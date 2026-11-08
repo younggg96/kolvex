@@ -67,7 +67,8 @@ export interface SegmentedControlProps<T extends string>
   wrap?: boolean;
 }
 
-const EASE = "cubic-bezier(0.32, 0.72, 0.24, 1)";
+/** Critically damped spring from app/globals.css (`--spring`). */
+const EASE = "var(--spring)";
 /** Longer than the glide so a fast tap still reads as a distinct press. */
 const PRESS_MS = 320;
 
@@ -280,7 +281,7 @@ export function SegmentedControl<T extends string>({
           transitionProperty: "transform, width, height, opacity",
           transitionDuration: ready ? `340ms, 340ms, 340ms, 0ms` : "0ms",
           transitionTimingFunction: ready
-            ? `${EASE}, ${EASE}, ${EASE}, ease-out`
+            ? `${EASE}, ${EASE}, ${EASE}, ${EASE}`
             : "linear",
           transform: `translate3d(${thumb?.left ?? 0}px, ${thumb?.top ?? 0}px, 0)`,
         }}

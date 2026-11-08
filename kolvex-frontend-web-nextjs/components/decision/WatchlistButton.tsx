@@ -14,7 +14,7 @@ export default function WatchlistButton({ ticker, showLabel = false, onRemoved }
   if (!symbol) return null;
   const saved = watchlist.includes(symbol);
   const label = !userId && ready ? c("Sign in to save your Watchlist", "请登录后保存自选股") : error ? c("Retry Watchlist sync", "重试同步自选股") : saved ? c(`Remove ${symbol} from Watchlist`, `将 ${symbol} 移出自选股`) : c(`Add ${symbol} to Watchlist`, `将 ${symbol} 加入自选股`);
-  return <Button type="button" variant="outline" size={showLabel ? "sm" : "icon"} className="min-h-11 min-w-11 shrink-0" disabled={!ready || pending} aria-label={label} title={label} aria-pressed={saved} onClick={async () => {
+  return <Button type="button" variant="outline" size={showLabel ? "sm" : "icon"} className={showLabel ? "min-h-11 min-w-11 shrink-0" : "shrink-0"} disabled={!ready || pending} aria-label={label} title={label} aria-pressed={saved} onClick={async () => {
     if (!userId || error === "auth") { toast.error(c("Sign in to save your Watchlist", "请登录后保存自选股")); return; }
     if (error) { await refresh(); return; }
     const success = await toggle(symbol);

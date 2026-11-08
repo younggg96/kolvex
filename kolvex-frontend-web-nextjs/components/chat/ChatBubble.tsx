@@ -44,7 +44,7 @@ export function ChatBubble({
       <div className="flex w-full justify-end animate-fade-in">
         <div className="max-w-[88%] md:max-w-[70%]">
           <div
-            className="rounded-3xl bg-muted px-4 py-2.5 text-foreground"
+            className="glass-card rounded-3xl border border-foreground/10 bg-card-glass px-4 py-2.5 text-foreground"
             aria-label={t("chat.userName")}
           >
             <p className="text-[0.9375rem] leading-relaxed whitespace-pre-wrap">

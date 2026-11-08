@@ -7,6 +7,7 @@ import {
   useScroll,
   useTransform,
 } from "motion/react";
+import { waapiSpringEasing } from "@/lib/motion/spring";
 
 /** Scroll values stay outside React state; layout remains in normal flow. */
 export function LandingParallax({
@@ -86,7 +87,7 @@ export default function LandingScrollEffects() {
               {
                 duration: 750,
                 delay: index * 75,
-                easing: "cubic-bezier(.16,1,.3,1)",
+                easing: waapiSpringEasing(),
               },
             );
             animations.add(animation);

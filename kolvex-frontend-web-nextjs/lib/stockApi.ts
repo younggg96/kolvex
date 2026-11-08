@@ -251,7 +251,7 @@ export interface AiTechnicalAnalysis {
     level?: number;
     detected_at?: string;
     label: string;
-    shape: "line" | "area";
+    shape: "line" | "area" | "channel" | "pitchfork";
     direction: "bullish" | "bearish" | "neutral";
     points: AiChartPoint[];
   }>;

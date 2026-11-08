@@ -90,7 +90,7 @@ export function RelayBar({ statuses, label }: { statuses: AgentStatus[]; label: 
         <span key={index} className="relative h-1 flex-1 overflow-hidden rounded-full bg-foreground/[0.08]">
           <span
             className={cn(
-              "absolute inset-0 origin-left rounded-full transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
+              "absolute inset-0 origin-left rounded-full transition-transform duration-500 ease-spring motion-reduce:transition-none",
               status === "failed" ? "bg-negative/50" : "bg-foreground/60",
               status === "completed" || status === "failed" ? "scale-x-100" : status === "running" ? "scale-x-[0.35]" : "scale-x-0",
             )}

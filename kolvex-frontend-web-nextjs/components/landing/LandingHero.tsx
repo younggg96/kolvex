@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useCopy } from "@/components/decision/shared";
 import { useLandingReducedMotion } from "./useLandingReducedMotion";
 import { useTranslation, type Locale } from "@/lib/i18n";
+import { motionSpring } from "@/lib/motion/spring";
 
 const headlines = {
   zh: [
@@ -83,8 +84,8 @@ export default function LandingHero() {
   const { locale } = useTranslation();
   const x = useMotionValue(0);
   const y = useMotionValue(0);
-  const springX = useSpring(x, { stiffness: 180, damping: 18 });
-  const springY = useSpring(y, { stiffness: 180, damping: 18 });
+  const springX = useSpring(x, motionSpring(0.47));
+  const springY = useSpring(y, motionSpring(0.47));
 
   return (
     <section id="product" className="landing-hero" aria-labelledby="landing-title" data-hero-paused={reduce}>

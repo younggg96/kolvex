@@ -150,7 +150,7 @@ export function ChatWelcome({
       >
         {input}
 
-        <ul className="mt-6 divide-y divide-border border-y border-border">
+        <ul className="glass-card mt-6 divide-y divide-border rounded-3xl border border-foreground/10 bg-card-glass px-4">
           {suggestions.map((suggestion, index) => (
             <li key={index}>
               <button

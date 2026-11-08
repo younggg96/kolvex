@@ -12,9 +12,9 @@ class ChartOperationTests(unittest.TestCase):
         llm = MagicMock(); llm.with_structured_output.return_value = structured
         bars = make_bars()
         with patch.object(ta, "get_user_llm", return_value=llm):
-            analysis = asyncio.run(ta.analyze_chart("NVDA", "1d", bars, None, None, model_id="deepseek-chat", user_api_keys={"deepseek": "user-test-key"}, operation="analysis", categories=["trend"], custom_scenarios=["Retest?"]))
-            drawings = asyncio.run(ta.analyze_chart("NVDA", "1d", bars, None, None, model_id="deepseek-chat", user_api_keys={"deepseek": "user-test-key"}, operation="drawings", categories=["levels", "structure"], custom_scenarios=["Retest?"]))
-            cached = asyncio.run(ta.analyze_chart("NVDA", "1d", bars, None, None, model_id="deepseek-chat", user_api_keys={"deepseek": "user-test-key"}, operation="analysis", categories=["trend"], custom_scenarios=["Retest?"]))
+            analysis = asyncio.run(ta.analyze_chart("NVDA", "1d", bars, None, None, model_id="deepseek-flash", user_api_keys={"deepseek": "user-test-key"}, operation="analysis", categories=["trend"], custom_scenarios=["Retest?"]))
+            drawings = asyncio.run(ta.analyze_chart("NVDA", "1d", bars, None, None, model_id="deepseek-flash", user_api_keys={"deepseek": "user-test-key"}, operation="drawings", categories=["levels", "structure"], custom_scenarios=["Retest?"]))
+            cached = asyncio.run(ta.analyze_chart("NVDA", "1d", bars, None, None, model_id="deepseek-flash", user_api_keys={"deepseek": "user-test-key"}, operation="analysis", categories=["trend"], custom_scenarios=["Retest?"]))
         self.assertEqual(structured.ainvoke.call_count, 2)
         self.assertEqual(analysis, cached)
         self.assertEqual(analysis["operation"], "analysis")
@@ -26,11 +26,13 @@ class ChartOperationTests(unittest.TestCase):
         prompt = structured.ainvoke.call_args.args[0][0][1]
         self.assertIn("ONLY for chart drawings", prompt)
 
-class DrawingTradePlanTests(unittest.TestCase):
+class TradePlanTests(unittest.TestCase):
+    """The conditional setup is the single execution plan and belongs to written analysis."""
+
     def setUp(self):
         ta._cache.clear()
 
-    def run_plan(self, categories, setup, bias="bullish"):
+    def run_plan(self, categories, setup, bias="bullish", operation="analysis"):
         structured = MagicMock()
         structured.ainvoke = AsyncMock(return_value=ta.AiAnalysis(
             trend="uptrend" if bias == "bullish" else "downtrend", bias=bias,
@@ -41,15 +43,15 @@ class DrawingTradePlanTests(unittest.TestCase):
         llm.with_structured_output.return_value = structured
         with patch.object(ta,"get_user_llm",return_value=llm):
             result = asyncio.run(ta.analyze_chart("NVDA","1d",make_bars(),None,None,
-                model_id="deepseek-chat",user_api_keys={"deepseek":"user-test-key"},
-                operation="drawings",categories=categories))
+                model_id="deepseek-flash",user_api_keys={"deepseek":"user-test-key"},
+                operation=operation,categories=categories))
         return result,structured
 
     def long(self):
         return ta.AiSetup(name="Retest",direction="bullish",entry_low=105,entry_high=107,
             invalidation=100,targets=[120,115],reason="If support holds")
 
-    def test_selected_trade_plan_is_validated_and_ratio_uses_nearest_target(self):
+    def test_analysis_plan_is_validated_and_ratio_uses_nearest_target(self):
         result,call = self.run_plan(["trade_plan"],self.long())
         plan = result["setup"]
         self.assertEqual(plan["targets"],[115,120])
@@ -57,11 +59,18 @@ class DrawingTradePlanTests(unittest.TestCase):
         self.assertEqual(result["findings"][0]["status"],"available")
         self.assertEqual(result["findings"][0]["explanation"],"If support holds")
         self.assertEqual(result["levels"],[])
-        self.assertIn("only when trade_plan is requested",call.ainvoke.call_args.args[0][0][1])
+        self.assertIn("written technical analysis",call.ainvoke.call_args.args[0][0][1])
 
-    def test_deselected_plan_is_not_drawn_even_if_model_returns_one(self):
-        result,_ = self.run_plan(["levels"],self.long())
+    def test_drawings_never_return_a_plan(self):
+        result,call = self.run_plan(["levels","trade_plan"],self.long(),operation="drawings")
         self.assertIsNone(result["setup"])
+        self.assertEqual(result["categories"],["levels"])
+        self.assertIn("Do not return a trade setup",call.ainvoke.call_args.args[0][0][1])
+
+    def test_drawing_defaults_have_no_plan_category(self):
+        result,_ = self.run_plan(None,None,operation="drawings")
+        self.assertIsNone(result["setup"])
+        self.assertEqual(result["categories"],["levels","trendlines","fibonacci"])
 
     def test_wrong_side_stop_and_neutral_bias_do_not_create_plan(self):
         for setup,bias in [(self.long().model_copy(update={"invalidation":108}),"bullish"),

@@ -2,9 +2,9 @@
 
 import { useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+import { waapiSpringEasing } from "@/lib/motion/spring";
 
 const directoryPaths = new Set(["/research", "/creators", "/stocks"]);
-const easing = "cubic-bezier(0.22, 1, 0.36, 1)";
 
 /** Progressive enhancement: server HTML stays visible without JavaScript. */
 export function ReadingMotion() {
@@ -27,7 +27,7 @@ export function ReadingMotion() {
       const animation = item.animate([
         { opacity: 0, transform: "translateY(12px)" },
         { opacity: 1, transform: "translateY(0)" },
-      ], { duration: 500, delay, easing, fill: "backwards" });
+      ], { duration: 500, delay, easing: waapiSpringEasing(), fill: "backwards" });
       animations.add(animation);
       animation.onfinish = () => animations.delete(animation);
     }

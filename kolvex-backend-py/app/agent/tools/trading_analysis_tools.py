@@ -4,6 +4,9 @@ Trading Analysis Tool for Chat Agent
 Provides a simplified TradingAgents multi-agent analysis as a tool
 within the existing chat agent system. Uses 1 debate round for speed.
 
+Not bound to any chat agent today: it blocks for minutes and bypasses
+TradingAnalysisService, so its results are never saved as signals.
+
 All tradingagents imports are deferred so this module is safe to
 import even when the package is not installed.
 """
@@ -16,35 +19,13 @@ from langchain_core.tools import tool
 
 logger = logging.getLogger(__name__)
 
-_user_api_keys_store: dict[str, dict[str, str]] = {}
 
-
-def set_user_api_keys_for_tool(user_id: str, keys: dict[str, str]):
-    """Cache user API keys so the tool can access them during execution."""
-    _user_api_keys_store[user_id] = keys
-
-
-@tool
-def run_trading_analysis(
+def _run_analysis(
     ticker: str,
-    trade_date: Optional[str] = None,
-    provider: str = "openai",
+    trade_date: Optional[str],
+    provider: str,
+    user_api_keys: Optional[dict[str, str]],
 ) -> str:
-    """Run a multi-agent trading analysis on a stock ticker using TradingAgents.
-
-    This tool deploys multiple AI agents (market analyst, social analyst, news analyst,
-    fundamentals analyst, bull/bear researchers, trader, and risk managers) to collaboratively
-    analyze a stock and produce a BUY/SELL/HOLD decision with supporting rationale.
-
-    Args:
-        ticker: Stock ticker symbol (e.g. "NVDA", "AAPL", "TSLA")
-        trade_date: Analysis date in YYYY-MM-DD format. Defaults to today.
-        provider: LLM provider to use (openai, anthropic, deepseek, etc.)
-
-    Returns:
-        A comprehensive analysis summary including the final BUY/SELL/HOLD decision
-        and key findings from each analysis stage.
-    """
     from app.services.trading_analysis_service import (
         TRADINGAGENTS_AVAILABLE,
         build_ta_config,
@@ -62,18 +43,13 @@ def run_trading_analysis(
     ticker = ticker.upper().strip()
 
     try:
-        user_keys = None
-        for uid, keys in _user_api_keys_store.items():
-            user_keys = keys
-            break
-
         config = build_ta_config(
             provider=provider,
             deep_think_model="gpt-4o-mini",
             quick_think_model="gpt-4o-mini",
             max_debate_rounds=1,
             max_risk_discuss_rounds=1,
-            user_api_keys=user_keys,
+            user_api_keys=user_api_keys,
         )
 
         graph = create_trading_graph(
@@ -106,3 +82,33 @@ def run_trading_analysis(
     except Exception as e:
         logger.error(f"Trading analysis tool failed for {ticker}: {e}", exc_info=True)
         return f"Trading analysis failed for {ticker}: {str(e)}"
+
+
+def create_trading_analysis_tool(user_api_keys: Optional[dict[str, str]] = None):
+    """Build the tool for one request, so it can only ever use that user's keys."""
+    keys = dict(user_api_keys) if user_api_keys else None
+
+    @tool
+    def run_trading_analysis(
+        ticker: str,
+        trade_date: Optional[str] = None,
+        provider: str = "openai",
+    ) -> str:
+        """Run a multi-agent trading analysis on a stock ticker using TradingAgents.
+
+        This tool deploys multiple AI agents (market analyst, social analyst, news analyst,
+        fundamentals analyst, bull/bear researchers, trader, and risk managers) to collaboratively
+        analyze a stock and produce a BUY/SELL/HOLD decision with supporting rationale.
+
+        Args:
+            ticker: Stock ticker symbol (e.g. "NVDA", "AAPL", "TSLA")
+            trade_date: Analysis date in YYYY-MM-DD format. Defaults to today.
+            provider: LLM provider to use (openai, anthropic, deepseek, etc.)
+
+        Returns:
+            A comprehensive analysis summary including the final BUY/SELL/HOLD decision
+            and key findings from each analysis stage.
+        """
+        return _run_analysis(ticker, trade_date, provider, keys)
+
+    return run_trading_analysis

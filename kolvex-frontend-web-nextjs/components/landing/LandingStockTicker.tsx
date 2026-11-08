@@ -38,7 +38,7 @@ const COMPANY_NAMES: Record<string, string> = {
 
 /** Pill shell: identical for the link and the non-routable fallback so the marquee never reflows. */
 const PILL_CLASS =
-  "group inline-flex min-h-11 items-center gap-1.5 md:gap-3 px-2.5 md:px-5 py-1.5 md:py-2.5 mx-1 md:mx-2 rounded-3xl glass-card bg-card-glass border border-foreground/10 transition-all duration-200 [transition-timing-function:cubic-bezier(0.25,1,0.5,1)]";
+  "group inline-flex min-h-11 items-center gap-1.5 md:gap-3 px-2.5 md:px-5 py-1.5 md:py-2.5 mx-1 md:mx-2 rounded-3xl glass-card bg-card-glass border border-foreground/10 transition-all duration-200";
 
 export default function LandingStockTicker() {
   const { t } = useTranslation();

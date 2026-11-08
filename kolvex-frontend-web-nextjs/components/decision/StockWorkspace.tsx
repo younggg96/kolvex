@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import PriceChart from "@/components/youtube/PriceChart";
+import ResultHeader from "@/components/youtube/chart/ResultHeader";
 import CompanyLogo from "@/components/ui/company-logo";
 import { ResearchReportContent } from "@/components/trading-analysis/ResearchReportContent";
 import AnalysisHistory from "./AnalysisHistory";
@@ -31,6 +32,8 @@ import { finite, getStockOverview } from "@/lib/stockFundamentals";
 import WatchlistButton from "./WatchlistButton";
 import { ReportCard } from "@/components/trading-analysis/report-card";
 import type { AiTechnicalAnalysis, StockQuote } from "@/lib/stockApi";
+import type { AnalysisVersion } from "@/lib/stockAnalysisHistory";
+import { authorLabel } from "@/lib/analysisAuthor";
 import {
   getYouTubeStockDetail,
   type YouTubeOpinion,
@@ -190,6 +193,8 @@ export default function StockWorkspace({
   const [technicalContainer, setTechnicalContainer] =
     useState<HTMLDivElement | null>(null);
   const [technical, setTechnical] = useState<AiTechnicalAnalysis | null>(null);
+  const [technicalVersion, setTechnicalVersion] =
+    useState<AnalysisVersion<AiTechnicalAnalysis> | null>(null);
   const publishedResearch =
     publishedResource.data?.items.find((item) => item.status === "completed") ??
     null;
@@ -214,7 +219,13 @@ export default function StockWorkspace({
     overviewResource.refresh();
   };
   const onAnalysis = useCallback(
-    (value: AiTechnicalAnalysis | null) => setTechnical(value),
+    (
+      value: AiTechnicalAnalysis | null,
+      version: AnalysisVersion<AiTechnicalAnalysis> | null = null,
+    ) => {
+      setTechnical(value);
+      setTechnicalVersion(version);
+    },
     [],
   );
   const creators = creatorEvidence(opinions);
@@ -630,20 +641,42 @@ export default function StockWorkspace({
                       aria-labelledby="stock-setup-title"
                     >
                       <div>
-                        <h3
-                          id="stock-setup-title"
-                          className="text-xs font-medium text-muted-foreground"
-                        >
-                          {c("Setup plan", "条件计划")}
-                        </h3>
-                        <p className="mt-2 font-semibold">
-                          {technical.setup.name}
-                        </p>
-                        <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
+                        <ResultHeader
+                          label={c("Setup plan", "条件计划")}
+                          labelId="stock-setup-title"
+                          title={technical.setup.name}
+                          badge={{
+                            label: t(
+                              technical.setup.direction === "bullish"
+                                ? "youtubeOpinions.ai.tradePlan.long"
+                                : "youtubeOpinions.ai.tradePlan.short",
+                            ),
+                            tone:
+                              technical.setup.direction === "bullish"
+                                ? "positive"
+                                : "negative",
+                          }}
+                          interval={technical.interval}
+                          view={technical.view}
+                          generatedAt={technical.generated_at}
+                          author={
+                            technicalVersion
+                              ? authorLabel(technicalVersion, c)
+                              : undefined
+                          }
+                          model={
+                            technical.model
+                              ? `${technical.provider ? `${technical.provider} / ` : ""}${technical.model}`
+                              : undefined
+                          }
+                          formatDate={date}
+                          t={t}
+                        />
+                        <p className="mt-2 text-[13px] leading-6 text-muted-foreground">
                           {technical.setup.reason}
                         </p>
                         {!benchmark && <SetupTradeLink symbol={ticker} setup={technical.setup} />}
-                        <dl className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                        <dl className="mt-5 grid grid-cols-2 gap-x-5 gap-y-4">
                           {[
                             [
                               c("Entry", "入场"),
@@ -663,22 +696,29 @@ export default function StockWorkspace({
                             ],
                           ].map(([label, value]) => (
                             <div key={label}>
-                              <dt className="text-xs text-muted-foreground">
+                              <dt className="text-xs font-medium text-muted-foreground">
                                 {label}
                               </dt>
-                              <dd className="figure mt-1 font-medium">
+                              <dd className="figure mt-1.5 text-lg font-semibold leading-tight tracking-tight">
                                 {value}
                               </dd>
                             </div>
                           ))}
                         </dl>
-                        <p className="mt-4 text-sm font-medium">
-                          {c("Setup alignment", "计划证据一致性")}：
-                          {technical.setup.score === null
-                            ? c("Incomplete evidence", "证据不完整")
-                            : `${technical.setup.score}/100`}
+                        <p className="mt-5 flex flex-wrap items-center gap-2 text-[13px] font-medium">
+                          <span>{c("Setup alignment", "计划证据一致性")}</span>
+                          <span className={cn(
+                            "rounded-full border px-2.5 py-1 text-xs font-semibold",
+                            technical.setup.score === null
+                              ? "border-border bg-muted/50 text-muted-foreground"
+                              : "border-positive/25 bg-positive/10 text-positive",
+                          )}>
+                            {technical.setup.score === null
+                              ? c("Incomplete evidence", "证据不完整")
+                              : `${technical.setup.score}/100`}
+                          </span>
                         </p>
-                        <details className="mt-2 text-xs text-muted-foreground">
+                        <details className="mt-3 text-[11px] text-muted-foreground">
                           <summary className="cursor-pointer">
                             {c("How the score works", "评分如何计算")}
                           </summary>
@@ -757,6 +797,7 @@ export default function StockWorkspace({
                   className="stock-tab-panel min-w-0 pt-2 data-[state=inactive]:hidden [&>section>header]:border-0 [&>section>header>div>h2]:sr-only"
                 >
                   <Panel
+                    surface="card"
                     title={c("AI research", "AI 研究")}
                   >
                     <div>

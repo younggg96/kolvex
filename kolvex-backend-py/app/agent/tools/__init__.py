@@ -25,8 +25,10 @@ from app.agent.tools.options_tools import (
     get_options_chain_summary,
 )
 from app.agent.tools.trading_analysis_tools import (
-    run_trading_analysis,
-    set_user_api_keys_for_tool,
+    create_trading_analysis_tool,
+)
+from app.agent.tools.creator_tools import (
+    get_creator_opinions,
 )
 
 # 所有可用工具列表
@@ -50,9 +52,11 @@ FINANCIAL_TOOLS = [
     get_stock_quote,
     get_stock_financials,
     get_analyst_recommendations,
+    get_stock_history,
     get_company_info,
     get_user_portfolio,
     get_options_chain_summary,
+    get_creator_opinions,
     web_search,
 ]
 
@@ -63,14 +67,24 @@ RESEARCH_TOOLS = [
     get_stock_history,
     get_company_info,
     get_options_chain_summary,
+    get_creator_opinions,
     web_search,
-    run_trading_analysis,
 ]
 
 ALERT_TOOLS = [
     get_stock_quote,
     web_search,
 ]
+
+_BASE_TOOLS = {
+    "financial": FINANCIAL_TOOLS,
+    "research": RESEARCH_TOOLS,
+    "alert": ALERT_TOOLS,
+}
+
+# Only available when the matching data source is active.
+_SOURCE_GATED_TOOLS = (web_search, get_user_portfolio)
+
 
 def get_tools_for_sources(
     sources: list[str] | None,
@@ -82,7 +96,7 @@ def get_tools_for_sources(
 
     Args:
         sources: 激活的数据源 ["web", "portfolio"]
-                 None 表示全部启用
+                 None 表示全部启用，空列表表示全部关闭
         base_tools: 基础工具集 ("financial", "research", "alert")
         user_id: 当前认证用户 ID，用于绑定 portfolio 工具
 
@@ -91,15 +105,9 @@ def get_tools_for_sources(
     """
     logger.info(f"get_tools_for_sources called: sources={sources}, base_tools={base_tools}, user_id={'***' + user_id[-6:] if user_id and len(user_id) > 6 else user_id}")
 
-    # 核心工具（始终可用）
-    core_tools = [
-        get_stock_quote,
-        get_stock_financials,
-        get_analyst_recommendations,
-        get_company_info,
-        get_stock_history,
-        get_options_chain_summary,
-    ]
+    # 该子 Agent 的基础工具（不受数据源开关影响）
+    base = _BASE_TOOLS.get(base_tools, FINANCIAL_TOOLS)
+    tools = [t for t in base if t not in _SOURCE_GATED_TOOLS]
 
     # 为当前用户创建绑定了 user_id 的 portfolio 工具
     portfolio_tool = (
@@ -114,17 +122,13 @@ def get_tools_for_sources(
         "plaid": [portfolio_tool],
     }
 
-    # 如果 sources 为 None，启用全部
+    # 只有未指定 sources 才全部启用；用户关掉的数据源不能被重新打开
     if sources is None:
         active_sources = list(source_tool_map.keys())
     else:
         active_sources = [s for s in sources if s in source_tool_map]
-        # 至少保留核心功能
-        if not active_sources:
-            active_sources = list(source_tool_map.keys())
 
     # 组装工具列表
-    tools = list(core_tools)
     for source in active_sources:
         for t in source_tool_map[source]:
             if t not in tools:
@@ -140,6 +144,6 @@ __all__ = [
     "ALERT_TOOLS",
     "get_tools_for_sources",
     "create_portfolio_tool_for_user",
-    "run_trading_analysis",
-    "set_user_api_keys_for_tool",
+    "create_trading_analysis_tool",
+    "get_creator_opinions",
 ]

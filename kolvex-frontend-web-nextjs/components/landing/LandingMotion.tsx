@@ -5,8 +5,10 @@ import {
   type ReactNode,
 } from "react";
 import { motion, useReducedMotion } from "motion/react";
+import { springEase, waapiSpringEasing } from "@/lib/motion/spring";
 
-export const landingEase = [0.16, 1, 0.3, 1] as const;
+/** The site-wide critically damped spring (lib/motion/spring.ts) as a motion easing. */
+export const landingEase = springEase;
 const MotionContext = createContext({
   paused: false,
   disabled: false,
@@ -54,7 +56,7 @@ export function LandingMotionProvider({ children }: { children: ReactNode }) {
         const animation = entry.target.animate(
           [{ opacity: 0.55, transform: `translateY(${spec.distance}px)` },
            { opacity: 1, transform: "translateY(0)" }],
-          { duration: spec.duration, delay: spec.delay, easing: "cubic-bezier(0.16, 1, 0.3, 1)" },
+          { duration: spec.duration, delay: spec.delay, easing: waapiSpringEasing() },
         );
         animations.add(animation);
         animation.onfinish = () => animations.delete(animation);

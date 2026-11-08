@@ -10,8 +10,7 @@ import { STOCK_SECTORS } from "@/lib/stockDiscovery";
 import { marketStockHref } from "@/lib/stockLinks";
 import CompanyLogo from "@/components/ui/company-logo";
 import { Button } from "@/components/ui/button";
-import { ListRow, ListRows, phonePlainCardClass } from "@/components/ui/list-card";
-import { cn } from "@/lib/utils";
+import { ListRow, ListRows } from "@/components/ui/list-card";
 import { PendingValue } from "@/components/ui/content-loading";
 import { Change, money, useCopy } from "./shared";
 import { Skeleton } from "../ui/skeleton";
@@ -51,7 +50,7 @@ export default function MarketWatchlistCard() {
         <Button asChild variant="outline" size="icon" className="h-11 w-11"><Link href="/dashboard/watchlist" aria-label={c("Open full Watchlist", "查看全部自选股")} title={c("Open Watchlist", "查看自选股")}><ArrowUpRight className="h-4 w-4" aria-hidden /></Link></Button>
       </div>
     </header>
-    <div className={cn("rounded-3xl border border-foreground/10 glass-card bg-card-glass p-3", phonePlainCardClass)} aria-busy={!ready || loading}>
+    <div className="rounded-3xl border border-foreground/10 glass-card bg-card-glass p-3" aria-busy={!ready || loading}>
       {!ready ? <div role="status" aria-label={c("Loading Watchlist", "正在加载自选股")}><Skeleton className="mb-1 ml-1 mt-2.5 h-3 w-20 rounded-md max-md:ml-0" /><RailRowsSkeleton rows={4} /></div>
         : (!userId || error) && !symbols.length ? null : !symbols.length ? <div className="px-3 py-6 text-center">
           <Star className="mx-auto h-5 w-5 text-muted-foreground" aria-hidden />

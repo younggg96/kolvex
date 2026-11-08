@@ -149,6 +149,15 @@ function detailFixture() {
       readAgentStream: async (_response, onEvent) => { await onEvent({ type: 'token', content: 'OK' }); await onEvent({ type: 'done' }); } },
     './types': { TOOL_LABELS: {} },
     '@/lib/i18n': { useTranslation: () => ({ t: (key) => key }) },
+    'lucide-react': { PanelRight: 'icon', SquarePen: 'icon' },
+    '@/components/ui/button': { Button: 'button' },
+    '@/components/ui/sheet': { Sheet: 'sheet', SheetContent: 'sheet-content', SheetTitle: 'sheet-title' },
+    '@/components/decision/shared': { useCopy: () => (en) => en },
+    './workspace/useChatWorkspace': { useChatWorkspace: () => ({ detail: null, run: null, loading: false, unavailable: false }) },
+    './workspace/WorkspacePicker': { WorkspacePicker: 'workspace-picker' },
+    './workspace/WorkspacePanel': { WorkspacePanel: 'workspace-panel' },
+    './ChatHistorySheet': { ChatHistorySheet: 'chat-history-sheet' },
+    'next/link': { __esModule: true, default: 'a' },
   });
   const props = { conversationId: 'chat-1' };
   return { h, request, streams, selections, render: (extra = {}) => h.render('ChatDetailContainer', { ...props, ...extra }) };

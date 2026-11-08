@@ -31,6 +31,7 @@ const tiers: Record<DrawingGroup, { width: number; opacity: number; dash?: strin
   levels: { width: 1, opacity: 0.85 },
   trend: { width: 1, opacity: 0.7, dash: "5 3" },
   fib: { width: 0.75, opacity: 0.45, dash: "3 3" },
+  zones: { width: 0.75, opacity: 0.6, dash: "2 3" },
   pattern: { width: 1, opacity: 0.5 },
 };
 
@@ -181,6 +182,46 @@ export default function ChartDrawingLayer({
         const path = drawing.points.map(toPx);
         if (path.length > 0) caption(path[path.length - 1], "end");
         body = <polyline points={path.map(p => `${p.x},${p.y}`).join(" ")} fill="none" {...stroke} pointerEvents="none" />;
+        break;
+      }
+      case "channel": {
+        // Base a→b; the parallel passes through c, so the width is c's vertical distance from the base.
+        const c = drawing.points[2] ? toPx(drawing.points[2]) : b;
+        const run = b.x - a.x;
+        const dy = c.y - (run ? a.y + ((b.y - a.y) * (c.x - a.x)) / run : a.y);
+        const k = ((width + height) * 2) / (Math.hypot(b.x - a.x, b.y - a.y) || 1);
+        const end = { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k };
+        const shift = (p: Point) => ({ x: p.x, y: p.y + dy });
+        caption(shift(a), "start", dy < 0 ? -5 : 12);
+        body = (
+          <>
+            <polygon points={[a, end, shift(end), shift(a)].map(p => `${p.x},${p.y}`).join(" ")} fill={color} fillOpacity={0.05} stroke="none" pointerEvents="none" />
+            <line x1={a.x} y1={a.y} x2={end.x} y2={end.y} {...stroke} />
+            <line x1={a.x} y1={a.y + dy} x2={end.x} y2={end.y + dy} {...stroke} />
+            {hitLine(id, a, end, "base")}
+            {hitLine(id, shift(a), shift(end), "parallel")}
+          </>
+        );
+        break;
+      }
+      case "pitchfork": {
+        // Andrews: median from P0 through mid(P1, P2); tines through P1 and P2 run parallel to it.
+        const [p0, p1, p2] = drawing.points.map(toPx);
+        const mid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+        const k = ((width + height) * 2) / (Math.hypot(mid.x - p0.x, mid.y - p0.y) || 1);
+        const extend = (p: Point) => ({ x: p.x + (mid.x - p0.x) * k, y: p.y + (mid.y - p0.y) * k });
+        caption(p0, "start");
+        body = (
+          <>
+            <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke={color} strokeWidth={stroke.strokeWidth} strokeOpacity={0.5} strokeDasharray="3 3" />
+            {[[p0, extend(p0)], [p1, extend(p1)], [p2, extend(p2)]].map(([from, to], index) => (
+              <g key={index}>
+                <line x1={from.x} y1={from.y} x2={to.x} y2={to.y} {...stroke} strokeDasharray={index === 0 ? undefined : stroke.strokeDasharray} />
+                {hitLine(id, from, to, String(index))}
+              </g>
+            ))}
+          </>
+        );
         break;
       }
       case "trend":

@@ -181,8 +181,6 @@ const ChartView = compile('components/youtube/chart/ChartView.tsx', {
   '@/components/ui/skeleton': { Skeleton: () => React.createElement('div') },
   '../CreatorAvatar': { __esModule: true, default: () => null },
   '../ChartDrawingLayer': { __esModule: true, default: () => React.createElement('svg', { 'data-drawings': 'yes' }) },
-  './AiPriceActionSignals': { __esModule: true, default: () => null },
-  './AiDrawingSetup': { __esModule: true, default: () => null },
   './AiAnalysisPanel': { __esModule: true, default: () => null },
   './AiAnalysisEmptyState': { __esModule: true, default: () => null },
 }).default;
@@ -219,8 +217,6 @@ function compileChartView(initialBox) {
     '@/components/ui/skeleton': { Skeleton: () => React.createElement('div') },
     '../CreatorAvatar': { __esModule: true, default: () => null },
     '../ChartDrawingLayer': { __esModule: true, default: () => React.createElement('svg', { 'data-drawings': 'yes' }) },
-    './AiPriceActionSignals': { __esModule: true, default: () => null },
-    './AiDrawingSetup': { __esModule: true, default: () => null },
     './AiAnalysisPanel': { __esModule: true, default: () => null },
     './AiAnalysisEmptyState': { __esModule: true, default: () => null },
   }).default;
@@ -386,4 +382,45 @@ test('creator-opinion charts can hide AI surfaces in compact and advanced modes'
     assert.doesNotMatch(markup, /<aside/);
     assert.match(render({ mode, showAi: true }).markup, /youtubeOpinions\.ai\.actions/);
   }
+});
+
+test('computed zones, channels and pitchforks map to their own shapes and layers', () => {
+  const { analysisDrawings } = compile('components/youtube/aiDrawings.ts');
+  const p = (date, price) => ({ date, price });
+  const overlays = [
+    { category: 'supply_demand', label: 'Demand', shape: 'area', direction: 'bullish', points: [p('2026-08-01', 100), p('2026-08-09', 102)] },
+    { category: 'gaps', label: 'FVG', shape: 'area', direction: 'bearish', points: [p('2026-08-02', 104), p('2026-08-09', 106)] },
+    { category: 'volume_profile', label: 'POC', shape: 'line', direction: 'neutral', points: [p('2026-08-01', 101), p('2026-08-09', 101)] },
+    { category: 'anchored_vwap', label: 'AVWAP', shape: 'line', direction: 'bullish', points: [p('2026-08-01', 100), p('2026-08-02', 101), p('2026-08-03', 102)] },
+    { category: 'channels', label: 'Rising', shape: 'channel', direction: 'bullish', points: [p('2026-08-01', 100), p('2026-08-05', 104), p('2026-08-03', 108)] },
+    { category: 'pitchfork', label: 'Fork', shape: 'pitchfork', direction: 'bullish', points: [p('2026-08-01', 100), p('2026-08-03', 110), p('2026-08-05', 105)] },
+    { category: 'channels', label: 'Broken', shape: 'channel', direction: 'bullish', points: [p('2026-08-01', 100), p('2026-08-05', 104)] },
+  ];
+  const result = analysisDrawings({ version_id: 'v', view: { end: '2026-08-09' }, levels: [], trendlines: [], overlays }, (key) => key);
+  assert.deepEqual(JSON.parse(JSON.stringify(result.map((item) => [item.label, item.type, item.group]))), [
+    ['Demand', 'rect', 'zones'],
+    ['FVG', 'rect', 'zones'],
+    ['POC', 'trend', 'levels'],
+    ['AVWAP', 'polyline', 'trend'],
+    ['Rising', 'channel', 'trend'],
+    ['Fork', 'pitchfork', 'trend'],
+  ]);
+});
+
+test('the drawing layer renders a filled channel and three pitchfork tines', () => {
+  const Layer = compile('components/youtube/ChartDrawingLayer.tsx', {
+    '@/lib/stockApi': { formatChangePercent: String, formatPrice: String },
+  }).default;
+  const drawing = (type, points) => ({ id: type, type, color: 'red', source: 'ai', group: 'trend', points: points.map(([time, price]) => ({ time, price })) });
+  const markup = renderToStaticMarkup(React.createElement(Layer, {
+    width: 800, height: 400, drawings: [
+      drawing('channel', [[0, 100], [100, 120], [50, 130]]),
+      drawing('pitchfork', [[0, 100], [100, 140], [200, 120]]),
+    ],
+    draft: null, selectedId: null, interactive: true,
+    toPx: ({ time, price }) => ({ x: time, y: 400 - price }), barsBetween: () => 0, t: (key) => key,
+  }));
+  assert.equal((markup.match(/<polygon/g) || []).length, 1);
+  assert.equal((markup.match(/data-drawing="pitchfork"/g) || []).length, 3);
+  assert.equal((markup.match(/data-drawing="channel"/g) || []).length, 2);
 });

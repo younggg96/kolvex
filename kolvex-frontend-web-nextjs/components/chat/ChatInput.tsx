@@ -245,7 +245,6 @@ export function ChatInput({
   onCancel,
   onKeyDown,
   isLoading = false,
-  isFocused = false,
   onFocus,
   onBlur,
   placeholder,
@@ -394,8 +393,7 @@ export function ChatInput({
           inline
             ? "bg-transparent"
             : cn(
-                "overflow-hidden rounded-[1.625rem] border bg-muted transition-colors duration-150",
-                isFocused ? "border-foreground/25" : "border-transparent"
+                "glass-card glass-card-blur overflow-hidden rounded-[1.625rem] border border-foreground/10 bg-card-glass-strong transition-colors duration-150 focus-within:border-foreground/35"
               )
         )}
       >
@@ -444,7 +442,7 @@ export function ChatInput({
               "disabled:cursor-not-allowed disabled:opacity-50",
               inline
                 ? "min-h-11 border-b-2 border-transparent text-[1.0625rem] leading-7 focus-visible:border-primary focus-visible:outline-none"
-                : "min-h-[1.75rem] max-h-[10rem] text-base leading-relaxed"
+                : "min-h-[1.75rem] max-h-[10rem] text-base leading-relaxed focus-visible:outline-none"
             )}
             rows={1}
           />

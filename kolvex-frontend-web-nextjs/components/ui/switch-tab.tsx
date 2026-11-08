@@ -96,7 +96,7 @@ export const SwitchTab = React.memo(function SwitchTab({
     const style: React.CSSProperties = {
       width: buttonRect.width,
       transform: `translateX(${buttonRect.left - containerRect.left + containerRef.current.scrollLeft - containerRef.current.clientLeft}px)`,
-      transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+      transition: "all 0.2s var(--spring)",
     };
 
     if (variant === "underline") {

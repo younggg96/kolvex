@@ -1,4 +1,4 @@
-import { ChevronDown } from "lucide-react";
+import Disclosure from "@/components/ui/disclosure";
 import type { AiTechnicalAnalysis } from "@/lib/stockApi";
 import { TECHNICAL_CATEGORIES } from "@/lib/technicalFocus";
 
@@ -16,12 +16,7 @@ export default function TechnicalFindings({ result, t }: { result: AiTechnicalAn
   const evidence = findings.filter(item => !item.category || item.status !== "unavailable");
 
   return (
-    <details className="group/evidence mt-4 border-t border-border">
-      <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded text-sm focus-visible:outline-none [&::-webkit-details-marker]:hidden">
-        <span className="font-medium">{t("youtubeOpinions.ai.focus.evidence")}</span>
-        <span className="text-xs tabular-nums text-muted-foreground">{findings.length}</span>
-        <ChevronDown className="ml-auto h-4 w-4 text-muted-foreground group-open/evidence:rotate-180" aria-hidden="true" />
-      </summary>
+    <Disclosure title={t("youtubeOpinions.ai.focus.evidence")} count={findings.length} className="mt-0 py-3">
       <dl className="space-y-4 pb-3 pt-1">
         {evidence.map(finding => (
           <div key={finding.id}>
@@ -39,6 +34,6 @@ export default function TechnicalFindings({ result, t }: { result: AiTechnicalAn
           </div>
         )}
       </dl>
-    </details>
+    </Disclosure>
   );
 }

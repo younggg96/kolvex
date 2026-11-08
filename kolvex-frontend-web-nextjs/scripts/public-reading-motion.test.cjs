@@ -60,7 +60,9 @@ function setup({ reduced = false, pathname = '/research', observerSupported = tr
     },
     require: (name) => name === 'react'
       ? { useEffect: (fn) => { effect = fn; } }
-      : { usePathname: () => pathname, useSearchParams: () => new URLSearchParams() },
+      : name === '@/lib/motion/spring'
+        ? { waapiSpringEasing: () => 'spring' }
+        : { usePathname: () => pathname, useSearchParams: () => new URLSearchParams() },
   });
   module.exports.ReadingMotion();
   const cleanup = effect();

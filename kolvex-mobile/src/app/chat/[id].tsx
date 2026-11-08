@@ -127,6 +127,7 @@ function Room() {
             setPartial((old) => old + (event.content ?? ""));
             setStatus("正在撰写回复…");
           }
+          if (event.type === "token_reset") setPartial("");
           if (event.type === "status")
             setStatus(
               (

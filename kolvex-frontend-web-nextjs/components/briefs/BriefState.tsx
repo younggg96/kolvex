@@ -18,7 +18,7 @@ export default function BriefState({ loading, error, retry }: { loading: boolean
 
 /** Mirrors BriefContent: hero image, meta line, title/headline/subtitle, then sections with paragraphs. */
 function BriefSkeleton() {
-  return <div className="mx-auto max-w-[67.5rem] space-y-10">
+  return <div className="mx-auto w-full max-w-[67.5rem] space-y-10">
     <div className="space-y-4">
       <Skeleton className="aspect-video w-full rounded-3xl" />
       <div className="flex gap-2"><Skeleton className="h-3 w-20 rounded-md" /><Skeleton className="h-3 w-14 rounded-md" /><Skeleton className="h-3 w-16 rounded-md" /></div>

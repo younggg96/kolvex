@@ -10,6 +10,7 @@ import { createPortal } from "react-dom";
 import { MODEL_CONFIGS, PROVIDER_NAME_TO_ID } from "@/lib/aiModels";
 import { useAvailableProviders } from "@/hooks/useAvailableProviders";
 import type { useChartAiJobs } from "@/hooks/useChartAiJobs";
+import type { AnalysisVersion } from "@/lib/stockAnalysisHistory";
 import { DEFAULT_TECHNICAL_FOCUS, DEFAULT_DRAWING_FOCUS, type TechnicalFocus } from "@/lib/technicalFocus";
 
 import {
@@ -81,8 +82,6 @@ import ChartSection from "./ChartSection";
 import OscillatorPane, { oscillatorLabels, type Oscillator } from "./OscillatorPane";
 import { drawingColors, drawingGroups, newDrawingId, type Anchor, type Drawing, type DrawingGroup, type DrawingTool, type SyncStatus } from "../chartDrawings";
 import { toneText, type StrengthTone } from "../strength";
-import AiPriceActionSignals from "./AiPriceActionSignals";
-import AiDrawingSetup from "./AiDrawingSetup";
 import AiAnalysisPanel from "./AiAnalysisPanel";
 import AiJobProgress, { AiJobStatusChip } from "./AiJobProgress";
 import AiAnalysisEmptyState from "./AiAnalysisEmptyState";
@@ -234,6 +233,7 @@ export interface ChartViewProps {
   selectedModel: string;
   onModelChange: (model: string) => void;
   savedAnalysis?: AiTechnicalAnalysis | null;
+  savedAnalysisVersion?: AnalysisVersion<AiTechnicalAnalysis> | null;
   snapshotBars?: PriceBar[];
   generationRequest?: number;
   technicalFocus?: TechnicalFocus;
@@ -283,6 +283,7 @@ export default function ChartView({
   selectedModel,
   onModelChange,
   savedAnalysis,
+  savedAnalysisVersion,
   snapshotBars,
   generationRequest = 0,
   technicalFocus = DEFAULT_TECHNICAL_FOCUS,
@@ -1191,28 +1192,17 @@ export default function ChartView({
       onAnalyze={() => void runAi("analysis")}
       t={t}
     />}
-    {drawingAi.status === "done" && drawingAi.result && (drawingAi.result.model || drawingAi.result.setup || drawingAi.result.findings?.some(item => item.status === "unavailable") || drawingAi.result.overlays?.some(item => ["breakouts", "retests", "false_breakouts"].includes(item.category) && item.detected_at && typeof item.level === "number")) && <details className={cn("group/drawings min-w-0 border-t border-border pt-3", stackedResults ? "order-2 mt-6" : "mt-5", advanced && "order-last")}>
-          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded text-sm font-medium hover:text-muted-foreground focus-visible:outline-none [&::-webkit-details-marker]:hidden">
-            {t("youtubeOpinions.ai.button")}
-            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground group-open/drawings:rotate-180" aria-hidden="true" />
-          </summary>
-          {drawingAi.result?.model && <p className="mt-1 break-words text-xs leading-5 text-muted-foreground">{t("youtubeOpinions.ai.generatedBy", { model: `${drawingAi.result.provider || ""} / ${drawingAi.result.model}` })}</p>}
-          {drawingAi.status === "done" && drawingAi.result?.setup && <AiDrawingSetup setup={drawingAi.result.setup} t={t} symbol={symbol} />}
-          {drawingAi.status === "done" && drawingAi.result && <AiPriceActionSignals result={drawingAi.result} formatDate={formatDate} t={t} />}
-          {drawingAi.status === "done" && drawingAi.result?.findings?.some(item => item.status === "unavailable") && <p className="mt-3 text-xs leading-5 text-muted-foreground">
-            {t("youtubeOpinions.ai.focus.unavailable")}：{drawingAi.result.findings.filter(item => item.status === "unavailable").map(item => t(`youtubeOpinions.ai.focus.categories.${item.id}`)).join(" / ")}
-          </p>}
-        </details>}
     {!advanced && aiFailure && <div className={stackedResults ? "order-first mb-4" : "mt-4"}>{aiFailure}</div>}
     {(ai.status === "done" || (ai.status === "error" && savedAnalysis)) && (
           <AiAnalysisPanel
             state={ai.status === "done" ? ai : { status: "done", result: savedAnalysis! }}
             busy={aiBusy}
-            interval={params.interval || "1d"}
+            version={savedAnalysisVersion}
             onRetry={() => void runAi("analysis")}
+            showRetry={advanced}
             formatDate={formatDate}
             t={t}
-            className={stackedResults ? "order-first" : "mt-6 border-t border-border pt-4"}
+            className={stackedResults ? "order-first" : "mt-5"}
           />
         )}
   </>);

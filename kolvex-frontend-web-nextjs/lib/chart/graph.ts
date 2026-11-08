@@ -73,8 +73,14 @@ export function clampGraphView(view: GraphView, count: number, minBars = GRAPH_M
   if (count <= 0) return { start: 0, end: 1 };
   const minSpan = Math.min(minBars, count);
   const span = Math.min(Math.max(view.end - view.start, minSpan), count * 1.15 + 4);
-  const start = Math.min(Math.max(view.start, -span * 0.1), count - Math.min(span * 0.3, count));
+  const { min, max } = graphPanBounds(span, count);
+  const start = Math.min(Math.max(view.start, min), max);
   return { start, end: start + span };
+}
+
+/** The range a view of `span` bars may start in: a little empty space before the first bar, and at least 30% of the window still showing data at the end. */
+export function graphPanBounds(span: number, count: number) {
+  return { min: -span * 0.1, max: count - Math.min(span * 0.3, count) };
 }
 
 /** Zoom around an anchor ratio (0 = left edge, 1 = right edge). */

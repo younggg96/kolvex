@@ -26,12 +26,14 @@ import {
   visibleQuestion,
 } from "./pageEvidence";
 import { useTranslation } from "@/lib/i18n";
-import { PanelRight } from "lucide-react";
+import { PanelRight, SquarePen } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useCopy } from "@/components/decision/shared";
 import { useChatWorkspace } from "./workspace/useChatWorkspace";
 import { WorkspacePicker } from "./workspace/WorkspacePicker";
+import { ChatHistorySheet } from "./ChatHistorySheet";
 import { WorkspacePanel } from "./workspace/WorkspacePanel";
 
 // ===== localStorage helpers for persisting chat preferences =====
@@ -209,6 +211,11 @@ export function ChatDetailContainer({
               setStreamingContent(accumulatedContent);
               setAgentStatus({ stage: "writing", message: event.content });
             }
+            break;
+
+          case "token_reset":
+            accumulatedContent = "";
+            setStreamingContent("");
             break;
 
           case "tool_start":
@@ -498,12 +505,18 @@ export function ChatDetailContainer({
   return (
     <div className={cn("flex h-full min-h-0", className)}>
       <div className="flex-1 flex flex-col min-w-0 relative">
-        <div className="flex h-14 shrink-0 items-center gap-2 px-4 md:px-8">
+        <div className="flex h-14 shrink-0 items-center gap-1 pl-2 pr-4 md:gap-2 md:px-8">
+          <ChatHistorySheet className="md:-ml-2" />
           <h1 className="min-w-0 flex-1 truncate text-[0.9375rem] font-semibold text-foreground">
             {currentConversation?.title && currentConversation.title !== "New Chat"
               ? currentConversation.title
               : copy("New chat", "新对话")}
           </h1>
+          <Button asChild variant="ghost" size="icon" className="max-md:h-11 max-md:w-11">
+            <Link href="/dashboard/chat" aria-label={copy("New chat", "新对话")} title={copy("New chat", "新对话")}>
+              <SquarePen className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </Button>
           <WorkspacePicker workspace={workspace} suggestedTitle={currentConversation?.title} />
           {hasWorkspace && (
             <Button
@@ -535,7 +548,7 @@ export function ChatDetailContainer({
           modelName={MODEL_CONFIGS.find((m) => m.id === selectedModel)?.name}
         />
         {/* Chat Input */}
-        <div className="sticky bottom-0 z-20 bg-background">
+        <div className="sticky bottom-0 z-20">
           <div className="mx-auto max-w-3xl px-4 pb-4 pt-2">
             {inputAction && <div className="flex justify-end pb-2">{inputAction}</div>}
             <ChatInput
@@ -573,7 +586,7 @@ export function ChatDetailContainer({
       )}
 
       <Sheet open={sheetOpen && hasWorkspace} onOpenChange={setSheetOpen}>
-        <SheetContent side="right" closeLabel={copy("Close", "关闭")} className="w-full overflow-y-auto bg-background sm:max-w-md">
+        <SheetContent side="right" closeLabel={copy("Close", "关闭")} className="w-full overflow-y-auto sm:max-w-md">
           <SheetTitle className="sr-only">{copy("Workspace research", "工作区研究")}</SheetTitle>
           <div className="pt-8">
             <WorkspacePanel workspace={workspace} conversationId={conversationId} model={selectedModel} />

@@ -377,6 +377,7 @@ async def stream_message(
     SSE 事件类型：
     - status: Agent 当前阶段
     - token: AI 回复的文本 token
+    - token_reset: 丢弃此前收到的 token（那段文字其实是工具调用前的规划）
     - tool_start: Agent 开始调用工具
     - tool_end: Agent 工具调用完成
     - done: 流式完成
@@ -430,6 +431,11 @@ async def stream_message(
                     token = event.get("content", "")
                     full_response += token
                     yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
+
+                elif event_type == "token_reset":
+                    # The text so far was tool planning, not the answer.
+                    full_response = ""
+                    yield f"data: {json.dumps({'type': 'token_reset'})}\n\n"
 
                 elif event_type == "status":
                     yield f"data: {json.dumps({'type': 'status', 'stage': event.get('stage', ''), 'content': event.get('content', '')})}\n\n"

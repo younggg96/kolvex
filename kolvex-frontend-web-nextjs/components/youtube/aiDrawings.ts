@@ -1,11 +1,21 @@
 import type { AiTechnicalAnalysis } from "@/lib/stockApi";
-import type { Drawing } from "./chartDrawings";
+import type { Drawing, DrawingGroup } from "./chartDrawings";
+
 /** Stable coordinates are derived from the immutable analysis, never from today's bars. */
-export function analysisDrawings(result: AiTechnicalAnalysis, t: (key: string) => string): Drawing[] {
-  const prefix = `ai-${result.version_id || result.generated_at}`;
+function prefixFor(result: AiTechnicalAnalysis) {
+  return `ai-${result.version_id || result.generated_at}`;
+}
+
+/**
+ * The single execution plan comes from written technical analysis. Drawings only
+ * annotate the chart, so a plan shown on the chart always matches the 条件计划 card.
+ */
+export function planDrawings(result: AiTechnicalAnalysis, t: (key: string) => string): Drawing[] {
   const plan = result.setup;
-  const entry = plan ? (plan.entry_low + plan.entry_high) / 2 : 0;
-  const planLines: Drawing[] = plan ? [
+  if (!plan) return [];
+  const prefix = `${prefixFor(result)}-plan`;
+  const entry = (plan.entry_low + plan.entry_high) / 2;
+  return [
     { id: `${prefix}-entry`, type: "hline", points: [{ time: Date.parse(result.view.end), price: entry }],
       color: "rgb(var(--chart-level))", label: t("youtubeOpinions.ai.tradePlan.entryPoint"), source: "ai", group: "plan", priority: 90 },
     { id: `${prefix}-stop`, type: "hline", points: [{ time: Date.parse(result.view.end), price: plan.invalidation }],
@@ -16,16 +26,46 @@ export function analysisDrawings(result: AiTechnicalAnalysis, t: (key: string) =
       label: `${t("youtubeOpinions.ai.tradePlan.target")} ${index + 1}`,
       source: "ai", group: "plan", priority: 85 - index,
     })),
-  ] : [];
+  ];
+}
+
+type Overlay = NonNullable<AiTechnicalAnalysis["overlays"]>[number];
+
+/** Computed overlays default to the pattern layer; these share a layer with what they behave like. */
+const OVERLAY_GROUPS: Partial<Record<Overlay["category"], DrawingGroup>> = {
+  supply_demand: "zones",
+  gaps: "zones",
+  volume_profile: "levels",
+  anchored_vwap: "trend",
+  channels: "trend",
+  pitchfork: "trend",
+};
+
+function overlayType(shape: Overlay["shape"], count: number): Drawing["type"] {
+  if (shape === "area") return "rect";
+  if (shape === "channel" || shape === "pitchfork") return shape;
+  return count > 2 ? "polyline" : "trend";
+}
+
+function overlayColor(item: Overlay) {
+  if (item.category === "moving_averages") {
+    return item.label === "EMA20" ? "rgb(168 85 247)" : item.label === "EMA50" ? "rgb(59 130 246)" : "rgb(125 175 205)";
+  }
+  if (item.category === "anchored_vwap") return "rgb(20 184 166)";
+  if (item.category === "volume_profile") return "rgb(var(--chart-level))";
+  return item.direction === "bullish" ? "rgb(var(--chart-up))" : item.direction === "bearish" ? "rgb(var(--chart-down))" : "rgb(var(--chart-level))";
+}
+
+/** Saved chart annotations: levels, trend lines, Fibonacci and computed overlays. */
+export function analysisDrawings(result: AiTechnicalAnalysis, t: (key: string) => string): Drawing[] {
+  const prefix = prefixFor(result);
   return [
-    ...planLines,
-    ...(result.overlays ?? []).filter(item => item.points.length >= 2).map((item, index) => ({
+    ...(result.overlays ?? []).filter(item => item.points.length >= ((item.shape === "channel" || item.shape === "pitchfork") ? 3 : 2)).map((item, index): Drawing => ({
       id: `${prefix}-overlay-${index}`,
-      type: item.shape === "area" ? "rect" as const : item.points.length > 2 ? "polyline" as const : "trend" as const,
+      type: overlayType(item.shape, item.points.length),
       points: item.points.map(point => ({ time: Date.parse(point.date), price: point.price })),
-      color: item.category === "moving_averages" ? (item.label === "EMA20" ? "rgb(168 85 247)" : item.label === "EMA50" ? "rgb(59 130 246)" : "rgb(125 175 205)")
-        : item.direction === "bullish" ? "rgb(var(--chart-up))" : item.direction === "bearish" ? "rgb(var(--chart-down))" : "rgb(var(--chart-level))",
-      label: item.label, source: "ai" as const, group: "pattern" as const, priority: 30,
+      color: overlayColor(item),
+      label: item.label, source: "ai", group: OVERLAY_GROUPS[item.category] ?? "pattern", priority: 30,
     })),
     ...result.levels.map((level, index) => ({
       id: `${prefix}-level-${index}`, type: "hline" as const,

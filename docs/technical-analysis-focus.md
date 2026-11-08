@@ -17,8 +17,9 @@ Use **Add scenario / 添加情景** to reveal the optional input; Enter adds it 
 or Cancel closes it. Trend, momentum, levels, scenarios and invalidation are selected by default. At least
 one category or custom scenario must remain. Selection is free of network side effects;
 **Generate / Update analysis** applies the current focus. Custom questions are optional.
-The separate chart-drawing action uses levels and structure only; it does not consume
-the custom written-analysis focus.
+The separate chart-drawing action defaults to levels, trendlines and Fibonacci and
+can add wave, pattern, candlestick and breakout annotations. It does not consume the
+custom written-analysis focus and never returns a trade plan.
 Controls are disabled during generation. Newly generated findings appear in both the
 chart analysis panel and the stock page's AI Technical Analysis section. Both lead with
 the summary and use a **Technical evidence / 分析依据** disclosure for topic details.
@@ -44,7 +45,11 @@ and locale parameters plus:
 ```
 
 Category IDs: `trend`, `momentum`, `levels`, `structure`, `volume`, `volatility`,
-`patterns`, `timeframes`, `score`, `historical`, `scenarios`, `invalidation`.
+`patterns`, `timeframes`, `score`, `historical`, `scenarios`, `invalidation`,
+`trade_plan`. For written analysis, `trade_plan` asks the model to explain the
+conditional setup; the setup itself is optional and server-validated. Drawings strip
+`trade_plan` and force `setup` to null, because the single execution plan belongs to
+written analysis.
 Missing categories use defaults; an explicitly empty category list is permitted only
 with a non-empty custom scenario. Duplicate values are removed, scenarios are trimmed,
 and unknown IDs, excessive counts, oversized text or an empty total focus are rejected

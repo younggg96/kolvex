@@ -20,7 +20,7 @@ class FocusValidationTests(unittest.TestCase):
         for values in [
             {"categories": ["buy_now"]}, {"categories": [], "custom_scenarios": [" "]},
             {"custom_scenarios": ["x" * 201]}, {"custom_scenarios": [str(i) for i in range(6)]},
-            {"categories": ["trend"] * 22},
+            {"categories": ["trend"] * 28},
         ]:
             with self.subTest(values=values), self.assertRaises(ValidationError):
                 TechnicalFocus(**values)

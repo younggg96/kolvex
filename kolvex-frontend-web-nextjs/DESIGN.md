@@ -638,22 +638,33 @@ metadata shows the provider and API model from the saved snapshot; changing the
 selector never changes attribution on an existing result. Legacy snapshots with
 no model metadata omit attribution.
 
-AI drawing focus also includes conditional entry/stop/target plans. The chart
-marks entry at the range midpoint, stop-loss and each target; `AiDrawingSetup`
-shows the full range, conditional reason and reward-to-risk ratio beneath it.
+`ResultHeader` is the one header for both the analysis panel and the `条件计划`
+card: eyebrow label, trend/plan title, bias/direction badge and the same
+provenance line (interval, visible window, generated time, author and completed
+model) in the same typography and order. The plan card is derived from the same
+saved analysis version, so both headers show identical values for that version.
+
+Only written analysis carries a conditional setup; it is the single execution
+plan. The chart marks its entry at the range midpoint, invalidation and each
+target from the selected analysis version, and the `条件计划` card shows the full
+range, conditional reason, reward-to-risk ratio and evidence-alignment score.
 The server validates direction and price ordering and computes the ratio from
-the entry midpoint and nearest target. Display reward : risk (e.g. 1.50 : 1).
-Invalid or neutral setups produce no plan overlays and an unavailable finding.
-These fields remain in the immutable saved drawing payload.
+the entry midpoint and nearest target. Invalid or neutral setups produce no plan
+overlays and an unavailable plan finding. Drawing requests never return a setup,
+so the chart plan and the card cannot diverge. These fields remain in the
+immutable saved analysis payload; the separate drawing payload stores annotations
+only.
 
 Drawing and analysis selectors expose breakout/breakdown, retest and false-break
-categories. `AiPriceActionSignals` lists dated events and their reference prices
-in document flow below the chart; labels explicitly distinguish pending,
-confirmed, failed and unconfirmed breaks. Detection uses swing levels confirmed
-before the event, tolerance from preceding candles, two consecutive closes for
-confirmation, a ten-bar retest window and a five-bar failed-break window. Wick
-rejection is separate from a close crossing. These are declared detection rules,
-not a guarantee that a future break or retest will occur.
+categories. Detected events remain chart annotations inside the saved drawing
+version; labels distinguish pending, confirmed, failed and unconfirmed breaks.
+Detection uses swing levels confirmed before the event, tolerance from preceding
+candles, two consecutive closes for confirmation, a ten-bar retest window and a
+five-bar failed-break window. Wick rejection is separate from a close crossing.
+These are declared detection rules, not a guarantee that a future break or retest
+will occur. The drawings result has no expandable panel: annotation ownership and
+generation metadata live with the chart layers and saved drawing version, so the
+chart itself is the result.
 
 ## Chart controls and result reading
 
@@ -694,10 +705,12 @@ from a translated toolbar action in a bounded popover. Nested focus dialogs reta
 confirmation and Escape behavior. Default dialog geometry is unchanged.
 
 Written analysis leads with trend, direction and a 16px/28px conclusion.
-`AnalysisSummary` is shared with the stock technical section: long conclusions
-show four lines with an explicit expansion action that retains the full text.
-Invalidation remains visible, followed by key prices; price explanations,
-technical findings and indicator/trendline details use native disclosures.
+`AnalysisSummary` clamps the conclusion to three rendered lines and only shows the
+expand/collapse control when the text actually overflows at the current width; the
+check measures the rendered paragraph (and re-runs on width and font changes), not
+a character count. Expanding restores the full saved text. Invalidation remains
+visible, followed by key prices; price explanations, technical findings and
+indicator/trendline details use native disclosures.
 Secondary actions follow the report rather than competing with its heading.
 Conditional drawing plans lead with the entry range, stop, targets and ratio in
 a wrapping data strip. Their full rationale and signal detection rules expand
@@ -711,7 +724,7 @@ theme tokens and Chinese/English messages remain authoritative.
 |---|---|---|---|---|
 | Select/Listbox | `components/ui/select.tsx` | DESIGN.md; `lib/aiModels.ts` catalogue | Authored Radix model and interval selectors | Browser keyboard, popup width, collision and bounded scrolling |
 | Overlay | `components/ui/dialog.tsx` | DESIGN.md; `PriceChart` and focus draft behavior | Default dialog; fullscreen chart; mobile sheet/desktop dialog for AI settings | Browser nested Escape, close, focus restoration and narrow layout |
-| Disclosure | Native details; `AnalysisSummary` | Saved analysis payload | Technical evidence, plan rationale and full conclusion | Browser expand/collapse and long content |
+| Disclosure | Native details | Saved analysis payload | Technical evidence and plan rationale | Browser expand/collapse and long content |
 
 ## Marketing landing page
 
@@ -1422,7 +1435,7 @@ Rules that follow from that:
   uses `listFeedGroupRowClass` so only the inner row washes, never both.
 - Tabs, `SegmentedControl`, `SwitchTab` and other tab-like pill groups use the
   iOS-style glass material from `app/globals.css`, matching the mobile dock: a
-  smoky, blurred `glass-track` with a bright rim, holding a solid white
+  smoky, blurred `glass-track` with a bright rim, holding a translucent white
   `glass-thumb` whose label is near-black (`--glass-thumb-foreground`) in both
   themes; unselected labels are `foreground` at 70%. Unselected options preview with the
   same grey wash. Solid fallbacks apply without backdrop filters and under

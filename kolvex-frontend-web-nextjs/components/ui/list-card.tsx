@@ -5,17 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-/** Drops the card surface below 768px so a list sits directly on the page, between its gutters. */
-export const phonePlainCardClass =
-  "max-md:!rounded-none max-md:!border-0 max-md:!bg-transparent max-md:!p-0 max-md:!shadow-none";
-
 /**
  * Canonical list-card shell. The Markets "Stock watch" card is the reference:
  * one 24px card on the page background, 12–16px inner padding, controls and
  * column headings inside the card, hoverable rows, and footer actions.
  * Every collection list (watchlist, KOL opinions, X, Reddit, news, holdings…)
  * uses this shell so lists read as the same surface across the workspace.
- * On phones the surface drops away and rows align to the page gutters.
  */
 export const ListCard = React.forwardRef<
   HTMLDivElement,
@@ -23,7 +18,7 @@ export const ListCard = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <Card
     ref={ref}
-    className={cn("min-w-0 p-3 sm:p-4", phonePlainCardClass, className)}
+    className={cn("min-w-0 p-3 sm:p-4", className)}
     {...props}
   />
 ));

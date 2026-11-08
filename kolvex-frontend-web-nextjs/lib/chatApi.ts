@@ -184,7 +184,7 @@ export interface AgentMessageResponse {
  * SSE event types from the LangGraph agent stream
  */
 export interface AgentStreamEvent {
-  type: "status" | "token" | "tool_start" | "tool_end" | "done" | "error";
+  type: "status" | "token" | "token_reset" | "tool_start" | "tool_end" | "done" | "error";
   content?: string;
   tool?: string;
   stage?: "routing" | "planning" | "writing" | string;

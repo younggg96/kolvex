@@ -7,8 +7,8 @@
 
 .searchField {
   transition:
-    background-color 180ms ease,
-    border-color 180ms ease;
+    background-color 180ms var(--spring),
+    border-color 180ms var(--spring);
 }
 
 .searchField:focus-within {
@@ -73,8 +73,8 @@
   flex-shrink: 0;
   color: rgb(var(--muted-foreground));
   transition:
-    color 150ms ease,
-    transform 220ms var(--ease-out-quint);
+    color 150ms var(--spring),
+    transform 220ms var(--spring);
 }
 
 .stockLink:is(:hover, :focus-visible) .stockLogo {

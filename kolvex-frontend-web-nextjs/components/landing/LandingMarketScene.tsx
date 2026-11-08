@@ -11,6 +11,7 @@ import {
 import { AudioLines, Sparkles, Wallet, Pause, Play } from "lucide-react";
 import { useCopy } from "@/components/decision/shared";
 import { landingEase, useLandingMotion } from "./LandingMotion";
+import { motionSpring } from "@/lib/motion/spring";
 
 // Illustrative series only. No network quotes or investment claims are implied.
 const series = {
@@ -37,8 +38,8 @@ export default function LandingMarketScene() {
   const scene = useRef<HTMLDivElement>(null);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
-  const rotateX = useSpring(y, { stiffness: 90, damping: 22 });
-  const rotateY = useSpring(x, { stiffness: 90, damping: 22 });
+  const rotateX = useSpring(y, motionSpring(0.66));
+  const rotateY = useSpring(x, motionSpring(0.66));
   const values = series[ticker].values;
   const path = values
     .map((v, i) => `${i === 0 ? "M" : "L"} ${30 + i * 32} ${260 - v * 2.1}`)
@@ -88,7 +89,7 @@ export default function LandingMarketScene() {
                 initial={reduce ? false : { opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.18 }}
+                transition={{ duration: 0.18, ease: landingEase }}
               >
                 <p className="mt-3 text-4xl font-bold tracking-tighter">
                   {ticker}
@@ -146,7 +147,7 @@ export default function LandingMarketScene() {
             fill="url(#hero-chart-fill)"
             initial={false}
             animate={{ opacity: moving ? [0, 1] : 1 }}
-            transition={{ duration: 1.4 }}
+            transition={{ duration: 1.4, ease: landingEase }}
           />
           {values.map((value, i) => (
             <motion.g
@@ -155,7 +156,7 @@ export default function LandingMarketScene() {
               animate={
                 moving ? { opacity: [0, 1], y: [18, 0] } : { opacity: 1, y: 0 }
               }
-              transition={{ delay: i * 0.035, duration: 0.6 }}
+              transition={{ delay: i * 0.035, duration: 0.6, ease: landingEase }}
             >
               <line
                 x1={30 + i * 32}

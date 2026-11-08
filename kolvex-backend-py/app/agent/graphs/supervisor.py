@@ -13,7 +13,7 @@ from langgraph.prebuilt import create_react_agent
 from app.agent.state import AgentState
 from app.agent.llm import get_llm, get_fast_llm, resolve_model_id
 from app.agent.config import SYSTEM_PROMPT, MAX_TOOL_ITERATIONS
-from app.agent.tools import FINANCIAL_TOOLS, RESEARCH_TOOLS, ALERT_TOOLS, get_tools_for_sources, set_user_api_keys_for_tool
+from app.agent.tools import get_tools_for_sources
 
 logger = logging.getLogger(__name__)
 
@@ -163,10 +163,6 @@ async def run_agent(
     # 解析模型
     provider, model = resolve_model_id(model_id)
 
-    # Cache user API keys for trading analysis tool
-    if user_id and user_api_keys:
-        set_user_api_keys_for_tool(user_id, user_api_keys)
-
     # 1. 先分类意图
     agent_type = await _classify_intent(messages, user_api_keys=user_api_keys)
 
@@ -222,10 +218,6 @@ async def stream_agent(
     # 解析模型
     provider, model = resolve_model_id(model_id)
 
-    # Cache user API keys for trading analysis tool
-    if user_id and user_api_keys:
-        set_user_api_keys_for_tool(user_id, user_api_keys)
-
     yield {
         "type": "status",
         "stage": "routing",
@@ -248,11 +240,12 @@ async def stream_agent(
 
     # 3. 流式运行
     try:
-        # LangGraph emits model tokens for both tool-planning turns and the
-        # final answer. Buffer each model run until on_chat_model_end so only
-        # a response without tool calls is exposed to the user.
-        model_buffers: Dict[str, list[str]] = {}
+        # A model turn can write text and only then decide to call a tool, so
+        # tokens go out as they arrive and token_reset retracts a turn that
+        # turns out to be tool planning.
+        model_turns: Dict[str, Dict[str, bool]] = {}
         final_response_emitted = False
+        writing = {"type": "status", "stage": "writing", "content": "Writing the response"}
 
         async for event in agent.astream_events(
             {"messages": messages},
@@ -261,38 +254,51 @@ async def stream_agent(
         ):
             kind = event.get("event", "")
 
+            if kind in ("on_chat_model_stream", "on_chat_model_end"):
+                # A model called from inside a tool is not the assistant speaking.
+                node = (event.get("metadata") or {}).get("langgraph_node")
+                if node not in (None, "agent"):
+                    continue
+
             if kind == "on_chat_model_stream":
-                # Buffer the model run. It may be an internal tool-planning
-                # turn and must not leak into the final assistant message.
+                if final_response_emitted:
+                    continue
                 chunk = event.get("data", {}).get("chunk")
+                run_id = str(event.get("run_id", "default"))
+                turn = model_turns.setdefault(run_id, {"emitted": False, "tools": False})
+
+                if getattr(chunk, "tool_call_chunks", None) or _message_has_tool_calls(chunk):
+                    turn["tools"] = True
+                    if turn["emitted"]:
+                        turn["emitted"] = False
+                        yield {"type": "token_reset"}
+                    continue
+
                 text = _content_to_text(getattr(chunk, "content", ""))
-                if text:
-                    run_id = str(event.get("run_id", "default"))
-                    model_buffers.setdefault(run_id, []).append(text)
+                if text and not turn["tools"]:
+                    if not turn["emitted"]:
+                        turn["emitted"] = True
+                        yield writing
+                    yield {"type": "token", "content": text}
 
             elif kind == "on_chat_model_end":
                 run_id = str(event.get("run_id", "default"))
+                turn = model_turns.pop(run_id, {"emitted": False, "tools": False})
                 output = event.get("data", {}).get("output")
-                buffered_text = "".join(model_buffers.pop(run_id, []))
-                final_text = buffered_text or _content_to_text(
-                    getattr(output, "content", "")
-                )
 
-                if (
-                    final_text
-                    and not _message_has_tool_calls(output)
-                    and not final_response_emitted
-                ):
-                    final_response_emitted = True
-                    yield {
-                        "type": "status",
-                        "stage": "writing",
-                        "content": "Writing the response",
-                    }
-                    yield {
-                        "type": "token",
-                        "content": final_text,
-                    }
+                if _message_has_tool_calls(output):
+                    if turn["emitted"]:
+                        yield {"type": "token_reset"}
+                elif not final_response_emitted:
+                    if turn["emitted"]:
+                        final_response_emitted = True
+                    else:
+                        # Providers that do not stream only report the full message here.
+                        final_text = _content_to_text(getattr(output, "content", ""))
+                        if final_text:
+                            final_response_emitted = True
+                            yield writing
+                            yield {"type": "token", "content": final_text}
 
             elif kind == "on_tool_start":
                 # 工具调用开始

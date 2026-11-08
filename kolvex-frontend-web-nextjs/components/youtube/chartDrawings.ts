@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export type DrawingType = "trend" | "ray" | "hline" | "rect" | "fib" | "measure" | "vline" | "extended" | "fibext" | "polyline";
-export type DrawingTool = "cursor" | Exclude<DrawingType, "polyline">;
+export type DrawingType = "trend" | "ray" | "hline" | "rect" | "fib" | "measure" | "vline" | "extended" | "fibext" | "polyline" | "channel" | "pitchfork";
+/** Polylines, channels and pitchforks are AI-only; the manual toolbar draws two-point shapes. */
+export type DrawingTool = "cursor" | Exclude<DrawingType, "polyline" | "channel" | "pitchfork">;
 
 /** Anchored to time and price so drawings survive range and interval changes. */
 export interface Anchor {
@@ -10,8 +11,8 @@ export interface Anchor {
 }
 
 /** AI layers the chart can toggle; manual drawings carry none and are always shown. */
-export type DrawingGroup = "plan" | "levels" | "trend" | "fib" | "pattern";
-export const drawingGroups: DrawingGroup[] = ["plan", "levels", "trend", "fib", "pattern"];
+export type DrawingGroup = "plan" | "levels" | "trend" | "fib" | "zones" | "pattern";
+export const drawingGroups: DrawingGroup[] = ["plan", "levels", "trend", "fib", "zones", "pattern"];
 
 export interface Drawing {
   id: string;

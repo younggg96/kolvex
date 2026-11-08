@@ -1,6 +1,6 @@
 "use client";
 
-import { ListCard, phonePlainCardClass } from "@/components/ui/list-card";
+import { ListCard } from "@/components/ui/list-card";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { StockRowsSkeleton } from "@/components/decision/StockRowsSkeleton";
 import { useCopy } from "@/components/decision/shared";
@@ -60,7 +60,7 @@ export function MarketPageSkeleton({ noTransition = false }: { noTransition?: bo
             {[2, 1].map((ends, i) => <section key={i}>
               <div className="mb-3 flex min-h-14 items-center gap-2"><Skeleton className="h-6 w-24 rounded-md" /><Skeleton className="ml-auto h-11 w-11 rounded-full" /></div>
               {ends === 2
-                ? <div className={cn("rounded-3xl border border-foreground/10 glass-card bg-card-glass p-3", phonePlainCardClass)}><RailRowsSkeleton ends={2} /></div>
+                ? <div className="rounded-3xl border border-foreground/10 glass-card bg-card-glass p-3"><RailRowsSkeleton ends={2} /></div>
                 : <ListCard><RailRowsSkeleton ends={1} /></ListCard>}
             </section>)}
           </aside>

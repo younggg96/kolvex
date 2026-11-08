@@ -13,7 +13,8 @@ import { isProductFeatureEnabled } from "@/lib/productFeatures";
 import { cn } from "@/lib/utils";
 import { MAIN_NAV_ITEMS, SEARCH_HREF, isMainNavItemActive, isNavItemActive } from "./navItems";
 
-const DOCK_TAB_FEATURES = ["home", "youtubeOpinions"];
+/** Dock tabs, left to right; everything else lives in the menu. */
+const DOCK_TAB_HREFS = ["/dashboard/chat", "/dashboard", "/dashboard/youtube-opinions"];
 /** Rounding and iOS rubber-banding can leave a scroller just short of its exact end. */
 const SCROLL_END_TOLERANCE_PX = 2;
 
@@ -70,10 +71,10 @@ export default function MobileTabBar() {
   const searchHighlighted = searchActive && !menuOpen;
 
   const enabledItems = MAIN_NAV_ITEMS.filter((item) => isProductFeatureEnabled(item.featureId));
-  const tabs = enabledItems.filter((item) => DOCK_TAB_FEATURES.includes(item.featureId));
+  const tabs = DOCK_TAB_HREFS.flatMap((href) => enabledItems.filter((item) => item.href === href));
   const menuLinks = [
     ...enabledItems
-      .filter((item) => !DOCK_TAB_FEATURES.includes(item.featureId))
+      .filter((item) => !DOCK_TAB_HREFS.includes(item.href))
       .map((item) => ({ href: item.href, title: t(item.shortTitleKey), icon: item.icon })),
     { href: "/dashboard/settings", title: t("sidebar.settings"), icon: Settings },
     ...(profile?.is_admin ? [{ href: "/dashboard/admin", title: t("sidebar.admin"), icon: ShieldCheck }] : []),

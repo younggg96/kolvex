@@ -6,6 +6,7 @@ TechnicalCategory = Literal[
     "trend", "momentum", "levels", "structure", "volume", "volatility",
     "waves", "moving_averages", "trendlines", "candlesticks", "fibonacci",
     "patterns", "timeframes", "score", "historical", "scenarios", "invalidation", "trade_plan", "breakouts", "retests", "false_breakouts",
+    "supply_demand", "gaps", "volume_profile", "anchored_vwap", "channels", "pitchfork",
 ]
 DEFAULT_CATEGORIES: List[TechnicalCategory] = ["trend", "momentum", "levels", "scenarios", "invalidation"]
 CATEGORY_GUIDANCE = {
@@ -28,12 +29,18 @@ CATEGORY_GUIDANCE = {
     "breakouts": "Explain only supplied breakout/breakdown events. A pending close is not confirmed; two consecutive closes confirm by the declared rule. Failed events remain failed. Do not claim volume confirmation without volume evidence.",
     "retests": "Explain supplied held retests after confirmed breaks: former resistance becomes support, or former support rejects a rally. Only discuss detected events, not guaranteed future retests.",
     "false_breakouts": "Explain supplied wick rejections and failed breaks returning through a previously confirmed level within five bars. State the rule and dates, never call a pending breakout a false breakout without evidence.",
+    "supply_demand": "Explain only supplied supply/demand zones: narrow base candles before an impulse candle. Say whether each is fresh or tested; a zone a close has passed through is already removed. Do not invent order flow or institutions.",
+    "gaps": "Explain only supplied unfilled price gaps and three-candle fair value gaps (FVG) with their dates and bounds. Do not claim a gap must fill.",
+    "volume_profile": "Explain the supplied volume profile: POC (highest-volume price) and the 70% value area between VAL and VAH, and where the latest close sits relative to them.",
+    "anchored_vwap": "Explain the supplied VWAPs anchored at the view's high and low: whether price is above or below each and what that says about average cost since the anchor.",
+    "channels": "Explain the supplied parallel channel drawn from the latest same-kind pivot pair and the opposite extreme between them. Describe price position within it; do not project future touches.",
+    "pitchfork": "Explain the supplied Andrews pitchfork on the last three alternating pivots: median line and the two parallel tines. Treat it as a geometric reference, not a forecast.",
     "trade_plan": "Explain an optional conditional setup: entry range, stop-loss invalidation and 1–2 target prices, grounded in supplied swing points or candidate levels. Return setup=null when no coherent directional setup exists. The server computes risk/reward, never invent a ratio.",
     "invalidation": "Explain conditions that would invalidate the current technical interpretation.",
 }
 
 class TechnicalFocus(BaseModel):
-    categories: List[TechnicalCategory] = Field(default_factory=lambda: list(DEFAULT_CATEGORIES), max_length=21)
+    categories: List[TechnicalCategory] = Field(default_factory=lambda: list(DEFAULT_CATEGORIES), max_length=27)
     custom_scenarios: List[str] = Field(default_factory=list, max_length=5)
 
     @field_validator("categories")

@@ -6,22 +6,26 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Trash2, MessagesSquare } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useCopy } from "@/components/decision/shared";
+import { useTranslation } from "@/lib/i18n";
 import type { ChatHistoryItem } from "./types";
 import * as chatApi from "@/lib/chatApi";
 
-function formatRelativeTime(date: Date): string {
+type Copy = (en: string, zh: string) => string;
+
+function formatRelativeTime(date: Date, copy: Copy, locale: string): string {
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffMins < 1) return copy("Just now", "刚刚");
+  if (diffMins < 60) return copy(`${diffMins}m ago`, `${diffMins} 分钟前`);
+  if (diffHours < 24) return copy(`${diffHours}h ago`, `${diffHours} 小时前`);
+  if (diffDays < 7) return copy(`${diffDays}d ago`, `${diffDays} 天前`);
 
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat(locale, {
     month: "short",
     day: "numeric",
   }).format(date);
@@ -67,6 +71,7 @@ export function ChatSidebarContent({
 }: ChatSidebarContentProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const copy = useCopy();
   const [conversations, setConversations] = useState<ChatHistoryItem[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<
     string | null
@@ -213,7 +218,7 @@ export function ChatSidebarContent({
   }
 
   if (conversations.length === 0) {
-    return null;
+    return <p className="px-5 py-2 text-sm text-muted-foreground">{copy("No conversations yet", "还没有对话")}</p>;
   }
 
   return (
@@ -221,28 +226,28 @@ export function ChatSidebarContent({
       {/* Conversations List */}
       <div className="flex-1 overflow-y-auto space-y-1 pl-3">
         <ConversationSection
-          title="Today"
+          title={copy("Today", "今天")}
           conversations={grouped.today}
           currentConversationId={currentConversationId}
           onSelect={handleSelectConversation}
           onDelete={handleDeleteConversation}
         />
         <ConversationSection
-          title="Yesterday"
+          title={copy("Yesterday", "昨天")}
           conversations={grouped.yesterday}
           currentConversationId={currentConversationId}
           onSelect={handleSelectConversation}
           onDelete={handleDeleteConversation}
         />
         <ConversationSection
-          title="This Week"
+          title={copy("This Week", "本周")}
           conversations={grouped.thisWeek}
           currentConversationId={currentConversationId}
           onSelect={handleSelectConversation}
           onDelete={handleDeleteConversation}
         />
         <ConversationSection
-          title="Older"
+          title={copy("Older", "更早")}
           conversations={grouped.older}
           currentConversationId={currentConversationId}
           onSelect={handleSelectConversation}
@@ -302,6 +307,16 @@ function ConversationItem({
   onDelete,
 }: ConversationItemProps) {
   const [showDelete, setShowDelete] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const copy = useCopy();
+  const { t } = useTranslation();
+
+  // Deleting is permanent and the control is always visible on phones, so it takes a second tap.
+  useEffect(() => {
+    if (!confirmingDelete) return;
+    const timer = window.setTimeout(() => setConfirmingDelete(false), 3000);
+    return () => window.clearTimeout(timer);
+  }, [confirmingDelete]);
 
   return (
     <div
@@ -328,24 +343,31 @@ function ConversationItem({
       )}
     >
       <MessagesSquare className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-      <div className="flex-1 min-w-0 overflow-hidden">
+      <div className="flex-1 min-w-0 overflow-hidden pr-8 md:pr-0">
         <p className="text-[0.8125rem] font-medium truncate">{conversation.title}</p>
         <p className="text-[0.6875rem] text-muted-foreground truncate">
-          {formatRelativeTime(new Date(conversation.updatedAt))}
+          {formatRelativeTime(new Date(conversation.updatedAt), copy, t("common.intlLocale"))}
         </p>
       </div>
 
-      {showDelete && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-          className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded-full text-muted-foreground hover:text-negative hover:bg-negative/10 transition-colors"
-        >
-          <Trash2 className="w-3 h-3" />
-        </button>
-      )}
+      {/* Touch screens have no hover, so phones always show the delete control. */}
+      <button
+        type="button"
+        aria-label={confirmingDelete ? copy("Tap again to delete", "再点一次删除") : copy("Delete conversation", "删除对话")}
+        title={confirmingDelete ? copy("Tap again to delete", "再点一次删除") : copy("Delete conversation", "删除对话")}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (confirmingDelete) onDelete();
+          else setConfirmingDelete(true);
+        }}
+        className={cn(
+          "absolute right-1 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-negative/10 hover:text-negative md:h-7 md:w-7",
+          confirmingDelete && "bg-negative/15 text-negative",
+          !showDelete && !confirmingDelete && "md:hidden",
+        )}
+      >
+        <Trash2 className="h-3.5 w-3.5 md:h-3 md:w-3" aria-hidden="true" />
+      </button>
     </div>
   );
 }

@@ -391,6 +391,7 @@
       "get_stock_financials": "读取财务数据",
       "get_analyst_recommendations": "查询分析师评级",
       "get_stock_history": "加载历史价格",
+      "get_creator_opinions": "读取博主观点",
       "get_company_info": "读取公司资料",
       "search_stock_news": "搜索相关新闻",
       "get_trending_news": "获取市场新闻",
@@ -1336,11 +1337,10 @@
       "submissionUnknown": "无法确认任务是否已提交。请检查状态，再重试同一任务。",
       "chartSettingsHint": "选择模型、调整分析和画线内容，或切换已保存的画线版本。设置用于下一次生成。",
       "modelLabel": "AI 模型",
-      "readMore": "展开完整结论",
-      "readLess": "收起结论",
       "supportingDetails": "指标与趋势线",
       "planReason": "计划依据与触发条件",
-      "signalRules": "查看信号判定规则",
+      "readMore": "展开完整结论",
+      "readLess": "收起结论",
       "analysisButton": "AI 分析",
       "empty": {
         "title": "尚未生成分析",
@@ -1371,6 +1371,7 @@
       "notConfigured": "请在设置中添加或更新所选模型的 API Key；分析仅使用你提供的 Key。",
       "selectModel": "请选择 AI 模型",
       "generatedBy": "由 {model} 完成",
+      "generatedByAuthor": "生成者：{author}",
       "openSettings": "前往设置",
       "failed": "AI 技术分析暂时不可用，请稍后再试。",
       "support": "支撑",
@@ -1432,7 +1433,13 @@
           "trade_plan": "入场 / 止损 / 盈亏比",
           "breakouts": "突破 / 跌破",
           "retests": "回踩 / 反抽确认",
-          "false_breakouts": "假突破 / 假跌破"
+          "false_breakouts": "假突破 / 假跌破",
+          "supply_demand": "供需区 / 订单块",
+          "gaps": "缺口 / FVG",
+          "volume_profile": "成交量分布",
+          "anchored_vwap": "锚定 VWAP",
+          "channels": "平行通道",
+          "pitchfork": "安德鲁斯叉"
         },
         "more": "更多类别",
         "addScenario": "添加情景",
@@ -1453,10 +1460,6 @@
         "basis": "按入场区间中点与第一目标计算，收益 : 风险",
         "long": "偏多计划",
         "short": "偏空计划"
-      },
-      "priceAction": {
-        "title": "价位行为信号",
-        "rules": "连续两根 K 线收盘越过价位确认突破；突破后 10 根内观察回踩，5 根内收回原区间标记假突破。影线穿越与收盘突破分别识别。"
       },
       "job": {
         "progress": "任务进度",
@@ -1491,6 +1494,7 @@
         "levels": "支撑阻力",
         "trend": "趋势线",
         "fib": "斐波那契",
+        "zones": "区域",
         "pattern": "形态",
         "allOff": "已全部隐藏"
       }

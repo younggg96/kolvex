@@ -18,17 +18,7 @@ def chart_overlays(bars, swings, averages, tolerance, locale="zh"):
         if len(points) >= 2:
             add("moving_averages", f"EMA{period}", points)
 
-    # Collapse consecutive same-kind pivots to the extreme; ignore ambiguous outside bars.
-    ambiguous = {p["index"] for p in swings if sum(q["index"] == p["index"] for q in swings) > 1}
-    pivots = []
-    for item in sorted(swings, key=lambda p: p["index"]):
-        if item["index"] in ambiguous:
-            continue
-        if pivots and item["kind"] == pivots[-1]["kind"]:
-            if (item["price"] > pivots[-1]["price"]) == (item["kind"] == "high"):
-                pivots[-1] = item
-        else:
-            pivots.append(item)
+    pivots = alternating_pivots(swings)
 
     # Candidate impulse: wave 2 does not cross origin, wave 4 does not overlap 1,
     # wave 3 is not the shortest impulse, and wave 5 exceeds wave 3.
@@ -108,7 +98,24 @@ def chart_overlays(bars, swings, averages, tolerance, locale="zh"):
                  {"date": end_date, "price": max(b["high"] for b in section)}], "area", direction)
     # Keep overlays useful in dense charts; retain the most recent candle patterns.
     candles = [item for item in overlays if item["category"] == "candlesticks"][-8:]
-    return [item for item in overlays if item["category"] != "candlesticks"] + candles + price_action_overlays(bars, swings, confirmation_window, locale)
+    return ([item for item in overlays if item["category"] != "candlesticks"] + candles
+            + price_action_overlays(bars, swings, confirmation_window, locale)
+            + zone_overlays(bars, locale) + volume_overlays(bars, locale) + structure_overlays(bars, pivots, locale))
+
+
+def alternating_pivots(swings):
+    """Collapse consecutive same-kind pivots to the extreme; ignore ambiguous outside bars."""
+    ambiguous = {p["index"] for p in swings if sum(q["index"] == p["index"] for q in swings) > 1}
+    pivots = []
+    for item in sorted(swings, key=lambda p: p["index"]):
+        if item["index"] in ambiguous:
+            continue
+        if pivots and item["kind"] == pivots[-1]["kind"]:
+            if (item["price"] > pivots[-1]["price"]) == (item["kind"] == "high"):
+                pivots[-1] = item
+        else:
+            pivots.append(item)
+    return pivots
 
 
 def price_action_overlays(bars, swings, confirmation_window=3, locale="zh"):
@@ -194,3 +201,207 @@ def price_action_overlays(bars, swings, confirmation_window=3, locale="zh"):
     # Retain a small recent set per category so one category cannot crowd out others.
     return [event for category in ("breakouts","retests","false_breakouts")
             for event in [e for e in events if e["category"]==category][-4:]]
+
+
+def _overlay(category, label, points, shape="line", direction="neutral", **extra):
+    return {"category": category, "label": label, "points": points, "shape": shape, "direction": direction, **extra}
+
+
+def _average_ranges(bars, period=14):
+    """Mean true range of the `period` bars *before* each index, so no bar sees its own range."""
+    ranges = [max(bar["high"] - bar["low"],
+                  abs(bar["high"] - bars[i - 1]["close"]) if i else 0,
+                  abs(bar["low"] - bars[i - 1]["close"]) if i else 0)
+              for i, bar in enumerate(bars)]
+    averages = []
+    for i in range(len(bars)):
+        window = ranges[max(0, i - period):i]
+        averages.append(sum(window) / len(window) if window else 0.0)
+    return averages
+
+
+def zone_overlays(bars, locale="zh"):
+    """Supply/demand bases before impulse candles, plus unfilled price gaps and fair value gaps.
+
+    A zone is dropped once a later close passes through it; a gap once price trades through it.
+    Zones extend to the last bar because they stay relevant until invalidated.
+    """
+    zh = locale.startswith("zh")
+    if len(bars) < 20:
+        return []
+    avg = _average_ranges(bars)
+    last_date = bars[-1]["date"]
+    zones = {1: [], -1: []}
+    last_impulse = -1
+    for i in range(15, len(bars)):
+        bar = bars[i]
+        body = bar["close"] - bar["open"]
+        if avg[i] <= 0 or abs(body) < 1.2 * avg[i] or i <= last_impulse + 1:
+            continue
+        sign = 1 if body > 0 else -1
+        base = []
+        for j in range(i - 1, max(i - 4, -1), -1):
+            if bars[j]["high"] - bars[j]["low"] > avg[i]:
+                break
+            base.append(j)
+        if not base:
+            continue
+        start = min(base)
+        low = min(bars[j]["low"] for j in base)
+        high = max(bars[j]["high"] for j in base)
+        if (sign == 1 and bar["close"] <= high) or (sign == -1 and bar["close"] >= low):
+            continue
+        last_impulse = i
+        later = bars[i + 1:]
+        if any((b["close"] < low) if sign == 1 else (b["close"] > high) for b in later):
+            continue
+        tested = any((b["low"] <= high) if sign == 1 else (b["high"] >= low) for b in later)
+        name = ("需求区" if sign == 1 else "供给区") if zh else ("Demand zone" if sign == 1 else "Supply zone")
+        status = ("已测试" if tested else "未测试") if zh else ("tested" if tested else "fresh")
+        zones[sign].append(_overlay(
+            "supply_demand", f"{name} · {status}",
+            [{"date": bars[start]["date"], "price": round(low, 2)}, {"date": last_date, "price": round(high, 2)}],
+            "area", "bullish" if sign == 1 else "bearish", status="tested" if tested else "fresh",
+            detected_at=bar["date"]))
+    result = zones[1][-3:] + zones[-1][-3:]
+
+    gaps = []
+    gapped = set()
+    for i in range(1, len(bars)):
+        prev, bar = bars[i - 1], bars[i]
+        found = []
+        if bar["low"] > prev["high"]:
+            found.append(("gap", 1, i - 1, prev["high"], bar["low"]))
+            gapped.add(i)
+        elif bar["high"] < prev["low"]:
+            found.append(("gap", -1, i - 1, bar["high"], prev["low"]))
+            gapped.add(i)
+        elif i >= 2 and i - 1 not in gapped:
+            # An FVG spanning a true gap mostly repeats it, so only gap-free FVGs are kept.
+            first = bars[i - 2]
+            if bar["low"] > first["high"]:
+                found.append(("fvg", 1, i - 2, first["high"], bar["low"]))
+            elif bar["high"] < first["low"]:
+                found.append(("fvg", -1, i - 2, bar["high"], first["low"]))
+        for kind, sign, start, low, high in found:
+            if high - low < 0.1 * (avg[i] or high - low):
+                continue
+            later = bars[i + 1:]
+            if any((b["low"] <= low) if sign == 1 else (b["high"] >= high) for b in later):
+                continue
+            if kind == "gap":
+                name = ("向上跳空缺口" if sign == 1 else "向下跳空缺口") if zh else ("Gap up" if sign == 1 else "Gap down")
+            else:
+                name = ("看涨 FVG" if sign == 1 else "看跌 FVG") if zh else ("Bullish FVG" if sign == 1 else "Bearish FVG")
+            gaps.append(_overlay(
+                "gaps", f"{name} · {'未回补' if zh else 'unfilled'}",
+                [{"date": bars[start]["date"], "price": round(low, 2)}, {"date": last_date, "price": round(high, 2)}],
+                "area", "bullish" if sign == 1 else "bearish", kind=kind, detected_at=bar["date"]))
+    return result + gaps[-4:]
+
+
+def volume_overlays(bars, locale="zh", bins=40, value_area=0.7):
+    """Volume profile (POC / value area) and VWAPs anchored at the view's high and low."""
+    zh = locale.startswith("zh")
+    volumes = [bar.get("volume") or 0 for bar in bars]
+    if len(bars) < 2 or sum(volumes) <= 0:
+        return []
+    low = min(bar["low"] for bar in bars)
+    high = max(bar["high"] for bar in bars)
+    overlays = []
+    if high > low:
+        step = (high - low) / bins
+        hist = [0.0] * bins
+        for bar, volume in zip(bars, volumes):
+            if volume <= 0:
+                continue
+            first = min(bins - 1, int((bar["low"] - low) / step))
+            last = min(bins - 1, int((bar["high"] - low) / step))
+            share = volume / (last - first + 1)
+            for k in range(first, last + 1):
+                hist[k] += share
+        poc = max(range(bins), key=hist.__getitem__)
+        total, covered, lo, hi = sum(hist), hist[poc], poc, poc
+        while covered < total * value_area and (lo > 0 or hi < bins - 1):
+            below = hist[lo - 1] if lo > 0 else -1
+            above = hist[hi + 1] if hi < bins - 1 else -1
+            if above >= below:
+                hi += 1
+                covered += above
+            else:
+                lo -= 1
+                covered += below
+        start, end = bars[0]["date"], bars[-1]["date"]
+        for label, price in (("POC", low + step * (poc + 0.5)), ("VAH", low + step * (hi + 1)), ("VAL", low + step * lo)):
+            price = round(price, 2)
+            overlays.append(_overlay("volume_profile", label,
+                                     [{"date": start, "price": price}, {"date": end, "price": price}], level=price))
+
+    highest = max(range(len(bars)), key=lambda i: bars[i]["high"])
+    lowest = min(range(len(bars)), key=lambda i: bars[i]["low"])
+    for index, sign in ((highest, -1), (lowest, 1)):
+        weighted = cumulative = 0.0
+        points = []
+        for bar, volume in zip(bars[index:], volumes[index:]):
+            weighted += (bar["high"] + bar["low"] + bar["close"]) / 3 * volume
+            cumulative += volume
+            if cumulative > 0:
+                points.append({"date": bar["date"], "price": round(weighted / cumulative, 4)})
+        if len(points) < 2:
+            continue
+        day = str(bars[index]["date"])[5:10]
+        label = f"AVWAP · {'自高点' if sign == -1 else '自低点'} {day}" if zh else f"AVWAP · from {'high' if sign == -1 else 'low'} {day}"
+        overlays.append(_overlay("anchored_vwap", label, points,
+                                 direction="bearish" if sign == -1 else "bullish", anchor=bars[index]["date"]))
+    return overlays
+
+
+def structure_overlays(bars, pivots, locale="zh"):
+    """A parallel channel on the latest pivot pair and an Andrews pitchfork on the last three pivots.
+
+    Channel points: two base pivots and the opposite extreme between them that sets the width.
+    Pitchfork points: P0 (handle) then P1, P2; the median runs from P0 through mid(P1, P2).
+    """
+    zh = locale.startswith("zh")
+    overlays = []
+    point = lambda p: {"date": p["date"], "price": p["price"]}
+
+    candidates = []
+    for kind in ("low", "high"):
+        side = [p for p in pivots if p["kind"] == kind]
+        if len(side) >= 2:
+            candidates.append((side[-1]["index"], kind, side[-2], side[-1]))
+    if candidates:
+        _, kind, a, b = max(candidates, key=lambda item: item[0])
+        segment = range(a["index"], b["index"] + 1)
+        if kind == "low":
+            c_index = max(segment, key=lambda i: bars[i]["high"])
+            c_price = bars[c_index]["high"]
+        else:
+            c_index = min(segment, key=lambda i: bars[i]["low"])
+            c_price = bars[c_index]["low"]
+        slope = (b["price"] - a["price"]) / (b["index"] - a["index"])
+        offset = c_price - (a["price"] + slope * (c_index - a["index"]))
+        last = len(bars) - 1
+        base_now = a["price"] + slope * (last - a["index"])
+        lower, upper = sorted((base_now, base_now + offset))
+        close = bars[-1]["close"]
+        width = abs(offset)
+        if width > 0 and (offset > 0) == (kind == "low") and lower - width * 0.5 <= close <= upper + width * 0.5:
+            if abs(slope * (b["index"] - a["index"])) < 0.25 * width:
+                label, direction = ("横盘区间" if zh else "Range channel"), "neutral"
+            elif slope > 0:
+                label, direction = ("上升通道" if zh else "Rising channel"), "bullish"
+            else:
+                label, direction = ("下降通道" if zh else "Falling channel"), "bearish"
+            overlays.append(_overlay("channels", label,
+                                     [point(a), point(b), {"date": bars[c_index]["date"], "price": c_price}],
+                                     "channel", direction))
+
+    if len(pivots) >= 3:
+        p0, p1, p2 = pivots[-3:]
+        middle = (p1["price"] + p2["price"]) / 2
+        direction = "bullish" if middle > p0["price"] else "bearish"
+        overlays.append(_overlay("pitchfork", "安德鲁斯叉" if zh else "Andrews pitchfork",
+                                 [point(p0), point(p1), point(p2)], "pitchfork", direction))
+    return overlays

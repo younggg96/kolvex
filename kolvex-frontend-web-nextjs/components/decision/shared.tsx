@@ -8,7 +8,6 @@ import Link from "next/link";
 import { ReactNode, useEffect, useState } from "react";
 import CompanyLogo from "@/components/ui/company-logo";
 import { Card } from "@/components/ui/card";
-import { phonePlainCardClass } from "@/components/ui/list-card";
 import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { getMyHoldings } from "@/lib/portfolioApi";
@@ -102,7 +101,7 @@ export function Panel({
         </div>
         {action}
       </header>
-      {surface === "card" ? <Card className={cn("p-3 sm:p-4", phonePlainCardClass)}>{children}</Card> : children}
+      {surface === "card" ? <Card className="p-3 sm:p-4">{children}</Card> : children}
     </section>
   );
 }

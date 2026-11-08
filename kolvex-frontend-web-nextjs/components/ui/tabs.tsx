@@ -106,7 +106,8 @@ const TabsTrigger = React.forwardRef<
 });
 TabsTrigger.displayName = TabsPrimitive.Trigger.displayName;
 
-const EASE = "cubic-bezier(0.32, 0.72, 0.24, 1)";
+/** Critically damped spring from app/globals.css (`--spring`). */
+const EASE = "var(--spring)";
 
 /** A list wider than its screen scrolls so the chosen tab is never left clipped. */
 function centerActive(list: HTMLElement, behavior?: ScrollBehavior) {

@@ -46,6 +46,7 @@ import {
   GRAPH_TOP_PAD,
   clampGraphView,
   dateTickIndices,
+  graphPanBounds,
   priceDomain,
   priceTickValues,
   viewForRange,
@@ -56,6 +57,14 @@ import {
 import type { Anchor } from "../chartDrawings";
 import type { StrengthTone } from "../strength";
 import { CallMarker, ExtremeTag, PriceTag } from "./ChartMarkers";
+import {
+  SPRING_RESPONSE,
+  VelocityTracker,
+  animateSpring,
+  projectRelease,
+  rubberBandClamp,
+  type SpringAnimation,
+} from "@/lib/motion/spring";
 
 type Translate = (key: string, params?: Record<string, string>) => string;
 export type GraphMode = "compact" | "advanced";
@@ -464,7 +473,13 @@ export default function PriceGraph({
   const [dragging, setDragging] = useState(false);
   const [panMode, setPanMode] = useState(false);
   const [fading, setFading] = useState<{ bars: PriceBar[]; view: GraphView } | null>(null);
-  const gesture = useRef<{ kind: "pan"; x: number; moved: boolean; view: GraphView } | { kind: "pinch"; distance: number; mid: number; view: GraphView } | null>(null);
+  const gesture = useRef<{ kind: "pan"; x: number; moved: boolean; view: GraphView; last: number } | { kind: "pinch"; distance: number; mid: number; view: GraphView } | null>(null);
+  /** Release velocity of a pan, in bars per second. */
+  const tracker = useRef(new VelocityTracker());
+  /** The spring that carries a released pan to rest (or back inside the data). */
+  const settling = useRef<SpringAnimation | null>(null);
+  /** Unclamped start while a trackpad scroll is pushing past an edge, and its settle timer. */
+  const wheelPan = useRef<{ raw: number; timer: number } | null>(null);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const lastSnapshot = useRef<{ key: string; bars: PriceBar[]; view: GraphView } | null>(null);
   const rangeKey = `${range}|${bars?.length ?? 0}`;
@@ -550,9 +565,46 @@ export default function PriceGraph({
     commit({ start: current.start + bars, end: current.end + bars });
   };
   const resetView = () => {
+    stopSettling();
     onViewChange(null);
     onActiveChange(null);
   };
+
+  /* -------------------------------------------------------------- physics */
+
+  // Pans past the data stretch with a rubber band instead of stopping dead, and a release keeps
+  // the hand's speed: a critically damped spring (lib/motion/spring.ts) carries the view to where
+  // the flick would come to rest, clamped to the data, so a hard flick into an edge springs back.
+  function stopSettling() {
+    settling.current?.stop();
+    settling.current = null;
+    if (wheelPan.current) window.clearTimeout(wheelPan.current.timer);
+    wheelPan.current = null;
+  }
+  const showStart = (start: number, span: number) => onViewChange({ start, end: start + span });
+  const elastic = (start: number, span: number) => {
+    const { min, max } = graphPanBounds(span, count);
+    return rubberBandClamp(start, min, max, span);
+  };
+  function settle(from: number, span: number, velocity: number) {
+    if (!count) return;
+    const { min, max } = graphPanBounds(span, count);
+    const to = Math.min(Math.max(projectRelease(from, velocity), min), max);
+    settling.current?.stop();
+    settling.current = animateSpring({
+      from,
+      to,
+      velocity,
+      response: SPRING_RESPONSE.gentle,
+      precision: Math.max(span * 1e-4, 1e-3),
+      onUpdate: (value) => showStart(rubberBandClamp(value, min, max, span), span),
+      onComplete: () => {
+        settling.current = null;
+      },
+    });
+  }
+  // A new range or data set must not be pushed around by a spring from the old one.
+  useEffect(() => stopSettling, [rangeKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* wheel: horizontal pans, ⌘/Ctrl wheel (pinch) zooms; advanced zooms on a plain wheel too. */
   useEffect(() => {
@@ -564,11 +616,25 @@ export default function PriceGraph({
       const span = current.end - current.start || 1;
       if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
         event.preventDefault();
-        panBy((event.deltaX / geometry.plotWidth) * span);
+        if (!count) return;
+        settling.current?.stop();
+        settling.current = null;
+        // Trackpad scrolling past an edge stretches, then springs back once the scroll stops.
+        const pan = wheelPan.current ?? { raw: current.start, timer: 0 };
+        window.clearTimeout(pan.timer);
+        pan.raw += (event.deltaX / geometry.plotWidth) * span;
+        const shown = elastic(pan.raw, span);
+        showStart(shown, span);
+        pan.timer = window.setTimeout(() => {
+          wheelPan.current = null;
+          settle(shown, span, 0);
+        }, 140);
+        wheelPan.current = pan;
         return;
       }
       if (!advanced && !event.ctrlKey && !event.metaKey) return;
       event.preventDefault();
+      stopSettling();
       zoomBy(Math.exp(event.deltaY * ZOOM_PER_PX * (event.ctrlKey ? 4 : 1)), ratio);
     };
     box.addEventListener("wheel", onWheel, { passive: false });
@@ -598,6 +664,9 @@ export default function PriceGraph({
 
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (!loaded) return;
+    // Catch the view where it is: a touch stops a settling spring, as a finger stops a scroll.
+    stopSettling();
+    tracker.current.reset();
     pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
     if (pointers.current.size === 2) {
       const [a, b] = Array.from(pointers.current.values());
@@ -607,7 +676,7 @@ export default function PriceGraph({
     }
     if (event.button !== 0) return;
     if (advanced) event.currentTarget.setPointerCapture(event.pointerId);
-    gesture.current = { kind: "pan", x: event.clientX, moved: false, view: current };
+    gesture.current = { kind: "pan", x: event.clientX, moved: false, view: current, last: current.start };
     scrub(event.clientX, event.clientY);
   };
 
@@ -633,8 +702,12 @@ export default function PriceGraph({
     if (!now.moved && Math.abs(dx) < DRAG_THRESHOLD) return;
     now.moved = true;
     setDragging(true);
-    const slot = geometry.plotWidth / Math.max(now.view.end - now.view.start, 1e-6);
-    commit({ start: now.view.start - dx / slot, end: now.view.end - dx / slot });
+    const span = now.view.end - now.view.start;
+    const slot = geometry.plotWidth / Math.max(span, 1e-6);
+    const shown = elastic(now.view.start - dx / slot, span);
+    now.last = shown;
+    tracker.current.add(shown, event.timeStamp);
+    showStart(shown, span);
   };
 
   const endGesture = (event: PointerEvent<HTMLDivElement>) => {
@@ -646,6 +719,11 @@ export default function PriceGraph({
     }
     gesture.current = null;
     setDragging(false);
+    if (now?.kind === "pan" && now.moved) {
+      // A cancelled pointer has no meaningful speed; it only springs back inside the data.
+      const velocity = event.type === "pointercancel" ? 0 : tracker.current.velocity(event.timeStamp);
+      settle(now.last, now.view.end - now.view.start, velocity);
+    }
   };
 
   const onPointerLeave = (event: PointerEvent<HTMLDivElement>) => {

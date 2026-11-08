@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { RefreshCw, X } from "lucide-react";
 import { getYouTubeStockDetail, type YouTubeOpinion } from "@/lib/youtubeOpinionsApi";
 import type { AiTechnicalAnalysis } from "@/lib/stockApi";
 import {
@@ -18,7 +18,8 @@ import {
 import { useSyncedDrawings, type Drawing } from "./chartDrawings";
 import SavedAnalysisData from "@/components/decision/SavedAnalysisData";
 import AnalysisHistory, { DrawingVersionSelector, useStockHistory } from "@/components/decision/AnalysisHistory";
-import { analysisDrawings } from "./aiDrawings";
+import { analysisDrawings, planDrawings } from "./aiDrawings";
+import type { AnalysisVersion } from "@/lib/stockAnalysisHistory";
 import ChartView from "./chart/ChartView";
 import TechnicalFocusSelector from "./chart/TechnicalFocusSelector";
 import { DEFAULT_TECHNICAL_FOCUS, DEFAULT_DRAWING_FOCUS, type TechnicalFocus } from "@/lib/technicalFocus";
@@ -61,7 +62,7 @@ export default function PriceChart({
   opinions: StrengthPoint[];
   formatDate: (date: string) => string;
   t: Translate;
-  onAnalysisChange?: (result: AiTechnicalAnalysis | null) => void;
+  onAnalysisChange?: (result: AiTechnicalAnalysis | null, version?: AnalysisVersion<AiTechnicalAnalysis> | null) => void;
   onRangeChange?: (range: PriceRange) => void;
   generationRequest?: number;
   drawingRequest?: number;
@@ -75,6 +76,7 @@ export default function PriceChart({
   const drawingVersions = useStockHistory<AiTechnicalAnalysis>(symbol, "drawings");
   const [hiddenAnalysis, setHiddenAnalysis] = useState(false);
   const [hiddenDrawings, setHiddenDrawings] = useState(false);
+  const [rerunRequest, setRerunRequest] = useState(0);
   const [viewingHistory, setViewingHistory] = useState<"analysis" | "drawings">("analysis");
   const [aiOverrides, setAiOverrides] = useState<Drawing[] | null>(null);
   const [drawingFocus, setDrawingFocus] = useState<TechnicalFocus>(DEFAULT_DRAWING_FOCUS);
@@ -94,10 +96,14 @@ export default function PriceChart({
   }, [savedFocus]);
   const selectedAnalysis = useMemo(() => versions.selected && !hiddenAnalysis
     ? { ...versions.selected.payload, version_id: versions.selected.id } : null, [versions.selected, hiddenAnalysis]);
-  useEffect(() => { onAnalysisChange?.(selectedAnalysis); }, [selectedAnalysis, onAnalysisChange]);
+  useEffect(() => { onAnalysisChange?.(selectedAnalysis, versions.selected); }, [selectedAnalysis, versions.selected, onAnalysisChange]);
   const selectedDrawings = useMemo(() => drawingVersions.selected
     ? { ...drawingVersions.selected.payload, version_id: drawingVersions.selected.id } : null, [drawingVersions.selected]);
-  const aiDrawings = useMemo(() => selectedDrawings ? analysisDrawings(selectedDrawings, t) : [], [selectedDrawings, t]);
+  // The conditional plan is the single execution plan: its lines come from the
+  // selected written analysis, while saved drawings contribute annotations only.
+  const planLines = useMemo(() => selectedAnalysis ? planDrawings(selectedAnalysis, t) : [], [selectedAnalysis, t]);
+  const annotationLines = useMemo(() => selectedDrawings ? analysisDrawings(selectedDrawings, t) : [], [selectedDrawings, t]);
+  const aiDrawings = useMemo(() => [...planLines, ...annotationLines], [planLines, annotationLines]);
   const manualDrawings = drawings.filter(item => item.source !== "ai");
   const loadVersions = versions.load;
   const analysisChanged = useCallback((result: AiTechnicalAnalysis | null) => {
@@ -121,6 +127,11 @@ export default function PriceChart({
   const aiJobs = useChartAiJobs(symbol, jobCompleted);
   const analysisBusy = aiJobs.busy;
   const analysisPending = analysisBusy || versions.busy;
+  const rerunButton = showAi && !hiddenAnalysis && (versions.selected || aiJobs.analysis.status === "done") && <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border py-3">
+    <Button type="button" size="sm" variant="outline" onClick={() => setRerunRequest(value => value + 1)} disabled={analysisPending} aria-busy={analysisPending}>
+      <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />{t("youtubeOpinions.ai.rerun")}
+    </Button>
+  </div>;
   useEffect(() => { onAnalysisBusy?.(analysisPending); }, [analysisPending, onAnalysisBusy]);
   useEffect(() => {
     if (aiJobs.analysis.status === "done" && aiJobs.analysis.result?.version_id === selectedId) aiJobs.clear("analysis");
@@ -234,6 +245,7 @@ export default function PriceChart({
     selectedModel,
     onModelChange: setSelectedModel,
     savedAnalysis: selectedAnalysis,
+    savedAnalysisVersion: versions.selected,
     snapshotBars: historicalSnapshot?.bars,
     /**
      * The graph's own range bar. These live here (not inside ChartView) so the fetched
@@ -262,21 +274,24 @@ export default function PriceChart({
 
   return (
     <>
-      <ChartView mode="compact" compactLayout={layout} resultsContainer={resultsContainer} generationRequest={generationRequest} drawingRequest={drawingRequest} {...shared} onOpenAdvanced={() => {
+      <ChartView mode="compact" compactLayout={layout} resultsContainer={resultsContainer} generationRequest={generationRequest + rerunRequest} drawingRequest={drawingRequest} {...shared} onOpenAdvanced={() => {
         advancedTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
         setAdvancedOpen(true);
       }} />
       {showAi && (layout === "workspace" ? (
-        resultsContainer && (analysisHistory.error !== null || analysisHistory.total > 0 || analysisHistory.selected || analysisHistory.scope === "mine" || selectedHistory.selected) && createPortal(<div className="order-last min-w-0 border-t border-border pt-1 [&>details]:mt-0 [&>details]:min-w-0 [&>details]:border-0 [&>details]:py-3">
-          <AnalysisHistory history={analysisHistory} />
+        resultsContainer && (analysisHistory.error !== null || analysisHistory.total > 0 || analysisHistory.selected || analysisHistory.scope === "mine" || selectedHistory.selected || rerunButton) && createPortal(<div className="order-last min-w-0 border-t border-border pt-1 [&>details]:mt-0 [&>details]:min-w-0 [&>details]:border-0 [&>details]:py-3">
+          {(analysisHistory.error !== null || analysisHistory.total > 0 || analysisHistory.selected || analysisHistory.scope === "mine") && <AnalysisHistory history={analysisHistory} />}
           {selectedHistory.selected && <SavedAnalysisData key={selectedHistory.selected.id} version={selectedHistory.selected} />}
+          {rerunButton}
         </div>, resultsContainer)
       ) : resultsContainer ? createPortal(<div className="order-last mt-6 min-w-0 border-t border-border pt-4 [&>details:first-child]:mt-0 [&>details:first-child]:border-0">
         <AnalysisHistory history={analysisHistory} />
         {selectedHistory.selected && <SavedAnalysisData key={selectedHistory.selected.id} version={selectedHistory.selected} />}
+        {rerunButton}
       </div>, resultsContainer) : (<>
         <AnalysisHistory history={analysisHistory} />
         {selectedHistory.selected && <SavedAnalysisData key={selectedHistory.selected.id} version={selectedHistory.selected} />}
+        {rerunButton}
       </>))}
       <Dialog open={advancedOpen} onOpenChange={setAdvancedOpen}>
         <DialogContent

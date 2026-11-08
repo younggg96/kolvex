@@ -129,8 +129,9 @@ test('old drawings retain original time/price coordinates and stable identifiers
 test('PriceChart keeps text analysis and AI overlays in independent history channels', async () => {
   let cursor=0;const slots=[],effects=[],calls=[];
   const react={useState(initial){const i=cursor++;if(!(i in slots))slots[i]=typeof initial==='function'?initial():initial;return[slots[i],v=>slots[i]=typeof v==='function'?v(slots[i]):v]},useRef(initial){const i=cursor++;if(!(i in slots))slots[i]={current:initial};return slots[i]},useCallback:fn=>fn,useMemo:fn=>fn(),useEffect:fn=>effects.push(fn)};
-  const payload=(price,id)=>({version_id:id,summary:id,interval:'1d',view:{end:'2026-10-01'},levels:[{kind:'support',price}],trendlines:[],fib:null});
-  const technical=version('text',{payload:payload(100,'text')});
+  const payload=(price,id,setup)=>({version_id:id,summary:id,interval:'1d',view:{end:'2026-10-01'},levels:[{kind:'support',price}],trendlines:[],fib:null,...(setup?{setup}:{})});
+  const plan={name:'Retest',direction:'bullish',entry_low:105,entry_high:107,invalidation:100,targets:[115],risk_reward:1.5};
+  const technical=version('text',{payload:payload(100,'text',plan)});
   const drawn=version('lines',{kind:'drawings',payload:payload(200,'lines')});
   const state=kind=>({items:[],total:0,busy:false,error:null,current:kind==='technical'?technical:drawn,selected:kind==='technical'?technical:drawn,load:async()=>calls.push(kind),select:async()=>{},activate:async()=>{}});
   const drawingModule=compile('components/youtube/aiDrawings.ts',{});
@@ -155,7 +156,8 @@ test('PriceChart keeps text analysis and AI overlays in independent history chan
   const render=()=>{cursor=0;effects.length=0;return h.default(props)};
   const tree=render();const chart=tree.props.children.find(node=>node?.type==='chart');
   assert.equal(chart.props.savedAnalysis.summary,'text');
-  assert.equal(chart.props.drawings[0].points[0].price,200);
+  assert.equal(chart.props.drawings.filter(d=>d.group==='plan').length,3);
+  assert.equal(chart.props.drawings.find(d=>d.group==='levels').points[0].price,200);
   assert.equal(chart.props.savedDrawings.summary,'lines');
   await chart.props.onAnalysisChange(payload(300,'new-text'));await tick();
   assert.deepEqual(calls,['technical']);
@@ -168,7 +170,7 @@ test('PriceChart keeps text analysis and AI overlays in independent history chan
   assert.equal(drawingSelector(cleared).props.hidden,true);
   await drawingSelector(cleared).props.history.select(drawn);
   const restored=render().props.children.find(node=>node?.type==='chart');
-  assert.equal(restored.props.drawings[0].points[0].price,200);
+  assert.equal(restored.props.drawings.find(d=>d.group==='levels').points[0].price,200);
   assert.equal(drawingSelector(restored).props.hidden,false);
   assert.equal(restored.props.savedAnalysis.summary,'text');
 });
@@ -186,19 +188,21 @@ test('computed moving average paths and candle annotations preserve stored ancho
   assert.equal(drawings[0].id,analysisDrawings(result,k=>k)[0].id);
 });
 
-test('entry stop and target overlays keep saved prices and calculated risk reward',()=>{
-  const {analysisDrawings}=compile('components/youtube/aiDrawings.ts',{});
+test('conditional plan lines come from analysis and drawings never draw a plan',()=>{
+  const {analysisDrawings,planDrawings}=compile('components/youtube/aiDrawings.ts',{});
   const result={version_id:'plan',generated_at:'2026-10-09',view:{end:'2026-10-07'},levels:[],trendlines:[],fib:null,
-    setup:{direction:'bullish',entry_low:105,entry_high:107,invalidation:100,targets:[115,120],risk_reward:1.5}};
-  const drawings=analysisDrawings(result,k=>k);
+    setup:{name:'Retest',direction:'bullish',entry_low:105,entry_high:107,invalidation:100,targets:[115,120],risk_reward:1.5}};
+  assert.equal(analysisDrawings(result,k=>k).length,0);
+  const drawings=planDrawings(result,k=>k);
   assert.equal(drawings.length,4);
   assert.deepEqual(Array.from(drawings,d=>d.points[0].price),[106,100,115,120]);
-  assert.ok(drawings[2].label.includes('1.50 : 1'));
+  assert.ok(drawings[0].label.includes('entryPoint'));
   assert.ok(drawings[1].label.includes('stop'));
-  assert.ok(drawings.every(d=>d.type==='hline' && d.source==='ai' && d.points[0].time===Date.parse('2026-10-07')));
-  assert.equal(drawings[0].id,analysisDrawings(result,k=>k)[0].id);
-  assert.equal(analysisDrawings({...result,setup:null},k=>k).length,0);
-  const short=analysisDrawings({...result,setup:{...result.setup,direction:'bearish',entry_low:110,entry_high:112,invalidation:116,targets:[105,100],risk_reward:1.2}},k=>k);
+  assert.ok(drawings[2].label.includes('target 1'));
+  assert.ok(drawings.every(d=>d.type==='hline' && d.source==='ai' && d.group==='plan' && d.points[0].time===Date.parse('2026-10-07')));
+  assert.equal(drawings[0].id,planDrawings(result,k=>k)[0].id);
+  assert.equal(planDrawings({...result,setup:null},k=>k).length,0);
+  const short=planDrawings({...result,setup:{...result.setup,direction:'bearish',entry_low:110,entry_high:112,invalidation:116,targets:[105,100],risk_reward:1.2}},k=>k);
   assert.deepEqual(Array.from(short,d=>d.points[0].price),[111,116,105,100]);
 });
 
