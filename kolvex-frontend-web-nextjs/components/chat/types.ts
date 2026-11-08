@@ -62,13 +62,13 @@ export interface ChatInputProps {
   onKeyDown?: (e: React.KeyboardEvent) => void;
   isLoading?: boolean;
   isFocused?: boolean;
-  onFocus?: (event: React.FocusEvent<HTMLTextAreaElement>) => void;
-  onBlur?: (event: React.FocusEvent<HTMLTextAreaElement>) => void;
+  onFocus?: () => void;
+  onBlur?: () => void;
   placeholder?: string;
   /**
    * "panel" is the rounded glass card used on the chat page, "inline" sits on
-   * the dialog ground, and "docked" is a bare field that the page places on the
-   * floating tab bar, with its footer controls in the row below.
+   * the dialog ground, and "docked" is the same card with tighter padding for a
+   * composer that leads the page from the bottom.
    */
   appearance?: "panel" | "inline" | "docked";
   activeSources?: SearchSource[];
@@ -84,7 +84,7 @@ export interface ChatInputProps {
   /** Human label for page evidence attached to this question. */
   evidenceLabel?: string;
   onClearEvidence?: () => void;
-  /** Extra classes for the typing area, e.g. a larger type size where it leads a surface. */
+  /** Extra classes for the typing area, e.g. a type size where it leads a surface. */
   fieldClassName?: string;
 }
 
@@ -120,15 +120,10 @@ export interface ChatWelcomeProps {
   availableProviders?: string[];
   /**
    * "page" is the full landing layout, "compact" drops the heading and link
-   * rows for use inside a dialog, and "dock" keeps the option rows on the page
-   * ground above the composer, which then rests on the floating tab bar.
+   * rows for use inside a dialog, and "dock" is the chat page: the option rows
+   * sit above the composer and the composer leads the page from the bottom.
    */
   variant?: "page" | "compact" | "dock";
-  /**
-   * Lets the composer rise onto the tab bar when the field takes focus, so the
-   * phone keyboard never covers it.
-   */
-  docked?: boolean;
   /** Overrides the default suggested questions */
   suggestions?: string[];
   /** Overrides the input placeholder, for example when a page context is attached. */

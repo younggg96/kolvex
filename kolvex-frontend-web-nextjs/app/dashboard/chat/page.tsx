@@ -16,7 +16,6 @@ export default function NewChatPage() {
       <ChatWelcomeContainer
         className="min-h-0 flex-1"
         variant="dock"
-        docked
       />
     </DashboardLayout>
   );

@@ -572,11 +572,6 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     "group grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2",
     listRowTargetClass,
   );
-  // Column headings mirror the row grids so labels line up with their cells.
-  const stockColumnHeaderClass =
-    "grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 px-2 py-3 sm:grid-cols-[minmax(0,1fr)_110px_160px] sm:gap-x-4";
-  const creatorColumnHeaderClass =
-    "grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 px-2 py-3";
   const formatPercent = (value?: number | null) =>
     typeof value === "number" && Number.isFinite(value)
       ? `${value > 0 ? "+" : ""}${value.toFixed(2)}%`
@@ -1172,12 +1167,6 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                               {stockRows(true)}
                             </TabsContent>
                             <TabsContent value="creators" className="mt-0">
-                              <ListColumnHeader>
-                                <div className={creatorColumnHeaderClass}>
-                                  <span>{t("youtubeOpinions.creator")}</span>
-                                  <span className="text-right">{t("youtubeOpinions.opinions")}</span>
-                                </div>
-                              </ListColumnHeader>
                               {creatorRows(visibleCreators, true)}
                               {!visibleCreators.length && (
                                 <EmptyLine

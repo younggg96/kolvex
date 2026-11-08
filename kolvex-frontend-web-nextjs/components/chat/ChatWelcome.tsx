@@ -18,28 +18,20 @@ const PROVIDER_NAME_TO_ID: Record<string, string> = {
   xAI: "grok",
 };
 
-/** Order here is the order shown: questions first, then the two page links. */
+/** Questions that ask the assistant; the two page links sit beside the composer. */
 const suggestionKeys = [
-  { key: "chat.suggestions.askCreators", isChat: true },
-  { key: "chat.suggestions.holdingsOverlap", isChat: true },
-  { key: "chat.suggestions.whoShifted", isChat: true },
-  { key: "chat.suggestions.compareOpinions", isChat: false, href: "/dashboard/youtube-opinions" },
-  { key: "chat.suggestions.reviewPortfolio", isChat: false, href: "/dashboard/portfolio" },
+  "chat.suggestions.askCreators",
+  "chat.suggestions.holdingsOverlap",
+  "chat.suggestions.whoShifted",
 ];
 
-const suggestionIcons = {
-  chat: MessageCircle,
-  "/dashboard/youtube-opinions": Youtube,
-  "/dashboard/portfolio": Briefcase,
-};
+/** Pages worth opening from the chat page, shown as chips beside the composer. */
+const referenceLinks = [
+  { href: "/dashboard/youtube-opinions", icon: Youtube, key: "chat.suggestions.compareOpinions" },
+  { href: "/dashboard/portfolio", icon: Briefcase, key: "chat.suggestions.reviewPortfolio" },
+];
 
-type Suggestion = {
-  text: string;
-  icon: typeof MessageCircle;
-  /** Sends the text as a question; otherwise the row navigates to `href`. */
-  isChat: boolean;
-  href?: string;
-};
+type Suggestion = { text: string; isChat: boolean };
 
 export function ChatWelcome({
   onSubmit,
@@ -54,7 +46,6 @@ export function ChatWelcome({
   placeholder,
   evidenceLabel,
   onClearEvidence,
-  docked: dockedComposer = false,
 }: ChatWelcomeProps) {
   const { t } = useTranslation();
   const [query, setQuery] = useState("");
@@ -62,23 +53,20 @@ export function ChatWelcome({
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const compact = variant === "compact";
   const dock = variant === "dock";
-  // The docked composer rises the moment the field takes focus so typing never
-  // hides behind the phone keyboard.
-  const [isTyping, setIsTyping] = useState(false);
-  const raised = dockedComposer && isTyping;
 
   useEffect(() => {
     if (compact) inputRef.current?.focus();
   }, [compact]);
 
-  const suggestions: Suggestion[] = suggestionOverrides
-    ? suggestionOverrides.map((text) => ({ text, isChat: true, icon: MessageCircle }))
-    : suggestionKeys.map((s) => ({
-        text: t(s.key),
-        isChat: s.isChat,
-        icon: suggestionIcons[(s.href ?? "chat") as keyof typeof suggestionIcons],
-        href: s.href,
-      }));
+  const suggestions: Suggestion[] = (
+    suggestionOverrides ?? suggestionKeys.map((key) => t(key))
+  ).map((text) => ({ text, isChat: true }));
+
+  const references = referenceLinks.map((link) => ({
+    href: link.href,
+    icon: link.icon,
+    label: t(link.key),
+  }));
 
   // Whether the user has any usable model
   const hasAnyModel =
@@ -114,14 +102,8 @@ export function ChatWelcome({
       onSubmit={handleSubmit}
       isLoading={isLoading}
       isFocused={isFocused}
-      onFocus={(event) => {
-        setIsFocused(true);
-        setIsTyping(event.target === inputRef.current);
-      }}
-      onBlur={() => {
-        setIsFocused(false);
-        setIsTyping(false);
-      }}
+      onFocus={() => setIsFocused(true)}
+      onBlur={() => setIsFocused(false)}
       placeholder={placeholder ?? t("chat.input.placeholder")}
       appearance={compact ? "inline" : dock ? "docked" : "panel"}
       activeSources={activeSources}
@@ -134,18 +116,13 @@ export function ChatWelcome({
       availableProviders={availableProviders}
       evidenceLabel={evidenceLabel}
       onClearEvidence={onClearEvidence}
-      fieldClassName={dock ? "text-[1.0625rem] leading-7" : undefined}
+      fieldClassName={dock ? "text-[0.9375rem] leading-6" : undefined}
     />
   );
 
   if (compact) {
     return (
-      <div
-        className={cn(
-          "flex w-full flex-col gap-4 pt-3",
-          raised && "fixed inset-x-0 bottom-[calc(4.75rem+max(1rem,env(safe-area-inset-bottom)))] z-50 mx-auto max-w-2xl px-5 lg:hidden"
-        )}
-      >
+      <div className="flex w-full flex-col gap-4 pt-3">
         {input}
         <div className="flex flex-wrap gap-2">
           {suggestions.map((suggestion) => (
@@ -165,68 +142,53 @@ export function ChatWelcome({
   }
 
   if (dock) {
+    // Compact rows on the page ground so the composer below stays the only glass.
     const rowClass =
-      "group flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-[0.9375rem] transition-colors duration-150 hover:bg-foreground/[0.06] focus-visible:bg-foreground/[0.06] focus-visible:outline-none active:bg-foreground/[0.1] disabled:cursor-not-allowed disabled:opacity-50";
+      "group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[0.875rem] text-foreground/80 transition-colors duration-150 hover:bg-foreground/[0.06] hover:text-foreground focus-visible:bg-foreground/[0.06] focus-visible:text-foreground focus-visible:outline-none active:bg-foreground/[0.1] disabled:cursor-not-allowed disabled:opacity-50";
+    const rowContent = (text: string) => (
+      <>
+        <MessageCircle className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+        <span className="min-w-0 flex-1">{text}</span>
+        <ArrowUpRight
+          className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-150 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+          aria-hidden
+        />
+      </>
+    );
 
     return (
-      <div className="flex flex-1 flex-col justify-end gap-2 px-4 pt-4 pb-[calc(max(1rem,env(safe-area-inset-bottom))+1.25rem)] lg:gap-4 lg:px-8 lg:pb-10">
-        <ul
-          className={cn(
-            "mx-auto w-full max-w-2xl",
-            // The rows carry the page-ground treatment only while the composer
-            // sits on the tab bar; once raised they scroll away instead.
-            !raised && "animate-fade-in",
-            raised && "px-1 md:pointer-events-none md:opacity-0"
-          )}
-          aria-hidden={raised || undefined}
-        >
-          {suggestions.map((suggestion) => {
-            const Icon = suggestion.icon;
-            const row = (
-              <>
-                <Icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-                <span className="min-w-0 flex-1">{suggestion.text}</span>
-                <ArrowUpRight
-                  className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-150 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
-                  aria-hidden
-                />
-              </>
-            );
-            return (
-              <li key={`${suggestion.href ?? "chat"}:${suggestion.text}`}>
-                {suggestion.href ? (
-                  <Link href={suggestion.href} className={rowClass}>
-                    {row}
-                  </Link>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => handleSuggestionClick(suggestion)}
-                    disabled={isBlocked || isLoading}
-                    className={rowClass}
-                  >
-                    {row}
-                  </button>
-                )}
-              </li>
-            );
-          })}
+      <div className="flex flex-1 flex-col px-4 pt-6 md:px-8 md:pt-10">
+        <ul className="mx-auto w-full max-w-2xl animate-fade-in">
+          {suggestions.map((suggestion) => (
+            <li key={suggestion.text}>
+              <button
+                type="button"
+                onClick={() => handleSuggestionClick(suggestion)}
+                disabled={isBlocked || isLoading}
+                className={rowClass}
+              >
+                {rowContent(suggestion.text)}
+              </button>
+            </li>
+          ))}
         </ul>
 
-        <div
-          className={cn(
-            "mx-auto w-full max-w-2xl animate-fade-in-up",
-            // Raised: the composer settles on the tab bar while the keyboard is
-            // open, so the rows above it scroll under the field instead of
-            // squeezing it. The field goes bare there; the dock's glass carries it.
-            raised
-              ? "glass-card fixed inset-x-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-[35] !w-auto !max-w-none !mx-0 !my-0 overflow-hidden rounded-t-[1.75rem] border-b-0 bg-card-glass-strong lg:inset-x-8 lg:bottom-10 lg:rounded-[1.625rem]"
-              : undefined
-          )}
-          style={{ animationDelay: "100ms" }}
-          data-docked-composer={dockedComposer || undefined}
-        >
+        <div className="mx-auto mt-auto w-full max-w-2xl animate-fade-in-up">
           {input}
+          {/* Pages worth opening sit beside the composer where there is width; the
+              bottom padding clears the floating dock on laptop heights. */}
+          <div className="mt-4 hidden flex-wrap items-center gap-1.5 pb-10 md:flex">
+            {references.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="group flex items-center gap-2 rounded-full border border-border px-3 py-1.5 text-[0.8125rem] text-muted-foreground transition-colors duration-150 hover:border-foreground/25 hover:text-foreground focus-visible:outline-none"
+              >
+                <item.icon className="h-3.5 w-3.5" aria-hidden />
+                {item.label}
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -257,40 +219,38 @@ export function ChatWelcome({
         {input}
 
         <ul className="glass-card mt-6 divide-y divide-border rounded-3xl border border-foreground/10 bg-card-glass px-4">
-          {suggestions.map((suggestion) => {
-            const Icon = suggestion.icon;
-            const row = (
-              <>
-                <Icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+          {suggestions.map((suggestion) => (
+            <li key={suggestion.text}>
+              <button
+                type="button"
+                onClick={() => handleSuggestionClick(suggestion)}
+                disabled={isBlocked || isLoading}
+                className="group flex w-full items-center gap-3 py-3.5 text-left text-[0.9375rem] text-foreground/85 transition-colors duration-150 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none"
+              >
+                <MessageCircle className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
                 <span className="min-w-0 flex-1">{suggestion.text}</span>
                 <ArrowUpRight
                   className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-150 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
                   aria-hidden
                 />
-              </>
-            );
-            return (
-              <li key={`${suggestion.href ?? "chat"}:${suggestion.text}`}>
-                {suggestion.href ? (
-                  <Link
-                    href={suggestion.href}
-                    className="group flex min-w-0 items-center gap-3 py-3.5 text-[0.9375rem] transition-colors hover:text-foreground focus-visible:outline-none"
-                  >
-                    {row}
-                  </Link>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => handleSuggestionClick(suggestion)}
-                    disabled={isBlocked || isLoading}
-                    className="group flex w-full items-center gap-3 py-3.5 text-left text-[0.9375rem] transition-colors duration-150 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none"
-                  >
-                    {row}
-                  </button>
-                )}
-              </li>
-            );
-          })}
+              </button>
+            </li>
+          ))}
+          {references.map((item) => (
+            <li key={item.href}>
+              <Link
+                href={item.href}
+                className="group flex min-w-0 items-center gap-3 py-3.5 text-[0.9375rem] text-foreground/85 transition-colors hover:text-foreground focus-visible:outline-none"
+              >
+                <item.icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                <span className="flex-1">{item.label}</span>
+                <ArrowUpRight
+                  className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-150 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                  aria-hidden
+                />
+              </Link>
+            </li>
+          ))}
         </ul>
       </div>
     </div>

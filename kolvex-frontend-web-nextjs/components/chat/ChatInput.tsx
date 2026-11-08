@@ -392,9 +392,7 @@ export function ChatInput({
       <div
         className={cn(
           "relative flex flex-col",
-          // Inline and docked keep the typing area on the page ground; only the
-          // default panel draws its own card.
-          inline || docked
+          inline
             ? "bg-transparent"
             : cn(
                 "glass-card glass-card-blur overflow-hidden rounded-[1.625rem] border border-foreground/10 bg-card-glass-strong transition-colors duration-150 focus-within:border-foreground/35"
@@ -431,7 +429,7 @@ export function ChatInput({
             inline
               ? "px-0 pb-3 pt-1"
               : docked
-                ? "gap-2.5 px-3.5 pt-3.5"
+                ? "gap-2.5 px-4 pt-3.5"
                 : cn("px-5", evidenceLabel ? "pt-1" : "pt-4", hasFooter ? "pb-1" : "pb-3")
           )}
         >
@@ -439,18 +437,20 @@ export function ChatInput({
             ref={inputRef as React.RefObject<HTMLTextAreaElement>}
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            onFocus={(event) => onFocus?.(event)}
-            onBlur={(event) => onBlur?.(event)}
+            onFocus={onFocus}
+            onBlur={onBlur}
             onKeyDown={handleKeyDown}
             placeholder={isBlocked ? t("chat.input.addApiKeyPlaceholder") : prompt}
             disabled={isBlocked}
             className={cn(
+              // The global focus-visible wash is for controls, not for the field
+              // being edited, so the composer stays one surface while typing.
               "flex-1 resize-none bg-transparent outline-none",
               "text-foreground placeholder:text-muted-foreground",
               "disabled:cursor-not-allowed disabled:opacity-50",
               inline
-                ? "min-h-11 border-b-2 border-transparent text-[1.0625rem] leading-7 focus-visible:border-primary focus-visible:outline-none"
-                : "min-h-[1.75rem] max-h-[10rem] text-base leading-relaxed focus-visible:outline-none",
+                ? "min-h-11 border-b-2 border-transparent text-[1.0625rem] leading-7 focus-visible:border-primary focus-visible:!bg-transparent focus-visible:outline-none"
+                : "min-h-[1.75rem] max-h-[10rem] text-base leading-relaxed focus-visible:!bg-transparent focus-visible:outline-none",
               fieldClassName
             )}
             rows={1}
@@ -474,7 +474,7 @@ export function ChatInput({
               inline
                 ? "border-t border-border px-0 py-2"
                 : docked
-                  ? "-ml-1 px-1.5 pb-1.5"
+                  ? "-ml-1 px-2 pb-2 pt-0.5"
                   : "px-2.5 pb-2.5 pt-1"
             )}
           >
