@@ -62,14 +62,18 @@ type Align = "left" | "center" | "right";
 
 const ALIGN_CLASS: Record<Align, string> = { left: "text-left", center: "text-center", right: "text-right" };
 
-function Th({ children, align }: { children?: ReactNode; align?: Align }) {
-  const resolved: Align = align || (isNumericCell(textOf(children)) ? "right" : "left");
+/** How a whole column behaves, decided once from everything it holds. */
+type ColumnLayout = { numeric: boolean; wraps: boolean; minWidth?: string };
+
+function Th({ children, align, column }: { children?: ReactNode; align?: Align; column?: ColumnLayout }) {
   return (
     <th
       scope="col"
+      style={column?.minWidth ? { minWidth: column.minWidth } : undefined}
       className={cn(
-        "whitespace-nowrap border-b border-foreground/10 px-3.5 py-2.5 text-xs font-semibold text-muted-foreground",
-        ALIGN_CLASS[resolved],
+        "border-b border-foreground/10 px-3.5 py-2.5 text-xs font-semibold text-muted-foreground",
+        !column?.wraps && "whitespace-nowrap",
+        ALIGN_CLASS[align || "left"],
       )}
     >
       {children}
@@ -77,22 +81,23 @@ function Th({ children, align }: { children?: ReactNode; align?: Align }) {
   );
 }
 
-function Td({ children, align }: { children?: ReactNode; align?: Align }) {
-  const text = textOf(children);
-  const tone = toneOf(text);
-  const resolved: Align = align || (isNumericCell(text) ? "right" : "left");
+function Td({ children, align, column }: { children?: ReactNode; align?: Align; column?: ColumnLayout }) {
+  const tone = toneOf(textOf(children));
+  const resolved: Align = align || "left";
   return (
     <td
+      style={column?.minWidth ? { minWidth: column.minWidth } : undefined}
       className={cn(
         "px-3.5 py-2.5 align-top text-[0.8125rem] leading-6 text-foreground",
+        column?.wraps && !column.numeric ? "[overflow-wrap:anywhere]" : "whitespace-nowrap",
         ALIGN_CLASS[resolved],
         resolved === "right" && "figure",
       )}
     >
       {tone ? (
-        <span className="inline-flex items-center gap-1.5">
-          <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", TONE_CLASS[tone])} aria-hidden="true" />
-          {children}
+        <span className="inline-flex items-start gap-1.5">
+          <span className={cn("mt-[0.5625rem] h-1.5 w-1.5 shrink-0 rounded-full", TONE_CLASS[tone])} aria-hidden="true" />
+          <span className="min-w-0">{children}</span>
         </span>
       ) : (
         children
@@ -101,7 +106,7 @@ function Td({ children, align }: { children?: ReactNode; align?: Align }) {
   );
 }
 
-type CellElement = ReactElement<{ children?: ReactNode; align?: Align | null }>;
+type CellElement = ReactElement<{ children?: ReactNode; align?: Align | null; column?: ColumnLayout }>;
 
 /** Rows split by section, so the header row never decides which columns hold numbers. */
 function tableRows(node: ReactNode): { header: CellElement[][]; body: CellElement[][] } {
@@ -124,42 +129,68 @@ function tableRows(node: ReactNode): { header: CellElement[][]; body: CellElemen
   return { header, body };
 }
 
-/** A column of numbers reads as numbers all the way up, header included. */
-function numericColumns(body: CellElement[][]): boolean[] {
-  const flags: boolean[] = [];
-  body.forEach((cells) => {
-    cells.forEach((cell, column) => {
-      const value = textOf(cell.props.children).trim();
-      if (!value || value === "—" || value === "-") return;
-      flags[column] = (flags[column] ?? true) && isNumericCell(value);
-    });
-  });
-  return flags;
+/** Text length in em: a CJK glyph fills the em box, Latin text runs about half of it. */
+function textUnits(text: string) {
+  let units = 0;
+  for (const glyph of text.trim()) units += /[⺀-鿿豈-﫿＀-｠]/.test(glyph) ? 1 : 0.55;
+  return units;
 }
 
-function alignCells(node: ReactNode, aligns: boolean[]): ReactNode {
-  if (Array.isArray(node)) return node.map((child) => alignCells(child, aligns));
+/** Anything this short stays on one line; a table of labels should not wrap at all. */
+const ONE_LINE_UNITS = 8;
+const WRAPPED_UNITS = { min: 8, max: 18 };
+const LINES = { header: 2, body: 3 };
+const BODY_EM_REM = 0.8125;
+const CELL_PADDING_REM = 1.75;
+
+/**
+ * CJK text can break after any glyph, so an auto-layout table will happily crush a
+ * sentence to one glyph per line while a neighbour keeps its full width. Columns that
+ * must wrap get a floor sized to their longest text; the table scrolls past that.
+ */
+function columnLayouts(header: CellElement[][], body: CellElement[][]): ColumnLayout[] {
+  const longest = (rows: CellElement[][], column: number) =>
+    rows.reduce((peak, cells) => Math.max(peak, textUnits(textOf(cells[column]?.props.children))), 0);
+  const count = Math.max(0, ...[...header, ...body].map((cells) => cells.length));
+
+  return Array.from({ length: count }, (_, column) => {
+    const values = body
+      .map((cells) => textOf(cells[column]?.props.children).trim())
+      .filter((value) => value && value !== "—" && value !== "-");
+    const numeric = values.length > 0 && values.every(isNumericCell);
+    const headerUnits = longest(header, column);
+    const bodyUnits = longest(body, column);
+    if (Math.max(headerUnits, bodyUnits) <= ONE_LINE_UNITS) return { numeric, wraps: false };
+    const units = Math.min(WRAPPED_UNITS.max, Math.max(WRAPPED_UNITS.min, headerUnits / LINES.header, bodyUnits / LINES.body));
+    return { numeric, wraps: true, minWidth: `${(units * BODY_EM_REM + CELL_PADDING_REM).toFixed(2)}rem` };
+  });
+}
+
+function applyColumns(node: ReactNode, columns: ColumnLayout[]): ReactNode {
+  if (Array.isArray(node)) return node.map((child) => applyColumns(child, columns));
   if (!isValidElement(node)) return node;
   const element = node as CellElement;
   if (element.type === Th || element.type === Td) return node; // the row pass below owns these
   const { children } = element.props;
   if (children === undefined) return node;
   if (element.type === "tr") {
-    const cells = Children.toArray(children).map((cell, column) => {
-      const target = aligns[column] ? "right" : undefined;
-      return isValidElement(cell) && target ? cloneElement(cell as CellElement, { align: target }) : cell;
+    const cells = Children.toArray(children).map((cell, index) => {
+      if (!isValidElement(cell)) return cell;
+      const column = columns[index];
+      return cloneElement(cell as CellElement, column?.numeric ? { column, align: "right" } : { column });
     });
     return cloneElement(element, undefined, cells);
   }
-  return cloneElement(element, undefined, alignCells(children, aligns));
+  return cloneElement(element, undefined, applyColumns(children, columns));
 }
 
-/** A markdown table: hairline rules, numeric columns right-aligned, scrolls on narrow screens. */
+/** A markdown table: hairline rules, one layout per column, scrolls only when the columns need it. */
 export function DataTable({ children, label, className }: { children?: ReactNode; label?: string; className?: string }) {
   const c = useCopy();
-  // React Markdown hands us the cells before they render, so the whole column can share
-  // one alignment instead of leaving numbers right-aligned under a left-aligned header.
-  const aligns = numericColumns(tableRows(children).body);
+  // React Markdown hands us the cells before they render, so a column can be sized and
+  // aligned as a whole rather than cell by cell.
+  const { header, body } = tableRows(children);
+  const columns = columnLayouts(header, body);
   return (
     <div
       role="region"
@@ -172,11 +203,11 @@ export function DataTable({ children, label, className }: { children?: ReactNode
     >
       <table
         className={cn(
-          "w-full min-w-[26rem] border-collapse text-left",
+          "w-full border-collapse text-left",
           "[&_thead]:bg-foreground/[0.05] [&_tbody>tr+tr]:border-t [&_tbody>tr+tr]:border-foreground/[0.06] [&_tbody>tr:hover]:bg-foreground/[0.04]",
         )}
       >
-        {alignCells(children, aligns)}
+        {applyColumns(children, columns)}
       </table>
     </div>
   );
@@ -316,8 +347,14 @@ function Anchor({ href, children }: { href?: string; children?: ReactNode }) {
 export const RICH_MARKDOWN_COMPONENTS: Components = {
   table: ({ children }) => <DataTable>{children}</DataTable>,
   // `align` arrives from the markdown column rule (`| ---: |`); keep it, the cell needs it.
-  th: ({ children, ...rest }) => <Th align={(rest as { align?: Align }).align}>{children}</Th>,
-  td: ({ children, ...rest }) => <Td align={(rest as { align?: Align }).align}>{children}</Td>,
+  th: ({ children, ...rest }) => {
+    const { align, column } = rest as { align?: Align; column?: ColumnLayout };
+    return <Th align={align} column={column}>{children}</Th>;
+  },
+  td: ({ children, ...rest }) => {
+    const { align, column } = rest as { align?: Align; column?: ColumnLayout };
+    return <Td align={align} column={column}>{children}</Td>;
+  },
   pre: ({ children }) => <Pre>{children}</Pre>,
   a: ({ href, children }) => <Anchor href={href}>{children}</Anchor>,
 };

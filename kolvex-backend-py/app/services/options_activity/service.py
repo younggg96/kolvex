@@ -16,6 +16,7 @@ from app.core.redis import get_redis
 from app.core.supabase import get_supabase_service
 from app.services.options_activity import store
 from app.services.options_activity.aggregate import build_report
+from app.services.options_activity.candidates import generate_candidates
 from app.services.options_activity.collector import OptionsActivityCollector
 from app.services.options_activity.summary import summarize
 
@@ -44,10 +45,11 @@ def _data_date(scans: list[dict]) -> Optional[str]:
 
 
 class OptionsActivityService:
-    def __init__(self, collector: Optional[OptionsActivityCollector] = None, db_factory=get_supabase_service, llm=None):
+    def __init__(self, collector: Optional[OptionsActivityCollector] = None, db_factory=get_supabase_service, llm=None, candidates_llm=None):
         self.collector = collector or OptionsActivityCollector()
         self._db_factory = db_factory
         self._llm = llm
+        self._candidates_llm = candidates_llm
         self._lock = asyncio.Lock()
 
     async def run(self, session: str, now: Optional[datetime] = None, force: bool = False) -> dict:
@@ -74,12 +76,15 @@ class OptionsActivityService:
 
         history = await store.recent_payloads(db, session, today)
         report = build_report(scans, history, today)
-        summary = await summarize(report, session, data_date, llm=self._llm)
+        summary, candidates = await asyncio.gather(
+            summarize(report, session, data_date, llm=self._llm),
+            generate_candidates(report, session, data_date, llm=self._candidates_llm),
+        )
         saved = await store.save(db, {
             **base,
             "status": "ok",
             "payload": report,
-            "summary": summary,
+            "summary": {**summary, "candidates": candidates},
             "model_id": summary.get("model_id"),
             "prompt_version": summary.get("prompt_version"),
         })

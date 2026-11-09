@@ -9,7 +9,7 @@ import CompanyLogo from "@/components/ui/company-logo";
 import { useCopy } from "@/components/decision/shared";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useTranslation } from "@/lib/i18n";
-import { barShare, formatPremium, type ActivityContract, type ActivityRun, type ActivitySession, type Contributor } from "@/lib/optionsActivity";
+import { barShare, formatPremium, type ActivityCandidate, type ActivityContract, type ActivityRun, type ActivitySession, type Contributor } from "@/lib/optionsActivity";
 import { marketStockHref } from "@/lib/stockLinks";
 import { cn } from "@/lib/utils";
 
@@ -429,6 +429,81 @@ export function UnusualContracts({
           </tbody>
         </table>
       </div>
+    </section>
+  );
+}
+
+function CandidateCard({ item }: { item: ActivityCandidate }) {
+  const c = useCopy();
+  const { locale } = useTranslation();
+  const expiry = useExpiryLabel();
+  const zh = locale === "zh";
+  const call = item.type === "call";
+  const confidence = { low: c("Low confidence", "低置信度"), medium: c("Medium confidence", "中置信度"), high: c("High confidence", "高置信度") };
+  const reasons: [string, string][] = [
+    [c("Why this direction", "方向理由"), zh ? item.thesis_zh : item.thesis_en],
+    [c("Key risks", "关键风险"), zh ? item.risk_zh : item.risk_en],
+    [c("No longer holds if", "失效条件"), zh ? item.invalidation_zh : item.invalidation_en],
+  ];
+
+  return (
+    <li className="min-w-0 rounded-3xl border border-foreground/10 glass-card bg-card-glass p-4 md:p-5">
+      <div className="flex items-start justify-between gap-3">
+        <Link
+          href={optionsHref(item.underlying)}
+          className="inline-flex min-w-0 items-center gap-2 rounded-full underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        >
+          <span aria-hidden="true"><CompanyLogo symbol={item.underlying} size="sm" /></span>
+          <span className="figure text-[0.9375rem] font-semibold">{item.underlying}</span>
+        </Link>
+        <span className="shrink-0 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">{confidence[item.confidence]}</span>
+      </div>
+      <p className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        <span className="figure text-lg font-semibold">${item.strike}</span>
+        <span className={cn("text-sm font-medium", call ? "text-positive" : "text-negative")}>{call ? c("Call · upside", "Call · 看涨") : c("Put · downside", "Put · 看跌")}</span>
+        <span className="figure text-xs text-muted-foreground">{expiry(item.expiration)} · {c(`${item.dte}d`, `${item.dte} 天`)}</span>
+        {item.flags.crosses_earnings && <span className="rounded bg-foreground/[0.06] px-1.5 py-0.5 text-[0.6875rem] text-muted-foreground">{c("Earnings", "跨财报")}</span>}
+      </p>
+      <p className="figure mt-1 text-xs text-muted-foreground">
+        {c("Traded", "成交额")} {formatPremium(item.premium)}
+        {item.vol_oi !== null && ` · ${c("Vol/OI", "量/持仓")} ${fixed(item.vol_oi, 1)}×`}
+        {item.price !== null && ` · ${c("Avg", "均价")} $${fixed(item.price)}`}
+      </p>
+      <dl className="mt-4 space-y-3 border-t border-border pt-4">
+        {reasons.map(([label, text]) => (
+          <div key={label}>
+            <dt className="text-xs text-muted-foreground">{label}</dt>
+            <dd className="mt-1 text-sm leading-6">{text}</dd>
+          </div>
+        ))}
+      </dl>
+    </li>
+  );
+}
+
+export function ResearchCandidates({ run }: { run: ActivityRun }) {
+  const c = useCopy();
+  const candidates = run.summary?.candidates;
+  if (!candidates) return null;
+  const title = c("AI research candidates", "AI 研究候选");
+  return (
+    <section aria-label={title}>
+      <SectionHeader
+        title={title}
+        note={c(
+          "Picked by AI from contracts in this run, with expirations at least 7 days out. The same for every reader and not based on your holdings: contracts to research, not orders to place. The delayed data has no buy/sell side, so premium traded is not a buy signal, and large puts are often hedges.",
+          "由 AI 从本轮实际成交的合约中挑选，到期日至少在 7 天后。所有用户看到的内容相同，不基于你的持仓，是值得进一步研究的合约，而不是下单指令。延迟数据没有主动买卖方向，成交额不代表买入信号，大额 Put 常常是对冲。",
+        )}
+      />
+      {candidates.status === "ok" && candidates.items.length > 0 ? (
+        <ul className="grid gap-4 md:grid-cols-2">
+          {candidates.items.map((item) => <CandidateCard key={item.symbol} item={item} />)}
+        </ul>
+      ) : (
+        <p className="rounded-3xl border border-foreground/10 glass-card bg-card-glass p-4 text-sm text-muted-foreground md:p-5">
+          {c("AI candidates are unavailable for this run.", "本轮 AI 研究候选暂不可用。")}
+        </p>
+      )}
     </section>
   );
 }

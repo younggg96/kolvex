@@ -31,7 +31,18 @@ export interface ActivityTicker {
 export interface ActivitySummary {
   sentiment: ActivitySentiment; points_zh: string[]; points_en: string[];
   source: "ai" | "template"; model_id: string | null;
+  /** Absent on runs saved before AI candidates existed. */
+  candidates?: ActivityCandidates;
 }
+
+export interface ActivityCandidate extends Omit<ActivityContract, "last"> {
+  thesis_zh: string; thesis_en: string;
+  risk_zh: string; risk_en: string;
+  invalidation_zh: string; invalidation_en: string;
+  confidence: "low" | "medium" | "high";
+}
+
+export interface ActivityCandidates { status: "ok" | "unavailable"; items: ActivityCandidate[] }
 
 export interface DayRun { id: string; trade_date: string; session: ActivitySession; run_at: string; data_date: string | null; market?: ActivityMarket }
 

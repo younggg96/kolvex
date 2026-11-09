@@ -14,6 +14,10 @@ from app.services.options_chain import metrics
 TOP_CONTRIBUTORS = 5
 TOP_CONTRACTS = 20
 MIN_RANGE_DAYS = 5
+MIN_CANDIDATE_DTE = 7
+CANDIDATES_PER_SYMBOL = 3
+CANDIDATE_POOL = 40
+MAX_CANDIDATE_DELTA = 0.85  # Deeper in the money trades like stock replacement or a hedge leg.
 
 
 def contract_price(row: dict) -> Optional[float]:
@@ -148,6 +152,22 @@ def _median(values: Iterable[Optional[float]]) -> Optional[float]:
     return round(median(clean), 4) if clean else None
 
 
+def candidate_pool(ranked: list[dict]) -> list[dict]:
+    """Contracts the AI candidates may be picked from. Same-day expirations crowd the premium
+    ranking, so this keeps longer-dated, not deep in-the-money contracts and caps each symbol."""
+    per_symbol: dict[str, int] = {}
+    pool: list[dict] = []
+    for contract in ranked:
+        delta = contract.get("delta")
+        if contract["dte"] < MIN_CANDIDATE_DTE or (delta is not None and abs(delta) > MAX_CANDIDATE_DELTA):
+            continue
+        if per_symbol.get(contract["underlying"], 0) >= CANDIDATES_PER_SYMBOL:
+            continue
+        per_symbol[contract["underlying"]] = per_symbol.get(contract["underlying"], 0) + 1
+        pool.append(contract)
+    return pool[:CANDIDATE_POOL]
+
+
 def build_report(scans: list[dict], history: list[dict], today: date) -> dict:
     """
     scans: [{symbol, is_etf, rows, stock, earnings}] for this run.
@@ -183,6 +203,7 @@ def build_report(scans: list[dict], history: list[dict], today: date) -> dict:
     negative = [_contributor(t) for t in reversed(ranked) if t["net_premium"] < 0][:TOP_CONTRIBUTORS]
     contracts.sort(key=lambda c: (-c["premium"], c["symbol"]))
     return {
+        "candidate_contracts": candidate_pool(contracts),
         "market": market,
         "contributors": {
             "positive": positive,

@@ -1,10 +1,11 @@
 import asyncio
 from datetime import date, datetime, timezone
+import json
 import unittest
 from unittest.mock import AsyncMock, patch
 from zoneinfo import ZoneInfo
 
-from app.services.options_activity import aggregate, summary
+from app.services.options_activity import aggregate, candidates, summary
 from app.services.options_activity.collector import RateLimiter, stock_quote
 from app.services.options_activity.service import OptionsActivityService, due_session
 
@@ -119,6 +120,130 @@ class SummaryTests(unittest.TestCase):
         self.assertIn("AAA", result["points_en"][1])
 
 
+def candidate(contract="AAA261120C00105000", underlying="AAA", kind="call", strike=105, exp="2026-11-20", confidence="medium", **overrides):
+    return {
+        "contract": contract, "underlying": underlying, "type": kind, "strike": strike, "expiration": exp,
+        "thesis_zh": "Call 成交额集中，且价外幅度不大。", "thesis_en": "Call premium traded here and it is near the money.",
+        "risk_zh": "时间衰减。", "risk_en": "Time decay.",
+        "invalidation_zh": "跌破隐含区间下沿。", "invalidation_en": "A close below the implied range.",
+        "confidence": confidence, **overrides,
+    }
+
+
+class FakeLLM:
+    model_name = "deepseek-test"
+
+    def __init__(self, content):
+        self.content = content
+
+    async def ainvoke(self, messages):
+        from langchain_core.messages import AIMessage
+
+        return AIMessage(content=self.content)
+
+
+class CandidateTests(unittest.TestCase):
+    def setUp(self):
+        aaa = [dict(row("call", 105, exp="2026-11-20", volume=500, oi=100, vwap=2.0), symbol="AAA261120C00105000"),
+               dict(row("call", 110, exp="2026-11-20", volume=400, oi=100, vwap=2.0), symbol="AAA261120C00110000"),
+               dict(row("call", 100, exp="2026-11-09", volume=9000, oi=100, vwap=2.0), symbol="AAA261109C00100000")]
+        bbb = [dict(row("put", 90, exp="2026-12-18", volume=100, oi=1000, vwap=3.0), symbol="BBB261218P00090000")]
+        self.report = aggregate.build_report([scan("AAA", aaa, earnings="2026-11-10"), scan("BBB", bbb)], [], TODAY)
+        self.pool = self.report["candidate_contracts"]
+
+    def generate(self, content):
+        return asyncio.run(candidates.generate_candidates(self.report, "intraday", TODAY.isoformat(), llm=FakeLLM(content)))
+
+    def test_pool_skips_short_dated_and_caps_each_symbol(self):
+        symbols = [c["symbol"] for c in self.pool]
+        self.assertNotIn("AAA261109C00100000", symbols)
+        self.assertIn("AAA261120C00105000", symbols)
+
+        many = [dict(c, symbol=f"S{i}", underlying="AAA", premium=100 - i, dte=20) for i, c in enumerate([self.pool[0]] * 5)]
+        self.assertEqual([c["symbol"] for c in aggregate.candidate_pool(many)], ["S0", "S1", "S2"])
+        deep = [dict(self.pool[0], symbol="DEEP", delta=-0.95), dict(self.pool[0], symbol="OK", delta=-0.6), dict(self.pool[0], symbol="NONE", delta=None)]
+        self.assertEqual([c["symbol"] for c in aggregate.candidate_pool(deep)], ["OK", "NONE"])
+
+    def test_real_contract_takes_facts_from_run_data(self):
+        result = self.generate(json.dumps({"candidates": [candidate(premium=1, dte=99)]}))
+        self.assertEqual((result["status"], result["dropped"], result["model_id"]), ("ok", 0, "deepseek-test"))
+        item = result["items"][0]
+        self.assertEqual((item["symbol"], item["premium"], item["dte"], item["confidence"]), ("AAA261120C00105000", 100_000, 14, "medium"))
+        self.assertTrue(item["flags"]["crosses_earnings"])
+
+    def test_invented_or_mismatched_contracts_are_dropped(self):
+        bad = [
+            candidate(contract="AAA261120C00999000", strike=999),  # not in this run
+            candidate(strike=106),  # real symbol, wrong strike
+            candidate(exp="2026-12-18"),
+            candidate(kind="put"),
+            candidate(underlying="ZZZ"),
+            candidate(contract="AAA261109C00100000", strike=100, exp="2026-11-09"),  # real but same-day, outside the pool
+            "not an object",
+        ]
+        valid = [c["symbol"] for c in candidates.validate_candidates(bad + [candidate()], self.pool)[0]]
+        self.assertEqual(valid, ["AAA261120C00105000"])
+        self.assertEqual(candidates.validate_candidates(bad, self.pool), ([], len(bad)))
+
+    def test_chinese_words_and_string_numbers_normalize(self):
+        item = candidate(kind="看涨", strike="105.0", confidence="中等", contract="aaa261120c00105000")
+        valid, dropped = candidates.validate_candidates([item], self.pool)
+        self.assertEqual(dropped, 0)
+        self.assertEqual((valid[0]["type"], valid[0]["strike"], valid[0]["confidence"]), ("call", 105, "medium"))
+
+    def test_incomplete_or_unknown_confidence_is_dropped(self):
+        self.assertEqual(candidates.validate_candidates([candidate(confidence="很确定")], self.pool)[0], [])
+        self.assertEqual(candidates.validate_candidates([candidate(risk_zh="  ")], self.pool)[0], [])
+        self.assertEqual(candidates.validate_candidates([candidate(thesis_en="x" * 401)], self.pool)[0], [])
+
+    def test_premium_described_as_a_buy_signal_is_dropped(self):
+        for field, text in (("thesis_zh", "大额成交是买入信号。"), ("risk_zh", "可能是聪明钱。"), ("thesis_en", "Whales bought this."), ("invalidation_en", "smart money leaves")):
+            self.assertEqual(candidates.validate_candidates([candidate(**{field: text})], self.pool)[0], [], field)
+
+    def test_keeps_one_per_underlying_and_caps_total(self):
+        second = candidate(contract="AAA261120C00110000", strike=110)
+        put = candidate(contract="BBB261218P00090000", underlying="BBB", kind="put", strike=90, exp="2026-12-18")
+        valid, dropped = candidates.validate_candidates([candidate(), second, put], self.pool)
+        self.assertEqual([c["symbol"] for c in valid], ["AAA261120C00105000", "BBB261218P00090000"])
+        self.assertEqual(dropped, 1)
+
+    def test_parses_fenced_json_and_bare_list(self):
+        self.assertEqual(self.generate("结果如下：\n```json\n" + json.dumps({"candidates": [candidate()]}) + "\n```")["status"], "ok")
+        self.assertEqual(self.generate(json.dumps([candidate()]))["status"], "ok")
+
+    def test_bad_output_is_unavailable_not_an_error(self):
+        for content, reason in (("抱歉，我无法回答", "invalid_output"), ('{"candidates": [', "invalid_output"), ('{"candidates": "none"}', "invalid_output"),
+                                (json.dumps({"candidates": []}), "no_valid_candidates"),
+                                (json.dumps({"candidates": [candidate(strike=999)]}), "no_valid_candidates")):
+            result = self.generate(content)
+            self.assertEqual((result["status"], result["reason"], result["items"]), ("unavailable", reason, []), content)
+
+    def test_model_failure_and_timeout_never_raise(self):
+        class Boom:
+            async def ainvoke(self, messages):
+                raise RuntimeError("500")
+
+        class Slow:
+            async def ainvoke(self, messages):
+                await asyncio.sleep(1)
+
+        result = asyncio.run(candidates.generate_candidates(self.report, "pre", None, llm=Boom()))
+        self.assertEqual((result["status"], result["reason"]), ("unavailable", "model_error"))
+        with patch.object(candidates, "LLM_TIMEOUT_SECONDS", 0.01):
+            result = asyncio.run(candidates.generate_candidates(self.report, "pre", None, llm=Slow()))
+        self.assertEqual((result["status"], result["reason"]), ("unavailable", "model_error"))
+
+    def test_missing_key_is_unavailable(self):
+        with patch("app.agent.llm._create_llm", side_effect=ValueError("API key not configured")):
+            result = asyncio.run(candidates.generate_candidates(self.report, "pre", None))
+        self.assertEqual((result["status"], result["reason"]), ("unavailable", "model_error"))
+
+    def test_no_eligible_contracts_skips_the_model(self):
+        self.report["candidate_contracts"] = []
+        result = asyncio.run(candidates.generate_candidates(self.report, "pre", None, llm=object()))
+        self.assertEqual((result["status"], result["reason"]), ("unavailable", "no_eligible_contracts"))
+
+
 class FakeCollector:
     configured = True
 
@@ -170,6 +295,10 @@ class ServiceTests(unittest.TestCase):
                   AsyncMock(return_value={"sentiment": "mixed", "points_zh": ["x"], "points_en": ["x"], "model_id": "m", "prompt_version": "v"}))
         p.start()
         self.addCleanup(p.stop)
+        self.candidates = AsyncMock(return_value={"status": "ok", "items": [{"symbol": "X"}]})
+        p = patch("app.services.options_activity.service.generate_candidates", self.candidates)
+        p.start()
+        self.addCleanup(p.stop)
 
     def service(self, collector):
         return OptionsActivityService(collector=collector, db_factory=lambda: object())
@@ -188,6 +317,29 @@ class ServiceTests(unittest.TestCase):
         saved = self.store["save"].call_args.args[1]
         self.assertEqual((saved["trade_date"], saved["session"], saved["status"], saved["model_id"]), ("2026-11-06", "intraday", "ok", "m"))
         self.assertEqual(saved["payload"]["market"]["call_premium"], 100_000)
+
+    def test_run_saves_candidates_inside_summary(self):
+        asyncio.run(self.service(FakeCollector()).run("intraday", at(12, 30)))
+        saved = self.store["save"].call_args.args[1]
+        self.assertEqual(saved["summary"]["candidates"]["items"], [{"symbol": "X"}])
+        self.assertEqual(saved["summary"]["points_zh"], ["x"])
+
+    def test_report_still_saves_when_model_is_down(self):
+        class Down:
+            model_name = "down"
+
+            async def ainvoke(self, messages):
+                raise RuntimeError("deepseek 503")
+
+        self.candidates.side_effect = candidates.generate_candidates
+        service = OptionsActivityService(collector=FakeCollector(), db_factory=lambda: object(), candidates_llm=Down())
+        result = asyncio.run(service.run("intraday", at(12, 30)))
+        self.assertEqual(result["status"], "ok")
+        saved = self.store["save"].call_args.args[1]
+        self.assertEqual(saved["status"], "ok")
+        self.assertEqual(saved["payload"]["market"]["call_premium"], 100_000)
+        self.assertEqual(saved["summary"]["sentiment"], "mixed")
+        self.assertEqual((saved["summary"]["candidates"]["status"], saved["summary"]["candidates"]["items"]), ("unavailable", []))
 
     def test_holiday_is_saved_as_skipped(self):
         result = asyncio.run(self.service(FakeCollector(bar_date="2026-11-05")).run("post", at(16, 20)))

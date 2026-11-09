@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useCachedResource } from "@/hooks/useCachedResource";
 import { useTranslation } from "@/lib/i18n";
 import { ACTIVITY_SESSIONS, runKey, runsKey, type ActivityRun, type RunList } from "@/lib/optionsActivity";
-import { ContributionBoard, MarketOverview, SummaryCard, TickerLevels, UnusualContracts, useSessionLabel, type Filter } from "./sections";
+import { ContributionBoard, MarketOverview, ResearchCandidates, SummaryCard, TickerLevels, UnusualContracts, useSessionLabel, type Filter } from "./sections";
 
 class ActivityError extends Error {
   constructor(public code: string, public status: number) {
@@ -166,6 +166,7 @@ export default function OptionsActivityPage() {
           {data ? (
             <div className="space-y-8 md:space-y-10">
               <SummaryCard run={data} />
+              <ResearchCandidates run={data} />
               <MarketOverview run={data} />
               <ContributionBoard run={data} />
               <UnusualContracts run={data} filter={kind} onFilterChange={(next) => setQuery({ kind: next === "all" ? null : next })} />

@@ -152,6 +152,47 @@ test('a numeric column right-aligns its header too, so the column reads as one b
   assert.match(headers[1], /text-left/, 'a word column stays left');
 });
 
+function renderTable(headers, rows) {
+  const { th, td } = RICH_MARKDOWN_COMPONENTS;
+  const row = (cell, values) => React.createElement('tr', null, ...values.map((value) => React.createElement(cell, null, value)));
+  return renderToStaticMarkup(DataTable({
+    children: React.createElement(
+      React.Fragment,
+      null,
+      React.createElement('thead', null, row(th, headers)),
+      React.createElement('tbody', null, ...rows.map((values) => row(td, values))),
+    ),
+  }));
+}
+
+const cellsOf = (markup, tag) => [...markup.matchAll(new RegExp(`<${tag}[ >][^>]*>`, 'g'))].map((match) => match[0]);
+
+test('a sentence column keeps a readable width instead of collapsing to one glyph per line', () => {
+  const markup = renderTable(['博主', '依据'], [['投资TALK君', '变现渠道可验证，长线逻辑不变，现价接近或低于自己的成本']]);
+  const [name, reason] = cellsOf(markup, 'td');
+  assert.match(name, /whitespace-nowrap/, 'a short label stays on one line');
+  assert.doesNotMatch(name, /min-width/);
+  assert.match(reason, /min-width:\s*\d/, 'long text gets a width floor');
+  assert.doesNotMatch(reason, /whitespace-nowrap/);
+  assert.doesNotMatch(markup, /min-w-\[26rem\]/, 'a small table must not be forced to scroll');
+});
+
+test('a long header wraps rather than stretching its column', () => {
+  const [header] = cellsOf(renderTable(['相对52周区间(164.27–243.37)'], [['区间下缘']]), 'th');
+  assert.doesNotMatch(header, /whitespace-nowrap/);
+  assert.match(header, /min-width/);
+});
+
+test('a column mixing numbers and words aligns as one block', () => {
+  const markup = renderTable(['指标', '数值'], [['PEG', '0.23'], ['市盈率', '23.6 倍'], ['ROE', '117.2%']]);
+  assert.equal(cellsOf(markup, 'td').filter((cell) => /text-right/.test(cell)).length, 0);
+});
+
+test('a tone dot stays on the first line of wrapped text', () => {
+  const markup = renderTable(['含义'], [['中性，谈不上便宜，等回调再看']]);
+  assert.match(markup, /inline-flex items-start/);
+});
+
 test('chat and research surfaces both strip emoji and share the renderer', () => {
   const root = path.join(__dirname, '..');
   for (const file of ['components/chat/ChatBubble.tsx', 'components/chat/workspace/parts.tsx', 'components/trading-analysis/markdown.tsx']) {
