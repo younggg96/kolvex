@@ -5,7 +5,8 @@ import Link from "next/link";
 import { Loader2, RefreshCw } from "lucide-react";
 import { AdminRowsSkeleton } from "@/components/admin/AdminSkeletons";
 import { Button } from "@/components/ui/button";
-import { ACTIVITY_SESSIONS, type ActivitySession } from "@/lib/optionsActivity";
+import { ResearchCandidates } from "@/components/options-activity/sections";
+import { ACTIVITY_SESSIONS, type ActivityCandidates, type ActivitySession } from "@/lib/optionsActivity";
 import { cn } from "@/lib/utils";
 
 interface AdminRun {
@@ -18,11 +19,21 @@ interface ManualState {
   started_at: string | null; finished_at: string | null; error: string | null;
   result: { status: string; data_date?: string | null; failed_symbols?: string[] } | null;
 }
-interface AdminStatus { configured: boolean; worker_enabled: boolean; manual: ManualState; runs: AdminRun[] }
+interface AnalysisState {
+  status: "idle" | "running" | "done" | "failed";
+  finished_at: string | null; error: string | null;
+  result: { status: "ok" | "unavailable"; reason: string | null; count: number } | null;
+}
+interface LatestRun { id: string; trade_date: string; session: ActivitySession; candidates: ActivityCandidates | null }
+interface AdminStatus { configured: boolean; worker_enabled: boolean; manual: ManualState; analysis: AnalysisState; latest: LatestRun | null; runs: AdminRun[] }
 
 const SESSION_LABEL: Record<ActivitySession, string> = { pre: "盘前", intraday: "盘中", post: "盘后" };
 const SESSION_TIME: Record<ActivitySession, string> = { pre: "09:00", intraday: "12:30", post: "16:20" };
 const POLL_MS = 5000;
+const ANALYSIS_REASON: Record<string, string> = {
+  no_eligible_contracts: "这一轮没有到期日在 7 天以上的合约。",
+  no_valid_candidates: "模型没有给出可用的候选。",
+};
 
 async function request<T>(query = "", method: "GET" | "POST" = "GET", signal?: AbortSignal): Promise<T> {
   const response = await fetch(`/api/admin/options-activity${query}`, { method, signal, cache: "no-store" });
@@ -49,7 +60,7 @@ export default function OptionsActivityManager() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [starting, setStarting] = useState<ActivitySession | null>(null);
+  const [starting, setStarting] = useState<ActivitySession | "analysis" | null>(null);
 
   const load = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -71,8 +82,10 @@ export default function OptionsActivityManager() {
     return () => controller.abort();
   }, [load]);
 
-  const running = status?.manual.status === "running";
-  // Poll while a manual run is in flight; runs take one to two minutes.
+  const analysis = status?.analysis;
+  const analyzing = analysis?.status === "running";
+  const running = status?.manual.status === "running" || analyzing;
+  // Poll while a manual run or analysis is in flight; both take a few minutes at most.
   useEffect(() => {
     if (!running) return;
     const timer = window.setInterval(() => void load(), POLL_MS);
@@ -94,7 +107,22 @@ export default function OptionsActivityManager() {
     }
   }
 
+  async function analyze() {
+    setStarting("analysis");
+    setError("");
+    setMessage("");
+    try {
+      await request("?action=analyze", "POST");
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "启动失败，请重试。");
+    } finally {
+      setStarting(null);
+    }
+  }
+
   const manual = status?.manual;
+  const latest = status?.latest;
   return (
     <div className="min-w-0 space-y-6">
       <div className="space-y-2">
@@ -151,6 +179,25 @@ export default function OptionsActivityManager() {
         )}
         {message && <p role="status" className="text-sm text-muted-foreground">{message}</p>}
         {error && <p role="alert" className="rounded-3xl bg-negative/10 px-4 py-3 text-sm text-foreground">{error}</p>}
+      </div>
+
+      <div className="space-y-3">
+        <h3 className="text-sm font-medium">AI 分析</h3>
+        <Button variant="outline" disabled={!latest || running || starting !== null} onClick={() => void analyze()}>
+          {(starting === "analysis" || analyzing) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {latest ? `分析 ${latest.trade_date} ${SESSION_LABEL[latest.session]}报告` : "暂无可分析的报告"}
+        </Button>
+        {analysis && analysis.status !== "idle" && (
+          <p role="status" className={cn("text-sm", analysis.status === "failed" ? "text-negative" : "text-muted-foreground")}>
+            {analysis.status === "running" && "正在分析，通常需要 1–3 分钟。"}
+            {analysis.status === "failed" && "分析失败，请重试。"}
+            {analysis.status === "done" &&
+              (analysis.result?.status === "ok"
+                ? `完成于 ${etTime(analysis.finished_at)}，得到 ${analysis.result.count} 个候选，已同步到报告页面。`
+                : `没有新结果，报告未改动：${ANALYSIS_REASON[analysis.result?.reason ?? ""] ?? "模型暂不可用，请重试。"}`)}
+          </p>
+        )}
+        <ResearchCandidates candidates={latest?.candidates} />
       </div>
 
       <div className="space-y-3">

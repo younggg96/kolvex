@@ -396,5 +396,47 @@ class ManualRunTests(unittest.TestCase):
         asyncio.run(main())
 
 
+class AnalyzeLatestTests(unittest.TestCase):
+    PAYLOAD = {"contracts": [{"symbol": "A", "underlying": "AAA", "dte": 30, "delta": 0.4}, {"symbol": "B", "underlying": "BBB", "dte": 1, "delta": 0.4}]}
+
+    def analyze(self, run, fresh):
+        generate = AsyncMock(return_value=fresh)
+        update = AsyncMock()
+        with patch("app.services.options_activity.store.get_run", AsyncMock(return_value=run)), \
+                patch("app.services.options_activity.store.update_summary", update), \
+                patch("app.services.options_activity.service.generate_candidates", generate):
+            result = asyncio.run(OptionsActivityService(collector=FakeCollector(), db_factory=lambda: object()).analyze_latest())
+        return result, generate, update
+
+    def test_old_run_gets_a_pool_and_keeps_its_summary(self):
+        run = {"id": "r", "session": "post", "data_date": "2026-11-06", "payload": self.PAYLOAD, "summary": {"points_zh": ["x"]}}
+        result, generate, update = self.analyze(run, {"status": "ok", "items": [{"symbol": "A"}]})
+        self.assertEqual(result, {"status": "ok", "reason": None, "count": 1})
+        self.assertEqual([c["symbol"] for c in generate.call_args.args[0]["candidate_contracts"]], ["A"])
+        self.assertEqual(update.call_args.args[1:], ("r", {"points_zh": ["x"], "candidates": {"status": "ok", "items": [{"symbol": "A"}]}}))
+
+    def test_failed_attempt_keeps_an_earlier_good_list(self):
+        down = {"status": "unavailable", "reason": "model_error", "items": []}
+        good = {"status": "ok", "items": [{"symbol": "A"}]}
+        run = {"id": "r", "session": "post", "payload": {"candidate_contracts": []}, "summary": {"candidates": good}}
+        result, _, update = self.analyze(run, down)
+        self.assertEqual(result, {"status": "unavailable", "reason": "model_error", "count": 0})
+        update.assert_not_called()
+        _, _, update = self.analyze({**run, "summary": {}}, down)
+        update.assert_called_once()
+
+    def test_no_saved_run_is_reported_as_failed_state(self):
+        from app.services.options_activity import service as svc
+
+        async def main():
+            with patch("app.services.options_activity.store.get_run", AsyncMock(return_value=None)):
+                self.assertTrue(svc.start_analysis())
+                self.assertFalse(svc.start_manual_run("post"), "a new report must wait for the analysis")
+                await asyncio.gather(*svc._manual_runs)
+            self.assertEqual((svc.analysis_state["status"], svc.analysis_state["error"]), ("failed", "no_runs"))
+
+        asyncio.run(main())
+
+
 if __name__ == "__main__":
     unittest.main()

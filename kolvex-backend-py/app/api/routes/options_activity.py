@@ -8,7 +8,7 @@ from app.api.dependencies.auth import get_current_user_id, verify_admin
 from app.core.supabase import get_supabase_service
 from app.services.options_activity import store
 from app.core.config import settings
-from app.services.options_activity.service import manual_state, options_activity_service, start_manual_run
+from app.services.options_activity.service import analysis_state, manual_state, options_activity_service, start_analysis, start_manual_run
 
 router = APIRouter(prefix="/market/options-activity", tags=["Market Data"])
 admin_router = APIRouter(prefix="/options-activity", tags=["Admin"])
@@ -57,11 +57,14 @@ async def get_run(run_id: UUID, response: Response, user_id: str = Depends(get_c
 async def admin_status(response: Response, limit: int = Query(default=20, ge=1, le=100), admin_id: str = Depends(verify_admin)):
     """Data-source and worker state, the current manual run and recent runs of every status (including skipped)."""
     _private(response)
+    db = get_supabase_service()
     return {
         "configured": options_activity_service.collector.configured,
         "worker_enabled": settings.OPTIONS_ACTIVITY_WORKER_ENABLED,
         "manual": manual_state,
-        "runs": await store.list_all(get_supabase_service(), limit),
+        "analysis": analysis_state,
+        "latest": await store.latest_candidates(db),
+        "runs": await store.list_all(db, limit),
     }
 
 
@@ -75,3 +78,13 @@ async def trigger_run(
     if not start_manual_run(session):
         raise HTTPException(status_code=409, detail="run_in_progress")
     return {"started": True, "session": session}
+
+
+@admin_router.post("/analyze", status_code=202)
+async def trigger_analysis(admin_id: str = Depends(verify_admin)):
+    """Regenerates the AI candidates of the newest saved run in the background."""
+    if not await store.latest_candidates(get_supabase_service()):
+        raise HTTPException(status_code=404, detail="no_runs")
+    if not start_analysis():
+        raise HTTPException(status_code=409, detail="run_in_progress")
+    return {"started": True}

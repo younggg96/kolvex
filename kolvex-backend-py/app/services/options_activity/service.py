@@ -15,7 +15,7 @@ from zoneinfo import ZoneInfo
 from app.core.redis import get_redis
 from app.core.supabase import get_supabase_service
 from app.services.options_activity import store
-from app.services.options_activity.aggregate import build_report
+from app.services.options_activity.aggregate import build_report, candidate_pool
 from app.services.options_activity.candidates import generate_candidates
 from app.services.options_activity.collector import OptionsActivityCollector
 from app.services.options_activity.summary import summarize
@@ -91,6 +91,21 @@ class OptionsActivityService:
         logger.info("Options activity %s %s saved: %d symbols, %d failed", today, session, len(scans), len(failed))
         return {"status": "ok", "id": saved.get("id"), "data_date": data_date, "failed_symbols": failed}
 
+    async def analyze_latest(self) -> dict:
+        """Regenerates the AI candidates of the newest saved run. A failed attempt keeps a good earlier list."""
+        db = self._db_factory()
+        run = await store.get_run(db)
+        if not run:
+            raise LookupError("no_runs")
+        report = run["payload"]
+        if "candidate_contracts" not in report:  # Saved before the pool existed.
+            report = {**report, "candidate_contracts": candidate_pool(report.get("contracts") or [])}
+        fresh = await generate_candidates(report, run["session"], run.get("data_date"), llm=self._candidates_llm)
+        summary = run.get("summary") or {}
+        if fresh["status"] == "ok" or (summary.get("candidates") or {}).get("status") != "ok":
+            await store.update_summary(db, run["id"], {**summary, "candidates": fresh})
+        return {"status": fresh["status"], "reason": fresh.get("reason"), "count": len(fresh["items"])}
+
     async def tick(self, now: Optional[datetime] = None) -> Optional[dict]:
         """One scheduler step: run the due session once, retrying failures a bounded number of times."""
         if not self.collector.configured:
@@ -129,6 +144,7 @@ options_activity_service = OptionsActivityService()
 _manual_runs: set[asyncio.Task] = set()
 # Last admin-triggered run in this process, shown on the admin tab.
 manual_state: dict = {"session": None, "status": "idle", "started_at": None, "finished_at": None, "error": None, "result": None}
+analysis_state: dict = {"status": "idle", "started_at": None, "finished_at": None, "error": None, "result": None}
 
 
 def manual_run_in_progress() -> bool:
@@ -151,6 +167,28 @@ def start_manual_run(session: str, force: bool = True) -> bool:
             manual_state.update(status="failed", error=str(exc)[:500])
         finally:
             manual_state["finished_at"] = datetime.now(timezone.utc).isoformat()
+
+    task = asyncio.create_task(runner())
+    _manual_runs.add(task)
+    task.add_done_callback(_manual_runs.discard)
+    return True
+
+
+def start_analysis() -> bool:
+    """Admin trigger. Shares the manual-run slot so a new report cannot replace the one being analyzed."""
+    if manual_run_in_progress():
+        return False
+    analysis_state.update(status="running", started_at=datetime.now(timezone.utc).isoformat(),
+                          finished_at=None, error=None, result=None)
+
+    async def runner():
+        try:
+            analysis_state.update(status="done", result=await options_activity_service.analyze_latest())
+        except Exception as exc:
+            logger.exception("Options activity AI analysis failed")
+            analysis_state.update(status="failed", error=str(exc)[:500])
+        finally:
+            analysis_state["finished_at"] = datetime.now(timezone.utc).isoformat()
 
     task = asyncio.create_task(runner())
     _manual_runs.add(task)

@@ -69,6 +69,19 @@ async def list_all(db, limit: int = 20) -> list[dict]:
     )
 
 
+async def latest_candidates(db) -> Optional[dict]:
+    """The newest successful run's identity and AI candidates, for the admin tab."""
+    rows = await _execute(
+        db.table(TABLE).select("id,trade_date,session,candidates:summary->candidates").eq("status", "ok")
+        .order("trade_date", desc=True).order("run_at", desc=True).limit(1)
+    )
+    return rows[0] if rows else None
+
+
+async def update_summary(db, run_id: str, summary: dict) -> None:
+    await _execute(db.table(TABLE).update({"summary": summary}).eq("id", run_id))
+
+
 async def get_run(db, run_id: Optional[str] = None) -> Optional[dict]:
     query = db.table(TABLE).select(FULL_COLUMNS).eq("status", "ok")
     query = query.eq("id", run_id) if run_id else query.order("trade_date", desc=True).order("run_at", desc=True)

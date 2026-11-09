@@ -9,7 +9,7 @@ import CompanyLogo from "@/components/ui/company-logo";
 import { useCopy } from "@/components/decision/shared";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useTranslation } from "@/lib/i18n";
-import { barShare, formatPremium, type ActivityCandidate, type ActivityContract, type ActivityRun, type ActivitySession, type Contributor } from "@/lib/optionsActivity";
+import { barShare, formatPremium, type ActivityCandidate, type ActivityCandidates, type ActivityContract, type ActivityRun, type ActivitySession, type Contributor } from "@/lib/optionsActivity";
 import { marketStockHref } from "@/lib/stockLinks";
 import { cn } from "@/lib/utils";
 
@@ -481,9 +481,8 @@ function CandidateCard({ item }: { item: ActivityCandidate }) {
   );
 }
 
-export function ResearchCandidates({ run }: { run: ActivityRun }) {
+export function ResearchCandidates({ candidates }: { candidates?: ActivityCandidates | null }) {
   const c = useCopy();
-  const candidates = run.summary?.candidates;
   if (!candidates) return null;
   const title = c("AI research candidates", "AI 研究候选");
   return (

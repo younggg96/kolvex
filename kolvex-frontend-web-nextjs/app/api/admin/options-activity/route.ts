@@ -8,18 +8,20 @@ const SESSIONS = new Set(["pre", "intraday", "post"]);
 const ERRORS: Record<string, string> = {
   options_data_not_configured: "后端还没有配置 Alpaca API Key。",
   run_in_progress: "已有一次运行正在进行，请等它结束。",
+  no_runs: "还没有可分析的报告。",
 };
 
-/** GET → status and recent runs; POST ?session= → start a manual run. Admin rights are checked by the backend. */
+/** GET → status and recent runs; POST ?session= → start a manual run; POST ?action=analyze → AI analysis of the newest run. Admin rights are checked by the backend. */
 async function proxy(request: NextRequest) {
   const session = request.nextUrl.searchParams.get("session");
-  if (request.method === "POST" && (!session || !SESSIONS.has(session)))
+  const analyze = request.nextUrl.searchParams.get("action") === "analyze";
+  if (request.method === "POST" && !analyze && (!session || !SESSIONS.has(session)))
     return NextResponse.json({ error: "无效的运行时点。" }, { status: 400, headers });
   try {
     const supabase = await createServerSupabaseClient();
     const { data: { session: auth } } = await supabase.auth.getSession();
     if (!auth?.access_token) return NextResponse.json({ error: "请先登录。" }, { status: 401, headers });
-    const path = request.method === "POST" ? `run?session=${session}` : "status";
+    const path = request.method !== "POST" ? "status" : analyze ? "analyze" : `run?session=${session}`;
     const response = await fetch(`${API}/api/v1/admin/options-activity/${path}`, {
       method: request.method,
       headers: { Authorization: `Bearer ${auth.access_token}` },
