@@ -20,6 +20,8 @@ import type { ChatMessageListProps, ToolStatus } from "./types";
 import { Button } from "../ui/button";
 import { useTranslation } from "@/lib/i18n";
 
+const USER_SCROLL_THRESHOLD_PX = 12;
+
 // Tool category icons
 function getToolIcon(toolName: string) {
   if (toolName.includes("stock") || toolName.includes("quote") || toolName.includes("financials") || toolName.includes("history") || toolName.includes("company") || toolName.includes("analyst")) {
@@ -133,6 +135,8 @@ export function ChatMessageList({
   onRetry,
   modelName,
   symbols,
+  onUserScroll,
+  composerCollapsed = false,
 }: ChatMessageListProps) {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -176,6 +180,35 @@ export function ChatMessageList({
     container.addEventListener("scroll", handleScroll);
     return () => container.removeEventListener("scroll", handleScroll);
   }, [messages.length]);
+
+  // Reads the gesture rather than `scroll`, which also fires for streaming auto-follow.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || !onUserScroll) return;
+
+    const canScroll = () => container.scrollHeight > container.clientHeight;
+    let touchStartY: number | null = null;
+    const handleTouchStart = (event: TouchEvent) => {
+      touchStartY = event.touches[0]?.clientY ?? null;
+    };
+    const handleTouchMove = (event: TouchEvent) => {
+      const y = event.touches[0]?.clientY;
+      if (touchStartY === null || y === undefined) return;
+      if (Math.abs(y - touchStartY) > USER_SCROLL_THRESHOLD_PX && canScroll()) onUserScroll();
+    };
+    const handleWheel = (event: WheelEvent) => {
+      if (Math.abs(event.deltaY) > 0 && canScroll()) onUserScroll();
+    };
+
+    container.addEventListener("touchstart", handleTouchStart, { passive: true });
+    container.addEventListener("touchmove", handleTouchMove, { passive: true });
+    container.addEventListener("wheel", handleWheel, { passive: true });
+    return () => {
+      container.removeEventListener("touchstart", handleTouchStart);
+      container.removeEventListener("touchmove", handleTouchMove);
+      container.removeEventListener("wheel", handleWheel);
+    };
+  }, [messages.length, onUserScroll]);
 
   if (
     messages.length === 0 &&
@@ -282,7 +315,11 @@ export function ChatMessageList({
           size="icon"
           variant="outline"
           className={cn(
-            "fixed bottom-40 left-1/2 -translate-x-1/2 z-20 max-lg:bottom-[calc(var(--chat-bottom-overlay)+0.5rem)]",
+            "fixed bottom-40 left-1/2 -translate-x-1/2 z-20 max-lg:[transition:bottom_var(--spring-standard)_var(--spring)]",
+            // A collapsed composer frees its space, so the button drops level with the round one.
+            composerCollapsed
+              ? "max-lg:bottom-[calc(5.5rem+env(safe-area-inset-bottom)+24px-1.125rem)]"
+              : "max-lg:bottom-[calc(var(--chat-bottom-overlay)+0.5rem)]",
             "w-9 h-9 !rounded-full bg-background surface-overlay",
             "animate-fade-in"
           )}

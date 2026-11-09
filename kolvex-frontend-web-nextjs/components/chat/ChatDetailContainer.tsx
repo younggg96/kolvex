@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { flushSync } from "react-dom";
 import { useRouter, usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { ChatMessageList } from "./ChatMessageList";
@@ -39,6 +40,8 @@ import { WorkspacePanel } from "./workspace/WorkspacePanel";
 
 // ===== localStorage helpers for persisting chat preferences =====
 const PANEL_PREF_KEY = "kolvex:workspacePanel";
+/** Below Tailwind's lg the composer floats over the thread and can tuck itself away. */
+const FLOATING_COMPOSER_QUERY = "(max-width: 1023px)";
 const PREFS_SOURCES_KEY = "kolvex:sources";
 const PREFS_MODEL_KEY = "kolvex:model";
 const AVAILABLE_SOURCES: SearchSource[] = [
@@ -116,6 +119,7 @@ export function ChatDetailContainer({
   const pathname = usePathname();
   const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
+  const [composerTucked, setComposerTucked] = useState(false);
 
   // Resolve initial sources: URL params > localStorage > defaults
   const [activeSources, setActiveSources] = useState<SearchSource[]>(() => {
@@ -484,6 +488,34 @@ export function ChatDetailContainer({
     return [...symbols];
   }, [evidence, messages]);
 
+  // The composer stays open while it is in use, and its API-key notice can't be tucked away.
+  const keepComposerOpen = isFocused || query.trim().length > 0;
+  const composerCollapsed = composerTucked && !isBlocked;
+
+  const handleUserScroll = useCallback(() => {
+    if (keepComposerOpen || !window.matchMedia(FLOATING_COMPOSER_QUERY).matches) return;
+    setComposerTucked(true);
+  }, [keepComposerOpen]);
+
+  // Focus inside the tap so iOS raises the keyboard; the field is inert until React commits.
+  const expandComposer = useCallback(() => {
+    flushSync(() => setComposerTucked(false));
+    inputRef.current?.focus({ preventScroll: true });
+  }, []);
+
+  useEffect(() => {
+    setComposerTucked(false);
+  }, [conversationId]);
+
+  useEffect(() => {
+    const floating = window.matchMedia(FLOATING_COMPOSER_QUERY);
+    const untuckWhenDocked = () => {
+      if (!floating.matches) setComposerTucked(false);
+    };
+    floating.addEventListener("change", untuckWhenDocked);
+    return () => floating.removeEventListener("change", untuckWhenDocked);
+  }, []);
+
   const handleFormSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (isBlocked) return;
@@ -572,12 +604,18 @@ export function ChatDetailContainer({
           onRetry={streamError ? handleRetry : undefined}
           modelName={MODEL_CONFIGS.find((m) => m.id === selectedModel)?.name}
           symbols={knownSymbols}
+          onUserScroll={handleUserScroll}
+          composerCollapsed={composerCollapsed}
         />
         {/* Chat Input */}
         {/* Below lg the composer floats above the dock while messages scroll beneath both. */}
         <div
           ref={composerRef}
-          className="z-20 max-lg:pointer-events-none max-lg:absolute max-lg:inset-x-0 max-lg:bottom-[calc(5.5rem+env(safe-area-inset-bottom))] max-lg:[&_form]:pointer-events-auto lg:sticky lg:bottom-0"
+          className={cn(
+            "z-20 max-lg:pointer-events-none max-lg:absolute max-lg:inset-x-0 max-lg:bottom-[calc(5.5rem+env(safe-area-inset-bottom))] lg:sticky lg:bottom-0",
+            // Once collapsed, only the round button takes touches; the rest scrolls the thread.
+            !composerCollapsed && "max-lg:[&_form]:pointer-events-auto"
+          )}
         >
           <div className="mx-auto max-w-3xl px-4 md:pb-4 pt-2">
             {inputAction && <div className="flex justify-end pb-2 [&>*]:pointer-events-auto">{inputAction}</div>}
@@ -602,6 +640,8 @@ export function ChatDetailContainer({
               evidenceLabel={evidenceLabel}
               onClearEvidence={evidenceLabel ? clearEvidence : undefined}
               fieldClassName="min-h-24"
+              collapsed={composerCollapsed}
+              onExpand={expandComposer}
             />
           </div>
         </div>

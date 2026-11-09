@@ -1452,6 +1452,9 @@ Rules that follow from that:
   The chat composer and the mobile dock are one surface: both use
   `glass-track glass-track-strong` with 28px corners and the same neutral control
   states, and share a 16px gutter on phones.
+  Below `lg`, dragging or wheeling the thread shrinks an idle composer into a 48px
+  round button at its bottom-right; a tap reopens and focuses it. It stays open while
+  focused, holding a draft, or showing the API-key notice.
 - `Button`, `ChipButton`, `TriggerButton` and hand-written action buttons are
   glass as well. `glass-button` adds the shared glass edge and blur (outline
   buttons use that rim instead of a border), while translucent

@@ -430,6 +430,7 @@
       "apiKeyRequiredDesc": "请在设置中添加至少一个模型 API 密钥，以解锁模型选择并开始对话。",
       "settingsApiKeys": "设置 → API 密钥",
       "addApiKeyPlaceholder": "请先在设置中添加 API 密钥...",
+      "expand": "展开输入框",
       "addApiKey": "添加 API 密钥",
       "selectModel": "选择模型",
       "sources": {

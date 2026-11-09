@@ -430,6 +430,7 @@
       "apiKeyRequiredDesc": "Add at least one model API key in Settings to unlock the model dropdown and start chatting.",
       "settingsApiKeys": "Settings → API Keys",
       "addApiKeyPlaceholder": "Please add an API key in Settings first...",
+      "expand": "Open message box",
       "addApiKey": "Add API key",
       "selectModel": "Select model",
       "sources": {

@@ -9,6 +9,7 @@ import {
   Check,
   Briefcase,
   Landmark,
+  Loader2,
   Lock,
   Settings,
   Square,
@@ -260,6 +261,8 @@ export function ChatInput({
   evidenceLabel,
   onClearEvidence,
   fieldClassName,
+  collapsed = false,
+  onExpand,
 }: ChatInputProps) {
   const { t } = useTranslation();
   const inline = appearance === "inline";
@@ -389,85 +392,157 @@ export function ChatInput({
       )}
 
       {/* Main Container */}
-      <div
-        className={cn(
-          "relative flex flex-col",
-          inline
-            ? "bg-transparent"
-            : // Same material, radius and rim as the mobile dock (MobileTabBar).
-              // The rim is a shadow, so focus brightens the shadow rather than a border.
-              "glass-track glass-track-strong overflow-hidden rounded-[28px] transition-shadow duration-150 focus-within:[box-shadow:var(--glass-drop),inset_0_0_0_1px_rgb(var(--foreground)/0.35),var(--glass-sheen)]"
-        )}
-      >
-        {evidenceLabel && (
+      <div className={cn("group/composer relative", inline && "bg-transparent")}>
+        {/* The glass is its own layer so it can shrink to a circle while the content keeps
+            its size, and fading the content never touches the glass's backdrop blur. Same
+            material, radius and rim as the mobile dock (MobileTabBar). The rim is a shadow,
+            so focus brightens the shadow rather than a border. */}
+        {!inline && (
           <div
+            aria-hidden
             className={cn(
-              "flex items-center gap-2",
-              inline ? "px-0 pb-1 pt-1" : "px-4 pt-3"
+              "glass-track glass-track-strong absolute inset-0 rounded-[28px]",
+              "[transition:top_var(--spring-standard)_var(--spring),left_var(--spring-standard)_var(--spring),box-shadow_150ms]",
+              "group-focus-within/composer:[box-shadow:var(--glass-drop),inset_0_0_0_1px_rgb(var(--foreground)/0.35),var(--glass-sheen)]",
+              collapsed && "max-lg:left-[calc(100%-48px)] max-lg:top-[calc(100%-48px)]"
             )}
-          >
-            <p className="min-w-0 flex-1 truncate text-[0.8125rem] text-muted-foreground">
-              <span className="font-medium text-foreground">{t("chat.evidence.using")}</span>
-              <span className="px-1.5 text-foreground/30" aria-hidden>·</span>
-              {evidenceLabel}
-            </p>
-            {onClearEvidence && (
-              <button
-                type="button"
-                onClick={onClearEvidence}
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-none"
-                aria-label={t("chat.evidence.clear")}
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
+          />
         )}
         <div
+          // React 18 only writes `inert` as a string attribute, though the types say boolean.
+          {...(collapsed ? { inert: "" as unknown as boolean } : {})}
           className={cn(
-            // The send button floats over the end of the field when it has no footer. The
-            // textarea stays in flow, so it — not an empty column — decides the row's
-            // height: a multi-line value grows the composer instead of scrolling inside a
-            // one-line box. The field's right inset keeps the caret clear of the button,
-            // while the rows above it still use the full width.
-            "relative grid items-end gap-2.5",
-            hasFooter ? "grid-cols-1" : "max-md:grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto]",
-            inline
-              ? "pb-3 pt-1"
-              : docked
-                ? "px-5 pt-3.5"
-                : cn("px-5", evidenceLabel ? "pt-1" : "pt-4", hasFooter ? "pb-1" : "pb-3")
+            "relative flex flex-col transition-opacity",
+            !inline && "overflow-hidden rounded-[28px]",
+            collapsed
+              ? "opacity-0 duration-100"
+              : "opacity-100 delay-100 duration-200"
           )}
         >
-          <textarea
-            ref={inputRef as React.RefObject<HTMLTextAreaElement>}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onFocus={onFocus}
-            onBlur={onBlur}
-            onKeyDown={handleKeyDown}
-            placeholder={isBlocked ? t("chat.input.addApiKeyPlaceholder") : prompt}
-            disabled={isBlocked}
+          {evidenceLabel && (
+            <div
+              className={cn(
+                "flex items-center gap-2",
+                inline ? "px-0 pb-1 pt-1" : "px-4 pt-3"
+              )}
+            >
+              <p className="min-w-0 flex-1 truncate text-[0.8125rem] text-muted-foreground">
+                <span className="font-medium text-foreground">{t("chat.evidence.using")}</span>
+                <span className="px-1.5 text-foreground/30" aria-hidden>·</span>
+                {evidenceLabel}
+              </p>
+              {onClearEvidence && (
+                <button
+                  type="button"
+                  onClick={onClearEvidence}
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-none"
+                  aria-label={t("chat.evidence.clear")}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          )}
+          <div
             className={cn(
-              // The global focus-visible wash is for controls, not for the field
-              // being edited, so the composer stays one surface while typing.
-              "col-start-1 row-start-1 block w-full min-w-0 resize-none bg-transparent outline-none",
-              "text-foreground placeholder:text-muted-foreground",
-              "disabled:cursor-not-allowed disabled:opacity-50",
-              // On phones the button overlays the field's end, so reserve its width on the
-              // last line. With a footer the button lives in the footer, leaving full width.
-              !hasFooter && "max-md:pr-14",
+              // The send button floats over the end of the field when it has no footer. The
+              // textarea stays in flow, so it — not an empty column — decides the row's
+              // height: a multi-line value grows the composer instead of scrolling inside a
+              // one-line box. The field's right inset keeps the caret clear of the button,
+              // while the rows above it still use the full width.
+              "relative grid items-end gap-2.5",
+              hasFooter ? "grid-cols-1" : "max-md:grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto]",
               inline
-                ? "min-h-11 border-b-2 border-transparent text-[1.0625rem] leading-7 focus-visible:border-primary focus-visible:!bg-transparent focus-visible:outline-none"
-                : "min-h-[1.75rem] max-h-[10rem] text-base leading-relaxed focus-visible:!bg-transparent focus-visible:outline-none",
-              fieldClassName
+                ? "pb-3 pt-1"
+                : docked
+                  ? "px-5 pt-3.5"
+                  : cn("px-5", evidenceLabel ? "pt-1" : "pt-4", hasFooter ? "pb-1" : "pb-3")
             )}
-            rows={1}
-          />
+          >
+            <textarea
+              ref={inputRef as React.RefObject<HTMLTextAreaElement>}
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              onFocus={onFocus}
+              onBlur={onBlur}
+              onKeyDown={handleKeyDown}
+              placeholder={isBlocked ? t("chat.input.addApiKeyPlaceholder") : prompt}
+              disabled={isBlocked}
+              className={cn(
+                // The global focus-visible wash is for controls, not for the field
+                // being edited, so the composer stays one surface while typing.
+                "col-start-1 row-start-1 block w-full min-w-0 resize-none bg-transparent outline-none",
+                "text-foreground placeholder:text-muted-foreground",
+                "disabled:cursor-not-allowed disabled:opacity-50",
+                // On phones the button overlays the field's end, so reserve its width on the
+                // last line. With a footer the button lives in the footer, leaving full width.
+                !hasFooter && "max-md:pr-14",
+                inline
+                  ? "min-h-11 border-b-2 border-transparent text-[1.0625rem] leading-7 focus-visible:border-primary focus-visible:!bg-transparent focus-visible:outline-none"
+                  : "min-h-[1.75rem] max-h-[10rem] text-base leading-relaxed focus-visible:!bg-transparent focus-visible:outline-none",
+                fieldClassName
+              )}
+              rows={1}
+            />
 
-          {/* Send Button - floats at the field's end on phones, its own column on desktop. */}
-          {!hasFooter && (
-            <div className="col-start-1 row-start-1 justify-self-end self-end md:col-start-2">
+            {/* Send Button - floats at the field's end on phones, its own column on desktop. */}
+            {!hasFooter && (
+              <div className="col-start-1 row-start-1 justify-self-end self-end md:col-start-2">
+                <SendButton
+                  disabled={isSendDisabled}
+                  isLoading={isLoading}
+                  onCancel={onCancel}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Footer - show when source toggle or model selector is enabled */}
+          {hasFooter && (
+            <div
+              className={cn(
+                "flex items-center justify-between gap-2",
+                inline
+                  ? "border-t border-border px-0 py-2"
+                  : "px-2.5 pb-2.5 pt-1"
+              )}
+            >
+              {/* Left Side - Source Toggles & Model Selector */}
+              <div className={cn("flex min-w-0 flex-wrap items-center gap-0.5", inline && "-ml-3")}>
+                {/* Source Toggles */}
+                {showSourceToggle && onToggleSource && (
+                  <>
+                    {sourceConfig.map(({ source, icon, label }) => (
+                      <SourceChip
+                        key={source}
+                        icon={icon}
+                        label={label}
+                        active={activeSources.includes(source)}
+                        onClick={() => onToggleSource(source)}
+                      />
+                    ))}
+                  </>
+                )}
+
+                {/* Divider */}
+                {showSourceToggle &&
+                  onToggleSource &&
+                  showModelSelector &&
+                  onSelectModel && (
+                    <div className="mx-1 h-4 w-px bg-foreground/15" aria-hidden />
+                  )}
+
+                {/* Model Selector */}
+                {showModelSelector && onSelectModel && (
+                  <ModelSelector
+                    selectedModel={selectedModel}
+                    onSelectModel={onSelectModel}
+                    availableProviders={availableProviders}
+                  />
+                )}
+              </div>
+
+              {/* Send Button */}
               <SendButton
                 disabled={isSendDisabled}
                 isLoading={isLoading}
@@ -477,57 +552,32 @@ export function ChatInput({
           )}
         </div>
 
-        {/* Footer - show when source toggle or model selector is enabled */}
-        {hasFooter && (
+        {onExpand && (
           <div
             className={cn(
-              "flex items-center justify-between gap-2",
-              inline
-                ? "border-t border-border px-0 py-2"
-                : "px-2.5 pb-2.5 pt-1"
+              "absolute bottom-0 right-0 transition-[opacity,transform] duration-200 lg:hidden",
+              collapsed
+                ? "pointer-events-auto scale-100 opacity-100 delay-100"
+                : "pointer-events-none scale-50 opacity-0"
             )}
           >
-            {/* Left Side - Source Toggles & Model Selector */}
-            <div className={cn("flex min-w-0 flex-wrap items-center gap-0.5", inline && "-ml-3")}>
-              {/* Source Toggles */}
-              {showSourceToggle && onToggleSource && (
-                <>
-                  {sourceConfig.map(({ source, icon, label }) => (
-                    <SourceChip
-                      key={source}
-                      icon={icon}
-                      label={label}
-                      active={activeSources.includes(source)}
-                      onClick={() => onToggleSource(source)}
-                    />
-                  ))}
-                </>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={onExpand}
+              tabIndex={collapsed ? 0 : -1}
+              aria-hidden={!collapsed}
+              aria-label={t("chat.input.expand")}
+              title={t("chat.input.expand")}
+              className="h-[48px] w-[48px] rounded-full text-foreground"
+            >
+              {isLoading ? (
+                <Loader2 className="h-[1.125rem] w-[1.125rem] animate-spin" />
+              ) : (
+                <ArrowUp className="h-[1.125rem] w-[1.125rem]" strokeWidth={2.5} />
               )}
-
-              {/* Divider */}
-              {showSourceToggle &&
-                onToggleSource &&
-                showModelSelector &&
-                onSelectModel && (
-                  <div className="mx-1 h-4 w-px bg-foreground/15" aria-hidden />
-                )}
-
-              {/* Model Selector */}
-              {showModelSelector && onSelectModel && (
-                <ModelSelector
-                  selectedModel={selectedModel}
-                  onSelectModel={onSelectModel}
-                  availableProviders={availableProviders}
-                />
-              )}
-            </div>
-
-            {/* Send Button */}
-            <SendButton
-              disabled={isSendDisabled}
-              isLoading={isLoading}
-              onCancel={onCancel}
-            />
+            </Button>
           </div>
         )}
       </div>

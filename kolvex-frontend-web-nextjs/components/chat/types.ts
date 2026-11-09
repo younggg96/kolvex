@@ -86,6 +86,9 @@ export interface ChatInputProps {
   onClearEvidence?: () => void;
   /** Extra classes for the typing area, e.g. a type size where it leads a surface. */
   fieldClassName?: string;
+  /** Below lg, shrink the composer into a round button at its bottom-right corner. */
+  collapsed?: boolean;
+  onExpand?: () => void;
 }
 
 export interface ChatBubbleProps {
@@ -174,4 +177,8 @@ export interface ChatMessageListProps {
   modelName?: string;
   /** Symbols this conversation already knows; their mentions get a logo and a link. */
   symbols?: string[];
+  /** The reader dragged or wheeled the list; programmatic scrolling does not count. */
+  onUserScroll?: () => void;
+  /** Lets the scroll-to-bottom button use the space a collapsed composer frees. */
+  composerCollapsed?: boolean;
 }
