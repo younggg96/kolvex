@@ -108,7 +108,7 @@ export function ChatWelcome({
       appearance={compact ? "inline" : dock ? "docked" : "panel"}
       activeSources={activeSources}
       onToggleSource={onToggleSource}
-      showSourceToggle={true}
+      showSourceToggle={!dock}
       showModelSelector={!!onSelectModel}
       selectedModel={selectedModel}
       onSelectModel={onSelectModel}
@@ -116,7 +116,7 @@ export function ChatWelcome({
       availableProviders={availableProviders}
       evidenceLabel={evidenceLabel}
       onClearEvidence={onClearEvidence}
-      fieldClassName={dock ? "text-[0.9375rem] leading-6" : undefined}
+      fieldClassName={dock ? "min-h-24 text-[0.9375rem] leading-6" : undefined}
     />
   );
 

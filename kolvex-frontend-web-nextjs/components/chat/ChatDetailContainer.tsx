@@ -564,13 +564,14 @@ export function ChatDetailContainer({
               placeholder={t("chat.input.placeholder")}
               activeSources={activeSources}
               onToggleSource={toggleSource}
-              showSourceToggle={true}
+              showSourceToggle={false}
               showModelSelector={true}
               selectedModel={selectedModel}
               onSelectModel={(model) => setSelectedModel(model)}
               availableProviders={availableProviders}
               evidenceLabel={evidenceLabel}
               onClearEvidence={evidenceLabel ? clearEvidence : undefined}
+              fieldClassName="min-h-24"
             />
           </div>
         </div>

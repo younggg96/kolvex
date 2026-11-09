@@ -115,7 +115,7 @@ function ModelSelector({
           ) : (
             <Lock className="w-3.5 h-3.5 text-muted-foreground" />
           )}
-          <span className="hidden sm:inline">
+          <span className="max-w-[55vw] truncate text-left sm:max-w-none">
             {triggerLabel}
           </span>
           <ChevronDown className="w-3 h-3 text-muted-foreground" />
