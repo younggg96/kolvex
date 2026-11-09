@@ -11,7 +11,7 @@ html {
 
 /* Phones: a denser rem scale so more of each screen fits. Every Tailwind size is rem-based, so
    text, spacing and control heights shrink together (14/16 = 87.5%). Fields below are a fixed
-   14px, and the smallest labels get pixel floors so they stay legible. */
+   16px, and the smallest labels get pixel floors so they stay legible. */
 @media (max-width: 639.98px) {
   html {
     font-size: 14px;
@@ -85,10 +85,9 @@ html {
   }
 }
 
-/* One size for entered text on phones and touch devices, so a field's own
-   Tailwind size utility cannot make it oversized or, with the 14px phone root,
-   too small. iOS zooms focused fields below 16 CSS px; IosInputZoomGuard turns
-   that off. The font override must win over field-specific size utilities. */
+/* One size for entered text on phones and touch devices. iOS zooms the page when
+   a field under 16 CSS px takes focus, and browsers that ignore maximum-scale zoom
+   regardless, so 16px is the floor. It must win over field-specific size utilities. */
 @media (max-width: 767px), (any-pointer: coarse) {
   input:not(:where([type="hidden"], [type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"], [type="button"], [type="submit"], [type="reset"], [type="image"])),
   textarea,
@@ -96,7 +95,7 @@ html {
   [contenteditable=""],
   [contenteditable="true"],
   [contenteditable="plaintext-only"] {
-    font-size: 14px !important;
+    font-size: 16px !important;
     line-height: 1.5;
   }
 
