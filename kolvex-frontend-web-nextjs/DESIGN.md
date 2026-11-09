@@ -129,16 +129,17 @@ instruments. Lines use `--compare-1` to `--compare-5`, which mark identity and d
 direction hues. The order passed the palette validator in both themes, so do not reorder it, and a symbol keeps its
 color while selected. Daily series are unavailable in the 1D range because they have no intraday line.
 Editable controls are a fixed-pixel exception: `app/globals.css` owns a
-16px input font and a 44px minimum single-line field height on narrow screens
+14px input font and a 44px minimum single-line field height on narrow screens
 and touch devices, including landscape. This covers shared Input, SearchInput,
-Textarea and native fields, selects and editable regions, preventing iOS focus
-zoom despite local text utilities. Non-text input types
+Textarea and native fields, selects and editable regions, whatever their local
+text utilities. iOS would zoom a focused field below 16px, so
+`IosInputZoomGuard` sets `maximum-scale=1` on iOS and iPadOS only. Non-text input types
 retain their own geometry; textareas retain their existing height/autogrow behavior.
-Desktop pointer layouts retain their existing type sizes, and the viewport keeps
-manual page zoom available. On narrow screens and touch devices, input and
-textarea placeholders use 14px text so empty fields read as quiet hints rather
-than oversized labels; entered text retains the 16px focus-safe size. These
-values share the global editable-control media rule, including auth and search.
+Desktop pointer layouts retain their existing type sizes, and manual page zoom
+stays available: iOS honours pinch zoom despite that limit, and other platforms
+keep `maximum-scale=5`. Placeholders inherit the same 14px, so text does not change
+size when typing starts. These values share the global editable-control media
+rule, including auth and search.
 Published
 reports stay within 1080px; Creator Opinions retains a wider two-column layout.
 

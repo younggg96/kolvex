@@ -1144,40 +1144,49 @@ export default function ChartView({
     </div>
   );
   const aiSettingsButtonClass = cn(aiActionClass, advanced ? "!w-11 px-0" : "!w-11 px-0 sm:!w-auto sm:px-3");
+  const onAiSettingsOpenChange = (open: boolean) => {
+    setSettingsOpen(open);
+    if (open) void refreshProviders();
+    else setPendingRun(null);
+  };
+  /** Mounted by the advanced controls and by the standard layout, whose "choose a model" button needs it too. */
+  const aiSettingsDialogContent = (
+    <DialogContent layout="sheet" showCloseButton={false} className="flex flex-col" onEscapeKeyDown={(event) => event.stopPropagation()}>
+      <DialogHeader>
+        <DialogTitle>{t("youtubeOpinions.ai.chartSettings")}</DialogTitle>
+        <DialogDescription>{aiSettingsDescription}</DialogDescription>
+      </DialogHeader>
+      <DialogClose asChild>
+        <Button type="button" variant="ghost" size="icon" className="absolute right-2 top-2 min-h-11 min-w-11" aria-label={t("common.close")}>
+          <X className="h-4 w-4" aria-hidden="true" />
+        </Button>
+      </DialogClose>
+      <div className="mt-2 min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain pb-2">
+        {aiSettings}
+      </div>
+      {aiSettingsFooter({
+        back: () => setSettingsOpen(false),
+        close: () => setSettingsOpen(false),
+        start: () => {
+          const operation = pendingRun;
+          setSettingsOpen(false);
+          setPendingRun(null);
+          if (operation) void runAi(operation);
+        },
+      })}
+    </DialogContent>
+  );
   const aiControls = (
     <div className="min-w-0" role="group" aria-label={t("youtubeOpinions.ai.actions")}>
       {aiActionsRow(
-        <Dialog open={settingsOpen} onOpenChange={(open) => { setSettingsOpen(open); if (open) void refreshProviders(); else setPendingRun(null); }}>
+        <Dialog open={settingsOpen} onOpenChange={onAiSettingsOpenChange}>
           <DialogTrigger asChild>
             <Button type="button" size="sm" variant="outline" aria-label={t("youtubeOpinions.ai.chartSettings")} title={t("youtubeOpinions.ai.chartSettings")} className={aiSettingsButtonClass}>
               <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
               <span className={cn(advanced ? "sr-only" : "sr-only sm:not-sr-only")}>{t("youtubeOpinions.ai.chartSettings")}</span>
             </Button>
           </DialogTrigger>
-          <DialogContent layout="sheet" showCloseButton={false} className="flex flex-col" onEscapeKeyDown={(event) => event.stopPropagation()}>
-            <DialogHeader>
-              <DialogTitle>{t("youtubeOpinions.ai.chartSettings")}</DialogTitle>
-              <DialogDescription>{aiSettingsDescription}</DialogDescription>
-            </DialogHeader>
-            <DialogClose asChild>
-              <Button type="button" variant="ghost" size="icon" className="absolute right-2 top-2 min-h-11 min-w-11" aria-label={t("common.close")}>
-                <X className="h-4 w-4" aria-hidden="true" />
-              </Button>
-            </DialogClose>
-            <div className="mt-2 min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain pb-2">
-              {aiSettings}
-            </div>
-            {aiSettingsFooter({
-              back: () => setSettingsOpen(false),
-              close: () => setSettingsOpen(false),
-              start: () => {
-                const operation = pendingRun;
-                setSettingsOpen(false);
-                setPendingRun(null);
-                if (operation) void runAi(operation);
-              },
-            })}
-          </DialogContent>
+          {aiSettingsDialogContent}
         </Dialog>,
       )}
     </div>
@@ -2047,6 +2056,7 @@ export default function ChartView({
 
         {!advanced && compactFooter && <div className="mt-3 mb-6 flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1">{compactFooter}</div>}
 
+        {showAi && !advanced && <Dialog open={settingsOpen} onOpenChange={onAiSettingsOpenChange}>{aiSettingsDialogContent}</Dialog>}
         {showAi && !advanced &&
           compactLayout !== "workspace" &&
           (resultsContainer ? createPortal(aiResults, resultsContainer) : aiResults)}
