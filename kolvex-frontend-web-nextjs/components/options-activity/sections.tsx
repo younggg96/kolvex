@@ -30,8 +30,8 @@ const optionsHref = (symbol: string) => `${marketStockHref(symbol)}?tab=options`
 
 function SectionHeader({ title, note }: { title: string; note?: string }) {
   return (
-    <div className="mb-4">
-      <h2 className="flex items-center gap-2 text-xl font-semibold">
+    <div className="mb-3.5">
+      <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight sm:text-xl">
         {title}
         {note && <InfoTip label={title}>{note}</InfoTip>}
       </h2>
@@ -62,7 +62,7 @@ export function SummaryCard({ run }: { run: ActivityRun }) {
   const sentimentLabel = { bullish: c("Call-heavy", "偏多"), bearish: c("Put-heavy", "偏空"), mixed: c("Mixed", "分歧") };
 
   return (
-    <section aria-labelledby="activity-summary" className="rounded-lg border border-border bg-card p-5 md:p-6">
+    <section aria-labelledby="activity-summary" className="rounded-3xl border border-foreground/10 glass-card bg-card-glass p-5 md:p-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 id="activity-summary" className="text-lg font-semibold">
           {c("Key points", "重点摘要")}
@@ -124,47 +124,49 @@ export function MarketOverview({ run }: { run: ActivityRun }) {
   return (
     <section aria-labelledby="activity-market">
       <SectionHeader title={c("Market overview", "市场概览")} note={c(`${m.tickers_scanned} symbols, contracts within ±15% of price and 45 days`, `${m.tickers_scanned} 个标的，现价 ±15%、45 天内到期的合约`)} />
-      <dl className="grid grid-cols-2 gap-6 border-b border-border pb-6 lg:grid-cols-4">
-        {figures.map(([label, value, className]) => (
-          <div key={label} className="min-w-0">
-            <dt className="text-xs text-muted-foreground">{label}</dt>
-            <dd className={cn("figure mt-2 text-lg font-semibold", className)}>{value}</dd>
-          </div>
-        ))}
-      </dl>
-      <div className="mt-4 flex flex-wrap gap-2 text-xs">
-        {vsBaseline !== null && (
-          <span className="rounded-full bg-muted px-2.5 py-1">
-            {c("P/C vs baseline", "P/C 较基线")}{" "}
-            <span className={cn("figure", vsBaseline > 0 ? "text-negative" : "text-positive")}>{pct(vsBaseline * 100, true)}</span>
-            <span className="text-muted-foreground">
-              {" "}
-              ({c(`median of last ${m.baseline_runs} runs`, `前 ${m.baseline_runs} 次同时段中位数`)} {fixed(m.pc_baseline)})
+      <div className="rounded-3xl border border-foreground/10 glass-card bg-card-glass p-4 sm:p-6">
+        <dl className="grid grid-cols-2 gap-6 border-b border-border pb-6 lg:grid-cols-4">
+          {figures.map(([label, value, className]) => (
+            <div key={label} className="min-w-0">
+              <dt className="text-xs text-muted-foreground">{label}</dt>
+              <dd className={cn("figure mt-2 text-lg font-semibold", className)}>{value}</dd>
+            </div>
+          ))}
+        </dl>
+        <div className="mt-4 flex flex-wrap gap-2 text-xs">
+          {vsBaseline !== null && (
+            <span className="rounded-full bg-muted px-2.5 py-1">
+              {c("P/C vs baseline", "P/C 较基线")}{" "}
+              <span className={cn("figure", vsBaseline > 0 ? "text-negative" : "text-positive")}>{pct(vsBaseline * 100, true)}</span>
+              <span className="text-muted-foreground">
+                {" "}
+                ({c(`median of last ${m.baseline_runs} runs`, `前 ${m.baseline_runs} 次同时段中位数`)} {fixed(m.pc_baseline)})
+              </span>
             </span>
+          )}
+          <span className="rounded-full bg-muted px-2.5 py-1">
+            ETF <span className={cn("figure", tone(m.etf_net_premium))}>{formatPremium(m.etf_net_premium, true)}</span>
           </span>
-        )}
-        <span className="rounded-full bg-muted px-2.5 py-1">
-          ETF <span className={cn("figure", tone(m.etf_net_premium))}>{formatPremium(m.etf_net_premium, true)}</span>
-        </span>
-        <span className="rounded-full bg-muted px-2.5 py-1">
-          {c("Stocks", "个股")} <span className={cn("figure", tone(m.stock_net_premium))}>{formatPremium(m.stock_net_premium, true)}</span>
-        </span>
-      </div>
-      {series.length > 1 && (
-        <div className="mt-6 h-56" role="img" aria-label={c("Call and put premium by run today", "今日各时点 Call 与 Put 成交额")}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={series} margin={{ top: 4, right: 8, bottom: 0, left: 8 }}>
-              <CartesianGrid vertical={false} stroke="rgb(var(--border))" strokeOpacity={0.5} />
-              <XAxis dataKey="name" tickLine={false} axisLine={false} fontSize={12} />
-              <YAxis tickFormatter={(v) => formatPremium(v)} tickLine={false} axisLine={false} fontSize={12} width={64} />
-              <Tooltip formatter={(v: number) => formatPremium(v)} cursor={{ fill: "rgb(var(--positive) / 0.04)" }} />
-              <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
-              <Bar dataKey="call" name="Call" fill="rgb(var(--positive-fill))" radius={[3, 3, 0, 0]} />
-              <Bar dataKey="put" name="Put" fill="rgb(var(--negative-fill))" radius={[3, 3, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <span className="rounded-full bg-muted px-2.5 py-1">
+            {c("Stocks", "个股")} <span className={cn("figure", tone(m.stock_net_premium))}>{formatPremium(m.stock_net_premium, true)}</span>
+          </span>
         </div>
-      )}
+        {series.length > 1 && (
+          <div className="mt-6 h-56" role="img" aria-label={c("Call and put premium by run today", "今日各时点 Call 与 Put 成交额")}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={series} margin={{ top: 4, right: 8, bottom: 0, left: 8 }}>
+                <CartesianGrid vertical={false} stroke="rgb(var(--border))" strokeOpacity={0.5} />
+                <XAxis dataKey="name" tickLine={false} axisLine={false} fontSize={12} />
+                <YAxis tickFormatter={(v) => formatPremium(v)} tickLine={false} axisLine={false} fontSize={12} width={64} />
+                <Tooltip formatter={(v: number) => formatPremium(v)} cursor={{ fill: "rgb(var(--positive) / 0.04)" }} />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+                <Bar dataKey="call" name="Call" fill="rgb(var(--positive-fill))" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="put" name="Put" fill="rgb(var(--negative-fill))" radius={[3, 3, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
     </section>
   );
 }
@@ -197,7 +199,7 @@ export function ContributionBoard({ run }: { run: ActivityRun }) {
   return (
     <section aria-labelledby="activity-board">
       <SectionHeader title={c("Net premium leaders", "净权利金贡献榜")} note={c("Net = call premium − put premium, per symbol", "每个标的的 Call 成交额 − Put 成交额")} />
-      <div className="rounded-lg border border-border p-4 md:p-5">
+      <div className="rounded-3xl border border-foreground/10 glass-card bg-card-glass p-4 md:p-5">
         <div className="mb-2 flex justify-between text-xs">
           <span className="text-negative">◀ {c("Put-heavy", "负贡献")} {formatPremium(negative_total, true)}</span>
           <span className="text-positive">{c("Call-heavy", "正贡献")} {formatPremium(positive_total, true)} ▶</span>
@@ -226,7 +228,7 @@ function ContractRow({ item, max }: { item: ActivityContract; max: number }) {
   const call = item.type === "call";
   const expiry = item.expiration.slice(5).replace("-", "/");
   return (
-    <li className="overflow-hidden rounded-lg border border-border">
+    <li className="overflow-hidden rounded-2xl border border-foreground/10 glass-card bg-card-glass transition-[border-color] duration-150 hover:border-foreground/20">
       <button
         type="button"
         aria-expanded={open}
@@ -259,7 +261,7 @@ function ContractRow({ item, max }: { item: ActivityContract; max: number }) {
         <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} />
       </button>
       {open && (
-        <div className="border-t border-border px-4 py-3">
+        <div className="border-t border-border bg-foreground/[0.02] px-4 py-4">
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-4">
             {([
               [c("Volume", "成交量"), item.volume.toLocaleString()],
@@ -330,9 +332,9 @@ export function TickerLevels({ run }: { run: ActivityRun }) {
           "期权隐含区间不是走势预测。Gamma 价位是做市商 Gamma 暴露最大的行权价；Max Pain 取持仓量最大的到期日。",
         )}
       />
-      <div className="overflow-x-auto rounded-lg border border-border">
+      <div className="overflow-x-auto rounded-3xl border border-foreground/10 glass-card bg-card-glass">
         <table className="w-full min-w-[760px] text-sm">
-          <thead className="bg-muted/50 text-xs text-muted-foreground">
+          <thead className="bg-foreground/[0.03] text-xs text-muted-foreground">
             <tr>
               {[c("Symbol", "标的"), c("Price", "现价"), c("Net premium", "净权利金"), c("P/C (baseline)", "P/C（基线）"), c("Implied range", "隐含区间"), "Max Pain", c("Gamma level", "Gamma 价位"), c("Earnings", "财报")].map(
                 (label, index) => (
@@ -345,7 +347,7 @@ export function TickerLevels({ run }: { run: ActivityRun }) {
           </thead>
           <tbody>
             {tickers.map((t) => (
-              <tr key={t.symbol} className="border-t border-border">
+              <tr key={t.symbol} className="border-t border-border transition-colors hover:bg-foreground/[0.03]">
                 <th scope="row" className="px-3 py-2 text-left font-semibold">
                   <Link href={optionsHref(t.symbol)} className="hover:underline">
                     {t.symbol}

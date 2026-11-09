@@ -1137,7 +1137,7 @@ html[data-chat-history-open] .app-workbench .app-sidebar {
   --glass-rim: rgb(255 255 255 / 0.13);
   --glass-highlight: rgb(255 255 255 / 0.22);
   --glass-lowlight: rgb(255 255 255 / 0.06);
-  --glass-control: rgb(255 255 255 / 0.08);
+  --glass-control: rgba(0, 0, 0, 0.1);
   --glass-drop: 0 10px 28px -12px rgb(0 0 0 / 0.6);
   --glass-recess: inset 0 1px 2px rgb(0 0 0 / 0.3);
   --glass-sheen: inset 0 1px 0 var(--glass-highlight), inset 0 -1px 0 var(--glass-lowlight);
@@ -1343,7 +1343,7 @@ html[data-chat-history-open] .app-workbench .app-sidebar {
 }
 
 .dark {
-  --card-glass: rgba(24, 24, 24);
+  --card-glass: rgba(0, 0, 0, 0.4);
   --card-glass-strong: rgb(30 30 32 / 0.78);
 }
 

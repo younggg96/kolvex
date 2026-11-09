@@ -2,7 +2,7 @@
 
 import { InfoTip } from "@/components/ui/info-tip";
 import { useState } from "react";
-import { Loader2, RefreshCw } from "lucide-react";
+import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useCopy } from "@/components/decision/shared";
 import { Button } from "@/components/ui/button";
@@ -69,11 +69,19 @@ export default function OptionsActivityPage() {
     <DashboardLayout title={c("Options activity", "期权异动")}>
       <div className="min-h-0 flex-1 overflow-y-auto bg-background dark:bg-transparent">
         <div className="mx-auto max-w-6xl px-[16px] pb-12 pt-4 md:px-8 md:py-8">
-          <header className="mb-6 flex flex-wrap items-end justify-between gap-4 md:mb-8">
+          <header className="mb-8 flex flex-col gap-5 md:mb-10 md:flex-row md:items-end md:justify-between">
             <div className="min-w-0">
-              <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight md:text-[2rem]">{c("Options activity", "期权异动")}<InfoTip label={c("About options activity", "关于期权异动")}>{c("Where options money traded across a watchlist of liquid ETFs and stocks, three times each trading day. A starting point for research, not a trading signal.", "每个交易日三次，扫描一组高流动性 ETF 和个股的期权成交，看资金集中在哪里。这是研究的起点，不是交易信号。")}</InfoTip></h1>
+              <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight md:text-[2rem]">
+                {c("Options activity", "期权异动")}
+                <InfoTip label={c("About options activity", "关于期权异动")}>
+                  {c("Where options money traded across a watchlist of liquid ETFs and stocks, three times each trading day. A starting point for research, not a trading signal.", "每个交易日三次，扫描一组高流动性 ETF 和个股的期权成交，看资金集中在哪里。这是研究的起点，不是交易信号。")}
+                </InfoTip>
+              </h1>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                {c("A daily view of options positioning across liquid ETFs and stocks.", "每日追踪高流动性 ETF 与个股的期权资金分布。")}
+              </p>
             </div>
-            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+            <div className="flex w-full flex-wrap items-center gap-2 rounded-3xl border border-foreground/10 glass-card bg-card-glass p-2 sm:w-auto sm:flex-nowrap">
               <div className="min-w-0 flex-1 sm:w-48 sm:flex-none">
                 <Select
                   value={activeDate ?? ""}
@@ -83,7 +91,7 @@ export default function OptionsActivityPage() {
                   }}
                   disabled={!list.data?.dates.length}
                 >
-                  <SelectTrigger aria-label={c("Trading day", "交易日")}>
+                  <SelectTrigger aria-label={c("Trading day", "交易日")} className="h-10 border-foreground/10 bg-foreground/[0.04]">
                     <SelectValue placeholder={c("Trading day", "交易日")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -112,7 +120,9 @@ export default function OptionsActivityPage() {
               <Button
                 variant="ghost"
                 size="icon"
+                className="shrink-0"
                 aria-label={c("Refresh", "刷新")}
+                title={c("Refresh", "刷新")}
                 onClick={() => {
                   list.refresh();
                   run.refresh();
@@ -124,7 +134,7 @@ export default function OptionsActivityPage() {
           </header>
 
           {data ? (
-            <div className="space-y-10">
+            <div className="space-y-8 md:space-y-10">
               <SummaryCard run={data} />
               <MarketOverview run={data} />
               <ContributionBoard run={data} />
@@ -132,19 +142,38 @@ export default function OptionsActivityPage() {
               <TickerLevels run={data} />
             </div>
           ) : failure && !run.loading ? (
-            <div className="rounded-lg border border-border px-6 py-10 text-center text-sm text-muted-foreground">
-              <p>{errorText[failure] ?? errorText.unavailable}</p>
+            <div role="alert" className="flex min-h-44 flex-col items-center justify-center rounded-3xl border border-foreground/10 glass-card bg-card-glass px-6 py-10 text-center">
+              <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                <AlertCircle className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <p className="max-w-lg text-sm leading-6 text-muted-foreground">{errorText[failure] ?? errorText.unavailable}</p>
               {failure === "unavailable" && (
-                <Button variant="outline" size="sm" className="mt-4" onClick={run.refresh}>
+                <Button variant="outline" size="sm" className="mt-5" onClick={run.refresh}>
                   {c("Try again", "重试")}
                 </Button>
               )}
             </div>
           ) : (
-            <div className="space-y-6" aria-busy="true">
-              <Skeleton className="h-32 w-full" />
-              <Skeleton className="h-56 w-full" />
-              <Skeleton className="h-72 w-full" />
+            <div className="space-y-8 md:space-y-10" aria-busy="true" role="status" aria-label={c("Loading options activity", "正在加载期权异动")}>
+              <div className="space-y-4 rounded-3xl border border-foreground/10 glass-card bg-card-glass p-5 md:p-6">
+                <Skeleton className="h-5 w-32 rounded-md" />
+                <div className="space-y-3">
+                  <Skeleton className="h-4 w-full rounded-md" />
+                  <Skeleton className="h-4 w-5/6 rounded-md" />
+                  <Skeleton className="h-4 w-2/3 rounded-md" />
+                </div>
+                <Skeleton className="h-3 w-48 rounded-md" />
+              </div>
+              <div className="space-y-5">
+                <Skeleton className="h-6 w-40 rounded-md" />
+                <div className="grid grid-cols-2 gap-4 rounded-3xl border border-foreground/10 glass-card bg-card-glass p-5 sm:grid-cols-4 md:p-6">
+                  {[0, 1, 2, 3].map((item) => <div key={item} className="space-y-2"><Skeleton className="h-3 w-20 rounded-md" /><Skeleton className="h-6 w-24 rounded-md" /></div>)}
+                </div>
+              </div>
+              <div className="space-y-4">
+                <Skeleton className="h-6 w-44 rounded-md" />
+                <div className="space-y-2">{[0, 1, 2, 3].map((item) => <Skeleton key={item} className="h-14 w-full rounded-2xl" />)}</div>
+              </div>
             </div>
           )}
         </div>
