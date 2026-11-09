@@ -97,9 +97,10 @@ export default function OptionsActivityPage() {
   return (
     <DashboardLayout title={c("Options activity", "期权异动")}>
       <div className="min-h-0 flex-1 overflow-y-auto bg-background dark:bg-transparent">
-        <div className="mx-auto max-w-6xl px-[16px] pb-12 pt-4 md:px-8 md:py-8">
-          <header className="mb-8 flex flex-col gap-5 md:mb-10 md:flex-row md:items-end md:justify-between">
-            <div className="min-w-0">
+        <div className="mx-auto max-w-6xl px-[16px] pb-12 pt-3 max-md:flex max-md:flex-col md:px-8 md:py-8">
+          {/* On phones the header dissolves so the toolbar can lead the page and stay pinned while it scrolls. */}
+          <header className="flex flex-col gap-5 max-md:contents md:mb-10 md:flex-row md:items-end md:justify-between">
+            <div className="min-w-0 max-md:mb-[16px]">
               <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight md:text-[2rem]">
                 {c("Options activity", "期权异动")}
                 <InfoTip label={c("About options activity", "关于期权异动")}>
@@ -107,7 +108,7 @@ export default function OptionsActivityPage() {
                 </InfoTip>
               </h1>
             </div>
-            <div className="flex w-full flex-wrap items-center gap-2 rounded-3xl border border-foreground/10 glass-card bg-card-glass p-2 sm:w-auto sm:flex-nowrap">
+            <div className="glass-track glass-track-strong flex w-full flex-wrap items-center gap-2 rounded-3xl border p-2 max-md:sticky max-md:top-[max(0.75rem,env(safe-area-inset-top))] max-md:z-30 max-md:order-first max-md:mb-[16px] max-md:rounded-[28px] sm:w-auto sm:flex-nowrap">
               <div className="min-w-0 flex-1 sm:w-48 sm:flex-none">
                 <Select
                   value={activeDate ?? ""}

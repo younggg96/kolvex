@@ -201,7 +201,7 @@ export function ChatMessageList({
 
   return (
     <div ref={containerRef} className="relative flex-1 overflow-y-auto">
-      <div className="mx-auto flex min-h-full max-w-3xl flex-col justify-end px-[16px] py-6 md:px-6">
+      <div className="mx-auto flex min-h-full max-w-3xl flex-col justify-end px-[16px] py-6 max-lg:pb-[calc(var(--chat-bottom-overlay)+1rem)] max-lg:pt-[calc(var(--chat-top-overlay)+1rem)] md:px-6">
         {/* Messages */}
         <div className="space-y-8">
           {messages.map((message, index) => (
@@ -282,7 +282,7 @@ export function ChatMessageList({
           size="icon"
           variant="outline"
           className={cn(
-            "fixed bottom-40 left-1/2 -translate-x-1/2 z-20",
+            "fixed bottom-40 left-1/2 -translate-x-1/2 z-20 max-lg:bottom-[calc(var(--chat-bottom-overlay)+0.5rem)]",
             "w-9 h-9 !rounded-full bg-background surface-overlay",
             "animate-fade-in"
           )}

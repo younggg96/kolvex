@@ -28,7 +28,7 @@ export function ChatHistorySheet({ className }: { className?: string }) {
           <History className="h-4 w-4" aria-hidden="true" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" closeLabel={copy("Close", "关闭")} className="flex w-[85%] flex-col pb-[env(safe-area-inset-bottom)] sm:max-w-sm">
+      <SheetContent side="left" closeLabel={copy("Close", "关闭")} className="flex w-[85%] flex-col overflow-hidden rounded-r-[28px] pb-[env(safe-area-inset-bottom)] sm:max-w-sm">
         <SheetTitle className="px-5 pb-2 pt-[max(1.25rem,env(safe-area-inset-top))] text-base font-semibold">{copy("Chat history", "历史对话")}</SheetTitle>
         <div className="min-h-0 flex-1 pr-2">
           <ChatSidebarContent enabled={open} onNavigate={() => setOpen(false)} />

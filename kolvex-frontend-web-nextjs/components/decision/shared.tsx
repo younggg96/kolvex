@@ -88,7 +88,7 @@ export function Panel({
 }) {
   return (
     <section id={id} aria-labelledby={id ? `${id}-title` : undefined} className={cn("min-w-0", className)}>
-      <header className={cn("flex flex-wrap items-end justify-between gap-x-4 gap-y-2", title && (surface === "card" ? "mb-3 min-h-14 items-center" : "border-b border-border pb-3"))}>
+      <header className={cn("flex flex-wrap items-end justify-between gap-x-4 gap-y-2", title && (surface === "card" ? "mb-3 min-h-14 items-center max-md:min-h-0" : "border-b border-border pb-3"))}>
         <div className="min-w-0">
           {title && (
             <div className="flex items-center gap-2">

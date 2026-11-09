@@ -254,13 +254,13 @@ function MarketCharts({ groups, quotes, loading, range, attempt, onRetry, view, 
   const [comparing, setComparing] = useState<(typeof MARKET_GROUPS)[number] | null>(null);
   return (
             <section aria-label={groups.length === 1 ? c("Market indices", "市场指数") : c("Market trends", "市场走势")}>
-              {view === "list" && <div className="mb-3 flex min-h-14 items-center justify-between gap-3">
+              {view === "list" && <div className="mb-3 flex min-h-14 max-md:min-h-0 items-center justify-between gap-3">
                 <h2 className="min-w-0 truncate text-xl font-semibold tracking-[-0.01em]">{c(groups[0].en, groups[0].zh)}</h2>
                 {sectionControls}
               </div>}
               {view === "list" ? <MarketComparison groups={groups} attempt={attempt} /> : groups.map((group, index) => (
-                <section key={group.key} aria-labelledby={`market-${group.key}-heading`} className="first:mt-0">
-                  <div className="mb-3 flex min-h-14 items-center justify-between gap-3">
+                <section key={group.key} aria-labelledby={`market-${group.key}-heading`} className="max-md:[&:not(:first-child)]:mt-8">
+                  <div className="mb-3 flex min-h-14 max-md:min-h-0 items-center justify-between gap-3">
                     <h2 id={`market-${group.key}-heading`} className="min-w-0 truncate text-xl font-semibold tracking-[-0.01em]">{c(group.en, group.zh)}</h2>
                     {index === 0 && sectionControls}
                     {comparable && <Button variant="outline" size="sm" className="shrink-0 gap-1.5" onClick={() => setComparing(group)}><LineChart className="h-3.5 w-3.5" aria-hidden />{c("Compare", "对比")}</Button>}
@@ -269,7 +269,7 @@ function MarketCharts({ groups, quotes, loading, range, attempt, onRetry, view, 
                     role="region"
                     aria-label={c(`${group.en}, scroll horizontally`, `${group.zh}，可横向滚动`)}
                     tabIndex={0}
-                    className="flex snap-x snap-proximity gap-3 overflow-x-auto overscroll-x-contain pb-2 max-md:scrollbar-hide sm:gap-4 xl:grid xl:grid-cols-5 focus-visible:outline-none"
+                    className="flex snap-x snap-proximity gap-3 overflow-x-auto overscroll-x-contain pb-2 max-md:pb-0 max-md:scrollbar-hide sm:gap-4 xl:grid xl:grid-cols-5 focus-visible:outline-none"
                   >
                     {group.instruments.map(item => (
                       <MarketInstrumentCard
@@ -286,7 +286,7 @@ function MarketCharts({ groups, quotes, loading, range, attempt, onRetry, view, 
                 </section>
               ))}
               {comparing && <MarketCompareDialog instruments={comparing.instruments} initialRange={range} attempt={attempt} title={c(comparing.en, comparing.zh)} onClose={() => setComparing(null)} />}
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground max-md:empty:hidden">
                 {view === "card" && !loading && groups.some(group => group.instruments.some(item => item.source !== "fred" && !quotes[item.symbol])) && (
                   <Button size="xs" variant="ghost" onClick={onRetry}>
                     {c("Retry missing quotes", "重试缺失报价")}
@@ -309,7 +309,7 @@ function MarketTrends({ range, view, attempt, retry }: MarketTabProps) {
     return () => setContext("");
   }, [context, setContext]);
 
-  return <div className="min-w-0 pt-6"><MarketCharts comparable view={view} groups={TREND_GROUPS} quotes={quotes} loading={loading} range={range} attempt={attempt} onRetry={retry} /></div>;
+  return <div className="min-w-0 pt-6 max-md:pt-[16px]"><MarketCharts comparable view={view} groups={TREND_GROUPS} quotes={quotes} loading={loading} range={range} attempt={attempt} onRetry={retry} /></div>;
 }
 
 function MarketOverview({ range, view, attempt, retry, sectionControls }: MarketTabProps & { sectionControls: React.ReactNode }) {
@@ -332,7 +332,7 @@ function MarketOverview({ range, view, attempt, retry, sectionControls }: Market
     .sort((a, b) => Number(heldSet.has(b.ticker)) - Number(heldSet.has(a.ticker)) || b.current_date.localeCompare(a.current_date))
     .slice(0, 5);
   return (
-        <div className="mx-auto grid gap-x-8 gap-y-2 pt-6 xl:grid-cols-[minmax(0,1fr)_320px] 2xl:gap-x-12">
+        <div className="mx-auto grid gap-x-8 gap-y-2 pt-6 max-md:gap-y-8 max-md:pt-[16px] xl:grid-cols-[minmax(0,1fr)_320px] 2xl:gap-x-12">
           <div className="min-w-0 xl:col-span-2">
             <MarketCharts view={view} groups={OVERVIEW_GROUPS} quotes={quotes} loading={loading} range={range} attempt={attempt} onRetry={retry} sectionControls={sectionControls} />
           </div>
@@ -343,7 +343,7 @@ function MarketOverview({ range, view, attempt, retry, sectionControls }: Market
           <aside className="min-w-0 space-y-8 xl:sticky xl:top-8 xl:self-start">
             <MarketWatchlistCard />
             <section aria-labelledby="market-creator-updates-title" className="min-w-0">
-              <header className="mb-3 flex min-h-14 items-center gap-2">
+              <header className="mb-3 flex min-h-14 max-md:min-h-0 items-center gap-2">
                 <h2 id="market-creator-updates-title" className="text-lg font-semibold">{c("Creator updates", "博主新动态")}</h2>
                 <div className="ml-auto flex items-center">
                   <Button asChild variant="outline" size="icon" className="h-11 w-11"><Link href="/dashboard/youtube-opinions" aria-label={c("Open all creator opinions", "查看全部观点")} title={c("Open all opinions", "查看全部观点")}><ArrowUpRight className="h-4 w-4" aria-hidden /></Link></Button>
@@ -423,17 +423,17 @@ export default function Market() {
   return (
     <DashboardLayout title={c("Markets", "行情")}>
       <main className="min-w-0 flex-1 overflow-y-auto">
-        <div className="mx-auto w-full min-w-0 max-w-[100rem] px-[16px] pb-8 md:pb-10 pt-6 md:px-8 md:pt-8">
+        <div className="mx-auto w-full min-w-0 max-w-[100rem] px-[16px] pb-8 md:pb-10 pt-3 md:px-8 md:pt-8">
           <Tabs value={tab} onValueChange={selectTab} className="min-w-0">
             {/* On phones the row dissolves (`contents`) so the tab bar can stick for the whole page, not just this row. The bar is the page-level nav: larger than in-page tabs, left-aligned, and it scrolls if it overflows. */}
             <div className="flex flex-wrap items-center justify-between gap-3 max-md:contents">
-              <TabsList ref={tabList} variant="pill-solid" aria-label={c("Market views", "行情视图")} className="max-md:sticky max-md:top-3 max-md:z-30 max-md:min-h-12 max-md:gap-1 max-md:self-start max-md:p-1">
+              <TabsList ref={tabList} variant="pill-solid" aria-label={c("Market views", "行情视图")} className="max-md:sticky max-md:top-[max(0.75rem,env(safe-area-inset-top))] max-md:z-30 max-md:min-h-12 max-md:gap-1 max-md:self-start max-md:p-1">
                 <TabsTrigger variant="pill" value="overview" className="max-md:!min-h-10 max-md:!px-4 max-md:!text-[0.9375rem]">{c("Market overview", "市场概览")}</TabsTrigger>
                 <TabsTrigger variant="pill" value="trends" className="max-md:!min-h-10 max-md:!px-4 max-md:!text-[0.9375rem]">{c("Market trends", "市场走势")}</TabsTrigger>
                 <TabsTrigger variant="pill" value="calendar" className="max-md:!min-h-10 max-md:!px-4 max-md:!text-[0.9375rem]">{c("Event calendar", "事件日历")}</TabsTrigger>
                 <TabsTrigger variant="pill" value="macro" className="max-md:!min-h-10 max-md:!px-4 max-md:!text-[0.9375rem]">{c("Macro indicators", "宏观指标")}</TabsTrigger>
               </TabsList>
-              <div ref={setToolbar} className={cn("flex min-w-0 max-w-full items-center justify-end gap-3 max-md:mt-3 max-md:w-full max-md:justify-between md:ml-auto", (tab === "calendar" || tab === "overview") && "max-md:hidden")}>
+              <div ref={setToolbar} className={cn("flex min-w-0 max-w-full items-center justify-end gap-3 max-md:mt-[16px] max-md:w-full max-md:justify-between md:ml-auto", (tab === "calendar" || tab === "overview") && "max-md:hidden")}>
                 {tab === "trends" && <MarketRangeControls range={range} setRange={setRange} view={view} setView={setView} />}
               </div>
             </div>

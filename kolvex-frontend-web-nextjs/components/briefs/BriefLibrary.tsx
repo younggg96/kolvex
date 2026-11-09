@@ -25,9 +25,9 @@ export default function BriefLibrary({ searchParams }: { searchParams?: BriefSea
   useEffect(() => { document.title = `${(data ? localizedBrief(data.payload, locale).brief.headline : t("briefs.title"))} | Kolvex`; }, [data, locale, t]);
 
   return <DashboardLayout title={t("briefs.title")}>
-    <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-[16px] pb-10 pt-6 md:px-8 md:pt-8">
-      <div className="mx-auto max-w-[67.5rem] space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-[16px] pb-10 pt-3 md:px-8 md:pt-8">
+      <div className="mx-auto max-w-[67.5rem] space-y-6 max-md:space-y-[16px]">
+        <div className="glass-track glass-track-strong flex flex-wrap items-center justify-between gap-3 max-md:sticky max-md:top-[max(0.75rem,env(safe-area-inset-top))] max-md:z-30 max-md:rounded-[28px] max-md:p-2 md:!bg-transparent md:!shadow-none md:![-webkit-backdrop-filter:none] md:![backdrop-filter:none]">
           <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
             <PopoverTrigger asChild>
               <Button variant="outline" aria-label={`${t("briefs.chooseDate")}：${formatBriefDate(date, locale)}`}>
@@ -46,7 +46,7 @@ export default function BriefLibrary({ searchParams }: { searchParams?: BriefSea
           </nav>
         </div>
         <Tabs value={type} onValueChange={value => router.push(briefLibraryHref(isBriefType(value) ? value : "morning", 1, date))}>
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 max-md:flex-nowrap max-md:gap-2">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 max-md:mb-[16px] max-md:flex-nowrap max-md:gap-2">
             {weekend ? <div className="min-w-0 py-2"><h2 className="text-lg font-semibold">{t("briefs.weekendEdition")}</h2><p className="mt-1 text-xs text-muted-foreground">{t("briefs.weekendSchedule")}</p></div> : <TabsList aria-label={t("briefs.filterLabel")} className="min-w-0 md:shrink-0">
               {BRIEF_TYPES.map(edition => <TabsTrigger key={edition} value={edition}>{t(`briefs.${edition}`)}</TabsTrigger>)}
             </TabsList>}

@@ -8,6 +8,7 @@ import { ChevronDown, ExternalLink, Loader2, RefreshCw, Search, Star, X } from "
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FilterSheet, FilterSheetGroup, FilterSheetToggle } from "@/components/ui/filter-sheet";
 import WatchlistButton from "@/components/decision/WatchlistButton";
@@ -72,12 +73,21 @@ export default function RedditOpinionsPage() {
   const resetFilters = () => { setCommunity("all-stocks"); setSort("mentions"); setOnlyWatchlist(false); };
   const watchButton = (row: RedditStock, compact = false) => <WatchlistButton ticker={row.ticker} showLabel={!compact} />;
 
+  const resultCount = t("redditOpinions.resultCount", { count: number.format(rows.length), total: number.format(data?.results.length ?? 0) });
+
   return (
     <DashboardLayout title={t("redditOpinions.header")}>
       <div className="min-h-0 flex-1 overflow-y-auto bg-background dark:bg-transparent">
-        <div className="mx-auto max-w-6xl px-[16px] pb-6 pt-4 md:px-8 md:py-8">
+        <div className="mx-auto max-w-6xl px-[16px] pb-6 pt-[12px] md:px-8 md:py-8">
           <div className="flex items-center justify-between gap-3">
-            <h1 className="text-2xl font-semibold tracking-tight md:text-[2rem]">{t("redditOpinions.title")}</h1>
+            <h1 className="flex min-w-0 items-center gap-2 text-2xl font-semibold tracking-tight md:text-[2rem]">
+              {t("redditOpinions.title")}
+              <InfoTip label={t("redditOpinions.dataNotes")}>
+                <p>{t("redditOpinions.scopeNote", { community: communityLabel(community) })}</p>
+                {data && <p className="tabular-nums">{resultCount}</p>}
+                {onlyWatchlist && <p className="mt-1">{t("redditOpinions.watchlistNote")}</p>}
+              </InfoTip>
+            </h1>
             <div className="flex shrink-0 items-center gap-1">
             <FilterSheet title={t("common.filter")} active={filtered} onReset={resetFilters}
               summary={[communityLabel(community), sortOptions.find(option => option.value === sort)?.label, onlyWatchlist && t("redditOpinions.onlyWatchlist")].filter(Boolean).join(" · ")}>
@@ -101,7 +111,7 @@ export default function RedditOpinionsPage() {
               <div className="hidden items-center gap-3 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] xl:grid-cols-[minmax(0,1fr)_11rem_11rem_auto]">
                 <div className="relative lg:col-span-3 xl:col-span-1">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-                  <Input ref={searchInput} type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("redditOpinions.search")} aria-label={t("redditOpinions.search")} aria-describedby="reddit-scope" className="h-11 pl-9 pr-10 [&::-webkit-search-cancel-button]:hidden" />
+                  <Input ref={searchInput} type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("redditOpinions.search")} aria-label={t("redditOpinions.search")} className="h-11 pl-9 pr-10 [&::-webkit-search-cancel-button]:hidden" />
                   {query && <Button variant="ghost" size="icon" className="absolute right-0 top-0 h-11 w-11" aria-label={t("redditOpinions.clearSearch")} title={t("redditOpinions.clearSearch")}
                     onClick={() => { setQuery(""); searchInput.current?.focus(); }}><X className="h-4 w-4" aria-hidden="true" /></Button>}
                 </div>
@@ -122,13 +132,7 @@ export default function RedditOpinionsPage() {
                   {t("redditOpinions.onlyWatchlist")} <span className="tabular-nums">{watchlist.length}</span>
                 </Button>
               </div>
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs leading-5 text-muted-foreground">
-                <div id="reddit-scope" className="min-w-0">
-                  <p>{t("redditOpinions.scopeNote", { community: communityLabel(community) })}</p>
-                  {onlyWatchlist && <p className="mt-1">{t("redditOpinions.watchlistNote")}</p>}
-                </div>
-                {data && <p role="status" aria-live="polite" className="shrink-0 tabular-nums">{t("redditOpinions.resultCount", { count: number.format(rows.length), total: number.format(data.results.length) })}</p>}
-              </div>
+              {data && <p role="status" aria-live="polite" className="sr-only">{resultCount}</p>}
 
               {Boolean(error) && <div role="alert" className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3 text-sm">
                 <p>{t(data ? "redditOpinions.staleError" : "redditOpinions.error")}</p>

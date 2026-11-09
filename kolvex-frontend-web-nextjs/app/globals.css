@@ -251,7 +251,7 @@ a {
     }
 
     .dark .surface-overlay {
-      background: rgb(28 28 30 / 0.74);
+      background: rgba(0, 0, 0, 0.15);
     }
   }
 
@@ -1401,6 +1401,23 @@ html[data-chat-history-open] .app-workbench .app-sidebar {
   .dashboard-content [data-nav-underlay] {
     padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
     scroll-padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* Chat threads fill the screen, scrolling beneath the header, composer and dock. */
+@media (max-width: 1023px) {
+  .mobile-nav-inset:has([data-chat-floating-composer]) {
+    padding-bottom: 0;
+  }
+
+  /* A forwards fill keeps the entrance effect alive, which stops floating glass blurring the page. */
+  .dashboard-content.animate-page-enter {
+    animation-fill-mode: backwards;
+  }
+
+  [data-chat-floating-composer] {
+    --chat-bottom-overlay: calc(var(--chat-composer-height, 8rem) + 5.5rem + env(safe-area-inset-bottom, 0px));
+    --chat-top-overlay: calc(max(0.5rem, env(safe-area-inset-top, 0px)) + 3.25rem);
   }
 }
 

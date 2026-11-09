@@ -168,6 +168,7 @@ export function ChatDetailContainer({
   const { availableProviders } = useAvailableProviders();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const composerRef = useRef<HTMLDivElement>(null);
   const sentFirstMessageRef = useRef<string | null>(null);
   const messageIdsBeforePendingRef = useRef<Set<string>>(new Set());
   const isLoadingRef = useRef(false);
@@ -499,6 +500,18 @@ export function ChatDetailContainer({
         !messageIdsBeforePendingRef.current.has(message.id)
     );
 
+  // The composer grows with its text, so the message list's clearance tracks its real height.
+  useEffect(() => {
+    const composer = composerRef.current;
+    if (!composer) return;
+    const syncHeight = () =>
+      composer.parentElement?.style.setProperty("--chat-composer-height", `${composer.offsetHeight}px`);
+    syncHeight();
+    const observer = new ResizeObserver(syncHeight);
+    observer.observe(composer);
+    return () => observer.disconnect();
+  }, []);
+
   const hasWorkspace = Boolean(workspace.detail);
   const togglePanel = () => {
     // The docked panel needs the xl width; narrower screens get the same panel as a sheet.
@@ -516,8 +529,8 @@ export function ChatDetailContainer({
 
   return (
     <div className={cn("flex h-full min-h-0", className)}>
-      <div className="flex-1 flex flex-col min-w-0 relative">
-        <div className="flex h-14 shrink-0 items-center gap-1 pl-2 pr-4 md:gap-2 md:px-8">
+      <div data-chat-floating-composer className="flex-1 flex flex-col min-w-0 relative">
+        <div className="glass-track glass-track-strong z-30 flex h-14 shrink-0 items-center gap-1 pl-2 pr-2 max-lg:absolute max-lg:inset-x-3 max-lg:top-[max(0.5rem,env(safe-area-inset-top))] max-lg:h-[3.25rem] max-lg:rounded-full md:gap-2 md:px-8 lg:!bg-transparent lg:!shadow-none lg:![-webkit-backdrop-filter:none] lg:![backdrop-filter:none]">
           <ChatHistorySheet className="md:-ml-2" />
           <h1 className="min-w-0 flex-1 truncate text-[0.9375rem] font-semibold text-foreground">
             {currentConversation?.title && currentConversation.title !== "New Chat"
@@ -561,9 +574,13 @@ export function ChatDetailContainer({
           symbols={knownSymbols}
         />
         {/* Chat Input */}
-        <div className="sticky bottom-0 z-20">
+        {/* Below lg the composer floats above the dock while messages scroll beneath both. */}
+        <div
+          ref={composerRef}
+          className="z-20 max-lg:pointer-events-none max-lg:absolute max-lg:inset-x-0 max-lg:bottom-[calc(5.5rem+env(safe-area-inset-bottom))] max-lg:[&_form]:pointer-events-auto lg:sticky lg:bottom-0"
+        >
           <div className="mx-auto max-w-3xl px-4 md:pb-4 pt-2">
-            {inputAction && <div className="flex justify-end pb-2">{inputAction}</div>}
+            {inputAction && <div className="flex justify-end pb-2 [&>*]:pointer-events-auto">{inputAction}</div>}
             <ChatInput
               value={query}
               onChange={setQuery}

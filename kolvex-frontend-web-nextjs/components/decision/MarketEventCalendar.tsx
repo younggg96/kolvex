@@ -118,7 +118,7 @@ export default function MarketEventCalendar({ toolbar }: { toolbar: HTMLElement 
   return (
     <section
       ref={calendarRoot}
-      className="min-w-0 max-w-full pt-3"
+      className="min-w-0 max-w-full pt-3 max-md:pt-[16px]"
       aria-labelledby="events-heading"
       aria-busy={loading}
     >
@@ -164,7 +164,7 @@ export default function MarketEventCalendar({ toolbar }: { toolbar: HTMLElement 
           />
         ) : (
           <Tabs value={week} onValueChange={setWeek} className="min-w-0">
-            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-1 pb-3 max-md:flex-nowrap max-md:px-0">
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-1 pb-3 max-md:flex-nowrap max-md:px-0 max-md:pb-[16px]">
               <TabsList aria-label={c("Calendar week", "日历周")} className="min-w-0">
                 {[
                   c("Last week", "上周"),

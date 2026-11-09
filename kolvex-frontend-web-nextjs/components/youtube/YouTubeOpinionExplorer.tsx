@@ -1006,7 +1006,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
             </span>
           </div>
         )}
-        <div className="mx-auto w-full min-w-0 max-w-[100rem] px-[16px] pb-10 pt-2 md:px-8 md:pt-7">
+        <div className="mx-auto w-full min-w-0 max-w-[100rem] px-[16px] pb-10 pt-[12px] md:px-8 md:pt-7">
           <Tabs
             value={route.tab}
             onValueChange={(value) => navigate({ tab: value as Route["tab"] })}
@@ -1026,7 +1026,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                     <div className="mt-3 border-b border-border px-2 py-3"><Skeleton className="h-3.5 w-1/3 rounded-md" /></div>
                     {route.tab === "creators" ? <CreatorRowsSkeleton label={t("common.loadingStatus")} /> : <StockDirectorySkeleton label={t("common.loadingStatus")} />}
                   </ListCard>
-                  {!allStocks && <div className="hidden xl:block"><div className="mb-3 flex min-h-14 flex-col justify-center gap-2"><Skeleton className="h-5 w-28 rounded-md" /><Skeleton className="h-3.5 w-40 rounded-md" /></div><ListCard><ChangeRowsSkeleton /></ListCard></div>}
+                  {!allStocks && <div className="hidden xl:block"><div className="mb-3 flex min-h-14 max-md:min-h-0 flex-col justify-center gap-2"><Skeleton className="h-5 w-28 rounded-md" /><Skeleton className="h-3.5 w-40 rounded-md" /></div><ListCard><ChangeRowsSkeleton /></ListCard></div>}
                 </div>}
               </section>
             )}
@@ -1034,7 +1034,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
               <div className={cn("grid min-w-0 gap-8", allStocks ? "mx-auto" : "xl:grid-cols-[minmax(0,1fr)_20rem] 2xl:gap-x-12")}>
                 <div className="min-w-0 space-y-8">
                   <div>
-                    <header className="mb-3 flex min-h-14 items-center justify-between gap-3">
+                    <header className="mb-3 flex min-h-14 max-md:min-h-0 items-center justify-between gap-3">
                       <div className="min-w-0">
                         <h2
                           id="creator-directory-heading"
@@ -1181,7 +1181,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                     </section>
                   </div>
                   {!allStocks && <section aria-labelledby="creator-latest-opinions-title" className="min-w-0">
-                    <header className="mb-3 flex min-h-14 items-start gap-2">
+                    <header className="mb-3 flex min-h-14 max-md:min-h-0 items-start gap-2">
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
                           <h2 id="creator-latest-opinions-title" className="text-xl font-semibold tracking-[-0.01em]">{c("Latest creator videos", "博主最新视频")}</h2>
@@ -1216,7 +1216,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                 {!allStocks && <aside className="min-w-0 space-y-8">
                   {changeList(true)}
                   {isProductFeatureEnabled("portfolio") && <section aria-labelledby="creator-holdings-title" className="min-w-0">
-                    <header className="mb-3 flex min-h-14 items-center gap-2">
+                    <header className="mb-3 flex min-h-14 max-md:min-h-0 items-center gap-2">
                       <h2 id="creator-holdings-title" className="text-lg font-semibold">{c("My holdings", "我的持仓")}</h2>
                       {held.tickers.length > 0 && (
                         <span
@@ -1462,7 +1462,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
 
                   {creatorOverview && (
                     <section className="min-w-0" aria-labelledby="creator-detail-latest-title">
-                      <header className="mb-3 flex min-h-14 flex-wrap items-center justify-between gap-3">
+                      <header className="mb-3 flex min-h-14 max-md:min-h-0 flex-wrap items-center justify-between gap-3">
                         <h2 id="creator-detail-latest-title" className="text-lg font-semibold">{c("Latest opinions", "最新观点")}</h2>
                         {latestCreatorOpinions.length > 0 && <Button
                           variant="outline"

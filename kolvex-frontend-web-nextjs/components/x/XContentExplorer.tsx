@@ -118,10 +118,10 @@ export default function XContentExplorer() {
 
   return (
     <DashboardLayout title={c("X creator posts", "X 博主内容")}>
-      <div className="min-h-0 flex-1 overflow-y-auto bg-background dark:bg-transparent px-[16px] pb-10 pt-5 md:px-8 md:pt-7">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-background dark:bg-transparent px-[16px] pb-10 pt-[12px] md:px-8 md:pt-7">
         <h1 className="sr-only">{c("X creator posts", "X 博主内容")}</h1>
         <div className="mx-auto w-full space-y-6">
-          <div className="grid gap-10 xl:grid-cols-[minmax(0,1fr)_300px]">
+          <div className="grid gap-10 max-md:gap-0 xl:grid-cols-[minmax(0,1fr)_300px]">
             <aside className="order-1 min-w-0 xl:col-start-2 xl:row-start-1">
               <div className="mb-3 flex min-h-8 items-baseline justify-between gap-2 max-lg:hidden">
                 <h2 className="text-base font-semibold">
@@ -185,9 +185,9 @@ export default function XContentExplorer() {
                   </ListRows>
                 </nav>
               </ListCard>
-              {creators.length === 1 && !selected && <div className="mt-6"><XCreatorProfile creator={creators[0]} /></div>}
+              {creators.length === 1 && !selected && <div className="mt-6 max-md:mb-[16px] max-md:mt-0"><XCreatorProfile creator={creators[0]} /></div>}
             </aside>
-            <div className="order-2 min-w-0 space-y-4 xl:col-start-1 xl:row-start-1">
+            <div className="order-2 min-w-0 space-y-4 max-md:space-y-8 xl:col-start-1 xl:row-start-1">
               {selected && <XCreatorProfile creator={selected} />}
               <XCreatorSummaries author={author} creators={creators} />
               <section

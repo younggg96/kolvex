@@ -367,7 +367,7 @@ export function ChatInput({
     <form noValidate onSubmit={handleFormSubmit}>
       {/* Need API key prompt when user has not configured any keys */}
       {availableProviders !== undefined && !hasAnyModel && (
-        <div role="status" className="mb-3 rounded-3xl bg-warning/10 px-4 py-3">
+        <div role="status" className="glass-track glass-track-strong mb-3 rounded-3xl px-4 py-3">
           <div className="flex items-start gap-2.5">
             <Lock className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning" />
             <div>

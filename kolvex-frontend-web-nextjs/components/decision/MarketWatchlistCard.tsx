@@ -43,7 +43,7 @@ export default function MarketWatchlistCard() {
   }
 
   return <section aria-labelledby="market-watchlist-title" className="min-w-0">
-    <header className="mb-3 flex min-h-14 items-center gap-2">
+    <header className="mb-3 flex min-h-14 max-md:min-h-0 items-center gap-2">
       <h2 id="market-watchlist-title" className="text-lg font-semibold">{c("Watchlist", "自选股")}</h2>
       {ready && <span className="rounded-full bg-muted px-2 py-0.5 text-xs tabular-nums text-muted-foreground" aria-label={c(`Showing ${symbols.length} of ${watchlist.length} saved stocks`, `展示 ${symbols.length} 只，共 ${watchlist.length} 只自选股`)}>{symbols.length}/{watchlist.length}</span>}
       <div className="ml-auto flex items-center">

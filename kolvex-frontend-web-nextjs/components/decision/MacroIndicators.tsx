@@ -157,7 +157,7 @@ export default function MacroIndicators({ toolbar }: { toolbar: HTMLElement | nu
   const notice = error === 401 ? c("Your session has expired. Sign in again to view the indicators.", "登录已过期，请重新登录后查看指标。") : error ? c("Could not update the indicators. Try again; existing values are from the previous load.", "暂时无法更新指标，请重试。已显示的数值来自上次加载。") : snapshot?.status === "partial" || snapshot?.status === "stale" ? c("Some sources are delayed or unavailable. Check each card's observation period.", "部分数据源延迟或暂不可用，请以各卡片的数据所属期为准。") : snapshot?.status === "unavailable" ? c("Official data sources are temporarily unavailable. Please try again later.", "官方数据源暂不可用，请稍后重试。") : snapshot?.status === "pending" ? c("The first official-data snapshot is being prepared. Check again shortly.", "首份官方数据正在准备中，请稍后刷新。") : null;
 
   return (
-    <section aria-labelledby="economic-indicators-heading" className="pt-2">
+    <section aria-labelledby="economic-indicators-heading" className="pt-2 max-md:pt-0">
       <h1 id="economic-indicators-heading" className="sr-only">{c("Macro indicators", "宏观指标")}</h1>
       <MarketToolbarControls toolbar={toolbar}>
         <SegmentedControl label={c("Indicator history range", "指标走势区间")} value={String(years)} onChange={(value) => setYears(Number(value))} className="border border-border max-md:flex-1" itemClassName="!min-h-9 max-md:!min-h-8 max-md:!flex-1 max-md:!text-[0.8125rem]" options={RANGES.map((range) => ({ value: String(range), label: c(`${range}Y`, `${range}年`) }))} />
@@ -166,7 +166,7 @@ export default function MacroIndicators({ toolbar }: { toolbar: HTMLElement | nu
       <div aria-live="polite" aria-atomic="true" className={notice ? "mt-4 text-sm leading-6 text-muted-foreground" : "sr-only"}>{notice && <p>{notice}</p>}{loading && !snapshot && <p>{c("Loading official economic indicators", "正在加载官方宏观指标")}</p>}</div>
       {error === 401 && <Button asChild variant="outline" size="sm" className="mb-4 rounded-full"><Link href="/auth?redirectTo=%2Fdashboard%3Ftab%3Dmacro">{c("Sign in", "重新登录")}</Link></Button>}
       {isPhone ? (
-        <ul className="mt-4 rounded-3xl border border-foreground/10 glass-card bg-card-glass px-3" aria-busy={loading}>
+        <ul className="mt-[16px] rounded-3xl border border-foreground/10 glass-card bg-card-glass px-3" aria-busy={loading}>
           {loading && !snapshot ? Array.from({ length: 8 }, (_, index) => <li key={index} aria-hidden="true" className="border-b border-border/60 last:border-b-0"><div className="grid min-h-16 grid-cols-[minmax(0,1fr)_3.5rem_minmax(5rem,auto)_1rem] items-center gap-2 py-2">
             <span className="flex flex-col gap-1.5"><Skeleton className={cn("h-4 rounded-md", index % 2 ? "w-24" : "w-32")} /><Skeleton className="h-3 w-20 rounded-md" /></span>
             <Skeleton className="h-8 w-full rounded-lg" />
