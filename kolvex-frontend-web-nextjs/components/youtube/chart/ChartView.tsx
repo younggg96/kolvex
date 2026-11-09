@@ -322,20 +322,6 @@ export default function ChartView({
   const chartCacheKey = stockHistoryKey(symbol, params);
   const quoteResource = useStockQuote(symbol, 15_000, !snapshotBars);
   const intraday = isIntraday(params.interval || "1d");
-  /** Experimental Kronos forecast band past the last bar (advanced daily/weekly charts only). */
-  const [showForecast, setShowForecast] = useState(false);
-  const forecastInterval = params.interval || "1d";
-  const forecastable = advanced && !snapshotBars && (forecastInterval === "1d" || forecastInterval === "1wk");
-  const forecastOn = forecastable && showForecast;
-  const forecastResource = useCachedResource<KlineForecast>(
-    klineForecastKey(symbol, forecastInterval),
-    signal => getKlineForecast(symbol, forecastInterval, signal),
-    { ttl: 10 * 60_000, timeout: 130_000, enabled: forecastOn },
-  );
-  const forecast = forecastOn ? forecastResource.data ?? null : null;
-  const priceExtent = useMemo(() => forecastExtent(forecast), [forecast]);
-  const forecastErrorCode = forecastOn && forecastResource.error ? ((forecastResource.error as { code?: string }).code || "unavailable") : null;
-  const pct = (value: number) => `${value >= 0 ? "+" : ""}${(value * 100).toFixed(1)}%`;
 
   const [box, setBox] = useState<HTMLDivElement | null>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
@@ -391,6 +377,23 @@ export default function ChartView({
   };
   const ai = aiJobs.analysis.status === "idle" ? localAi : { ...aiJobs.analysis, error: jobError(aiJobs.analysis.errorCode) };
   const drawingAi = aiJobs.drawings.status === "idle" ? localDrawingAi : { ...aiJobs.drawings, error: jobError(aiJobs.drawings.errorCode, "drawings") };
+  /** Experimental Kronos forecast band past the last bar (advanced daily/weekly charts only). */
+  const [showForecast, setShowForecast] = useState(false);
+  const forecastInterval = params.interval || "1d";
+  // A saved analysis keeps the forecast it was written with, so the band matches its text and needs no new inference.
+  const analysisResult = ai.status === "done" ? ai.result : savedAnalysis;
+  const analysisForecast = analysisResult?.forecast?.interval === forecastInterval ? analysisResult.forecast : null;
+  const forecastable = advanced && (forecastInterval === "1d" || forecastInterval === "1wk") && (!snapshotBars || !!analysisForecast);
+  const forecastOn = forecastable && showForecast;
+  const forecastResource = useCachedResource<KlineForecast>(
+    klineForecastKey(symbol, forecastInterval),
+    signal => getKlineForecast(symbol, forecastInterval, signal),
+    { ttl: 10 * 60_000, timeout: 130_000, enabled: forecastOn && !analysisForecast },
+  );
+  const forecast = forecastOn ? analysisForecast ?? forecastResource.data ?? null : null;
+  const priceExtent = useMemo(() => forecastExtent(forecast), [forecast]);
+  const forecastErrorCode = forecastOn && !analysisForecast && forecastResource.error ? ((forecastResource.error as { code?: string }).code || "unavailable") : null;
+  const pct = (value: number) => `${value >= 0 ? "+" : ""}${(value * 100).toFixed(1)}%`;
   const gesture = useRef<Gesture | null>(null);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
 
@@ -524,11 +527,14 @@ export default function ChartView({
     return defaultGraphView({ count, times, range, rangeStart: rangeStart(range, times[count - 1]) }) || { start: 0, end: count };
   }, [advanced, count, range, times]);
   const current = view || defaultView;
-  /** Once per loaded forecast, widen the window so the band past the last bar is in view. */
+  /** Once per loaded forecast, widen the window so the band past the last bar is in view; turning it off gives the room back. */
   const revealedForecast = useRef<string | null>(null);
   useEffect(() => {
     if (!forecast || forecastBase < 0) {
-      if (!forecastOn) revealedForecast.current = null;
+      if (!forecastOn && revealedForecast.current) {
+        revealedForecast.current = null;
+        setView(previous => previous && previous.end > count ? clampGraphView({ start: previous.start, end: count }, count) : previous);
+      }
       return;
     }
     const id = `${forecast.symbol}:${forecast.interval}:${forecast.context_end}`;
@@ -1247,6 +1253,8 @@ export default function ChartView({
             busy={aiBusy}
             version={savedAnalysisVersion}
             onRetry={() => void runAi("analysis")}
+            forecastVisible={forecastOn}
+            onToggleForecast={analysisForecast && forecastable ? () => setShowForecast(value => !value) : undefined}
             showRetry={advanced}
             formatDate={formatDate}
             t={t}
@@ -1428,6 +1436,7 @@ export default function ChartView({
               </span>
               <InfoTip label={t("youtubeOpinions.forecast.hint")}>
                 <span className="block tabular-nums">{t("youtubeOpinions.forecast.range", { low: pct(forecast.summary.p10_return), high: pct(forecast.summary.p90_return) })}</span>
+                <span className="block tabular-nums">{t("youtubeOpinions.forecast.asOf", { date: forecast.context_end })}</span>
                 <span className="mt-1 block">{t("youtubeOpinions.forecast.disclaimer")}</span>
               </InfoTip>
             </>
@@ -1641,7 +1650,7 @@ export default function ChartView({
       className={cn(pill(showForecast), "gap-1.5")}
       title={t("youtubeOpinions.forecast.hint")}
     >
-      {showForecast && forecastResource.loading
+      {forecastOn && !forecast && !forecastErrorCode
         ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
         : <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />}
       {t("youtubeOpinions.forecast.toggle")}

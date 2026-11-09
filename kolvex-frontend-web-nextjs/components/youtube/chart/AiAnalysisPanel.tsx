@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { RefreshCw } from "lucide-react";
+import { Eye, EyeOff, RefreshCw } from "lucide-react";
 import { ContentLoading } from "@/components/ui/content-loading";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -33,7 +33,9 @@ function indicatorLabel(key: string) {
   return key.toUpperCase();
 }
 
-export default function AiAnalysisPanel({ state, busy = false, onRetry, showRetry = true, formatDate, t, className, version }: {
+const percent = (value: number) => `${value >= 0 ? "+" : ""}${(value * 100).toFixed(1)}%`;
+
+export default function AiAnalysisPanel({ state, busy = false, onRetry, showRetry = true, formatDate, t, className, version, forecastVisible = false, onToggleForecast }: {
   state: AiPanelState;
   busy?: boolean;
   onRetry: () => void;
@@ -43,6 +45,9 @@ export default function AiAnalysisPanel({ state, busy = false, onRetry, showRetr
   className?: string;
   /** Saved analysis version, so the header can show who generated it. */
   version?: AnalysisVersion<AiTechnicalAnalysis> | null;
+  forecastVisible?: boolean;
+  /** Absent when this chart cannot draw the saved forecast (compact view or another interval). */
+  onToggleForecast?: () => void;
 }) {
   const c = useCopy();
   const result = state.result;
@@ -52,6 +57,7 @@ export default function AiAnalysisPanel({ state, busy = false, onRetry, showRetr
     return typeof value === "number" && Number.isFinite(value) ? [{ key, value }] : [];
   }) : [];
   const levels = result ? [...result.levels].sort((a, b) => b.price - a.price) : [];
+  const forecast = result?.forecast;
   const hasDetails = result && (indicators.length > 0 || result.trendlines.length > 0 || (!result.findings?.length && result.signals.length > 0));
 
   return (
@@ -89,6 +95,22 @@ export default function AiAnalysisPanel({ state, busy = false, onRetry, showRetr
           <h4 className="text-sm font-semibold text-warning">{t("youtubeOpinions.ai.invalidation")}</h4>
           <p className="mt-2 max-w-[90ch] whitespace-pre-line break-words text-[13px] leading-6 text-muted-foreground">{result.invalidation}</p>
         </div>}
+
+        {forecast && <section className="mt-4 rounded-3xl bg-muted/60 p-4" aria-label={t("youtubeOpinions.forecast.panelTitle")}>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h4 className="text-sm font-semibold">{t("youtubeOpinions.forecast.panelTitle")}</h4>
+            {onToggleForecast && <Button type="button" size="sm" variant="outline" className="min-h-11 sm:min-h-9" aria-pressed={forecastVisible} onClick={onToggleForecast}>
+              {forecastVisible ? <EyeOff className="h-3.5 w-3.5" aria-hidden="true" /> : <Eye className="h-3.5 w-3.5" aria-hidden="true" />}
+              {t(forecastVisible ? "youtubeOpinions.forecast.hideOnChart" : "youtubeOpinions.forecast.showOnChart")}
+            </Button>}
+          </div>
+          <dl className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-3">
+            <div><dt className="text-xs text-muted-foreground">{t("youtubeOpinions.forecast.median", { days: String(forecast.horizon) })}</dt><dd className="mt-1 text-sm font-semibold tabular-nums">{percent(forecast.summary.median_return)}</dd></div>
+            <div><dt className="text-xs text-muted-foreground">P10–P90</dt><dd className="mt-1 text-sm font-semibold tabular-nums">{percent(forecast.summary.p10_return)} ~ {percent(forecast.summary.p90_return)}</dd></div>
+            <div><dt className="text-xs text-muted-foreground">{t("youtubeOpinions.forecast.probUp")}</dt><dd className="mt-1 text-sm font-semibold tabular-nums">{Math.round(forecast.summary.prob_up * 100)}%</dd></div>
+          </dl>
+          <p className="mt-3 max-w-[90ch] text-[13px] leading-6 text-muted-foreground">{t("youtubeOpinions.forecast.asOf", { date: forecast.context_end })} · {t("youtubeOpinions.forecast.disclaimer")}</p>
+        </section>}
 
         {levels.length > 0 && <section className="mt-7" aria-label={t("youtubeOpinions.ai.levels")}>
           <h4 className="text-base font-semibold">{t("youtubeOpinions.ai.levels")}</h4>

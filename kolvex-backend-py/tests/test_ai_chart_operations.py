@@ -2,6 +2,7 @@ import asyncio
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 from app.services import technical_analysis as ta
+from app.services.kline_forecast import ForecastUnavailable
 from test_technical_analysis import make_bars
 
 class ChartOperationTests(unittest.TestCase):
@@ -88,6 +89,52 @@ class TradePlanTests(unittest.TestCase):
         result,_ = self.run_plan(["trade_plan"],setup,"bearish")
         self.assertEqual(result["setup"]["targets"],[105,100])
         self.assertEqual(result["setup"]["risk_reward"],1.2)
+
+class AnalysisForecastTests(unittest.TestCase):
+    def setUp(self):
+        ta._cache.clear()
+        self.bars = make_bars()
+        self.forecast = {
+            "symbol": "NVDA", "interval": "1d", "horizon": 20, "context_end": self.bars[-1]["date"][:10],
+            "points": [{"date": "2030-01-01", "open": 1, "high": 2, "low": 1, "close": 1.5, "close_p10": 1, "close_p90": 2, "volume": 1}],
+            "summary": {"median_return": 0.01, "p10_return": -0.05, "p90_return": 0.08, "prob_up": 0.6},
+        }
+
+    def analyze(self, fetch, operation="analysis", view_end=None):
+        structured = MagicMock()
+        structured.ainvoke = AsyncMock(return_value=ta.AiAnalysis(trend="uptrend", bias="bullish", summary="Evidence"))
+        llm = MagicMock(); llm.with_structured_output.return_value = structured
+        with patch.object(ta, "get_user_llm", return_value=llm), patch.object(ta, "get_kline_forecast", fetch):
+            result = asyncio.run(ta.analyze_chart("NVDA", "1d", self.bars, None, view_end, model_id="deepseek-flash", user_api_keys={"deepseek": "user-test-key"}, operation=operation, categories=["levels"]))
+        return result, structured.ainvoke.call_args.args[0]
+
+    def test_forecast_is_saved_in_payload_and_given_to_the_model_as_low_weight_evidence(self):
+        result, messages = self.analyze(AsyncMock(return_value=self.forecast))
+        self.assertEqual(result["forecast"], self.forecast)
+        self.assertIn("Do not base trend, bias", messages[0][1])
+        self.assertIn('"experimental_model_forecast"', messages[1][1])
+        self.assertIn('"median_return": 0.01', messages[1][1])
+
+    def test_forecast_failure_does_not_fail_the_analysis(self):
+        result, messages = self.analyze(AsyncMock(side_effect=ForecastUnavailable("forecast_service_error")))
+        self.assertNotIn("forecast", result)
+        self.assertNotIn("experimental_model_forecast", messages[1][1])
+
+    def test_drawings_never_request_a_forecast(self):
+        fetch = AsyncMock(return_value=self.forecast)
+        result, _ = self.analyze(fetch, operation="drawings")
+        fetch.assert_not_awaited()
+        self.assertNotIn("forecast", result)
+
+    def test_view_ending_in_the_past_has_no_forecast(self):
+        fetch = AsyncMock(return_value=self.forecast)
+        result, _ = self.analyze(fetch, view_end=self.bars[-10]["date"])
+        fetch.assert_not_awaited()
+        self.assertNotIn("forecast", result)
+
+    def test_forecast_from_a_different_end_date_is_dropped(self):
+        result, _ = self.analyze(AsyncMock(return_value={**self.forecast, "context_end": "1999-01-01"}))
+        self.assertNotIn("forecast", result)
 
 if __name__ == "__main__":
     unittest.main()

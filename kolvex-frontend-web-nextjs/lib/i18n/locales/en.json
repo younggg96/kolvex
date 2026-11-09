@@ -1602,6 +1602,12 @@
       "title": "Kronos · {days} bars",
       "summary": "median {median} · P(up) {up}",
       "range": "P10–P90: {low} to {high}",
+      "asOf": "Based on bars through {date}",
+      "panelTitle": "Kronos forecast (experimental)",
+      "median": "Median over {days} bars",
+      "probUp": "Probability up",
+      "showOnChart": "Show on chart",
+      "hideOnChart": "Hide from chart",
       "disclaimer": "Experimental model output. In backtests it mostly reverts to the recent average and does not predict direction. Not investment advice.",
       "errors": {
         "not_configured": "Forecast service is not configured.",

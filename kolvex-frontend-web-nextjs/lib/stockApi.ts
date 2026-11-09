@@ -1,6 +1,7 @@
 import { loadClientCache } from "./clientCache";
 import { publishQuote } from "./quoteSnapshots";
 import type { TechnicalFocus, TechnicalCategory } from "./technicalFocus";
+import type { KlineForecast } from "./klineForecast";
 // Stock API types and utilities
 
 export interface StockQuote {
@@ -243,6 +244,8 @@ export interface AiChartPoint {
 }
 
 export interface AiTechnicalAnalysis {
+  /** Experimental Kronos forecast saved with the written analysis (daily/weekly only). */
+  forecast?: KlineForecast | null;
   provider?: string;
   model?: string;
   overlays?: Array<{
