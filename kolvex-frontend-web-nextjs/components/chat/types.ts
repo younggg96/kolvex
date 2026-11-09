@@ -97,6 +97,8 @@ export interface ChatBubbleProps {
   onRetry?: () => void;
   /** Display name of the model that generated this message (assistant only) */
   modelName?: string;
+  /** Symbols this conversation already knows; their mentions get a logo and a link. */
+  symbols?: string[];
 }
 
 export interface ChatHistorySidebarProps {
@@ -170,4 +172,6 @@ export interface ChatMessageListProps {
   onRetry?: () => void;
   /** Display name of the currently selected model */
   modelName?: string;
+  /** Symbols this conversation already knows; their mentions get a logo and a link. */
+  symbols?: string[];
 }

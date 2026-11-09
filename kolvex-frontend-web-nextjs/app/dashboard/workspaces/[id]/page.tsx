@@ -30,7 +30,7 @@ export default function WorkspacePage() {
       }
     >
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-3xl md:px-3">
+        <div className="w-full md:px-3">
           {workspace.loading && !workspace.detail ? (
             <p role="status" className="flex items-center gap-2 px-[16px] py-10 text-sm text-muted-foreground md:px-5">
               <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />

@@ -55,12 +55,12 @@ export function ResearchReportContent({ analysis: source, locale, t, translation
       <div className="min-w-0 space-y-12">
         {analysis.full_signal && (
           <div id={`${id}-conclusion`} className={REPORT_READER_CONCLUSION}>
-            <ReportCard title={t("tradingAnalysis.reader.conclusion")} content={analysis.full_signal} locale={locale} t={t} bordered={false} />
+            <ReportCard title={t("tradingAnalysis.reader.conclusion")} content={analysis.full_signal} locale={locale} t={t} bordered={false} symbols={[analysis.ticker]} />
           </div>
         )}
         {analysis.investment_plan && (
           <div id={`${id}-investment`} className="scroll-mt-6">
-            <ReportCard title={t("tradingAnalysis.sections.investmentPlan")} content={analysis.investment_plan} locale={locale} t={t} />
+            <ReportCard title={t("tradingAnalysis.sections.investmentPlan")} content={analysis.investment_plan} locale={locale} t={t} symbols={[analysis.ticker]} />
           </div>
         )}
         {!!reports.length && (
@@ -78,7 +78,7 @@ export function ResearchReportContent({ analysis: source, locale, t, translation
               </div>
               {reports.map((report) => (
                 <TabsContent key={report.key} value={report.key} className="mt-0">
-                  <ReportCard title={report.title} content={report.content} locale={locale} t={t} bordered={false} />
+                  <ReportCard title={report.title} content={report.content} locale={locale} t={t} bordered={false} symbols={[analysis.ticker]} />
                 </TabsContent>
               ))}
             </Tabs>
@@ -86,14 +86,14 @@ export function ResearchReportContent({ analysis: source, locale, t, translation
         )}
         {analysis.trader_plan && (
           <div id={`${id}-trader`} className="scroll-mt-6">
-            <ReportCard title={t("tradingAnalysis.sections.traderPlan")} content={analysis.trader_plan} locale={locale} t={t} />
+            <ReportCard title={t("tradingAnalysis.sections.traderPlan")} content={analysis.trader_plan} locale={locale} t={t} symbols={[analysis.ticker]} />
           </div>
         )}
         {(analysis.investment_debate || analysis.risk_debate) && (
           <section id={`${id}-discussion`} className="scroll-mt-6 space-y-10">
             <h2 className="text-xl font-semibold">{t("tradingAnalysis.reader.discussion")}</h2>
-            <DebateCard title={t("tradingAnalysis.sections.investmentDebate")} icon={Swords} debate={analysis.investment_debate as unknown as Record<string, string> | null} bullLabel={t("tradingAnalysis.debate.bullResearcher")} bearLabel={t("tradingAnalysis.debate.bearResearcher")} judgeLabel={t("tradingAnalysis.debate.judgeDecision")} locale={locale} t={t} />
-            <DebateCard title={t("tradingAnalysis.sections.riskDebate")} icon={ShieldCheck} debate={analysis.risk_debate as unknown as Record<string, string> | null} bullLabel={t("tradingAnalysis.debate.aggressiveAnalyst")} bearLabel={t("tradingAnalysis.debate.conservativeAnalyst")} judgeLabel={t("tradingAnalysis.debate.judgeDecision")} locale={locale} t={t} />
+            <DebateCard title={t("tradingAnalysis.sections.investmentDebate")} icon={Swords} debate={analysis.investment_debate as unknown as Record<string, string> | null} bullLabel={t("tradingAnalysis.debate.bullResearcher")} bearLabel={t("tradingAnalysis.debate.bearResearcher")} judgeLabel={t("tradingAnalysis.debate.judgeDecision")} locale={locale} t={t} symbols={[analysis.ticker]} />
+            <DebateCard title={t("tradingAnalysis.sections.riskDebate")} icon={ShieldCheck} debate={analysis.risk_debate as unknown as Record<string, string> | null} bullLabel={t("tradingAnalysis.debate.aggressiveAnalyst")} bearLabel={t("tradingAnalysis.debate.conservativeAnalyst")} judgeLabel={t("tradingAnalysis.debate.judgeDecision")} locale={locale} t={t} symbols={[analysis.ticker]} />
           </section>
         )}
       </div>

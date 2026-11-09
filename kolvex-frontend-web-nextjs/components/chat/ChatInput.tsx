@@ -425,11 +425,17 @@ export function ChatInput({
         )}
         <div
           className={cn(
-            "flex items-end gap-3",
+            // The send button floats over the end of the field when it has no footer. The
+            // textarea stays in flow, so it — not an empty column — decides the row's
+            // height: a multi-line value grows the composer instead of scrolling inside a
+            // one-line box. The field's right inset keeps the caret clear of the button,
+            // while the rows above it still use the full width.
+            "relative grid items-end gap-2.5",
+            hasFooter ? "grid-cols-1" : "max-md:grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto]",
             inline
-              ? "px-0 pb-3 pt-1"
+              ? "pb-3 pt-1"
               : docked
-                ? "gap-2.5 px-5 pt-3.5"
+                ? "px-5 pt-3.5"
                 : cn("px-5", evidenceLabel ? "pt-1" : "pt-4", hasFooter ? "pb-1" : "pb-3")
           )}
         >
@@ -445,9 +451,12 @@ export function ChatInput({
             className={cn(
               // The global focus-visible wash is for controls, not for the field
               // being edited, so the composer stays one surface while typing.
-              "flex-1 resize-none bg-transparent outline-none",
+              "col-start-1 row-start-1 block w-full min-w-0 resize-none bg-transparent outline-none",
               "text-foreground placeholder:text-muted-foreground",
               "disabled:cursor-not-allowed disabled:opacity-50",
+              // On phones the button overlays the field's end, so reserve its width on the
+              // last line. With a footer the button lives in the footer, leaving full width.
+              !hasFooter && "max-md:pr-14",
               inline
                 ? "min-h-11 border-b-2 border-transparent text-[1.0625rem] leading-7 focus-visible:border-primary focus-visible:!bg-transparent focus-visible:outline-none"
                 : "min-h-[1.75rem] max-h-[10rem] text-base leading-relaxed focus-visible:!bg-transparent focus-visible:outline-none",
@@ -456,13 +465,15 @@ export function ChatInput({
             rows={1}
           />
 
-          {/* Send Button - inline when no footer */}
+          {/* Send Button - floats at the field's end on phones, its own column on desktop. */}
           {!hasFooter && (
-            <SendButton
-              disabled={isSendDisabled}
-              isLoading={isLoading}
-              onCancel={onCancel}
-            />
+            <div className="col-start-1 row-start-1 justify-self-end self-end md:col-start-2">
+              <SendButton
+                disabled={isSendDisabled}
+                isLoading={isLoading}
+                onCancel={onCancel}
+              />
+            </div>
           )}
         </div>
 

@@ -86,7 +86,7 @@ export function WorkspacePanel({
   const running = run?.status === "running";
 
   return (
-    <div className={cn("space-y-8 px-4 pb-10 pt-5 md:px-5", className)}>
+    <div className={cn("w-full min-w-0 space-y-8 px-4 pb-10 pt-5 md:px-5", className)}>
       <header className="space-y-3">
         <div className="flex items-start gap-2">
           <h2 className="min-w-0 flex-1 text-lg font-semibold leading-7 text-foreground [overflow-wrap:anywhere]">{detail.title}</h2>
@@ -142,7 +142,7 @@ export function WorkspacePanel({
 
       <ResearchLauncher workspace={workspace} model={model} running={running} c={c} />
 
-      {run && <RunView run={run} c={c} locale={locale} />}
+      {run && <RunView run={run} c={c} locale={locale} symbols={detail.tickers} />}
 
       {detail.runs.length > 1 && (
         <section className="space-y-2">
@@ -262,71 +262,100 @@ function ResearchLauncher({ workspace, model, running, c }: { workspace: ChatWor
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /** A textarea in a narrow side panel takes every Enter for a new line; ⌘/Ctrl+Enter starts. */
+  const startOnModEnter = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if ((event.metaKey || event.ctrlKey) && event.key === "Enter" && !running && !starting) {
+      event.preventDefault();
+      void start();
+    }
+  };
+
+  const start = async () => {
+    setStarting(true);
+    setError(null);
+    try {
+      await workspace.start(question.trim(), agents, model);
+      setQuestion("");
+    } catch (err) {
+      setError(workspaceErrorCode(err));
+    } finally {
+      setStarting(false);
+    }
+  };
+
   const toggle = (agent: ResearchAgent) =>
     setAgents((prev) => prev.includes(agent)
       ? (prev.length === 1 ? prev : prev.filter((a) => a !== agent))
       : RESEARCH_AGENTS.filter((a) => a === agent || prev.includes(a)));
 
+  // One hairline card groups the question and the action, so the launcher reads as a
+  // single form instead of three full-bleed bands.
   return (
-    <section className="space-y-3">
-      <div className="flex items-center gap-1.5">
-        <h3 className="text-sm font-semibold text-foreground">{c("Research team", "研究团队")}</h3>
-        <InfoTip label={c("How research works", "研究是怎么进行的")}>
-          {c(
-            "Each researcher works in parallel with its own tools on this workspace's tickers, brief, question and chats. A lead researcher then combines their notes. Results are saved to this workspace.",
-            "每位研究员各用自己的工具，基于本工作区的股票、背景、问题和对话并行研究，最后由主研究员汇总成结论。结果会保存在这个工作区。",
-          )}
-        </InfoTip>
+    <section className="space-y-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5">
+          <h3 className="text-sm font-semibold text-foreground">{c("Research team", "研究团队")}</h3>
+          <InfoTip label={c("How research works", "研究是怎么进行的")}>
+            {c(
+              "Each researcher works in parallel with its own tools on this workspace's tickers, brief, question and chats. A lead researcher then combines their notes. Results are saved to this workspace.",
+              "每位研究员各用自己的工具，基于本工作区的股票、背景、问题和对话并行研究，最后由主研究员汇总成结论。结果会保存在这个工作区。",
+            )}
+          </InfoTip>
+        </div>
+        <span className="figure text-xs text-muted-foreground">
+          {c(`${agents.length} of ${RESEARCH_AGENTS.length} selected`, `已选 ${agents.length}/${RESEARCH_AGENTS.length} 位`)}
+        </span>
       </div>
-      <div className="flex flex-wrap gap-2" role="group" aria-label={c("Researchers", "研究员")}>
+
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label={c("Researchers", "研究员")}>
         {RESEARCH_AGENTS.map((agent) => {
           const on = agents.includes(agent);
           const Icon = AGENT_META[agent].icon;
           return (
-            <ChipButton key={agent} type="button" variant={on ? "primary" : "outline"} aria-pressed={on}
+            <ChipButton key={agent} type="button" variant={on ? "primary" : "outline"} size="sm" aria-pressed={on}
               disabled={running || starting} onClick={() => toggle(agent)}
+              className={cn(!on && "opacity-70 hover:opacity-100")}
               icon={on ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : <Icon className="h-3.5 w-3.5" aria-hidden="true" />}>
               {agentName(agent, c)}
             </ChipButton>
           );
         })}
       </div>
-      <Textarea
-        value={question}
-        onChange={(e) => setQuestion(e.target.value)}
-        maxLength={2000}
-        rows={2}
-        className="min-h-[4.5rem] resize-none"
-        placeholder={c("Question for this round (optional)", "本轮要研究的问题（可选）")}
-        aria-label={c("Research question", "研究问题")}
-      />
-      {error && <p role="alert" className="text-xs text-negative">{workspaceErrorText(error, c)}</p>}
-      <Button
-        className="w-full gap-2"
-        disabled={running || starting}
-        onClick={async () => {
-          setStarting(true);
-          setError(null);
-          try {
-            await workspace.start(question.trim(), agents, model);
-            setQuestion("");
-          } catch (err) {
-            setError(workspaceErrorCode(err));
-          } finally {
-            setStarting(false);
-          }
-        }}
-      >
-        {running || starting
-          ? <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
-          : <Play className="h-4 w-4" aria-hidden="true" />}
-        {running ? c("Research in progress", "研究进行中") : c(`Start research · ${agents.length}`, `开始研究 · ${agents.length} 位`)}
-      </Button>
+
+      <div className="rounded-2xl border border-foreground/10 bg-foreground/[0.04] p-2 focus-within:border-foreground/25">
+        <Textarea
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          onKeyDown={startOnModEnter}
+          maxLength={2000}
+          rows={2}
+          className="min-h-[3.5rem] resize-none rounded-xl border-transparent bg-transparent px-2 py-1.5 hover:bg-transparent focus-visible:border-transparent focus-visible:bg-transparent"
+          placeholder={c("Question for this round (optional)", "本轮要研究的问题（可选）")}
+          aria-label={c("Research question", "研究问题")}
+        />
+        <div className="mt-1.5 flex items-center justify-between gap-3">
+          <span className="hidden text-[0.6875rem] text-muted-foreground sm:block">{c("⌘Enter to start", "⌘Enter 开始")}</span>
+          {error
+            ? <p role="alert" className="text-xs text-negative [overflow-wrap:anywhere]">{workspaceErrorText(error, c)}</p>
+            : <span className="sr-only" aria-live="polite">{running ? c("Research in progress", "研究进行中") : ""}</span>}
+          <Button
+            size="sm"
+            className="ml-auto shrink-0 gap-1.5"
+            disabled={running || starting}
+            onClick={start}
+          >
+            {running || starting
+              ? <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+              : <Play className="h-3.5 w-3.5" aria-hidden="true" />}
+            {running ? c("Researching", "研究进行中") : c("Start research", "开始研究")}
+          </Button>
+        </div>
+      </div>
     </section>
   );
 }
 
-function RunView({ run, c, locale }: { run: ResearchRun; c: Copy; locale: string }) {
+function RunView({ run, c, locale, symbols }: { run: ResearchRun; c: Copy; locale: string; symbols: string[] }) {
   const results = run.results ?? [];
   const done = results.filter((r) => r.status === "completed" || r.status === "failed").length;
 
@@ -348,7 +377,7 @@ function RunView({ run, c, locale }: { run: ResearchRun; c: Copy; locale: string
           </div>
         )}
         {run.synthesis ? (
-          <ResearchMarkdown>{run.synthesis}</ResearchMarkdown>
+          <ResearchMarkdown symbols={symbols}>{run.synthesis}</ResearchMarkdown>
         ) : run.status === "failed" ? (
           <p className="text-sm text-negative">{c("This research run failed.", "这轮研究失败了。")}</p>
         ) : run.status !== "running" ? (
@@ -361,14 +390,14 @@ function RunView({ run, c, locale }: { run: ResearchRun; c: Copy; locale: string
 
       <ListCard className="p-1.5 sm:p-2">
         <ListRows>
-          {results.map((result) => <ResultRow key={result.agent} result={result} c={c} />)}
+          {results.map((result) => <ResultRow key={result.agent} result={result} c={c} symbols={symbols} />)}
         </ListRows>
       </ListCard>
     </section>
   );
 }
 
-function ResultRow({ result, c }: { result: AgentResult; c: Copy }) {
+function ResultRow({ result, c, symbols }: { result: AgentResult; c: Copy; symbols: string[] }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const toolLabel = (name: string) => {
@@ -416,7 +445,7 @@ function ResultRow({ result, c }: { result: AgentResult; c: Copy }) {
         <CollapsibleContent className="px-2.5 pb-4 pl-[3.375rem]">
           {result.status === "completed" ? (
             <div className="space-y-3">
-              <ResearchMarkdown>{result.content}</ResearchMarkdown>
+              <ResearchMarkdown symbols={symbols}>{result.content}</ResearchMarkdown>
               {result.tools_used.length > 0 && (
                 <p className="text-xs text-muted-foreground">
                   {c("Data used", "使用的数据")}: <span>{Array.from(new Set(result.tools_used)).map(toolLabel).join(" · ")}</span>

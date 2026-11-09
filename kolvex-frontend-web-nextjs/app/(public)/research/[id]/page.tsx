@@ -65,11 +65,11 @@ export default async function ResearchDetailPage({ params }: Props) {
     <article className="min-w-0 space-y-12">
       {sections.map(([id, heading, content]) => {
         const Icon = sectionIcons[id as keyof typeof sectionIcons];
-        return <section key={id} id={id} className={id === "conclusion" ? REPORT_READER_CONCLUSION : "scroll-mt-6 border-t border-border pt-6"}><h2 className="mb-6 flex items-center gap-2 text-xl font-semibold"><Icon className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden="true" />{heading}</h2><MarkdownBody content={content} /></section>;
+        return <section key={id} id={id} className={id === "conclusion" ? REPORT_READER_CONCLUSION : "scroll-mt-6 border-t border-border pt-6"}><h2 className="mb-6 flex items-center gap-2 text-xl font-semibold"><Icon className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden="true" />{heading}</h2><MarkdownBody content={content} symbols={[report.ticker]} /></section>;
       })}
       {debates.map(({ title: heading, data, labels }) => data && <section key={heading} className="space-y-5 border-t border-border pt-8"><h2 className="text-xl font-semibold">{heading}</h2>{Object.entries(labels).map(([key, label]) => {
         const content = (data as unknown as Record<string, string>)[key];
-        return content ? <details key={key} open={key === "judge_decision"} className="border-b border-border pb-5"><summary className="cursor-pointer py-3 font-medium">{label}</summary><MarkdownBody content={content} /></details> : null;
+        return content ? <details key={key} open={key === "judge_decision"} className="border-b border-border pb-5"><summary className="cursor-pointer py-3 font-medium">{label}</summary><MarkdownBody content={content} symbols={[report.ticker]} /></details> : null;
       })}</section>)}
       {!sections.length && !report.investment_debate && !report.risk_debate && <p className="text-muted-foreground">该报告未提供正文。</p>}
     </article>

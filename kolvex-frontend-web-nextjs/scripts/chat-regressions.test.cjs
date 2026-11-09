@@ -44,6 +44,7 @@ function harness(file, mocks = {}) {
       return slots[index];
     },
     useCallback(fn) { return fn; },
+    useMemo(factory) { return factory(); },
     useEffect(setup) { effects.push({ setup }); },
   };
   const window = {
@@ -157,6 +158,7 @@ function detailFixture() {
     './workspace/WorkspacePicker': { WorkspacePicker: 'workspace-picker' },
     './workspace/WorkspacePanel': { WorkspacePanel: 'workspace-panel' },
     './ChatHistorySheet': { ChatHistorySheet: 'chat-history-sheet' },
+    '@/lib/markdown/stockMentions': { findSymbols: () => [] },
     'next/link': { __esModule: true, default: 'a' },
   });
   const props = { conversationId: 'chat-1' };

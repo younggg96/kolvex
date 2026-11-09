@@ -1,7 +1,10 @@
+"use client";
+
 import type { ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
+import { DataTable, RICH_MARKDOWN_COMPONENTS } from "@/components/markdown/rich-markdown";
+import { RICH_REMARK_PLUGINS, richRemarkPlugins, richUrlTransform, stripEmoji } from "@/lib/markdown/prose";
 
 export const PROSE_CLASSES = cn(
   "prose w-full min-w-0 max-w-none dark:prose-invert break-words text-base leading-[1.85] text-foreground/90 md:text-[1.0625rem]",
@@ -23,25 +26,24 @@ export const PROSE_CLASSES = cn(
 );
 
 export function MarkdownTable({ children, className }: { children?: ReactNode; className?: string }) {
-  return (
-    <div role="region" aria-label="Data table" tabIndex={0} className={cn("glass-card bg-card-glass my-6 w-full min-w-0 max-w-full overflow-x-auto rounded-3xl border border-foreground/10 focus-visible:outline-none", className)}>
-      <table>{children}</table>
-    </div>
-  );
+  return <DataTable className={cn("my-6", className)}>{children}</DataTable>;
 }
 
-export function MarkdownBody({ content }: { content: string }) {
+export function MarkdownBody({ content, symbols }: { content: string; symbols?: string[] }) {
+  const remarkPlugins = symbols?.length ? richRemarkPlugins(symbols) : RICH_REMARK_PLUGINS;
   return (
     <div className={PROSE_CLASSES}>
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={remarkPlugins}
+        urlTransform={richUrlTransform}
         components={{
           h1: ({ children }) => <h3 className="text-xl md:text-2xl">{children}</h3>,
           h2: ({ children }) => <h3 className="text-lg md:text-xl">{children}</h3>,
           h3: ({ children }) => <h4 className="text-base md:text-lg">{children}</h4>,
+          ...RICH_MARKDOWN_COMPONENTS,
           table: ({ children }) => <MarkdownTable>{children}</MarkdownTable>,
         }}
-      >{content}</ReactMarkdown>
+      >{stripEmoji(content)}</ReactMarkdown>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import CompanyLogo from "@/components/ui/company-logo";
 import { useCopy } from "@/components/decision/shared";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useTranslation } from "@/lib/i18n";
@@ -220,87 +221,172 @@ export function ContributionBoard({ run }: { run: ActivityRun }) {
   );
 }
 
-type Filter = "all" | "etf" | "stock";
+export type Filter = "all" | "etf" | "stock";
 
-function ContractRow({ item, max }: { item: ActivityContract; max: number }) {
+/** Expiry as the reader's locale writes month/day, from the ISO date the API returns. */
+function useExpiryLabel() {
+  const { locale } = useTranslation();
+  return (iso: string) =>
+    new Intl.DateTimeFormat(locale === "zh" ? "zh-CN" : "en-US", {
+      month: "2-digit",
+      day: "2-digit",
+      timeZone: "UTC",
+    }).format(new Date(`${iso}T00:00:00Z`));
+}
+
+/** Volume and open interest are counts: group them the way the reader's locale does. */
+function useCountLabel() {
+  const { locale } = useTranslation();
+  return (value: number) => new Intl.NumberFormat(locale === "zh" ? "zh-CN" : "en-US").format(value);
+}
+
+/**
+ * A ranked contract is a row, not a card: the eye compares premium down one column.
+ * The contract's identity, size, price and the volume/open-interest signal each own a
+ * column, and the expansion is an explicit button so nothing pretends to be a link.
+ */
+function ContractRow({
+  item,
+  max,
+  index,
+}: {
+  item: ActivityContract;
+  max: number;
+  index: number;
+}) {
   const c = useCopy();
+  const { locale } = useTranslation();
+  const expiry = useExpiryLabel();
+  const count = useCountLabel();
   const [open, setOpen] = useState(false);
   const call = item.type === "call";
-  const expiry = item.expiration.slice(5).replace("-", "/");
+  const detailsId = `activity-contract-${index}`;
+  const heavyVolume = item.vol_oi !== null && item.vol_oi >= 3;
+
+  const detail: [string, string][] = [
+    [c("Volume", "成交量"), count(item.volume)],
+    [c("Open interest", "持仓量"), count(item.open_interest)],
+    ["IV", item.iv === null ? "—" : pct(item.iv * 100)],
+    ["Delta", fixed(item.delta, 3)],
+    [c("Out of the money", "价外幅度"), pct(item.otm_pct)],
+    [c("Last trade", "最近成交"), item.last === null ? "—" : `$${fixed(item.last)}`],
+    [c("Expiration", "到期日"), item.expiration],
+    [c("Contract", "合约"), item.symbol],
+  ];
+
   return (
-    <li className="overflow-hidden rounded-2xl border border-foreground/10 glass-card bg-card-glass transition-[border-color] duration-150 hover:border-foreground/20">
-      <button
-        type="button"
-        aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
-        className="flex w-full items-center gap-3 border-l-4 px-4 py-3 text-left hover:bg-foreground/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
-        style={{ borderLeftColor: call ? "rgb(var(--positive-fill))" : "rgb(var(--negative-fill))" }}
-      >
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="font-semibold">{item.underlying}</span>
-            <span className={cn("figure rounded px-1.5 py-0.5 text-xs font-medium", call ? "bg-positive/10 text-positive" : "bg-negative/10 text-negative")}>
-              ${item.strike} {call ? "C" : "P"}
-            </span>
-            <span className="figure text-sm text-muted-foreground">{expiry}</span>
-            <span className="figure rounded bg-muted px-1.5 py-0.5 text-xs">{item.dte}d</span>
-            {item.flags.new_positions && <span className="rounded bg-muted px-1.5 py-0.5 text-xs">{c("New positions", "新开仓")}</span>}
-            {item.flags.crosses_earnings && <span className="rounded bg-muted px-1.5 py-0.5 text-xs">{c("Spans earnings", "跨财报")}</span>}
-          </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {c("Avg price", "成交均价")} <span className="figure">${fixed(item.price)}</span>
-          </p>
-        </div>
-        <div className="w-28 shrink-0 text-right">
-          <p className="figure font-semibold">{formatPremium(item.premium)}</p>
-          <div className="mt-1.5 h-1 rounded-full bg-muted" aria-hidden>
-            <div className={cn("h-full rounded-full", call ? "bg-positive-fill" : "bg-negative-fill")} style={{ width: `${barShare(item.premium, max) * 100}%` }} />
-          </div>
-          <p className="figure mt-1 text-xs text-muted-foreground">Vol/OI {item.vol_oi === null ? "—" : `${fixed(item.vol_oi, 1)}×`}</p>
-        </div>
-        <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} />
-      </button>
-      {open && (
-        <div className="border-t border-border bg-foreground/[0.02] px-4 py-4">
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-4">
-            {([
-              [c("Volume", "成交量"), item.volume.toLocaleString()],
-              [c("Open interest", "持仓量"), item.open_interest.toLocaleString()],
-              ["IV", item.iv === null ? "—" : pct(item.iv * 100)],
-              ["Delta", fixed(item.delta, 3)],
-              [c("Out of the money", "价外幅度"), pct(item.otm_pct)],
-              [c("Last trade", "最近成交"), item.last === null ? "—" : `$${fixed(item.last)}`],
-              [c("Expiration", "到期日"), item.expiration],
-              [c("Contract", "合约"), item.symbol],
-            ] as [string, string][]).map(([label, value]) => (
-              <div key={label} className="min-w-0">
-                <dt className="text-xs text-muted-foreground">{label}</dt>
-                <dd className="figure mt-0.5 break-all">{value}</dd>
-              </div>
-            ))}
-          </dl>
-          <Link href={optionsHref(item.underlying)} className="mt-3 inline-block text-sm font-medium text-primary hover:underline">
-            {c(`Open ${item.underlying} options chain`, `查看 ${item.underlying} 期权链`)} →
+    <>
+      <tr className="border-t border-border align-middle transition-colors hover:bg-foreground/[0.03]">
+        <th scope="row" className="py-2.5 pl-3 pr-2 text-left font-semibold">
+          <Link
+            href={optionsHref(item.underlying)}
+            className="inline-flex items-center gap-2 rounded-full underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          >
+            <span aria-hidden="true"><CompanyLogo symbol={item.underlying} size="xs" /></span>
+            <span className="figure text-[0.9375rem]">{item.underlying}</span>
           </Link>
-        </div>
+        </th>
+        <td className="px-2 py-2.5">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+            <span className="figure text-[0.9375rem] font-medium">
+              ${item.strike}{" "}
+              <span className={call ? "text-positive" : "text-negative"}>{call ? "C" : "P"}</span>
+            </span>
+            <span className="figure text-xs text-muted-foreground">
+              {expiry(item.expiration)} · {c(`${item.dte}d`, `${item.dte} 天`)}
+            </span>
+            {item.flags.new_positions && <span className="rounded bg-foreground/[0.06] px-1.5 py-0.5 text-[0.6875rem] text-muted-foreground">{c("New", "新开仓")}</span>}
+            {item.flags.crosses_earnings && <span className="rounded bg-foreground/[0.06] px-1.5 py-0.5 text-[0.6875rem] text-muted-foreground">{c("Earnings", "跨财报")}</span>}
+          </div>
+        </td>
+        <td className="w-[5.5rem] px-2 py-2.5 text-right sm:w-[7.5rem]">
+          <span className="figure text-[0.9375rem] font-semibold">{formatPremium(item.premium)}</span>
+        </td>
+        <td className="hidden w-[5rem] px-2 py-2.5 text-right text-sm text-muted-foreground sm:table-cell">
+          <span className="figure">${fixed(item.price)}</span>
+        </td>
+        <td className="hidden w-[5.5rem] px-2 py-2.5 text-right text-sm text-muted-foreground md:table-cell">
+          <span className="figure">{count(item.volume)}</span>
+        </td>
+        <td className="hidden w-[5.5rem] px-2 py-2.5 text-right text-sm text-muted-foreground lg:table-cell">
+          <span className="figure">{count(item.open_interest)}</span>
+        </td>
+        <td className="hidden w-[4.5rem] px-2 py-2.5 text-right text-sm sm:table-cell">
+          <span className={cn("figure", heavyVolume ? "font-medium text-foreground" : "text-muted-foreground")}>
+            {item.vol_oi === null ? "—" : `${fixed(item.vol_oi, 1)}×`}
+          </span>
+        </td>
+        <td className="w-10 py-2.5 pl-1 pr-2 text-right">
+          <button
+            type="button"
+            aria-expanded={open}
+            aria-controls={detailsId}
+            aria-label={c(
+              `${open ? "Hide" : "Show"} details for ${item.underlying} $${item.strike} ${call ? "call" : "put"}`,
+              `${open ? "收起" : "展开"} ${item.underlying} $${item.strike} ${call ? "看涨" : "看跌"}详情`,
+            )}
+            onClick={() => setOpen((value) => !value)}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
+          >
+            <ChevronDown className={cn("h-4 w-4 transition-transform duration-200 motion-reduce:transition-none", open && "rotate-180")} aria-hidden="true" />
+          </button>
+        </td>
+      </tr>
+      {open && (
+        <tr id={detailsId} className="border-t border-border bg-foreground/[0.02]">
+          <td colSpan={6} className="px-3 pb-4 pt-3">
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-4">
+              {detail.map(([label, value]) => (
+                <div key={label} className="min-w-0">
+                  <dt className="text-xs text-muted-foreground">{label}</dt>
+                  <dd className="figure mt-0.5 break-all">{value}</dd>
+                </div>
+              ))}
+            </dl>
+            <Link
+              href={optionsHref(item.underlying)}
+              className="mt-3 inline-flex min-h-11 items-center text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            >
+              {c(`Open ${item.underlying} options chain`, `查看 ${item.underlying} 期权链`)} →
+            </Link>
+          </td>
+        </tr>
       )}
-    </li>
+    </>
   );
 }
 
-export function UnusualContracts({ run }: { run: ActivityRun }) {
+export function UnusualContracts({
+  run,
+  filter: controlled,
+  onFilterChange,
+}: {
+  run: ActivityRun;
+  /** Controlled by the page so the group can live in the URL. */
+  filter?: Filter;
+  onFilterChange?: (filter: Filter) => void;
+}) {
   const c = useCopy();
-  const [filter, setFilter] = useState<Filter>("all");
+  const [uncontrolled, setUncontrolled] = useState<Filter>("all");
+  const filter = controlled ?? uncontrolled;
+  const setFilter = (next: Filter) => {
+    setUncontrolled(next);
+    onFilterChange?.(next);
+  };
   const all = run.payload.contracts;
   const etf = all.filter((x) => x.is_etf).length;
   const shown = all.filter((x) => filter === "all" || (filter === "etf") === x.is_etf);
   const max = Math.max(0, ...all.map((x) => x.premium));
+
   return (
     <section aria-labelledby="activity-contracts">
-      <SectionHeader title={c("Largest contracts", "异动合约")} />
+      <SectionHeader
+        title={c("Largest contracts", "异动合约")}
+        note={c("Ranked by premium traded, largest first. Volume/Open interest above 3× is bold: more contracts changed hands than were already open.", "按成交权利金从大到小排序。量/持仓 超过 3 倍加粗：当日成交量超过原有持仓量。")}
+      />
       <SegmentedControl
         size="sm"
-        className="mb-4"
+        className="mb-3"
         label={c("Contract type", "合约类型")}
         value={filter}
         onChange={setFilter}
@@ -310,11 +396,39 @@ export function UnusualContracts({ run }: { run: ActivityRun }) {
           { value: "stock", label: `${c("Stocks", "个股")} ${all.length - etf}` },
         ]}
       />
-      <ul className="space-y-2">
-        {shown.map((item) => (
-          <ContractRow key={item.symbol} item={item} max={max} />
-        ))}
-      </ul>
+      <div className="overflow-x-auto rounded-3xl border border-foreground/10 glass-card bg-card-glass">
+        <table className="w-full table-fixed text-sm sm:min-w-[560px]">
+          <caption className="sr-only">
+            {c(
+              `${shown.length} largest ${filter === "stock" ? "stock" : filter === "etf" ? "ETF" : ""} option contracts by premium traded`,
+              `成交权利金最大的 ${shown.length} 个${filter === "stock" ? "个股" : filter === "etf" ? "ETF" : ""}期权合约`,
+            )}
+          </caption>
+          <thead className="text-xs text-muted-foreground">
+            <tr className="border-b border-border">
+              <th scope="col" className="w-[4.5rem] py-2.5 pl-3 pr-2 text-left font-medium sm:w-[5.5rem]">{c("Symbol", "标的")}</th>
+              <th scope="col" className="px-2 py-2.5 text-left font-medium">{c("Contract", "合约")}</th>
+              <th scope="col" className="w-[5.5rem] px-2 py-2.5 text-right font-medium sm:w-[7.5rem]">{c("Premium", "权利金")}</th>
+              <th scope="col" className="hidden w-[5rem] px-2 py-2.5 text-right font-medium sm:table-cell">{c("Avg price", "均价")}</th>
+              <th scope="col" className="hidden w-[5.5rem] px-2 py-2.5 text-right font-medium md:table-cell">{c("Volume", "成交量")}</th>
+              <th scope="col" className="hidden w-[5.5rem] px-2 py-2.5 text-right font-medium lg:table-cell">{c("Open interest", "持仓量")}</th>
+              <th scope="col" className="hidden w-[4.5rem] px-2 py-2.5 text-right font-medium sm:table-cell">Vol/OI</th>
+              <th scope="col" className="w-10 py-2.5 pl-1 pr-2"><span className="sr-only">{c("Details", "详情")}</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {shown.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="px-3 py-8 text-center text-sm text-muted-foreground">
+                  {c("No contracts in this group for this run.", "这个分类本次没有合约。")}
+                </td>
+              </tr>
+            ) : (
+              shown.map((item, index) => <ContractRow key={item.symbol} item={item} max={max} index={index} />)
+            )}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }

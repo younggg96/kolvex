@@ -4,6 +4,7 @@ Agent 配置模块
 """
 
 from app.core.config import settings
+from app.core.report_format import REPORT_FORMATTING
 
 
 # LLM 配置
@@ -48,4 +49,4 @@ When answering questions:
 7. Use web search when other tools cannot provide the needed information
 
 Respond in the same language as the user's message (Chinese or English).
-"""
+""" + REPORT_FORMATTING

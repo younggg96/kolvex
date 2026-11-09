@@ -26,11 +26,13 @@ function DebatePanel({
   icon: Icon,
   content,
   variant,
+  symbols,
 }: {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   content: string;
   variant: "bull" | "bear";
+  symbols?: string[];
 }) {
   const isBull = variant === "bull";
   return (
@@ -40,7 +42,7 @@ function DebatePanel({
         <span className="flex-1">{label}</span>
         <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
       </summary>
-      <div className="pt-5"><MarkdownBody content={content} /></div>
+      <div className="pt-5"><MarkdownBody content={content} symbols={symbols} /></div>
     </details>
   );
 }
@@ -55,6 +57,7 @@ export function DebateCard({
   className,
   locale,
   t,
+  symbols,
 }: {
   title: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -65,6 +68,8 @@ export function DebateCard({
   className?: string;
   locale: string;
   t: (key: string) => string;
+  /** Symbols this debate is about; their mentions render as a logo linking to quotes. */
+  symbols?: string[];
 }) {
   const bullKey =
     debate &&
@@ -253,7 +258,7 @@ export function DebateCard({
                   t={t}
                 />
               </div>
-              <MarkdownBody content={judgeContent} />
+              <MarkdownBody content={judgeContent} symbols={symbols} />
             </div>
           </div>
         )}
@@ -268,6 +273,7 @@ export function DebateCard({
                   icon={TrendingUp}
                   content={getContent(bullKey!) || ""}
                   variant="bull"
+                  symbols={symbols}
                 />
               )}
 
@@ -277,6 +283,7 @@ export function DebateCard({
                   icon={TrendingDown}
                   content={getContent(bearKey!) || ""}
                   variant="bear"
+                  symbols={symbols}
                 />
               )}
             </div>

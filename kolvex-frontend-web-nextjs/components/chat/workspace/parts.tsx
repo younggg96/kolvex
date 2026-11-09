@@ -1,7 +1,6 @@
 "use client";
 
 import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import {
   AlertCircle,
   Briefcase,
@@ -14,6 +13,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { RICH_MARKDOWN_COMPONENTS } from "@/components/markdown/rich-markdown";
+import { richRemarkPlugins, richUrlTransform, stripEmoji } from "@/lib/markdown/prose";
 import type { AgentStatus, ResearchAgent, Stance } from "@/lib/researchWorkspaceApi";
 
 type Copy = (en: string, zh: string) => string;
@@ -101,7 +102,8 @@ export function RelayBar({ statuses, label }: { statuses: AgentStatus[]; label: 
   );
 }
 
-export function ResearchMarkdown({ children, className }: { children: string; className?: string }) {
+export function ResearchMarkdown({ children, className, symbols }: { children: string; className?: string; symbols?: string[] }) {
+  const remarkPlugins = richRemarkPlugins(symbols);
   return (
     <div
       className={cn(
@@ -109,12 +111,17 @@ export function ResearchMarkdown({ children, className }: { children: string; cl
         "prose-headings:mt-3 prose-headings:mb-1.5 prose-headings:font-semibold prose-h1:text-base prose-h2:text-sm prose-h3:text-sm",
         "prose-p:my-1.5 prose-p:leading-6 prose-p:text-sm prose-ul:my-1.5 prose-ul:pl-4 prose-li:my-0.5 prose-li:text-sm",
         "prose-ol:my-1.5 prose-ol:pl-4 prose-strong:font-semibold prose-strong:text-foreground",
-        "prose-table:block prose-table:max-w-full prose-table:overflow-x-auto prose-table:text-xs",
         "[&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
         className,
       )}
     >
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>{children}</ReactMarkdown>
+      <ReactMarkdown
+        remarkPlugins={remarkPlugins}
+        urlTransform={richUrlTransform}
+        components={RICH_MARKDOWN_COMPONENTS}
+      >
+        {stripEmoji(children)}
+      </ReactMarkdown>
     </div>
   );
 }

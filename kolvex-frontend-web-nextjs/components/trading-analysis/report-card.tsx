@@ -20,6 +20,7 @@ export function ReportCard({
   t,
   headerExtra,
   bordered = true,
+  symbols,
 }: {
   title: string;
   content: string | null | undefined;
@@ -28,6 +29,8 @@ export function ReportCard({
   t: (key: string) => string;
   headerExtra?: React.ReactNode;
   bordered?: boolean;
+  /** Symbols this report is about; their mentions render as a logo linking to quotes. */
+  symbols?: string[];
 }) {
   const { displayContent, showTranslated, isTranslating, translationError, toggle } =
     useContentTranslation(content, locale);
@@ -153,7 +156,7 @@ export function ReportCard({
             {t("tradingAnalysis.translationFailed")}
           </p>
         )}
-        <MarkdownBody content={displayContent || ""} />
+        <MarkdownBody content={displayContent || ""} symbols={symbols} />
       </section>
     </TooltipProvider>
   );

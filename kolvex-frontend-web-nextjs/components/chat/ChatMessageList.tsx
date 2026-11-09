@@ -132,6 +132,7 @@ export function ChatMessageList({
   errorMessage,
   onRetry,
   modelName,
+  symbols,
 }: ChatMessageListProps) {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -210,6 +211,7 @@ export function ChatMessageList({
               content={message.content}
               timestamp={message.timestamp}
               isFirst={index === 0}
+              symbols={symbols}
             />
           ))}
 

@@ -1,7 +1,8 @@
 "use client";
 
 import { InfoTip } from "@/components/ui/info-tip";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useCopy } from "@/components/decision/shared";
@@ -12,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useCachedResource } from "@/hooks/useCachedResource";
 import { useTranslation } from "@/lib/i18n";
 import { ACTIVITY_SESSIONS, runKey, runsKey, type ActivityRun, type RunList } from "@/lib/optionsActivity";
-import { ContributionBoard, MarketOverview, SummaryCard, TickerLevels, UnusualContracts, useSessionLabel } from "./sections";
+import { ContributionBoard, MarketOverview, SummaryCard, TickerLevels, UnusualContracts, useSessionLabel, type Filter } from "./sections";
 
 class ActivityError extends Error {
   constructor(public code: string, public status: number) {
@@ -31,8 +32,27 @@ export default function OptionsActivityPage() {
   const c = useCopy();
   const { locale } = useTranslation();
   const sessionLabel = useSessionLabel();
-  const [date, setDate] = useState<string | null>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  // The day, the run and the contract group live in the URL so a view can be shared
+  // and reloaded exactly as it was read.
+  const [date, setDate] = useState<string | null>(() => searchParams.get("date"));
   const [runId, setRunId] = useState<string | null>(null);
+  const kindParam = searchParams.get("kind");
+  const kind: Filter = kindParam === "etf" || kindParam === "stock" ? kindParam : "all";
+
+  const setQuery = useCallback(
+    (updates: Record<string, string | null>) => {
+      const next = new URLSearchParams(searchParams.toString());
+      for (const [key, value] of Object.entries(updates)) {
+        if (value) next.set(key, value);
+        else next.delete(key);
+      }
+      const query = next.toString();
+      router.replace(`/dashboard/options-activity${query ? `?${query}` : ""}`, { scroll: false });
+    },
+    [router, searchParams],
+  );
 
   const list = useCachedResource<RunList>(runsKey(date), (signal) => load(runsKey(date), signal), { ttl: 60_000, timeout: 25_000 });
   // A picked date with no explicit run shows that day's latest run.
@@ -46,6 +66,15 @@ export default function OptionsActivityPage() {
   });
   const data = run.data;
   const runsForPicker = date ? dayRuns : data?.day_runs ?? [];
+  const wantedSession = searchParams.get("session");
+
+  // A session in the URL picks that run once the day's runs are known.
+  useEffect(() => {
+    if (!wantedSession || data?.session === wantedSession) return;
+    const runs = date ? list.data?.runs ?? [] : data?.day_runs ?? [];
+    const match = runs.find((r) => r.session === wantedSession);
+    if (match && match.id !== runId) setRunId(match.id);
+  }, [wantedSession, data, date, list.data, runId]);
   const activeDate = data?.trade_date ?? date ?? list.data?.date ?? null;
 
   const failure = run.error instanceof ActivityError ? run.error.code : run.error ? "unavailable" : null;
@@ -77,9 +106,6 @@ export default function OptionsActivityPage() {
                   {c("Where options money traded across a watchlist of liquid ETFs and stocks, three times each trading day. A starting point for research, not a trading signal.", "每个交易日三次，扫描一组高流动性 ETF 和个股的期权成交，看资金集中在哪里。这是研究的起点，不是交易信号。")}
                 </InfoTip>
               </h1>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                {c("A daily view of options positioning across liquid ETFs and stocks.", "每日追踪高流动性 ETF 与个股的期权资金分布。")}
-              </p>
             </div>
             <div className="flex w-full flex-wrap items-center gap-2 rounded-3xl border border-foreground/10 glass-card bg-card-glass p-2 sm:w-auto sm:flex-nowrap">
               <div className="min-w-0 flex-1 sm:w-48 sm:flex-none">
@@ -88,6 +114,7 @@ export default function OptionsActivityPage() {
                   onValueChange={(next) => {
                     setDate(next);
                     setRunId(null);
+                    setQuery({ date: next, session: null });
                   }}
                   disabled={!list.data?.dates.length}
                 >
@@ -110,6 +137,7 @@ export default function OptionsActivityPage() {
                 onChange={(session) => {
                   const match = runsForPicker.find((r) => r.session === session);
                   if (match) setRunId(match.id);
+                  setQuery({ session });
                 }}
                 options={ACTIVITY_SESSIONS.map((session) => ({
                   value: session,
@@ -128,7 +156,9 @@ export default function OptionsActivityPage() {
                   run.refresh();
                 }}
               >
-                {run.refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                {run.refreshing
+                  ? <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                  : <RefreshCw className="h-4 w-4" aria-hidden="true" />}
               </Button>
             </div>
           </header>
@@ -138,7 +168,7 @@ export default function OptionsActivityPage() {
               <SummaryCard run={data} />
               <MarketOverview run={data} />
               <ContributionBoard run={data} />
-              <UnusualContracts run={data} />
+              <UnusualContracts run={data} filter={kind} onFilterChange={(next) => setQuery({ kind: next === "all" ? null : next })} />
               <TickerLevels run={data} />
             </div>
           ) : failure && !run.loading ? (

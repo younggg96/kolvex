@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { ChatMessageList } from "./ChatMessageList";
@@ -26,6 +26,7 @@ import {
   visibleQuestion,
 } from "./pageEvidence";
 import { useTranslation } from "@/lib/i18n";
+import { findSymbols } from "@/lib/markdown/stockMentions";
 import { PanelRight, SquarePen } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -471,6 +472,17 @@ export function ChatDetailContainer({
     ? formatEvidenceLabel(evidence, evidencePlace)
     : undefined;
 
+  // Tickers the reader already named (page context or their own words) get a logo and a
+  // link in the answer, without waiting for the answer to build a table.
+  const knownSymbols = useMemo(() => {
+    const symbols = new Set<string>(evidence?.tickers ?? []);
+    for (const message of messages) {
+      if (message.role !== "user") continue;
+      for (const symbol of findSymbols(message.content)) symbols.add(symbol);
+    }
+    return [...symbols];
+  }, [evidence, messages]);
+
   const handleFormSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (isBlocked) return;
@@ -546,10 +558,11 @@ export function ChatDetailContainer({
           errorMessage={streamError}
           onRetry={streamError ? handleRetry : undefined}
           modelName={MODEL_CONFIGS.find((m) => m.id === selectedModel)?.name}
+          symbols={knownSymbols}
         />
         {/* Chat Input */}
         <div className="sticky bottom-0 z-20">
-          <div className="mx-auto max-w-3xl px-4 pb-4 pt-2">
+          <div className="mx-auto max-w-3xl px-4 md:pb-4 pt-2">
             {inputAction && <div className="flex justify-end pb-2">{inputAction}</div>}
             <ChatInput
               value={query}

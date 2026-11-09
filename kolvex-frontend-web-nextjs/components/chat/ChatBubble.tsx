@@ -3,13 +3,13 @@
 import { cn } from "@/lib/utils";
 import { Copy, Check, RotateCcw } from "lucide-react";
 import { useState } from "react";
-import ReactMarkdown, { type Components } from "react-markdown";
-import remarkGfm from "remark-gfm";
+import ReactMarkdown from "react-markdown";
 import { visibleQuestion } from "./pageEvidence";
 import type { ChatBubbleProps } from "./types";
 import { Button } from "../ui/button";
 import { useTranslation } from "@/lib/i18n";
-import { MarkdownTable } from "@/components/trading-analysis/markdown";
+import { RICH_MARKDOWN_COMPONENTS } from "@/components/markdown/rich-markdown";
+import { richRemarkPlugins, richUrlTransform, stripEmoji } from "@/lib/markdown/prose";
 
 const CHAT_PROSE_CLASSES = cn(
   "prose prose-sm dark:prose-invert w-full min-w-0 max-w-none break-words text-[0.9375rem] leading-7 text-foreground/90",
@@ -23,15 +23,8 @@ const CHAT_PROSE_CLASSES = cn(
   "prose-code:text-[0.8125rem] prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:font-normal prose-code:before:content-none prose-code:after:content-none",
   "prose-pre:bg-muted prose-pre:text-foreground prose-pre:rounded-2xl prose-pre:text-[0.8125rem] prose-pre:overflow-x-auto",
   "prose-blockquote:font-normal prose-blockquote:not-italic prose-blockquote:border-l prose-blockquote:border-l-border prose-blockquote:bg-muted/50 prose-blockquote:py-1 prose-blockquote:px-4 prose-blockquote:rounded-r-lg [&_blockquote_p:first-of-type]:before:content-none [&_blockquote_p:last-of-type]:after:content-none",
-  "prose-table:my-0 prose-table:w-full prose-table:text-[0.8125rem] prose-th:bg-muted/60 prose-th:whitespace-nowrap prose-th:px-3.5 prose-th:py-2.5 prose-th:font-semibold prose-td:px-3.5 prose-td:py-2.5 prose-td:align-top prose-td:tabular-nums",
   "[&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
 );
-
-const REMARK_PLUGINS = [remarkGfm];
-
-const MARKDOWN_COMPONENTS: Components = {
-  table: ({ children }) => <MarkdownTable className="my-4">{children}</MarkdownTable>,
-};
 
 export function ChatBubble({
   role,
@@ -41,14 +34,18 @@ export function ChatBubble({
   isFirst,
   onRetry,
   modelName,
+  symbols,
 }: ChatBubbleProps) {
   const { t } = useTranslation();
+  const remarkPlugins = richRemarkPlugins(symbols);
   const [copied, setCopied] = useState(false);
   const isUser = role === "user";
   const question = isUser ? visibleQuestion(content) : content;
+  // Assistant text is a report: emoji come from the model, not from this design.
+  const displayContent = isUser ? content : stripEmoji(content);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(content);
+    await navigator.clipboard.writeText(displayContent);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -98,8 +95,12 @@ export function ChatBubble({
 
           <div className="text-foreground">
             <div className={CHAT_PROSE_CLASSES}>
-              <ReactMarkdown remarkPlugins={REMARK_PLUGINS} components={MARKDOWN_COMPONENTS}>
-                {content}
+              <ReactMarkdown
+                remarkPlugins={remarkPlugins}
+                urlTransform={richUrlTransform}
+                components={RICH_MARKDOWN_COMPONENTS}
+              >
+                {displayContent}
               </ReactMarkdown>
               {isStreaming && (
                 <span className="inline-flex ml-0.5 align-middle">
