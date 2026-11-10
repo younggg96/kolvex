@@ -564,6 +564,42 @@ export function ChatDetailContainer({
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    const composer = composerRef.current;
+    const thread = composer?.parentElement;
+    const viewport = window.visualViewport;
+    if (!composer || !thread || !viewport) return;
+
+    const floating = window.matchMedia(FLOATING_COMPOSER_QUERY);
+    const syncKeyboardInset = () => {
+      const editing = document.activeElement === inputRef.current || thread.hasAttribute("data-chat-keyboard");
+      // Mobile browsers can shrink or pan the visible area while leaving the layout viewport in place.
+      const keyboardOpen = floating.matches && editing && viewport.scale === 1
+        && document.documentElement.clientHeight - viewport.height > 120;
+      thread.toggleAttribute("data-chat-keyboard", keyboardOpen);
+      if (keyboardOpen) {
+        const visibleBottom = viewport.offsetTop + viewport.height;
+        const inset = Math.max(0, thread.getBoundingClientRect().bottom - visibleBottom);
+        thread.style.setProperty("--chat-keyboard-inset", `${inset}px`);
+      } else {
+        thread.style.removeProperty("--chat-keyboard-inset");
+      }
+    };
+
+    composer.addEventListener("focusin", syncKeyboardInset);
+    viewport.addEventListener("resize", syncKeyboardInset);
+    viewport.addEventListener("scroll", syncKeyboardInset);
+    floating.addEventListener("change", syncKeyboardInset);
+    return () => {
+      composer.removeEventListener("focusin", syncKeyboardInset);
+      viewport.removeEventListener("resize", syncKeyboardInset);
+      viewport.removeEventListener("scroll", syncKeyboardInset);
+      floating.removeEventListener("change", syncKeyboardInset);
+      thread.removeAttribute("data-chat-keyboard");
+      thread.style.removeProperty("--chat-keyboard-inset");
+    };
+  }, []);
+
   const hasWorkspace = Boolean(workspace.detail);
   const togglePanel = () => {
     // The docked panel needs the xl width; narrower screens get the same panel as a sheet.
@@ -634,7 +670,7 @@ export function ChatDetailContainer({
         <div
           ref={composerRef}
           className={cn(
-            "z-20 max-lg:pointer-events-none max-lg:absolute max-lg:inset-x-0 max-lg:bottom-[calc(5.5rem+env(safe-area-inset-bottom))] lg:sticky lg:bottom-0",
+            "z-20 max-lg:pointer-events-none max-lg:absolute max-lg:inset-x-0 max-lg:bottom-[var(--chat-composer-bottom)] lg:sticky lg:bottom-0",
             // Once collapsed, only the round button takes touches; the rest scrolls the thread.
             !composerCollapsed && "max-lg:[&_form]:pointer-events-auto"
           )}

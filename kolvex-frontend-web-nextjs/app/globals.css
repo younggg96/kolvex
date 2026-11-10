@@ -1415,8 +1415,17 @@ html[data-chat-history-open] .app-workbench .app-sidebar {
   }
 
   [data-chat-floating-composer] {
-    --chat-bottom-overlay: calc(var(--chat-composer-height, 8rem) + 5.5rem + env(safe-area-inset-bottom, 0px));
+    --chat-composer-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+    --chat-bottom-overlay: calc(var(--chat-composer-height, 8rem) + var(--chat-composer-bottom));
     --chat-top-overlay: calc(max(0.5rem, env(safe-area-inset-top, 0px)) + 3.25rem);
+  }
+
+  [data-chat-floating-composer][data-chat-keyboard] {
+    --chat-composer-bottom: calc(var(--chat-keyboard-inset, 0px) + 0.5rem);
+  }
+
+  .mobile-nav-inset:has([data-chat-keyboard]) [data-mobile-dock] {
+    visibility: hidden;
   }
 }
 

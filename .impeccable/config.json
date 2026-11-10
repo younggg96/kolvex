@@ -11,6 +11,15 @@
         ],
         "createdAt": "2026-11-01T11:26:34.740Z",
         "reason": "Codex triage: default TabsTrigger intentionally combines a 2px bottom active-state indicator with focus-only top corner rounding; this is a tab selection and keyboard focus affordance, not a rounded card accent. The stock workspace uses the separate pill variant."
+      },
+      {
+        "rule": "bounce-easing",
+        "value": "var(--spring)",
+        "files": [
+          "kolvex-frontend-web-nextjs/app/globals.css"
+        ],
+        "createdAt": "2026-11-10T18:52:34.765Z",
+        "reason": "Codex verified: the shared CSS easing stops increase monotonically from 0 to 1, with no overshoot or bounce."
       }
     ]
   }

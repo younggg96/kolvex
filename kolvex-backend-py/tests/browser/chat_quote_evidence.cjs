@@ -125,6 +125,33 @@ async function run() {
     assert.equal(withoutFundamentals.events.some((event) => event.tool === "get_reported_revenue"), false);
     assert.deepEqual(withoutFundamentals.events.at(-1).revenue_evidence, []);
     console.log("PASS: missing SEC facts and disabled fundamentals produce no revenue evidence");
+
+    await page.setViewportSize({ width: 390, height: 740 });
+    await input.blur();
+    const thread = page.locator("[data-chat-floating-composer]");
+    await thread.locator(".overflow-y-auto").first().dispatchEvent("wheel", { deltaY: -60 });
+    await page.getByRole("button", { name: "Open message box" }).click();
+    assert.equal(await input.evaluate((element) => document.activeElement === element), true);
+
+    const setVisibleViewport = (height, offsetTop = 0) => page.evaluate(({ height, offsetTop }) => {
+      const viewport = window.visualViewport;
+      Object.defineProperties(viewport, {
+        height: { configurable: true, value: height },
+        offsetTop: { configurable: true, value: offsetTop },
+      });
+      viewport.dispatchEvent(new Event(offsetTop ? "scroll" : "resize"));
+    }, { height, offsetTop });
+
+    for (const offset of [0, 50]) {
+      await setVisibleViewport(405, offset);
+      const send = await page.getByRole("button", { name: "Send", exact: true }).boundingBox();
+      assert.ok(send && send.y + send.height <= 405 + offset, "send button must clear the keyboard");
+    }
+    assert.equal(await page.locator("[data-mobile-dock]").isVisible(), false);
+    await setVisibleViewport(740);
+    assert.equal(await thread.getAttribute("data-chat-keyboard"), null);
+    assert.equal(await page.locator("[data-mobile-dock]").isVisible(), true);
+    console.log("PASS: expanded mobile composer clears the keyboard and restores the dock");
   } finally {
     await browser.close();
   }
