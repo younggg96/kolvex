@@ -82,6 +82,26 @@ test('stream start and completion discard history cached during message generati
   assert.equal(gets, 3);
 });
 
+test('chat completion does not depend on the stream closing cleanly', { timeout: 1000 }, async () => {
+  const { api } = fixture('chatApi.ts');
+  let connection;
+  let cancelled = false;
+  const response = new Response(new ReadableStream({
+    start(controller) {
+      connection = controller;
+      controller.enqueue(new TextEncoder().encode('data: {"type":"done","message_id":"saved"}\n\n'));
+    },
+    cancel() {
+      cancelled = true;
+    },
+  }));
+  const events = [];
+  await api.readAgentStream(response, (event) => events.push(event.message_id));
+  assert.deepEqual(events, ['saved']);
+  assert.equal(cancelled, true);
+  connection.error(new TypeError('Load failed'));
+});
+
 test('malformed/failed streams invalidate partial history too', async () => {
   let gets = 0;
   const { api } = fixture('chatApi.ts', async () => {

@@ -9,9 +9,12 @@ import { ChatInput, MODEL_CONFIGS } from "./ChatInput";
 import { useChatHistory } from "./useChatHistory";
 import { useAvailableProviders } from "@/hooks/useAvailableProviders";
 import {
+  getAgentStreamStatus,
   readAgentStream,
+  stopAgentStream,
   streamAgentMessage,
   type AgentStreamEvent,
+  type ChatMessage,
   type QuoteEvidence,
   type RevenueEvidence,
 } from "@/lib/chatApi";
@@ -143,6 +146,7 @@ export function ChatDetailContainer({
 
   const [activeSkills, setActiveSkills] = useState(() => readChatSkills(conversationId, initialSkills));
   const [isLoading, setIsLoading] = useState(false);
+  const [backgroundActive, setBackgroundActive] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
   const [streamingRevenueEvidence, setStreamingRevenueEvidence] = useState<RevenueEvidence[]>([]);
   const [streamingQuoteEvidence, setStreamingQuoteEvidence] = useState<QuoteEvidence[]>([]);
@@ -185,6 +189,13 @@ export function ChatDetailContainer({
   const messageIdsBeforePendingRef = useRef<Set<string>>(new Set());
   const isLoadingRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const interruptedTurnRef = useRef<{
+    content: string;
+    startedAt: number;
+    userId?: string;
+    error?: string;
+    stopRequested?: boolean;
+  } | null>(null);
 
   // Persist sources & model to localStorage whenever they change
   useEffect(() => {
@@ -206,18 +217,23 @@ export function ChatDetailContainer({
     currentConversation,
     messages,
     selectConversation,
+    rememberMessages,
     deleteConversation,
   } = useChatHistory();
 
   // ---- Stream processing helper ----
   const processAgentStream = useCallback(
-    async (response: Response, signal: AbortSignal) => {
+    async (response: Response, signal: AbortSignal, onAccepted: (message: ChatMessage) => void) => {
       let accumulatedContent = "";
-      let completed = false;
+      let completion: AgentStreamEvent | undefined;
 
       await readAgentStream(response, (event: AgentStreamEvent) => {
         if (signal.aborted) return;
         switch (event.type) {
+          case "accepted":
+            if (event.user_message) onAccepted(event.user_message);
+            break;
+
           case "status":
             setAgentStatus({
               stage: event.stage || "working",
@@ -265,7 +281,7 @@ export function ChatDetailContainer({
             break;
 
           case "done":
-            completed = true;
+            completion = event;
             if (event.quote_evidence?.length) setStreamingQuoteEvidence(event.quote_evidence);
             if (event.revenue_evidence?.length) setStreamingRevenueEvidence(event.revenue_evidence);
             break;
@@ -275,9 +291,10 @@ export function ChatDetailContainer({
           }
       });
 
-      if (!completed) {
+      if (!completion) {
         throw new Error("The response stream ended before completion.");
       }
+      return completion;
     },
     [t]
   );
@@ -312,6 +329,72 @@ export function ChatDetailContainer({
       controller?.abort();
     };
   }, [conversationId]);
+
+  const reconcileHistory = useCallback(async () => {
+    const history = await selectConversation(conversationId, true);
+    const turn = interruptedTurnRef.current;
+    if (!history || !turn) return false;
+
+    const index = history.messages.findIndex((message) =>
+      turn.userId
+        ? message.id === turn.userId
+        : message.role === "user" && message.content === turn.content &&
+          (message.timestamp?.getTime() ?? 0) >= turn.startedAt
+    );
+    if (index < 0 || history.messages[index + 1]?.role !== "assistant") return false;
+    interruptedTurnRef.current = null;
+    setStreamError(null);
+    return true;
+  }, [conversationId, selectConversation]);
+
+  // A returning tab can follow the server task without resubmitting the prompt.
+  useEffect(() => {
+    const controller = new AbortController();
+    let timer: number | undefined;
+    let checking = false;
+    const check = async () => {
+      if (checking || controller.signal.aborted || isLoadingRef.current) return;
+      checking = true;
+      window.clearTimeout(timer);
+      try {
+        const { active } = await getAgentStreamStatus(conversationId, controller.signal);
+        if (controller.signal.aborted || isLoadingRef.current) return;
+        if (active) {
+          setBackgroundActive(true);
+          timer = window.setTimeout(check, 3000);
+        } else {
+          const recovered = await reconcileHistory();
+          if (controller.signal.aborted || isLoadingRef.current) return;
+          setBackgroundActive(false);
+          const turn = interruptedTurnRef.current;
+          if (!recovered && turn?.error) setStreamError(turn.error);
+        }
+      } catch {
+        if (!controller.signal.aborted && (backgroundActive || interruptedTurnRef.current)) {
+          timer = window.setTimeout(check, 5000);
+        }
+      } finally {
+        checking = false;
+      }
+    };
+
+    const checkWhenVisible = () => {
+      if (document.visibilityState === "visible") void check();
+    };
+    void check();
+    document.addEventListener("visibilitychange", checkWhenVisible);
+    window.addEventListener("pageshow", check);
+    window.addEventListener("focus", check);
+    window.addEventListener("online", check);
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", checkWhenVisible);
+      window.removeEventListener("pageshow", check);
+      window.removeEventListener("focus", check);
+      window.removeEventListener("online", check);
+    };
+  }, [conversationId, reconcileHistory, backgroundActive, isLoading]);
 
   // ---- Sidebar events ----
   useEffect(() => {
@@ -369,7 +452,7 @@ export function ChatDetailContainer({
   // ---- Submit user message from input ----
   const handleSubmit = useCallback(
     async (messageText: string) => {
-      if (!messageText.trim() || isLoadingRef.current || isBlocked) return;
+      if (!messageText.trim() || isLoadingRef.current || backgroundActive || isBlocked) return;
 
       const trimmedMessage = messageText.trim();
       isLoadingRef.current = true;
@@ -380,6 +463,11 @@ export function ChatDetailContainer({
       setAgentStatus({ stage: "routing" });
       setStreamError(null);
       setLastSubmittedMessage(trimmedMessage);
+      const turn: NonNullable<typeof interruptedTurnRef.current> = {
+        content: trimmedMessage,
+        startedAt: Date.now(),
+      };
+      interruptedTurnRef.current = turn;
 
       // Optimistic update: show user message immediately
       messageIdsBeforePendingRef.current = new Set(
@@ -389,6 +477,7 @@ export function ChatDetailContainer({
 
       const controller = new AbortController();
       abortControllerRef.current = controller;
+      let userMessage: ChatMessage | undefined;
       try {
         // Stream response from LangGraph Agent via backend
         // The /stream endpoint saves user message + generates AI response
@@ -404,22 +493,43 @@ export function ChatDetailContainer({
           controller.signal
         );
 
-        await processAgentStream(response, controller.signal);
+        const completion = await processAgentStream(response, controller.signal, (message) => {
+          userMessage = message;
+          turn.userId = message.id;
+          if (turn.stopRequested) {
+            void stopAgentStream(conversationId).catch((error) =>
+              console.error("Unable to stop chat generation:", error)
+            );
+          }
+        });
         if (controller.signal.aborted) return;
-        await selectConversation(conversationId);
+        interruptedTurnRef.current = null;
+        const committed = userMessage ? [userMessage] : [];
+        if (completion.message_id && completion.created_at && completion.content) {
+          committed.push({
+            id: completion.message_id,
+            role: "assistant",
+            content: completion.content,
+            created_at: completion.created_at,
+            quote_evidence: completion.quote_evidence,
+            revenue_evidence: completion.revenue_evidence,
+          });
+        }
+        rememberMessages(conversationId, committed);
+        await selectConversation(conversationId, true).catch(() => undefined);
       } catch (error) {
-        // Navigation aborts must not fetch history or mutate the next chat.
         if (abortControllerRef.current !== controller) return;
         console.error("Chat error:", error);
-        const aborted = error instanceof DOMException && error.name === "AbortError";
-        setStreamError(
-          aborted
-            ? "Generation was stopped."
-            : error instanceof Error
-              ? error.message
-              : "The AI agent may be unavailable. Please try again."
-        );
-        await selectConversation(conversationId).catch(() => undefined);
+        turn.error = error instanceof Error ? error.message : "The AI agent may be unavailable. Please try again.";
+        const state = await getAgentStreamStatus(conversationId, controller.signal).catch(() => null);
+        if (abortControllerRef.current !== controller) return;
+        if (state?.active) {
+          setBackgroundActive(true);
+          return;
+        }
+        const recovered = await reconcileHistory().catch(() => false);
+        if (recovered || abortControllerRef.current !== controller) return;
+        setStreamError(turn.error);
       } finally {
         if (abortControllerRef.current === controller) {
           abortControllerRef.current = null;
@@ -437,8 +547,11 @@ export function ChatDetailContainer({
     },
     [
       conversationId,
+      backgroundActive,
       isBlocked,
       processAgentStream,
+      reconcileHistory,
+      rememberMessages,
       selectConversation,
       selectedModel,
       activeSources,
@@ -467,14 +580,34 @@ export function ChatDetailContainer({
   }, [firstMessage, conversationId, pathname, handleSubmit, isBlocked]);
 
   const handleCancel = useCallback(() => {
-    abortControllerRef.current?.abort();
-  }, []);
-
-  const handleRetry = useCallback(() => {
-    if (lastSubmittedMessage && !isLoading) {
-      handleSubmit(lastSubmittedMessage);
+    const turn = interruptedTurnRef.current;
+    if (isLoadingRef.current && turn && !turn.userId) {
+      // The stop request could otherwise reach the server ahead of the POST.
+      turn.stopRequested = true;
+      return;
     }
-  }, [handleSubmit, isLoading, lastSubmittedMessage]);
+    if (turn) turn.error = undefined;
+    void stopAgentStream(conversationId).then(() => {
+      setBackgroundActive(false);
+      return reconcileHistory();
+    }).catch((error) => console.error("Unable to stop chat generation:", error));
+  }, [conversationId, reconcileHistory]);
+
+  const handleRetry = useCallback(async () => {
+    if (!lastSubmittedMessage || isLoadingRef.current || backgroundActive) return;
+    try {
+      const { active } = await getAgentStreamStatus(conversationId);
+      if (active) {
+        setBackgroundActive(true);
+        setStreamError(null);
+        return;
+      }
+      if (await reconcileHistory()) return;
+      void handleSubmit(lastSubmittedMessage);
+    } catch (error) {
+      console.error("Could not verify the previous chat turn:", error);
+    }
+  }, [backgroundActive, conversationId, handleSubmit, lastSubmittedMessage, reconcileHistory]);
 
   const clearEvidence = () => {
     setPageEvidence("");
@@ -654,10 +787,10 @@ export function ChatDetailContainer({
           streamingContent={streamingContent}
           streamingQuoteEvidence={streamingQuoteEvidence}
           streamingRevenueEvidence={streamingRevenueEvidence}
-          isLoading={isLoading}
+          isLoading={isLoading || backgroundActive}
           messagesEndRef={messagesEndRef}
           activeTools={activeTools}
-          agentStatus={agentStatus}
+          agentStatus={agentStatus ?? (backgroundActive ? { stage: "working" } : null)}
           errorMessage={streamError}
           onRetry={streamError ? handleRetry : undefined}
           modelName={MODEL_CONFIGS.find((m) => m.id === selectedModel)?.name}
@@ -682,7 +815,7 @@ export function ChatDetailContainer({
               onChange={setQuery}
               onSubmit={handleFormSubmit}
               onCancel={handleCancel}
-              isLoading={isLoading}
+              isLoading={isLoading || backgroundActive}
               isFocused={isFocused}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}

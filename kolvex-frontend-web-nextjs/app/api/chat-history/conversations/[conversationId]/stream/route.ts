@@ -37,7 +37,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const body = await request.json();
 
     const response = await fetch(
-      `${BACKEND_API_URL}/api/v1/chat/conversations/${conversationId}/stream`,
+      `${BACKEND_API_URL}/api/v1/chat/conversations/${conversationId}/stream?continue_on_disconnect=true`,
       {
         method: "POST",
         headers: {
@@ -80,4 +80,41 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       { status: 500 }
     );
   }
+}
+
+async function requestStreamState(method: "GET" | "DELETE", params: RouteParams["params"]) {
+  try {
+    const { conversationId } = await params;
+    const supabase = await createServerSupabaseClient();
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error || !session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const response = await fetch(
+      `${BACKEND_API_URL}/api/v1/chat/conversations/${conversationId}/stream`,
+      {
+        method,
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        cache: "no-store",
+      }
+    );
+    if (!response.ok) {
+      return NextResponse.json({ error: "Could not check chat generation" }, { status: response.status });
+    }
+    return NextResponse.json(await response.json(), {
+      headers: { "Cache-Control": "no-store" },
+    });
+  } catch (error) {
+    console.error("Chat generation state request failed:", error);
+    return NextResponse.json({ error: "Could not reach chat generation" }, { status: 502 });
+  }
+}
+
+export function GET(_request: NextRequest, { params }: RouteParams) {
+  return requestStreamState("GET", params);
+}
+
+export function DELETE(_request: NextRequest, { params }: RouteParams) {
+  return requestStreamState("DELETE", params);
 }

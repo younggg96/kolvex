@@ -6,6 +6,7 @@
 3. SSE 流式模式 - 实时流式返回 AI 回复
 """
 
+import asyncio
 import json
 import logging
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -361,6 +362,32 @@ async def send_message(
     )
 
 
+# A chat turn belongs to the backend process. The SSE response only subscribes
+# to it, so disconnecting the client does not cancel generation or saving.
+_chat_turns: dict[tuple[str, str], asyncio.Task[None]] = {}
+CHAT_TURN_TIMEOUT_SECONDS = 600
+
+
+@router.get("/conversations/{conversation_id}/stream")
+async def get_stream_status(
+    conversation_id: str,
+    current_user_id: str = Depends(get_current_user_id),
+):
+    return {"active": (current_user_id, conversation_id) in _chat_turns}
+
+
+@router.delete("/conversations/{conversation_id}/stream")
+async def stop_stream(
+    conversation_id: str,
+    current_user_id: str = Depends(get_current_user_id),
+):
+    task = _chat_turns.get((current_user_id, conversation_id))
+    if task:
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
+    return {"active": False}
+
+
 @router.post(
     "/conversations/{conversation_id}/stream",
     summary="流式发送消息并获取 AI 回复 (SSE)",
@@ -368,130 +395,144 @@ async def send_message(
 async def stream_message(
     conversation_id: str,
     request: SendMessageRequest,
+    continue_on_disconnect: bool = False,
     current_user_id: str = Depends(get_current_user_id),
     api_keys_service: UserApiKeysService = Depends(get_user_api_keys_service),
 ):
-    """
-    流式发送用户消息并实时获取 AI Agent 回复 (Server-Sent Events)。
-    
-    流程：
-    1. 保存用户消息
-    2. 加载历史
-    3. 加载用户自定义 API keys
-    4. 流式运行 Agent，逐 token 返回
-    5. 完成后保存完整 AI 回复
-
-    SSE 事件类型：
-    - status: Agent 当前阶段
-    - token: AI 回复的文本 token
-    - token_reset: 丢弃此前收到的 token（那段文字其实是工具调用前的规划）
-    - tool_start: Agent 开始调用工具
-    - tool_end: Agent 工具调用完成
-    - done: 流式完成
-    - error: 发生错误
-
-    需要认证：Bearer token
-    """
     from app.agent.memory import load_conversation_history, save_message
     from app.agent.graphs.supervisor import stream_agent
 
-    # 1. 保存用户消息
-    user_msg = await save_message(
-        user_id=current_user_id,
-        conversation_id=conversation_id,
-        role="user",
-        content=request.content,
-    )
+    key = (current_user_id, conversation_id)
+    if key in _chat_turns:
+        raise HTTPException(status_code=409, detail="A reply is already being generated.")
 
-    if not user_msg:
-        raise HTTPException(
-            status_code=http_status.HTTP_404_NOT_FOUND,
-            detail="Conversation not found",
+    events: asyncio.Queue[Optional[str]] = asyncio.Queue(maxsize=128)
+    subscribed = True
+
+    def publish(event: Optional[str]):
+        nonlocal subscribed
+        if not subscribed:
+            return
+        if events.full():
+            # A slow subscriber can recover from history after the turn completes.
+            subscribed = False
+            while not events.empty():
+                events.get_nowait()
+            events.put_nowait(None)
+            return
+        events.put_nowait(None if event is None else f"data: {event}\n\n")
+
+    async def generate():
+        user_msg = await save_message(
+            user_id=current_user_id,
+            conversation_id=conversation_id,
+            role="user",
+            content=request.content,
         )
+        if not user_msg:
+            publish(json.dumps({"type": "error", "content": "Unable to save the user message."}))
+            return
 
-    # 2. 加载对话历史
-    history = await load_conversation_history(
-        user_id=current_user_id,
-        conversation_id=conversation_id,
-    )
+        if continue_on_disconnect:
+            publish(json.dumps({"type": "accepted", "user_message": user_msg}))
+        history = await load_conversation_history(
+            user_id=current_user_id, conversation_id=conversation_id,
+        )
+        user_api_keys = await api_keys_service.get_keys_dict(current_user_id)
+        context = await turn_context(current_user_id, conversation_id, request.context)
 
-    # 3. 加载用户自定义 API keys
-    user_api_keys = await api_keys_service.get_keys_dict(current_user_id)
-    context = await turn_context(current_user_id, conversation_id, request.context)
-
-    # 4. SSE 流式生成器
-    async def event_generator():
         full_response = ""
+        async for event in stream_agent(
+            messages=attach_page_evidence(history, context),
+            user_id=current_user_id,
+            conversation_id=conversation_id,
+            model_id=request.model,
+            sources=request.sources,
+            skills=request.skills,
+            user_api_keys=user_api_keys or None,
+        ):
+            event_type = event.get("type")
+            if event_type == "token":
+                full_response += event.get("content", "")
+            elif event_type == "token_reset":
+                full_response = ""
+            elif event_type == "done":
+                done = {"type": "done", "message_id": None}
+                if full_response.strip():
+                    quotes = event.get("quote_evidence") or []
+                    revenues = event.get("revenue_evidence") or []
+                    ai_msg = await save_message(
+                        user_id=current_user_id,
+                        conversation_id=conversation_id,
+                        role="assistant",
+                        content=full_response,
+                        quote_evidence=quotes,
+                        revenue_evidence=revenues,
+                    )
+                    if not ai_msg:
+                        publish(json.dumps({
+                            "type": "error", "content": "Unable to save the assistant response.",
+                        }))
+                        return
+                    done.update(
+                        message_id=ai_msg["id"],
+                        content=full_response,
+                        created_at=ai_msg["created_at"],
+                        quote_evidence=quotes,
+                        revenue_evidence=revenues,
+                    )
+                publish(json.dumps(done))
+                return
 
+            if event_type in {"token", "token_reset", "status", "tool_start", "tool_end", "error"}:
+                publish(json.dumps({
+                    name: event[name] for name in ("type", "content", "stage", "tool") if name in event
+                }))
+            if event_type == "error":
+                return
+
+    async def run_turn():
         try:
-            async for event in stream_agent(
-                messages=attach_page_evidence(history, context),
-                user_id=current_user_id,
-                conversation_id=conversation_id,
-                model_id=request.model,
-                sources=request.sources,
-                skills=request.skills,
-                user_api_keys=user_api_keys or None,
-            ):
-                event_type = event.get("type", "")
-                
-                if event_type == "token":
-                    token = event.get("content", "")
-                    full_response += token
-                    yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
+            async with asyncio.timeout(CHAT_TURN_TIMEOUT_SECONDS):
+                await generate()
+        except asyncio.CancelledError:
+            publish(json.dumps({"type": "error", "content": "Generation was stopped."}))
+            raise
+        except TimeoutError:
+            logger.warning("Chat generation timed out for conversation %s", conversation_id)
+            publish(json.dumps({"type": "error", "content": "The reply took too long to generate."}))
+        except Exception:
+            logger.exception("Chat generation failed for conversation %s", conversation_id)
+            publish(json.dumps({"type": "error", "content": "The AI agent could not complete the response."}))
 
-                elif event_type == "token_reset":
-                    # The text so far was tool planning, not the answer.
-                    full_response = ""
-                    yield f"data: {json.dumps({'type': 'token_reset'})}\n\n"
+    task = asyncio.create_task(run_turn())
+    _chat_turns[key] = task
 
-                elif event_type == "status":
-                    yield f"data: {json.dumps({'type': 'status', 'stage': event.get('stage', ''), 'content': event.get('content', '')})}\n\n"
+    def finish_turn(_: asyncio.Task[None]):
+        _chat_turns.pop(key, None)
+        publish(None)
 
-                elif event_type == "tool_start":
-                    yield f"data: {json.dumps({'type': 'tool_start', 'tool': event.get('tool', '')})}\n\n"
+    task.add_done_callback(finish_turn)
 
-                elif event_type == "tool_end":
-                    yield f"data: {json.dumps({'type': 'tool_end', 'tool': event.get('tool', '')})}\n\n"
-
-                elif event_type == "done":
-                    # 保存完整回复
-                    if full_response.strip():
-                        quotes = event.get("quote_evidence") or []
-                        revenues = event.get("revenue_evidence") or []
-                        ai_msg = await save_message(
-                            user_id=current_user_id,
-                            conversation_id=conversation_id,
-                            role="assistant",
-                            content=full_response,
-                            quote_evidence=quotes,
-                            revenue_evidence=revenues,
-                        )
-                        if not ai_msg:
-                            yield f"data: {json.dumps({'type': 'error', 'content': 'Unable to save the assistant response.'})}\n\n"
-                            return
-                        done = {
-                            "type": "done",
-                            "message_id": ai_msg["id"],
-                            "content": full_response,
-                            "created_at": ai_msg.get("created_at"),
-                            "quote_evidence": quotes,
-                            "revenue_evidence": revenues,
-                        }
-                        yield f"data: {json.dumps(done)}\n\n"
-                    else:
-                        yield f"data: {json.dumps({'type': 'done', 'message_id': None})}\n\n"
-
-                elif event_type == "error":
-                    error_msg = event.get("content", "Unknown error")
-                    yield f"data: {json.dumps({'type': 'error', 'content': error_msg})}\n\n"
-
-        except Exception as e:
-            logger.error(f"Stream error: {e}", exc_info=True)
-            yield f"data: {json.dumps({'type': 'error', 'content': str(e)})}\n\n"
+    async def subscribe():
+        nonlocal subscribed
+        try:
+            while True:
+                try:
+                    event = await asyncio.wait_for(events.get(), timeout=15)
+                except TimeoutError:
+                    yield ": keepalive\n\n"
+                    continue
+                if event is None:
+                    return
+                yield event
+        finally:
+            subscribed = False
+            if not continue_on_disconnect and not task.done():
+                task.cancel()
 
     return StreamingResponse(
-        event_generator(),
+        subscribe(),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",

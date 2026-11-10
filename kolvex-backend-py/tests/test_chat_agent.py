@@ -1,3 +1,4 @@
+import asyncio
 import json
 import unittest
 from types import SimpleNamespace
@@ -257,6 +258,77 @@ class StreamRouteTests(unittest.TestCase):
         history_message = MessageSchema(id="m1", role="assistant", content="Answer",
                                         created_at="2026-11-10T12:00:00Z", quote_evidence=quotes)
         self.assertEqual(history_message.model_dump(mode="json")["quote_evidence"], quotes)
+
+
+class DetachedStreamTests(unittest.IsolatedAsyncioTestCase):
+    async def test_web_disconnect_does_not_cancel_or_duplicate_the_turn(self):
+        from fastapi import HTTPException
+        from app.api.routes.chat import routes
+
+        release = asyncio.Event()
+
+        async def fake_stream(**_kwargs):
+            yield {"type": "token", "content": "Answer"}
+            await release.wait()
+            yield {"type": "done"}
+
+        user = {"id": "question", "role": "user", "content": "hi", "created_at": "now"}
+        save = AsyncMock(side_effect=[user, {"id": "answer", "created_at": "now"}])
+        api_keys = SimpleNamespace(get_keys_dict=AsyncMock(return_value={}))
+        request = routes.SendMessageRequest(content="hi")
+
+        with patch("app.agent.memory.save_message", save), \
+                patch("app.agent.memory.load_conversation_history", AsyncMock(return_value=[])), \
+                patch.object(routes, "turn_context", AsyncMock(return_value=None)), \
+                patch("app.agent.graphs.supervisor.stream_agent", fake_stream):
+            response = await routes.stream_message("chat", request, True, "owner", api_keys)
+            stream = response.body_iterator
+            try:
+                self.assertIn('"accepted"', await asyncio.wait_for(anext(stream), 1))
+                self.assertIn('"token"', await asyncio.wait_for(anext(stream), 1))
+                await stream.aclose()
+                self.assertEqual(await routes.get_stream_status("chat", "owner"), {"active": True})
+                self.assertEqual(await routes.get_stream_status("chat", "other"), {"active": False})
+                with self.assertRaises(HTTPException) as conflict:
+                    await routes.stream_message("chat", request, True, "owner", api_keys)
+                self.assertEqual(conflict.exception.status_code, 409)
+                task = routes._chat_turns[("owner", "chat")]
+                release.set()
+                await asyncio.wait_for(task, 1)
+                self.assertEqual(await routes.get_stream_status("chat", "owner"), {"active": False})
+                self.assertEqual(save.await_count, 2)
+                self.assertEqual(save.await_args.kwargs["content"], "Answer")
+            finally:
+                await routes.stop_stream("chat", "owner")
+
+
+    async def test_explicit_stop_cancels_a_detached_turn(self):
+        from app.api.routes.chat import routes
+
+        async def fake_stream(**_kwargs):
+            yield {"type": "token", "content": "Partial"}
+            await asyncio.Event().wait()
+
+        user = {"id": "question", "role": "user", "content": "hi", "created_at": "now"}
+        save = AsyncMock(return_value=user)
+        api_keys = SimpleNamespace(get_keys_dict=AsyncMock(return_value={}))
+        request = routes.SendMessageRequest(content="hi")
+        with patch("app.agent.memory.save_message", save), \
+                patch("app.agent.memory.load_conversation_history", AsyncMock(return_value=[])), \
+                patch.object(routes, "turn_context", AsyncMock(return_value=None)), \
+                patch("app.agent.graphs.supervisor.stream_agent", fake_stream):
+            response = await routes.stream_message("chat", request, True, "owner", api_keys)
+            stream = response.body_iterator
+            try:
+                await asyncio.wait_for(anext(stream), 1)
+                await asyncio.wait_for(anext(stream), 1)
+                await asyncio.wait_for(routes.stop_stream("chat", "owner"), 1)
+                self.assertIn("Generation was stopped.", await asyncio.wait_for(anext(stream), 1))
+                self.assertEqual(await routes.get_stream_status("chat", "owner"), {"active": False})
+                self.assertEqual(save.await_count, 1)
+            finally:
+                await stream.aclose()
+                await routes.stop_stream("chat", "owner")
 
 
 if __name__ == "__main__":

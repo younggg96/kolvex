@@ -79,7 +79,7 @@ async function apiRequest<T>(
     return data;
   };
   // Chat contents remain tab-local and are cleared by the shared account boundary.
-  if (read) return loadClientCache(`${API_PREFIX}${endpoint}`, request, {
+  if (read && options.cache !== "no-store") return loadClientCache(`${API_PREFIX}${endpoint}`, request, {
     ttl: 30_000, maxAge: 60_000, signal: options.signal ?? undefined,
   });
   return request(options.signal ?? undefined);
@@ -106,9 +106,10 @@ export async function getConversations(
  * @param conversationId Conversation ID
  */
 export async function getConversation(
-  conversationId: string
+  conversationId: string,
+  fresh = false
 ): Promise<ChatConversation> {
-  return apiRequest<ChatConversation>(`/conversations/${conversationId}`);
+  return apiRequest<ChatConversation>(`/conversations/${conversationId}`, fresh ? { cache: "no-store" } : {});
 }
 
 /**
@@ -205,11 +206,12 @@ export interface AgentMessageResponse {
  * SSE event types from the LangGraph agent stream
  */
 export interface AgentStreamEvent {
-  type: "status" | "token" | "token_reset" | "tool_start" | "tool_end" | "done" | "error";
+  type: "accepted" | "status" | "token" | "token_reset" | "tool_start" | "tool_end" | "done" | "error";
   content?: string;
   tool?: string;
   stage?: "routing" | "planning" | "writing" | string;
   message_id?: string;
+  user_message?: ChatMessage;
   quote_evidence?: QuoteEvidence[];
   revenue_evidence?: RevenueEvidence[];
   created_at?: string;
@@ -296,6 +298,19 @@ export async function streamAgentMessage(
   return response;
 }
 
+export function getAgentStreamStatus(conversationId: string, signal?: AbortSignal) {
+  return apiRequest<{ active: boolean }>(`/conversations/${conversationId}/stream`, {
+    cache: "no-store",
+    signal,
+  });
+}
+
+export function stopAgentStream(conversationId: string) {
+  return apiRequest<{ active: boolean }>(`/conversations/${conversationId}/stream`, {
+    method: "DELETE",
+  });
+}
+
 /**
  * Consume an SSE response without assuming network chunks align to lines or
  * events. Browsers may split a JSON payload anywhere in the byte stream.
@@ -320,24 +335,30 @@ async function consumeAgentStream(
       .join("\n");
 
     if (!data || data === "[DONE]") return;
-    await onEvent(JSON.parse(data) as AgentStreamEvent);
+    const event = JSON.parse(data) as AgentStreamEvent;
+    await onEvent(event);
+    return event.type === "done";
   };
 
-  while (true) {
-    const { done, value } = await reader.read();
-    buffer += decoder.decode(value, { stream: !done });
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      buffer += decoder.decode(value, { stream: !done });
 
-    const blocks = buffer.split(/\r?\n\r?\n/);
-    buffer = blocks.pop() || "";
-    for (const block of blocks) {
-      if (block.trim()) await processEventBlock(block);
+      const blocks = buffer.split(/\r?\n\r?\n/);
+      buffer = blocks.pop() || "";
+      for (const block of blocks) {
+        if (block.trim() && await processEventBlock(block)) return;
+      }
+
+      if (done) break;
     }
 
-    if (done) break;
-  }
-
-  if (buffer.trim()) {
-    await processEventBlock(buffer);
+    if (buffer.trim()) await processEventBlock(buffer);
+  } finally {
+    // Closing the subscription is best effort once the terminal event has arrived.
+    void reader.cancel().catch(() => undefined);
+    reader.releaseLock();
   }
 }
 

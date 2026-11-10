@@ -23,16 +23,20 @@ function convertApiConversation(
         seenMessageIds.add(msg.id);
         return true;
       })
-      .map((msg) => ({
-        id: msg.id,
-        role: msg.role as "user" | "assistant" | "system",
-        content: msg.content,
-        quoteEvidence: msg.quote_evidence,
-        revenueEvidence: msg.revenue_evidence,
-        timestamp: new Date(msg.created_at),
-      })),
+      .map(convertApiMessage),
     createdAt: new Date(apiConv.created_at),
     updatedAt: new Date(apiConv.updated_at),
+  };
+}
+
+function convertApiMessage(msg: chatApi.ChatMessage): Message {
+  return {
+    id: msg.id,
+    role: msg.role,
+    content: msg.content,
+    quoteEvidence: msg.quote_evidence,
+    revenueEvidence: msg.revenue_evidence,
+    timestamp: new Date(msg.created_at),
   };
 }
 
@@ -204,7 +208,7 @@ export function useChatHistory() {
   );
 
   // Select a conversation
-  const selectConversation = useCallback(async (id: string) => {
+  const selectConversation = useCallback(async (id: string, fresh = false) => {
     const version = (conversationRequestVersions.current.get(id) || 0) + 1;
     conversationRequestVersions.current.set(id, version);
     setCurrentConversationId(id);
@@ -212,7 +216,7 @@ export function useChatHistory() {
 
     try {
       // Fetch full conversation with messages
-      const conv = await chatApi.getConversation(id);
+      const conv = await chatApi.getConversation(id, fresh);
       if (conversationRequestVersions.current.get(id) !== version) return;
       const converted = convertApiConversation(conv);
 
@@ -233,16 +237,31 @@ export function useChatHistory() {
         );
         window.dispatchEvent(new CustomEvent("kolvex:conversationUpdated"));
       }
+      return converted;
     } catch (err) {
       console.error("Failed to fetch conversation:", err);
       // Reset state and re-throw so callers can handle (e.g. redirect)
       if (conversationRequestVersions.current.get(id) !== version) return;
-      if (currentConversationIdRef.current === id) {
+      if (!fresh && currentConversationIdRef.current === id) {
         setCurrentConversationId(null);
         currentConversationIdRef.current = null;
       }
       throw err;
     }
+  }, []);
+
+  const rememberMessages = useCallback((id: string, committed: chatApi.ChatMessage[]) => {
+    setConversations((previous) => previous.map((conversation) => {
+      if (conversation.id !== id) return conversation;
+      const existing = new Set(conversation.messages.map((message) => message.id));
+      return {
+        ...conversation,
+        messages: [
+          ...conversation.messages,
+          ...committed.filter((message) => !existing.has(message.id)).map(convertApiMessage),
+        ],
+      };
+    }));
   }, []);
 
   // Delete a conversation
@@ -328,6 +347,7 @@ export function useChatHistory() {
     createConversation,
     addMessage,
     selectConversation,
+    rememberMessages,
     deleteConversation,
     startNewChat,
     clearHistory,
