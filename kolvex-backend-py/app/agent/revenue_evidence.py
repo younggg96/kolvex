@@ -26,7 +26,13 @@ class RevenueEvidence(BaseModel):
         return self
 
 
-_REVENUE_LIST = TypeAdapter(list[RevenueEvidence])
+class RevenueComparison(BaseModel):
+    evidence: list[RevenueEvidence]
+    year_over_year_pct: float | None
+    unavailable_reason: str | None = None
+
+
+_REVENUE_OUTPUT = TypeAdapter(list[RevenueEvidence] | RevenueComparison)
 
 
 def extract_revenue_evidence(output: object) -> list[RevenueEvidence]:
@@ -35,6 +41,7 @@ def extract_revenue_evidence(output: object) -> list[RevenueEvidence]:
     if output.status != "success" or not isinstance(output.content, str):
         return []
     try:
-        return _REVENUE_LIST.validate_json(output.content)
+        result = _REVENUE_OUTPUT.validate_json(output.content)
+        return result.evidence if isinstance(result, RevenueComparison) else result
     except ValidationError:
         return []

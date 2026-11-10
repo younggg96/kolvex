@@ -68,6 +68,46 @@ class ToolSelectionTests(unittest.TestCase):
         bind.assert_called_once_with("user-1")
 
 
+class RevenueComparisonTests(unittest.IsolatedAsyncioTestCase):
+    async def get_comparison(self, prior_value):
+        from app.agent.revenue_evidence import extract_revenue_evidence
+        from app.agent.tools.stock_tools import get_reported_revenue
+
+        def quarter(start, end, filed, value):
+            return {"start": start, "period": end, "revenue": value, "sources": {"revenue": {
+                "derived": False, "filed": filed,
+                "source_url": "https://www.sec.gov/Archives/edgar/data/1/000000000126000001/0000000001-26-000001-index.html",
+            }}}
+
+        rows = [
+            quarter("2026-04-01", "2026-06-30", "2026-08-01", 200),
+            quarter("2026-01-01", "2026-03-31", "2026-05-01", 160),
+        ]
+        if prior_value is not None:
+            rows.append(quarter("2025-04-01", "2025-06-30", "2025-08-01", prior_value))
+        with patch("app.agent.tools.stock_tools.sec_client.financials", AsyncMock(return_value={
+            "symbol": "NVDA", "currency": "USD", "quarterly": rows,
+        })):
+            result = await get_reported_revenue.ainvoke({
+                "type": "tool_call", "name": "get_reported_revenue", "id": "revenue",
+                "args": {"symbol": "NVDA", "year_over_year": True},
+            })
+        return json.loads(result.content), extract_revenue_evidence(result)
+
+    async def test_yoy_uses_prior_year_instead_of_prior_quarter(self):
+        comparison, cards = await self.get_comparison(100)
+        self.assertEqual(comparison["year_over_year_pct"], 100)
+        self.assertEqual([str(row.period_end) for row in cards], ["2026-06-30", "2025-06-30"])
+
+    async def test_missing_or_zero_base_does_not_produce_a_growth_percentage(self):
+        for prior_value, card_count in [(None, 1), (0, 2)]:
+            with self.subTest(prior_value=prior_value):
+                comparison, cards = await self.get_comparison(prior_value)
+                self.assertIsNone(comparison["year_over_year_pct"])
+                self.assertTrue(comparison["unavailable_reason"])
+                self.assertEqual(len(cards), card_count)
+
+
 class TradingAnalysisKeyTests(unittest.TestCase):
     def test_each_tool_uses_only_its_own_users_keys(self):
         graph = Mock()

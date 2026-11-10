@@ -135,7 +135,9 @@ def _create_agent_for_request(
         source_hint += (
             "\n\nUse get_reported_revenue for reported quarterly or annual revenue amounts. "
             "Match the period and currency in the returned evidence, and identify the date as the SEC filing date. "
-            "The tool returns only directly reported figures. If the requested period is absent, state that limitation."
+            "The tool returns only directly reported figures. If the requested period is absent, state that limitation. "
+            "For year-over-year revenue, set year_over_year=true and use year_over_year_pct. "
+            "If that value is null, explain unavailable_reason and do not substitute the previous quarter."
         )
     if skills is not None:
         source_hint += (

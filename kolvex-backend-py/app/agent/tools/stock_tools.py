@@ -6,11 +6,12 @@ Stock Data Tools
 import json
 import asyncio
 import logging
+import math
 from typing import Literal, Optional
 from langchain_core.tools import tool
 from pydantic import ValidationError
 
-from app.agent.revenue_evidence import RevenueEvidence
+from app.agent.revenue_evidence import RevenueComparison, RevenueEvidence
 from app.services.sec.client import SecNotFound, SecUnavailable, sec_client
 
 from app.services.yfinance.client import get_yfinance_service
@@ -63,10 +64,16 @@ def get_stock_financials(symbol: str) -> str:
 
 
 @tool
-async def get_reported_revenue(symbol: str, period: Literal["quarterly", "annual"] = "quarterly") -> str:
+async def get_reported_revenue(
+    symbol: str,
+    period: Literal["quarterly", "annual"] = "quarterly",
+    year_over_year: bool = False,
+) -> str:
     """Get up to two latest directly reported quarterly or annual revenue figures from SEC EDGAR.
     Includes reporting dates, currency, SEC filing date, and the original filing link.
     Derived quarters and TTM are excluded. Use annual only when the user asks for full-year revenue.
+    Set year_over_year to true to compare the latest directly reported period with the same
+    period a year earlier and return a server-calculated percentage, if comparable data exists.
     """
     try:
         history = await sec_client.financials(symbol)
@@ -86,10 +93,34 @@ async def get_reported_revenue(symbol: str, period: Literal["quarterly", "annual
             )
         except ValidationError:
             continue
-        evidence.append(fact.model_dump(mode="json"))
+        if year_over_year and evidence:
+            latest = evidence[0]
+            # Fiscal weeks can move period boundaries by up to a week from year to year.
+            start_gap = (latest.period_start - fact.period_start).days
+            end_gap = (latest.period_end - fact.period_end).days
+            if not (358 <= start_gap <= 373 and 358 <= end_gap <= 373):
+                continue
+        evidence.append(fact)
         if len(evidence) == 2:
             break
-    return json.dumps(evidence or {"error": "No directly reported SEC revenue for this period"})
+
+    if not evidence:
+        return json.dumps({"error": "No directly reported SEC revenue for this period"})
+    if not year_over_year:
+        return json.dumps([fact.model_dump(mode="json") for fact in evidence])
+
+    growth = None
+    reason = "No comparable directly reported period a year earlier."
+    if len(evidence) == 2:
+        latest, prior = evidence
+        reason = "Percentage growth requires a positive, comparable prior-period revenue."
+        if prior.value > 0:
+            change = (latest.value / prior.value - 1) * 100
+            if math.isfinite(change):
+                growth, reason = round(change, 2), None
+    return RevenueComparison(
+        evidence=evidence, year_over_year_pct=growth, unavailable_reason=reason,
+    ).model_dump_json()
 
 
 @tool
