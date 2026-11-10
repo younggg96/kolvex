@@ -60,8 +60,8 @@ create table auth.users (id uuid primary key);
 create function auth.uid() returns uuid language sql stable as $$ select null::uuid $$;
 SQL
   cat "$backend/migrations/create_chat_conversations_table.sql"
-  cat "$backend/supabase/migrations/20261110100408_chat_quote_evidence.sql"
-  cat "$backend/supabase/migrations/20261110103002_chat_revenue_evidence.sql"
+  cat "$backend/supabase/migrations/20261110184725_chat_quote_evidence.sql"
+  cat "$backend/supabase/migrations/20261110184729_chat_revenue_evidence.sql"
   cat <<'SQL'
 insert into auth.users values ('00000000-0000-0000-0000-000000000001');
 insert into public.chat_conversations (id, user_id)
