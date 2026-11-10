@@ -56,6 +56,10 @@ export default function More() {
           title="超级投资者"
           onPress={() => router.push("/superinvestors")}
         />
+        <NavRow
+          title="国会议员交易"
+          onPress={() => router.push("/congress-trades")}
+        />
         <NavRow title="宏观指标" onPress={() => router.push("/macro")} />
         <NavRow
           title="市场事件日历"

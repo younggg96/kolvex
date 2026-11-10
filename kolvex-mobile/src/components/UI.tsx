@@ -2,6 +2,7 @@ import {
   useEffect,
   useRef,
   useState,
+  useSyncExternalStore,
   type ComponentRef,
   type PropsWithChildren,
 } from "react";
@@ -21,7 +22,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from "react-native";
-import { isLiquidGlassAvailable } from "expo-glass-effect";
+import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
@@ -75,46 +76,76 @@ export function Copy({
 }
 // Reading and data sit on an opaque surface. Only toolbars and overlays ask for
 // `material`: real SwiftUI glass on iOS 26+, blur on older iOS, opaque elsewhere.
+// Reduce Transparency is one system setting; every glass surface reads the same copy.
+let reduceTransparency = true;
+const reduceListeners = new Set<() => void>();
+if (Platform.OS === "ios") {
+  void AccessibilityInfo.isReduceTransparencyEnabled()
+    .then((value) => {
+      reduceTransparency = value;
+      reduceListeners.forEach((listener) => listener());
+    })
+    .catch(() => {});
+  AccessibilityInfo.addEventListener("reduceTransparencyChanged", (value) => {
+    reduceTransparency = value;
+    reduceListeners.forEach((listener) => listener());
+  });
+}
+const subscribeReduce = (listener: () => void) => {
+  reduceListeners.add(listener);
+  return () => reduceListeners.delete(listener);
+};
+const liquidGlass = Platform.OS === "ios" && isLiquidGlassAvailable();
+/** True where iOS 26 Liquid Glass can render and the reader has not asked for solid surfaces. */
+export function useLiquidGlass() {
+  const reduce = useSyncExternalStore(
+    subscribeReduce,
+    () => reduceTransparency,
+    () => true,
+  );
+  return liquidGlass && !reduce;
+}
+
+/**
+ * The Web's glass card. On iOS 26 it is the system's Liquid Glass (UIGlassEffect);
+ * with Reduce Transparency, or before iOS 26, the Web's solid card colours.
+ * `material` keeps the clearer SwiftUI glass for floating toolbars such as the Dock.
+ */
 export function Glass({
   children,
   style,
   material = false,
 }: PropsWithChildren<{ style?: StyleProp<ViewStyle>; material?: boolean }>) {
   const t = useTheme();
-  const [reduce, setReduce] = useState(true);
-  useEffect(() => {
-    if (!material || Platform.OS !== "ios") return;
-    AccessibilityInfo.isReduceTransparencyEnabled()
-      .then(setReduce)
-      .catch(() => setReduce(true));
-    const subscription = AccessibilityInfo.addEventListener(
-      "reduceTransparencyChanged",
-      setReduce,
-    );
-    return () => subscription.remove();
-  }, [material]);
-  const shell = [styles.glass, { borderColor: t.rim }, style];
-  if (!material || reduce)
+  const glass = useLiquidGlass();
+  // Liquid Glass draws its own lit edge; the Web rim is only for solid surfaces.
+  const shell = [
+    styles.glass,
+    glass ? { borderWidth: 0 } : { borderColor: t.rim },
+    style,
+  ];
+  if (glass && material)
+    return <SwiftGlass style={shell}>{children}</SwiftGlass>;
+  if (glass)
     return (
-      <View
-        style={[
-          shell,
-          { backgroundColor: reduce && material ? t.surface : t.card },
-        ]}
+      <GlassView
+        glassEffectStyle="regular"
+        colorScheme={t.dark ? "dark" : "light"}
+        style={shell}
       >
         {children}
-      </View>
+      </GlassView>
     );
-  if (Platform.OS === "ios" && isLiquidGlassAvailable())
-    return <SwiftGlass style={shell}>{children}</SwiftGlass>;
-  if (Platform.OS === "ios")
+  if (material && Platform.OS === "ios" && !reduceTransparency)
     return (
       <BlurView tint={t.dark ? "dark" : "light"} intensity={60} style={shell}>
         {children}
       </BlurView>
     );
   return (
-    <View style={[shell, { backgroundColor: t.surface }]}>{children}</View>
+    <View style={[shell, { backgroundColor: material ? t.surface : t.card }]}>
+      {children}
+    </View>
   );
 }
 /**
@@ -140,7 +171,13 @@ export function Button({
   const t = useTheme();
   const { locale } = usePreferences();
   const text = useText();
+  const glass = useLiquidGlass();
   const primary = variant === "primary";
+  const label_ = (
+    <Copy size={14} bold color={primary ? t.onBrand : t.text}>
+      {translateNodes(children, locale)}
+    </Copy>
+  );
   return (
     <Pressable
       accessibilityRole="button"
@@ -153,18 +190,37 @@ export function Button({
         onPress();
       }}
       style={({ pressed }) => [
-        styles.button,
-        {
-          alignSelf: block ? "stretch" : "flex-start",
-          backgroundColor: primary ? t.brand : selected ? t.washStrong : t.wash,
-          borderColor: primary ? "transparent" : t.rim,
-          opacity: disabled ? 0.4 : pressed ? 0.7 : 1,
-        },
+        { alignSelf: block ? "stretch" : "flex-start" },
+        glass
+          ? { opacity: disabled ? 0.4 : 1 }
+          : [
+              styles.button,
+              {
+                backgroundColor: primary
+                  ? t.brand
+                  : selected
+                    ? t.washStrong
+                    : t.wash,
+                borderColor: primary ? "transparent" : t.rim,
+                opacity: disabled ? 0.4 : pressed ? 0.7 : 1,
+              },
+            ],
       ]}
     >
-      <Copy size={14} bold color={primary ? t.onBrand : t.text}>
-        {translateNodes(children, locale)}
-      </Copy>
+      {glass ? (
+        // Interactive glass gives the system's own press response.
+        <GlassView
+          isInteractive={!disabled}
+          glassEffectStyle="regular"
+          tintColor={primary ? t.brand : selected ? t.washStrong : undefined}
+          colorScheme={t.dark ? "dark" : "light"}
+          style={[styles.button, { borderWidth: 0 }]}
+        >
+          {label_}
+        </GlassView>
+      ) : (
+        label_
+      )}
     </Pressable>
   );
 }

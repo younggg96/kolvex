@@ -69,6 +69,8 @@ export function nativePathFor(input: string): string {
       return `/paper-trading${url.search}`;
     case "options-activity":
       return `/options-activity${url.search}`;
+    case "congress-trades":
+      return `/congress-trades${url.search}`;
     case "superinvestors":
       return c ? `/superinvestor/${encoded(c)}` : "/superinvestors";
     case "briefs":

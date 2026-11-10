@@ -17,6 +17,7 @@ import {
 import { router } from "expo-router";
 import { apiURL } from "../lib/config";
 import { useAuth } from "../state/Auth";
+import { GlassView } from "expo-glass-effect";
 import { useText } from "../lib/i18n";
 import { useTheme } from "../lib/theme";
 import {
@@ -27,6 +28,7 @@ import {
   Failure,
   Page,
   LoadingStatus,
+  useLiquidGlass,
 } from "./UI";
 import { textBlocks } from "../lib/markdownBlocks";
 import { safeExternal } from "../lib/links";
@@ -82,6 +84,7 @@ export function Field({
   ...props
 }: ComponentProps<typeof TextInput> & { label: string; error?: string }) {
   const t = useTheme();
+  const glass = useLiquidGlass();
   const text = useText();
   const input = useRef<React.ComponentRef<typeof TextInput>>(null);
   useEffect(() => {
@@ -92,13 +95,15 @@ export function Field({
       <Copy size={14} bold>
         {label}
       </Copy>
-      <View
+      <GlassView
+        glassEffectStyle={glass ? "regular" : "none"}
+        colorScheme={t.dark ? "dark" : "light"}
         style={{
           paddingHorizontal: 16,
           borderRadius: props.multiline ? 24 : 999,
-          borderWidth: 1,
+          borderWidth: glass && !error ? 0 : 1,
           borderColor: error ? t.negative : t.rim,
-          backgroundColor: t.field,
+          backgroundColor: glass ? undefined : t.field,
         }}
       >
         <TextInput
@@ -112,7 +117,7 @@ export function Field({
             props.style,
           ]}
         />
-      </View>
+      </GlassView>
       {!!error && <Failure message={error} />}
     </View>
   );
@@ -156,32 +161,40 @@ export function Filters({
   disabled?: boolean;
 }) {
   const t = useTheme();
+  const glass = useLiquidGlass();
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={{ flexGrow: 0, alignSelf: "flex-start", maxWidth: "100%" }}
-      contentContainerStyle={{
-        gap: 4,
-        padding: 4,
+    <GlassView
+      glassEffectStyle={glass ? "regular" : "none"}
+      colorScheme={t.dark ? "dark" : "light"}
+      style={{
+        alignSelf: "flex-start",
+        maxWidth: "100%",
         borderRadius: 999,
-        borderWidth: 1,
+        borderWidth: glass ? 0 : 1,
         borderColor: t.rim,
-        backgroundColor: t.field,
+        backgroundColor: glass ? undefined : t.field,
+        overflow: "hidden",
       }}
     >
-      {values.map(([key, name]) => (
-        <Chip
-          bare
-          key={key}
-          disabled={disabled}
-          selected={key === value}
-          onPress={() => onChange(key)}
-        >
-          {name}
-        </Chip>
-      ))}
-    </ScrollView>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ flexGrow: 0 }}
+        contentContainerStyle={{ gap: 4, padding: 4 }}
+      >
+        {values.map(([key, name]) => (
+          <Chip
+            bare
+            key={key}
+            disabled={disabled}
+            selected={key === value}
+            onPress={() => onChange(key)}
+          >
+            {name}
+          </Chip>
+        ))}
+      </ScrollView>
+    </GlassView>
   );
 }
 export function Pager({

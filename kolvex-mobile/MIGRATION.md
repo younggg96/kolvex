@@ -86,7 +86,7 @@ Status abbreviations: `C` Code, `B` Bundle, `W` RN-Web. `Auth` means the screen 
 
 ## Known remaining work
 
-Added 2026-11-09: the seven rows from Superinvestors to Kronos forecast. Still unported from the Web: research workspaces (`/dashboard/workspaces`), stock discovery on search, stock mentions in Markdown, the company valuation calculator, and options-activity admin controls.
+Added 2026-11-09: the seven rows from Superinvestors to Kronos forecast. Added 2026-11-10: Congress trades (`/dashboard/congress-trades` → `/congress-trades`, under Settings). Still unported from the Web: research workspaces (`/dashboard/workspaces`), stock discovery on search, stock mentions in Markdown, the company valuation calculator, and options-activity admin controls.
 
 1. **Native acceptance of the remaining screens on iOS.** Android is set aside for now.
 2. **Signed-in writes.** Sign-in, restore, sign-out and read paths passed on the owner's account; writes need a disposable test account.

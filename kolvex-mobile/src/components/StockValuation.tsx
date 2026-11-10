@@ -21,6 +21,7 @@ import { usePreferences } from "../state/Preferences";
 import { Field, Filters } from "./Content";
 import { SecLink } from "./SecResearch";
 import { CardsSkeleton } from "./Skeletons";
+import { CompanyCalculator } from "./CompanyCalculator";
 import {
   Button,
   Copy,
@@ -80,7 +81,37 @@ function useFormat() {
 }
 
 /** Historical PE reference values from SEC filings, in USD. Not a forecast. */
+/** The Web's valuation workspace: company calculator first, history on request. */
 export function StockValuation({ symbol }: { symbol: string }) {
+  const [mode, setMode] = useState("calculator");
+  const [visited, setVisited] = useState(["calculator"]);
+  return (
+    <View style={{ gap: 16 }}>
+      <Filters
+        values={[
+          ["calculator", "公司估值计算"],
+          ["history", "历史估值走势"],
+        ]}
+        value={mode}
+        onChange={(value) => {
+          setMode(value);
+          setVisited((previous) => Array.from(new Set([...previous, value])));
+        }}
+      />
+      {visited.includes("calculator") && (
+        <View style={mode === "calculator" ? undefined : { display: "none" }}>
+          <CompanyCalculator key={symbol} symbol={symbol} />
+        </View>
+      )}
+      {visited.includes("history") && (
+        <View style={mode === "history" ? undefined : { display: "none" }}>
+          <HistoricalValuation key={symbol} symbol={symbol} />
+        </View>
+      )}
+    </View>
+  );
+}
+function HistoricalValuation({ symbol }: { symbol: string }) {
   const f = useFormat();
   const [years, setYears] = useState("3");
   const [view, setView] = useState<string>("price");

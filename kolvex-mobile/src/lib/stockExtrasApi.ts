@@ -149,7 +149,7 @@ export async function loadValuation(
   years: number,
   signal: AbortSignal,
 ): Promise<StockValuation | { status: "unsupported" }> {
-  const path = `/market/valuation/${encoded(symbol)}/history?years=${years}`;
+  const path = `/valuation/${encoded(symbol)}/history?years=${years}`;
   const read = async (target: string) => {
     const response = await apiResponse(target, { signal, timeout: 60_000 });
     return { status: response.status, data: await response.json() };
@@ -157,7 +157,7 @@ export async function loadValuation(
   let result = await read(`${path}&retry=true`);
   for (let attempt = 0; result.status === 202 && attempt < 100; attempt++) {
     await pause(3000, signal);
-    const job = await read(`/market/valuation/jobs/${result.data.job_id}`);
+    const job = await read(`/valuation/jobs/${result.data.job_id}`);
     if (job.data.status === "failed") throw new Error("估值数据源暂不可用。");
     if (job.data.status === "complete") result = await read(path);
   }
@@ -190,7 +190,7 @@ export const simulateValuation = (
   signal: AbortSignal,
 ) =>
   apiRequest<ValuationSimulation>(
-    `/market/valuation/${encoded(snapshot.symbol)}/simulate`,
+    `/valuation/${encoded(snapshot.symbol)}/simulate`,
     {
       method: "POST",
       signal,

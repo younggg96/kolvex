@@ -89,6 +89,14 @@ function AppContent() {
               options={{ title: text("期权异动") }}
             />
             <Stack.Screen
+              name="+not-found"
+              options={{ title: text("页面未找到") }}
+            />
+            <Stack.Screen
+              name="congress-trades"
+              options={{ title: text("国会议员交易") }}
+            />
+            <Stack.Screen
               name="superinvestors"
               options={{ title: text("超级投资者") }}
             />
