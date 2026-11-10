@@ -1520,18 +1520,19 @@ saturation and a fine reflective edge. The dock has no opaque black fill.
 Active routes use a neutral inset pill and foreground icon. Targets are at least
 44px; icon-only controls retain localized accessible names.
 
-Search and Menu expand the capsule upward in place rather than opening a sheet.
-Search holds the ticker lookup; Menu holds a three-column grid of every other
-route, settings, admin for admins, and log out. An outside press, Escape, a route
-change or page scrolling collapses it. Once a page scroller moves vertically away
-from its top, the capsule stays scaled down from its bottom edge and returns to
-full size only at the top or bottom of the scroll, or on a new route; expanding
-it also restores full size. Horizontal scrollers do not trigger this, and reduced
-motion disables it.
+Menu expands the capsule upward in place rather than opening a sheet. It holds a
+three-column grid of every other route, settings, admin for admins, and log out.
+An outside press, Escape, a route change or page scrolling collapses it. Once a
+page scroller moves vertically away from its top, the capsule stays scaled down
+from its bottom edge and returns to full size at the top or bottom of the scroll
+or on a new route. Opening the menu also restores full size. Horizontal scrollers
+do not trigger this, and reduced motion disables it.
 
-From lg the sidebar links to the Search page above the main navigation. Below lg the dock's search replaces per-list search fields in Markets, Watchlist
-and Creator Opinions, so each list's filter and sort controls sit on one row.
-Those fields remain from lg up, and the Watchlist add-stock field stays at all widths.
+Search opens Explore. Below lg, its field sits directly above the dock and
+discovery and results scroll independently above it. The field moves above the
+mobile keyboard while the dock is hidden. Discovery previews use the shared
+ListCard shell with compact rows. From lg, the sidebar links to Explore and the
+field sits below the page heading.
 
 Page-level scroll viewports extend beneath the glass; their bottom clearance and
 scroll padding keep the final row reachable above it, including the safe area.

@@ -1403,6 +1403,21 @@ html[data-chat-history-open] .app-workbench .app-sidebar {
   }
 }
 
+/* Explore reserves space for its search field directly above the floating dock. */
+@media (max-width: 1023px) {
+  .mobile-nav-inset:has([data-search-page]) {
+    padding-bottom: calc(62px + max(1rem, env(safe-area-inset-bottom, 0px)));
+  }
+
+  .mobile-nav-inset:has([data-search-keyboard]) {
+    padding-bottom: 0;
+  }
+
+  .mobile-nav-inset:has([data-search-keyboard]) [data-mobile-dock] {
+    visibility: hidden;
+  }
+}
+
 /* Chat threads fill the screen, scrolling beneath the header, composer and dock. */
 @media (max-width: 1023px) {
   .mobile-nav-inset:has([data-chat-floating-composer]) {

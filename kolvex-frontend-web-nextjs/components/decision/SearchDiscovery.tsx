@@ -40,7 +40,7 @@ function ViewAll({ href, label }: { href: string; label: string }) {
 function DiscoverySection({ id, title, icon, href, linkLabel, className, children }: { id: string; title: string; icon?: ReactNode; href?: string; linkLabel?: string; className?: string; children: ReactNode }) {
   return <section aria-labelledby={id} className={cn("min-w-0", className)}>
     <header className={styles.sectionHeader}>
-      <h2 id={id} className="flex min-w-0 items-center gap-2 text-lg font-semibold tracking-tight">{icon}{title}</h2>
+      <h2 id={id} className="flex min-w-0 items-center gap-1.5 text-base font-semibold tracking-tight lg:gap-2 lg:text-lg">{icon}{title}</h2>
       {href && <ViewAll href={href} label={linkLabel || title} />}
     </header>
     {children}
@@ -80,14 +80,14 @@ function TrendingStocks({ youtube, reddit, onRemember }: { youtube: Resource<You
 
   return <DiscoverySection id="search-trending" title={c("Trending stocks", "热议股票")} href={href} linkLabel={source === "youtube" ? c("View all YouTube stocks", "查看全部 YouTube 热议股票") : c("View all Reddit stocks", "查看全部 Reddit 热议股票")}>
     <ListCard>
-      <ListToolbar className="mb-3 gap-x-2">
+      <ListToolbar className="mb-1.5 gap-x-2 lg:mb-3">
         <SegmentedControl
           label={c("Trending source", "热议来源")}
           semantics="radio"
           size="sm"
           value={source}
           onChange={setSource}
-          itemClassName="min-h-9 px-3"
+          itemClassName="min-h-8 px-2.5 lg:min-h-9 lg:px-3"
           options={[
             { value: "youtube", label: <span className="flex items-center gap-1.5"><YouTubeIcon className="h-3.5 w-3.5" />YouTube</span>, ariaLabel: "YouTube" },
             { value: "reddit", label: <span className="flex items-center gap-1.5"><RedditIcon className="h-3.5 w-3.5" />Reddit</span>, ariaLabel: "Reddit" },
@@ -100,12 +100,12 @@ function TrendingStocks({ youtube, reddit, onRemember }: { youtube: Resource<You
           {stocks.map((stock, index) => <ListRow key={stock.ticker} className={cn("pr-0", styles.stockItem)} style={{ "--search-row": index } as CSSProperties}>
             <Link href={marketStockHref(stock.ticker)} title={stock.name} onClick={() => onRemember({ title: stock.name, detail: stock.ticker, href: marketStockHref(stock.ticker) })} className={cn(listCompactRowClass, styles.stockLink)}>
               <span aria-hidden className={styles.rank}>{index + 1}</span>
-              <span aria-hidden className={styles.stockLogo}><CompanyLogo symbol={stock.ticker} name={stock.name} customSize={32} /></span>
-              <span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{stock.ticker}</span><span className="mt-0.5 block truncate text-xs text-muted-foreground">{stock.name}</span></span>
+              <span aria-hidden className={styles.stockLogo}><CompanyLogo symbol={stock.ticker} name={stock.name} size="sm" className="max-lg:max-h-6 max-lg:max-w-6 max-lg:!p-0.5" /></span>
+              <span className="min-w-0 flex-1"><span className="block truncate text-xs font-semibold lg:text-sm">{stock.ticker}</span><span className="mt-0.5 block truncate text-xs text-muted-foreground">{stock.name}</span></span>
               <ArrowUpRight aria-hidden className={cn("h-3.5 w-3.5", styles.rowArrow)} />
             </Link>
           </ListRow>)}
-        </ol> : <SourceState {...resource} retry={resource.refresh} className="min-h-[22rem] xl:min-h-[26rem]" skeleton={<ol className={styles.stockList}>{Array.from({ length: PICK_COUNT }, (_, i) => <li key={i} className={cn("flex min-w-0 pr-0", styles.stockItem)}><div className={cn(listCompactRowClass, styles.stockLink, "hover:bg-transparent")}><Skeleton className="h-3 w-4 rounded" /><Skeleton className="h-8 w-8 shrink-0 rounded-full" /><span className="flex min-w-0 flex-1 flex-col gap-1.5"><Skeleton className="h-4 w-12 rounded-md" /><Skeleton className={cn("h-3 rounded-md", i % 2 ? "w-20" : "w-28")} /></span></div></li>)}</ol>} />}
+        </ol> : <SourceState {...resource} retry={resource.refresh} className="lg:min-h-[22rem] xl:min-h-[26rem]" skeleton={<ol className={styles.stockList}>{Array.from({ length: PICK_COUNT }, (_, i) => <li key={i} className={cn("flex min-w-0 pr-0", styles.stockItem)}><div className={cn(listCompactRowClass, styles.stockLink, "hover:bg-transparent")}><Skeleton className="h-3 w-4 rounded" /><Skeleton className="h-8 w-8 shrink-0 rounded-full" /><span className="flex min-w-0 flex-1 flex-col gap-1.5"><Skeleton className="h-4 w-12 rounded-md" /><Skeleton className={cn("h-3 rounded-md", i % 2 ? "w-20" : "w-28")} /></span></div></li>)}</ol>} />}
       </div>
       {stocks.length > 0 && <PartialError error={resource.error} retry={resource.refresh} />}
       <ListFooterLink href={href}>{source === "youtube" ? c("Explore creator opinions", "探索博主的完整观点") : c("Explore Reddit discussions", "查看 Reddit 完整讨论榜")}</ListFooterLink>
@@ -134,14 +134,14 @@ function CreatorPicks({ youtube, x, onRemember }: { youtube: Resource<YouTubeOpi
 
   return <DiscoverySection id="search-creators" title={c("Discover creators", "发现创作者")} href={href} linkLabel={c("View all creators", "查看全部创作者")}>
     <ListCard>
-      <ListToolbar className="mb-3 min-h-11">
+      <ListToolbar className="mb-1.5 lg:mb-3 lg:min-h-11">
         <SegmentedControl
           label={c("Creator platform", "创作者平台")}
           semantics="radio"
           size="sm"
           value={source}
           onChange={setSource}
-          itemClassName="min-h-9 px-3"
+          itemClassName="min-h-8 px-2.5 lg:min-h-9 lg:px-3"
           options={[
             { value: "youtube", label: <span className="flex items-center gap-1.5"><YouTubeIcon className="h-3.5 w-3.5" />YouTube</span>, ariaLabel: "YouTube" },
             { value: "x", label: <span className="flex items-center gap-1.5"><XIcon className="h-3 w-3" /><span>{c("Creators", "创作者")}</span></span>, ariaLabel: c("X creators", "X 创作者") },
@@ -152,12 +152,12 @@ function CreatorPicks({ youtube, x, onRemember }: { youtube: Resource<YouTubeOpi
         {creators.length ? <ListRows className={styles.creatorList}>
           {creators.map(creator => <ListRow key={creator.href} className="pr-0">
             <Link href={creator.href} title={`${creator.title} ${creator.detail}`} onClick={() => onRemember({ title: creator.title, detail: creator.detail, href: creator.href })} className={cn(listCompactRowClass, styles.creatorLink, styles.rowLink, "w-full")}>
-              <CreatorAvatar name={creator.title} avatarUrl={creator.avatar} size="sm" className="h-8 w-8" />
-              <span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium">{creator.title}</span><span className="block truncate text-[0.6875rem] text-muted-foreground">{creator.detail}</span></span>
+              <CreatorAvatar name={creator.title} avatarUrl={creator.avatar} size="sm" className="h-6 w-6 lg:h-8 lg:w-8" />
+              <span className="min-w-0 flex-1"><span className="block truncate text-xs font-medium lg:text-sm">{creator.title}</span><span className="block truncate text-[0.6875rem] text-muted-foreground">{creator.detail}</span></span>
               <ArrowUpRight aria-hidden className={cn("h-3.5 w-3.5", styles.rowArrow)} />
             </Link>
           </ListRow>)}
-        </ListRows> : <SourceState {...resource} retry={resource.refresh} className="min-h-[22rem] xl:min-h-[26rem]" skeleton={<ul className={cn("min-w-0", styles.creatorList)}>{Array.from({ length: PICK_COUNT }, (_, i) => <li key={i} className="flex min-w-0 pr-0"><div className={cn(listCompactRowClass, styles.creatorLink, "w-full hover:bg-transparent")}><Skeleton className="h-8 w-8 shrink-0 rounded-full" /><span className="flex min-w-0 flex-1 flex-col gap-1.5"><Skeleton className={cn("h-4 rounded-md", i % 2 ? "w-20" : "w-28")} /><Skeleton className="h-3 w-16 rounded-md" /></span></div></li>)}</ul>} />}
+        </ListRows> : <SourceState {...resource} retry={resource.refresh} className="lg:min-h-[22rem] xl:min-h-[26rem]" skeleton={<ul className={cn("min-w-0", styles.creatorList)}>{Array.from({ length: PICK_COUNT }, (_, i) => <li key={i} className="flex min-w-0 pr-0"><div className={cn(listCompactRowClass, styles.creatorLink, "w-full hover:bg-transparent")}><Skeleton className="h-8 w-8 shrink-0 rounded-full" /><span className="flex min-w-0 flex-1 flex-col gap-1.5"><Skeleton className={cn("h-4 rounded-md", i % 2 ? "w-20" : "w-28")} /><Skeleton className="h-3 w-16 rounded-md" /></span></div></li>)}</ul>} />}
       </div>
       {creators.length > 0 && <PartialError error={resource.error} retry={resource.refresh} />}
       <ListFooterLink href={href}>{source === "youtube" ? c("Browse YouTube creators", "浏览 YouTube 创作者") : c("Browse X creators", "浏览 X 创作者")}</ListFooterLink>
@@ -176,14 +176,14 @@ function ResearchPicks({ onRemember }: { onRemember: Remember }) {
       {reports.length ? <ListRows>{reports.map(report => {
         const item = { href: `/dashboard/trading-analysis/explore/${encodeURIComponent(report.id)}`, title: c(`${report.ticker} research report`, `${report.ticker} 研究报告`), detail: dayLabel(report.trade_date) };
         return <ListRow key={report.id} className="pr-0">
-          <Link href={item.href} onClick={() => onRemember(item)} className={cn(listCompactRowClass, styles.rowLink, "min-h-[4.5rem] w-full gap-3 px-2")}>
-            <span aria-hidden><CompanyLogo symbol={report.ticker} customSize={32} /></span>
+          <Link href={item.href} onClick={() => onRemember(item)} className={cn(listCompactRowClass, styles.rowLink, "min-h-12 w-full gap-2 px-1 lg:min-h-[4.5rem] lg:gap-3 lg:px-2")}>
+            <span aria-hidden><CompanyLogo symbol={report.ticker} size="sm" className="max-lg:max-h-6 max-lg:max-w-6 max-lg:!p-0.5" /></span>
             <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{report.ticker}</span><span className="mt-0.5 block text-xs text-muted-foreground">{c("AI research report", "AI 研究报告")}</span></span>
             <span className="shrink-0 text-xs text-muted-foreground">{item.detail}</span>
             <ArrowUpRight aria-hidden className={cn("h-4 w-4", styles.rowArrow)} />
           </Link>
         </ListRow>;
-      })}</ListRows> : <SourceState {...resource} retry={resource.refresh} className="min-h-72" skeleton={<ul className="min-w-0">{[0, 1, 2, 3].map(i => <li key={i} className={cn(listCompactRowClass, "min-h-[4.5rem] w-full gap-3 px-2 hover:bg-transparent")}><Skeleton className="h-8 w-8 shrink-0 rounded-full" /><span className="flex min-w-0 flex-1 flex-col gap-1.5"><Skeleton className="h-4 w-12 rounded-md" /><Skeleton className="h-3 w-24 rounded-md" /></span><Skeleton className="h-3 w-14 rounded-md" /></li>)}</ul>} />}
+      })}</ListRows> : <SourceState {...resource} retry={resource.refresh} className="lg:min-h-72" skeleton={<ul className="min-w-0">{[0, 1, 2, 3].map(i => <li key={i} className={cn(listCompactRowClass, "min-h-12 w-full gap-2 px-1 lg:min-h-[4.5rem] lg:gap-3 lg:px-2 hover:bg-transparent")}><Skeleton className="h-8 w-8 shrink-0 rounded-full" /><span className="flex min-w-0 flex-1 flex-col gap-1.5"><Skeleton className="h-4 w-12 rounded-md" /><Skeleton className="h-3 w-24 rounded-md" /></span><Skeleton className="h-3 w-14 rounded-md" /></li>)}</ul>} />}
       {reports.length > 0 && <PartialError error={resource.error} retry={resource.refresh} />}
     </ListCard>
   </DiscoverySection>;
@@ -202,11 +202,11 @@ function NewsPicks() {
   return <DiscoverySection id="search-news" title={c("Latest news", "最新新闻")} icon={<Newspaper aria-hidden className="h-4 w-4 text-muted-foreground" />} href="/dashboard/news" linkLabel={c("View all news", "查看全部新闻")}>
     <ListCard>
       {articles.length ? <ListRows>{articles.map(article => <ListRow key={article.id} className="pr-0">
-        <Link href={article.link} target="_blank" rel="noopener noreferrer" className={cn(listCompactRowClass, styles.rowLink, "min-h-24 w-full items-start gap-3 px-2 py-4")}>
+        <Link href={article.link} target="_blank" rel="noopener noreferrer" className={cn(listCompactRowClass, styles.rowLink, "min-h-16 w-full items-start gap-2 px-1 py-2 lg:min-h-24 lg:gap-3 lg:px-2 lg:py-4")}>
           <span className="min-w-0 flex-1"><span className="line-clamp-2 text-sm leading-relaxed">{article.title}</span><span className="mt-1.5 block text-xs text-muted-foreground">{article.publisher || c("News source", "新闻来源")}</span></span>
           <ArrowUpRight aria-hidden className={cn("mt-1 h-4 w-4", styles.rowArrow)} />
         </Link>
-      </ListRow>)}</ListRows> : <SourceState {...resource} retry={resource.refresh} className="min-h-72" skeleton={<TextRowsSkeleton count={3} />} />}
+      </ListRow>)}</ListRows> : <SourceState {...resource} retry={resource.refresh} className="lg:min-h-72" skeleton={<TextRowsSkeleton count={3} />} />}
       {articles.length > 0 && <PartialError error={resource.error} retry={resource.refresh} />}
     </ListCard>
   </DiscoverySection>;
@@ -222,7 +222,7 @@ function BriefPicks({ onRemember }: { onRemember: Remember }) {
     <ListCard>
       {briefs.length ? <ListRows className={styles.briefList}>{briefs.map(brief => {
         const item = { href: `/dashboard/briefs/${encodeURIComponent(brief.id)}`, title: brief.headline || brief.title, detail: dayLabel(brief.brief_date) };
-        return <ListRow key={brief.id} className="pr-0"><Link href={item.href} onClick={() => onRemember(item)} className={cn(listCompactRowClass, styles.rowLink, "min-h-24 w-full items-start gap-3 px-2 py-4")}>
+        return <ListRow key={brief.id} className="pr-0"><Link href={item.href} onClick={() => onRemember(item)} className={cn(listCompactRowClass, styles.rowLink, "min-h-16 w-full items-start gap-2 px-1 py-2 lg:min-h-24 lg:gap-3 lg:px-2 lg:py-4")}>
           <span className="min-w-0 flex-1"><span className="line-clamp-2 text-sm font-medium leading-relaxed">{item.title}</span><span className="mt-2 block text-xs text-muted-foreground">{item.detail}</span></span>
           <ArrowUpRight aria-hidden className={cn("mt-1 h-4 w-4", styles.rowArrow)} />
         </Link></ListRow>;
@@ -235,17 +235,17 @@ function BriefPicks({ onRemember }: { onRemember: Remember }) {
 export default function SearchDiscovery({ youtube, reddit, x, history, onHistoryChange, onRemember }: { youtube: Resource<YouTubeOpinionDashboard>; reddit: Resource<RedditRanking>; x: Resource<{ creators: XCreator[] }>; history: SearchHistoryItem[]; onHistoryChange: (items: SearchHistoryItem[]) => void; onRemember: Remember }) {
   const c = useCopy();
   return <div className={styles.discovery}>
-    {history.length > 0 && <section aria-labelledby="search-recent" className="mb-8">
-      <div className="mb-2 flex min-h-9 items-center justify-between gap-3">
+    {history.length > 0 && <section aria-labelledby="search-recent" className="mb-3 lg:mb-8">
+      <div className="mb-1 flex min-h-9 items-center justify-between gap-3">
         <h2 id="search-recent" className="text-sm font-medium text-muted-foreground">{c("Recent searches", "最近搜索")}</h2>
         <button type="button" onClick={() => onHistoryChange([])} className="min-h-9 rounded-full px-2 text-xs text-muted-foreground transition-colors hover:text-foreground motion-reduce:transition-none">{c("Clear", "清除")}</button>
       </div>
       <ul className="flex flex-wrap gap-2">{history.map(item => <li key={item.href} className={cn("glass-button glass-button-neutral flex min-w-0 items-center rounded-full bg-foreground/[0.08] transition-colors hover:bg-foreground/[0.13] has-[a:active]:bg-foreground/[0.18] motion-reduce:transition-none", styles.recentItem)}>
         {/* The whole chip washes on hover, not just the link half, so the pill never looks split. */}
-        <Link href={item.href} title={item.title} onClick={() => onRemember(item)} className="flex min-h-11 min-w-0 items-center gap-2 rounded-full py-2 pl-3.5 pr-1 text-sm">
+        <Link href={item.href} title={item.title} onClick={() => onRemember(item)} className="flex min-h-11 min-w-0 items-center gap-1.5 rounded-full py-1 pl-2.5 pr-1 text-xs lg:gap-2 lg:py-2 lg:pl-3.5 lg:text-sm">
           <Clock aria-hidden className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /><span className="truncate">{item.title}</span>
         </Link>
-        <button type="button" aria-label={c(`Remove ${item.title} from recent searches`, `从最近搜索中移除 ${item.title}`)} onClick={() => onHistoryChange(history.filter(existing => existing.href !== item.href))} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground motion-reduce:transition-none"><X aria-hidden className="h-3.5 w-3.5" /></button>
+        <button type="button" aria-label={c(`Remove ${item.title} from recent searches`, `从最近搜索中移除 ${item.title}`)} onClick={() => onHistoryChange(history.filter(existing => existing.href !== item.href))} className="flex h-11 w-9 shrink-0 lg:w-11 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground motion-reduce:transition-none"><X aria-hidden className="h-3.5 w-3.5" /></button>
       </li>)}</ul>
     </section>}
     {isProductFeatureEnabled("youtubeOpinions") && <div className={styles.discoveryGrid}>
@@ -262,7 +262,7 @@ export default function SearchDiscovery({ youtube, reddit, x, history, onHistory
 
 /** Headline rows (news, briefs): two clamped lines and a source/date line. */
 function TextRowsSkeleton({ count, className }: { count: number; className?: string }) {
-  return <ul className={cn("min-w-0", className)}>{Array.from({ length: count }, (_, i) => <li key={i} className={cn(listCompactRowClass, "min-h-24 w-full items-start gap-3 px-2 py-4 hover:bg-transparent")}>
+  return <ul className={cn("min-w-0", className)}>{Array.from({ length: count }, (_, i) => <li key={i} className={cn(listCompactRowClass, "min-h-16 w-full items-start gap-2 px-1 py-2 lg:min-h-24 lg:gap-3 lg:px-2 lg:py-4 hover:bg-transparent")}>
     <span className="flex min-w-0 flex-1 flex-col gap-2"><Skeleton className="h-4 w-full rounded-md" /><Skeleton className={cn("h-4 rounded-md", i % 2 ? "w-1/2" : "w-2/3")} /><Skeleton className="mt-0.5 h-3 w-20 rounded-md" /></span>
   </li>)}</ul>;
 }

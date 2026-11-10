@@ -45,15 +45,15 @@ function stockMatchScore({ ticker, name }: StockResult, query: string) {
 }
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
-  return <section className="mt-7">
-    <h2 className="mb-3 text-lg font-semibold">{title}</h2>
+  return <section className="mt-4 lg:mt-7">
+    <h2 className="mb-2 text-base font-semibold lg:mb-3 lg:text-lg">{title}</h2>
     <ListCard><ListRows>{children}</ListRows></ListCard>
   </section>;
 }
 
 function ResultRow({ href, title, detail, leading, trailing, onOpen }: { href: string; title: string; detail: string; leading?: ReactNode; trailing?: ReactNode; onOpen?: () => void }) {
   return <ListRow>
-    <Link href={href} onClick={onOpen} className={cn(listRowTargetClass, styles.rowLink, "flex gap-3")}>
+    <Link href={href} onClick={onOpen} className={cn(listRowTargetClass, styles.rowLink, "flex gap-2 max-lg:min-h-[48px] lg:gap-3")}>
       {leading}
       <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{title}</span><span className="mt-1 block truncate text-xs text-muted-foreground">{detail}</span></span>
       <ArrowUpRight aria-hidden className={cn("h-4 w-4", styles.rowArrow)} />
@@ -83,6 +83,8 @@ export default function SearchPage() {
   const dayLabel = useDayLabel();
   const router = useRouter();
   const { error: watchlistError, userId } = useWatchlist();
+  const page = useRef<HTMLElement>(null);
+  const scrollRegion = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
   const composition = useRef(false);
   const [composing, setComposing] = useState(false);
@@ -107,7 +109,35 @@ export default function SearchPage() {
   }, [userId]);
 
   useEffect(() => {
-    if (window.matchMedia("(min-width: 768px)").matches) input.current?.focus();
+    if (window.matchMedia("(min-width: 1024px)").matches) input.current?.focus();
+
+    const layout = page.current;
+    const field = input.current;
+    const viewport = window.visualViewport;
+    if (!layout || !field || !viewport) return;
+    const shell = layout.closest(".mobile-nav-inset") ?? layout;
+    const mobile = window.matchMedia("(max-width: 1023px)");
+    const syncKeyboardInset = () => {
+      const editing = document.activeElement === field || layout.hasAttribute("data-search-keyboard");
+      const keyboardOpen = mobile.matches && editing && viewport.scale === 1
+        && document.documentElement.clientHeight - viewport.height > 120;
+      layout.toggleAttribute("data-search-keyboard", keyboardOpen);
+      // The shell edge stays stable while its dock reservation is removed.
+      const inset = keyboardOpen
+        ? Math.max(0, shell.getBoundingClientRect().bottom - viewport.offsetTop - viewport.height)
+        : 0;
+      layout.style.setProperty("--search-keyboard-inset", `${inset}px`);
+    };
+    field.addEventListener("focus", syncKeyboardInset);
+    viewport.addEventListener("resize", syncKeyboardInset);
+    viewport.addEventListener("scroll", syncKeyboardInset);
+    mobile.addEventListener("change", syncKeyboardInset);
+    return () => {
+      field.removeEventListener("focus", syncKeyboardInset);
+      viewport.removeEventListener("resize", syncKeyboardInset);
+      viewport.removeEventListener("scroll", syncKeyboardInset);
+      mobile.removeEventListener("change", syncKeyboardInset);
+    };
   }, []);
 
   function saveHistory(next: SearchHistoryItem[]) {
@@ -118,6 +148,11 @@ export default function SearchPage() {
   const rememberStock = ({ ticker, name }: StockResult) => remember({ title: name, detail: ticker, href: marketStockHref(ticker) });
 
   const query = searchValue.trim().toLowerCase();
+  const searching = Boolean(query);
+  useEffect(() => {
+    scrollRegion.current?.scrollTo(0, 0);
+    page.current?.scrollTo(0, 0);
+  }, [searching, filter]);
   const catalogue = useMemo(() => {
     const stocks = new Map<string, StockResult>();
     for (const stock of opinions.data?.stocks ?? []) stocks.set(stock.ticker, { ticker: stock.ticker, name: stock.company_name || stock.ticker });
@@ -226,53 +261,55 @@ export default function SearchPage() {
   }
 
   return <DashboardLayout title={c("Search", "探索")}>
-    <main className="min-w-0 flex-1 overflow-y-auto">
-      <div className={styles.page}>
-        <header className="mb-7">
-          <h1 className="text-[2rem] font-semibold tracking-tight">{c("Search", "探索")}</h1>
-          <div className="mt-6 flex items-center gap-3">
-            <form role="search" noValidate onSubmit={submit} className="min-w-0 flex-1">
-              <div className={cn("glass-field relative flex h-14 items-center rounded-full border border-transparent bg-foreground/[0.06]", styles.searchField)}>
-                <Search aria-hidden className="pointer-events-none absolute left-5 h-5 w-5 text-muted-foreground" />
-                <input
-                  ref={input}
-                  value={value}
-                  onChange={event => changeValue(event.target.value)}
-                  onCompositionStart={() => { composition.current = true; setComposing(true); }}
-                  onCompositionEnd={event => { composition.current = false; setComposing(false); changeValue(event.currentTarget.value); }}
-                  onKeyDown={event => {
-                    if (event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229 || composition.current) {
-                      if (event.key === "Enter") event.preventDefault();
-                      return;
-                    }
-                    if (event.key === "Escape") {
-                      event.preventDefault();
-                      if (value) clearSearch();
-                      else router.back();
-                    }
-                  }}
-                  aria-label={c("Search stocks and creators", "搜索股票和创作者")}
-                  aria-invalid={submitFailed || undefined}
-                  aria-describedby={submitFailed ? "search-error" : undefined}
-                  placeholder={c("Search stocks, companies, creators", "搜索股票、公司、创作者")}
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                  spellCheck={false}
-                  enterKeyHint="search"
-                  maxLength={40}
-                  className="h-full w-full rounded-full bg-transparent pl-14 pr-12 text-base text-foreground outline-none placeholder:text-muted-foreground focus-visible:bg-transparent focus-visible:no-underline focus-visible:outline-none"
-                />
-                {value && <Button type="button" variant="icon" size="icon" aria-label={c("Clear search", "清空搜索")} onClick={clearSearch} className="absolute right-1 shadow-sm"><X aria-hidden className="h-4 w-4" /></Button>}
-              </div>
-            </form>
-            <button type="button" onClick={() => router.back()} className="flex min-h-11 shrink-0 items-center gap-3 rounded-full px-3 text-sm text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground motion-reduce:transition-none">
-              {c("Cancel", "取消")}<kbd aria-hidden className="glass-button glass-button-neutral hidden rounded-md bg-foreground/[0.08] px-1.5 py-0.5 text-[0.6875rem] font-normal sm:inline">Esc</kbd>
-            </button>
-          </div>
-          {submitFailed && <p id="search-error" role="alert" className="mt-3 pl-5 text-sm text-negative">{c("No matching stock. Choose a result below, or try a ticker like AAPL.", "没有匹配的股票。请选择下方结果，或试试 AAPL 这样的股票代码。")}</p>}
-          {watchlistError && <p role="alert" className="mt-3 pl-5 text-sm text-negative">{c("Your watchlist couldn't be updated. Try again.", "自选更新失败，请重试。")}</p>}
-        </header>
+    <main ref={page} data-search-page className={styles.page}>
+      <header className={styles.pageHeader}>
+        <h1 className="text-xl font-semibold tracking-tight lg:text-3xl">{c("Search", "探索")}</h1>
+      </header>
+      <div className={styles.searchDock}>
+        <div className="flex items-center gap-1 lg:gap-3">
+          <form role="search" noValidate onSubmit={submit} className="min-w-0 flex-1">
+            <div className={cn("glass-field relative flex h-[44px] items-center rounded-full border border-transparent bg-foreground/[0.06] lg:h-14", styles.searchField)}>
+              <Search aria-hidden className="pointer-events-none absolute left-3.5 h-4 w-4 lg:left-5 lg:h-5 lg:w-5 text-muted-foreground" />
+              <input
+                ref={input}
+                value={value}
+                onChange={event => changeValue(event.target.value)}
+                onCompositionStart={() => { composition.current = true; setComposing(true); }}
+                onCompositionEnd={event => { composition.current = false; setComposing(false); changeValue(event.currentTarget.value); }}
+                onKeyDown={event => {
+                  if (event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229 || composition.current) {
+                    if (event.key === "Enter") event.preventDefault();
+                    return;
+                  }
+                  if (event.key === "Escape") {
+                    event.preventDefault();
+                    if (value) clearSearch();
+                    else router.back();
+                  }
+                }}
+                aria-label={c("Search stocks and creators", "搜索股票和创作者")}
+                aria-invalid={submitFailed || undefined}
+                aria-describedby={submitFailed ? "search-error" : undefined}
+                placeholder={c("Search stocks, companies, creators", "搜索股票、公司、创作者")}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                enterKeyHint="search"
+                maxLength={40}
+                className="h-full w-full rounded-full bg-transparent pl-10 pr-11 text-base lg:pl-14 lg:pr-12 text-foreground outline-none placeholder:text-muted-foreground focus-visible:bg-transparent focus-visible:no-underline focus-visible:outline-none"
+              />
+              {value && <Button type="button" variant="icon" size="icon" aria-label={c("Clear search", "清空搜索")} onClick={clearSearch} className="absolute right-1 shadow-sm max-lg:h-[36px] max-lg:w-[36px]"><X aria-hidden className="h-4 w-4" /></Button>}
+            </div>
+          </form>
+          <button type="button" onClick={() => router.back()} className="flex min-h-[44px] shrink-0 items-center gap-3 rounded-full px-2 text-xs text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground motion-reduce:transition-none lg:px-3 lg:text-sm">
+            {c("Cancel", "取消")}<kbd aria-hidden className="glass-button glass-button-neutral hidden rounded-md bg-foreground/[0.08] px-1.5 py-0.5 text-[0.6875rem] font-normal lg:inline">Esc</kbd>
+          </button>
+        </div>
+        {submitFailed && <p id="search-error" role="alert" className="mt-2 px-2 text-xs text-negative">{c("No matching stock. Choose a result or try a ticker like AAPL.", "没有匹配的股票。请选择一条结果，或试试 AAPL 这样的股票代码。")}</p>}
+      </div>
+      <div ref={scrollRegion} className={styles.scrollRegion}>
+        {watchlistError && <p role="alert" className="mt-3 pl-5 text-sm text-negative">{c("Your watchlist couldn't be updated. Try again.", "自选更新失败，请重试。")}</p>}
 
         {!query ? <SearchDiscovery youtube={opinions} reddit={reddit} x={xCreators} history={history} onHistoryChange={saveHistory} onRemember={remember} /> : <div className="max-w-4xl">
           <SegmentedControl label={c("Filter results", "筛选结果")} semantics="radio" options={filters} value={filter} onChange={setFilter} size="sm" itemClassName="min-h-10 px-4" />
@@ -298,11 +335,11 @@ export default function SearchPage() {
               return <ResultRow key={report.id} {...item} leading={<span aria-hidden><CompanyLogo symbol={report.ticker} customSize={32} /></span>} onOpen={() => remember(item)} />;
             })}</Section>}
 
-            {!hasResults && (catalogueLoading || researchPending) && <ContentLoading className="min-h-0">{[4, 3].map((rows, section) => <section key={section} className="mt-7">
+            {!hasResults && (catalogueLoading || researchPending) && <ContentLoading className="min-h-0">{[4, 3].map((rows, section) => <section key={section} className="mt-4 lg:mt-7">
               <Skeleton className="mb-3 h-6 w-20 rounded-md" />
               <ListCard>{Array.from({ length: rows }, (_, i) => <div key={i} className={cn(listRowTargetClass, "flex gap-3")}><Skeleton className="h-8 w-8 shrink-0 rounded-full" /><span className="flex min-w-0 flex-1 flex-col gap-2"><Skeleton className="h-4 w-16 rounded-md" /><Skeleton className={cn("h-3 rounded-md", i % 2 ? "w-28" : "w-40")} /></span></div>)}</ListCard>
             </section>)}</ContentLoading>}
-            {!catalogueLoading && !researchPending && !researchFailed && !hasResults && <div className="mt-7"><ListCard><ListEmptyState
+            {!catalogueLoading && !researchPending && !researchFailed && !hasResults && <div className="mt-4 lg:mt-7"><ListCard><ListEmptyState
               title={filter === "all" ? c(`Nothing found for “${value.trim()}”`, `没有找到“${value.trim()}”`) : c("Nothing in this category", "这个分类下没有结果")}
               action={<Button type="button" variant="outline" size="sm" onClick={filter === "all" ? clearSearch : () => setFilter("all")}>{filter === "all" ? c("Clear search", "清空搜索") : c("Show all results", "查看全部结果")}</Button>}
             /></ListCard></div>}
