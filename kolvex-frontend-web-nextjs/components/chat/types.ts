@@ -1,3 +1,6 @@
+import type { QuoteEvidence, RevenueEvidence } from "@/lib/chatApi";
+import type { ChatSkill } from "./chatSkills";
+
 // Chat component types and interfaces
 
 export interface Message {
@@ -5,6 +8,8 @@ export interface Message {
   role: "user" | "assistant" | "system";
   content: string;
   timestamp?: Date;
+  revenueEvidence?: RevenueEvidence[] | null;
+  quoteEvidence?: QuoteEvidence[] | null;
 }
 
 export interface ChatConversation {
@@ -74,6 +79,8 @@ export interface ChatInputProps {
   activeSources?: SearchSource[];
   onToggleSource?: (source: SearchSource) => void;
   showSourceToggle?: boolean;
+  activeSkills?: ChatSkill[];
+  onToggleSkill?: (skill: ChatSkill) => void;
   inputRef?: React.RefObject<HTMLTextAreaElement>;
   // Model selection
   selectedModel?: AIModel;
@@ -102,6 +109,8 @@ export interface ChatBubbleProps {
   modelName?: string;
   /** Symbols this conversation already knows; their mentions get a logo and a link. */
   symbols?: string[];
+  revenueEvidence?: RevenueEvidence[] | null;
+  quoteEvidence?: QuoteEvidence[] | null;
 }
 
 export interface ChatHistorySidebarProps {
@@ -119,6 +128,8 @@ export interface ChatWelcomeProps {
   isLoading?: boolean;
   activeSources: SearchSource[];
   onToggleSource: (source: SearchSource) => void;
+  activeSkills: ChatSkill[];
+  onToggleSkill: (skill: ChatSkill) => void;
   selectedModel?: AIModel;
   onSelectModel?: (model: AIModel) => void;
   /** Backend provider IDs with usable keys */
@@ -167,6 +178,8 @@ export interface ChatMessageListProps {
   messages: Message[];
   pendingUserMessage?: string;
   streamingContent?: string;
+  streamingQuoteEvidence?: QuoteEvidence[];
+  streamingRevenueEvidence?: RevenueEvidence[];
   isLoading?: boolean;
   messagesEndRef?: React.RefObject<HTMLDivElement>;
   activeTools?: ToolStatus[];

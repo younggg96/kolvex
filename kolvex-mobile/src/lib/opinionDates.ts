@@ -17,6 +17,22 @@ export function opinionDay(value?: string | null): string {
   return `${part("year")}-${part("month")}-${part("day")}`;
 }
 
+/** Month and day only, for narrow rails such as "11/3". */
+export function formatOpinionDateShort(
+  value: string | null | undefined,
+  locale: string,
+): string {
+  const day = opinionDay(value);
+  if (!day) return "";
+  const parsed = new Date(`${day}T12:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return new Intl.DateTimeFormat(locale, {
+    timeZone: "UTC",
+    month: "numeric",
+    day: "numeric",
+  }).format(parsed);
+}
+
 export function formatOpinionDate(
   value: string | null | undefined,
   locale: string,

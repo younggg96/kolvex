@@ -2,15 +2,20 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
+  Activity,
   ArrowUp,
+  Building2,
   Globe,
   ChevronDown,
   Cpu,
   Check,
   Briefcase,
   Landmark,
+  Layers3,
   Loader2,
   Lock,
+  MessageCircle,
+  Plus,
   Settings,
   Square,
   X,
@@ -25,6 +30,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CHAT_SKILLS, type ChatSkill } from "./chatSkills";
 import type {
   ChatInputProps,
   SearchSource,
@@ -34,6 +42,15 @@ import type {
 
 import { MODEL_CONFIGS, PROVIDER_NAME_TO_ID } from "@/lib/aiModels";
 export { MODEL_CONFIGS, PROVIDER_NAME_TO_ID, getFirstAvailableModelId } from "@/lib/aiModels";
+
+const SKILL_ICONS = {
+  market: Activity,
+  fundamentals: Building2,
+  options: Layers3,
+  news: Globe,
+  creators: MessageCircle,
+  portfolio: Briefcase,
+} satisfies Record<ChatSkill, typeof Globe>;
 
 interface SourceChipProps {
   icon: React.ReactNode;
@@ -253,6 +270,8 @@ export function ChatInput({
   activeSources = ["plaid", "portfolio"],
   onToggleSource,
   showSourceToggle = true,
+  activeSkills,
+  onToggleSkill,
   inputRef: externalRef,
   selectedModel = "deepseek-flash",
   onSelectModel,
@@ -305,6 +324,7 @@ export function ChatInput({
   ];
 
   const hasFooter =
+    (activeSkills && onToggleSkill) ||
     (showSourceToggle && onToggleSource) ||
     (showModelSelector && onSelectModel);
 
@@ -509,6 +529,68 @@ export function ChatInput({
             >
               {/* Left Side - Source Toggles & Model Selector */}
               <div className={cn("flex min-w-0 flex-wrap items-center gap-0.5", inline && "-ml-3")}>
+                {activeSkills && onToggleSkill && (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="xs"
+                        className="size-8 shrink-0 rounded-full p-0 text-foreground/70 data-[state=open]:bg-foreground/10"
+                        aria-label={t("chat.input.skills.title")}
+                        title={t("chat.input.skills.title")}
+                      >
+                        <Plus className="size-4" aria-hidden="true" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      align="start"
+                      side="top"
+                      sideOffset={8}
+                      className="max-h-[var(--radix-popover-content-available-height)] w-64 max-w-[calc(100vw-2rem)] overflow-y-auto !bg-card p-2"
+                      aria-label={t("chat.input.skills.title")}
+                    >
+                      <div className="mb-1 border-b border-border px-2.5 pb-2.5 pt-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-semibold text-foreground">
+                            {t("chat.input.skills.title")}
+                          </p>
+                          <span
+                            className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs tabular-nums text-muted-foreground"
+                            role="status"
+                          >
+                            {t("chat.input.skills.selected", {
+                              count: String(activeSkills.length),
+                              total: String(CHAT_SKILLS.length),
+                            })}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                          {t("chat.input.skills.description")}
+                        </p>
+                      </div>
+                      {CHAT_SKILLS.map((skill) => {
+                        const Icon = SKILL_ICONS[skill];
+                        return (
+                          <label
+                            key={skill}
+                            className="flex min-h-10 cursor-pointer items-center gap-2.5 rounded-2xl px-2.5 text-sm text-foreground transition-colors hover:bg-foreground/[0.06] focus-within:bg-foreground/[0.06]"
+                          >
+                            <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                            <span className="min-w-0 flex-1">{t(`chat.input.skills.${skill}`)}</span>
+                            <Checkbox
+                              type="button"
+                              className="border-muted-foreground/50 focus-visible:ring-2 focus-visible:ring-foreground/60 focus-visible:ring-offset-2 focus-visible:ring-offset-card data-[state=checked]:border-transparent data-[state=checked]:bg-foreground/10 data-[state=checked]:text-foreground"
+                              checked={activeSkills.includes(skill)}
+                              onCheckedChange={() => onToggleSkill(skill)}
+                            />
+                          </label>
+                        );
+                      })}
+                    </PopoverContent>
+                  </Popover>
+                )}
+
                 {/* Source Toggles */}
                 {showSourceToggle && onToggleSource && (
                   <>

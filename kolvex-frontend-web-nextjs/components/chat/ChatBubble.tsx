@@ -5,6 +5,8 @@ import { Copy, Check, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { visibleQuestion } from "./pageEvidence";
+import { RevenueEvidenceCard } from "./RevenueEvidenceCard";
+import { QuoteEvidenceCard } from "./QuoteEvidenceCard";
 import type { ChatBubbleProps } from "./types";
 import { Button } from "../ui/button";
 import { useTranslation } from "@/lib/i18n";
@@ -35,6 +37,8 @@ export function ChatBubble({
   onRetry,
   modelName,
   symbols,
+  quoteEvidence,
+  revenueEvidence,
 }: ChatBubbleProps) {
   const { t } = useTranslation();
   const remarkPlugins = richRemarkPlugins(symbols);
@@ -109,6 +113,18 @@ export function ChatBubble({
               )}
             </div>
           </div>
+
+          {!!(quoteEvidence?.length || revenueEvidence?.length) && (
+            <div className="mt-4 grid max-w-md gap-2">
+              {quoteEvidence?.map((quote) => <QuoteEvidenceCard key={quote.symbol} quote={quote} />)}
+              {revenueEvidence?.map((revenue) => (
+                <RevenueEvidenceCard
+                  key={`${revenue.symbol}:${revenue.period_kind}:${revenue.period_end}`}
+                  revenue={revenue}
+                />
+              ))}
+            </div>
+          )}
 
           {/* Actions */}
           {!isStreaming && content && (

@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { Platform, View } from "react-native";
+import { View } from "react-native";
 import { router } from "expo-router";
 import { supabase } from "../lib/supabase";
-import { authConfigured, webURL } from "../lib/config";
+import { authConfigured } from "../lib/config";
 import { oauth } from "../lib/authFlow";
 import { useMutation } from "../lib/useMutation";
 import { MutationStatus } from "../components/MutationStatus";
@@ -16,8 +16,10 @@ import {
   Glass,
   Page,
   StatusScrim,
+  styles,
 } from "../components/UI";
-import { Field, Filters, SourceLink } from "../components/Content";
+import { Field, Filters } from "../components/Content";
+import { useTheme } from "../lib/theme";
 export default function SignIn() {
   const { locale, save } = usePreferences();
   const oauthAction = useMutation();
@@ -63,14 +65,22 @@ export default function SignIn() {
             })
           : await supabase.auth.signUp({ email: email.trim(), password });
       if (result.error) {
+        // The code only, never the credentials: enough to tell a wrong password from a dead connection.
+        if (__DEV__)
+          console.warn(
+            `[sign-in] ${result.error.name} ${result.error.status ?? ""} ${result.error.code ?? ""}`,
+          );
         const message =
           result.error.code === "email_not_confirmed"
             ? "邮箱尚未验证，请先打开验证邮件。"
-            : result.error.status === 429
-              ? "请求较频繁，请稍后重试。"
-              : mode === "login"
-                ? "登录失败，请检查邮箱与密码后重试。"
-                : "注册未完成，请检查邮箱和密码是否符合账户要求。";
+            : result.error.name === "AuthRetryableFetchError" ||
+                !result.error.status
+              ? "无法连接账户服务，请检查网络后重试。"
+              : result.error.status === 429
+                ? "请求较频繁，请稍后重试。"
+                : mode === "login"
+                  ? "登录失败，请检查邮箱与密码后重试。"
+                  : "注册未完成，请检查邮箱和密码是否符合账户要求。";
         throw new Error(message);
       }
       if (!alive.current) return;
@@ -86,9 +96,10 @@ export default function SignIn() {
       if (alive.current) setBusy(false);
     }
   }
+  const t = useTheme();
   return (
     <View style={{ flex: 1 }}>
-      <Page title="登录 Kolvex" subtitle="使用账户继续。">
+      <Page title="Kolvex" titleLocalize={false}>
         <Filters
           values={[
             ["zh", "简体中文"],
@@ -103,7 +114,10 @@ export default function SignIn() {
             message="配置 Supabase 地址和公共密钥后，可使用现有账户登录。"
           />
         ) : (
-          <>
+          <Glass style={{ padding: 20, gap: 16 }}>
+            <Copy size={24} bold>
+              欢迎回来
+            </Copy>
             <Filters
               values={[
                 ["login", "登录"],
@@ -121,41 +135,68 @@ export default function SignIn() {
             />
             <Field
               label="邮箱"
+              placeholder="输入邮箱地址"
               error={fieldError.email}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
+              textContentType="username"
               autoCapitalize="none"
               autoCorrect={false}
               autoComplete="email"
+              returnKeyType="next"
               editable={!busy}
             />
             <Field
               label="密码"
+              placeholder="输入密码"
               error={fieldError.password}
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!show}
+              textContentType={mode === "login" ? "password" : "newPassword"}
               autoCapitalize="none"
               autoCorrect={false}
               autoComplete={
                 mode === "login" ? "current-password" : "new-password"
               }
+              returnKeyType="go"
+              onSubmitEditing={() => void submit()}
               editable={!busy}
             />
-            <Button onPress={() => setShow((v) => !v)}>
-              {show ? "隐藏密码" : "显示密码"}
-            </Button>
+            <View style={styles.row}>
+              <Copy size={14} role="link" onPress={() => setShow((v) => !v)}>
+                {show ? "隐藏密码" : "显示密码"}
+              </Copy>
+              <Copy
+                size={14}
+                color={t.accent}
+                role="link"
+                onPress={() => router.push("/auth/recovery")}
+              >
+                忘记密码？
+              </Copy>
+            </View>
             {!!error && <Failure message={error} />}
-            {!!notice && (
-              <Glass style={{ padding: 16 }}>
-                <Copy>{notice}</Copy>
-              </Glass>
-            )}
-            <Button disabled={busy} onPress={() => void submit()}>
+            {!!notice && <Copy size={14}>{notice}</Copy>}
+            <Button
+              variant="primary"
+              disabled={busy}
+              onPress={() => void submit()}
+            >
               {busy ? "正在处理…" : mode === "login" ? "登录" : "创建账户"}
             </Button>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
+            >
+              <View style={{ flex: 1, height: 1, backgroundColor: t.rim }} />
+              <Copy size={12} muted>
+                或
+              </Copy>
+              <View style={{ flex: 1, height: 1, backgroundColor: t.rim }} />
+            </View>
             <Button
+              block
               disabled={oauthAction.busy || busy}
               onPress={() =>
                 void oauthAction.run(async () => {
@@ -164,35 +205,10 @@ export default function SignIn() {
                 })
               }
             >
-              使用 Google 登录
-            </Button>
-            <Button
-              disabled={oauthAction.busy || busy}
-              onPress={() =>
-                void oauthAction.run(async () => {
-                  if (!(await oauth("apple"))) return false;
-                  router.replace("/");
-                })
-              }
-            >
-              使用 Apple 登录
+              使用 Google 继续
             </Button>
             <MutationStatus {...oauthAction} />
-            <Button onPress={() => router.push("/auth/recovery")}>
-              找回密码
-            </Button>
-            {webURL.startsWith("https://") && (
-              <SourceLink url={`${webURL}/auth/forgot-password`}>
-                忘记密码？在网页版找回 ↗
-              </SourceLink>
-            )}
-            <Copy size={12} muted>
-              {Platform.OS === "web"
-                ? "网页预览仅保留本次会话，刷新后需重新登录。"
-                : "登录会话加密保存在设备安全存储中。"}{" "}
-              邮箱验证要求沿用现有账户配置。
-            </Copy>
-          </>
+          </Glass>
         )}
       </Page>
       <StatusScrim />

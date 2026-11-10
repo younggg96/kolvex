@@ -263,7 +263,7 @@ export default function SearchPage() {
                   maxLength={40}
                   className="h-full w-full rounded-full bg-transparent pl-14 pr-12 text-base text-foreground outline-none placeholder:text-muted-foreground focus-visible:bg-transparent focus-visible:no-underline focus-visible:outline-none"
                 />
-                {value && <button type="button" aria-label={c("Clear search", "清空搜索")} onClick={clearSearch} className="absolute right-1 flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground motion-reduce:transition-none"><X aria-hidden className="h-4 w-4" /></button>}
+                {value && <Button type="button" variant="icon" size="icon" aria-label={c("Clear search", "清空搜索")} onClick={clearSearch} className="absolute right-1 shadow-sm"><X aria-hidden className="h-4 w-4" /></Button>}
               </div>
             </form>
             <button type="button" onClick={() => router.back()} className="flex min-h-11 shrink-0 items-center gap-3 rounded-full px-3 text-sm text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground motion-reduce:transition-none">

@@ -25,7 +25,6 @@ import {
   Copy,
   Empty,
   Failure,
-  Glass,
   Page,
   LoadingStatus,
 } from "./UI";
@@ -37,7 +36,11 @@ export function AuthGate({
   children,
   inline = false,
   skeleton,
-}: PropsWithChildren<{ title: string; inline?: boolean; skeleton: React.ReactNode }>) {
+}: PropsWithChildren<{
+  title: string;
+  inline?: boolean;
+  skeleton: React.ReactNode;
+}>) {
   const auth = useAuth();
   let boundary: React.ReactNode;
   if (!auth.ready) boundary = <LoadingStatus>{skeleton}</LoadingStatus>;
@@ -89,7 +92,15 @@ export function Field({
       <Copy size={14} bold>
         {label}
       </Copy>
-      <Glass style={{ paddingHorizontal: 16 }}>
+      <View
+        style={{
+          paddingHorizontal: 16,
+          borderRadius: props.multiline ? 24 : 999,
+          borderWidth: 1,
+          borderColor: error ? t.negative : t.rim,
+          backgroundColor: t.field,
+        }}
+      >
         <TextInput
           ref={input}
           accessibilityLabel={text(label)}
@@ -101,7 +112,7 @@ export function Field({
             props.style,
           ]}
         />
-      </Glass>
+      </View>
       {!!error && <Failure message={error} />}
     </View>
   );
@@ -144,14 +155,24 @@ export function Filters({
   onChange: (v: string) => void;
   disabled?: boolean;
 }) {
+  const t = useTheme();
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ gap: 8 }}
+      style={{ flexGrow: 0, alignSelf: "flex-start", maxWidth: "100%" }}
+      contentContainerStyle={{
+        gap: 4,
+        padding: 4,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: t.rim,
+        backgroundColor: t.field,
+      }}
     >
       {values.map(([key, name]) => (
         <Chip
+          bare
           key={key}
           disabled={disabled}
           selected={key === value}

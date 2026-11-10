@@ -3,6 +3,8 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public status: number,
+    /** The backend's machine-readable `detail` code, when it sent one. */
+    public detail?: string,
   ) {
     super(message);
   }
@@ -82,8 +84,15 @@ export async function apiResponse(
         (options.body === undefined ? undefined : JSON.stringify(options.body)),
       signal: options.stream ? options.signal : controller.signal,
     });
-    if (!response.ok)
-      throw new ApiError(errorForStatus(response.status), response.status);
+    if (!response.ok) {
+      const body: unknown = await response.json().catch(() => null);
+      const detail = (body as { detail?: unknown } | null)?.detail;
+      throw new ApiError(
+        errorForStatus(response.status),
+        response.status,
+        typeof detail === "string" ? detail : undefined,
+      );
+    }
     if (
       options.authenticated &&
       options.expectedUser &&

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CardsSkeleton } from "./Skeletons";
 import * as Crypto from "expo-crypto";
+import { router } from "expo-router";
 import { apiRequest } from "../lib/http";
 import { useAuth } from "../state/Auth";
 import { useResource } from "../lib/useResource";
@@ -248,14 +249,16 @@ export function TechnicalAI({
         loading={history.loading}
         onChange={setPage}
       />
-      {result && <TechnicalResult result={result} />}
+      {result && <TechnicalResult result={result} symbol={symbol} />}
     </Glass>
   );
 }
 export function TechnicalResult({
   result: r,
+  symbol,
 }: {
   result: AiTechnicalAnalysis;
+  symbol: string;
 }) {
   return (
     <Glass style={{ padding: 16, gap: 12 }}>
@@ -295,6 +298,26 @@ export function TechnicalResult({
             {number(r.setup.risk_reward)}
           </Copy>
           <Copy>{r.setup.reason}</Copy>
+          <Button
+            onPress={() => {
+              const setup = r.setup!;
+              // Carries an editable plan only: neither a quote nor an order.
+              router.push({
+                pathname: "/paper-trading",
+                params: {
+                  symbol,
+                  side: setup.direction === "bullish" ? "long" : "short",
+                  entry: String(setup.entry_low),
+                  stop: String(setup.invalidation),
+                  target: String(setup.targets[0] ?? ""),
+                  note: [setup.name, setup.reason].join("\n").slice(0, 2000),
+                  source: "ai_setup",
+                },
+              });
+            }}
+          >
+            用此计划模拟交易
+          </Button>
         </>
       )}
       <Copy size={12} muted>

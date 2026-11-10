@@ -119,17 +119,13 @@ type Draft = {
   start: { x: number; y: number };
   awaitingSecond: boolean;
 };
-type Gesture =
-  | {
-      kind: "edit";
-      id: string;
-      handle: number | "body";
-      origin: Anchor;
-      before: Drawing[];
-      moved: boolean;
-    }
-  | { kind: "pan"; x: number; view: View; moved: boolean }
-  | { kind: "pinch"; distance: number; mid: number; view: View };
+type DrawingEdit = {
+  id: string;
+  handle: number | "body";
+  origin: Anchor;
+  before: Drawing[];
+  moved: boolean;
+};
 type Calls = {
   bullish: YouTubeOpinion[];
   bearish: YouTubeOpinion[];
@@ -323,7 +319,6 @@ export default function ChartView({
   const quoteResource = useStockQuote(symbol, 15_000, !snapshotBars);
   const intraday = isIntraday(params.interval || "1d");
 
-  const [box, setBox] = useState<HTMLDivElement | null>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const receiveGraphGeometry = useCallback((next: GraphGeometry) => {
     setSize(previous => previous.width === next.width && previous.height === next.height
@@ -394,8 +389,7 @@ export default function ChartView({
   const priceExtent = useMemo(() => forecastExtent(forecast), [forecast]);
   const forecastErrorCode = forecastOn && !analysisForecast && forecastResource.error ? ((forecastResource.error as { code?: string }).code || "unavailable") : null;
   const pct = (value: number) => `${value >= 0 ? "+" : ""}${(value * 100).toFixed(1)}%`;
-  const gesture = useRef<Gesture | null>(null);
-  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const drawingEdit = useRef<DrawingEdit | null>(null);
 
   useEffect(() => setIndicators(advanced ? readIndicators(mode) : []), [mode, advanced]);
 
@@ -494,18 +488,6 @@ export default function ChartView({
     setDrawingAi({ status: "idle" });
   }, [symbol]);
 
-  useEffect(() => {
-    if (!box) return;
-    const observer = new ResizeObserver(([entry]) =>
-      setSize({
-        width: entry.contentRect.width,
-        height: entry.contentRect.height,
-      }),
-    );
-    observer.observe(box);
-    return () => observer.disconnect();
-  }, [box]);
-
   const count = bars?.length ?? 0;
   const times = useMemo(() => (bars || []).map((bar) => Date.parse(bar.date)), [bars]);
   const series = useMemo(() => computeIndicators(bars || [], intraday), [bars, intraday]);
@@ -602,37 +584,9 @@ export default function ChartView({
     [rangeOptions, t],
   );
 
-  function clampView(next: View): View {
-    return clampGraphView(next, count, MIN_BARS);
-  }
-
-  const zoomRef = useRef<(factor: number, anchorRatio: number) => void>(() => {});
-  const panRef = useRef<(bars: number) => void>(() => {});
-  zoomRef.current = (factor, anchorRatio) => {
+  function zoom(factor: number, anchorRatio: number) {
     setView(zoomGraphView(current, factor, anchorRatio, count, MIN_BARS));
-  };
-  panRef.current = (shift) => setView(clampView({ start: current.start + shift, end: current.end + shift }));
-
-  useEffect(() => {
-    if (!box) return;
-    const onWheel = (event: WheelEvent) => {
-      const rect = box.getBoundingClientRect();
-      const plotWidth = Math.max(rect.width - GRAPH_AXIS_WIDTH, 1);
-      const ratio = Math.min(Math.max((event.clientX - rect.left) / plotWidth, 0), 1);
-      const horizontal = Math.abs(event.deltaX) > Math.abs(event.deltaY);
-      if (horizontal) {
-        event.preventDefault();
-        const span = current.end - current.start || 1;
-        panRef.current((event.deltaX / plotWidth) * span);
-        return;
-      }
-      if (!advanced && !event.ctrlKey && !event.metaKey) return;
-      event.preventDefault();
-      zoomRef.current(Math.exp(event.deltaY * (event.ctrlKey ? 0.01 : 0.0015)), ratio);
-    };
-    box.addEventListener("wheel", onWheel, { passive: false });
-    return () => box.removeEventListener("wheel", onWheel);
-  });
+  }
 
   const activeIndicators = new Set(advanced ? indicators : []);
   const showVolume = activeIndicators.has("volume");
@@ -725,12 +679,6 @@ export default function ChartView({
     autoScale
       ? geometry.yOf(price)
       : priceTop + ((yRange.hi - price) / (yRange.hi - yRange.lo)) * (priceBottom - priceTop);
-  const priceAt = (py: number) =>
-    autoScale
-      ? geometry.priceAt(py)
-      : yRange.hi - ((py - priceTop) / (priceBottom - priceTop)) * (yRange.hi - yRange.lo);
-  const indexAt = (time: number) => geometry.indexAt(time);
-  const timeAt = (index: number) => geometry.timeAt(index);
   const barLabel = (bar: PriceBar) => `${formatDate(bar.date.slice(0, 10))}${intraday ? ` ${bar.date.slice(11, 16)}` : ""}`;
 
   const drawing = tool !== "cursor";
@@ -747,21 +695,22 @@ export default function ChartView({
   const activeCalls = active === null || !showCalls ? null : calls.get(active) || null;
   const activeEvents = activeCalls ? [...activeCalls.bullish, ...activeCalls.bearish, ...activeCalls.other] : [];
 
-  function locate(clientX: number, clientY: number, snap = magnet) {
-    const rect = box!.getBoundingClientRect();
-    const px = clientX - rect.left;
-    const py = clientY - rect.top;
-    let index = px / slot + current.start - 0.5;
-    let price = priceAt(py);
-    if (snap && bars) {
+  function locate(event: PointerEvent<HTMLDivElement>, plot: GraphGeometry, snap = magnet) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const px = event.clientX - rect.left;
+    const py = event.clientY - rect.top;
+    const slot = plot.plotWidth / Math.max(plot.view.end - plot.view.start, 1e-6);
+    let index = px / slot + plot.view.start - 0.5;
+    let price = plot.priceAt(py);
+    if (snap && bars?.length) {
       index = Math.min(Math.max(Math.round(index), 0), count - 1);
       const bar = bars[index];
       const nearest = [bar.open, bar.high, bar.low, bar.close].reduce((best, value) =>
-        Math.abs(yOf(value) - py) < Math.abs(yOf(best) - py) ? value : best,
+        Math.abs(plot.yOf(value) - py) < Math.abs(plot.yOf(best) - py) ? value : best,
       );
-      if (Math.abs(yOf(nearest) - py) <= SNAP_PX) price = nearest;
+      if (Math.abs(plot.yOf(nearest) - py) <= SNAP_PX) price = nearest;
     }
-    return { anchor: { time: timeAt(index), price }, px, py };
+    return { anchor: { time: plot.timeAt(index), price }, px, py };
   }
 
   function commit(item: Drawing) {
@@ -792,161 +741,85 @@ export default function ChartView({
     }
   }
 
-  function scrubTo(px: number) {
-    if (!count) return;
-    const index = Math.round(px / slot + current.start - 0.5);
-    setActive(px > plotW || index < 0 || index >= count ? null : index);
-  }
-
   function resetView() {
     setView(null);
     setAutoScale(true);
   }
 
-  function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
-    if (!loaded) return;
-    pointers.current.set(event.pointerId, {
-      x: event.clientX,
-      y: event.clientY,
-    });
-    if (pointers.current.size === 2) {
-      const [a, b] = Array.from(pointers.current.values());
-      const rect = box!.getBoundingClientRect();
-      gesture.current = {
-        kind: "pinch",
-        distance: Math.abs(a.x - b.x) || 1,
-        mid: ((a.x + b.x) / 2 - rect.left) / plotW,
-        view: current,
-      };
-      setDraft(null);
-      return;
-    }
-    if (event.button !== 0) return;
-    const { anchor, px, py } = locate(event.clientX, event.clientY);
-    scrubTo(px);
-    if (px > plotW) return;
+  function handlePointerDown(event: PointerEvent<HTMLDivElement>, plot: GraphGeometry) {
+    const { anchor, px, py } = locate(event, plot);
+    if (px < 0 || px > plot.plotWidth || py < 0 || py > plot.axisBlock.h) return false;
     if (drawing) {
-      event.currentTarget.setPointerCapture(event.pointerId);
       const type = tool as Drawing["type"];
       if (type === "hline" || type === "vline") commit({ id: newDrawingId(), type, points: [anchor], color });
       else if (draft?.awaitingSecond) commit({ ...draft.drawing, points: [draft.drawing.points[0], anchor] });
-      else
-        setDraft({
-          drawing: {
-            id: newDrawingId(),
-            type,
-            points: [anchor, anchor],
-            color,
-          },
-          start: { x: px, y: py },
-          awaitingSecond: false,
-        });
-      return;
+      else setDraft({
+        drawing: { id: newDrawingId(), type, points: [anchor, anchor], color },
+        start: { x: px, y: py },
+        awaitingSecond: false,
+      });
+      return true;
     }
-    event.currentTarget.setPointerCapture(event.pointerId);
     const target = (event.target as Element).closest<SVGElement>("[data-drawing]");
-    if (target?.dataset.drawing) {
-      const handle = target.dataset.handle;
-      setSelectedId(target.dataset.drawing);
-      gesture.current = {
-        kind: "edit",
-        id: target.dataset.drawing,
-        handle: handle === undefined ? "body" : Number(handle),
-        origin: locate(event.clientX, event.clientY, false).anchor,
-        before: drawings,
-        moved: false,
-      };
-      return;
+    if (!target?.dataset.drawing) {
+      setSelectedId(null);
+      return false;
     }
-    setSelectedId(null);
-    gesture.current = {
-      kind: "pan",
-      x: event.clientX,
-      view: current,
+    const handle = target.dataset.handle;
+    setSelectedId(target.dataset.drawing);
+    drawingEdit.current = {
+      id: target.dataset.drawing,
+      handle: handle === undefined ? "body" : Number(handle),
+      origin: locate(event, plot, false).anchor,
+      before: drawings,
       moved: false,
     };
+    return true;
   }
 
-  function handlePointerMove(event: PointerEvent<HTMLDivElement>) {
-    if (!loaded) return;
-    if (pointers.current.has(event.pointerId))
-      pointers.current.set(event.pointerId, {
-        x: event.clientX,
-        y: event.clientY,
-      });
-    const now = gesture.current;
-    if (now?.kind === "pinch" && pointers.current.size === 2) {
-      const [a, b] = Array.from(pointers.current.values());
-      const ratio = now.distance / (Math.abs(a.x - b.x) || 1);
-      const base = now.view.end - now.view.start;
-      const anchor = now.view.start + base * now.mid;
-      setView(
-        clampView({
-          start: anchor - base * ratio * now.mid,
-          end: anchor + base * ratio * (1 - now.mid),
-        }),
-      );
-      return;
-    }
-    const { anchor, px, py } = locate(event.clientX, event.clientY);
-    scrubTo(px);
-    if (now?.kind === "pan") {
-      const dx = event.clientX - now.x;
-      if (Math.abs(dx) > 3) now.moved = true;
-      if (now.moved)
-        setView(
-          clampView({
-            start: now.view.start - dx / slot,
-            end: now.view.end - dx / slot,
-          }),
-        );
-      return;
-    }
-    if (now?.kind === "edit") {
-      const free = locate(event.clientX, event.clientY, false).anchor;
-      const shift = indexAt(free.time) - indexAt(now.origin.time);
-      const lift = free.price - now.origin.price;
-      const next = now.before.map((item) => {
-        if (item.id !== now.id) return item;
+  function handlePointerMove(event: PointerEvent<HTMLDivElement>, plot: GraphGeometry) {
+    const edit = drawingEdit.current;
+    if (!edit && !draft) return;
+    const { anchor } = locate(event, plot);
+    if (edit) {
+      const free = locate(event, plot, false).anchor;
+      const shift = plot.indexAt(free.time) - plot.indexAt(edit.origin.time);
+      const lift = free.price - edit.origin.price;
+      const next = edit.before.map((item) => {
+        if (item.id !== edit.id) return item;
         const points =
-          now.handle === "body"
+          edit.handle === "body"
             ? item.points.map((point) => ({
-                time: timeAt(indexAt(point.time) + shift),
+                time: plot.timeAt(plot.indexAt(point.time) + shift),
                 price: point.price + lift,
               }))
-            : item.points.map((point, index) => (index === now.handle ? anchor : point));
+            : item.points.map((point, index) => (index === edit.handle ? anchor : point));
         return { ...item, points };
       });
-      now.moved = true;
+      edit.moved = true;
       setDrawings(next, null);
       return;
     }
-    if (draft)
-      setDraft({
-        ...draft,
-        drawing: {
-          ...draft.drawing,
-          points: [draft.drawing.points[0], anchor],
-        },
-      });
+    if (draft) setDraft({
+      ...draft,
+      drawing: { ...draft.drawing, points: [draft.drawing.points[0], anchor] },
+    });
   }
 
-  function handlePointerUp(event: PointerEvent<HTMLDivElement>) {
-    pointers.current.delete(event.pointerId);
-    const now = gesture.current;
-    if (now?.kind === "pinch") {
-      if (pointers.current.size < 2) gesture.current = null;
+  function handlePointerUp(event: PointerEvent<HTMLDivElement>, plot: GraphGeometry) {
+    const edit = drawingEdit.current;
+    drawingEdit.current = null;
+    if (event.type === "pointercancel") {
+      if (edit?.moved) setDrawings(edit.before, null);
+      setDraft(null);
       return;
     }
-    gesture.current = null;
-    if (now?.kind === "edit" && now.moved) {
-      setDrawings(drawings, now.before);
-      return;
-    }
+    if (edit?.moved) setDrawings(drawings, edit.before);
     if (draft && !draft.awaitingSecond) {
-      const { px, py } = locate(event.clientX, event.clientY);
-      if (Math.hypot(px - draft.start.x, py - draft.start.y) > 5) commit(draft.drawing);
-      else setDraft({ ...draft, awaitingSecond: true });
+      const { anchor, px, py } = locate(event, plot);
+      if (Math.hypot(px - draft.start.x, py - draft.start.y) > 5) {
+        commit({ ...draft.drawing, points: [draft.drawing.points[0], anchor] });
+      } else setDraft({ ...draft, awaitingSecond: true });
     }
   }
 
@@ -960,18 +833,10 @@ export default function ChartView({
   }
   if (escapeRef) escapeRef.current = cancelOne;
 
-  function handleKey(event: KeyboardEvent<HTMLDivElement>) {
+  function handleDrawingKey(event: KeyboardEvent<HTMLDivElement>) {
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z") undo();
     else if ((event.key === "Delete" || event.key === "Backspace") && selectedId) removeSelected();
-    else if (event.key === "Escape") {
-      if (escapeRef) return;
-      if (!cancelOne()) return;
-    } else if (event.key === "ArrowLeft") setActive(Math.max((active ?? lastVisible) - 1, 0));
-    else if (event.key === "ArrowRight") setActive(Math.min((active ?? lastVisible) + 1, count - 1));
-    else if (event.key === "+" || event.key === "=") zoomRef.current(0.8, 0.5);
-    else if (event.key === "-") zoomRef.current(1.25, 0.5);
-    else if (event.key === "0") resetView();
-    else return;
+    else if (event.key !== "Escape" || escapeRef || !cancelOne()) return;
     event.preventDefault();
   }
 
@@ -1163,7 +1028,7 @@ export default function ChartView({
         <DialogDescription>{aiSettingsDescription}</DialogDescription>
       </DialogHeader>
       <DialogClose asChild>
-        <Button type="button" variant="ghost" size="icon" className="absolute right-2 top-2 min-h-11 min-w-11" aria-label={t("common.close")}>
+        <Button type="button" variant="icon" size="icon" className="absolute right-2 top-2 min-h-11 min-w-11" aria-label={t("common.close")}>
           <X className="h-4 w-4" aria-hidden="true" />
         </Button>
       </DialogClose>
@@ -1473,7 +1338,7 @@ export default function ChartView({
           )}
         </div>
       )}
-      {activeEvents.length > 0 && !drawing && !gesture.current && active !== null && (
+      {activeEvents.length > 0 && !drawing && !drawingEdit.current && active !== null && (
         <div
           aria-hidden="true"
           className="pointer-events-none absolute top-6 z-10 w-64 max-w-[calc(100%-1rem)] rounded-3xl border border-border bg-background/95 p-2.5 text-xs shadow-lg backdrop-blur"
@@ -1706,6 +1571,12 @@ export default function ChartView({
       onGeometry={receiveGraphGeometry}
       priceExtent={priceExtent}
       drawingLayer={drawingLayerNode}
+      drawingInteraction={advanced ? {
+        onPointerDown: handlePointerDown,
+        onPointerMove: handlePointerMove,
+        onPointerUp: handlePointerUp,
+        onKeyDown: handleDrawingKey,
+      } : undefined}
       overlay={advanced ? advancedOverlay : null}
       subPane={<>{layersRow}{oscillatorPane}</>}
       rangeTrailing={advanced ? intervalControl : null}
@@ -1776,7 +1647,7 @@ export default function ChartView({
                         </DialogDescription>
                       </div>
                       <DialogClose asChild>
-                        <Button type="button" variant="ghost" size="icon" className="-mr-2 min-h-11 min-w-11" aria-label={t("common.close")}>
+                        <Button type="button" variant="icon" size="icon" className="-mr-2 min-h-11 min-w-11" aria-label={t("common.close")}>
                           <X className="h-4 w-4" aria-hidden="true" />
                         </Button>
                       </DialogClose>
@@ -1986,7 +1857,7 @@ export default function ChartView({
               title={t("youtubeOpinions.zoomIn")}
               aria-label={t("youtubeOpinions.zoomIn")}
               disabled={!loaded}
-              onClick={() => zoomRef.current(0.7, 0.85)}
+              onClick={() => zoom(0.7, 0.85)}
               className={cn(iconButton(false), "max-sm:hidden")}
             >
               <ZoomIn className="h-4 w-4" />
@@ -1996,7 +1867,7 @@ export default function ChartView({
               title={t("youtubeOpinions.zoomOut")}
               aria-label={t("youtubeOpinions.zoomOut")}
               disabled={!loaded}
-              onClick={() => zoomRef.current(1.4, 0.85)}
+              onClick={() => zoom(1.4, 0.85)}
               className={cn(iconButton(false), "max-sm:hidden")}
             >
               <ZoomOut className="h-4 w-4" />

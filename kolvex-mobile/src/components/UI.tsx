@@ -9,6 +9,7 @@ import {
   AccessibilityInfo,
   Animated,
   FlatList,
+  Image,
   Platform,
   Pressable,
   RefreshControl,
@@ -29,7 +30,6 @@ import { usePreferences } from "../state/Preferences";
 import { translateNodes, useText } from "../lib/i18n";
 import { useTheme } from "../lib/theme";
 import SwiftGlass from "./native/SwiftGlass";
-import SwiftButton, { swiftButtonsAvailable } from "./native/SwiftButton";
 
 export function Copy({
   children,
@@ -93,10 +93,17 @@ export function Glass({
     );
     return () => subscription.remove();
   }, [material]);
-  const shell = [styles.glass, { borderColor: t.border }, style];
+  const shell = [styles.glass, { borderColor: t.rim }, style];
   if (!material || reduce)
     return (
-      <View style={[shell, { backgroundColor: t.surface }]}>{children}</View>
+      <View
+        style={[
+          shell,
+          { backgroundColor: reduce && material ? t.surface : t.card },
+        ]}
+      >
+        {children}
+      </View>
     );
   if (Platform.OS === "ios" && isLiquidGlassAvailable())
     return <SwiftGlass style={shell}>{children}</SwiftGlass>;
@@ -110,32 +117,30 @@ export function Glass({
     <View style={[shell, { backgroundColor: t.surface }]}>{children}</View>
   );
 }
+/**
+ * The Web's pill button. `primary` is the one solid green action on a screen and
+ * fills its row; everything else is a neutral wash that hugs its label.
+ */
 export function Button({
   children,
   onPress,
   selected = false,
   disabled = false,
   label,
+  variant = "neutral",
+  block = variant === "primary",
 }: PropsWithChildren<{
   onPress: () => void;
   selected?: boolean;
   disabled?: boolean;
   label?: string;
+  variant?: "neutral" | "primary";
+  block?: boolean;
 }>) {
   const t = useTheme();
   const { locale } = usePreferences();
   const text = useText();
-  if (swiftButtonsAvailable)
-    return (
-      <SwiftButton
-        selected={selected}
-        disabled={disabled}
-        label={label ? text(label) : undefined}
-        onPress={onPress}
-      >
-        {translateNodes(children, locale)}
-      </SwiftButton>
-    );
+  const primary = variant === "primary";
   return (
     <Pressable
       accessibilityRole="button"
@@ -150,13 +155,14 @@ export function Button({
       style={({ pressed }) => [
         styles.button,
         {
-          backgroundColor: selected ? t.tint : t.surface,
-          borderColor: selected ? t.secondary : t.border,
-          opacity: disabled ? 0.45 : pressed ? 0.65 : 1,
+          alignSelf: block ? "stretch" : "flex-start",
+          backgroundColor: primary ? t.brand : selected ? t.washStrong : t.wash,
+          borderColor: primary ? "transparent" : t.rim,
+          opacity: disabled ? 0.4 : pressed ? 0.7 : 1,
         },
       ]}
     >
-      <Copy size={14} bold color={t.text}>
+      <Copy size={14} bold color={primary ? t.onBrand : t.text}>
         {translateNodes(children, locale)}
       </Copy>
     </Pressable>
@@ -186,10 +192,13 @@ export function Chip({
   onPress,
   selected = false,
   disabled = false,
+  bare = false,
 }: PropsWithChildren<{
   onPress: () => void;
   selected?: boolean;
   disabled?: boolean;
+  /** Inside a segmented track, where the track supplies the surface. */
+  bare?: boolean;
 }>) {
   const t = useTheme();
   return (
@@ -205,17 +214,51 @@ export function Chip({
       style={({ pressed }) => [
         styles.button,
         {
-          paddingVertical: 8,
-          backgroundColor: selected ? t.text : t.surface,
-          borderColor: selected ? t.text : t.border,
+          minHeight: 36,
+          paddingVertical: 6,
+          borderWidth: 0,
+          // The Web's glass thumb: a white pill with near-black text.
+          backgroundColor: selected
+            ? "rgba(255,255,255,0.97)"
+            : bare
+              ? "transparent"
+              : t.wash,
           opacity: disabled ? 0.45 : pressed ? 0.65 : 1,
         },
       ]}
     >
-      <Copy size={14} bold color={selected ? t.background : t.text}>
+      <Copy size={14} bold color={selected ? "#111111" : t.text}>
         {children}
       </Copy>
     </Pressable>
+  );
+}
+/**
+ * The Web's phone backdrop: the green light behind dark-mode screens, dimmed so
+ * data text stays readable. Light mode keeps the plain ground, as on the Web.
+ */
+export function Backdrop() {
+  const t = useTheme();
+  if (!t.dark) return null;
+  return (
+    <View
+      pointerEvents="none"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={[StyleSheet.absoluteFill, { backgroundColor: "rgb(2,6,7)" }]}
+    >
+      <Image
+        source={require("../../assets/dashboard-backdrop.jpg")}
+        resizeMode="cover"
+        style={{ width: "100%", height: "100%" }}
+      />
+      <View
+        style={[
+          StyleSheet.absoluteFill,
+          { backgroundColor: "rgba(0,0,0,0.7)" },
+        ]}
+      />
+    </View>
   );
 }
 export function Page({
@@ -243,63 +286,63 @@ export function Page({
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
   const nearEnd = useRef(true);
   return (
-    <ScrollView
-      ref={scroll}
-      scrollEnabled={scrollEnabled}
-      onScroll={(event) => {
-        const { contentOffset, contentSize, layoutMeasurement } =
-          event.nativeEvent;
-        nearEnd.current =
-          contentOffset.y + layoutMeasurement.height >=
-          contentSize.height - 120;
-      }}
-      scrollEventThrottle={100}
-      onContentSizeChange={() => {
-        if (followContent && nearEnd.current)
-          scroll.current?.scrollToEnd({ animated: false });
-      }}
-      style={{ flex: 1, backgroundColor: t.background }}
-      contentInsetAdjustmentBehavior="automatic"
-      keyboardShouldPersistTaps="handled"
-      automaticallyAdjustKeyboardInsets
-      contentContainerStyle={{
-        paddingHorizontal: 24,
-        paddingTop: Platform.OS === "android" ? insets.top + 16 : 16,
-        paddingBottom: insets.bottom + 100,
-        gap: 24,
-      }}
-      refreshControl={
-        onRefresh ? (
-          <RefreshControl
-            refreshing={refreshing ?? false}
-            onRefresh={onRefresh}
-            tintColor={t.accent}
-          />
-        ) : undefined
-      }
-    >
-      <View style={{ gap: 4 }}>
-        <Copy size={12} bold color={t.accent}>
-          KOLVEX
-        </Copy>
-        <Copy size={36} bold localize={titleLocalize}>
-          {title}
-        </Copy>
-        {!!subtitle && (
-          <Copy size={14} muted localize={subtitleLocalize}>
-            {subtitle}
+    <View style={{ flex: 1, backgroundColor: t.background }}>
+      <Backdrop />
+      <ScrollView
+        ref={scroll}
+        scrollEnabled={scrollEnabled}
+        onScroll={(event) => {
+          const { contentOffset, contentSize, layoutMeasurement } =
+            event.nativeEvent;
+          nearEnd.current =
+            contentOffset.y + layoutMeasurement.height >=
+            contentSize.height - 120;
+        }}
+        scrollEventThrottle={100}
+        onContentSizeChange={() => {
+          if (followContent && nearEnd.current)
+            scroll.current?.scrollToEnd({ animated: false });
+        }}
+        style={{ flex: 1 }}
+        contentInsetAdjustmentBehavior="automatic"
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
+        contentContainerStyle={{
+          paddingHorizontal: 16,
+          paddingTop: Platform.OS === "android" ? insets.top + 16 : 16,
+          paddingBottom: insets.bottom + 100,
+          gap: 24,
+        }}
+        refreshControl={
+          onRefresh ? (
+            <RefreshControl
+              refreshing={refreshing ?? false}
+              onRefresh={onRefresh}
+              tintColor={t.accent}
+            />
+          ) : undefined
+        }
+      >
+        <View style={{ gap: 4 }}>
+          <Copy size={26} bold localize={titleLocalize}>
+            {title}
           </Copy>
+          {!!subtitle && (
+            <Copy size={14} muted localize={subtitleLocalize}>
+              {subtitle}
+            </Copy>
+          )}
+        </View>
+        {demoMode && (
+          <Glass style={{ padding: 12 }}>
+            <Copy size={12} muted>
+              演示模式 · 行情为静态样本，非实时市场数据
+            </Copy>
+          </Glass>
         )}
-      </View>
-      {demoMode && (
-        <Glass style={{ padding: 12 }}>
-          <Copy size={12} muted>
-            演示模式 · 行情为静态样本，非实时市场数据
-          </Copy>
-        </Glass>
-      )}
-      {children}
-    </ScrollView>
+        {children}
+      </ScrollView>
+    </View>
   );
 }
 export function NavRow({
@@ -419,8 +462,16 @@ export function Skeleton({
       if (cancelled || reduced) return;
       loop = Animated.loop(
         Animated.sequence([
-          Animated.timing(opacity, { toValue: 0.45, duration: 800, useNativeDriver: true }),
-          Animated.timing(opacity, { toValue: 1, duration: 800, useNativeDriver: true }),
+          Animated.timing(opacity, {
+            toValue: 0.45,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacity, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+          }),
         ]),
       );
       loop.start();
@@ -433,7 +484,13 @@ export function Skeleton({
   return (
     <Animated.View
       style={[
-        { width, height, borderRadius: radius, backgroundColor: t.tint, opacity },
+        {
+          width,
+          height,
+          borderRadius: radius,
+          backgroundColor: t.tint,
+          opacity,
+        },
         style,
       ]}
     />
@@ -443,7 +500,10 @@ export function Skeleton({
  * Cold-load wrapper for a skeleton. `children` must mirror the layout that replaces it
  * (see Skeletons.tsx). Appears after 300ms so fast reads never flash a placeholder.
  */
-export function LoadingStatus({ children, label = "正在加载数据" }: PropsWithChildren<{ label?: string }>) {
+export function LoadingStatus({
+  children,
+  label = "正在加载数据",
+}: PropsWithChildren<{ label?: string }>) {
   const text = useText();
   const [visible, setVisible] = useState(false);
   useEffect(() => {
@@ -552,9 +612,9 @@ export const styles = StyleSheet.create({
   },
   button: {
     minHeight: 44,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 999,
     borderWidth: StyleSheet.hairlineWidth,
     alignItems: "center",
     justifyContent: "center",
@@ -594,55 +654,55 @@ export function ListPage<T>({
   const t = useTheme();
   const insets = useSafeAreaInsets();
   return (
-    <FlatList
-      data={items}
-      keyExtractor={keyFor}
-      renderItem={({ item }) => renderItem(item)}
-      style={{ flex: 1, backgroundColor: t.background }}
-      contentInsetAdjustmentBehavior="automatic"
-      keyboardShouldPersistTaps="handled"
-      contentContainerStyle={{
-        paddingHorizontal: 24,
-        paddingTop: Platform.OS === "android" ? insets.top + 16 : 16,
-        paddingBottom: insets.bottom + 100,
-      }}
-      ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          tintColor={t.accent}
-        />
-      }
-      ListHeaderComponent={
-        <View style={{ gap: 24, paddingBottom: 24 }}>
-          <View style={{ gap: 4 }}>
-            <Copy size={12} bold color={t.accent}>
-              KOLVEX
-            </Copy>
-            <Copy size={36} bold>
-              {title}
-            </Copy>
-            {!!subtitle && (
-              <Copy size={14} muted>
-                {subtitle}
+    <View style={{ flex: 1, backgroundColor: t.background }}>
+      <Backdrop />
+      <FlatList
+        data={items}
+        keyExtractor={keyFor}
+        renderItem={({ item }) => renderItem(item)}
+        style={{ flex: 1 }}
+        contentInsetAdjustmentBehavior="automatic"
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{
+          paddingHorizontal: 16,
+          paddingTop: Platform.OS === "android" ? insets.top + 16 : 16,
+          paddingBottom: insets.bottom + 100,
+        }}
+        ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={t.accent}
+          />
+        }
+        ListHeaderComponent={
+          <View style={{ gap: 24, paddingBottom: 24 }}>
+            <View style={{ gap: 4 }}>
+              <Copy size={26} bold>
+                {title}
               </Copy>
+              {!!subtitle && (
+                <Copy size={14} muted>
+                  {subtitle}
+                </Copy>
+              )}
+            </View>
+            {demoMode && (
+              <Glass style={{ padding: 12 }}>
+                <Copy size={12} muted>
+                  演示模式 · 行情为静态样本，非实时市场数据
+                </Copy>
+              </Glass>
             )}
+            {header}
           </View>
-          {demoMode && (
-            <Glass style={{ padding: 12 }}>
-              <Copy size={12} muted>
-                演示模式 · 行情为静态样本，非实时市场数据
-              </Copy>
-            </Glass>
-          )}
-          {header}
-        </View>
-      }
-      ListFooterComponent={
-        footer ? <View style={{ paddingTop: 24 }}>{footer}</View> : undefined
-      }
-      ListEmptyComponent={empty}
-    />
+        }
+        ListFooterComponent={
+          footer ? <View style={{ paddingTop: 24 }}>{footer}</View> : undefined
+        }
+        ListEmptyComponent={empty}
+      />
+    </View>
   );
 }

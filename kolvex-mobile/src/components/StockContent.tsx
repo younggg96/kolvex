@@ -1,7 +1,10 @@
 import { usePreferences } from "../state/Preferences";
 import { CardsSkeleton } from "./Skeletons";
 import { StockOpinions } from "./StockOpinions";
-import { Options } from "./Options";
+import { StockOptionsChain } from "./StockOptionsChain";
+import { StockValuation } from "./StockValuation";
+import { AiFundamentals } from "./AiFundamentals";
+import { StockPaperTrading } from "./StockPaperTrading";
 import { Multicharts, Earnings, Analysts } from "./StockResearch";
 import { EarningsMaterials, FinancialsTab, Ownership } from "./SecResearch";
 import { StockPeers } from "./StockPeers";
@@ -20,6 +23,7 @@ import { Button, Copy, Empty, Glass, Section } from "./UI";
 import { Filters, ResourceState, SourceLink } from "./Content";
 const allTabs = [
   ["summary", "基本面"],
+  ["valuation", "估值"],
   ["financials", "财务报表"],
   ["earnings", "盈利"],
   ["multicharts", "指标趋势"],
@@ -30,6 +34,7 @@ const allTabs = [
   ["creators", "博主观点"],
   ["research", "AI 研究"],
   ["options", "期权链"],
+  ["paper-trading", "虚拟交易"],
   ["profile", "公司资料"],
 ] as const;
 const benchmarkTabs = ["summary", "news", "creators", "research"];
@@ -45,6 +50,7 @@ export function StockContent({
   initialTab?: string;
 }) {
   const benchmark = BENCHMARKS.some((item) => item.symbol === symbol);
+  const user = useAuth().session?.user.id;
   const tabs = benchmark
     ? allTabs.filter(([key]) => benchmarkTabs.includes(key))
     : allTabs;
@@ -62,7 +68,12 @@ export function StockContent({
       ) : tab === "profile" ? (
         <Company symbol={symbol} />
       ) : tab === "summary" ? (
-        <Financials symbol={symbol} />
+        <>
+          {!benchmark && !!user && <AiFundamentals symbol={symbol} />}
+          <Financials symbol={symbol} />
+        </>
+      ) : tab === "valuation" ? (
+        <StockValuation key={symbol} symbol={symbol} />
       ) : tab === "financials" ? (
         <FinancialsTab symbol={symbol} />
       ) : tab === "multicharts" ? (
@@ -81,7 +92,9 @@ export function StockContent({
       ) : tab === "creators" ? (
         <StockOpinions symbol={symbol} />
       ) : tab === "options" ? (
-        <Options symbol={symbol} />
+        <StockOptionsChain key={symbol} symbol={symbol} />
+      ) : tab === "paper-trading" ? (
+        <StockPaperTrading key={symbol} symbol={symbol} />
       ) : tab === "research" ? (
         <StockReports symbol={symbol} />
       ) : (

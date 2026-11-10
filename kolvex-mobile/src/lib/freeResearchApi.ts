@@ -2,9 +2,11 @@ import { apiRequest, ApiError } from "./http";
 import {
   freeResearchKey,
   institutionKey,
+  institutionSummaryKey,
   INSTITUTIONS_KEY,
   type Institution,
   type InstitutionManager,
+  type InstitutionSummary,
   type RevenueOutlook,
   type SecFilings,
   type SecFinancials,
@@ -78,3 +80,10 @@ export const managers = (signal: AbortSignal) =>
   );
 export const institution = (manager: string, signal: AbortSignal) =>
   read<Institution>(institutionKey(manager), "holdings", signal);
+export const institutionSummary = (manager: string, signal: AbortSignal) =>
+  read<InstitutionSummary>(institutionSummaryKey(manager), "top", signal);
+/** Drops cached 13F reads so an explicit refresh asks the SEC proxy again. */
+export function forgetInstitutions() {
+  for (const key of [...cache.keys()])
+    if (key.startsWith(INSTITUTIONS_KEY)) cache.delete(key);
+}

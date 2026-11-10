@@ -1,0 +1,365 @@
+{
+  "berkshire": {
+    "zhName": "伯克希尔·哈撒韦",
+    "person": {
+      "en": "Warren Buffett",
+      "zh": "沃伦·巴菲特"
+    },
+    "role": {
+      "en": "Chairman",
+      "zh": "董事长"
+    }
+  },
+  "bridgewater": {
+    "zhName": "桥水基金",
+    "person": {
+      "en": "Ray Dalio",
+      "zh": "瑞·达利欧"
+    },
+    "role": {
+      "en": "Founder",
+      "zh": "创始人"
+    }
+  },
+  "pershing": {
+    "zhName": "潘兴广场",
+    "person": {
+      "en": "Bill Ackman",
+      "zh": "比尔·阿克曼"
+    },
+    "role": {
+      "en": "Founder & CEO",
+      "zh": "创始人兼 CEO"
+    }
+  },
+  "duquesne": {
+    "zhName": "杜肯家族办公室",
+    "person": {
+      "en": "Stanley Druckenmiller",
+      "zh": "斯坦利·德鲁肯米勒"
+    },
+    "role": {
+      "en": "Founder",
+      "zh": "创始人"
+    }
+  },
+  "appaloosa": {
+    "zhName": "阿帕卢萨",
+    "person": {
+      "en": "David Tepper",
+      "zh": "大卫·泰珀"
+    },
+    "role": {
+      "en": "Founder",
+      "zh": "创始人"
+    }
+  },
+  "baupost": {
+    "zhName": "包普斯特集团",
+    "person": {
+      "en": "Seth Klarman",
+      "zh": "塞斯·卡拉曼"
+    },
+    "role": {
+      "en": "CEO",
+      "zh": "CEO"
+    }
+  },
+  "tiger": {
+    "zhName": "老虎环球",
+    "person": {
+      "en": "Chase Coleman",
+      "zh": "蔡斯·科尔曼"
+    },
+    "role": {
+      "en": "Founder",
+      "zh": "创始人"
+    }
+  },
+  "third_point": {
+    "zhName": "第三点",
+    "person": {
+      "en": "Daniel Loeb",
+      "zh": "丹尼尔·勒布"
+    },
+    "role": {
+      "en": "Founder & CEO",
+      "zh": "创始人兼 CEO"
+    }
+  },
+  "oaktree": {
+    "zhName": "橡树资本",
+    "person": {
+      "en": "Howard Marks",
+      "zh": "霍华德·马克斯"
+    },
+    "role": {
+      "en": "Co-founder",
+      "zh": "联合创始人"
+    }
+  },
+  "renaissance": {
+    "zhName": "文艺复兴科技",
+    "person": {
+      "en": "Jim Simons",
+      "zh": "吉姆·西蒙斯"
+    },
+    "role": {
+      "en": "Founder",
+      "zh": "创始人"
+    }
+  },
+  "duan_yongping": {
+    "zhName": "H&H 国际投资",
+    "person": {
+      "en": "Duan Yongping",
+      "zh": "段永平"
+    },
+    "role": {
+      "en": "Founder",
+      "zh": "创始人"
+    }
+  },
+  "himalaya": {
+    "zhName": "喜马拉雅资本",
+    "person": {
+      "en": "Li Lu",
+      "zh": "李录"
+    },
+    "role": {
+      "en": "Founder",
+      "zh": "创始人"
+    }
+  },
+  "hhlr": {
+    "zhName": "高瓴 HHLR",
+    "person": {
+      "en": "Zhang Lei",
+      "zh": "张磊"
+    },
+    "role": {
+      "en": "Founder",
+      "zh": "创始人"
+    }
+  },
+  "greenwoods": {
+    "zhName": "景林资产",
+    "person": {
+      "en": "Jiang Jinzhi",
+      "zh": "蒋锦志"
+    },
+    "role": {
+      "en": "Founder",
+      "zh": "创始人"
+    }
+  },
+  "temasek": {
+    "zhName": "淡马锡",
+    "person": {
+      "en": "Dilhan Pillay",
+      "zh": "狄尔汉·皮莱"
+    },
+    "role": {
+      "en": "CEO",
+      "zh": "CEO"
+    }
+  },
+  "pabrai": {
+    "zhName": "帕伯莱投资",
+    "person": {
+      "en": "Mohnish Pabrai",
+      "zh": "莫尼什·帕伯莱"
+    },
+    "role": {
+      "en": "Founder",
+      "zh": "创始人"
+    }
+  },
+  "markel": {
+    "zhName": "马克尔集团",
+    "person": {
+      "en": "Tom Gayner",
+      "zh": "汤姆·盖纳"
+    },
+    "role": {
+      "en": "CEO",
+      "zh": "CEO"
+    }
+  },
+  "fairfax": {
+    "zhName": "费尔法克斯金融",
+    "person": {
+      "en": "Prem Watsa",
+      "zh": "普雷姆·瓦特萨"
+    },
+    "role": {
+      "en": "Founder & Chairman",
+      "zh": "创始人兼董事长"
+    }
+  },
+  "akre": {
+    "zhName": "阿克雷资本",
+    "person": {
+      "en": "Chuck Akre",
+      "zh": "查克·阿克雷"
+    },
+    "role": {
+      "en": "Founder",
+      "zh": "创始人"
+    }
+  },
+  "gardner_russo": {
+    "zhName": "加德纳·鲁索",
+    "person": {
+      "en": "Tom Russo",
+      "zh": "汤姆·鲁索"
+    },
+    "role": {
+      "en": "Partner",
+      "zh": "合伙人"
+    }
+  },
+  "ruane": {
+    "zhName": "红杉基金（鲁安·坎尼夫）",
+    "person": {
+      "en": "Bill Ruane",
+      "zh": "比尔·鲁安"
+    },
+    "role": {
+      "en": "Founder",
+      "zh": "创始人"
+    }
+  },
+  "fundsmith": {
+    "zhName": "芬德史密斯",
+    "person": {
+      "en": "Terry Smith",
+      "zh": "特里·史密斯"
+    },
+    "role": {
+      "en": "Founder & CEO",
+      "zh": "创始人兼 CEO"
+    }
+  },
+  "icahn": {
+    "zhName": "伊坎",
+    "person": {
+      "en": "Carl Icahn",
+      "zh": "卡尔·伊坎"
+    },
+    "role": {
+      "en": "Founder",
+      "zh": "创始人"
+    }
+  },
+  "elliott": {
+    "zhName": "艾略特管理",
+    "person": {
+      "en": "Paul Singer",
+      "zh": "保罗·辛格"
+    },
+    "role": {
+      "en": "Founder",
+      "zh": "创始人"
+    }
+  },
+  "trian": {
+    "zhName": "特里安基金",
+    "person": {
+      "en": "Nelson Peltz",
+      "zh": "尼尔森·佩尔茨"
+    },
+    "role": {
+      "en": "Founder & CEO",
+      "zh": "创始人兼 CEO"
+    }
+  },
+  "valueact": {
+    "zhName": "ValueAct 资本",
+    "person": {
+      "en": "Mason Morfit",
+      "zh": "梅森·莫菲特"
+    },
+    "role": {
+      "en": "CEO",
+      "zh": "CEO"
+    }
+  },
+  "starboard": {
+    "zhName": "Starboard 价值",
+    "person": {
+      "en": "Jeff Smith",
+      "zh": "杰夫·史密斯"
+    },
+    "role": {
+      "en": "Founder & CEO",
+      "zh": "创始人兼 CEO"
+    }
+  },
+  "ark": {
+    "zhName": "方舟投资",
+    "person": {
+      "en": "Cathie Wood",
+      "zh": "凯茜·伍德"
+    },
+    "role": {
+      "en": "Founder & CEO",
+      "zh": "创始人兼 CEO"
+    }
+  },
+  "coatue": {
+    "zhName": "Coatue 资本",
+    "person": {
+      "en": "Philippe Laffont",
+      "zh": "菲利普·拉丰"
+    },
+    "role": {
+      "en": "Founder",
+      "zh": "创始人"
+    }
+  },
+  "lone_pine": {
+    "zhName": "孤松资本",
+    "person": {
+      "en": "Stephen Mandel",
+      "zh": "斯蒂芬·曼德尔"
+    },
+    "role": {
+      "en": "Founder",
+      "zh": "创始人"
+    }
+  },
+  "altimeter": {
+    "zhName": "Altimeter 资本",
+    "person": {
+      "en": "Brad Gerstner",
+      "zh": "布拉德·格斯特纳"
+    },
+    "role": {
+      "en": "Founder & CEO",
+      "zh": "创始人兼 CEO"
+    }
+  },
+  "soros": {
+    "zhName": "索罗斯基金管理",
+    "person": {
+      "en": "George Soros",
+      "zh": "乔治·索罗斯"
+    },
+    "role": {
+      "en": "Founder",
+      "zh": "创始人"
+    }
+  },
+  "gates": {
+    "zhName": "盖茨基金会信托",
+    "person": {
+      "en": "Bill Gates",
+      "zh": "比尔·盖茨"
+    },
+    "role": {
+      "en": "Co-founder",
+      "zh": "联合创始人"
+    }
+  }
+}

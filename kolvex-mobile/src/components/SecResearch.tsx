@@ -27,11 +27,11 @@ import { DataTable } from "./DataTable";
 import { Field, Filters } from "./Content";
 import { MetricBars, Statements } from "./StockResearch";
 import { Button, Copy, Empty, Failure, Glass, Section, LoadingStatus } from "./UI";
-const SEC_TIMEOUT = 55_000;
-function useFormat() {
+export const SEC_TIMEOUT = 55_000;
+export function useFormat() {
   return financialFormat(usePreferences().locale);
 }
-function SecState({
+export function SecState({
   resource,
   empty,
   emptyText,
@@ -51,7 +51,7 @@ function SecState({
   return empty ? <Empty title="暂无数据" message={emptyText} /> : null;
 }
 /** Links only to validated sec.gov archive paths; anything else renders as plain text. */
-function SecLink({ href, label }: { href?: string; label: string }) {
+export function SecLink({ href, label }: { href?: string; label: string }) {
   const t = useTheme();
   const [failed, setFailed] = useState(false);
   const safe = secSourceUrl(href);
@@ -64,13 +64,12 @@ function SecLink({ href, label }: { href?: string; label: string }) {
         Linking.openURL(safe).catch(() => setFailed(true));
       }}
       role="link"
-      localize={false}
     >
       {label}
     </Copy>
   );
 }
-function FactList({ items }: { items: [string, string][] }) {
+export function FactList({ items }: { items: [string, string][] }) {
   return (
     <Glass style={{ padding: 16 }}>
       <View style={{ flexDirection: "row", flexWrap: "wrap", rowGap: 16 }}>
@@ -88,7 +87,7 @@ function FactList({ items }: { items: [string, string][] }) {
     </Glass>
   );
 }
-function Note({ children }: { children: string }) {
+export function Note({ children }: { children: string }) {
   return (
     <Copy size={12} muted>
       {children}

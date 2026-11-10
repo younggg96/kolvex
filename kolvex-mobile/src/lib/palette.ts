@@ -14,6 +14,13 @@ export const palette = {
     negative: "#B4310D",
     chartUp: "#00C807",
     chartDown: "#FF5100",
+    // Glass tokens from the Web's globals.css (--glass-rim, --card-glass, bg-foreground/x).
+    rim: "rgba(37,41,37,0.1)",
+    card: "#FFFFFF",
+    wash: "rgba(37,41,37,0.08)",
+    washStrong: "rgba(37,41,37,0.14)",
+    field: "rgba(37,41,37,0.06)",
+    onBrand: "#000000",
   },
   dark: {
     dark: true,
@@ -28,5 +35,11 @@ export const palette = {
     negative: "#FF5000",
     chartUp: "#00C807",
     chartDown: "#FF5100",
+    rim: "rgba(255,255,255,0.13)",
+    card: "rgba(0,0,0,0.4)",
+    wash: "rgba(255,255,255,0.08)",
+    washStrong: "rgba(255,255,255,0.14)",
+    field: "rgba(255,255,255,0.06)",
+    onBrand: "#000000",
   },
 } as const;

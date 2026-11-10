@@ -74,9 +74,17 @@ async def lifespan(app: FastAPI):
     options_activity_worker = asyncio.create_task(run_options_activity_worker()) if settings.OPTIONS_ACTIVITY_WORKER_ENABLED else None
     from app.services.agent_signal_evaluation import run_signal_evaluation_worker
     signal_eval_worker = asyncio.create_task(run_signal_evaluation_worker())
+    from app.services.congress_trades import run_congress_trades_worker
+    congress_worker = (
+        asyncio.create_task(run_congress_trades_worker())
+        if os.getenv("CONGRESS_TRADES_SYNC_ENABLED", "").lower() == "true" else None
+    )
     try:
         yield
     finally:
+        if congress_worker:
+            congress_worker.cancel()
+            await asyncio.gather(congress_worker, return_exceptions=True)
         signal_eval_worker.cancel()
         try:
             await signal_eval_worker

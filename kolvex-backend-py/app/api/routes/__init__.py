@@ -28,6 +28,7 @@ from app.api.routes.valuation import router as valuation_router
 from app.api.routes.options import router as options_router
 from app.api.routes.options_activity import router as options_activity_router
 from app.api.routes.forecast import router as forecast_router
+from app.api.routes.congress_trades import router as congress_trades_router
 
 # Create API router
 api_router = APIRouter()
@@ -62,3 +63,4 @@ api_router.include_router(market_events_router)
 api_router.include_router(market_observations_router)
 
 __all__ = ["api_router"]
+api_router.include_router(congress_trades_router)

@@ -58,6 +58,7 @@
     "optionsFlow": "期权异动",
     "tradingAnalysis": "研究",
     "superinvestors": "超级投资者",
+    "congressTrades": "国会议员交易",
     "optionsActivity": "期权异动",
     "news": "新闻",
     "youtubeOpinions": "KOL 观点",
@@ -83,6 +84,7 @@
   "tabBar": {
     "paperTrading": "虚拟交易",
     "superinvestors": "超级投资者",
+    "congressTrades": "国会议员交易",
     "optionsActivity": "期权异动",
     "watchlist": "自选股",
     "news": "新闻",
@@ -388,6 +390,7 @@
       "get_plaid_wash_sale_risk": "检查 Plaid wash sale 风险",
       "get_plaid_sell_review": "复盘 Plaid 卖出表现",
       "get_stock_quote": "获取股票报价",
+      "get_reported_revenue": "查阅 SEC 营收申报",
       "get_stock_financials": "读取财务数据",
       "get_analyst_recommendations": "查询分析师评级",
       "get_stock_history": "加载历史价格",
@@ -424,6 +427,20 @@
       "portfolio": "持仓",
       "page": "当前页面"
     },
+    "revenueEvidence": {
+      "title": "营收证据",
+      "quarterly": "季度营收",
+      "annual": "年度营收",
+      "period": "报告期",
+      "filed": "SEC 申报日",
+      "openSource": "查看 {symbol} 的 SEC 文件"
+    },
+    "quoteEvidence": {
+      "title": "行情证据",
+      "unknownTime": "报价时间未知",
+      "unknownCurrency": "币种未知",
+      "openSource": "查看 {symbol} 的行情来源"
+    },
     "input": {
       "placeholder": "问一只股票、一位博主，或和持仓的关系...",
       "apiKeyRequired": "需要 API 密钥",
@@ -433,6 +450,17 @@
       "expand": "展开输入框",
       "addApiKey": "添加 API 密钥",
       "selectModel": "选择模型",
+      "skills": {
+        "title": "技能",
+        "selected": "已选 {count}/{total}",
+        "description": "选择这段对话可以使用的研究工具。",
+        "market": "行情",
+        "fundamentals": "基本面",
+        "options": "期权",
+        "news": "新闻与网页",
+        "creators": "创作者观点",
+        "portfolio": "持仓分析"
+      },
       "sources": {
         "plaid": "Plaid",
         "news": "新闻",

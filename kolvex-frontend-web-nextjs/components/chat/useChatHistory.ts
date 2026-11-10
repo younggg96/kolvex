@@ -27,6 +27,8 @@ function convertApiConversation(
         id: msg.id,
         role: msg.role as "user" | "assistant" | "system",
         content: msg.content,
+        quoteEvidence: msg.quote_evidence,
+        revenueEvidence: msg.revenue_evidence,
         timestamp: new Date(msg.created_at),
       })),
     createdAt: new Date(apiConv.created_at),

@@ -381,6 +381,13 @@ export interface PriceGraphProps {
   overlay?: ReactNode;
   /** Drawing layer rendered inside the plot, clipped to the plot box. */
   drawingLayer?: ReactNode | ((geometry: GraphGeometry) => ReactNode);
+  /** Advanced: drawing tools may claim a pointer before it starts a graph gesture. */
+  drawingInteraction?: {
+    onPointerDown: (event: PointerEvent<HTMLDivElement>, geometry: GraphGeometry) => boolean;
+    onPointerMove: (event: PointerEvent<HTMLDivElement>, geometry: GraphGeometry) => void;
+    onPointerUp: (event: PointerEvent<HTMLDivElement>, geometry: GraphGeometry) => void;
+    onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void;
+  };
   /** Advanced: candles / indicators on the shared geometry, drawn instead of the close line. */
   renderPlot?: (geometry: GraphGeometry) => ReactNode;
   /** Rendered under the time axis (advanced: oscillator pane). */
@@ -446,6 +453,7 @@ export default function PriceGraph({
   onOpenAdvanced,
   overlay,
   drawingLayer,
+  drawingInteraction,
   renderPlot,
   subPane,
   rangeTrailing,
@@ -480,6 +488,7 @@ export default function PriceGraph({
   const settling = useRef<SpringAnimation | null>(null);
   /** Unclamped start while a trackpad scroll is pushing past an edge, and its settle timer. */
   const wheelPan = useRef<{ raw: number; timer: number } | null>(null);
+  const drawingPointer = useRef<number | null>(null);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const lastSnapshot = useRef<{ key: string; bars: PriceBar[]; view: GraphView } | null>(null);
   const rangeKey = `${range}|${bars?.length ?? 0}`;
@@ -663,10 +672,15 @@ export default function PriceGraph({
   };
 
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    if (!loaded) return;
+    if (!loaded || drawingPointer.current !== null) return;
     // Catch the view where it is: a touch stops a settling spring, as a finger stops a scroll.
     stopSettling();
     tracker.current.reset();
+    if (!pointers.current.size && event.button === 0 && drawingInteraction?.onPointerDown(event, geometry)) {
+      drawingPointer.current = event.pointerId;
+      event.currentTarget.setPointerCapture(event.pointerId);
+      return;
+    }
     pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
     if (pointers.current.size === 2) {
       const [a, b] = Array.from(pointers.current.values());
@@ -682,6 +696,11 @@ export default function PriceGraph({
 
   const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
     if (!loaded) return;
+    if (drawingPointer.current !== null) {
+      if (drawingPointer.current === event.pointerId) drawingInteraction?.onPointerMove(event, geometry);
+      return;
+    }
+    if (!gesture.current) drawingInteraction?.onPointerMove(event, geometry);
     if (pointers.current.has(event.pointerId)) pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
     const now = gesture.current;
     if (now?.kind === "pinch" && pointers.current.size === 2) {
@@ -711,7 +730,14 @@ export default function PriceGraph({
   };
 
   const endGesture = (event: PointerEvent<HTMLDivElement>) => {
-    pointers.current.delete(event.pointerId);
+    if (drawingPointer.current !== null) {
+      if (drawingPointer.current === event.pointerId) {
+        drawingPointer.current = null;
+        drawingInteraction?.onPointerUp(event, geometry);
+      }
+      return;
+    }
+    if (!pointers.current.delete(event.pointerId)) return;
     const now = gesture.current;
     if (now?.kind === "pinch") {
       if (pointers.current.size < 2) gesture.current = null;
@@ -737,6 +763,8 @@ export default function PriceGraph({
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    drawingInteraction?.onKeyDown(event);
+    if (event.defaultPrevented) return;
     const base = activeIndex ?? Math.max(Math.min(geometry.lastIndex, count - 1), 0);
     if (event.key === "ArrowLeft") onActiveChange(Math.max(base - 1, 0));
     else if (event.key === "ArrowRight") onActiveChange(Math.min(base + 1, count - 1));

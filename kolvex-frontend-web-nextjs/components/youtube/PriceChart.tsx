@@ -228,7 +228,7 @@ export default function PriceChart({
     setDrawings: (next: Drawing[], recordFrom?: Drawing[] | null) => {
       // Local edits to AI overlays never mutate the saved analysis snapshot.
       setAiOverrides(next.filter(item => item.source === "ai"));
-      setDrawings(next.filter(item => item.source !== "ai"), recordFrom?.filter(item => item.source !== "ai"));
+      setDrawings(next.filter(item => item.source !== "ai"), recordFrom === null ? null : recordFrom?.filter(item => item.source !== "ai"));
     },
     undo,
     canUndo: history.length > 0,
@@ -311,7 +311,7 @@ export default function PriceChart({
           {advancedOpen && <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:overflow-hidden sm:px-4 sm:pb-3">
             <ChartView mode="advanced" {...shared} escapeRef={escapeRef} headerActions={
               <DialogClose asChild>
-                <Button type="button" variant="ghost" size="icon" className="shrink-0" aria-label={t("common.close")} title={t("common.close")}>
+                <Button type="button" variant="icon" size="icon" className="shrink-0" aria-label={t("common.close")} title={t("common.close")}>
                   <X className="h-5 w-5" aria-hidden="true" />
                 </Button>
               </DialogClose>

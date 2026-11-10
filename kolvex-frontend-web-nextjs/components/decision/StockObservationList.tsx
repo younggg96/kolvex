@@ -227,7 +227,7 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
               className="h-11 pl-10 pr-12" onChange={event => { setSearchDraft(event.target.value); if (!composing.current) commitSearch(event.target.value); }}
               onCompositionStart={() => { composing.current = true; }} onCompositionEnd={event => { composing.current = false; commitSearch(event.currentTarget.value); }}
               onKeyDown={event => { if (event.key === "Escape" && !composing.current) clearSearch(); }} />
-            {searchDraft && <Button type="button" variant="ghost" size="icon" onClick={clearSearch} aria-label={c("Clear stock search", "清除股票搜索")} className="absolute right-0 top-0 h-11 w-11"><X className="h-4 w-4" aria-hidden="true" /></Button>}
+            {searchDraft && <Button type="button" variant="icon" size="icon" onClick={clearSearch} aria-label={c("Clear stock search", "清除股票搜索")} className="absolute right-1 top-1 h-9 w-9 shadow-sm"><X className="h-4 w-4" aria-hidden="true" /></Button>}
           </div>
         </div>
         {state.scope === "core" && <div className="min-w-0">

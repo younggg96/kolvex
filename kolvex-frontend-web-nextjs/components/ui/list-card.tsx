@@ -192,4 +192,4 @@ export function ListFooterLink({
 
 /** Compact row for secondary rails (holdings, recent changes) inside a list card. */
 export const listCompactRowClass =
-  "flex min-h-11 items-center justify-between gap-3 rounded-2xl px-1 py-2.5 text-sm transition-colors duration-150 hover:bg-foreground/[0.06] focus-visible:bg-foreground/[0.06] focus-visible:outline-none active:bg-foreground/[0.1]";
+  "flex min-h-10 items-center justify-between gap-2 rounded-xl px-1 py-1.5 text-sm transition-colors duration-150 hover:bg-foreground/[0.06] focus-visible:bg-foreground/[0.06] focus-visible:outline-none active:bg-foreground/[0.1]";

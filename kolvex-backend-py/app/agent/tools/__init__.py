@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 from app.agent.tools.stock_tools import (
     get_stock_quote,
     get_stock_financials,
+    get_reported_revenue,
     get_analyst_recommendations,
     get_stock_history,
     get_company_info,
@@ -36,6 +37,7 @@ ALL_TOOLS = [
     # Stock tools
     get_stock_quote,
     get_stock_financials,
+    get_reported_revenue,
     get_analyst_recommendations,
     get_stock_history,
     get_company_info,
@@ -51,6 +53,7 @@ ALL_TOOLS = [
 FINANCIAL_TOOLS = [
     get_stock_quote,
     get_stock_financials,
+    get_reported_revenue,
     get_analyst_recommendations,
     get_stock_history,
     get_company_info,
@@ -63,6 +66,7 @@ FINANCIAL_TOOLS = [
 RESEARCH_TOOLS = [
     get_stock_quote,
     get_stock_financials,
+    get_reported_revenue,
     get_analyst_recommendations,
     get_stock_history,
     get_company_info,
@@ -86,10 +90,25 @@ _BASE_TOOLS = {
 _SOURCE_GATED_TOOLS = (web_search, get_user_portfolio)
 
 
+_CHAT_TOOL_SKILLS = {
+    "get_stock_quote": "market",
+    "get_stock_history": "market",
+    "get_stock_financials": "fundamentals",
+    "get_reported_revenue": "fundamentals",
+    "get_analyst_recommendations": "fundamentals",
+    "get_company_info": "fundamentals",
+    "get_options_chain_summary": "options",
+    "web_search": "news",
+    "get_creator_opinions": "creators",
+    "get_user_portfolio": "portfolio",
+}
+
+
 def get_tools_for_sources(
     sources: list[str] | None,
     base_tools: str = "financial",
     user_id: str | None = None,
+    skills: list[str] | None = None,
 ) -> list:
     """
     根据前端激活的 sources 过滤工具集
@@ -99,6 +118,7 @@ def get_tools_for_sources(
                  None 表示全部启用，空列表表示全部关闭
         base_tools: 基础工具集 ("financial", "research", "alert")
         user_id: 当前认证用户 ID，用于绑定 portfolio 工具
+        skills: 启用的聊天技能，None 保留所有可用工具
 
     Returns:
         过滤后的工具列表
@@ -134,7 +154,9 @@ def get_tools_for_sources(
             if t not in tools:
                 tools.append(t)
 
-    return tools
+    if skills is None:
+        return tools
+    return [tool for tool in tools if _CHAT_TOOL_SKILLS.get(tool.name) in skills]
 
 
 __all__ = [

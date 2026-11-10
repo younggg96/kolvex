@@ -1648,15 +1648,17 @@ storage key. Weekday navigation retains its fitted three-option pill.
 
 ### X opinion summary snapshots
 
-The X feed renders saved bilingual AI summaries above posts, grouped by creator
-and filtered by the selected author. The existing ListCard contains a compact
-headline row for each creator; native disclosures reveal reasoning, caveats and
-original source links. Dates use the reader locale and timezone. The scope note
-explicitly identifies selected, incomplete coverage and potential other stocks.
-The summary endpoint verifies every citation exists and belongs to its creator
-before returning a snapshot. Reading does not call a model or generate a fresh
-summary. This is a saved editorial snapshot, not a scheduled-generation service.
-Missing snapshots and recoverable failures leave the underlying feed available.
+X Opinions places original posts in the main column and the creator directory
+with per-creator AI analysis in the right column. Narrow layouts stack the
+directory above the feed. Selecting a creator filters the posts, resets pagination
+and retains the ticker. Expanding an AI analysis leaves post filters unchanged.
+Creator, ticker and post page remain URL state; older view parameters are ignored.
+
+The directory uses the shared ListCard and includes creators without a saved
+analysis. Expanded analyses show coverage, reasoning, risks and cited posts.
+Ticker search scopes the feed; each saved summary covers selected source posts
+across stocks. The directory, summaries and feed can load or fail independently.
+Post refresh retains already loaded rows for the same query.
 
 ### Content loading states
 

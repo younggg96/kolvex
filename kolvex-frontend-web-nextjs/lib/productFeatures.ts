@@ -10,6 +10,7 @@ export type ProductFeatureId =
   | "portfolio"
   | "paperTrading"
   | "superinvestors"
+  | "congressTrades"
   | "optionsActivity"
   | "settings"
   | "admin";
@@ -27,6 +28,7 @@ export interface ProductFeature {
 export const PRODUCT_FEATURES = [
   { id: "paperTrading", label: "Paper trading", enabled: true, routePrefixes: ["/dashboard/paper-trading"], apiPrefixes: ["/api/paper-trading"] },
   { id: "superinvestors", label: "Superinvestors", enabled: true, routePrefixes: ["/dashboard/superinvestors"], componentDirs: ["components/superinvestors"] },
+  { id: "congressTrades", label: "Congress trades", enabled: true, routePrefixes: ["/dashboard/congress-trades"], apiPrefixes: ["/api/congress/trades"], componentDirs: ["components/congress"] },
   {
     id: "optionsActivity",
     label: "Options activity",

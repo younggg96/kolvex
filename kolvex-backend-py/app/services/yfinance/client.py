@@ -275,7 +275,8 @@ class YFinanceService:
         except Exception:
             info = {}
 
-        current_price = info.get("regularMarketPrice") or info.get("currentPrice")
+        regular_price = info.get("regularMarketPrice")
+        current_price = regular_price or info.get("currentPrice")
         previous_close = info.get("regularMarketPreviousClose") or info.get("previousClose")
 
         if not current_price or not previous_close:
@@ -318,7 +319,7 @@ class YFinanceService:
             # 市值
             "market_cap": info.get("marketCap"),
             # 时间
-            "market_time": info.get("regularMarketTime"),
+            "market_time": info.get("regularMarketTime") if regular_price else None,
             "market_state": info.get("marketState"),
             "quote_source": "Yahoo Finance",
             "exchange_timezone_name": info.get("exchangeTimezoneName"),

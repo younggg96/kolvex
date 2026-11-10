@@ -190,9 +190,10 @@ const ChartView = compile('components/youtube/chart/ChartView.tsx', {
  * state read. Two bundles cover the two states the real component goes through: before the
  * graph reports its box (0) and after (desktop 640).
  */
-function compileChartView(initialBox) {
+function compileChartView(initialBox, initialTool = "cursor") {
   const seededUseState = (initial) => {
     const value = typeof initial === 'function' ? initial() : initial;
+    if (value === "cursor") return React.useState(initialTool);
     return React.useState(value?.width === 0 && initialBox > 0 ? { ...value, width: initialBox } : value);
   };
   return compile('components/youtube/chart/ChartView.tsx', {
@@ -359,6 +360,29 @@ test('the oscillator pane and the drawing layer share the graph window', () => {
   assert.equal(compact.mode, 'compact');
 });
 
+
+test('advanced manual drawings use pointer coordinates from the live graph', () => {
+  const ChartViewWithTool = compileChartView(0, 'hline');
+  const committed = [];
+  renderToStaticMarkup(React.createElement(ChartViewWithTool, {
+    ...baseProps,
+    mode: 'advanced',
+    setDrawings: (drawings) => committed.push(...drawings),
+  }));
+  const interaction = graphRenders.at(-1).drawingInteraction;
+  const plot = graphGeometry({ bars, view: { start: 10, end: 30 }, width: 640, height: 360 });
+  const event = {
+    currentTarget: { getBoundingClientRect: () => ({ left: 90, top: 60 }) },
+    clientX: 90 + plot.xOf(18),
+    clientY: 60 + 200,
+  };
+  assert.equal(interaction.onPointerDown({ ...event, clientX: 90 + plot.plotWidth + 1 }, plot), false);
+  assert.equal(interaction.onPointerDown(event, plot), true);
+  assert.equal(committed.length, 1);
+  assert.equal(committed[0].type, 'hline');
+  assert.deepEqual({ ...committed[0].points[0] }, { time: plot.timeAt(18), price: plot.priceAt(200) });
+  assert.equal(render({ mode: 'compact' }).graph.drawingInteraction, undefined);
+});
 
 test('AI drawings render before the host has measured a box and use the live graph coordinates', () => {
   for (const mode of ['compact', 'advanced']) {

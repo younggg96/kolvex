@@ -10,6 +10,8 @@ from typing import Dict, Any, Optional, AsyncGenerator, List
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langgraph.prebuilt import create_react_agent
 
+from app.agent.quote_evidence import QuoteEvidence, extract_quote_evidence
+from app.agent.revenue_evidence import RevenueEvidence, extract_revenue_evidence
 from app.agent.state import AgentState
 from app.agent.llm import get_llm, get_fast_llm, resolve_model_id
 from app.agent.config import SYSTEM_PROMPT, MAX_TOOL_ITERATIONS
@@ -97,6 +99,7 @@ def _create_agent_for_request(
     sources: Optional[List[str]] = None,
     user_id: Optional[str] = None,
     user_api_keys: Optional[Dict[str, str]] = None,
+    skills: Optional[List[str]] = None,
 ):
     """
     为每个请求创建合适的 Agent（支持动态 model 和 source 过滤）
@@ -113,10 +116,34 @@ def _create_agent_for_request(
     llm = get_llm(provider=provider, model=model, user_api_keys=user_api_keys)
 
     # 获取过滤后的工具（传入 user_id 以绑定 portfolio 工具）
-    tools = get_tools_for_sources(sources, base_tools=agent_type, user_id=user_id)
+    tools = get_tools_for_sources(sources, base_tools=agent_type, user_id=user_id, skills=skills)
 
     # 选择系统提示词 + source hints
-    source_hint = _build_source_hint(sources)
+    available_tools = {tool.name for tool in tools}
+    source_hint = _build_source_hint([
+        source for source in sources or []
+        if (source == "web" and "web_search" in available_tools)
+        or (source == "portfolio" and "get_user_portfolio" in available_tools)
+    ])
+    source_hint += (
+        "\n\nFor a current quote, use the price and currency returned by get_stock_quote. "
+        "Only describe a quote as current when its returned market_time supports that claim. "
+        "If the quote tool is unavailable or returns no price, say you could not verify the quote. "
+        "If market_time is missing, state that the quote time is unknown."
+    )
+    if "get_reported_revenue" in available_tools:
+        source_hint += (
+            "\n\nUse get_reported_revenue for reported quarterly or annual revenue amounts. "
+            "Match the period and currency in the returned evidence, and identify the date as the SEC filing date. "
+            "The tool returns only directly reported figures. If the requested period is absent, state that limitation."
+        )
+    if skills is not None:
+        source_hint += (
+            "\n\nThe user selected which research skills are available for this turn. "
+            "Use only the tools provided. Skip any requested research steps that need unavailable "
+            "tools and explain material gaps. If no tools are available, answer from the provided "
+            "context and general knowledge, and do not claim to have checked live data."
+        )
 
     if agent_type == "research":
         prompt = RESEARCH_SYSTEM_PROMPT + source_hint
@@ -144,6 +171,9 @@ async def run_agent(
     model_id: Optional[str] = None,
     sources: Optional[List[str]] = None,
     user_api_keys: Optional[Dict[str, str]] = None,
+    skills: Optional[List[str]] = None,
+    quote_evidence: Optional[List[QuoteEvidence]] = None,
+    revenue_evidence: Optional[List[RevenueEvidence]] = None,
 ) -> str:
     """
     运行 Agent 并返回最终回复
@@ -168,7 +198,7 @@ async def run_agent(
 
     # 2. 创建对应 Agent (传入 user_id 以绑定用户数据工具)
     agent = _create_agent_for_request(
-        agent_type, provider, model, sources, user_id=user_id, user_api_keys=user_api_keys
+        agent_type, provider, model, sources, user_id=user_id, user_api_keys=user_api_keys, skills=skills
     )
 
     # 3. 运行
@@ -182,6 +212,18 @@ async def run_agent(
         final_messages = result.get("messages", [])
         for msg in reversed(final_messages):
             if isinstance(msg, AIMessage) and msg.content and not msg.tool_calls:
+                if quote_evidence is not None:
+                    quotes = {}
+                    for item in final_messages[len(messages):]:
+                        if quote := extract_quote_evidence(item):
+                            quotes[quote.symbol] = quote
+                    quote_evidence.extend(quotes.values())
+                if revenue_evidence is not None:
+                    revenues = {}
+                    for item in final_messages[len(messages):]:
+                        for revenue in extract_revenue_evidence(item):
+                            revenues[(revenue.symbol, revenue.period_kind, revenue.period_end)] = revenue
+                    revenue_evidence.extend(revenues.values())
                 return msg.content
 
         return "I'm sorry, I wasn't able to generate a response. Please try again."
@@ -199,6 +241,7 @@ async def stream_agent(
     model_id: Optional[str] = None,
     sources: Optional[List[str]] = None,
     user_api_keys: Optional[Dict[str, str]] = None,
+    skills: Optional[List[str]] = None,
 ) -> AsyncGenerator[Dict[str, Any], None]:
     """
     流式运行 Agent，逐步返回事件
@@ -229,7 +272,7 @@ async def stream_agent(
 
     # 2. 创建对应 Agent (传入 user_id 以绑定用户数据工具)
     agent = _create_agent_for_request(
-        agent_type, provider, model, sources, user_id=user_id, user_api_keys=user_api_keys
+        agent_type, provider, model, sources, user_id=user_id, user_api_keys=user_api_keys, skills=skills
     )
 
     yield {
@@ -245,6 +288,8 @@ async def stream_agent(
         # turns out to be tool planning.
         model_turns: Dict[str, Dict[str, bool]] = {}
         final_response_emitted = False
+        quotes: dict[str, QuoteEvidence] = {}
+        revenues: dict[tuple, RevenueEvidence] = {}
         writing = {"type": "status", "stage": "writing", "content": "Writing the response"}
 
         async for event in agent.astream_events(
@@ -311,6 +356,10 @@ async def stream_agent(
                 }
 
             elif kind == "on_tool_end":
+                if quote := extract_quote_evidence(event.get("data", {}).get("output")):
+                    quotes[quote.symbol] = quote
+                for revenue in extract_revenue_evidence(event.get("data", {}).get("output")):
+                    revenues[(revenue.symbol, revenue.period_kind, revenue.period_end)] = revenue
                 # 工具调用结束
                 tool_name = event.get("name", "")
                 yield {
@@ -325,7 +374,12 @@ async def stream_agent(
             }
             return
 
-        yield {"type": "done", "content": ""}
+        done: Dict[str, Any] = {"type": "done", "content": ""}
+        if quotes:
+            done["quote_evidence"] = [quote.model_dump(mode="json") for quote in quotes.values()]
+        if revenues:
+            done["revenue_evidence"] = [revenue.model_dump(mode="json") for revenue in revenues.values()]
+        yield done
 
     except Exception as e:
         logger.error(f"Agent streaming failed: {e}", exc_info=True)

@@ -6,8 +6,12 @@ Stock Data Tools
 import json
 import asyncio
 import logging
-from typing import Optional
+from typing import Literal, Optional
 from langchain_core.tools import tool
+from pydantic import ValidationError
+
+from app.agent.revenue_evidence import RevenueEvidence
+from app.services.sec.client import SecNotFound, SecUnavailable, sec_client
 
 from app.services.yfinance.client import get_yfinance_service
 from app.services.finnhub.client import get_finnhub_client
@@ -56,6 +60,36 @@ def get_stock_financials(symbol: str) -> str:
     except Exception as e:
         logger.error(f"Error getting financials for {symbol}: {e}")
         return json.dumps({"error": f"Failed to get financials for {symbol}: {str(e)}"})
+
+
+@tool
+async def get_reported_revenue(symbol: str, period: Literal["quarterly", "annual"] = "quarterly") -> str:
+    """Get up to two latest directly reported quarterly or annual revenue figures from SEC EDGAR.
+    Includes reporting dates, currency, SEC filing date, and the original filing link.
+    Derived quarters and TTM are excluded. Use annual only when the user asks for full-year revenue.
+    """
+    try:
+        history = await sec_client.financials(symbol)
+    except (SecNotFound, SecUnavailable):
+        return json.dumps({"error": "SEC revenue data unavailable for this symbol"})
+
+    evidence = []
+    for row in history[period]:
+        source = row["sources"].get("revenue")
+        if not source or source.get("derived") is not False:
+            continue
+        try:
+            fact = RevenueEvidence(
+                symbol=history["symbol"], value=row["revenue"], currency=history["currency"],
+                period_kind=period, period_start=row["start"], period_end=row["period"],
+                filed_on=source["filed"], source_url=source["source_url"],
+            )
+        except ValidationError:
+            continue
+        evidence.append(fact.model_dump(mode="json"))
+        if len(evidence) == 2:
+            break
+    return json.dumps(evidence or {"error": "No directly reported SEC revenue for this period"})
 
 
 @tool

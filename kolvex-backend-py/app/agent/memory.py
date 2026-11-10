@@ -101,6 +101,8 @@ async def save_message(
     conversation_id: str,
     role: str,
     content: str,
+    quote_evidence: Optional[List[Dict[str, Any]]] = None,
+    revenue_evidence: Optional[List[Dict[str, Any]]] = None,
 ) -> Optional[Dict[str, Any]]:
     """
     保存消息到数据库
@@ -131,14 +133,16 @@ async def save_message(
             logger.error(f"Conversation {conversation_id} not found for user {user_id}")
             return None
 
+        row: Dict[str, Any] = {"conversation_id": conversation_id, "role": role, "content": content}
+        if quote_evidence:
+            row["quote_evidence"] = quote_evidence
+        if revenue_evidence:
+            row["revenue_evidence"] = revenue_evidence
+
         # 保存消息
         result = (
             (await asyncio.to_thread(supabase.table("chat_messages")
-            .insert({
-                "conversation_id": conversation_id,
-                "role": role,
-                "content": content,
-            })
+            .insert(row)
             .execute))
         )
 

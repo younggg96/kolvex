@@ -58,6 +58,7 @@
     "optionsFlow": "Options Flow",
     "tradingAnalysis": "Research",
     "superinvestors": "Superinvestors",
+    "congressTrades": "Congress trades",
     "optionsActivity": "Options activity",
     "news": "News",
     "youtubeOpinions": "KOL Opinions",
@@ -82,6 +83,7 @@
   },
   "tabBar": {
     "superinvestors": "Superinvestors",
+    "congressTrades": "Congress trades",
     "optionsActivity": "Options activity",
     "paperTrading": "Paper trading",
     "watchlist": "Watchlist",
@@ -388,6 +390,7 @@
       "get_plaid_wash_sale_risk": "Checking Plaid wash-sale risk",
       "get_plaid_sell_review": "Reviewing Plaid sales",
       "get_stock_quote": "Getting stock quote",
+      "get_reported_revenue": "Checking SEC revenue filings",
       "get_stock_financials": "Fetching financials",
       "get_analyst_recommendations": "Checking analyst ratings",
       "get_stock_history": "Loading price history",
@@ -424,6 +427,20 @@
       "portfolio": "Holdings",
       "page": "This page"
     },
+    "revenueEvidence": {
+      "title": "Revenue evidence",
+      "quarterly": "Quarterly revenue",
+      "annual": "Annual revenue",
+      "period": "Reporting period",
+      "filed": "SEC filing date",
+      "openSource": "View SEC filing for {symbol}"
+    },
+    "quoteEvidence": {
+      "title": "Quote evidence",
+      "unknownTime": "Quote time unavailable",
+      "unknownCurrency": "Currency unavailable",
+      "openSource": "View source for {symbol}"
+    },
     "input": {
       "placeholder": "Ask about a stock, a creator, or your holdings...",
       "apiKeyRequired": "API key required",
@@ -433,6 +450,17 @@
       "expand": "Open message box",
       "addApiKey": "Add API key",
       "selectModel": "Select model",
+      "skills": {
+        "title": "Skills",
+        "selected": "{count} of {total} selected",
+        "description": "Choose the research tools available in this chat.",
+        "market": "Market data",
+        "fundamentals": "Fundamentals",
+        "options": "Options",
+        "news": "News and web",
+        "creators": "Creator opinions",
+        "portfolio": "Portfolio"
+      },
       "sources": {
         "plaid": "Plaid",
         "news": "News",

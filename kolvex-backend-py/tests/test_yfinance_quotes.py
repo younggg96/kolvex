@@ -47,6 +47,10 @@ class QuoteFallbackTests(unittest.TestCase):
         self.assertEqual(quote["pre_market_time"], Ticker.info["preMarketTime"])
         self.assertEqual(quote["post_market_time"], Ticker.info["postMarketTime"])
         self.assertEqual(quote["quote_source"], "Yahoo Finance")
+        Ticker.info.pop("regularMarketPrice")
+        fallback_quote = service.get_quote("NVDA")
+        self.assertEqual(fallback_quote["current_price"], 199)
+        self.assertIsNone(fallback_quote["market_time"])
 
     def test_history_explicitly_uses_unadjusted_regular_session_prices(self):
         calls = []

@@ -1,6 +1,6 @@
 # Web → React Native migration ledger
 
-Reference: `../kolvex-frontend-web-nextjs` (routes, `lib/productFeatures.ts`) and `../kolvex-backend-py`. Audited against commit `839a958`. The Web keeps moving, so this records what was checked, not perpetual parity.
+Reference: `../kolvex-frontend-web-nextjs` (routes, `lib/productFeatures.ts`) and `../kolvex-backend-py`. First audited against commit `839a958`; the rows marked 2026-11-09 below were added against `170a02a`. The Web keeps moving, so this records what was checked, not perpetual parity.
 
 ## Login required
 
@@ -55,6 +55,13 @@ Status abbreviations: `C` Code, `B` Bundle, `W` RN-Web. `Auth` means the screen 
 | Settings, API keys, `/dashboard/settings`                          | `/preferences`                                    | Theme, language, profile sync, masked keys                                                                                                   | —                                                                                                                                  | C B W, Auth |
 | Admin, `/dashboard/admin`                                          | `/admin`                                          | Server-verified gate, users, briefs, events, YouTube, X. **Fixed:** entry hidden for non-admins                                              | Database tab shows counts; privileged success paths not exercised                                                                  | C B, Auth   |
 | Deep links                                                         | `+native-intent.ts`                               | **New.** Web paths and `kolvex://` map to native screens; Android https filter                                                               | iOS universal links need an Apple Team ID and an AASA file on `kolvex.app`; Android verification needs `assetlinks.json`           | C B         |
+| Superinvestors, `/dashboard/superinvestors`                        | `/superinvestors`, `/superinvestor/[manager]`     | **New.** Directory with lead card, quarter grouping, size/activity sort; detail with overview, concentration, quarter activity, filter/search/sort, amendments | Holdings are cards, not a wide table. No company logos; tickers open the stock screen                                              | C           |
+| Options activity, `/dashboard/options-activity`                    | `/options-activity`                               | **New.** Day and run pickers, summary, AI candidates, market overview, contributors, contracts with details, ticker levels                   | Explanations sit behind an info button. Admin run/analysis controls not ported                                                     | C, Auth     |
+| Paper trading, `/dashboard/paper-trading`                          | `/paper-trading`, stock `paper-trading` tab       | **New.** Account, equity curve, positions, orders, ledger, order ticket with confirmation, exits, journal, community reviews, publish/withdraw | Ticket and exits are sheets. AI setup link from the technical screen carries a draft only                                          | C, Auth     |
+| Valuation, `StockValuation`                                        | `valuation` tab                                   | **New.** PE reference range, price/PE/premium history, session reader with sources, scenario simulation                                      | Company calculator, AI assumptions and the P/S fallback (`ValuationHistoryCard`) not ported; no shaded band on the chart            | C           |
+| AI fundamentals, `AiFundamentalAnalysis`                           | `summary` tab                                     | **New.** Model choice, seven dimensions, strengths/concerns/watch items                                                                      | Last result kept in memory only                                                                                                    | C, Auth     |
+| Full options chain, `StockOptionsChain`                            | `options` tab                                     | **Replaced** the yfinance chain. Expirations, metrics, paired strikes, near/all, contract sheet                                              | One fixed column set per cell instead of selectable columns                                                                        | C, Auth     |
+| Kronos forecast (experimental)                                     | `/technical/[symbol]`                             | **New.** On-request forecast card: median path, P10–P90 band, summary                                                                        | Not overlaid on the candle chart; not fed into AI analysis                                                                         | C, Auth     |
 | Legal and contact                                                  | More → system browser                             | Privacy, terms, contact pages open on the website                                                                                            | Web's contact form returns 410, so no native form                                                                                  | C B         |
 
 ## Native material and layout
@@ -78,6 +85,8 @@ Status abbreviations: `C` Code, `B` Bundle, `W` RN-Web. `Auth` means the screen 
 | Chat `plaid` and `portfolio` sources              | Still selectable, matching the Web's chat. Worth a product decision while Portfolio is off.                                         |
 
 ## Known remaining work
+
+Added 2026-11-09: the seven rows from Superinvestors to Kronos forecast. Still unported from the Web: research workspaces (`/dashboard/workspaces`), stock discovery on search, stock mentions in Markdown, the company valuation calculator, and options-activity admin controls.
 
 1. **Native acceptance of the remaining screens on iOS.** Android is set aside for now.
 2. **Signed-in writes.** Sign-in, restore, sign-out and read paths passed on the owner's account; writes need a disposable test account.

@@ -4,6 +4,7 @@ import {
   PieChart,
   BookOpen,
   Landmark,
+  ScrollText,
   Newspaper,
   Radio,
   Telescope,
@@ -128,6 +129,15 @@ export const MAIN_NAV_ITEMS: MainNavItem[] = [
     href: "/dashboard/superinvestors",
     type: "link",
     featureId: "superinvestors",
+    group: "research",
+  },
+  {
+    icon: ScrollText,
+    titleKey: "sidebar.congressTrades",
+    shortTitleKey: "tabBar.congressTrades",
+    href: "/dashboard/congress-trades",
+    type: "link",
+    featureId: "congressTrades",
     group: "research",
   },
   {

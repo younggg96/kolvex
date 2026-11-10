@@ -24,7 +24,7 @@ const USER_SCROLL_THRESHOLD_PX = 12;
 
 // Tool category icons
 function getToolIcon(toolName: string) {
-  if (toolName.includes("stock") || toolName.includes("quote") || toolName.includes("financials") || toolName.includes("history") || toolName.includes("company") || toolName.includes("analyst")) {
+  if (toolName.includes("stock") || toolName.includes("quote") || toolName.includes("financials") || toolName === "get_reported_revenue" || toolName.includes("history") || toolName.includes("company") || toolName.includes("analyst")) {
     return <BarChart3 className="w-3 h-3" />;
   }
   if (toolName.includes("news") || toolName.includes("trending")) {
@@ -127,6 +127,8 @@ export function ChatMessageList({
   messages,
   pendingUserMessage,
   streamingContent,
+  streamingQuoteEvidence,
+  streamingRevenueEvidence,
   isLoading = false,
   messagesEndRef,
   activeTools = [],
@@ -242,6 +244,8 @@ export function ChatMessageList({
               key={message.id}
               role={message.role as "user" | "assistant"}
               content={message.content}
+              quoteEvidence={message.quoteEvidence}
+              revenueEvidence={message.revenueEvidence}
               timestamp={message.timestamp}
               isFirst={index === 0}
               symbols={symbols}
@@ -272,6 +276,8 @@ export function ChatMessageList({
             <ChatBubble
               role="assistant"
               content={streamingContent}
+              quoteEvidence={streamingQuoteEvidence}
+              revenueEvidence={streamingRevenueEvidence}
               isStreaming={true}
               modelName={modelName}
             />

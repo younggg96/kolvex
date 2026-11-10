@@ -9,6 +9,7 @@ import { useChatHistory } from "./useChatHistory";
 import { useAvailableProviders } from "@/hooks/useAvailableProviders";
 import { getFirstAvailableModelId } from "./ChatInput";
 import { evidenceStorageKey } from "./pageEvidence";
+import { DEFAULT_CHAT_SKILLS, toggleChatSkill, type ChatSkill } from "./chatSkills";
 import type { AIModel, ChatWelcomeProps, SearchSource } from "./types";
 
 interface ChatWelcomeContainerProps {
@@ -45,6 +46,7 @@ export function ChatWelcomeContainer({
     "portfolio",
     "web",
   ]);
+  const [activeSkills, setActiveSkills] = useState<ChatSkill[]>([...DEFAULT_CHAT_SKILLS]);
   const [isLoading, setIsLoading] = useState(false);
   const submittingRef = useRef(false);
   const [selectedModel, setSelectedModel] = useState<AIModel>("deepseek-flash");
@@ -95,6 +97,7 @@ export function ChatWelcomeContainer({
         params.set("firstMessage", trimmedMessage);
         params.set("sources", activeSources.join(","));
         params.set("model", selectedModel);
+        params.set("skills", activeSkills.join(","));
         router.push(
           `/dashboard/chat/${conversationId}?${params.toString()}`
         );
@@ -106,7 +109,7 @@ export function ChatWelcomeContainer({
         setIsLoading(false);
       }
     },
-    [createConversation, router, activeSources, selectedModel, decisionContext, onSubmitted]
+    [createConversation, router, activeSources, activeSkills, selectedModel, decisionContext, onSubmitted]
   );
 
   return (
@@ -120,6 +123,8 @@ export function ChatWelcomeContainer({
             isLoading={isLoading}
             activeSources={activeSources}
             onToggleSource={toggleSource}
+            activeSkills={activeSkills}
+            onToggleSkill={(skill) => setActiveSkills((skills) => toggleChatSkill(skills, skill))}
             selectedModel={selectedModel}
             onSelectModel={setSelectedModel}
             availableProviders={availableProviders}

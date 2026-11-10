@@ -77,6 +77,9 @@ for (const file of [
   "marketComparison.ts",
   "freeResearch.ts",
   "opinionDates.ts",
+  "optionsActivity.ts",
+  "paperTradingReviews.ts",
+  "stockPaperTrading.ts",
 ]) {
   test(`native ${file} retains Web catalogue/range semantics`, () => {
     assert.deepEqual(

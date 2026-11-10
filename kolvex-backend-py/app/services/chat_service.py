@@ -98,7 +98,7 @@ class ChatService:
         try:
             result = (
                 (await asyncio.to_thread(self.supabase.table("chat_conversations")
-                .select("*, chat_messages(id, role, content, created_at)")
+                .select("*, chat_messages(*)")
                 .eq("id", conversation_id)
                 .eq("user_id", user_id)
                 .single()

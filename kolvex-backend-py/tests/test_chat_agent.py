@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, Mock, patch
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from langchain_core.messages import AIMessage, AIMessageChunk, HumanMessage
+from langchain_core.messages import AIMessage, AIMessageChunk, HumanMessage, ToolMessage
 
 from app.agent.graphs import supervisor
 from app.agent.tools import create_trading_analysis_tool, get_tools_for_sources
@@ -44,6 +44,23 @@ class ToolSelectionTests(unittest.TestCase):
         self.assertIn("web_search", tools)
         self.assertNotIn("get_user_portfolio", tools)
 
+    def test_skill_selection_narrows_tools_without_overriding_sources(self):
+        selected = ["market", "news", "portfolio"]
+        self.assertEqual(
+            names(get_tools_for_sources(["web"], "financial", "user-1", skills=selected)),
+            {"get_stock_quote", "get_stock_history", "web_search"},
+        )
+
+    def test_empty_skills_disable_all_tools(self):
+        self.assertEqual(get_tools_for_sources(None, "financial", "user-1", skills=[]), [])
+
+    def test_all_skills_preserve_default_tools(self):
+        selected = ["market", "fundamentals", "options", "news", "creators", "portfolio"]
+        self.assertEqual(
+            names(get_tools_for_sources(None, "financial", "user-1", skills=selected)),
+            names(get_tools_for_sources(None, "financial", "user-1")),
+        )
+
     def test_portfolio_is_bound_to_the_current_user(self):
         with patch("app.agent.tools.create_portfolio_tool_for_user") as bind:
             bind.return_value = SimpleNamespace(name="get_user_portfolio")
@@ -64,6 +81,17 @@ class TradingAnalysisKeyTests(unittest.TestCase):
             alice.invoke({"ticker": "NVDA"})
         used = [call.kwargs["user_api_keys"] for call in build.call_args_list]
         self.assertEqual(used, [{"openai": "bob-key"}, {"openai": "alice-key"}])
+
+
+def quote_result(**overrides):
+    data = {"symbol": "NVDA", "current_price": 123.45, "currency": "USD",
+            "quote_source": "Yahoo Finance", "market_time": 1793814337, **overrides}
+    return ToolMessage(name="get_stock_quote", tool_call_id="quote-1", content=json.dumps(data))
+
+
+def quote_end(**overrides):
+    return {"event": "on_tool_end", "name": "get_stock_quote",
+            "data": {"output": quote_result(**overrides)}}
 
 
 def stream(run_id, content="", tool_call=False, node="agent"):
@@ -121,19 +149,49 @@ class StreamAgentTests(unittest.IsolatedAsyncioTestCase):
                                      stream("a", "Answer"), end("a", "Answer")])
         self.assertEqual([e.get("content") for e in out if e["type"] == "token"], ["Answer"])
 
+    async def test_stream_attaches_latest_successful_quote_for_each_symbol(self):
+        events = [quote_end(), quote_end(current_price=130.25, market_time=None),
+                  quote_end(symbol="AMD", error="Unavailable"), end("a", "NVDA: 130.25 USD")]
+        out = await self.run_stream(events)
+        self.assertEqual(out[-1]["quote_evidence"], [{
+            "symbol": "NVDA", "price": 130.25, "currency": "USD",
+            "source": "Yahoo Finance", "quoted_at": None,
+        }])
+
+    async def test_unsuccessful_or_missing_tool_result_has_no_evidence(self):
+        for events in ([quote_end(current_price=None)], []):
+            out = await self.run_stream([*events, end("a", "Could not verify quote")])
+            self.assertNotIn("quote_evidence", out[-1])
+
+    async def test_sync_agent_collects_only_current_turn_quote(self):
+        initial = [quote_result(symbol="AMD"), HumanMessage(content="NVDA?")]
+        agent = Mock(ainvoke=AsyncMock(return_value={
+            "messages": [*initial, quote_result(), AIMessage(content="NVDA: 123.45 USD")],
+        }))
+        evidence = []
+        with patch.object(supervisor, "_classify_intent", AsyncMock(return_value="financial")), \
+                patch.object(supervisor, "_create_agent_for_request", return_value=agent):
+            answer = await supervisor.run_agent(initial, quote_evidence=evidence)
+        self.assertEqual(answer, "NVDA: 123.45 USD")
+        self.assertEqual([quote.symbol for quote in evidence], ["NVDA"])
+        self.assertEqual(evidence[0].quoted_at.timestamp(), 1793814337)
+
     async def test_no_final_text_is_an_error(self):
         out = await self.run_stream([end("a", "")])
         self.assertEqual(out[-1]["type"], "error")
 
 
 class StreamRouteTests(unittest.TestCase):
-    def test_retracted_text_is_not_saved(self):
+    def test_stream_persists_final_text_and_quote_together(self):
         from app.api.routes.chat import routes
         from app.services.user_api_keys_service import UserApiKeysService  # noqa: F401
 
+        quotes = [{"symbol": "NVDA", "price": 123.45, "currency": "USD",
+                   "source": "Yahoo Finance", "quoted_at": None}]
+
         async def fake_stream(**_kwargs):
             for event in ({"type": "token", "content": "Let me check"}, {"type": "token_reset"},
-                          {"type": "token", "content": "Answer"}, {"type": "done", "content": ""}):
+                          {"type": "token", "content": "Answer"}, {"type": "done", "quote_evidence": quotes}):
                 yield event
 
         app = FastAPI()
@@ -152,6 +210,13 @@ class StreamRouteTests(unittest.TestCase):
         self.assertIn({"type": "token_reset"}, events)
         self.assertEqual(save.await_args_list[-1].kwargs["content"], "Answer")
         self.assertEqual(events[-1]["content"], "Answer")
+        self.assertEqual(save.await_args_list[-1].kwargs["quote_evidence"], quotes)
+        self.assertEqual(events[-1]["quote_evidence"], quotes)
+
+        from app.api.routes.chat.schemas import MessageSchema
+        history_message = MessageSchema(id="m1", role="assistant", content="Answer",
+                                        created_at="2026-11-10T12:00:00Z", quote_evidence=quotes)
+        self.assertEqual(history_message.model_dump(mode="json")["quote_evidence"], quotes)
 
 
 if __name__ == "__main__":

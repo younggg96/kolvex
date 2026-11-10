@@ -38,6 +38,8 @@ export function ChatWelcome({
   isLoading = false,
   activeSources,
   onToggleSource,
+  activeSkills,
+  onToggleSkill,
   selectedModel,
   onSelectModel,
   availableProviders,
@@ -108,6 +110,8 @@ export function ChatWelcome({
       appearance={compact ? "inline" : dock ? "docked" : "panel"}
       activeSources={activeSources}
       onToggleSource={onToggleSource}
+      activeSkills={activeSkills}
+      onToggleSkill={onToggleSkill}
       showSourceToggle={!dock}
       showModelSelector={!!onSelectModel}
       selectedModel={selectedModel}

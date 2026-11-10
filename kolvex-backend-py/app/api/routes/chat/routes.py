@@ -320,6 +320,8 @@ async def send_message(
     context = await turn_context(current_user_id, conversation_id, request.context)
 
     # 4. 运行 Agent（传入模型、数据源和用户 API keys）
+    quotes = []
+    revenues = []
     try:
         ai_response_text = await run_agent(
             messages=attach_page_evidence(history, context),
@@ -327,6 +329,9 @@ async def send_message(
             conversation_id=conversation_id,
             model_id=request.model,
             sources=request.sources,
+            skills=request.skills,
+            quote_evidence=quotes,
+            revenue_evidence=revenues,
             user_api_keys=user_api_keys or None,
         )
     except Exception as e:
@@ -339,6 +344,8 @@ async def send_message(
         conversation_id=conversation_id,
         role="assistant",
         content=ai_response_text,
+        quote_evidence=[quote.model_dump(mode="json") for quote in quotes],
+        revenue_evidence=[revenue.model_dump(mode="json") for revenue in revenues],
     )
 
     if not ai_msg:
@@ -423,6 +430,7 @@ async def stream_message(
                 conversation_id=conversation_id,
                 model_id=request.model,
                 sources=request.sources,
+                skills=request.skills,
                 user_api_keys=user_api_keys or None,
             ):
                 event_type = event.get("type", "")
@@ -449,13 +457,28 @@ async def stream_message(
                 elif event_type == "done":
                     # 保存完整回复
                     if full_response.strip():
+                        quotes = event.get("quote_evidence") or []
+                        revenues = event.get("revenue_evidence") or []
                         ai_msg = await save_message(
                             user_id=current_user_id,
                             conversation_id=conversation_id,
                             role="assistant",
                             content=full_response,
+                            quote_evidence=quotes,
+                            revenue_evidence=revenues,
                         )
-                        yield f"data: {json.dumps({'type': 'done', 'message_id': ai_msg['id'] if ai_msg else None, 'content': full_response, 'created_at': ai_msg.get('created_at') if ai_msg else None})}\n\n"
+                        if not ai_msg:
+                            yield f"data: {json.dumps({'type': 'error', 'content': 'Unable to save the assistant response.'})}\n\n"
+                            return
+                        done = {
+                            "type": "done",
+                            "message_id": ai_msg["id"],
+                            "content": full_response,
+                            "created_at": ai_msg.get("created_at"),
+                            "quote_evidence": quotes,
+                            "revenue_evidence": revenues,
+                        }
+                        yield f"data: {json.dumps(done)}\n\n"
                     else:
                         yield f"data: {json.dumps({'type': 'done', 'message_id': None})}\n\n"
 

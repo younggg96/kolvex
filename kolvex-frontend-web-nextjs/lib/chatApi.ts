@@ -9,11 +9,32 @@ const API_PREFIX = "/api/chat-history";
 
 // ===== Types =====
 
+export interface QuoteEvidence {
+  symbol: string;
+  price: number;
+  currency: string | null;
+  source: string;
+  quoted_at: string | null;
+}
+
+export interface RevenueEvidence {
+  symbol: string;
+  value: number;
+  currency: string;
+  period_kind: "quarterly" | "annual";
+  period_start: string;
+  period_end: string;
+  filed_on: string;
+  source_url: string;
+}
+
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant" | "system";
   content: string;
   created_at: string;
+  quote_evidence?: QuoteEvidence[] | null;
+  revenue_evidence?: RevenueEvidence[] | null;
 }
 
 export interface ChatConversation {
@@ -189,6 +210,8 @@ export interface AgentStreamEvent {
   tool?: string;
   stage?: "routing" | "planning" | "writing" | string;
   message_id?: string;
+  quote_evidence?: QuoteEvidence[];
+  revenue_evidence?: RevenueEvidence[];
   created_at?: string;
 }
 
@@ -200,6 +223,7 @@ export interface AgentRequestOptions {
   model?: string;
   /** Active data sources: "web", "portfolio", "plaid" */
   sources?: string[];
+  skills?: string[];
   /** Page evidence for this turn. The backend does not store it as the user message. */
   context?: string;
 }
@@ -224,6 +248,7 @@ export async function sendAgentMessage(
         content,
         model: options?.model || undefined,
         sources: options?.sources || undefined,
+        skills: options?.skills,
         context: options?.context || undefined,
       }),
     }
@@ -256,6 +281,7 @@ export async function streamAgentMessage(
         content,
         model: options?.model || undefined,
         sources: options?.sources || undefined,
+        skills: options?.skills,
         context: options?.context || undefined,
       }),
       signal,

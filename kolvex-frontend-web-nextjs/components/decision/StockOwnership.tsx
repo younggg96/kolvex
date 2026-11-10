@@ -1,5 +1,6 @@
 "use client";
 
+import CongressTrades from "@/components/congress/CongressTrades";
 import { DataTableSkeleton } from "@/components/decision/StockTabSkeletons";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
@@ -24,6 +25,19 @@ export default function StockOwnership({ symbol }: { symbol: string }) {
   return (
     <div className="space-y-6">
       <Insiders symbol={symbol} />
+      <section aria-labelledby="stock-congress-title" className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-x-4">
+          <h2 id="stock-congress-title" className="text-lg font-semibold">
+            {c("Recent Congress trades", "近期国会议员交易")}
+          </h2>
+          <Link href={`/dashboard/congress-trades?ticker=${encodeURIComponent(symbol)}`}
+            className="inline-flex min-h-10 items-center gap-1 text-sm font-medium underline-offset-4 hover:underline focus-visible:outline-none focus-visible:underline">
+            {c("All disclosures for this stock", "查看该股票的全部披露")}
+            <ChevronRight className="h-4 w-4" aria-hidden="true" />
+          </Link>
+        </div>
+        <CongressTrades filters={`ticker=${encodeURIComponent(symbol)}`} />
+      </section>
       <Link
         href="/dashboard/superinvestors"
         className="inline-flex min-h-10 items-center gap-1 text-sm font-medium underline-offset-4 hover:underline focus-visible:outline-none focus-visible:underline"

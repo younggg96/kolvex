@@ -73,7 +73,7 @@ export default function ChartSection({
             <DialogTitle className="text-base font-semibold">{label}</DialogTitle>
             <DialogDescription className="sr-only">{typeof summary === "string" ? summary : label}</DialogDescription>
             <DialogClose asChild>
-              <Button type="button" variant="ghost" size="icon" className="-mr-2 ml-auto min-h-11 min-w-11" aria-label={closeLabel}>
+              <Button type="button" variant="icon" size="icon" className="-mr-2 ml-auto min-h-11 min-w-11" aria-label={closeLabel}>
                 <X className="h-4 w-4" aria-hidden="true" />
               </Button>
             </DialogClose>

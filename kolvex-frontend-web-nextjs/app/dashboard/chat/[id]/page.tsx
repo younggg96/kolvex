@@ -50,6 +50,7 @@ export default function ChatPage() {
         conversationId={conversationId}
         firstMessage={pendingMessage || firstMessage}
         initialSources={initialSources}
+        initialSkills={searchParams.get("skills") ?? undefined}
         initialModel={initialModel}
         onConversationChange={handleConversationChange}
       />

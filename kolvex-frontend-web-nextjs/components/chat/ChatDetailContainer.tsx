@@ -12,6 +12,8 @@ import {
   readAgentStream,
   streamAgentMessage,
   type AgentStreamEvent,
+  type QuoteEvidence,
+  type RevenueEvidence,
 } from "@/lib/chatApi";
 import type {
   AgentStatus,
@@ -19,6 +21,7 @@ import type {
   SearchSource,
   ToolStatus,
 } from "./types";
+import { readChatSkills, toggleChatSkill } from "./chatSkills";
 import { TOOL_LABELS as toolLabels } from "./types";
 import {
   evidenceStorageKey,
@@ -92,6 +95,7 @@ interface ChatDetailContainerProps {
   firstMessage?: string;
   /** Initial sources from welcome page (comma-separated in URL) */
   initialSources?: string;
+  initialSkills?: string;
   /** Initial model from welcome page */
   initialModel?: string;
   onConversationChange?: (
@@ -111,6 +115,7 @@ export function ChatDetailContainer({
   inputAction,
   firstMessage,
   initialSources,
+  initialSkills,
   initialModel,
   onConversationChange,
 }: ChatDetailContainerProps) {
@@ -136,8 +141,11 @@ export function ChatDetailContainer({
     return DEFAULT_SOURCES;
   });
 
+  const [activeSkills, setActiveSkills] = useState(() => readChatSkills(conversationId, initialSkills));
   const [isLoading, setIsLoading] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
+  const [streamingRevenueEvidence, setStreamingRevenueEvidence] = useState<RevenueEvidence[]>([]);
+  const [streamingQuoteEvidence, setStreamingQuoteEvidence] = useState<QuoteEvidence[]>([]);
   const [pendingUserMessage, setPendingUserMessage] = useState("");
   const [agentStatus, setAgentStatus] = useState<AgentStatus | null>(null);
   const [streamError, setStreamError] = useState<string | null>(null);
@@ -182,6 +190,12 @@ export function ChatDetailContainer({
   useEffect(() => {
     saveSources(conversationId, activeSources);
   }, [conversationId, activeSources]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(`kolvex:skills:${conversationId}`, JSON.stringify(activeSkills));
+    } catch {}
+  }, [conversationId, activeSkills]);
 
   useEffect(() => {
     saveModel(conversationId, selectedModel);
@@ -252,6 +266,8 @@ export function ChatDetailContainer({
 
           case "done":
             completed = true;
+            if (event.quote_evidence?.length) setStreamingQuoteEvidence(event.quote_evidence);
+            if (event.revenue_evidence?.length) setStreamingRevenueEvidence(event.revenue_evidence);
             break;
 
           case "error":
@@ -382,6 +398,7 @@ export function ChatDetailContainer({
           {
             model: selectedModel,
             sources: activeSources,
+            skills: activeSkills,
             context: pageEvidence || undefined,
           },
           controller.signal
@@ -411,6 +428,8 @@ export function ChatDetailContainer({
           setPendingUserMessage("");
           messageIdsBeforePendingRef.current.clear();
           setStreamingContent("");
+          setStreamingQuoteEvidence([]);
+          setStreamingRevenueEvidence([]);
           setActiveTools([]);
           setAgentStatus(null);
         }
@@ -423,6 +442,7 @@ export function ChatDetailContainer({
       selectConversation,
       selectedModel,
       activeSources,
+      activeSkills,
       messages,
       pageEvidence,
     ]
@@ -596,6 +616,8 @@ export function ChatDetailContainer({
             pendingMessageWasPersisted ? undefined : pendingUserMessage
           }
           streamingContent={streamingContent}
+          streamingQuoteEvidence={streamingQuoteEvidence}
+          streamingRevenueEvidence={streamingRevenueEvidence}
           isLoading={isLoading}
           messagesEndRef={messagesEndRef}
           activeTools={activeTools}
@@ -632,6 +654,8 @@ export function ChatDetailContainer({
               placeholder={t("chat.input.placeholder")}
               activeSources={activeSources}
               onToggleSource={toggleSource}
+              activeSkills={activeSkills}
+              onToggleSkill={(skill) => setActiveSkills((skills) => toggleChatSkill(skills, skill))}
               showSourceToggle={false}
               showModelSelector={true}
               selectedModel={selectedModel}

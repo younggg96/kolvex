@@ -6,6 +6,9 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 
+from app.agent.quote_evidence import QuoteEvidence
+from app.agent.revenue_evidence import RevenueEvidence
+
 
 class MessageSchema(BaseModel):
     """消息模型"""
@@ -13,6 +16,8 @@ class MessageSchema(BaseModel):
     role: str
     content: str
     created_at: datetime
+    quote_evidence: list[QuoteEvidence] | None = None
+    revenue_evidence: list[RevenueEvidence] | None = None
 
 
 class ConversationSchema(BaseModel):
@@ -59,6 +64,10 @@ class SendMessageRequest(BaseModel):
         default=None,
         description="Active data sources: web, portfolio, plaid. If not set, all sources are available."
     )
+    skills: Optional[List[str]] = Field(
+        default=None,
+        description="Enabled chat skills. Omit to enable all; an empty list disables all skill tools.",
+    )
     context: Optional[str] = Field(
         default=None,
         max_length=100000,
@@ -73,6 +82,8 @@ class MessageResponse(BaseModel):
     role: str
     content: str
     created_at: datetime
+    quote_evidence: list[QuoteEvidence] | None = None
+    revenue_evidence: list[RevenueEvidence] | None = None
 
 
 class AgentMessageResponse(BaseModel):

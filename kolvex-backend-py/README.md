@@ -203,3 +203,22 @@ and public cache hits/misses/hit ratios. PostgREST table/RPC traffic is measured
 separately from API output; do not add both as Supabase egress. Aggregate by
 `source`, `endpoint`, and time across processes. Query strings, user IDs,
 credentials and response content are excluded from these metrics.
+
+### Congress trades
+
+Apply the `congress_trade_disclosures` Supabase migration to your development
+database. For a one-off import, run this from the backend directory:
+
+```bash
+python -c 'from app.services.congress_trades import sync_congress_trades; print(sync_congress_trades())'
+```
+
+The CongressInvests free feed requires no API key. The importer reads the
+provider's paginated snapshot and keeps usable disclosures filed in the past
+365 days. For ongoing development, set `CONGRESS_TRADES_SYNC_ENABLED=true` and
+restart the backend to import on startup and refresh daily. A failed refresh
+preserves the last successful snapshot and retries in an hour.
+
+Signed-in users can open `/dashboard/congress-trades` or the ownership tab on
+a stock page to see reported ranges and links to original filings when
+available. Check data-use terms before publishing the feed commercially.

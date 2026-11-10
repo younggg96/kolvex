@@ -80,6 +80,22 @@ function AppContent() {
               options={{ title: text("观点动态") }}
             />
             <Stack.Screen name="macro" options={{ title: text("宏观指标") }} />
+            <Stack.Screen
+              name="paper-trading"
+              options={{ title: text("虚拟交易") }}
+            />
+            <Stack.Screen
+              name="options-activity"
+              options={{ title: text("期权异动") }}
+            />
+            <Stack.Screen
+              name="superinvestors"
+              options={{ title: text("超级投资者") }}
+            />
+            <Stack.Screen
+              name="superinvestor/[manager]"
+              options={{ title: text("13F 持仓") }}
+            />
             <Stack.Screen name="account" options={{ title: text("账户") }} />
             <Stack.Screen name="briefs" options={{ title: text("日报") }} />
             <Stack.Screen

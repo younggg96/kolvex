@@ -25,6 +25,7 @@ import {
 } from "../../components/DrawingEditor";
 import { useAuth } from "../../state/Auth";
 import { TechnicalAI } from "../../components/TechnicalAI";
+import { KronosForecast } from "../../components/KronosForecast";
 export default function Technical() {
   const p = useLocalSearchParams<{ symbol: string }>();
   const symbol = (p.symbol || "").toUpperCase();
@@ -230,6 +231,7 @@ function Workspace({ symbol }: { symbol: string }) {
           interval={interval}
           onResult={setAnalysis}
         />
+        <KronosForecast symbol={symbol} />
       </AuthGate>
     </Page>
   );

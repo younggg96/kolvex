@@ -44,6 +44,18 @@ export default function More() {
           title="创作者、视频与股票目录"
           onPress={() => router.push("/creators")}
         />
+        <NavRow
+          title="虚拟交易"
+          onPress={() => router.push("/paper-trading")}
+        />
+        <NavRow
+          title="期权异动"
+          onPress={() => router.push("/options-activity")}
+        />
+        <NavRow
+          title="超级投资者"
+          onPress={() => router.push("/superinvestors")}
+        />
         <NavRow title="宏观指标" onPress={() => router.push("/macro")} />
         <NavRow
           title="市场事件日历"

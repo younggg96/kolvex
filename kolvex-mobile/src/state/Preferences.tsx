@@ -11,7 +11,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { apiRequest } from "../lib/http";
 export type Appearance = "LIGHT" | "DARK" | "SYSTEM";
 type Preferences = { theme: Appearance; locale: "zh" | "en" };
-const initial: Preferences = { theme: "SYSTEM", locale: "zh" };
+// Dark first, as the Web (`defaultTheme="dark"`); a saved choice still wins.
+const initial: Preferences = { theme: "DARK", locale: "zh" };
 const Context = createContext({
   ...initial,
   error: undefined as string | undefined,
