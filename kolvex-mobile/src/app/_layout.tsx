@@ -98,14 +98,6 @@ function AppContent() {
               options={{ title: text("页面未找到") }}
             />
             <Stack.Screen
-              name="workspaces"
-              options={{ title: text("工作区") }}
-            />
-            <Stack.Screen
-              name="workspace/[id]"
-              options={{ title: text("工作区") }}
-            />
-            <Stack.Screen
               name="congress-trades"
               options={{ title: text("国会议员交易") }}
             />
@@ -118,16 +110,10 @@ function AppContent() {
               options={{ title: text("13F 持仓") }}
             />
             <Stack.Screen name="account" options={{ title: text("账户") }} />
-            <Stack.Screen name="briefs" options={{ title: text("日报") }} />
-            <Stack.Screen
-              name="brief/[id]"
-              options={{ title: text("日报详情") }}
-            />
             <Stack.Screen
               name="report/[id]"
               options={{ title: text("研究报告") }}
             />
-            <Stack.Screen name="news" options={{ title: text("新闻终端") }} />
             <Stack.Screen
               name="portfolio"
               options={{ title: text("投资组合") }}

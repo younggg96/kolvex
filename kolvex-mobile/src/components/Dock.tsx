@@ -22,7 +22,14 @@ import { useText } from "../lib/i18n";
 import { useTheme } from "../lib/theme";
 import { useResource } from "../lib/useResource";
 import { useAuth } from "../state/Auth";
-import { Copy, Glass } from "./UI";
+import GlassDockRow, { glassDockAvailable } from "./native/GlassDockRow";
+import { Copy, Glass, useLiquidGlass } from "./UI";
+
+/** The iOS SF Symbol name of an icon. */
+const symbolOf = (icon: SymbolName) =>
+  typeof icon === "object" && icon && "ios" in icon
+    ? String(icon.ios)
+    : "circle";
 
 type SymbolName = ComponentProps<typeof SymbolView>["name"];
 type DockProps = Parameters<
@@ -80,11 +87,13 @@ const MENU: {
   },
   {
     href: "/briefs",
+    route: "briefs",
     label: "日报",
     icon: { ios: "newspaper", android: "newspaper", web: "newspaper" },
   },
   {
     href: "/news",
+    route: "news",
     label: "新闻",
     icon: {
       ios: "dot.radiowaves.left.and.right",
@@ -94,6 +103,7 @@ const MENU: {
   },
   {
     href: "/workspaces",
+    route: "workspaces",
     label: "工作区",
     icon: { ios: "folder", android: "folder", web: "folder" },
   },
@@ -221,6 +231,7 @@ function useDockSlot() {
 /** Floating glass dock matching the Web phone navigation in components/layout/MobileTabBar.tsx. */
 export function Dock({ state }: DockProps) {
   const t = useTheme();
+  const liquidGlass = useLiquidGlass();
   const text = useText();
   const insets = useSafeAreaInsets();
   const auth = useAuth();
@@ -249,6 +260,8 @@ export function Dock({ state }: DockProps) {
     user ? profile(user, signal) : Promise.resolve(null),
   );
   const current = state.routes[state.index]?.name;
+  // iOS draws the buttons in SwiftUI so the selection morphs between tabs in Liquid Glass.
+  const nativeRow = glassDockAvailable && liquidGlass;
 
   function toggle(next: boolean) {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -367,7 +380,50 @@ export function Dock({ state }: DockProps) {
                 </View>
               </View>
             )}
-            {search ? (
+            {nativeRow ? (
+              <GlassDockRow
+                items={
+                  search
+                    ? [
+                        {
+                          key: "back",
+                          label: "返回",
+                          symbol: symbolOf(BACK_ICON),
+                          highlighted: false,
+                        },
+                        {
+                          key: "menu",
+                          label: "打开导航菜单",
+                          symbol: symbolOf(MENU_ICON),
+                          highlighted: open,
+                          expanded: open,
+                        },
+                      ]
+                    : [
+                        ...TABS.map((tab) => ({
+                          key: tab.route,
+                          label: tab.label,
+                          symbol: symbolOf(tab.icon),
+                          selected: tab.route === current,
+                          highlighted: tab.route === current && !open,
+                        })),
+                        {
+                          key: "menu",
+                          label: "打开导航菜单",
+                          symbol: symbolOf(MENU_ICON),
+                          highlighted: open,
+                          expanded: open,
+                        },
+                      ]
+                }
+                onPress={(key) => {
+                  if (key === "menu") toggle(!open);
+                  else if (key === "back") {
+                    if (search && !search.onBack()) search.onCancel();
+                  } else openTab(key);
+                }}
+              />
+            ) : search ? (
               <View style={{ flexDirection: "row", height: 46 }}>
                 <DockButton
                   label="返回"

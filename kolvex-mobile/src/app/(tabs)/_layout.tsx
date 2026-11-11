@@ -21,6 +21,11 @@ export default function TabsLayout() {
         <Tabs.Screen name="opinions" />
         <Tabs.Screen name="search" />
         <Tabs.Screen name="watchlist" />
+        <Tabs.Screen name="briefs" />
+        <Tabs.Screen name="brief/[id]" />
+        <Tabs.Screen name="news" />
+        <Tabs.Screen name="workspaces" />
+        <Tabs.Screen name="workspace/[id]" />
         <Tabs.Screen name="research" />
         <Tabs.Screen name="settings" />
       </Tabs>

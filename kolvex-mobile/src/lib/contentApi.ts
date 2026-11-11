@@ -1,4 +1,4 @@
-import { apiRequest } from "./http";
+import { ApiError, apiRequest } from "./http";
 import { demoMode } from "./config";
 import type {
   BriefSummary,
@@ -52,11 +52,17 @@ export async function briefs(
   requireList(result.items);
   return result;
 }
-export const brief = (id: string, user: string, signal: AbortSignal) =>
-  apiRequest<{ payload: DailyBrief; revision: string }>(
-    `/briefs/${encoded(id)}`,
-    { signal, authenticated: true, expectedUser: user },
-  );
+export async function brief(id: string, user: string, signal: AbortSignal) {
+  try {
+    return await apiRequest<{ payload: DailyBrief; revision: string }>(
+      `/briefs/${encoded(id)}`,
+      { signal, authenticated: true, expectedUser: user },
+    );
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
+  }
+}
 export async function news(signal: AbortSignal, symbol?: string) {
   if (demoMode)
     return {
@@ -170,6 +176,17 @@ export const stockFacts = (symbol: string, signal: AbortSignal) =>
 
 export const deleteAllConversations = (user: string, signal: AbortSignal) =>
   apiRequest<unknown>("/chat/conversations", {
+    method: "DELETE",
+    signal,
+    authenticated: true,
+    expectedUser: user,
+  });
+export const deleteConversation = (
+  id: string,
+  user: string,
+  signal: AbortSignal,
+) =>
+  apiRequest<unknown>(`/chat/conversations/${encoded(id)}`, {
     method: "DELETE",
     signal,
     authenticated: true,

@@ -8,28 +8,32 @@ import {
   STOCK_SECTORS,
   currentMarketDiscovery,
   fetchMarketDiscovery,
-  type DiscoveryStock,
 } from "../lib/marketDiscovery";
+import { SymbolView } from "expo-symbols";
+import { quote } from "../lib/api";
 import {
   BUZZ_SOURCES,
   buzzSymbols,
   loadBuzz,
+  type BuzzData,
   type BuzzSource,
 } from "../lib/creatorBuzz";
 import { useTheme } from "../lib/theme";
 import { useResource } from "../lib/useResource";
 import { usePreferences } from "../state/Preferences";
-import { Filters } from "./Content";
-import { QuoteRow } from "./Quotes";
+import { CompanyLogo } from "./CompanyLogo";
+import { MiniTrend, type RangeKey } from "./MarketCards";
+import { Sheet } from "./PaperTrading";
 import { CardsSkeleton } from "./Skeletons";
 import {
   Button,
+  Chip,
   Copy,
   Empty,
   Failure,
   Glass,
   LoadingStatus,
-  Section,
+  phone,
   styles,
 } from "./UI";
 
@@ -67,13 +71,109 @@ const EMPTY: Record<Scope, string> = {
   core: "这个列表暂时没有股票。",
 };
 
-export function StockWatch({ revision }: { revision: number }) {
+const SCOPES: [Scope, string][] = [
+  ["movers", "今日异动"],
+  ["active", "放量活跃"],
+  ["creators", "博主热议"],
+  ["core", "常看美股"],
+];
+
+/** The Web's FilterSheetGroup: a small label over wrapping chips. */
+function FilterGroup({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: readonly (readonly [string, string])[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <View style={{ gap: 8 }}>
+      <Copy size={12} muted>
+        {label}
+      </Copy>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+        {options.map(([key, name]) => (
+          <Chip
+            key={key}
+            size="sm"
+            selected={key === value}
+            onPress={() => onChange(key)}
+          >
+            {name}
+          </Chip>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function RoundIcon({
+  icon,
+  label,
+  onPress,
+  dot = false,
+}: {
+  icon: { ios: string; android: string; web: string };
+  label: string;
+  onPress: () => void;
+  dot?: boolean;
+}) {
+  const t = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      hitSlop={4}
+      style={({ pressed }) => ({
+        width: phone(40),
+        height: phone(40),
+        borderRadius: 999,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: pressed ? t.wash : "transparent",
+      })}
+    >
+      <SymbolView name={icon as never} size={15} tintColor={t.secondary} />
+      {dot && (
+        <View
+          style={{
+            position: "absolute",
+            top: 2,
+            right: 2,
+            width: 9,
+            height: 9,
+            borderRadius: 5,
+            borderWidth: 2,
+            borderColor: t.background,
+            backgroundColor: t.text,
+          }}
+        />
+      )}
+    </Pressable>
+  );
+}
+
+export function StockWatch({
+  revision,
+  range = "1D",
+}: {
+  revision: number;
+  range?: RangeKey;
+}) {
+  const t = useTheme();
+  const { locale } = usePreferences();
   const [scope, setScope] = useState<Scope>("movers");
   const [sort, setSort] = useState("move");
   const [sector, setSector] = useState("all");
   const [source, setSource] = useState<BuzzSource>("all");
   const [rows, setRows] = useState(PAGE);
   const [showNotes, setShowNotes] = useState(false);
+  const [filtering, setFiltering] = useState(false);
   const changeScope = (next: string) => {
     setScope(next as Scope);
     setSort(SORTS[next as Scope][0][0]);
@@ -81,50 +181,136 @@ export function StockWatch({ revision }: { revision: number }) {
     setSource("all");
     setRows(PAGE);
   };
+  const filtered =
+    scope !== "movers" ||
+    sort !== SORTS[scope][0][0] ||
+    sector !== "all" ||
+    source !== "all";
+  const description =
+    scope === "creators" && sort === "latest"
+      ? "按原文发布时间 · 包含历史观点"
+      : scope === "creators" && source === "reddit"
+        ? "Reddit 近 24 小时股票提及 · 来自 ApeWisdom"
+        : scope === "creators" && source === "x"
+          ? "已收录 X 博主帖子中的股票代码 · 近 7 天"
+          : scope === "creators" && source === "youtube"
+            ? "近 7 天发布的观点"
+            : DESCRIPTIONS[scope];
   return (
-    <View style={{ gap: 12 }}>
+    <Glass style={{ padding: 16, gap: 10 }}>
       <View style={styles.row}>
-        <Section title="股票观察" />
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ expanded: showNotes }}
-          accessibilityLabel="名单说明"
-          onPress={() => setShowNotes((v) => !v)}
-          hitSlop={8}
+        <Copy size={20} bold>
+          股票观察
+        </Copy>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
+          <RoundIcon
+            icon={{ ios: "info.circle", android: "info", web: "info" }}
+            label="名单说明"
+            onPress={() => setShowNotes((v) => !v)}
+          />
+          <RoundIcon
+            icon={{
+              ios: "slider.horizontal.3",
+              android: "tune",
+              web: "tune",
+            }}
+            label="筛选股票"
+            dot={filtered}
+            onPress={() => setFiltering(true)}
+          />
+        </View>
+      </View>
+      {showNotes && (
+        <View
           style={{
-            minWidth: 44,
-            minHeight: 44,
-            alignItems: "center",
-            justifyContent: "center",
+            gap: 6,
+            padding: 12,
+            borderRadius: phone(16),
+            backgroundColor: t.wash,
           }}
         >
-          <Copy muted localize={false}>
-            ⓘ
-          </Copy>
-        </Pressable>
-      </View>
-      <Filters
-        values={[
-          ["movers", "今日异动"],
-          ["active", "放量活跃"],
-          ["creators", "博主热议"],
-          ["core", "常看美股"],
-        ]}
-        value={scope}
-        onChange={changeScope}
-      />
-      {scope === "core" ? (
-        <Filters
-          values={STOCK_SECTORS.map((item) => [item.key, item.zh] as const)}
-          value={sector}
-          onChange={(value) => {
-            setSector(value);
-            setRows(PAGE);
-          }}
+          <Copy size={12}>{description}</Copy>
+          {(scope === "movers" || scope === "active") && (
+            <Copy size={12} muted>
+              来自 Yahoo Finance
+              筛选候选，并非全市场完整排名。范围为美元美股，股价至少5美元、市值至少20亿美元、当日成交量至少2万股；每个来源榜单最多100只，页面可见时每分钟更新。右侧报价单独刷新。
+            </Copy>
+          )}
+          {scope === "active" && (
+            <Copy size={12} muted>
+              放量倍数 = 当日累计成交量 /
+              3个月全天日均成交量，不是与平常同一时刻比较；开盘初期可能暂无符合条件的股票。
+            </Copy>
+          )}
+        </View>
+      )}
+      {scope === "creators" ? (
+        <BuzzList
+          source={source}
+          sort={sort === "latest" && source !== "reddit" ? "latest" : "heat"}
+          rows={rows}
+          range={range}
+          revision={revision}
+          more={() => setRows((v) => v + PAGE)}
+        />
+      ) : scope === "core" ? (
+        <CoreList
+          sector={sector}
+          rows={rows}
+          range={range}
+          revision={revision}
+          more={() => setRows((v) => v + PAGE)}
         />
       ) : (
-        <Filters
-          values={
+        <DiscoveryList
+          scope={scope}
+          sort={sort}
+          rows={rows}
+          range={range}
+          revision={revision}
+          more={() => setRows((v) => v + PAGE)}
+        />
+      )}
+      <Sheet
+        title="筛选股票"
+        visible={filtering}
+        onClose={() => setFiltering(false)}
+      >
+        <FilterGroup
+          label="名单"
+          options={SCOPES}
+          value={scope}
+          onChange={changeScope}
+        />
+        {scope === "core" && (
+          <FilterGroup
+            label="行业"
+            options={STOCK_SECTORS.map(
+              (item) => [item.key, locale === "en" ? item.en : item.zh] as const,
+            )}
+            value={sector}
+            onChange={(value) => {
+              setSector(value);
+              setRows(PAGE);
+            }}
+          />
+        )}
+        {scope === "creators" && (
+          <FilterGroup
+            label="来源"
+            options={BUZZ_SOURCES}
+            value={source}
+            onChange={(value) => {
+              setSource(value as BuzzSource);
+              // Reddit rankings carry no per-post dates, so there is no "latest" order for them.
+              if (value === "reddit") setSort("heat");
+              setRows(PAGE);
+            }}
+          />
+        )}
+        <FilterGroup
+          label="排序"
+          options={
             scope === "creators" && source === "reddit"
               ? SORTS.creators.slice(0, 1)
               : SORTS[scope]
@@ -135,69 +321,121 @@ export function StockWatch({ revision }: { revision: number }) {
             setRows(PAGE);
           }}
         />
-      )}
-      {scope === "creators" && (
-        <Filters
-          values={BUZZ_SOURCES}
-          value={source}
-          onChange={(value) => {
-            setSource(value as BuzzSource);
-            // Reddit rankings carry no per-post dates, so there is no "latest" order for them.
-            if (value === "reddit") setSort("heat");
-            setRows(PAGE);
-          }}
-        />
-      )}
-      <Copy size={12} muted>
-        {scope === "creators" && sort === "latest"
-          ? "按原文发布时间 · 包含历史观点"
-          : scope === "creators" && source === "reddit"
-            ? "Reddit 近 24 小时股票提及 · 来自 ApeWisdom"
-            : scope === "creators" && source === "x"
-              ? "已收录 X 博主帖子中的股票代码 · 近 7 天"
-              : scope === "creators" && source === "youtube"
-                ? "近 7 天发布的观点"
-                : DESCRIPTIONS[scope]}
-      </Copy>
-      {showNotes && (scope === "movers" || scope === "active") && (
-        <Glass style={{ padding: 16, gap: 8 }}>
-          <Copy size={12} muted>
-            来自 Yahoo Finance
-            筛选候选，并非全市场完整排名。范围为美元美股，股价至少5美元、市值至少20亿美元、当日成交量至少2万股；每个来源榜单最多100只，页面可见时每分钟更新。右侧报价单独刷新。
-          </Copy>
-          {scope === "active" && (
-            <Copy size={12} muted>
-              放量倍数 = 当日累计成交量 /
-              3个月全天日均成交量，不是与平常同一时刻比较；开盘初期可能暂无符合条件的股票。
-            </Copy>
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          {filtered && (
+            <Button onPress={() => changeScope("movers")}>重置</Button>
           )}
-        </Glass>
-      )}
-      {scope === "creators" ? (
-        <BuzzList
-          source={source}
-          sort={sort === "latest" && source !== "reddit" ? "latest" : "heat"}
-          rows={rows}
+          <View style={{ flex: 1 }}>
+            <Button selected onPress={() => setFiltering(false)}>
+              完成
+            </Button>
+          </View>
+        </View>
+      </Sheet>
+    </Glass>
+  );
+}
+
+/** The Web's observation row: logo, ticker and tag, name, trend, price and change. */
+function WatchRow({
+  symbol,
+  name,
+  tag,
+  price,
+  changePercent,
+  range,
+  revision,
+  first,
+}: {
+  symbol: string;
+  name?: string;
+  tag?: string | null;
+  price?: number | null;
+  changePercent?: number | null;
+  range: RangeKey;
+  revision: number;
+  first: boolean;
+}) {
+  const t = useTheme();
+  const { locale } = usePreferences();
+  const known = price != null;
+  const q = useResource(`watch-quote:${symbol}:${revision}`, (signal) =>
+    known ? Promise.resolve(null) : quote(symbol, signal),
+  );
+  const value = price ?? q.data?.current_price ?? null;
+  const move = known ? changePercent : (q.data?.change_percent ?? null);
+  const region = locale === "en" ? "en-US" : "zh-CN";
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${symbol} ${name ?? ""}`}
+      onPress={() => router.push(`/stock/${encodeURIComponent(symbol)}`)}
+      style={({ pressed }) => ({
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+        minHeight: 56,
+        paddingVertical: 8,
+        borderTopWidth: first ? 0 : 1,
+        borderColor: t.border,
+        opacity: pressed ? 0.6 : 1,
+      })}
+    >
+      <CompanyLogo symbol={symbol} size={phone(32)} />
+      <View style={{ flex: 1, minWidth: 0, gap: 1 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+          <Copy size={14} bold localize={false}>
+            {symbol}
+          </Copy>
+          {!!tag && (
+            <View
+              style={{
+                paddingHorizontal: phone(6),
+                paddingVertical: 1,
+                borderRadius: 999,
+                backgroundColor: t.wash,
+                flexShrink: 1,
+              }}
+            >
+              <Copy size={11} muted lines={1}>
+                {tag}
+              </Copy>
+            </View>
+          )}
+        </View>
+        <Copy size={11} muted lines={1} localize={false}>
+          {name ?? q.data?.name ?? ""}
+        </Copy>
+      </View>
+      <View style={{ width: phone(60) }}>
+        <MiniTrend
+          symbol={symbol}
+          range={range}
           revision={revision}
-          more={() => setRows((v) => v + PAGE)}
+          positive={range === "1D" && move != null ? move >= 0 : undefined}
         />
-      ) : scope === "core" ? (
-        <CoreList
-          sector={sector}
-          rows={rows}
-          revision={revision}
-          more={() => setRows((v) => v + PAGE)}
-        />
-      ) : (
-        <DiscoveryList
-          scope={scope}
-          sort={sort}
-          rows={rows}
-          revision={revision}
-          more={() => setRows((v) => v + PAGE)}
-        />
-      )}
-    </View>
+      </View>
+      <View style={{ width: phone(80), alignItems: "flex-end", gap: 1 }}>
+        <Copy size={14} bold localize={false}>
+          {value == null
+            ? "—"
+            : new Intl.NumberFormat(region, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              }).format(value)}
+        </Copy>
+        <Copy
+          size={11}
+          bold
+          localize={false}
+          color={move == null ? t.secondary : move < 0 ? t.negative : t.accent}
+        >
+          {move == null
+            ? "—"
+            : `${move > 0 ? "+" : move < 0 ? "−" : ""}${Math.abs(move).toFixed(2)}%`}
+        </Copy>
+      </View>
+    </Pressable>
   );
 }
 
@@ -205,12 +443,14 @@ function BuzzList({
   source,
   sort,
   rows,
+  range,
   revision,
   more,
 }: {
   source: BuzzSource;
   sort: "heat" | "latest";
   rows: number;
+  range: RangeKey;
   revision: number;
   more: () => void;
 }) {
@@ -263,11 +503,19 @@ function BuzzList({
           }
         />
       ) : (
-        list
-          .slice(0, rows)
-          .map((symbol) => (
-            <QuoteRow key={symbol} symbol={symbol} revision={revision} />
-          ))
+        <View>
+          {list.slice(0, rows).map((symbol, index) => (
+            <WatchRow
+              key={symbol}
+              symbol={symbol}
+              name={buzzName(data, symbol)}
+              tag={buzzTag(data, symbol, source)}
+              range={range}
+              revision={revision}
+              first={index === 0}
+            />
+          ))}
+        </View>
       )}
       {list.length > rows && <Button onPress={more}>显示更多</Button>}
     </View>
@@ -277,11 +525,13 @@ function BuzzList({
 function CoreList({
   sector,
   rows,
+  range,
   revision,
   more,
 }: {
   sector: string;
   rows: number;
+  range: RangeKey;
   revision: number;
   more: () => void;
 }) {
@@ -290,13 +540,19 @@ function CoreList({
   );
   return (
     <View style={{ gap: 8 }}>
-      {list.slice(0, rows).map((stock) => (
-        <QuoteRow
-          key={stock.symbol}
-          symbol={stock.symbol}
-          revision={revision}
-        />
-      ))}
+      <View>
+        {list.slice(0, rows).map((stock, index) => (
+          <WatchRow
+            key={stock.symbol}
+            symbol={stock.symbol}
+            name={stock.name}
+            tag={STOCK_SECTORS.find((item) => item.key === stock.sector)?.zh}
+            range={range}
+            revision={revision}
+            first={index === 0}
+          />
+        ))}
+      </View>
       {list.length > rows && <Button onPress={more}>显示更多</Button>}
     </View>
   );
@@ -306,12 +562,14 @@ function DiscoveryList({
   scope,
   sort,
   rows,
+  range,
   revision,
   more,
 }: {
   scope: "movers" | "active";
   sort: string;
   rows: number;
+  range: RangeKey;
   revision: number;
   more: () => void;
 }) {
@@ -363,16 +621,25 @@ function DiscoveryList({
       {!items.length ? (
         <Empty title="暂无内容" message={EMPTY[scope]} />
       ) : (
-        <Glass style={{ paddingHorizontal: 16 }}>
+        <View>
           {items.slice(0, rows).map((item, index) => (
-            <DiscoveryRow
+            <WatchRow
               key={item.symbol}
-              item={item}
+              symbol={item.symbol}
+              name={item.name}
+              price={item.price}
+              changePercent={item.changePercent}
+              tag={
+                scope === "active" && item.volumeMultiple != null
+                  ? `${item.volumeMultiple.toFixed(2)}倍量`
+                  : null
+              }
+              range={range}
+              revision={revision}
               first={index === 0}
-              showVolume={scope === "active"}
             />
           ))}
-        </Glass>
+        </View>
       )}
       {items.length > rows && <Button onPress={more}>显示更多</Button>}
       {!!board.fetchedAt && <FetchedAt value={board.fetchedAt} />}
@@ -405,69 +672,26 @@ function FetchedAt({ value }: { value: string }) {
   );
 }
 
-function DiscoveryRow({
-  item,
-  first,
-  showVolume,
-}: {
-  item: DiscoveryStock;
-  first: boolean;
-  showVolume: boolean;
-}) {
-  const t = useTheme();
-  const { locale } = usePreferences();
-  const region = locale === "en" ? "en-US" : "zh-CN";
-  const price = new Intl.NumberFormat(region, {
-    style: "currency",
-    currency: "USD",
-  }).format(item.price);
-  // Hermes ignores signDisplay, so the sign is written out as on the Web.
-  const change = `${item.changePercent > 0 ? "+" : ""}${new Intl.NumberFormat(
-    region,
-    { style: "percent", maximumFractionDigits: 2 },
-  ).format(item.changePercent / 100)}`;
+function buzzName(data: BuzzData, symbol: string) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`${item.symbol} ${item.name}`}
-      onPress={() => router.push(`/stock/${encodeURIComponent(item.symbol)}`)}
-      style={({ pressed }) => [
-        styles.row,
-        {
-          minHeight: 60,
-          paddingVertical: 10,
-          borderTopWidth: first ? 0 : 1,
-          borderColor: t.border,
-          opacity: pressed ? 0.6 : 1,
-        },
-      ]}
-    >
-      <View style={{ flex: 1, gap: 2 }}>
-        <Copy bold localize={false}>
-          {item.symbol}
-        </Copy>
-        <Copy size={12} muted lines={1} localize={false}>
-          {item.name}
-        </Copy>
-      </View>
-      <View style={{ alignItems: "flex-end", gap: 2 }}>
-        <Copy size={14} bold localize={false}>
-          {price}
-        </Copy>
-        <Copy
-          size={12}
-          bold
-          localize={false}
-          color={item.changePercent < 0 ? t.negative : t.accent}
-        >
-          {change}
-        </Copy>
-        {showVolume && item.volumeMultiple != null && (
-          <Copy size={12} muted localize={false}>
-            {`${item.volumeMultiple.toFixed(1)}×`}
-          </Copy>
-        )}
-      </View>
-    </Pressable>
+    data.youtube?.find((row) => row.ticker === symbol)?.company_name ??
+    data.reddit?.find((row) => row.ticker === symbol)?.name
   );
+}
+
+/** The Web's stockEntryTag for creator scope: the chosen source's count comes first. */
+function buzzTag(data: BuzzData, symbol: string, source: BuzzSource) {
+  const youtube = data.youtube?.find((row) => row.ticker === symbol)
+    ?.discussion_heat?.recent;
+  const reddit = data.reddit?.find((row) => row.ticker === symbol)?.mentions;
+  const x = data.x?.find((row) => row.ticker === symbol)?.posts;
+  const tags = {
+    youtube: youtube ? `${youtube}条观点` : null,
+    reddit: reddit ? `Reddit ${reddit.toLocaleString("en-US")}` : null,
+    x: x ? `X ${x}帖` : null,
+  };
+  const keys = ["youtube", "reddit", "x"] as const;
+  const order =
+    source === "all" ? keys : [source, ...keys.filter((key) => key !== source)];
+  return order.map((key) => tags[key]).find(Boolean) ?? null;
 }

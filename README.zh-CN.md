@@ -1,0 +1,120 @@
+# Kolvex
+
+**简体中文** · [English](./README.md)
+
+Kolvex 是一个开源美股研究平台。按股票比较 YouTube 创作者的观点，查看观点日期和原视频，也可以阅读已发布的 AI 研究报告。
+
+[免登录体验 MSFT](https://kolvex.app/stocks/MSFT) · [本地运行](#本地启动) · [在 GitHub 加星](https://github.com/younggg96/kolvex)
+
+![Kolvex 市场概览，展示市场指数、股票观察和自选股](docs/images/kolvex-market-overview-zh-CN.png)
+
+本文以当前代码中的路由和服务为准。第三方服务需要配置对应凭据；代码实现不代表线上环境已经配置或通过验证。
+
+## 当前功能
+
+| 模块 | 功能 |
+| --- | --- |
+| YouTube 股票观点 | 管理员校验和导入单条或批量分析 JSON；按股票、创作者、情绪、日期筛选；股票和创作者汇总、每日观点及变化、创作者资料 |
+| X 博主内容 | 博主资料、原始推文、股票标签筛选、分页、管理员 JSON 校验与去重导入、本机每小时浏览器增量采集 |
+| 市场数据 | 单只及批量报价、历史和日内价格、公司信息、财务指标、三大财务报表、分红、分析师评级、财报信息、期权到期日及期权链 |
+| 投资组合 | 通过 Plaid 连接投资账户，同步账户、持仓和投资交易记录；公开分享、持仓可见性、隐私设置、资产及盈亏历史快照 |
+| 投资组合 AI 分析 | 使用 Ollama 分析组合风险、分散程度、持仓优缺点、调整建议和单只持仓 |
+| AI 金融助手 | 保存对话和消息、流式回复、切换模型；通过 LangGraph 调用市场数据、网页搜索、个人持仓和交易分析工具 |
+| 多智能体交易分析 | 市场、新闻、社交及基本面分析，多空辩论和风险讨论；后台运行、实时进度、历史报告、发布及撤回 |
+| 用户与管理 | Supabase Auth 注册、登录、OAuth、密码管理；用户资料、头像、主题、语言偏好、个人模型 API Key、管理员用户和数据统计 |
+
+YouTube 模块接收外部生成的分析结果，当前未提供自动抓取视频并生成观点的完整流程。交易分析输出研究报告和建议，当前没有自动下单接口。
+
+Next.js 服务端还提供后端接口代理、行情缓存、指数聚合、文本翻译、图片代理及直接连接 Ollama 的聊天接口。
+
+### AI 对话
+
+![Kolvex AI 对话中的 CRWV 研究示例，展示股价走势和基本面指标](docs/images/kolvex-ai-chat-zh-CN.png)
+
+## 项目结构与技术栈
+
+React Native 手机端位于 [`kolvex-mobile`](./kolvex-mobile/README.md)，使用 Expo、原生导航和 iOS Liquid Glass。目前已接入账户登录、云端自选、创作者内容、股票资料、日报、研究报告、新闻、AI 流式对话与已有券商持仓阅读；原生券商授权及高级图表等剩余范围见[手机端迁移清单](./kolvex-mobile/MIGRATION.md)。未配置 API 时仅显示明确标注的演示行情。
+
+```text
+kolvex/
+├── kolvex-frontend-web-nextjs/   # Next.js 14、React 18、TypeScript、Tailwind CSS
+├── kolvex-mobile/               # React Native、Expo
+└── kolvex-backend-py/            # FastAPI、Pydantic、Supabase、Redis
+    ├── app/api/routes/          # HTTP API
+    ├── app/services/            # 市场数据、Plaid、观点、聊天和分析服务
+    ├── app/agent/               # LangGraph 金融助手与工具
+    ├── tradingagents/          # 仓库内置的多智能体交易分析代码
+    ├── migrations/             # SQL 迁移文件
+    └── tests/                  # YouTube 观点相关测试
+```
+
+主要业务数据和认证使用 Supabase；市场数据使用 yfinance，投资账户使用 Plaid，网页搜索使用 Tavily。AI 功能分别使用云端模型和 Ollama。仓库仍保留 SQLAlchemy、Alembic 依赖及本地 PostgreSQL 编排，但主要业务代码通过 Supabase 客户端读写。
+
+## 本地启动
+
+管理员还可通过 MCP 查询和修改日报、YouTube 创作者与观点、市场事件。独立服务支持 stdio / Streamable HTTP，见[内容管理 MCP](docs/mcp-content-admin.md)。
+
+需要 Node.js 18.17+、Python 3.11+ 和已配置的 Supabase 项目。Redis 用于缓存与分析进度；Ollama 用于本地模型功能。
+
+### 后端
+
+```bash
+cd kolvex-backend-py
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+```
+
+编辑 `.env`，补充 `SUPABASE_URL`、`SUPABASE_KEY`、`SUPABASE_SERVICE_KEY` 和随机生成的 `SECRET_KEY`。按需要配置模型、Plaid、Redis 等服务，详见[后端 README](./kolvex-backend-py/README.md)。现有 `.env.example` 包含部分旧配置，不是完整的当前配置清单。
+
+```bash
+python main.py
+```
+
+本地 API 为 `http://localhost:8080`，交互式文档为 `http://localhost:8080/docs`，健康检查为 `http://localhost:8080/health`。
+
+### 前端
+
+```bash
+cd kolvex-frontend-web-nextjs
+npm ci
+```
+
+创建 `.env.local`：
+
+```dotenv
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+NEXT_PUBLIC_BACKEND_API_URL=http://127.0.0.1:8080
+```
+
+```bash
+npm run dev
+```
+
+访问 `http://localhost:3000`。Supabase 服务端密钥只配置在后端。
+
+### Docker 开发环境
+
+完成后端 `.env` 配置后：
+
+```bash
+cd kolvex-backend-py
+docker compose up -d --build
+docker compose logs -f backend
+```
+
+当前开发 Compose 启动后端、Redis 和本地 PostgreSQL；仍需单独配置 Supabase。Ollama 默认通过 `host.docker.internal:11434` 连接宿主机服务。后端端口为 `8080`。
+
+## 已退役功能
+
+当前不再提供 Robinhood／IBKR 直接接入、旧 Twitter／小红书自动 KOL 追踪、独立新闻聚合、超级投资者持仓追踪、量化策略和回测、股票追踪、用户关注、通知及定时预警、期权异动和独立期权 AI 分析。普通期权链查询与 Plaid 投资组合功能保留。联系表单邮件发送已禁用。
+
+新的 X 原文内容功能使用独立数据表与导入流程，并通过本机定时浏览器工作流采集，不恢复旧爬虫服务。安装与数据格式见 [X 内容说明](./docs/x-content.md)。
+
+相关移除 SQL 位于后端 `migrations/`；保留的历史迁移和依赖不代表功能仍然启用，也不能据此判断生产数据库是否已执行迁移。
+
+## 许可证
+
+[MIT](./LICENSE)

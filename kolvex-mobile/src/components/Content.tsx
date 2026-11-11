@@ -1,3 +1,4 @@
+import GlassTabs, { glassTabsAvailable } from "./native/GlassTabs";
 import { usePreferences } from "../state/Preferences";
 import {
   useEffect,
@@ -87,11 +88,13 @@ export function AuthGate({
 }
 export function Field({
   label,
+  hideLabel = false,
   error,
   trailing,
   ...props
 }: ComponentProps<typeof TextInput> & {
   label: string;
+  hideLabel?: boolean;
   error?: string;
   /** A control inside the pill after the text, such as a show-password eye. */
   trailing?: React.ReactNode;
@@ -105,9 +108,7 @@ export function Field({
   }, [error]);
   return (
     <View style={{ gap: 8 }}>
-      <Copy size={14} bold>
-        {label}
-      </Copy>
+      {!hideLabel && <Copy size={14} bold>{label}</Copy>}
       <GlassView
         glassEffectStyle={glass ? "regular" : "none"}
         colorScheme={t.dark ? "dark" : "light"}
@@ -179,7 +180,12 @@ export function Filters({
   onChange,
   disabled = false,
   stretch = false,
+  size = "md",
+  maxWidth,
 }: {
+  size?: "sm" | "md";
+  /** The widest the track may grow before it scrolls (iOS glass tabs). */
+  maxWidth?: number;
   values: readonly (readonly [string, string])[];
   value: string;
   onChange: (v: string) => void;
@@ -189,10 +195,24 @@ export function Filters({
 }) {
   const t = useTheme();
   const glass = useLiquidGlass();
+  // iOS draws the track and its moving pill natively in Liquid Glass.
+  if (glass && glassTabsAvailable)
+    return (
+      <GlassTabs
+        values={values}
+        value={value}
+        onChange={onChange}
+        size={size}
+        stretch={stretch}
+        disabled={disabled}
+        maxWidth={maxWidth}
+      />
+    );
   const chips = values.map(([key, name]) => (
     <View key={key} style={stretch ? { flex: 1 } : undefined}>
       <Chip
         bare
+        size={size}
         disabled={disabled}
         selected={key === value}
         onPress={() => onChange(key)}
@@ -208,8 +228,8 @@ export function Filters({
         colorScheme={t.dark ? "dark" : "light"}
         style={{
           flexDirection: "row",
-          gap: 4,
-          padding: 4,
+          gap: 3,
+          padding: 3,
           borderRadius: 999,
           borderWidth: glass ? 0 : 1,
           borderColor: t.rim,
@@ -237,7 +257,7 @@ export function Filters({
         horizontal
         showsHorizontalScrollIndicator={false}
         style={{ flexGrow: 0 }}
-        contentContainerStyle={{ gap: 4, padding: 4 }}
+        contentContainerStyle={{ gap: 3, padding: 3 }}
       >
         {chips}
       </ScrollView>
@@ -282,8 +302,8 @@ export function Pager({
 }
 export function ResourceState({
   resource,
-  empty,
-  message,
+  empty = false,
+  message = "",
   skeleton,
 }: {
   resource: {
@@ -292,8 +312,8 @@ export function ResourceState({
     error?: string;
     refresh: () => void;
   };
-  empty: boolean;
-  message: string;
+  empty?: boolean;
+  message?: string;
   /** Placeholder in the shape of the content this state stands in for. */
   skeleton: React.ReactNode;
 }) {
@@ -323,10 +343,14 @@ export function TextBody({
   text,
   symbols = [],
   size = 16,
+  lineHeight,
+  gap = 12,
 }: {
   text: string;
   /** Body size in the Web's desktop px; chat prose uses 15 (text-[0.9375rem]). */
   size?: number;
+  lineHeight?: number;
+  gap?: number;
   /** Tickers already identified for this text, such as the ones the reader asked about. */
   symbols?: readonly string[];
 }) {
@@ -392,7 +416,7 @@ export function TextBody({
         return <Text key={index}>{mentions(part, index)}</Text>;
       });
   return (
-    <View style={{ gap: 12 }}>
+    <View style={{ gap }}>
       {textBlocks(text).map((block, i) =>
         block.kind === "rule" ? (
           <View key={i} style={{ height: 1, backgroundColor: theme.border }} />
@@ -448,7 +472,7 @@ export function TextBody({
               •
             </Copy>
             <View style={{ flex: 1 }}>
-              <Copy size={size} selectable>
+              <Copy size={size} lineHeight={lineHeight} selectable>
                 {inline(block.text)}
               </Copy>
             </View>
@@ -459,6 +483,7 @@ export function TextBody({
             selectable
             bold={block.kind === "heading"}
             size={block.kind === "heading" ? size + 2 : size}
+            lineHeight={lineHeight}
           >
             {inline(block.text)}
           </Copy>

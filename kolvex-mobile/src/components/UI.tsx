@@ -46,6 +46,7 @@ const fontPx = (size: number) =>
 export function Copy({
   children,
   size = 16,
+  lineHeight,
   muted = false,
   bold = false,
   color,
@@ -56,6 +57,7 @@ export function Copy({
   role,
 }: PropsWithChildren<{
   size?: number;
+  lineHeight?: number;
   muted?: boolean;
   bold?: boolean;
   color?: string;
@@ -77,7 +79,9 @@ export function Copy({
         color: color ?? (muted ? t.secondary : t.text),
         fontSize: fontPx(size),
         fontWeight: bold ? "600" : "400",
-        lineHeight: fontPx(size) * (size >= 20 ? 1.3 : 1.5),
+        lineHeight: lineHeight === undefined
+          ? fontPx(size) * (size >= 20 ? 1.3 : 1.5)
+          : phone(lineHeight),
         letterSpacing: size >= 20 ? -0.2 : 0,
         fontVariant: ["tabular-nums"],
       }}
@@ -191,30 +195,40 @@ export function Button({
   selected = false,
   disabled = false,
   label,
+  size = "md",
   variant = "neutral",
   block = variant === "primary",
   icon,
+  trailingIcon,
 }: PropsWithChildren<{
   onPress: () => void;
   selected?: boolean;
   disabled?: boolean;
   label?: string;
+  size?: "sm" | "md";
   variant?: "neutral" | "primary";
   block?: boolean;
   /** Leading artwork, such as a provider logo. */
   icon?: React.ReactNode;
+  trailingIcon?: React.ReactNode;
 }>) {
   const t = useTheme();
   const { locale } = usePreferences();
   const text = useText();
   const glass = useLiquidGlass();
   const primary = variant === "primary";
+  const compact = size === "sm" ? {
+    minHeight: phone(36),
+    paddingHorizontal: phone(16),
+    paddingVertical: phone(6),
+  } : undefined;
   const label_ = (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
       {icon}
       <Copy size={14} bold color={primary ? t.onBrand : t.text}>
         {translateNodes(children, locale)}
       </Copy>
+      {trailingIcon}
     </View>
   );
   return (
@@ -223,7 +237,7 @@ export function Button({
       accessibilityLabel={label ? text(label) : undefined}
       accessibilityState={{ selected, disabled }}
       disabled={disabled}
-      hitSlop={{ top: 3, bottom: 3 }}
+      hitSlop={size === "sm" ? { top: 7, bottom: 7 } : { top: 3, bottom: 3 }}
       onPress={() => {
         if (Platform.OS !== "web")
           void Haptics.selectionAsync().catch(() => {});
@@ -235,6 +249,7 @@ export function Button({
           ? { opacity: disabled ? 0.4 : 1 }
           : [
               styles.button,
+              compact,
               {
                 backgroundColor: primary
                   ? t.brand
@@ -253,7 +268,7 @@ export function Button({
           glassEffectStyle="regular"
           tintColor={primary ? t.brand : selected ? t.washStrong : undefined}
           colorScheme={t.dark ? "dark" : "light"}
-          style={[styles.button, { borderWidth: 0 }]}
+          style={[styles.button, compact, { borderWidth: 0 }]}
         >
           {label_}
         </GlassView>
@@ -288,12 +303,15 @@ export function Chip({
   selected = false,
   disabled = false,
   bare = false,
+  size = "md",
 }: PropsWithChildren<{
   onPress: () => void;
   selected?: boolean;
   disabled?: boolean;
   /** Inside a segmented track, where the track supplies the surface. */
   bare?: boolean;
+  /** The Web's segmented sizes: md min-h-10 px-4 text-sm, sm min-h-8 px-3 13px. */
+  size?: "sm" | "md";
 }>) {
   const t = useTheme();
   return (
@@ -302,7 +320,7 @@ export function Chip({
       accessibilityState={{ selected, disabled }}
       disabled={disabled}
       // Drawn at the Web's phone size; the touch area stays at least 44pt.
-      hitSlop={{ top: 5, bottom: 5 }}
+      hitSlop={size === "sm" ? { top: 8, bottom: 8 } : { top: 5, bottom: 5 }}
       onPress={() => {
         if (Platform.OS !== "web")
           void Haptics.selectionAsync().catch(() => {});
@@ -311,10 +329,9 @@ export function Chip({
       style={({ pressed }) => [
         styles.button,
         {
-          // The Web's md segmented item: min-h-10 px-4.
-          minHeight: phone(40),
-          paddingHorizontal: phone(16),
-          paddingVertical: phone(6),
+          minHeight: phone(size === "sm" ? 32 : 40),
+          paddingHorizontal: phone(size === "sm" ? 12 : 16),
+          paddingVertical: phone(size === "sm" ? 4 : 6),
           borderWidth: 0,
           // The Web's glass thumb: a white pill with near-black text.
           backgroundColor: selected
@@ -326,7 +343,11 @@ export function Chip({
         },
       ]}
     >
-      <Copy size={14} bold color={selected ? "#111111" : t.text}>
+      <Copy
+        size={size === "sm" ? 13 : 14}
+        bold
+        color={selected ? "#111111" : t.text}
+      >
         {children}
       </Copy>
     </Pressable>
@@ -379,11 +400,15 @@ export function Page({
   followContent = false,
   scrollEnabled = true,
   hideTitle = false,
+  stickyHeader,
+  scrollKey,
 }: PropsWithChildren<{
   title: string;
   subtitle?: string;
   /** The Web's tab pages show no page heading; `title` still names the screen. */
   hideTitle?: boolean;
+  stickyHeader?: React.ReactNode;
+  scrollKey?: string;
   titleLocalize?: boolean;
   subtitleLocalize?: boolean;
   refreshing?: boolean;
@@ -396,6 +421,14 @@ export function Page({
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
   const nearEnd = useRef(true);
   const embedded = useContext(Embedded);
+  useEffect(() => {
+    if (scrollKey !== undefined) {
+      scroll.current?.scrollTo({
+        y: Platform.OS === "ios" ? -insets.top : 0,
+        animated: false,
+      });
+    }
+  }, [scrollKey, insets.top]);
   if (embedded) return <View style={{ gap: phone(24) }}>{children}</View>;
   return (
     <View style={{ flex: 1, backgroundColor: t.background }}>
@@ -419,6 +452,7 @@ export function Page({
         contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets
+        stickyHeaderIndices={stickyHeader ? [0] : undefined}
         contentContainerStyle={{
           paddingHorizontal: phone(16),
           paddingTop:
@@ -436,6 +470,7 @@ export function Page({
           ) : undefined
         }
       >
+        {stickyHeader}
         {!hideTitle && (
           <View style={{ gap: 4 }}>
             <Copy size={24} bold localize={titleLocalize}>

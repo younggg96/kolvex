@@ -5,7 +5,12 @@ import { Pressable, View } from "react-native";
 import { router } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { Filters } from "../../components/Content";
-import { InstrumentRow, type RangeKey } from "../../components/MarketCards";
+import {
+  ComparisonTable,
+  InstrumentRow,
+  ViewToggle,
+  type RangeKey,
+} from "../../components/MarketCards";
 import { OpinionStrength } from "../../components/OpinionStrength";
 import { StockWatch } from "../../components/StockWatch";
 import {
@@ -14,6 +19,7 @@ import {
   Glass,
   Page,
   Skeleton,
+  phone,
   styles,
 } from "../../components/UI";
 import { catalogue } from "../../lib/featureApi";
@@ -55,8 +61,42 @@ export default function Markets() {
   );
 }
 
+/** The Web's MarketRangeControls at phone size: a compact range track and a view switch. */
+function RangeControls({
+  range,
+  setRange,
+  view,
+  setView,
+}: {
+  range: RangeKey;
+  setRange: (range: RangeKey) => void;
+  view: "card" | "list";
+  setView: (view: "card" | "list") => void;
+}) {
+  const { locale } = usePreferences();
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+      {view === "card" ? (
+        <View style={{ maxWidth: phone(156), flexShrink: 1 }}>
+          <Filters
+            size="sm"
+            maxWidth={phone(156)}
+            values={MARKET_RANGES.map(
+              (item) => [item.key, locale === "en" ? item.en : item.zh] as const,
+            )}
+            value={range}
+            onChange={(value) => setRange(value as RangeKey)}
+          />
+        </View>
+      ) : null}
+      <ViewToggle value={view} onChange={setView} />
+    </View>
+  );
+}
+
 function Overview({ revision }: { revision: number }) {
   const [range, setRange] = useState<RangeKey>("1D");
+  const [view, setView] = useState<"card" | "list">("card");
   return (
     <>
       <View style={{ gap: 12 }}>
@@ -64,21 +104,24 @@ function Overview({ revision }: { revision: number }) {
           <Copy size={20} bold>
             市场指数
           </Copy>
-          <View style={{ flexShrink: 1 }}>
-            <Filters
-              values={MARKET_RANGES.map((item) => [item.key, item.zh] as const)}
-              value={range}
-              onChange={(value) => setRange(value as RangeKey)}
-            />
-          </View>
+          <RangeControls
+            range={range}
+            setRange={setRange}
+            view={view}
+            setView={setView}
+          />
         </View>
-        <InstrumentRow
-          instruments={BENCHMARKS}
-          range={range}
-          revision={revision}
-        />
+        {view === "card" ? (
+          <InstrumentRow
+            instruments={BENCHMARKS}
+            range={range}
+            revision={revision}
+          />
+        ) : (
+          <ComparisonTable instruments={BENCHMARKS} revision={revision} />
+        )}
       </View>
-      <StockWatch revision={revision} />
+      <StockWatch revision={revision} range={range} />
       <CreatorUpdates revision={revision} />
       <Copy size={12} muted>
         研究从事实开始。市场数据与创作者观点不构成投资建议。
@@ -91,25 +134,37 @@ function Overview({ revision }: { revision: number }) {
 function Trends({ revision }: { revision: number }) {
   const { locale } = usePreferences();
   const [range, setRange] = useState<RangeKey>("1D");
+  const [view, setView] = useState<"card" | "list">("card");
+  const groups = MARKET_GROUPS.filter((group) => group.key !== "indices");
   return (
     <>
-      <Filters
-        values={MARKET_RANGES.map((item) => [item.key, item.zh] as const)}
-        value={range}
-        onChange={(value) => setRange(value as RangeKey)}
-      />
-      {MARKET_GROUPS.filter((group) => group.key !== "indices").map((group) => (
-        <View key={group.key} style={{ gap: 12 }}>
-          <Copy size={20} bold localize={false}>
-            {locale === "en" ? group.en : group.zh}
-          </Copy>
-          <InstrumentRow
-            instruments={group.instruments}
-            range={range}
-            revision={revision}
-          />
-        </View>
-      ))}
+      <View style={{ alignItems: "flex-end" }}>
+        <RangeControls
+          range={range}
+          setRange={setRange}
+          view={view}
+          setView={setView}
+        />
+      </View>
+      {view === "list" ? (
+        <ComparisonTable
+          instruments={groups.flatMap((group) => group.instruments)}
+          revision={revision}
+        />
+      ) : (
+        groups.map((group) => (
+          <View key={group.key} style={{ gap: 12 }}>
+            <Copy size={20} bold localize={false}>
+              {locale === "en" ? group.en : group.zh}
+            </Copy>
+            <InstrumentRow
+              instruments={group.instruments}
+              range={range}
+              revision={revision}
+            />
+          </View>
+        ))
+      )}
       <Copy size={12} muted>
         ETF 是行业或风格的代表，不是指数点位。收益率与利差使用百分点变动；FRED
         为每日观测数据，不提供盘中走势。

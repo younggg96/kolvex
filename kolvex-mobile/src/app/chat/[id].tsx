@@ -22,6 +22,7 @@ import { quote } from "../../lib/api";
 import { demoMode } from "../../lib/config";
 import { isSymbol } from "../../lib/models";
 import { useResource } from "../../lib/useResource";
+import { parseSkills } from "../../lib/chatSkills";
 import { sendChat } from "../../lib/stream";
 import type { Conversation } from "../../lib/contentTypes";
 import { AuthGate, ResourceState, TextBody } from "../../components/Content";
@@ -61,6 +62,7 @@ function Room() {
     q?: string;
     sources?: string;
     model?: string;
+    skills?: string;
   }>();
   const id = params.id;
   const user = useAuth().session!.user.id;
@@ -78,11 +80,12 @@ function Room() {
     typeof params.model === "string" ? params.model : "",
   );
   const [attach, setAttach] = useState(true);
-  const [sources, setSources] = useState(
+  const [sources] = useState(
     typeof params.sources === "string" && params.sources
       ? params.sources.split(",")
-      : ["web"],
+      : ["plaid", "portfolio", "web"],
   );
+  const [skills, setSkills] = useState(() => parseSkills(params.skills));
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [recovering, setRecovering] = useState(false);
@@ -201,6 +204,7 @@ function Room() {
         context,
         sources,
         model || undefined,
+        skills,
       );
       // Reconcile the authoritative history before re-enabling Send. A stream's
       // done event may not guarantee that every storage write succeeded.
@@ -371,8 +375,8 @@ function Room() {
             onStop={() => action.current?.abort()}
             busy={busy}
             disabled={!data || recovering}
-            sources={sources}
-            onSources={setSources}
+            skills={skills}
+            onSkills={setSkills}
             model={model}
             onModel={setModel}
             user={user}

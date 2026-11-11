@@ -5,6 +5,8 @@ import type { CreatorLatestVideo } from "./creatorSharing";
 export type Creator = {
   channel_id: string;
   channel_title?: string;
+  channel_handle?: string;
+  channel_avatar_url?: string;
   channel_url?: string;
   description?: string;
   country?: string;
@@ -30,6 +32,7 @@ export type Catalogue = Dashboard & {
   creators: Creator[];
   stocks: {
     ticker: string;
+    company_name?: string | null;
     total_opinions: number;
     creator_count: number;
     avg_score: number;
@@ -111,6 +114,7 @@ export const xCreators = (signal: AbortSignal) =>
     creators: {
       username: string;
       display_name: string;
+      avatar_url?: string | null;
       bio: string;
       website?: string;
       followers_count?: number;

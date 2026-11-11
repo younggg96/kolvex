@@ -561,7 +561,7 @@ function Calculator({
             <Copy size={14} muted>
               还没有配置 API Key。
             </Copy>
-            <Button onPress={() => router.push("/preferences")}>
+            <Button onPress={() => router.push("/settings?tab=api-keys")}>
               前往设置添加
             </Button>
           </>

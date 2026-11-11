@@ -15,6 +15,8 @@ const Context = createContext<{
   symbols: string[];
   ready: boolean;
   error?: string;
+  add: (symbol: string) => Promise<boolean>;
+  remove: (symbol: string) => Promise<boolean>;
   toggle: (symbol: string) => void;
   pending: boolean;
   cloud: boolean;
@@ -25,6 +27,8 @@ const Context = createContext<{
   pending: false,
   cloud: false,
   refresh: () => {},
+  add: async () => false,
+  remove: async () => false,
   toggle: () => {},
 });
 export const useWatchlist = () => useContext(Context);
@@ -70,12 +74,13 @@ function CloudWatchlistProvider({
     });
     return () => subscription.remove();
   }, [refresh]);
-  async function save(symbol: string) {
-    if (lock.current || data.loading || !data.data) return;
+  async function save(symbol: string, saved: boolean) {
+    if (lock.current || data.loading || !data.data) return false;
     if (!/^[A-Z][A-Z0-9.-]{0,9}$/.test(symbol)) {
       setMutationError("云端自选仅支持最长 10 位的股票或 ETF 代码。");
-      return;
+      return false;
     }
+    if (data.data.includes(symbol) === saved) return true;
     lock.current = true;
     const controller = new AbortController();
     operation.current = controller;
@@ -86,7 +91,7 @@ function CloudWatchlistProvider({
       const account = await supabase!.auth.getSession();
       if (account.data.session?.user.id !== userId)
         throw new Error("账户已切换，请重新打开页面。");
-      const result = data.data.includes(symbol)
+      const result = !saved
         ? await supabase!
             .from("user_watchlist")
             .delete()
@@ -100,11 +105,13 @@ function CloudWatchlistProvider({
       if (result.error && result.error.code !== "23505")
         throw new Error("自选保存未确认，请刷新检查后再试。");
       if (alive.current) data.refresh();
+      return alive.current;
     } catch (error) {
       if (alive.current)
         setMutationError(
           error instanceof Error ? error.message : "自选保存未确认，请刷新。",
         );
+      return false;
     } finally {
       clearTimeout(deadline);
       operation.current = null;
@@ -118,8 +125,10 @@ function CloudWatchlistProvider({
         symbols: data.data ?? [],
         ready: !!data.data,
         error: mutationError ?? data.error,
+        add: (symbol) => save(symbol, true),
+        remove: (symbol) => save(symbol, false),
         toggle: (symbol) => {
-          void save(symbol);
+          void save(symbol, !data.data?.includes(symbol));
         },
         pending: pending || data.loading,
         cloud: true,

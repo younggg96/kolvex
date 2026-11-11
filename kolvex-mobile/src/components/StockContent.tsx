@@ -12,6 +12,8 @@ import { StockPeers } from "./StockPeers";
 import { useState } from "react";
 import { View } from "react-native";
 import { router } from "expo-router";
+import { SymbolView } from "expo-symbols";
+import { useTheme } from "../lib/theme";
 import { BENCHMARKS } from "../lib/marketBenchmarks";
 import { useAuth } from "../state/Auth";
 import { apiRequest } from "../lib/http";
@@ -22,34 +24,48 @@ import { useResource } from "../lib/useResource";
 import { useNewsTranslations } from "../lib/useNewsTranslations";
 import { Button, Copy, Empty, Glass, Section } from "./UI";
 import { Filters, ResourceState, SourceLink } from "./Content";
+// The Web's StockWorkspace tab order and phone labels.
 const allTabs = [
-  ["summary", "基本面"],
-  ["valuation", "估值"],
-  ["financials", "财务报表"],
-  ["earnings", "盈利"],
-  ["multicharts", "指标趋势"],
-  ["analyst", "分析师"],
-  ["peers", "同行比较"],
-  ["ownership", "持仓披露"],
-  ["news", "最新新闻"],
-  ["creators", "博主观点"],
+  ["summary", "概览"],
+  ["technical", "技术分析"],
+  ["paper-trading", "我的虚拟交易"],
+  ["creators", "博主情报"],
   ["research", "AI 研究"],
-  ["options", "期权链"],
-  ["paper-trading", "虚拟交易"],
+  ["news", "新闻"],
+  ["options", "期权"],
+  ["financials", "财务报表"],
+  ["valuation", "估值"],
+  ["earnings", "盈利表现"],
+  ["multicharts", "指标趋势"],
+  ["analyst", "分析师目标价"],
+  ["peers", "同行比较"],
+  ["ownership", "内部人交易"],
   ["profile", "公司资料"],
 ] as const;
-const benchmarkTabs = ["summary", "news", "creators", "research"];
+const benchmarkTabs = [
+  "summary",
+  "technical",
+  "creators",
+  "research",
+  "news",
+  "options",
+];
+/** Tabs that show the price card above their content, as on the Web. */
+const CHART_TABS = ["summary", "technical", "paper-trading"];
 export function StockContent({
   symbol,
   currency,
   companyName,
   initialTab,
+  chart,
 }: {
   symbol: string;
   currency?: string;
   companyName?: string;
   initialTab?: string;
+  chart?: React.ReactNode;
 }) {
+  const t = useTheme();
   const benchmark = BENCHMARKS.some((item) => item.symbol === symbol);
   const user = useAuth().session?.user.id;
   const tabs = benchmark
@@ -61,7 +77,27 @@ export function StockContent({
   return (
     <View style={{ gap: 16 }}>
       <Filters values={tabs} value={tab} onChange={setTab} />
-      {demoMode ? (
+      {CHART_TABS.includes(tab) && chart}
+      {tab === "technical" ? (
+        <Button
+          icon={
+            <SymbolView
+              name={{
+                ios: "chart.xyaxis.line",
+                android: "candlestick_chart",
+                web: "candlestick_chart",
+              }}
+              size={14}
+              tintColor={t.text}
+            />
+          }
+          onPress={() =>
+            router.push(`/technical/${encodeURIComponent(symbol)}`)
+          }
+        >
+          K 线、指标与 AI 画线
+        </Button>
+      ) : demoMode ? (
         <Empty
           title="连接真实数据后查看"
           message="公司资料、财务指标及新闻均来自后端，不提供模拟资料。"
@@ -70,8 +106,9 @@ export function StockContent({
         <Company symbol={symbol} />
       ) : tab === "summary" ? (
         <>
+          {/* The Web shows fundamentals for companies only; an index shows its chart. */}
           {!benchmark && !!user && <AiFundamentals symbol={symbol} />}
-          <Financials symbol={symbol} />
+          {!benchmark && <Financials symbol={symbol} />}
         </>
       ) : tab === "valuation" ? (
         <StockValuation key={symbol} symbol={symbol} />
@@ -188,6 +225,7 @@ function Company({ symbol }: { symbol: string }) {
   );
 }
 function Financials({ symbol }: { symbol: string }) {
+  const t = useTheme();
   const resource = useResource(symbol, (signal) =>
     apiRequest<Record<string, unknown>>(
       `/market/financials/${encodeURIComponent(symbol)}`,
@@ -237,38 +275,38 @@ function Financials({ symbol }: { symbol: string }) {
         message="暂无财务指标。"
       />
       {data && (
-        <Glass style={{ padding: 20, gap: 16 }}>
-          <Section title="核心财务指标" note="数据口径沿用现有市场数据源" />
-          {fields.map(([key, label]) => {
+        // The Web's fundamentals group card: a quiet heading, then label / value rows.
+        <Glass style={{ padding: 16, gap: 4 }}>
+          <Copy size={14} muted>
+            核心财务指标
+          </Copy>
+          {fields.map(([key, label], index) => {
             const value =
               typeof data[key] === "number" ? (data[key] as number) : undefined;
+            const pct = [
+              "profit_margins",
+              "operating_margins",
+              "return_on_equity",
+              "revenue_growth",
+            ].includes(key);
             return (
-              <View key={key} style={{ gap: 4 }}>
+              <View
+                key={key}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "baseline",
+                  justifyContent: "space-between",
+                  gap: 16,
+                  paddingVertical: 10,
+                  borderTopWidth: index ? 1 : 0,
+                  borderColor: t.border,
+                }}
+              >
                 <Copy size={14} muted>
                   {label}
                 </Copy>
-                <Copy>
-                  {number(
-                    value == null
-                      ? undefined
-                      : [
-                            "profit_margins",
-                            "operating_margins",
-                            "return_on_equity",
-                            "revenue_growth",
-                          ].includes(key)
-                        ? value * 100
-                        : value,
-                  )}
-                  {value != null &&
-                  [
-                    "profit_margins",
-                    "operating_margins",
-                    "return_on_equity",
-                    "revenue_growth",
-                  ].includes(key)
-                    ? "%"
-                    : ""}
+                <Copy size={14} bold localize={false}>
+                  {`${number(value == null ? undefined : pct ? value * 100 : value)}${value != null && pct ? "%" : ""}`}
                 </Copy>
               </View>
             );

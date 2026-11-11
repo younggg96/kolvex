@@ -16,11 +16,15 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Chip, Copy, LoadingStatus } from "../../components/UI";
 import {
   Pill,
-  PillRow,
   ResultRow,
   SearchGroup,
 } from "../../components/search/SearchSections";
 import { useDockSearch } from "../../components/Dock";
+import {
+  DiscoverCreators,
+  LatestRows,
+  TrendingStocks,
+} from "../../components/search/DiscoveryCards";
 import { briefs, news, reports } from "../../lib/contentApi";
 import type { TradingAnalysis } from "../../lib/contentTypes";
 import { catalogue, xCreators } from "../../lib/featureApi";
@@ -346,11 +350,6 @@ export default function Search() {
   const catalogueFailed = Boolean(
     opinions.error || reddit.error || creators.error,
   );
-  const picksLoading =
-    catalogueLoading ||
-    latestReports.loading ||
-    latestNews.loading ||
-    latestBriefs.loading;
   const showStocks =
     (filter === "all" || filter === "stocks") && stockResults.length > 0;
   const showCreators =
@@ -466,172 +465,117 @@ export default function Search() {
     );
   } else {
     const blocks: ReactNode[] = [];
-    if (youtubePicks.length > 0)
-      blocks.push(
-        <SearchGroup
-          key="youtube-stocks"
-          title="YouTube 博主热议"
-          action="查看全部"
-          onAction={() => go("/opinions")}
-        >
-          <PillRow>
-            {youtubePicks.map((stock) => (
-              <Pill
-                key={stock.ticker}
-                label={stock.ticker}
-                onPress={() =>
-                  stockPick({ ticker: stock.ticker, name: stock.ticker })
-                }
-              />
-            ))}
-          </PillRow>
-        </SearchGroup>,
-      );
-    if (youtubeCreatorPicks.length > 0)
-      blocks.push(
-        <SearchGroup
-          key="youtube-creators"
-          title="YouTube 热门博主"
-          action="查看全部"
-          onAction={() => go("/creators")}
-        >
-          <PillRow>
-            {youtubeCreatorPicks.map((creator) => {
-              const name = creator.channel_title || creator.channel_id;
-              return (
-                <Pill
-                  key={creator.channel_id}
-                  label={name}
-                  onPress={() =>
-                    open({
-                      title: name,
-                      detail: "YouTube",
-                      href: `/creator/youtube/${encodeURIComponent(creator.channel_id)}`,
-                    })
-                  }
-                />
-              );
-            })}
-          </PillRow>
-        </SearchGroup>,
-      );
-    if (redditPicks.length > 0)
-      blocks.push(
-        <SearchGroup
-          key="reddit"
-          title="Reddit 讨论最热"
-          action="查看全部"
-          onAction={() => go("/opinions")}
-        >
-          <PillRow>
-            {redditPicks.map((stock) => (
-              <Pill
-                key={stock.ticker}
-                label={stock.ticker}
-                onPress={() => stockPick(stock)}
-              />
-            ))}
-          </PillRow>
-        </SearchGroup>,
-      );
-    if (xPicks.length > 0)
-      blocks.push(
-        <SearchGroup
-          key="x"
-          title="X 创作者"
-          action="查看全部"
-          onAction={() => go("/creators")}
-        >
-          <PillRow>
-            {xPicks.map((creator) => {
-              const title = creator.display_name || `@${creator.username}`;
-              return (
-                <Pill
-                  key={creator.username}
-                  label={title}
-                  onPress={() =>
-                    open({
-                      title,
-                      detail: `@${creator.username}`,
-                      href: `/creator/x/${encodeURIComponent(creator.username)}`,
-                    })
-                  }
-                />
-              );
-            })}
-          </PillRow>
-        </SearchGroup>,
-      );
+    // The Web's discovery cards, in its order: trending stocks, creators, then the latest.
+    blocks.push(
+      <TrendingStocks
+        key="trending"
+        youtube={youtubePicks.map((stock) => ({
+          ticker: stock.ticker,
+          name: stock.company_name || stock.ticker,
+        }))}
+        reddit={redditPicks.map((stock) => ({
+          ticker: stock.ticker,
+          name: stock.name,
+        }))}
+        loading={catalogueLoading}
+        onOpen={stockPick}
+        onViewAll={() => go("/opinions")}
+      />,
+      <DiscoverCreators
+        key="creators"
+        youtube={youtubeCreatorPicks.map((creator) => {
+          const name = creator.channel_title || creator.channel_id;
+          return {
+            key: creator.channel_id,
+            title: name,
+            detail: creator.channel_handle || "YouTube",
+            avatar: creator.channel_avatar_url,
+            onPress: () =>
+              open({
+                title: name,
+                detail: "YouTube",
+                href: `/creator/youtube/${encodeURIComponent(creator.channel_id)}`,
+              }),
+          };
+        })}
+        x={xPicks.map((creator) => {
+          const title = creator.display_name || `@${creator.username}`;
+          return {
+            key: creator.username,
+            title,
+            detail: `@${creator.username}`,
+            avatar: creator.avatar_url,
+            onPress: () =>
+              open({
+                title,
+                detail: `@${creator.username}`,
+                href: `/creator/x/${encodeURIComponent(creator.username)}`,
+              }),
+          };
+        })}
+        loading={catalogueLoading}
+        onViewAll={() => go("/creators")}
+      />,
+    );
     if (reportPicks.length > 0)
       blocks.push(
-        <SearchGroup
+        <LatestRows
           key="reports"
           title="最新研究"
-          action="查看全部"
-          onAction={() => go("/research")}
-        >
-          <PillRow>
-            {reportPicks.map((report) => {
-              const item = reportItem(report);
-              return (
-                <Pill
-                  key={report.id}
-                  label={text(item.title)}
-                  onPress={() => open(item)}
-                />
-              );
-            })}
-          </PillRow>
-        </SearchGroup>,
+          logo
+          onViewAll={() => go("/research")}
+          rows={reportPicks.slice(0, 4).map((report) => {
+            const item = reportItem(report);
+            return {
+              key: report.id,
+              ticker: report.ticker,
+              title: report.ticker,
+              detail: text("AI 研究报告"),
+              trailing: report.trade_date,
+              onPress: () => open(item),
+            };
+          })}
+        />,
       );
     if (newsPicks.length > 0)
       blocks.push(
-        <SearchGroup
+        <LatestRows
           key="news"
           title="最新新闻"
-          action="查看全部"
-          onAction={() => go("/news")}
-        >
-          <View>
-            {newsPicks.map((article) => (
-              <ResultRow
-                key={article.id ?? article.uuid ?? article.link}
-                title={article.title_zh || article.title}
-                detail={article.publisher ?? text("新闻来源")}
-                onPress={() => openExternal(article.link)}
-              />
-            ))}
-          </View>
-        </SearchGroup>,
+          multiline
+          onViewAll={() => go("/news")}
+          rows={newsPicks.map((article) => ({
+            key: article.id ?? article.uuid ?? article.link,
+            title: article.title_zh || article.title,
+            detail: article.publisher ?? text("新闻来源"),
+            onPress: () => openExternal(article.link),
+          }))}
+        />,
       );
     if (briefPicks.length > 0)
       blocks.push(
-        <SearchGroup
+        <LatestRows
           key="briefs"
           title="最新日报"
-          action="查看全部"
-          onAction={() => go("/briefs")}
-        >
-          <View>
-            {briefPicks.map((brief) => {
-              const item = {
-                href: `/brief/${encodeURIComponent(brief.id)}`,
-                title: brief.headline || brief.title,
-                detail: brief.brief_date,
-              };
-              return (
-                <ResultRow
-                  key={brief.id}
-                  title={item.title}
-                  detail={item.detail}
-                  onPress={() => open(item)}
-                />
-              );
-            })}
-          </View>
-        </SearchGroup>,
+          multiline
+          onViewAll={() => go("/briefs")}
+          rows={briefPicks.map((brief) => {
+            const item = {
+              href: `/brief/${encodeURIComponent(brief.id)}`,
+              title: brief.headline || brief.title,
+              detail: brief.brief_date,
+            };
+            return {
+              key: brief.id,
+              title: item.title,
+              detail: item.detail,
+              onPress: () => open(item),
+            };
+          })}
+        />,
       );
-    if (picksLoading)
+    // The stock and creator cards show their own placeholders.
+    if (latestReports.loading || latestNews.loading || latestBriefs.loading)
       blocks.push(
         <LoadingStatus key="loading">
           <View style={{ gap: 12 }}>
