@@ -2,7 +2,7 @@ import { router, useFocusEffect } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useCallback, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, View } from "react-native";
-import { AuthGate, Field } from "../../components/Content";
+import { AuthGate, Field } from "../../../components/Content";
 import {
   Button,
   Copy,
@@ -11,18 +11,18 @@ import {
   Page,
   Skeleton,
   phone,
-} from "../../components/UI";
-import { workspaceErrorText } from "../../components/Workspace";
-import { useText } from "../../lib/i18n";
+} from "../../../components/UI";
+import { workspaceErrorText } from "../../../components/Workspace";
+import { useText } from "../../../lib/i18n";
 import {
   createWorkspace,
   listWorkspaces,
   parseTickers,
   workspaceErrorCode,
-} from "../../lib/researchWorkspaceApi";
-import { useTheme } from "../../lib/theme";
-import { useResource } from "../../lib/useResource";
-import { useAuth } from "../../state/Auth";
+} from "../../../lib/researchWorkspaceApi";
+import { useTheme } from "../../../lib/theme";
+import { useResource } from "../../../lib/useResource";
+import { useAuth } from "../../../state/Auth";
 
 const row = {
   flexDirection: "row",
@@ -96,12 +96,11 @@ function WorkspaceList() {
     }
   }
 
-  const newButton = (primary = false) => (
+  const newButton = () => (
     <Button
       size="sm"
-      variant={primary ? "primary" : "neutral"}
+      variant="primary"
       block={false}
-      label="新建工作区"
       icon={
         <SymbolView
           name={{
@@ -110,7 +109,6 @@ function WorkspaceList() {
             web: "create_new_folder",
           }}
           size={phone(16)}
-          tintColor={primary ? t.onBrand : t.text}
         />
       }
       onPress={() => setCreating(true)}
@@ -123,23 +121,51 @@ function WorkspaceList() {
     <Page
       title="工作区"
       hideTitle
+      // Title and the new-workspace button stay pinned while the list scrolls.
+      floatingHeader={
+        <View
+          style={{
+            minHeight: phone(48),
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <Copy size={24} bold lines={1}>
+            工作区
+          </Copy>
+          {!creating && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={text("新建工作区")}
+              onPress={() => setCreating(true)}
+              hitSlop={4}
+              style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
+            >
+              <Glass
+                style={{
+                  width: phone(40),
+                  height: phone(40),
+                  borderRadius: phone(20),
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <SymbolView
+                  name={{ ios: "plus", android: "add", web: "add" }}
+                  size={phone(16)}
+                  weight="semibold"
+                  tintColor={t.text}
+                />
+              </Glass>
+            </Pressable>
+          )}
+        </View>
+      }
       onRefresh={resource.refresh}
       refreshing={resource.loading && !!resource.data}
     >
-      <View
-        style={{ marginHorizontal: 2, paddingTop: phone(8), gap: phone(24) }}
-      >
-        <View
-          style={[
-            row,
-            { justifyContent: "space-between", minHeight: phone(36) },
-          ]}
-        >
-          <Copy size={24} lineHeight={32} bold>
-            工作区
-          </Copy>
-          {!creating && newButton()}
-        </View>
+      <View style={{ marginHorizontal: 2, gap: phone(24) }}>
         {creating && (
           <View style={{ gap: phone(12) }}>
             <Field
@@ -209,7 +235,7 @@ function WorkspaceList() {
           ) : !items.length ? (
             <View style={{ paddingVertical: phone(24), gap: phone(16) }}>
               <Copy size={14}>按主题归集对话，让研究团队一起研究。</Copy>
-              {!creating && newButton(true)}
+              {!creating && newButton()}
             </View>
           ) : (
             items.map((item) => (
@@ -265,15 +291,6 @@ function WorkspaceList() {
                     {`${item.chat_count} 个对话`}
                   </Copy>
                 </View>
-                <SymbolView
-                  name={{
-                    ios: "arrow.up.right",
-                    android: "north_east",
-                    web: "north_east",
-                  }}
-                  size={phone(14)}
-                  tintColor={t.secondary}
-                />
               </Pressable>
             ))
           )}

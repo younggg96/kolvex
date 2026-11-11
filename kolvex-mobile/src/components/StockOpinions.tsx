@@ -138,11 +138,19 @@ export function StockOpinions({ symbol }: { symbol: string }) {
   };
   const groups: { side: Side; label: string; empty: string }[] = [
     { side: "bullish", label: "看多", empty: "近 30 天暂无看多观点" },
-    { side: "neutral", label: "中性或分歧", empty: "近 30 天暂无中性或分歧观点" },
+    {
+      side: "neutral",
+      label: "中性或分歧",
+      empty: "近 30 天暂无中性或分歧观点",
+    },
     { side: "bearish", label: "看空", empty: "近 30 天暂无看空观点" },
   ];
   const tone = (side: Side) =>
-    side === "bullish" ? t.accent : side === "bearish" ? t.negative : t.secondary;
+    side === "bullish"
+      ? t.accent
+      : side === "bearish"
+        ? t.negative
+        : t.secondary;
 
   const header = (
     <View
@@ -376,7 +384,12 @@ export function StockOpinions({ symbol }: { symbol: string }) {
                       backgroundColor: active ? t.text : t.secondary,
                     }}
                   />
-                  <Copy size={14} bold={active} muted={!active} localize={false}>
+                  <Copy
+                    size={14}
+                    bold={active}
+                    muted={!active}
+                    localize={false}
+                  >
                     {date(day, true)}
                   </Copy>
                   <Copy size={12} muted>{`${items.length} 条观点`}</Copy>
@@ -389,7 +402,11 @@ export function StockOpinions({ symbol }: { symbol: string }) {
           <Pressable
             accessibilityRole="button"
             onPress={() => setAllDates((v) => !v)}
-            style={{ minHeight: 44, justifyContent: "center", alignSelf: "flex-start" }}
+            style={{
+              minHeight: 44,
+              justifyContent: "center",
+              alignSelf: "flex-start",
+            }}
           >
             <Copy size={12} bold>
               {allDates ? "收起历史日期" : `查看全部 ${days.length} 个日期`}

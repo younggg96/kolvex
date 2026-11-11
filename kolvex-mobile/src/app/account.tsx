@@ -7,7 +7,14 @@ import { AvatarEditor } from "../components/AvatarEditor";
 import { apiRequest } from "../lib/http";
 import { profile } from "../lib/contentApi";
 import { useResource } from "../lib/useResource";
-import { Button, Copy, Failure, Glass, Page, LoadingStatus } from "../components/UI";
+import {
+  Button,
+  Copy,
+  Failure,
+  Glass,
+  Page,
+  LoadingStatus,
+} from "../components/UI";
 import { Field } from "../components/Content";
 export default function Account() {
   const auth = useAuth();
@@ -15,7 +22,14 @@ export default function Account() {
     return (
       <Page title="账户">
         <LoadingStatus>
-          <CardsSkeleton count={1} gap={8} lines={[{ size: 20, width: "50%" }, { size: 14, width: "70%" }]} />
+          <CardsSkeleton
+            count={1}
+            gap={8}
+            lines={[
+              { size: 20, width: "50%" },
+              { size: 14, width: "70%" },
+            ]}
+          />
           <FormSkeleton fields={3} />
         </LoadingStatus>
       </Page>

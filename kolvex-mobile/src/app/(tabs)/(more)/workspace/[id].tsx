@@ -8,9 +8,9 @@ import {
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { SymbolView } from "expo-symbols";
-import { StockBadge } from "../../../components/StockBadge";
-import { AuthGate, Field, TextBody } from "../../../components/Content";
-import { CardsSkeleton } from "../../../components/Skeletons";
+import { StockBadge } from "../../../../components/StockBadge";
+import { AuthGate, Field, TextBody } from "../../../../components/Content";
+import { CardsSkeleton } from "../../../../components/Skeletons";
 import {
   Button,
   Copy,
@@ -19,8 +19,9 @@ import {
   Page,
   phone,
   styles,
-} from "../../../components/UI";
+} from "../../../../components/UI";
 import {
+  AGENT_ICONS,
   AGENT_NAMES,
   AgentStatusText,
   RelayBar,
@@ -28,8 +29,8 @@ import {
   TOOL_NAMES,
   formatRunTime,
   workspaceErrorText,
-} from "../../../components/Workspace";
-import { createConversation } from "../../../lib/contentApi";
+} from "../../../../components/Workspace";
+import { createConversation } from "../../../../lib/contentApi";
 import {
   DEFAULT_RESEARCH_AGENTS,
   RESEARCH_AGENTS,
@@ -45,12 +46,12 @@ import {
   type ResearchAgent,
   type ResearchRun,
   type WorkspaceDetail,
-} from "../../../lib/researchWorkspaceApi";
-import { useText } from "../../../lib/i18n";
-import { useTheme } from "../../../lib/theme";
-import { useResource } from "../../../lib/useResource";
-import { useAuth } from "../../../state/Auth";
-import { usePreferences } from "../../../state/Preferences";
+} from "../../../../lib/researchWorkspaceApi";
+import { useText } from "../../../../lib/i18n";
+import { useTheme } from "../../../../lib/theme";
+import { useResource } from "../../../../lib/useResource";
+import { useAuth } from "../../../../state/Auth";
+import { usePreferences } from "../../../../state/Preferences";
 
 const POLL_MS = 3000;
 const skeleton = (
@@ -122,8 +123,8 @@ function Detail({ id }: { id: string }) {
       title={detail?.title ?? "工作区"}
       titleLocalize={false}
       hideTitle
-      stickyHeader={
-        <View style={{ marginTop: -phone(12) }}>
+      floatingHeader={
+        <View>
           <Pressable
             accessibilityRole="link"
             accessibilityLabel={text("返回工作区")}
@@ -565,11 +566,23 @@ function Launcher({
                   paddingHorizontal: 10,
                 }}
               >
-                {selected && (
+                {selected ? (
                   <SymbolView
                     name={{ ios: "checkmark", android: "check", web: "check" }}
-                    size={phone(12)}
+                    size={phone(14)}
                     tintColor={t.text}
+                  />
+                ) : (
+                  <SymbolView
+                    name={
+                      {
+                        ios: AGENT_ICONS[agent][0],
+                        android: AGENT_ICONS[agent][1],
+                        web: AGENT_ICONS[agent][1],
+                      } as never
+                    }
+                    size={phone(14)}
+                    tintColor={t.secondary}
                   />
                 )}
                 <Copy size={13} bold>
@@ -734,8 +747,35 @@ function ResultRow({
         accessibilityState={{ expanded: open, disabled: !expandable }}
         disabled={!expandable}
         onPress={() => setOpen((v) => !v)}
-        style={{ flexDirection: "row", gap: 12, minHeight: 44 }}
+        style={{
+          flexDirection: "row",
+          alignItems: "flex-start",
+          gap: 12,
+          minHeight: 44,
+        }}
       >
+        <View
+          style={{
+            width: phone(32),
+            height: phone(32),
+            borderRadius: 999,
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: t.wash,
+          }}
+        >
+          <SymbolView
+            name={
+              {
+                ios: AGENT_ICONS[result.agent][0],
+                android: AGENT_ICONS[result.agent][1],
+                web: AGENT_ICONS[result.agent][1],
+              } as never
+            }
+            size={phone(16)}
+            tintColor={t.text}
+          />
+        </View>
         <View style={{ flex: 1, gap: 4 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
             <Copy size={14} bold>
@@ -764,9 +804,16 @@ function ResultRow({
           )}
         </View>
         {expandable && (
-          <Copy muted localize={false}>
-            {open ? "⌃" : "⌄"}
-          </Copy>
+          <SymbolView
+            name={{
+              ios: open ? "chevron.up" : "chevron.down",
+              android: open ? "expand_less" : "expand_more",
+              web: open ? "expand_less" : "expand_more",
+            }}
+            size={phone(16)}
+            tintColor={t.secondary}
+            style={{ marginTop: phone(8) }}
+          />
         )}
       </Pressable>
       {open &&

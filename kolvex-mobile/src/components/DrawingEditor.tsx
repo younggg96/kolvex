@@ -74,9 +74,14 @@ export function DrawingEditor({
         !!price2.trim() &&
         Number.isFinite(Number(price2))));
   return (
-    <Glass style={{ padding: 20, gap: 12 }}>
+    <Glass style={{ padding: 16, gap: 12 }}>
       <Section title="我的云端画线" />
-      <ResourceState skeleton={<FormSkeleton fields={2} />} resource={r} empty={false} message="画线暂无内容" />
+      <ResourceState
+        skeleton={<FormSkeleton fields={2} />}
+        resource={r}
+        empty={false}
+        message="画线暂无内容"
+      />
       <Copy muted>
         可在图表上直接绘制，也可选择 K 线填入锚点或编辑日期与价格。保存后与 Web
         同步；不会自动覆盖云端变化。

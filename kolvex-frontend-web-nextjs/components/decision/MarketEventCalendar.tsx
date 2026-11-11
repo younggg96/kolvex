@@ -422,7 +422,7 @@ export default function MarketEventCalendar({ toolbar }: { toolbar: HTMLElement 
                                           />
                                         )}
                                         {event.source_url && (
-                                          <div className="mt-2 flex flex-wrap items-center gap-3 text-xs">
+                                          <div className="mt-2 flex flex-wrap items-center gap-3 text-[0.6875rem] leading-4">
                                             <a
                                               href={event.source_url}
                                               target="_blank"

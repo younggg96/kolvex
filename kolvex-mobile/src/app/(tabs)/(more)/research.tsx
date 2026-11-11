@@ -1,40 +1,33 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useMemo, useState, type ReactNode } from "react";
-import {
-  Modal,
-  Pressable,
-  StyleSheet,
-  View,
-  useWindowDimensions,
-} from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { CompanyLogo } from "../../components/CompanyLogo";
-import { Filters, ResourceState } from "../../components/Content";
+import { Pressable, StyleSheet, View, useWindowDimensions } from "react-native";
+import { CompanyLogo } from "../../../components/CompanyLogo";
+import { Filters, ResourceState } from "../../../components/Content";
+import { OptionGroup, OptionSheet } from "../../../components/OptionSheet";
 import {
   Button,
-  Chip,
   Copy,
   Glass,
   Page,
   Skeleton,
   phone,
-} from "../../components/UI";
-import { profile, reports } from "../../lib/contentApi";
-import type { TradingAnalysis } from "../../lib/contentTypes";
-import { apiRequest } from "../../lib/http";
-import { useText } from "../../lib/i18n";
-import { money } from "../../lib/paperTrading";
+} from "../../../components/UI";
+import { reports } from "../../../lib/contentApi";
+import type { TradingAnalysis } from "../../../lib/contentTypes";
+import { apiRequest } from "../../../lib/http";
+import { useText } from "../../../lib/i18n";
+import { money } from "../../../lib/paperTrading";
 import {
   groupResearchByStock,
   loadResearchCatalog,
   STOCKS_PER_PAGE,
-} from "../../lib/researchGroups";
-import type { AiTechnicalAnalysis } from "../../lib/technicalTypes";
-import { useTheme } from "../../lib/theme";
-import { useResource } from "../../lib/useResource";
-import { useAuth } from "../../state/Auth";
-import { usePreferences } from "../../state/Preferences";
+} from "../../../lib/researchGroups";
+import type { AiTechnicalAnalysis } from "../../../lib/technicalTypes";
+import { useTheme } from "../../../lib/theme";
+import { useResource } from "../../../lib/useResource";
+import { useAuth } from "../../../state/Auth";
+import { usePreferences } from "../../../state/Preferences";
 
 type AnalysisItem = Pick<AiTechnicalAnalysis, "signals"> & {
   id: string;
@@ -84,9 +77,6 @@ export default function Research() {
   const [tab, setTab] = useState<ResearchMode>("all");
   const [sort, setSort] = useState<Sort>("newest");
   const [showSort, setShowSort] = useState(false);
-  const account = useResource(`research-profile:${user}`, (signal) =>
-    profile(user, signal),
-  );
   const catalog = useResource(
     `research-catalog:${user}`,
     (signal) =>
@@ -123,6 +113,9 @@ export default function Research() {
   const page = Math.min(requestedPage, totalPages);
   const offset = (page - 1) * STOCKS_PER_PAGE;
   const showSortButton = tab === "planned" && total > 1;
+  // Newest-first lists read as a timeline: 今天 / 昨天 / 近 7 天 / 近 30 天 / 更早.
+  const sortByDate =
+    tab !== "all" && (tab === "technical" || sort === "newest");
   const counts = {
     all: catalog.data && groups.length,
     technical: index.data?.technical.length,
@@ -145,91 +138,67 @@ export default function Research() {
       title="AI 研究"
       hideTitle
       scrollKey={`${tab}:${page}`}
+      floatingHeader={
+        <View style={[styles.row, { gap: phone(8) }]}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Filters
+              maxWidth={Math.max(
+                100,
+                width - 32 - (showSortButton ? phone(44) : 0),
+              )}
+              values={values}
+              value={tab}
+              onChange={(next) => {
+                if (
+                  next !== "all" &&
+                  next !== "technical" &&
+                  next !== "planned"
+                )
+                  return;
+                setTab(next);
+                goPage(1);
+              }}
+            />
+          </View>
+          {showSortButton && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={text(
+                `排序 · ${text(sorts.find(([key]) => key === sort)?.[1] ?? "最新")}`,
+              )}
+              hitSlop={6}
+              onPress={() => setShowSort(true)}
+            >
+              <Glass
+                style={[
+                  styles.center,
+                  {
+                    borderRadius: 999,
+                    width: phone(36),
+                    height: phone(36),
+                  },
+                ]}
+              >
+                <SymbolView
+                  name={{
+                    ios: "slider.horizontal.3",
+                    android: "tune",
+                    web: "tune",
+                  }}
+                  size={phone(16)}
+                  tintColor={t.text}
+                />
+              </Glass>
+            </Pressable>
+          )}
+        </View>
+      }
       onRefresh={current.refresh}
       refreshing={current.loading && !!current.data}
     >
-      <View
-        style={{ marginHorizontal: 2, paddingTop: phone(8), gap: phone(32) }}
-      >
-        <View style={[styles.row, { justifyContent: "space-between" }]}>
-          <Copy size={28} lineHeight={35} bold>
-            AI 研究
-          </Copy>
-          {account.data?.is_admin && (
-            <Button size="sm" onPress={() => router.push("/research-tasks")}>
-              管理报告
-            </Button>
-          )}
-        </View>
-        <View style={{ gap }}>
-          <View style={[styles.row, { flexWrap: "wrap", gap: phone(8) }]}>
-            <Copy size={17} bold>
-              股票研究
-            </Copy>
-            {tab === "all" && total > 0 && (
-              <Copy
-                size={14}
-                muted
-              >{`${total} 只股票 · ${catalog.data?.length ?? 0} 个任务`}</Copy>
-            )}
-          </View>
+      <View style={{ marginHorizontal: 2, gap }}>
+        <View>
           <Glass clear style={{ padding: 12 }}>
-            <View
-              style={[styles.row, { gap: phone(8), paddingBottom: phone(12) }]}
-            >
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Filters
-                  size="sm"
-                  maxWidth={Math.max(
-                    100,
-                    width - 32 - phone(24) - (showSortButton ? phone(44) : 0),
-                  )}
-                  values={values}
-                  value={tab}
-                  onChange={(next) => {
-                    if (
-                      next !== "all" &&
-                      next !== "technical" &&
-                      next !== "planned"
-                    )
-                      return;
-                    setTab(next);
-                    goPage(1);
-                  }}
-                />
-              </View>
-              {showSortButton && (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={text(
-                    `排序 · ${text(sorts.find(([key]) => key === sort)?.[1] ?? "最新")}`,
-                  )}
-                  hitSlop={6}
-                  onPress={() => setShowSort(true)}
-                >
-                  <Glass
-                    style={[
-                      styles.center,
-                      {
-                        borderRadius: 999,
-                        width: phone(36),
-                        height: phone(36),
-                      },
-                    ]}
-                  >
-                    <SymbolView
-                      name={{
-                        ios: "slider.horizontal.3",
-                        android: "tune",
-                        web: "tune",
-                      }}
-                      size={phone(16)}
-                      tintColor={t.text}
-                    />
-                  </Glass>
-                </Pressable>
-              )}
-            </View>
             {(current.loading || total > 0) && (
               <View
                 style={[
@@ -277,15 +246,39 @@ export default function Research() {
                         page={page}
                       />
                     ))
-                : analysis
-                    .slice(offset, offset + STOCKS_PER_PAGE)
-                    .map((item) => (
-                      <AnalysisGroup
-                        key={`${tab}-${page}-${item.ticker}`}
-                        item={item}
-                        planned={tab === "planned"}
-                      />
-                    ))}
+                : sortByDate
+                  ? dateSections(
+                      analysis.slice(offset, offset + STOCKS_PER_PAGE),
+                    ).map(([label, items], index) => (
+                      <View key={label}>
+                        <View
+                          style={{
+                            paddingTop: phone(index ? 16 : 4),
+                            paddingBottom: phone(4),
+                          }}
+                        >
+                          <Copy size={12} bold muted>
+                            {label}
+                          </Copy>
+                        </View>
+                        {items.map((item) => (
+                          <AnalysisGroup
+                            key={`${tab}-${page}-${item.ticker}`}
+                            item={item}
+                            planned={tab === "planned"}
+                          />
+                        ))}
+                      </View>
+                    ))
+                  : analysis
+                      .slice(offset, offset + STOCKS_PER_PAGE)
+                      .map((item) => (
+                        <AnalysisGroup
+                          key={`${tab}-${page}-${item.ticker}`}
+                          item={item}
+                          planned={tab === "planned"}
+                        />
+                      ))}
             </View>
             {totalPages > 1 && !current.error && (
               <View
@@ -314,104 +307,54 @@ export default function Research() {
           </Glass>
         </View>
       </View>
-      {showSort && (
-        <ResearchSort
+      <OptionSheet
+        title="排序"
+        visible={showSort}
+        onClose={() => setShowSort(false)}
+        onReset={
+          sort !== "newest"
+            ? () => {
+                setSort("newest");
+                goPage(1);
+              }
+            : undefined
+        }
+      >
+        <OptionGroup
+          label="排序"
+          options={sorts}
           value={sort}
-          onClose={() => setShowSort(false)}
           onChange={(next) => {
-            setSort(next);
+            setSort(next as Sort);
             goPage(1);
           }}
         />
-      )}
+      </OptionSheet>
     </Page>
   );
 }
 
-function ResearchSort({
-  value,
-  onClose,
-  onChange,
-}: {
-  value: Sort;
-  onClose: () => void;
-  onChange: (value: Sort) => void;
-}) {
-  const t = useTheme();
-  const text = useText();
-  const insets = useSafeAreaInsets();
-  return (
-    <Modal visible transparent animationType="slide" onRequestClose={onClose}>
-      <View style={{ flex: 1, justifyContent: "flex-end" }}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={text("关闭")}
-          onPress={onClose}
-          style={[
-            StyleSheet.absoluteFill,
-            { backgroundColor: "rgba(0,0,0,0.5)" },
-          ]}
-        />
-        <Glass material style={{ padding: 20 }}>
-          <View
-            accessibilityViewIsModal
-            style={{ gap: phone(16), paddingBottom: insets.bottom }}
-          >
-            <View style={[styles.row, { justifyContent: "space-between" }]}>
-              <Copy bold>排序</Copy>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={text("关闭")}
-                onPress={onClose}
-                hitSlop={6}
-                style={[
-                  styles.center,
-                  {
-                    width: phone(36),
-                    height: phone(36),
-                    borderRadius: 999,
-                    backgroundColor: t.brand,
-                  },
-                ]}
-              >
-                <SymbolView
-                  name={{ ios: "xmark", android: "close", web: "close" }}
-                  size={phone(16)}
-                  tintColor={t.onBrand}
-                />
-              </Pressable>
-            </View>
-            <View style={{ gap: phone(8) }}>
-              <Copy size={12} muted>
-                排序
-              </Copy>
-              <View style={[styles.row, { gap: phone(8), flexWrap: "wrap" }]}>
-                {sorts.map(([key, label]) => (
-                  <Chip
-                    key={key}
-                    selected={key === value}
-                    onPress={() => onChange(key)}
-                  >
-                    {label}
-                  </Chip>
-                ))}
-              </View>
-            </View>
-            <View style={styles.row}>
-              {value !== "newest" && (
-                <Button onPress={() => onChange("newest")}>重置</Button>
-              )}
-              <View style={{ flex: 1 }}>
-                <Button variant="primary" onPress={onClose}>
-                  完成
-                </Button>
-              </View>
-            </View>
-          </View>
-        </Glass>
-      </View>
-    </Modal>
-  );
+/** Buckets newest-first items by how long ago they were made. */
+function dateSections(items: AnalysisItem[]) {
+  const day = 86_400_000;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const start = today.getTime();
+  const label = (value: string) => {
+    const time = new Date(value).getTime();
+    if (!Number.isFinite(time)) return "更早";
+    if (time >= start) return "今天";
+    if (time >= start - day) return "昨天";
+    if (time >= start - 6 * day) return "近 7 天";
+    if (time >= start - 29 * day) return "近 30 天";
+    return "更早";
+  };
+  const sections = new Map<string, AnalysisItem[]>();
+  for (const item of items) {
+    const key = label(item.created_at);
+    sections.set(key, [...(sections.get(key) ?? []), item]);
+  }
+  return [...sections];
 }
 
 function ResearchRow({
@@ -468,7 +411,7 @@ function ResearchRow({
                   web: "expand_more",
                 }
           }
-          size={phone(13)}
+          size={phone(16)}
           tintColor={t.secondary}
         />
       </Pressable>
@@ -476,7 +419,7 @@ function ResearchRow({
         <View
           style={{
             paddingHorizontal: phone(8),
-            paddingBottom: phone(20),
+            paddingBottom: phone(16),
             gap: phone(8),
           }}
         >
@@ -563,7 +506,7 @@ function PublishedGroup({
       ticker={ticker}
       trailing={<Direction value={tasks[0].final_decision} />}
       caption={
-        <View>
+        <View style={{ gap: phone(2) }}>
           <Copy
             size={12}
             lineHeight={16}
@@ -582,7 +525,7 @@ function PublishedGroup({
         ]}
       >
         <Copy size={12} muted>
-          研究任务 · 最新优先
+          研究任务 · 按研究日期从新到旧
         </Copy>
         <Copy
           size={12}
@@ -616,7 +559,7 @@ function PublishedGroup({
           <View style={{ flex: 1, minWidth: phone(160), gap: phone(4) }}>
             <Copy size={14} bold localize={false}>
               {date(task.trade_date, true)}
-              {index === 0 ? ` · ${text("最新")}` : ""}
+              {index === 0 ? ` · ${text("最新任务")}` : ""}
             </Copy>
             <Copy size={12} muted localize={false}>
               {[

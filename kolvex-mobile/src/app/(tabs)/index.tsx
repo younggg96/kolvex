@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { router } from "expo-router";
-import { SymbolView } from "expo-symbols";
 import { Filters } from "../../components/Content";
 import {
   ComparisonTable,
@@ -11,6 +10,8 @@ import {
   ViewToggle,
   type RangeKey,
 } from "../../components/MarketCards";
+import { CompanyLogo } from "../../components/CompanyLogo";
+import { ArrowLink, MarketWatchlist } from "../../components/MarketWatchlist";
 import { OpinionStrength } from "../../components/OpinionStrength";
 import { StockWatch } from "../../components/StockWatch";
 import {
@@ -42,8 +43,12 @@ export default function Markets() {
   const [tab, setTab] = useState("overview");
   const [revision, setRevision] = useState(0);
   return (
-    <Page title="行情" hideTitle onRefresh={() => setRevision((v) => v + 1)}>
-      <Filters values={TABS} value={tab} onChange={setTab} />
+    <Page
+      title="行情"
+      hideTitle
+      onRefresh={() => setRevision((v) => v + 1)}
+      floatingHeader={<Filters values={TABS} value={tab} onChange={setTab} />}
+    >
       {tab === "overview" ? (
         <Overview revision={revision} />
       ) : (
@@ -82,7 +87,8 @@ function RangeControls({
             size="sm"
             maxWidth={phone(156)}
             values={MARKET_RANGES.map(
-              (item) => [item.key, locale === "en" ? item.en : item.zh] as const,
+              (item) =>
+                [item.key, locale === "en" ? item.en : item.zh] as const,
             )}
             value={range}
             onChange={(value) => setRange(value as RangeKey)}
@@ -122,10 +128,8 @@ function Overview({ revision }: { revision: number }) {
         )}
       </View>
       <StockWatch revision={revision} range={range} />
+      <MarketWatchlist revision={revision} />
       <CreatorUpdates revision={revision} />
-      <Copy size={12} muted>
-        研究从事实开始。市场数据与创作者观点不构成投资建议。
-      </Copy>
     </>
   );
 }
@@ -191,34 +195,12 @@ function CreatorUpdates({ revision }: { revision: number }) {
         <Copy size={18} bold>
           博主新动态
         </Copy>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="查看全部观点"
+        <ArrowLink
+          label="查看全部观点"
           onPress={() => router.navigate("/opinions")}
-          hitSlop={6}
-          style={({ pressed }) => ({
-            width: 38,
-            height: 38,
-            borderRadius: 19,
-            borderWidth: 1,
-            borderColor: t.rim,
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: pressed ? t.wash : "transparent",
-          })}
-        >
-          <SymbolView
-            name={{
-              ios: "arrow.up.right",
-              android: "north_east",
-              web: "north_east",
-            }}
-            size={14}
-            tintColor={t.text}
-          />
-        </Pressable>
+        />
       </View>
-      <Glass style={{ paddingHorizontal: 16, paddingVertical: 4 }}>
+      <Glass clear style={{ paddingHorizontal: 12, paddingVertical: 4 }}>
         {r.loading && !r.data ? (
           <View style={{ gap: 12, paddingVertical: 12 }}>
             {[0, 1, 2].map((i) => (
@@ -254,14 +236,25 @@ function CreatorUpdates({ revision }: { revision: number }) {
                 opacity: pressed ? 0.6 : 1,
               })}
             >
-              <Copy size={14} bold localize={false}>
-                {shift.ticker}
-              </Copy>
               <View
-                style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+                style={{
+                  flex: 1,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+              >
+                <CompanyLogo symbol={shift.ticker} size={phone(24)} />
+                <Copy size={14} bold lines={1} localize={false}>
+                  {shift.ticker}
+                </Copy>
+              </View>
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
               >
                 <OpinionStrength
                   value={consensus.get(shift.ticker)?.avg_score}
+                  size={12}
                 />
                 <View
                   style={{ width: 1, height: 12, backgroundColor: t.border }}
@@ -271,7 +264,7 @@ function CreatorUpdates({ revision }: { revision: number }) {
                     首次覆盖
                   </Copy>
                 ) : (
-                  <OpinionStrength value={shift.change} change />
+                  <OpinionStrength value={shift.change} change barsOnly />
                 )}
               </View>
             </Pressable>

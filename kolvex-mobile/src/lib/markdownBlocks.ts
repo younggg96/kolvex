@@ -8,7 +8,8 @@ const cells = (line: string) =>
     .replace(/\|$/, "")
     .split("|")
     .map((cell) => cell.trim());
-const isDivider = (line: string) => /^\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?$/.test(line);
+const isDivider = (line: string) =>
+  /^\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?$/.test(line);
 /** The small Markdown subset AI reports and chat answers actually use. */
 export function textBlocks(source: string): TextBlock[] {
   const blocks: TextBlock[] = [];

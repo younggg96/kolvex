@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { View } from "react-native";
 import { CardsSkeleton } from "./Skeletons";
 import * as Crypto from "expo-crypto";
 import { router } from "expo-router";
@@ -87,7 +88,7 @@ export function TechnicalAI({
     onResult(value);
   }
   return (
-    <Glass style={{ padding: 20, gap: 16 }}>
+    <Glass style={{ padding: 16, gap: 16 }}>
       <Section title="AI 技术研究与画线" />
       <Filters
         values={[
@@ -107,20 +108,22 @@ export function TechnicalAI({
         disabled={m.busy}
       />
       <Copy muted>选择分析范围</Copy>
-      {TECHNICAL_CATEGORIES.map((c) => (
-        <Button
-          key={c}
-          selected={categories.includes(c)}
-          disabled={m.busy}
-          onPress={() =>
-            setCategories((v) =>
-              v.includes(c) ? v.filter((x) => x !== c) : [...v, c],
-            )
-          }
-        >
-          {categoryName[c] || c}
-        </Button>
-      ))}
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+        {TECHNICAL_CATEGORIES.map((c) => (
+          <Button
+            key={c}
+            selected={categories.includes(c)}
+            disabled={m.busy}
+            onPress={() =>
+              setCategories((v) =>
+                v.includes(c) ? v.filter((x) => x !== c) : [...v, c],
+              )
+            }
+          >
+            {categoryName[c] || c}
+          </Button>
+        ))}
+      </View>
       <Field
         editable={!m.busy}
         label="自定义研究情景（每行一项）"

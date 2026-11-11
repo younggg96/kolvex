@@ -26,13 +26,15 @@ import {
 } from "react-native";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import { BlurView } from "expo-blur";
+import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { demoMode } from "../lib/api";
 import { usePreferences } from "../state/Preferences";
 import { translateNodes, useText } from "../lib/i18n";
 import { useTheme } from "../lib/theme";
-import SwiftGlass from "./native/SwiftGlass";
+import SwiftGlass, { type SwiftGlassVariant } from "./native/SwiftGlass";
+import TabScrollMarker from "./native/TabScrollMarker";
 
 /**
  * The Web shrinks its rem from 16px to 14px on phones, so every size there is 87.5% of its
@@ -79,9 +81,10 @@ export function Copy({
         color: color ?? (muted ? t.secondary : t.text),
         fontSize: fontPx(size),
         fontWeight: bold ? "600" : "400",
-        lineHeight: lineHeight === undefined
-          ? fontPx(size) * (size >= 20 ? 1.3 : 1.5)
-          : phone(lineHeight),
+        lineHeight:
+          lineHeight === undefined
+            ? fontPx(size) * (size >= 20 ? 1.3 : 1.5)
+            : phone(lineHeight),
         letterSpacing: size >= 20 ? -0.2 : 0,
         fontVariant: ["tabular-nums"],
       }}
@@ -138,18 +141,22 @@ export function useLiquidGlass() {
 /**
  * The Web's glass card. On iOS 26 it is the system's Liquid Glass (UIGlassEffect);
  * with Reduce Transparency, or before iOS 26, the Web's solid card colours.
- * `material` keeps the clearer SwiftUI glass for floating toolbars such as the Dock.
+ * `material` keeps SwiftUI glass for floating chrome such as the Dock; its
+ * `glassVariant` picks the system's clear toolbar glass or the frosted regular glass.
  */
 export function Glass({
   children,
   style,
   material = false,
   clear = false,
+  glassVariant = "clear",
 }: PropsWithChildren<{
   style?: StyleProp<ViewStyle>;
   material?: boolean;
   /** Clear glass over artwork, darkened like the Web's bg-card-glass so text stays legible. */
   clear?: boolean;
+  /** Only with `material`: which Liquid Glass the API draws the surface from. */
+  glassVariant?: SwiftGlassVariant;
 }>) {
   const t = useTheme();
   const glass = useLiquidGlass();
@@ -161,7 +168,11 @@ export function Glass({
     style,
   ];
   if (glass && material)
-    return <SwiftGlass style={shell}>{children}</SwiftGlass>;
+    return (
+      <SwiftGlass variant={glassVariant} style={shell}>
+        {children}
+      </SwiftGlass>
+    );
   if (glass)
     return (
       <GlassView
@@ -217,11 +228,14 @@ export function Button({
   const text = useText();
   const glass = useLiquidGlass();
   const primary = variant === "primary";
-  const compact = size === "sm" ? {
-    minHeight: phone(36),
-    paddingHorizontal: phone(16),
-    paddingVertical: phone(6),
-  } : undefined;
+  const compact =
+    size === "sm"
+      ? {
+          minHeight: phone(36),
+          paddingHorizontal: phone(16),
+          paddingVertical: phone(6),
+        }
+      : undefined;
   const label_ = (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
       {icon}
@@ -276,24 +290,6 @@ export function Button({
         label_
       )}
     </Pressable>
-  );
-}
-/** Screens without a navigation bar: keeps content from scrolling under the status bar. */
-export function StatusScrim() {
-  const t = useTheme();
-  const insets = useSafeAreaInsets();
-  return (
-    <View
-      pointerEvents="none"
-      style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        height: insets.top,
-        backgroundColor: t.background,
-      }}
-    />
   );
 }
 /** A filter choice: a plain control among content, deliberately without glass. */
@@ -401,13 +397,25 @@ export function Page({
   scrollEnabled = true,
   hideTitle = false,
   stickyHeader,
+  floatingHeader,
+  actions,
+  badge,
   scrollKey,
 }: PropsWithChildren<{
   title: string;
   subtitle?: string;
+  /** Buttons at the right end of the title row (refresh, sort, filter, new). */
+  actions?: React.ReactNode;
+  /** A small count pill beside the title, such as the number of saved stocks. */
+  badge?: string;
   /** The Web's tab pages show no page heading; `title` still names the screen. */
   hideTitle?: boolean;
   stickyHeader?: React.ReactNode;
+  /**
+   * Pinned over the top of the page (the page's own tab bar). Content starts below it
+   * and scrolls underneath, so the glass bar stays put like a navigation bar.
+   */
+  floatingHeader?: React.ReactNode;
   scrollKey?: string;
   titleLocalize?: boolean;
   subtitleLocalize?: boolean;
@@ -421,6 +429,9 @@ export function Page({
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
   const nearEnd = useRef(true);
   const embedded = useContext(Embedded);
+  // The header's own height, so the content can start just below it.
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const headerTop = insets.top + phone(8);
   useEffect(() => {
     if (scrollKey !== undefined) {
       scroll.current?.scrollTo({
@@ -429,69 +440,165 @@ export function Page({
       });
     }
   }, [scrollKey, insets.top]);
-  if (embedded) return <View style={{ gap: phone(24) }}>{children}</View>;
+  if (embedded)
+    return (
+      <View style={{ gap: phone(24) }}>
+        {floatingHeader}
+        {children}
+      </View>
+    );
   return (
     <View style={{ flex: 1, backgroundColor: t.background }}>
       <Backdrop />
-      <ScrollView
-        ref={scroll}
-        scrollEnabled={scrollEnabled}
-        onScroll={(event) => {
-          const { contentOffset, contentSize, layoutMeasurement } =
-            event.nativeEvent;
-          nearEnd.current =
-            contentOffset.y + layoutMeasurement.height >=
-            contentSize.height - 120;
-        }}
-        scrollEventThrottle={100}
-        onContentSizeChange={() => {
-          if (followContent && nearEnd.current)
-            scroll.current?.scrollToEnd({ animated: false });
-        }}
-        style={{ flex: 1 }}
-        contentInsetAdjustmentBehavior="automatic"
-        keyboardShouldPersistTaps="handled"
-        automaticallyAdjustKeyboardInsets
-        stickyHeaderIndices={stickyHeader ? [0] : undefined}
-        contentContainerStyle={{
-          paddingHorizontal: phone(16),
-          paddingTop:
-            Platform.OS === "android" ? insets.top + phone(16) : phone(16),
-          paddingBottom: insets.bottom + 100,
-          gap: phone(24),
-        }}
-        refreshControl={
-          onRefresh ? (
-            <RefreshControl
-              refreshing={refreshing ?? false}
-              onRefresh={onRefresh}
-              tintColor={t.accent}
-            />
-          ) : undefined
-        }
-      >
-        {stickyHeader}
-        {!hideTitle && (
-          <View style={{ gap: 4 }}>
-            <Copy size={24} bold localize={titleLocalize}>
-              {title}
-            </Copy>
-            {!!subtitle && (
-              <Copy size={14} muted localize={subtitleLocalize}>
-                {subtitle}
+      <TabScrollMarker>
+        <ScrollView
+          ref={scroll}
+          scrollEnabled={scrollEnabled}
+          onScroll={(event) => {
+            const { contentOffset, contentSize, layoutMeasurement } =
+              event.nativeEvent;
+            nearEnd.current =
+              contentOffset.y + layoutMeasurement.height >=
+              contentSize.height - 120;
+          }}
+          scrollEventThrottle={100}
+          onContentSizeChange={() => {
+            if (followContent && nearEnd.current)
+              scroll.current?.scrollToEnd({ animated: false });
+          }}
+          style={{ flex: 1 }}
+          contentInsetAdjustmentBehavior="automatic"
+          keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets
+          stickyHeaderIndices={stickyHeader ? [0] : undefined}
+          contentContainerStyle={{
+            paddingHorizontal: phone(16),
+            paddingTop:
+              (Platform.OS === "android" ? insets.top : 0) +
+              // The title row starts where a floating tab bar would, so every
+              // page's header sits at the same height.
+              (floatingHeader ? phone(8) + headerHeight + phone(20) : phone(8)),
+            // iOS already insets the content by the home-indicator area
+            // (contentInsetAdjustmentBehavior), so only the floating tab bar is added here.
+            paddingBottom:
+              Platform.OS === "ios" ? phone(24) : insets.bottom + phone(88),
+            gap: phone(24),
+          }}
+          refreshControl={
+            onRefresh ? (
+              <RefreshControl
+                refreshing={refreshing ?? false}
+                onRefresh={onRefresh}
+                tintColor={t.accent}
+                progressViewOffset={floatingHeader ? headerHeight : undefined}
+              />
+            ) : undefined
+          }
+        >
+          {stickyHeader}
+          {!hideTitle && (
+            <View style={{ gap: 4 }}>
+              {/* As tall as the floating tab bar, so titles and tabs line up across pages. */}
+              <View
+                style={{
+                  minHeight: phone(48),
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: phone(12),
+                }}
+              >
+                <View
+                  style={{
+                    flexShrink: 1,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: phone(8),
+                  }}
+                >
+                  <Copy size={24} bold lines={1} localize={titleLocalize}>
+                    {title}
+                  </Copy>
+                  {!!badge && (
+                    <View
+                      style={{
+                        borderRadius: 999,
+                        backgroundColor: t.wash,
+                        paddingHorizontal: phone(8),
+                        paddingVertical: phone(2),
+                      }}
+                    >
+                      <Copy size={12} muted localize={false}>
+                        {badge}
+                      </Copy>
+                    </View>
+                  )}
+                </View>
+                {actions && (
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: phone(8),
+                    }}
+                  >
+                    {actions}
+                  </View>
+                )}
+              </View>
+              {!!subtitle && (
+                <Copy size={14} muted localize={subtitleLocalize}>
+                  {subtitle}
+                </Copy>
+              )}
+            </View>
+          )}
+          {demoMode && (
+            <Glass style={{ padding: 12 }}>
+              <Copy size={12} muted>
+                演示模式 · 行情为静态样本，非实时市场数据
               </Copy>
-            )}
-          </View>
-        )}
-        {demoMode && (
-          <Glass style={{ padding: 12 }}>
-            <Copy size={12} muted>
-              演示模式 · 行情为静态样本，非实时市场数据
-            </Copy>
-          </Glass>
-        )}
-        {children}
-      </ScrollView>
+            </Glass>
+          )}
+          {children}
+        </ScrollView>
+      </TabScrollMarker>
+      {floatingHeader ? (
+        // The system's scroll-edge fade: content dims as it passes under the status
+        // bar and the pinned tabs, so the glass bar always reads clearly.
+        <Svg
+          pointerEvents="none"
+          width="100%"
+          height={headerTop + headerHeight + phone(16)}
+          style={{ position: "absolute", top: 0, left: 0, right: 0 }}
+        >
+          <Defs>
+            <LinearGradient id="page-edge" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor={t.background} stopOpacity={0.92} />
+              <Stop offset="0.6" stopColor={t.background} stopOpacity={0.6} />
+              <Stop offset="1" stopColor={t.background} stopOpacity={0} />
+            </LinearGradient>
+          </Defs>
+          <Rect width="100%" height="100%" fill="url(#page-edge)" />
+        </Svg>
+      ) : null}
+      {floatingHeader ? (
+        <View
+          pointerEvents="box-none"
+          onLayout={(event) =>
+            setHeaderHeight(Math.round(event.nativeEvent.layout.height))
+          }
+          style={{
+            position: "absolute",
+            top: headerTop,
+            left: phone(16),
+            right: phone(16),
+            zIndex: 10,
+          }}
+        >
+          {floatingHeader}
+        </View>
+      ) : null}
     </View>
   );
 }

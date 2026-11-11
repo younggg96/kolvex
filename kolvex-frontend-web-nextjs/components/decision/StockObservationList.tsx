@@ -252,9 +252,6 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
           </Select>
         </div>
       </div>
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs leading-5 text-muted-foreground max-lg:mb-0">
-        {!blocking && (!sourceError || symbols.length > 0) && <p role="status" aria-live="polite" className="shrink-0 tabular-nums max-lg:sr-only">{c(`Showing ${visible.length} of ${symbols.length} stocks`, `已显示 ${visible.length} / ${symbols.length} 只`)}</p>}
-      </div>
       {marketScope && (board?.partial && !board.unavailable || board?.stale) && <div role="status" className="mb-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <p>{board.stale ? c("Refresh unavailable. Showing a saved ranking snapshot (up to 15 minutes old).", "更新暂不可用，显示最多15分钟内的榜单快照。") : c("Some source lists are unavailable; this ranking has partial coverage.", "部分来源榜单暂不可用，当前仅显示已取得的候选。")}</p>
         <Button variant="ghost" size="sm" disabled={discovery.refreshing} onClick={discovery.refresh}>{c("Retry ranking", "重试榜单")}</Button>

@@ -1,22 +1,25 @@
 import { useState } from "react";
-import { CardsSkeleton } from "../components/Skeletons";
-import { apiRequest } from "../lib/http";
-import { profile } from "../lib/contentApi";
-import { useAuth } from "../state/Auth";
-import { useResource } from "../lib/useResource";
-import { useMutation } from "../lib/useMutation";
-import { Page, Copy, Button, Glass } from "../components/UI";
+import { CardsSkeleton } from "../../../components/Skeletons";
+import { apiRequest } from "../../../lib/http";
+import { profile } from "../../../lib/contentApi";
+import { useAuth } from "../../../state/Auth";
+import { useResource } from "../../../lib/useResource";
+import { useMutation } from "../../../lib/useMutation";
+import { Page, Copy, Button, Glass } from "../../../components/UI";
 import {
   AuthGate,
   Field,
   Filters,
   Pager,
   ResourceState,
-} from "../components/Content";
-import { ConfirmAction } from "../components/ConfirmAction";
-import { MutationStatus } from "../components/MutationStatus";
-import { AdminBriefs, AdminSourceEditor } from "../components/AdminEditors";
-import { OptionsActivityAdmin } from "../components/OptionsActivityAdmin";
+} from "../../../components/Content";
+import { ConfirmAction } from "../../../components/ConfirmAction";
+import { MutationStatus } from "../../../components/MutationStatus";
+import {
+  AdminBriefs,
+  AdminSourceEditor,
+} from "../../../components/AdminEditors";
+import { OptionsActivityAdmin } from "../../../components/OptionsActivityAdmin";
 export default function Admin() {
   return (
     <AuthGate

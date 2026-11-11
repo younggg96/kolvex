@@ -3,20 +3,18 @@ import { SymbolView, type SymbolViewProps } from "expo-symbols";
 import { useCallback, useRef, useState, type ComponentRef } from "react";
 import {
   AppState,
-  Modal,
   Pressable,
   StyleSheet,
   TextInput,
   useWindowDimensions,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { CompanyLogo } from "../../components/CompanyLogo";
-import { MiniTrend } from "../../components/MarketCards";
-import { QuoteRowsSkeleton } from "../../components/Skeletons";
+import { CompanyLogo } from "../../../components/CompanyLogo";
+import { OptionGroup, OptionSheet } from "../../../components/OptionSheet";
+import { MiniTrend } from "../../../components/MarketCards";
+import { QuoteRowsSkeleton } from "../../../components/Skeletons";
 import {
   Button,
-  Chip,
   Copy,
   Failure,
   Glass,
@@ -25,15 +23,15 @@ import {
   PendingValue,
   Skeleton,
   phone,
-} from "../../components/UI";
-import { quote } from "../../lib/api";
-import { useText } from "../../lib/i18n";
-import { CORE_STOCKS } from "../../lib/marketDiscovery";
-import type { Quote } from "../../lib/models";
-import { money } from "../../lib/paperTrading";
-import { useTheme } from "../../lib/theme";
-import { useResource } from "../../lib/useResource";
-import { useWatchlist } from "../../state/Watchlist";
+} from "../../../components/UI";
+import { quote } from "../../../lib/api";
+import { useText } from "../../../lib/i18n";
+import { CORE_STOCKS } from "../../../lib/marketDiscovery";
+import type { Quote } from "../../../lib/models";
+import { money } from "../../../lib/paperTrading";
+import { useTheme } from "../../../lib/theme";
+import { useResource } from "../../../lib/useResource";
+import { useWatchlist } from "../../../state/Watchlist";
 
 const PAGE_SIZE = 20;
 const SORTS = [
@@ -147,7 +145,6 @@ export default function Watchlist() {
   const t = useTheme();
   const text = useText();
   const { width } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
   const list = useWatchlist();
   const { q: query = "", sort: sortParam } = useLocalSearchParams<{
     q?: string;
@@ -248,20 +245,23 @@ export default function Watchlist() {
   return (
     <Page
       title="自选股"
-      hideTitle
-      refreshing={list.pending}
-      onRefresh={() => {
-        list.refresh();
-        refresh();
-      }}
-    >
-      <View
-        style={{ gap: phone(24), marginHorizontal: 2, paddingTop: phone(8) }}
-      >
-        <View style={[styles.row, { alignItems: "flex-start" }]}>
-          <Copy size={24} bold>
-            自选股
-          </Copy>
+      badge={list.ready && hasSymbols ? `${list.symbols.length}` : undefined}
+      actions={
+        <>
+          {hasSymbols && (
+            <IconButton
+              label={`排序 · ${text(sort[1])}`}
+              icon={{
+                ios: "arrow.up.arrow.down",
+                android: "swap_vert",
+                web: "swap_vert",
+              }}
+              size={phone(40)}
+              glass
+              marked={sort[0] !== "added"}
+              onPress={() => setSortOpen(true)}
+            />
+          )}
           <IconButton
             label="刷新自选股行情"
             icon={{
@@ -269,91 +269,20 @@ export default function Watchlist() {
               android: "refresh",
               web: "refresh",
             }}
+            size={phone(40)}
+            glass
             disabled={!list.ready || quotes.loading || !hasSymbols}
             onPress={refresh}
           />
-        </View>
-        <View style={{ gap: phone(8) }}>
-          <Copy size={14}>添加股票</Copy>
-          <View
-            style={[styles.row, { gap: phone(8), alignItems: "flex-start" }]}
-          >
-            <Glass
-              style={{
-                flex: 1,
-                borderRadius: 999,
-                flexDirection: "row",
-                alignItems: "center",
-                paddingLeft: 14,
-              }}
-            >
-              <TextInput
-                ref={input}
-                accessibilityLabel={text("添加股票")}
-                editable={!list.pending}
-                value={ticker}
-                onChangeText={(value) => {
-                  setTicker(value);
-                  setInvalid(false);
-                  setNotice("");
-                }}
-                placeholder={text("输入股票代码，如 AAPL、BRK-B")}
-                placeholderTextColor={t.secondary}
-                autoCapitalize="characters"
-                autoCorrect={false}
-                spellCheck={false}
-                maxLength={20}
-                returnKeyType="go"
-                submitBehavior="submit"
-                onSubmitEditing={() => void addTicker()}
-                style={{
-                  flex: 1,
-                  minHeight: 44,
-                  color: t.text,
-                  fontSize: 16,
-                  paddingVertical: phone(8),
-                  paddingRight: ticker ? 0 : phone(44),
-                }}
-              />
-              {!!ticker && (
-                <IconButton
-                  label="清空股票代码"
-                  icon={{ ios: "xmark", android: "close", web: "close" }}
-                  size={phone(44)}
-                  onPress={() => {
-                    setTicker("");
-                    setInvalid(false);
-                    setNotice("");
-                    input.current?.focus();
-                  }}
-                />
-              )}
-            </Glass>
-            <Button
-              variant="primary"
-              block={false}
-              label="添加"
-              disabled={!canEdit}
-              onPress={() => void addTicker()}
-              icon={
-                <SymbolView
-                  name={{ ios: "plus", android: "add", web: "add" }}
-                  size={iconSize}
-                  tintColor={t.onBrand}
-                />
-              }
-            >
-              添加
-            </Button>
-          </View>
-          <View accessibilityLiveRegion="polite">
-            <Copy size={12} muted color={invalid ? t.negative : undefined}>
-              {invalid
-                ? "请输入有效的股票代码，如 AAPL、BRK-B。"
-                : notice || "与 Reddit 关注共用，登录后同步到账号。"}
-            </Copy>
-          </View>
-        </View>
+        </>
+      }
+      refreshing={list.pending}
+      onRefresh={() => {
+        list.refresh();
+        refresh();
+      }}
+    >
+      <View style={{ gap: phone(24), marginHorizontal: 2 }}>
         {!!list.error && <Failure message={list.error} retry={list.refresh} />}
         {!list.ready && !list.error && (
           <Glass style={{ padding: 12, gap: 12 }}>
@@ -380,29 +309,7 @@ export default function Watchlist() {
         )}
         {hasSymbols && (
           <View style={{ gap: phone(12) }}>
-            <Glass clear style={{ padding: 12 }}>
-              <View style={styles.row}>
-                <Copy
-                  size={12}
-                  muted
-                >{`已显示 ${Math.min(rows, filtered.length)} / ${filtered.length} 只`}</Copy>
-                <IconButton
-                  label={`排序 · ${text(sort[1])}`}
-                  icon={{
-                    ios: "slider.horizontal.3",
-                    android: "tune",
-                    web: "tune",
-                  }}
-                  glass
-                  marked={sort[0] !== "added"}
-                  onPress={() => setSortOpen(true)}
-                />
-              </View>
-              <View style={{ marginTop: phone(12) }}>
-                <Copy size={12} muted>
-                  自选名单 · 名单内排序
-                </Copy>
-              </View>
+            <Glass clear style={{ paddingHorizontal: 12, paddingVertical: 4 }}>
               {unavailable && (
                 <View style={{ marginTop: phone(12), gap: phone(8) }}>
                   <Copy size={14} muted>
@@ -411,49 +318,23 @@ export default function Watchlist() {
                   <Button onPress={refresh}>重试报价</Button>
                 </View>
               )}
-              <View
-                style={[
-                  styles.row,
-                  {
-                    marginTop: phone(12),
-                    gap: phone(4),
-                    borderBottomWidth: StyleSheet.hairlineWidth,
-                    borderColor: t.border,
-                  },
-                ]}
-              >
-                <View style={[styles.columns, { paddingVertical: phone(12) }]}>
-                  <View style={{ flex: 1 }}>
-                    <Copy size={12} muted>
-                      股票
-                    </Copy>
-                  </View>
-                  {showTrend && (
-                    <View style={columns.trend}>
-                      <Copy size={12} muted>
-                        走势 · 1天
-                      </Copy>
-                    </View>
-                  )}
-                  <View style={columns.price}>
-                    <Copy size={12} muted>
-                      价格 / 今日
-                    </Copy>
-                  </View>
-                </View>
-                <View style={[styles.center, { width: compactButton }]}>
-                  <Copy size={12} muted>
-                    自选
-                  </Copy>
-                </View>
-              </View>
-              {filtered.slice(0, rows).map((symbol) => {
+              {filtered.slice(0, rows).map((symbol, index) => {
                 const current = quotes.data?.[symbol];
                 const move = current?.change_percent;
                 const hasMove = move != null && Number.isFinite(move);
                 const name = current?.name || companyNames.get(symbol);
                 return (
-                  <View key={symbol} style={[styles.row, { gap: phone(4) }]}>
+                  <View
+                    key={symbol}
+                    style={[
+                      styles.row,
+                      {
+                        gap: phone(4),
+                        borderTopWidth: index ? StyleSheet.hairlineWidth : 0,
+                        borderColor: t.border,
+                      },
+                    ]}
+                  >
                     <Pressable
                       accessibilityRole="link"
                       onPress={() =>
@@ -465,7 +346,7 @@ export default function Watchlist() {
                       style={({ pressed }) => [
                         styles.columns,
                         {
-                          paddingVertical: phone(8),
+                          paddingVertical: phone(12),
                           borderRadius: phone(16),
                           backgroundColor: pressed ? t.wash : undefined,
                         },
@@ -525,7 +406,6 @@ export default function Watchlist() {
                       </View>
                     </Pressable>
                     <IconButton
-                      glass
                       label={`将 ${symbol} 移出自选股`}
                       icon={{ ios: "star.fill", android: "star", web: "star" }}
                       disabled={!canEdit}
@@ -578,83 +458,19 @@ export default function Watchlist() {
           </View>
         )}
       </View>
-      <Modal
+      <OptionSheet
+        title="排序"
         visible={sortOpen}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setSortOpen(false)}
+        onClose={() => setSortOpen(false)}
+        onReset={sort[0] !== "added" ? () => updateSort("added") : undefined}
       >
-        <View style={{ flex: 1, justifyContent: "flex-end" }}>
-          <Pressable
-            accessibilityElementsHidden
-            importantForAccessibility="no-hide-descendants"
-            onPress={() => setSortOpen(false)}
-            style={[
-              StyleSheet.absoluteFill,
-              { backgroundColor: "rgba(0,0,0,0.55)" },
-            ]}
-          />
-          <Glass
-            material
-            style={{
-              padding: 20,
-              gap: 16,
-              borderBottomLeftRadius: 0,
-              borderBottomRightRadius: 0,
-            }}
-          >
-            <View
-              accessibilityViewIsModal
-              style={{ gap: phone(16), paddingBottom: insets.bottom }}
-            >
-              <View style={styles.row}>
-                <Copy bold>排序</Copy>
-                <IconButton
-                  label="关闭"
-                  icon={{ ios: "xmark", android: "close", web: "close" }}
-                  primary
-                  onPress={() => setSortOpen(false)}
-                />
-              </View>
-              <View style={{ gap: phone(8) }}>
-                <Copy size={12} muted>
-                  排序
-                </Copy>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    flexWrap: "wrap",
-                    gap: phone(8),
-                  }}
-                >
-                  {SORTS.map(([value, label]) => (
-                    <Chip
-                      key={value}
-                      size="md"
-                      selected={sort[0] === value}
-                      onPress={() => updateSort(value)}
-                    >
-                      {label}
-                    </Chip>
-                  ))}
-                </View>
-              </View>
-              <View
-                style={[styles.row, { gap: phone(8), marginTop: phone(4) }]}
-              >
-                {sort[0] !== "added" && (
-                  <Button onPress={() => updateSort("added")}>重置</Button>
-                )}
-                <View style={{ flex: 1 }}>
-                  <Button variant="primary" onPress={() => setSortOpen(false)}>
-                    完成
-                  </Button>
-                </View>
-              </View>
-            </View>
-          </Glass>
-        </View>
-      </Modal>
+        <OptionGroup
+          label="排序"
+          options={SORTS}
+          value={sort[0]}
+          onChange={(value) => updateSort(value as (typeof SORTS)[number][0])}
+        />
+      </OptionSheet>
     </Page>
   );
 }

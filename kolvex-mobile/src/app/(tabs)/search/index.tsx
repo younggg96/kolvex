@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ResultRowsSkeleton, TextLine } from "../../components/Skeletons";
+import { ResultRowsSkeleton, TextLine } from "../../../components/Skeletons";
 import type { ComponentRef, ReactNode } from "react";
+import type { SearchBarCommands } from "react-native-screens";
 import {
-  Keyboard,
   Linking,
   Platform,
   Pressable,
@@ -10,38 +10,42 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { router, useFocusEffect } from "expo-router";
+import { router, Stack, useFocusEffect } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Chip, Copy, LoadingStatus } from "../../components/UI";
+import { CompanyLogo } from "../../../components/CompanyLogo";
+import { Backdrop, Copy, LoadingStatus, phone } from "../../../components/UI";
+import { Filters } from "../../../components/Content";
 import {
   Pill,
   ResultRow,
   SearchGroup,
-} from "../../components/search/SearchSections";
-import { useDockSearch } from "../../components/Dock";
+} from "../../../components/search/SearchSections";
+import { useDockSearch } from "../../../components/Dock";
+import TabScrollMarker from "../../../components/native/TabScrollMarker";
 import {
   DiscoverCreators,
   LatestRows,
   TrendingStocks,
-} from "../../components/search/DiscoveryCards";
-import { briefs, news, reports } from "../../lib/contentApi";
-import type { TradingAnalysis } from "../../lib/contentTypes";
-import { catalogue, xCreators } from "../../lib/featureApi";
-import { useText } from "../../lib/i18n";
-import { safeExternal } from "../../lib/links";
-import { companyNames, isSymbol } from "../../lib/models";
-import { redditRanking } from "../../lib/reddit";
+} from "../../../components/search/DiscoveryCards";
+import { briefs, news, reports } from "../../../lib/contentApi";
+import type { TradingAnalysis } from "../../../lib/contentTypes";
+import { catalogue, xCreators } from "../../../lib/featureApi";
+import { useText } from "../../../lib/i18n";
+import { safeExternal } from "../../../lib/links";
+import { companyNames, isSymbol } from "../../../lib/models";
+import { redditRanking } from "../../../lib/reddit";
 import {
   useSearchHistory,
   type SearchHistoryItem,
-} from "../../lib/useSearchHistory";
-import { useTheme } from "../../lib/theme";
-import { useResource } from "../../lib/useResource";
-import { useAuth } from "../../state/Auth";
-import { useWatchlist } from "../../state/Watchlist";
+} from "../../../lib/useSearchHistory";
+import { useTheme } from "../../../lib/theme";
+import { useResource } from "../../../lib/useResource";
+import { congressTrades, type CongressTrade } from "../../../lib/congressApi";
+import { useAuth } from "../../../state/Auth";
+import { useWatchlist } from "../../../state/Watchlist";
 
-type Filter = "all" | "stocks" | "creators" | "research";
+type Filter = "all" | "stocks" | "creators" | "research" | "congress";
 type StockResult = { ticker: string; name: string };
 
 const PILL_COUNT = 8;
@@ -58,7 +62,15 @@ const FILTERS: [Filter, string][] = [
   ["stocks", "股票"],
   ["creators", "创作者"],
   ["research", "AI 研究"],
+  ["congress", "国会交易"],
 ];
+const CONGRESS_LIMIT = 3;
+const CONGRESS_SIDES = {
+  buy: "买入",
+  sell: "卖出",
+  exchange: "交换",
+  other: "其他",
+} as const;
 
 const go = (href: string) => router.push(href as never);
 const stockHref = (ticker: string) => `/stock/${encodeURIComponent(ticker)}`;
@@ -67,6 +79,67 @@ const reportItem = (report: TradingAnalysis) => ({
   title: `${report.ticker} 研究报告`,
   detail: report.trade_date,
 });
+
+/** One company's AI reports as a single row that expands to each dated report. */
+function ResearchFold({
+  ticker,
+  reports: items,
+  onOpen,
+}: {
+  ticker: string;
+  reports: TradingAnalysis[];
+  onOpen: (item: { title: string; detail: string; href: string }) => void;
+}) {
+  const t = useTheme();
+  const text = useText();
+  const [open, setOpen] = useState(false);
+  const latest = items[0];
+  if (items.length === 1) {
+    const item = reportItem(latest);
+    return (
+      <ResultRow
+        title={text(item.title)}
+        detail={item.detail}
+        leading={<CompanyLogo symbol={ticker} size={32} />}
+        onPress={() => onOpen(item)}
+      />
+    );
+  }
+  return (
+    <View>
+      <ResultRow
+        title={text(`${ticker} 研究报告`)}
+        detail={`${latest.trade_date} · ${text(`${items.length} 份`)}`}
+        leading={<CompanyLogo symbol={ticker} size={32} />}
+        onPress={() => setOpen((value) => !value)}
+        trailing={
+          <SymbolView
+            name={{
+              ios: open ? "chevron.up" : "chevron.down",
+              android: open ? "expand_less" : "expand_more",
+              web: open ? "expand_less" : "expand_more",
+            }}
+            size={14}
+            tintColor={t.secondary}
+          />
+        }
+      />
+      {open &&
+        items.map((report) => {
+          const item = reportItem(report);
+          return (
+            <View key={report.id} style={{ paddingLeft: 44 }}>
+              <ResultRow
+                title={report.trade_date}
+                detail={text("AI 研究报告")}
+                onPress={() => onOpen(item)}
+              />
+            </View>
+          );
+        })}
+    </View>
+  );
+}
 
 /** Lower scores list first; null means the stock doesn't match. */
 function stockMatchScore({ ticker, name }: StockResult, query: string) {
@@ -211,6 +284,7 @@ export default function Search() {
   const [filter, setFilter] = useState<Filter>("all");
   const [submitFailed, setSubmitFailed] = useState(false);
   const [recentHeight, setRecentHeight] = useState(RECENT_FALLBACK_HEIGHT);
+  const [filterHeight, setFilterHeight] = useState(phone(48));
   const [research, setResearch] = useState<{
     ticker: string;
     items: TradingAnalysis[];
@@ -230,6 +304,9 @@ export default function Search() {
       : Promise.resolve({ items: [] as TradingAnalysis[] }),
   );
   const latestNews = useResource("search-news", (signal) => news(signal));
+  const latestCongress = useResource(`search-congress:${user}`, (signal) =>
+    user ? congressTrades("", 1, user, signal) : Promise.resolve(null),
+  );
   const latestBriefs = useResource(`search-briefs:${user}`, (signal) =>
     user ? briefs(signal, user, 1, "all") : Promise.resolve(null),
   );
@@ -322,6 +399,38 @@ export default function Search() {
     .sort((a, b) => (b.publish_time ?? 0) - (a.publish_time ?? 0))
     .slice(0, NEWS_COUNT);
   const briefPicks = (latestBriefs.data?.items ?? []).slice(0, BRIEF_COUNT);
+  // The tickers members traded most across the latest filings.
+  const congressPicks = useMemo(() => {
+    const byTicker = new Map<
+      string,
+      {
+        ticker: string;
+        count: number;
+        buys: number;
+        sells: number;
+        latest: string;
+      }
+    >();
+    for (const trade of latestCongress.data?.trades ?? []) {
+      const ticker = trade.ticker?.toUpperCase();
+      if (!ticker || !isSymbol(ticker)) continue;
+      const pick = byTicker.get(ticker) ?? {
+        ticker,
+        count: 0,
+        buys: 0,
+        sells: 0,
+        latest: trade.filed_date,
+      };
+      pick.count += 1;
+      if (trade.direction === "buy") pick.buys += 1;
+      if (trade.direction === "sell") pick.sells += 1;
+      if (trade.filed_date > pick.latest) pick.latest = trade.filed_date;
+      byTicker.set(ticker, pick);
+    }
+    return [...byTicker.values()]
+      .sort((a, b) => b.count - a.count || b.latest.localeCompare(a.latest))
+      .slice(0, 4);
+  }, [latestCongress.data]);
 
   const topTicker = stockResults[0]?.ticker;
   useEffect(() => {
@@ -345,6 +454,43 @@ export default function Search() {
   const researchResults =
     research && research.ticker === topTicker ? research.items : [];
 
+  // Congress trades: by the top ticker, or by member name for a word that isn't one.
+  const congressQuery = topTicker
+    ? `ticker=${encodeURIComponent(topTicker)}`
+    : query.length >= 3 && /[a-z]/.test(query)
+      ? `member=${encodeURIComponent(value.trim())}`
+      : "";
+  const [congress, setCongress] = useState<{
+    query: string;
+    items: CongressTrade[];
+    more: boolean;
+  } | null>(null);
+  useEffect(() => {
+    if (!congressQuery || !user) return;
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      congressTrades(congressQuery, 1, user, controller.signal)
+        .then((page) =>
+          setCongress({
+            query: congressQuery,
+            items: page.trades,
+            more: page.has_more || page.trades.length > CONGRESS_LIMIT,
+          }),
+        )
+        .catch(() => {
+          if (!controller.signal.aborted)
+            setCongress({ query: congressQuery, items: [], more: false });
+        });
+    }, RESEARCH_DEBOUNCE_MS);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [congressQuery, user]);
+  const congressResults =
+    congress && congress.query === congressQuery ? congress.items : [];
+  const congressHref = `/congress-trades?${congressQuery}`;
+
   const catalogueLoading =
     opinions.loading || reddit.loading || creators.loading;
   const catalogueFailed = Boolean(
@@ -356,7 +502,9 @@ export default function Search() {
     (filter === "all" || filter === "creators") && creatorResults.length > 0;
   const showResearch =
     (filter === "all" || filter === "research") && researchResults.length > 0;
-  const hasResults = showStocks || showCreators || showResearch;
+  const showCongress =
+    (filter === "all" || filter === "congress") && congressResults.length > 0;
+  const hasResults = showStocks || showCreators || showResearch || showCongress;
 
   const stockPick = (stock: StockResult) =>
     openStock({ ticker: stock.ticker, name: stock.name });
@@ -380,6 +528,7 @@ export default function Search() {
                     : stock.ticker
                 }
                 onPress={() => openStock(stock)}
+                leading={<CompanyLogo symbol={stock.ticker} size={32} />}
                 trailing={<WatchToggle ticker={stock.ticker} />}
               />
             ))}
@@ -404,18 +553,41 @@ export default function Search() {
     if (showResearch)
       groups.push(
         <SearchGroup title="AI 研究" key="research">
+          <ResearchFold
+            ticker={topTicker!}
+            reports={researchResults}
+            onOpen={open}
+          />
+        </SearchGroup>,
+      );
+    if (showCongress)
+      groups.push(
+        <SearchGroup
+          title="国会议员交易"
+          key="congress"
+          action={congress?.more ? text("查看全部") : undefined}
+          onAction={() => go(congressHref)}
+        >
           <View>
-            {researchResults.map((report) => {
-              const item = reportItem(report);
-              return (
-                <ResultRow
-                  key={report.id}
-                  title={text(item.title)}
-                  detail={item.detail}
-                  onPress={() => open(item)}
-                />
-              );
-            })}
+            {congressResults.slice(0, CONGRESS_LIMIT).map((trade) => (
+              <ResultRow
+                key={trade.id}
+                title={`${trade.ticker ?? text("证券")} · ${text(CONGRESS_SIDES[trade.direction])} · ${trade.member_name}`}
+                detail={`${trade.amount_range ?? "—"} · ${trade.trade_date}`}
+                leading={
+                  trade.ticker ? (
+                    <CompanyLogo symbol={trade.ticker} size={32} />
+                  ) : undefined
+                }
+                onPress={() =>
+                  open({
+                    title: `${text("国会议员交易")} · ${trade.ticker ?? trade.member_name}`,
+                    detail: trade.member_name,
+                    href: congressHref,
+                  })
+                }
+              />
+            ))}
           </View>
         </SearchGroup>,
       );
@@ -442,27 +614,8 @@ export default function Search() {
           部分来源暂时不可用，结果可能不完整。
         </Copy>,
       );
-    lists = [...groups.reverse()];
-    lists.push(
-      <ScrollView
-        key="filters"
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        style={{ marginHorizontal: -16, maxHeight: 44 }}
-        contentContainerStyle={{ gap: 4, paddingHorizontal: 16 }}
-      >
-        {FILTERS.map(([key, label]) => (
-          <Chip
-            key={key}
-            selected={filter === key}
-            onPress={() => setFilter(key)}
-          >
-            {label}
-          </Chip>
-        ))}
-      </ScrollView>,
-    );
+    // Results read top-down, stocks first.
+    lists = groups;
   } else {
     const blocks: ReactNode[] = [];
     // The Web's discovery cards, in its order: trending stocks, creators, then the latest.
@@ -517,6 +670,28 @@ export default function Search() {
         onViewAll={() => go("/creators")}
       />,
     );
+    if (congressPicks.length > 0)
+      blocks.push(
+        <LatestRows
+          key="congress"
+          title="热门国会交易"
+          logo
+          onViewAll={() => go("/congress-trades")}
+          rows={congressPicks.map((pick) => ({
+            key: pick.ticker,
+            ticker: pick.ticker,
+            title: pick.ticker,
+            detail: `${text(`${pick.count} 笔交易`)} · ${text(`买入 ${pick.buys} · 卖出 ${pick.sells}`)}`,
+            trailing: pick.latest,
+            onPress: () =>
+              open({
+                title: `${text("国会议员交易")} · ${pick.ticker}`,
+                detail: pick.ticker,
+                href: `/congress-trades?ticker=${encodeURIComponent(pick.ticker)}`,
+              }),
+          }))}
+        />,
+      );
     if (reportPicks.length > 0)
       blocks.push(
         <LatestRows
@@ -575,7 +750,12 @@ export default function Search() {
         />,
       );
     // The stock and creator cards show their own placeholders.
-    if (latestReports.loading || latestNews.loading || latestBriefs.loading)
+    if (
+      latestReports.loading ||
+      latestNews.loading ||
+      latestBriefs.loading ||
+      latestCongress.loading
+    )
       blocks.push(
         <LoadingStatus key="loading">
           <View style={{ gap: 12 }}>
@@ -584,7 +764,8 @@ export default function Search() {
           </View>
         </LoadingStatus>,
       );
-    lists = blocks.reverse();
+    // Top-down: discovery first, recent searches last.
+    lists = blocks;
     const recent = [
       ...history.map((item) => ({
         key: `history:${item.href}`,
@@ -608,7 +789,7 @@ export default function Search() {
     // A compact strip keeps the workspace bottom-first: long lists push the
     // newest block off-screen, while chips stay a single row.
     if (recent.length > 0)
-      lists.unshift(
+      lists.push(
         <SearchGroup
           key="recent"
           title="最近搜索"
@@ -646,21 +827,11 @@ export default function Search() {
       href: stockHref(top.ticker),
     });
     changeValue("");
+    nativeField.current?.clearText();
     openStock(top);
   }
-  function cancel() {
-    Keyboard.dismiss();
-    changeValue("");
-    if (router.canGoBack()) router.back();
-    else router.navigate("/");
-  }
-  // The dock renders the field above the keyboard; back clears the query first.
-  function back() {
-    if (!value) return true;
-    changeValue("");
-    return false;
-  }
-
+  const nativeSearch = Platform.OS === "ios";
+  const nativeField = useRef<SearchBarCommands>(null);
   const field = useRef<ComponentRef<typeof TextInput>>(null);
   const { hold, release } = useDockSearch("search", {
     field: (
@@ -734,46 +905,96 @@ export default function Search() {
         onMeasure={setRecentHeight}
       />
     ),
-    onCancel: cancel,
-    onBack: back,
   });
 
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
   useFocusEffect(
     useCallback(() => {
+      if (nativeSearch) return;
       hold();
-      return () => release();
-    }, [hold, release]),
+      return release;
+    }, [hold, nativeSearch, release]),
   );
 
   return (
-    <ScrollView
-      ref={scroll}
-      style={{ flex: 1, backgroundColor: t.background }}
-      contentInsetAdjustmentBehavior="automatic"
-      keyboardShouldPersistTaps="handled"
-      keyboardDismissMode="on-drag"
-      // The dock grows by its field and the recent searches above it; both
-      // keyboard insets and this padding keep the lists clear of it.
-      automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
-      contentContainerStyle={{
-        paddingHorizontal: 16,
-        paddingTop: Platform.OS === "android" ? insets.top + 16 : 16,
-        paddingBottom:
-          insets.bottom + 100 + (history.length ? recentHeight : 0),
-        flexGrow: 1,
-        justifyContent: "space-between",
-        gap: 24,
-      }}
-    >
-      {submitFailed && (
-        <View accessibilityRole="alert" style={{ paddingLeft: 16 }}>
-          <Copy size={14} color={t.negative}>
-            没有匹配的股票。试试股票代码，如 AAPL、BRK-B。
-          </Copy>
-        </View>
+    // The backdrop runs edge to edge, behind the status bar, as on every other screen.
+    <View style={{ flex: 1, backgroundColor: t.background }}>
+      {nativeSearch && (
+        <Stack.SearchBar
+          ref={nativeField}
+          placement="automatic"
+          placeholder={text("搜索股票、公司、创作者")}
+          autoCapitalize="none"
+          hideWhenScrolling={false}
+          obscureBackground={false}
+          onChangeText={(event) => {
+            const next = event.nativeEvent.text;
+            const limited = next.slice(0, 40);
+            if (limited !== next) nativeField.current?.setText(limited);
+            changeValue(limited);
+          }}
+          onCancelButtonPress={() => changeValue("")}
+          onSearchButtonPress={submit}
+        />
       )}
-      {lists}
-    </ScrollView>
+      <Backdrop />
+      <TabScrollMarker>
+        <ScrollView
+          ref={scroll}
+          style={{ flex: 1 }}
+          // The search field lives in the tab bar, but Stack.SearchBar still shows an
+          // empty navigation bar; automatic insets would leave its height as a blank
+          // band, so iOS pads past the status bar itself, as every other tab does.
+          contentInsetAdjustmentBehavior={nativeSearch ? "never" : "automatic"}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
+          contentContainerStyle={{
+            paddingHorizontal: 16,
+            // With a query, results start below the pinned filter tabs.
+            paddingTop:
+              (Platform.OS === "web" ? 16 : insets.top + 16) +
+              (query ? phone(8) + filterHeight : 0),
+            paddingBottom: nativeSearch
+              ? insets.bottom + 100
+              : insets.bottom + 100 + (history.length ? recentHeight : 0),
+            flexGrow: 1,
+            justifyContent: "flex-start",
+            gap: 24,
+          }}
+        >
+          {submitFailed && (
+            <View accessibilityRole="alert" style={{ paddingLeft: 16 }}>
+              <Copy size={14} color={t.negative}>
+                没有匹配的股票。试试股票代码，如 AAPL、BRK-B。
+              </Copy>
+            </View>
+          )}
+          {lists}
+        </ScrollView>
+      </TabScrollMarker>
+      {query ? (
+        // Pinned like every page's header tabs; results scroll underneath.
+        <View
+          pointerEvents="box-none"
+          onLayout={(event) =>
+            setFilterHeight(Math.round(event.nativeEvent.layout.height))
+          }
+          style={{
+            position: "absolute",
+            top: (Platform.OS === "web" ? 0 : insets.top) + phone(8),
+            left: 16,
+            right: 16,
+            zIndex: 10,
+          }}
+        >
+          <Filters
+            values={FILTERS}
+            value={filter}
+            onChange={(key) => setFilter(key as Filter)}
+          />
+        </View>
+      ) : null}
+    </View>
   );
 }

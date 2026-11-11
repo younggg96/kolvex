@@ -108,7 +108,11 @@ export function Field({
   }, [error]);
   return (
     <View style={{ gap: 8 }}>
-      {!hideLabel && <Copy size={14} bold>{label}</Copy>}
+      {!hideLabel && (
+        <Copy size={14} bold>
+          {label}
+        </Copy>
+      )}
       <GlassView
         glassEffectStyle={glass ? "regular" : "none"}
         colorScheme={t.dark ? "dark" : "light"}

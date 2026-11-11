@@ -31,12 +31,14 @@ function AppContent() {
         <Stack
           screenOptions={{
             headerTintColor: t.text,
-            // No bar behind Back: the page's backdrop runs to the top, as on the Web.
-            // ScrollViews inset themselves below it (contentInsetAdjustmentBehavior).
-            headerTransparent: true,
+            headerStyle: { backgroundColor: t.background },
+            headerUserInterfaceStyle: t.dark ? "dark" : "light",
+            // iOS 26 draws this bar as Liquid Glass; pages keep drawing their own large
+            // titles, so the bar shows only the native Back control.
+            headerTransparent: false,
             headerShadowVisible: false,
             headerBackButtonDisplayMode: "minimal",
-            // Each page draws its own large title, as on the Web; the bar keeps only Back.
+            // Each page draws its own large title; the bar keeps only Back.
             // `title` stays set per screen for VoiceOver and the app switcher.
             headerTitle: "",
             contentStyle: { backgroundColor: t.background },
@@ -55,7 +57,6 @@ function AppContent() {
               name="markets"
               options={{ title: text("市场全景") }}
             />
-            <Stack.Screen name="admin" options={{ title: text("管理中心") }} />
             <Stack.Screen
               name="calendar"
               options={{ title: text("市场日历") }}
@@ -63,10 +64,6 @@ function AppContent() {
             <Stack.Screen
               name="preferences"
               options={{ title: text("显示与模型设置") }}
-            />
-            <Stack.Screen
-              name="research-tasks"
-              options={{ title: text("我的研究任务") }}
             />
             <Stack.Screen
               name="research-task/[id]"
@@ -86,24 +83,8 @@ function AppContent() {
             />
             <Stack.Screen name="macro" options={{ title: text("宏观指标") }} />
             <Stack.Screen
-              name="paper-trading"
-              options={{ title: text("虚拟交易") }}
-            />
-            <Stack.Screen
-              name="options-activity"
-              options={{ title: text("期权异动") }}
-            />
-            <Stack.Screen
               name="+not-found"
               options={{ title: text("页面未找到") }}
-            />
-            <Stack.Screen
-              name="congress-trades"
-              options={{ title: text("国会议员交易") }}
-            />
-            <Stack.Screen
-              name="superinvestors"
-              options={{ title: text("超级投资者") }}
             />
             <Stack.Screen
               name="superinvestor/[manager]"
@@ -119,7 +100,16 @@ function AppContent() {
               options={{ title: text("投资组合") }}
             />
 
-            <Stack.Screen name="chat/[id]" options={{ title: "Ask Kolvex" }} />
+            <Stack.Screen
+              name="chat/[id]"
+              options={{
+                title: "Ask Kolvex",
+                ...(Platform.OS === "ios" && {
+                  headerTransparent: true,
+                  headerStyle: { backgroundColor: "transparent" },
+                }),
+              }}
+            />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen
               name="stock/[symbol]"

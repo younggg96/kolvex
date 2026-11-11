@@ -22,12 +22,11 @@ import { useTheme } from "../lib/theme";
 import { useResource } from "../lib/useResource";
 import { usePreferences } from "../state/Preferences";
 import { CompanyLogo } from "./CompanyLogo";
+import { OptionGroup, OptionSheet } from "./OptionSheet";
 import { MiniTrend, type RangeKey } from "./MarketCards";
-import { Sheet } from "./PaperTrading";
 import { CardsSkeleton } from "./Skeletons";
 import {
   Button,
-  Chip,
   Copy,
   Empty,
   Failure,
@@ -77,39 +76,6 @@ const SCOPES: [Scope, string][] = [
   ["creators", "博主热议"],
   ["core", "常看美股"],
 ];
-
-/** The Web's FilterSheetGroup: a small label over wrapping chips. */
-function FilterGroup({
-  label,
-  options,
-  value,
-  onChange,
-}: {
-  label: string;
-  options: readonly (readonly [string, string])[];
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <View style={{ gap: 8 }}>
-      <Copy size={12} muted>
-        {label}
-      </Copy>
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-        {options.map(([key, name]) => (
-          <Chip
-            key={key}
-            size="sm"
-            selected={key === value}
-            onPress={() => onChange(key)}
-          >
-            {name}
-          </Chip>
-        ))}
-      </View>
-    </View>
-  );
-}
 
 function RoundIcon({
   icon,
@@ -197,7 +163,7 @@ export function StockWatch({
             ? "近 7 天发布的观点"
             : DESCRIPTIONS[scope];
   return (
-    <Glass style={{ padding: 16, gap: 10 }}>
+    <View style={{ gap: 12 }}>
       <View style={styles.row}>
         <Copy size={20} bold>
           股票观察
@@ -271,22 +237,24 @@ export function StockWatch({
           more={() => setRows((v) => v + PAGE)}
         />
       )}
-      <Sheet
+      <OptionSheet
         title="筛选股票"
         visible={filtering}
         onClose={() => setFiltering(false)}
+        onReset={filtered ? () => changeScope("movers") : undefined}
       >
-        <FilterGroup
+        <OptionGroup
           label="名单"
           options={SCOPES}
           value={scope}
           onChange={changeScope}
         />
         {scope === "core" && (
-          <FilterGroup
+          <OptionGroup
             label="行业"
             options={STOCK_SECTORS.map(
-              (item) => [item.key, locale === "en" ? item.en : item.zh] as const,
+              (item) =>
+                [item.key, locale === "en" ? item.en : item.zh] as const,
             )}
             value={sector}
             onChange={(value) => {
@@ -296,7 +264,7 @@ export function StockWatch({
           />
         )}
         {scope === "creators" && (
-          <FilterGroup
+          <OptionGroup
             label="来源"
             options={BUZZ_SOURCES}
             value={source}
@@ -308,7 +276,7 @@ export function StockWatch({
             }}
           />
         )}
-        <FilterGroup
+        <OptionGroup
           label="排序"
           options={
             scope === "creators" && source === "reddit"
@@ -321,18 +289,34 @@ export function StockWatch({
             setRows(PAGE);
           }}
         />
-        <View style={{ flexDirection: "row", gap: 8 }}>
-          {filtered && (
-            <Button onPress={() => changeScope("movers")}>重置</Button>
-          )}
-          <View style={{ flex: 1 }}>
-            <Button selected onPress={() => setFiltering(false)}>
-              完成
-            </Button>
-          </View>
-        </View>
-      </Sheet>
+      </OptionSheet>
+    </View>
+  );
+}
+
+/** The list surface: the Web's dark glass card (bg-card-glass, border-foreground/10). */
+function ListCard({ children }: { children: React.ReactNode }) {
+  return (
+    <Glass clear style={{ paddingHorizontal: 12, paddingVertical: 4 }}>
+      {children}
     </Glass>
+  );
+}
+
+/** The Web's ListLoadMore: a centred pill under the card naming how many more load. */
+function LoadMore({
+  remaining,
+  onPress,
+}: {
+  remaining: number;
+  onPress: () => void;
+}) {
+  return (
+    <View style={{ flexDirection: "row", justifyContent: "center" }}>
+      <Button
+        onPress={onPress}
+      >{`再看 ${Math.min(PAGE, remaining)} 只股票`}</Button>
+    </View>
   );
 }
 
@@ -458,15 +442,17 @@ function BuzzList({
   const data = resource.data;
   if (resource.loading && !data)
     return (
-      <LoadingStatus label="正在加载股票">
-        <CardsSkeleton
-          count={4}
-          lines={[
-            { size: 16, width: "30%" },
-            { size: 12, width: "60%" },
-          ]}
-        />
-      </LoadingStatus>
+      <ListCard>
+        <LoadingStatus label="正在加载股票">
+          <CardsSkeleton
+            count={4}
+            lines={[
+              { size: 16, width: "30%" },
+              { size: 12, width: "60%" },
+            ]}
+          />
+        </LoadingStatus>
+      </ListCard>
     );
   if (!data)
     return <Failure message="博主线索暂不可用。" retry={resource.refresh} />;
@@ -503,7 +489,7 @@ function BuzzList({
           }
         />
       ) : (
-        <View>
+        <ListCard>
           {list.slice(0, rows).map((symbol, index) => (
             <WatchRow
               key={symbol}
@@ -515,9 +501,11 @@ function BuzzList({
               first={index === 0}
             />
           ))}
-        </View>
+        </ListCard>
       )}
-      {list.length > rows && <Button onPress={more}>显示更多</Button>}
+      {list.length > rows && (
+        <LoadMore remaining={list.length - rows} onPress={more} />
+      )}
     </View>
   );
 }
@@ -540,7 +528,7 @@ function CoreList({
   );
   return (
     <View style={{ gap: 8 }}>
-      <View>
+      <ListCard>
         {list.slice(0, rows).map((stock, index) => (
           <WatchRow
             key={stock.symbol}
@@ -552,8 +540,10 @@ function CoreList({
             first={index === 0}
           />
         ))}
-      </View>
-      {list.length > rows && <Button onPress={more}>显示更多</Button>}
+      </ListCard>
+      {list.length > rows && (
+        <LoadMore remaining={list.length - rows} onPress={more} />
+      )}
     </View>
   );
 }
@@ -592,15 +582,17 @@ function DiscoveryList({
   );
   if (resource.loading && !resource.data)
     return (
-      <LoadingStatus label="正在加载股票">
-        <CardsSkeleton
-          count={4}
-          lines={[
-            { size: 16, width: "30%" },
-            { size: 12, width: "60%" },
-          ]}
-        />
-      </LoadingStatus>
+      <ListCard>
+        <LoadingStatus label="正在加载股票">
+          <CardsSkeleton
+            count={4}
+            lines={[
+              { size: 16, width: "30%" },
+              { size: 12, width: "60%" },
+            ]}
+          />
+        </LoadingStatus>
+      </ListCard>
     );
   if (!board || (resource.error && !resource.data))
     return <Failure message="股票榜单暂时不可用。" retry={resource.refresh} />;
@@ -621,7 +613,7 @@ function DiscoveryList({
       {!items.length ? (
         <Empty title="暂无内容" message={EMPTY[scope]} />
       ) : (
-        <View>
+        <ListCard>
           {items.slice(0, rows).map((item, index) => (
             <WatchRow
               key={item.symbol}
@@ -639,9 +631,11 @@ function DiscoveryList({
               first={index === 0}
             />
           ))}
-        </View>
+        </ListCard>
       )}
-      {items.length > rows && <Button onPress={more}>显示更多</Button>}
+      {items.length > rows && (
+        <LoadMore remaining={items.length - rows} onPress={more} />
+      )}
       {!!board.fetchedAt && <FetchedAt value={board.fetchedAt} />}
     </View>
   );

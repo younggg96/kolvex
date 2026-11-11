@@ -80,9 +80,8 @@ export function nativePathFor(input: string): string {
     case "chat":
       return c ? `/chat/${encoded(c)}` : "/chat";
     case "ai-research":
-      return query.get("view") === "authoring"
-        ? "/research-tasks"
-        : "/research";
+      // The report management page is gone; every view opens AI research.
+      return "/research";
     case "trading-analysis":
       if (c === "explore") return d ? `/report/${encoded(d)}` : "/research";
       return c ? `/research-task/${encoded(c)}` : "/research";

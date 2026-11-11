@@ -71,10 +71,7 @@
     "This account has reached the simulation capacity. Existing positions can still be closed.",
     "账户已达到模拟容量上限，请先管理现有持仓。"
   ],
-  "invalid_number": [
-    "Enter valid positive prices.",
-    "请输入有效的正数价格。"
-  ],
+  "invalid_number": ["Enter valid positive prices.", "请输入有效的正数价格。"],
   "_order": [
     "Request failed. Check your connection and retry the same action. An order may already have been accepted.",
     "请求失败。请检查网络并重试同一操作，订单可能已经被接收。"

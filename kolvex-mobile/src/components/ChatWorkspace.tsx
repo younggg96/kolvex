@@ -6,7 +6,6 @@ import { router } from "expo-router";
 import {
   attachChat,
   createWorkspace,
-  detachChat,
   listWorkspaces,
   parseTickers,
   workspaceErrorCode,
@@ -16,116 +15,32 @@ import { useTheme } from "../lib/theme";
 import { useResource } from "../lib/useResource";
 import { Field } from "./Content";
 import { Sheet } from "./PaperTrading";
-import { SymbolView } from "expo-symbols";
 import { Button, Copy, Failure, Glass, LoadingStatus, Skeleton } from "./UI";
 import { workspaceErrorText } from "./Workspace";
 
-export function ChatWorkspace({
-  conversationId,
-  user,
-  compact = false,
-}: {
-  conversationId: string;
-  user: string;
-  /** The Web's title-bar pill: the workspace's name, or "加入工作区". */
-  compact?: boolean;
-}) {
-  const t = useTheme();
+/**
+ * The Web's chat WorkspacePicker as a header action: which workspace the chat belongs to,
+ * and a press that opens it or adds the chat to one. `sheet` must be rendered by the page.
+ */
+export function useChatWorkspace(conversationId: string, user: string) {
   const [revision, setRevision] = useState(0);
   const current = useResource(
     `chat-workspace:${user}:${conversationId}:${revision}`,
     (signal) => workspaceForChat(conversationId, user, signal),
   );
   const [open, setOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const workspace = current.data;
-  // Before the workspace migration the backend answers 503; the chat keeps working.
-  if (current.error && current.data === undefined) return null;
-  const sheet = (
-    <Sheet title="加入工作区" visible={open} onClose={() => setOpen(false)}>
-      {open && (
-        <Picker
-          conversationId={conversationId}
-          user={user}
-          onDone={() => {
-            setOpen(false);
-            setRevision((v) => v + 1);
-          }}
-        />
-      )}
-    </Sheet>
-  );
-  if (compact)
-    return (
-      <>
-        <Pressable
-          accessibilityRole="button"
-          disabled={current.loading && !workspace}
-          onPress={() =>
-            workspace
-              ? router.push(`/workspace/${encodeURIComponent(workspace.id)}`)
-              : setOpen(true)
-          }
-          hitSlop={6}
-          style={({ pressed }) => ({
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 6,
-            maxWidth: 160,
-            paddingHorizontal: 12,
-            paddingVertical: 7,
-            borderRadius: 999,
-            borderWidth: 1,
-            borderColor: t.rim,
-            backgroundColor: pressed ? t.wash : "transparent",
-          })}
-        >
-          <SymbolView
-            name={{ ios: "folder", android: "folder", web: "folder" }}
-            size={13}
-            tintColor={t.text}
-          />
-          {workspace ? (
-            <Copy size={13} bold lines={1} localize={false}>
-              {workspace.title}
-            </Copy>
-          ) : (
-            <Copy size={13} bold lines={1}>
-              加入工作区
-            </Copy>
-          )}
-        </Pressable>
-        {sheet}
-      </>
-    );
-  return (
-    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-      {workspace ? (
-        <>
-          <Button
-            onPress={() =>
-              router.push(`/workspace/${encodeURIComponent(workspace.id)}`)
-            }
-          >
-            {`工作区 · ${workspace.title}`}
-          </Button>
-          <Button
-            onPress={() => {
-              setError(null);
-              detachChat(conversationId, user)
-                .then(() => setRevision((v) => v + 1))
-                .catch((e) => setError(workspaceErrorCode(e)));
-            }}
-          >
-            移出此对话
-          </Button>
-        </>
-      ) : (
-        <Button disabled={current.loading} onPress={() => setOpen(true)}>
-          加入工作区
-        </Button>
-      )}
-      {!!error && <Failure message={workspaceErrorText(error)} />}
+  return {
+    // Before the workspace migration the backend answers 503; the chat keeps working.
+    available: !(current.error && current.data === undefined),
+    workspace,
+    loading: current.loading && !workspace,
+    label: workspace ? `工作区 · ${workspace.title}` : "加入工作区",
+    press: () =>
+      workspace
+        ? router.push(`/workspace/${encodeURIComponent(workspace.id)}`)
+        : setOpen(true),
+    sheet: (
       <Sheet title="加入工作区" visible={open} onClose={() => setOpen(false)}>
         {open && (
           <Picker
@@ -138,8 +53,8 @@ export function ChatWorkspace({
           />
         )}
       </Sheet>
-    </View>
-  );
+    ),
+  };
 }
 
 function Picker({

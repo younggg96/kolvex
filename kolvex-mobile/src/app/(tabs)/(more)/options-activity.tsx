@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ScrollView, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
-import { AuthGate, Filters } from "../components/Content";
+import { AuthGate, Filters } from "../../../components/Content";
 import {
   ContributionBoard,
   MarketOverview,
@@ -11,8 +11,8 @@ import {
   TickerLevels,
   UnusualContracts,
   type ContractFilter,
-} from "../components/OptionsActivity";
-import { CardsSkeleton } from "../components/Skeletons";
+} from "../../../components/OptionsActivity";
+import { CardsSkeleton } from "../../../components/Skeletons";
 import {
   Chip,
   Copy,
@@ -20,15 +20,15 @@ import {
   Failure,
   LoadingStatus,
   Page,
-} from "../components/UI";
+} from "../../../components/UI";
 import {
   ACTIVITY_SESSIONS,
   type ActivitySession,
-} from "../lib/optionsActivity";
-import { activityRun, activityRuns } from "../lib/optionsActivityApi";
-import { useResource } from "../lib/useResource";
-import { useAuth } from "../state/Auth";
-import { usePreferences } from "../state/Preferences";
+} from "../../../lib/optionsActivity";
+import { activityRun, activityRuns } from "../../../lib/optionsActivityApi";
+import { useResource } from "../../../lib/useResource";
+import { useAuth } from "../../../state/Auth";
+import { usePreferences } from "../../../state/Preferences";
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const skeleton = (
@@ -137,6 +137,7 @@ function Report() {
           {ACTIVITY_SESSIONS.map((item) => (
             <Chip
               key={item}
+              size="sm"
               selected={data?.session === item}
               disabled={!runsForPicker.some((r) => r.session === item)}
               onPress={() => {

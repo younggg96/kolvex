@@ -1,27 +1,33 @@
 // The Web's new-chat page (/dashboard/chat, ChatWelcome variant="dock"): a round history
 // button, three suggested questions as quiet rows, and the composer docked above the dock.
-import { useEffect, useRef, useState } from "react";
-import { Keyboard, Pressable, ScrollView, View } from "react-native";
-import { router, useLocalSearchParams } from "expo-router";
-import { GlassView } from "expo-glass-effect";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
+import {
+  AccessibilityInfo,
+  Animated,
+  BackHandler,
+  Keyboard,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+  useWindowDimensions,
+} from "react-native";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import ChatGlassButton from "../../components/native/ChatGlassButton";
 import { SymbolView } from "expo-symbols";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChatComposer } from "../../components/ChatComposer";
 import { ChatHistoryDrawer } from "../../components/ChatHistoryDrawer";
 import { AuthGate } from "../../components/Content";
 import { CardsSkeleton } from "../../components/Skeletons";
-import {
-  Backdrop,
-  Copy,
-  Failure,
-  phone,
-  useLiquidGlass,
-} from "../../components/UI";
+import { Backdrop, Copy, Failure, phone } from "../../components/UI";
 import { DEFAULT_CHAT_SKILLS, type ChatSkill } from "../../lib/chatSkills";
 import { createConversation } from "../../lib/contentApi";
 import { useText } from "../../lib/i18n";
 import { isSymbol } from "../../lib/models";
 import { useTheme } from "../../lib/theme";
+import { TabBarVisibility } from "../../state/TabBarVisibility";
 import { useAuth } from "../../state/Auth";
 
 const SUGGESTIONS = [
@@ -29,10 +35,16 @@ const SUGGESTIONS = [
   "哪些观点和我的持仓有关？",
   "最近谁转强、谁转弱？",
 ];
-/** The dock's own height above the home indicator (46pt row + 4pt padding each side). */
+/** Height of the custom Dock on Android and web. */
 const DOCK = 54;
+/**
+ * The sliding chat's corner while the drawer is open. On iPhone it follows the display's
+ * own corner, as ChatGPT's does, so the page reads as the screen sliding aside.
+ */
+const PANEL_RADIUS = Platform.OS === "ios" ? 55 : 28;
 
 export default function NewChat() {
+  const { fresh } = useLocalSearchParams<{ fresh?: string }>();
   return (
     <AuthGate
       title="对话"
@@ -40,7 +52,7 @@ export default function NewChat() {
         <CardsSkeleton lines={[{ size: 16 }, { size: 12, width: "40%" }]} />
       }
     >
-      <Welcome />
+      <Welcome key={fresh ?? "chat"} />
     </AuthGate>
   );
 }
@@ -48,7 +60,6 @@ export default function NewChat() {
 function Welcome() {
   const t = useTheme();
   const text = useText();
-  const glass = useLiquidGlass();
   const insets = useSafeAreaInsets();
   const user = useAuth().session!.user.id;
   const { ticker, history: openHistory } = useLocalSearchParams<{
@@ -66,6 +77,66 @@ function Welcome() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [history, setHistory] = useState(openHistory === "1");
+  const [historyMounted, setHistoryMounted] = useState(history);
+  const setTabBarHidden = useContext(TabBarVisibility);
+  const { width } = useWindowDimensions();
+  const drawerWidth = Math.min(width * 0.8, 360);
+  const [progress] = useState(
+    () => new Animated.Value(openHistory === "1" ? 1 : 0),
+  );
+  const [reduceMotion, setReduceMotion] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
+      if (active) setReduceMotion(enabled);
+    });
+    const subscription = AccessibilityInfo.addEventListener(
+      "reduceMotionChanged",
+      setReduceMotion,
+    );
+    return () => {
+      active = false;
+      subscription.remove();
+    };
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      setTabBarHidden(history);
+      if (!history) return;
+      const subscription = BackHandler.addEventListener(
+        "hardwareBackPress",
+        () => {
+          setHistory(false);
+          return true;
+        },
+      );
+      return () => {
+        subscription.remove();
+        setTabBarHidden(false);
+      };
+    }, [history, setTabBarHidden]),
+  );
+
+  useEffect(() => {
+    const toValue = history ? 1 : 0;
+    const useNativeDriver = Platform.OS !== "web";
+    const animation = reduceMotion
+      ? Animated.timing(progress, { toValue, duration: 0, useNativeDriver })
+      : Animated.spring(progress, {
+          toValue,
+          stiffness: 145,
+          damping: 20,
+          mass: 1,
+          useNativeDriver,
+        });
+    animation.start(({ finished }) => {
+      if (finished && !history) setHistoryMounted(false);
+    });
+    return () => animation.stop();
+  }, [history, progress, reduceMotion]);
+
   const [keyboard, setKeyboard] = useState(0);
   const action = useRef<AbortController | null>(null);
   useEffect(() => () => action.current?.abort(), []);
@@ -84,6 +155,11 @@ function Welcome() {
   async function start(question: string) {
     const content = question.trim();
     if (!content || action.current) return;
+    if (!model) {
+      setQuery(content);
+      setError("请先选择模型。");
+      return;
+    }
     const controller = new AbortController();
     action.current = controller;
     setBusy(true);
@@ -99,7 +175,7 @@ function Welcome() {
           q: content,
           sources: sources.join(","),
           skills: skills.join(","),
-          ...(model ? { model } : {}),
+          model,
           ...(symbol ? { ticker: symbol } : {}),
         },
       });
@@ -112,134 +188,171 @@ function Welcome() {
     }
   }
 
-  const bottom = keyboard
-    ? keyboard + 8
-    : Math.max(16, insets.bottom) + DOCK + 12;
+  // The iOS tab screen's safe area already includes the native tab bar.
+  const dockTop =
+    Platform.OS === "ios" ? insets.bottom : Math.max(16, insets.bottom) + DOCK;
+  const bottom = Math.max(keyboard, dockTop) + 14;
+  const newConversation = () => {
+    Keyboard.dismiss();
+    setQuery("");
+    setModel("");
+    setError(undefined);
+    setHistory(false);
+  };
   return (
-    <View style={{ flex: 1, backgroundColor: t.background }}>
-      <Backdrop />
-      <View
+    <View
+      style={{ flex: 1, overflow: "hidden", backgroundColor: t.background }}
+    >
+      {/* Mounted only while open or animating, so none of its native glass can show
+          through the chat once the drawer has closed. */}
+      {historyMounted && (
+        <ChatHistoryDrawer
+          width={drawerWidth}
+          visible={history}
+          progress={progress}
+          user={user}
+          onClose={() => setHistory(false)}
+          onNew={newConversation}
+        />
+      )}
+      <Animated.View
         style={{
-          paddingTop: insets.top + 6,
-          paddingHorizontal: phone(16),
-          height: insets.top + 6 + 56,
-          justifyContent: "center",
+          flex: 1,
+          overflow: "hidden",
+          borderRadius: historyMounted ? PANEL_RADIUS : 0,
+          borderCurve: "continuous",
+          backgroundColor: t.background,
+          transform: [
+            {
+              translateX: progress.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, drawerWidth],
+              }),
+            },
+          ],
         }}
       >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={text("历史对话")}
-          onPress={() => setHistory(true)}
-          hitSlop={4}
+        <View
+          style={{ flex: 1 }}
+          pointerEvents={history ? "none" : "auto"}
+          accessibilityElementsHidden={history}
+          importantForAccessibility={history ? "no-hide-descendants" : "auto"}
         >
-          <GlassView
-
-            glassEffectStyle={glass ? "regular" : "none"}
-            colorScheme={t.dark ? "dark" : "light"}
+          <Backdrop />
+          <View
             style={{
-              width: phone(44),
-              height: phone(44),
-              borderRadius: 999,
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: glass ? undefined : t.wash,
-            }}
-          >
-            <SymbolView
-              name={{
-                ios: "clock.arrow.circlepath",
-                android: "history",
-                web: "history",
-              }}
-              size={16}
-              tintColor={t.text}
-            />
-          </GlassView>
-        </Pressable>
-      </View>
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{
-          paddingHorizontal: phone(16),
-          paddingTop: phone(24),
-          paddingBottom: bottom + 140,
-        }}
-      >
-        {symbol && (
-          <Copy
-            size={13}
-            muted
-          >{`新对话可附加 ${symbol} 的真实报价作为本轮资料。`}</Copy>
-        )}
-        {SUGGESTIONS.map((suggestion) => (
-          <Pressable
-            key={suggestion}
-            accessibilityRole="button"
-            disabled={busy}
-            onPress={() => void start(text(suggestion))}
-            style={({ pressed }) => ({
+              paddingTop: insets.top + 2,
+              paddingHorizontal: 16,
+              minHeight: insets.top + 2 + 48,
               flexDirection: "row",
               alignItems: "center",
-              gap: phone(12),
-              minHeight: 44,
-              paddingHorizontal: phone(12),
-              paddingVertical: phone(10),
-              borderRadius: phone(12),
-              backgroundColor: pressed ? t.wash : "transparent",
-              opacity: busy ? 0.5 : 1,
-            })}
+              justifyContent: "space-between",
+            }}
           >
-            <SymbolView
-              name={{
-                ios: "message",
-                android: "chat_bubble",
-                web: "chat_bubble",
+            <ChatGlassButton
+              icon="history"
+              label={text("历史对话")}
+              onPress={() => {
+                Keyboard.dismiss();
+                setHistoryMounted(true);
+                setHistory(true);
               }}
-              size={15}
-              tintColor={t.secondary}
             />
-            <View style={{ flex: 1 }}>
-              <Copy size={14}>{suggestion}</Copy>
-            </View>
-            <SymbolView
-              name={{
-                ios: "arrow.up.right",
-                android: "north_east",
-                web: "north_east",
+          </View>
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{
+              paddingHorizontal: phone(16),
+              paddingTop: phone(24),
+              paddingBottom: bottom + 140,
+            }}
+          >
+            {SUGGESTIONS.map((suggestion) => (
+              <Pressable
+                key={suggestion}
+                accessibilityRole="button"
+                disabled={busy}
+                onPress={() => void start(text(suggestion))}
+                style={({ pressed }) => ({
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: phone(12),
+                  minHeight: 44,
+                  paddingHorizontal: phone(12),
+                  paddingVertical: phone(10),
+                  borderRadius: phone(12),
+                  backgroundColor: pressed ? t.wash : "transparent",
+                  opacity: busy ? 0.5 : 1,
+                })}
+              >
+                <SymbolView
+                  name={{
+                    ios: "message",
+                    android: "chat_bubble",
+                    web: "chat_bubble",
+                  }}
+                  size={15}
+                  tintColor={t.secondary}
+                />
+                <View style={{ flex: 1 }}>
+                  <Copy size={17}>{suggestion}</Copy>
+                </View>
+                <SymbolView
+                  name={{
+                    ios: "arrow.up.right",
+                    android: "north_east",
+                    web: "north_east",
+                  }}
+                  size={14}
+                  tintColor={t.secondary}
+                />
+              </Pressable>
+            ))}
+            {!!error && <Failure message={error} />}
+          </ScrollView>
+          <View
+            style={{
+              position: "absolute",
+              left: phone(16),
+              right: phone(16),
+              bottom,
+            }}
+          >
+            <ChatComposer
+              value={query}
+              onChange={setQuery}
+              onSend={() => void start(query)}
+              busy={busy}
+              skills={skills}
+              onSkills={setSkills}
+              model={model}
+              onModel={(next) => {
+                setModel(next);
+                setError((previous) =>
+                  previous === "请先选择模型。" ? undefined : previous,
+                );
               }}
-              size={14}
-              tintColor={t.secondary}
+              user={user}
             />
-          </Pressable>
-        ))}
-        {!!error && <Failure message={error} />}
-      </ScrollView>
-      <View
-        style={{
-          position: "absolute",
-          left: phone(16),
-          right: phone(16),
-          bottom,
-        }}
-      >
-        <ChatComposer
-          tall
-          value={query}
-          onChange={setQuery}
-          onSend={() => void start(query)}
-          busy={busy}
-          skills={skills}
-          onSkills={setSkills}
-          model={model}
-          onModel={setModel}
-          user={user}
-        />
-      </View>
-      <ChatHistoryDrawer
-        visible={history}
-        onClose={() => setHistory(false)}
-        user={user}
-      />
+          </View>
+        </View>
+        {historyMounted && (
+          <Animated.View
+            pointerEvents={history ? "auto" : "none"}
+            style={[StyleSheet.absoluteFill, { opacity: progress }]}
+          >
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={text("关闭")}
+              onPress={() => setHistory(false)}
+              style={[
+                StyleSheet.absoluteFill,
+                { backgroundColor: t.washStrong },
+              ]}
+            />
+          </Animated.View>
+        )}
+      </Animated.View>
     </View>
   );
 }

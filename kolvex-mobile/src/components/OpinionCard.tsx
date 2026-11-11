@@ -21,14 +21,15 @@ export function OpinionCard({
 }) {
   const t = useTheme();
   return (
-    <Glass style={{ padding: 20, gap: 12 }}>
-      <Copy bold localize={false}>
+    <Glass style={{ padding: 12, gap: 12 }}>
+      <Copy bold size={15} localize={false}>
         {item.ticker} · {item.channel_title || item.channel_id || "来源未提供"}
       </Copy>
       <Copy size={12} muted>
         {item.opinion_date}
       </Copy>
       <Copy
+        size={14}
         color={
           item.sentiment === "bullish"
             ? t.accent
@@ -39,17 +40,23 @@ export function OpinionCard({
       >
         {names[item.sentiment]}
       </Copy>
-      <Copy selectable>{item.summary || item.thesis || "暂无摘要"}</Copy>
+      <Copy size={15} selectable>
+        {item.summary || item.thesis || "暂无摘要"}
+      </Copy>
       {!!item.thesis && !!item.summary && item.thesis !== item.summary && (
-        <Copy selectable>{item.thesis}</Copy>
+        <Copy size={15} selectable>
+          {item.thesis}
+        </Copy>
       )}
       {item.key_points?.map((point, i) => (
-        <Copy key={i} localize={false}>
+        <Copy key={i} size={14} localize={false}>
           • {point}
         </Copy>
       ))}
       {!!item.risks?.length && (
-        <Copy muted>提到的风险：{item.risks.join("；")}</Copy>
+        <Copy size={14} muted>
+          提到的风险：{item.risks.join("；")}
+        </Copy>
       )}
       {creatorLink && item.channel_id && (
         <Button

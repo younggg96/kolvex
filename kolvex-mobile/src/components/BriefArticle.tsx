@@ -122,14 +122,25 @@ function BriefImpact({
 }
 
 function BriefStory({ item }: { item: BriefItem }) {
+  const t = useTheme();
   return (
     <Glass clear style={{ padding: 16, gap: 20 }}>
       {!!item.image && <BriefFigure image={item.image} />}
       <View style={styles.group}>
         {!!item.kicker && (
-          <Copy size={12} muted localize={false}>
-            {item.kicker}
-          </Copy>
+          <View
+            style={{
+              alignSelf: "flex-start",
+              paddingHorizontal: phone(12),
+              paddingVertical: phone(4),
+              borderRadius: 999,
+              backgroundColor: t.wash,
+            }}
+          >
+            <Copy size={12} localize={false}>
+              {item.kicker}
+            </Copy>
+          </View>
         )}
         {!!item.time_pt && (
           <Copy size={14} muted localize={false}>

@@ -1,5 +1,6 @@
 // The Web's dock buttons drawn in SwiftUI: the highlighted tab sits on a Liquid Glass
-// pill that morphs to the next tab with a native spring when the selection changes.
+// pill that morphs to the next tab with a native spring when the selection changes. The
+// pill takes the Web's neutral wash in dark mode so its glass stays visible on the track.
 import { useId } from "react";
 import * as Haptics from "expo-haptics";
 import {
@@ -51,7 +52,7 @@ export default function GlassDockRow({ items, onPress }: GlassDockRowProps) {
               <Image
                 key={item.key}
                 systemName={item.symbol as never}
-                size={21}
+                size={18}
                 color={item.highlighted ? t.text : t.secondary}
                 modifiers={[
                   frame({
@@ -63,7 +64,14 @@ export default function GlassDockRow({ items, onPress }: GlassDockRowProps) {
                   ...(item.highlighted
                     ? [
                         glassEffect({
-                          glass: { variant: "regular", interactive: true },
+                          // The Web's neutral selected wash, carried by the system's own glass:
+                          // in dark mode the regular glass alone sits too close to the dark
+                          // track, so the pill takes the 10% foreground fill the Web uses.
+                          glass: {
+                            variant: "regular",
+                            interactive: true,
+                            tint: t.dark ? "#FFFFFF1A" : undefined,
+                          },
                           shape: "capsule",
                         }),
                         glassEffectId("dock-selection", namespace),

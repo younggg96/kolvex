@@ -48,7 +48,7 @@ function Header({ title, note }: { title: string; note?: string }) {
     <View style={{ gap: 4 }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
         <View style={{ flexShrink: 1 }}>
-          <Copy size={20} bold>
+          <Copy size={18} bold>
             {title}
           </Copy>
         </View>
@@ -134,7 +134,7 @@ export function SummaryCard({ run }: { run: ActivityRun }) {
   return (
     <Glass style={{ padding: 20, gap: 12 }}>
       <View style={styles.row}>
-        <Copy size={20} bold>
+        <Copy size={18} bold>
           重点摘要
         </Copy>
         {sentiment && (
@@ -236,10 +236,22 @@ export function MarketOverview({ run }: { run: ActivityRun }) {
         title="市场概览"
         note={`${m.tickers_scanned} 个标的，现价 ±15%、45 天内到期的合约`}
       />
-      <Glass style={{ padding: 20, gap: 16 }}>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", rowGap: 16 }}>
+      <Glass style={{ padding: 16, gap: 16 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            flexWrap: "wrap",
+            rowGap: 24,
+            borderBottomWidth: 1,
+            borderColor: t.border,
+            paddingBottom: 24,
+          }}
+        >
           {figures.map(([label, value, color]) => (
-            <View key={label} style={{ width: "50%", paddingRight: 8, gap: 4 }}>
+            <View
+              key={label}
+              style={{ width: "50%", paddingRight: 24, gap: 4 }}
+            >
               <Copy size={12} muted>
                 {label}
               </Copy>
@@ -359,8 +371,8 @@ function ContributorRow({ item, max }: { item: Contributor; max: number }) {
         minHeight: 44,
       }}
     >
-      <View style={{ width: 64 }}>
-        <SymbolLink symbol={item.symbol} />
+      <View style={{ width: 72 }}>
+        <SymbolLink symbol={item.symbol} size={16} />
       </View>
       <View
         accessibilityElementsHidden
@@ -392,7 +404,7 @@ function ContributorRow({ item, max }: { item: Contributor; max: number }) {
           }}
         />
       </View>
-      <View style={{ width: 80, alignItems: "flex-end" }}>
+      <View style={{ width: 88, alignItems: "flex-end" }}>
         <Copy size={14} bold localize={false} color={tone(item.net_premium)}>
           {formatPremium(item.net_premium, true)}
         </Copy>
@@ -591,6 +603,7 @@ export function UnusualContracts({
         note="按成交权利金从大到小排序。量/持仓 超过 3 倍加粗：当日成交量超过原有持仓量。"
       />
       <Filters
+        size="sm"
         values={[
           ["all", `全部 ${all.length}`],
           ["etf", `ETF指数 ${etf}`],

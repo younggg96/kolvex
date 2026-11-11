@@ -14,16 +14,18 @@ export default function Opinions() {
       title="KOL 观点"
       hideTitle
       onRefresh={() => setRevision((v) => v + 1)}
+      floatingHeader={
+        <Filters
+          values={[
+            ["youtube", "YouTube"],
+            ["reddit", "Reddit"],
+            ["x", "X"],
+          ]}
+          value={source}
+          onChange={setSource}
+        />
+      }
     >
-      <Filters
-        values={[
-          ["youtube", "YouTube"],
-          ["reddit", "Reddit"],
-          ["x", "X"],
-        ]}
-        value={source}
-        onChange={setSource}
-      />
       {source === "youtube" ? (
         <YouTubeOverview revision={revision} />
       ) : source === "reddit" ? (

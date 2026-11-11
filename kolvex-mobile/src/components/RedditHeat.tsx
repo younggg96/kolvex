@@ -20,8 +20,8 @@ import { useResource } from "../lib/useResource";
 import { usePreferences } from "../state/Preferences";
 import { useWatchlist } from "../state/Watchlist";
 import { CompanyLogo } from "./CompanyLogo";
-import { Sheet } from "./PaperTrading";
-import { Button, Chip, Copy, Failure, Glass, Skeleton, styles } from "./UI";
+import { OptionChip, OptionGroup, OptionSheet } from "./OptionSheet";
+import { Button, Copy, Failure, Glass, Skeleton, styles } from "./UI";
 
 const SORTS: [RedditSort, string][] = [
   ["mentions", "提及量最多"],
@@ -205,63 +205,49 @@ export function RedditHeat({ revision }: { revision: number }) {
           {`数据来源：ApeWisdom · 获取时间 ${new Date(resource.data.fetchedAt).toLocaleString(locale === "en" ? "en-US" : "zh-CN")}`}
         </Copy>
       )}
-      <Sheet title="筛选" visible={filters} onClose={() => setFilters(false)}>
+      <OptionSheet
+        title="筛选"
+        visible={filters}
+        onClose={() => setFilters(false)}
+        onReset={
+          filtered
+            ? () => {
+                setCommunity("all-stocks");
+                setSort("mentions");
+                setOnlySaved(false);
+              }
+            : undefined
+        }
+      >
+        <OptionGroup
+          label="社区"
+          options={REDDIT_COMMUNITIES.map(
+            (value) => [value, communityLabel(value)] as const,
+          )}
+          value={community}
+          onChange={(value) => setCommunity(value as typeof community)}
+        />
+        <OptionGroup
+          label="排序"
+          options={SORTS}
+          value={sort}
+          onChange={(value) => setSort(value as typeof sort)}
+        />
         <View style={{ gap: 8 }}>
-          <Copy size={14} bold>
-            社区
-          </Copy>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-            {REDDIT_COMMUNITIES.map((value) => (
-              <Chip
-                key={value}
-                selected={value === community}
-                onPress={() => setCommunity(value)}
-              >
-                {communityLabel(value)}
-              </Chip>
-            ))}
-          </View>
-        </View>
-        <View style={{ gap: 8 }}>
-          <Copy size={14} bold>
-            排序
-          </Copy>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-            {SORTS.map(([value, label]) => (
-              <Chip
-                key={value}
-                selected={value === sort}
-                onPress={() => setSort(value)}
-              >
-                {label}
-              </Chip>
-            ))}
-          </View>
-        </View>
-        <View style={{ gap: 8 }}>
-          <Copy size={14} bold>
+          <Copy size={12} muted>
             范围
           </Copy>
-          <Chip
-            selected={onlySaved}
-            disabled={!list.ready}
-            onPress={() => setOnlySaved((v) => !v)}
-          >
-            {`仅关注 ${list.symbols.length}`}
-          </Chip>
+          <View style={{ flexDirection: "row" }}>
+            <OptionChip
+              selected={onlySaved}
+              disabled={!list.ready}
+              onPress={() => setOnlySaved((v) => !v)}
+            >
+              {`仅关注 ${list.symbols.length}`}
+            </OptionChip>
+          </View>
         </View>
-        {filtered && (
-          <Button
-            onPress={() => {
-              setCommunity("all-stocks");
-              setSort("mentions");
-              setOnlySaved(false);
-            }}
-          >
-            重置
-          </Button>
-        )}
-      </Sheet>
+      </OptionSheet>
     </View>
   );
 }

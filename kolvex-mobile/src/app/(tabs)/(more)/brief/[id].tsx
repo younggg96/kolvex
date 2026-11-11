@@ -1,17 +1,20 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { Pressable, StyleSheet, View } from "react-native";
-import { BriefArticle } from "../../../components/BriefArticle";
-import { AuthGate, ResourceState } from "../../../components/Content";
-import { ArticleSkeleton, ChartSkeleton } from "../../../components/Skeletons";
-import { Button, Copy, Page, phone } from "../../../components/UI";
-import { isBriefDate } from "../../../lib/briefDates";
-import { brief } from "../../../lib/contentApi";
-import { isBriefType } from "../../../lib/contentTypes";
-import { useText } from "../../../lib/i18n";
-import { useTheme } from "../../../lib/theme";
-import { useResource } from "../../../lib/useResource";
-import { useAuth } from "../../../state/Auth";
+import { BriefArticle } from "../../../../components/BriefArticle";
+import { AuthGate, ResourceState } from "../../../../components/Content";
+import {
+  ArticleSkeleton,
+  ChartSkeleton,
+} from "../../../../components/Skeletons";
+import { Button, Copy, Page, phone } from "../../../../components/UI";
+import { isBriefDate } from "../../../../lib/briefDates";
+import { brief } from "../../../../lib/contentApi";
+import { isBriefType } from "../../../../lib/contentTypes";
+import { useText } from "../../../../lib/i18n";
+import { useTheme } from "../../../../lib/theme";
+import { useResource } from "../../../../lib/useResource";
+import { useAuth } from "../../../../state/Auth";
 
 const skeleton = (
   <>
@@ -55,11 +58,10 @@ function Reader() {
     <Page
       title="日报"
       hideTitle
-      stickyHeader={
+      floatingHeader={
         <View
           style={{
             marginHorizontal: 2,
-            marginTop: -phone(12),
           }}
         >
           <Pressable

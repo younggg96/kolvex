@@ -8,6 +8,8 @@ export type GlassTabsProps = {
   disabled?: boolean;
   /** The widest the track may grow before it scrolls; defaults to the page width. */
   maxWidth?: number;
+  /** SF Symbol per key: the tab draws as a round icon button instead of its label. */
+  icons?: Readonly<Record<string, string>>;
 };
 export const glassTabsAvailable = false;
 export default function GlassTabs(_props: GlassTabsProps) {

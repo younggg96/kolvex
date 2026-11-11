@@ -19,7 +19,8 @@ export default function Report() {
       onRefresh={r.refresh}
       refreshing={r.loading}
     >
-      <ResourceState skeleton={<ArticleSkeleton />}
+      <ResourceState
+        skeleton={<ArticleSkeleton />}
         resource={r}
         empty={!r.data}
         message="报告未公开、已删除或暂不可用。"

@@ -29,7 +29,19 @@ export default function Updates() {
         />
       )}
       {scope === "holdings" ? (
-        <AuthGate skeleton={<CardsSkeleton lines={[{ size: 16, width: "30%" }, { size: 16, width: "40%" }, { size: 12, width: "50%" }]} />} inline title="持仓观点动态">
+        <AuthGate
+          skeleton={
+            <CardsSkeleton
+              lines={[
+                { size: 16, width: "30%" },
+                { size: 16, width: "40%" },
+                { size: 12, width: "50%" },
+              ]}
+            />
+          }
+          inline
+          title="持仓观点动态"
+        >
           <Feed held />
         </AuthGate>
       ) : (
@@ -63,7 +75,16 @@ function Feed({ held }: { held: boolean }) {
     .sort((a, b) => b.opinion_date.localeCompare(a.opinion_date));
   return (
     <>
-      <ResourceState skeleton={<CardsSkeleton lines={[{ size: 16, width: "30%" }, { size: 16, width: "40%" }, { size: 12, width: "50%" }]} />}
+      <ResourceState
+        skeleton={
+          <CardsSkeleton
+            lines={[
+              { size: 16, width: "30%" },
+              { size: 16, width: "40%" },
+              { size: 12, width: "50%" },
+            ]}
+          />
+        }
         resource={r}
         empty={!changes.length}
         message={held ? "暂无持仓对应的观点变化。" : "暂无观点变化。"}

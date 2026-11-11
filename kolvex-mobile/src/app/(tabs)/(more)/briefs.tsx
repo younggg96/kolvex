@@ -2,25 +2,28 @@ import { router, useLocalSearchParams } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useState } from "react";
 import { View } from "react-native";
-import { BriefArticle } from "../../components/BriefArticle";
-import { BriefCalendar, BriefIconButton } from "../../components/BriefCalendar";
-import { AuthGate, Filters, ResourceState } from "../../components/Content";
-import { ArticleSkeleton, ChartSkeleton } from "../../components/Skeletons";
-import { Button, Copy, Glass, Page, phone } from "../../components/UI";
+import { BriefArticle } from "../../../components/BriefArticle";
+import {
+  BriefCalendar,
+  BriefIconButton,
+} from "../../../components/BriefCalendar";
+import { AuthGate, Filters, ResourceState } from "../../../components/Content";
+import { ArticleSkeleton, ChartSkeleton } from "../../../components/Skeletons";
+import { Button, Copy, Glass, Page, phone } from "../../../components/UI";
 import {
   briefReadingDate,
   editionNames,
   isWeekendBriefDate,
   shiftBriefDate,
   utcBriefDate,
-} from "../../lib/briefDates";
-import { brief } from "../../lib/contentApi";
-import { BRIEF_TYPES, isBriefType } from "../../lib/contentTypes";
-import { useText } from "../../lib/i18n";
-import { useTheme } from "../../lib/theme";
-import { useResource } from "../../lib/useResource";
-import { useAuth } from "../../state/Auth";
-import { usePreferences } from "../../state/Preferences";
+} from "../../../lib/briefDates";
+import { brief } from "../../../lib/contentApi";
+import { BRIEF_TYPES, isBriefType } from "../../../lib/contentTypes";
+import { useText } from "../../../lib/i18n";
+import { useTheme } from "../../../lib/theme";
+import { useResource } from "../../../lib/useResource";
+import { useAuth } from "../../../state/Auth";
+import { usePreferences } from "../../../state/Preferences";
 
 const editions = BRIEF_TYPES.map((type) => [type, editionNames[type]] as const);
 const skeleton = (
@@ -66,8 +69,8 @@ function Library() {
     <Page
       title="日报"
       hideTitle
-      stickyHeader={
-        <View style={{ marginHorizontal: 2, paddingTop: phone(8) }}>
+      floatingHeader={
+        <View>
           <Glass
             material
             style={{
@@ -169,6 +172,7 @@ function Library() {
               android: "refresh",
               web: "refresh",
             }}
+            size={phone(44)}
             onPress={resource.refresh}
             disabled={resource.loading}
             glass={false}

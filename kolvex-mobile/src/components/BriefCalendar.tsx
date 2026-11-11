@@ -23,16 +23,17 @@ export function BriefIconButton({
   onPress,
   glass = true,
   disabled = false,
+  size = phone(36),
 }: {
   label: string;
   icon: SymbolViewProps["name"];
   onPress: () => void;
   glass?: boolean;
   disabled?: boolean;
+  size?: number;
 }) {
   const t = useTheme();
   const text = useText();
-  const size = phone(36);
   const glyph = <SymbolView name={icon} size={phone(16)} tintColor={t.text} />;
   return (
     <Pressable

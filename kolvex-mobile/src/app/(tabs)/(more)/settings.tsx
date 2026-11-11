@@ -1,17 +1,11 @@
 // The Web's settings page (app/dashboard/settings) at phone size: a pill tab bar for
 // 账户 / API 密钥 / 偏好设置, each a bold section title over divided label/value rows.
 import { useState, type ReactNode } from "react";
-import {
-  Image,
-  Linking,
-  Pressable,
-  TextInput,
-  View,
-} from "react-native";
+import { Image, Linking, Pressable, TextInput, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { SymbolView } from "expo-symbols";
-import { AuthGate, Filters } from "../../components/Content";
-import { FormSkeleton } from "../../components/Skeletons";
+import { AuthGate, Filters } from "../../../components/Content";
+import { FormSkeleton } from "../../../components/Skeletons";
 import {
   Button,
   Copy,
@@ -20,15 +14,15 @@ import {
   Page,
   Skeleton,
   phone,
-} from "../../components/UI";
-import { profile } from "../../lib/contentApi";
-import { apiRequest } from "../../lib/http";
-import { useText } from "../../lib/i18n";
-import { safeExternal } from "../../lib/links";
-import { useTheme } from "../../lib/theme";
-import { useResource } from "../../lib/useResource";
-import { useAuth } from "../../state/Auth";
-import { usePreferences, type Appearance } from "../../state/Preferences";
+} from "../../../components/UI";
+import { profile } from "../../../lib/contentApi";
+import { apiRequest } from "../../../lib/http";
+import { useText } from "../../../lib/i18n";
+import { safeExternal } from "../../../lib/links";
+import { useTheme } from "../../../lib/theme";
+import { useResource } from "../../../lib/useResource";
+import { useAuth } from "../../../state/Auth";
+import { usePreferences, type Appearance } from "../../../state/Preferences";
 
 const TABS = [
   ["account", "账户"],
@@ -158,89 +152,156 @@ function FieldRow({
 
 function Account() {
   const t = useTheme();
-  const user = useAuth().session!.user;
+  const auth = useAuth();
+  const user = auth.session!.user;
   const r = useResource(`settings-profile:${user.id}`, (signal) =>
     profile(user.id, signal),
   );
   const data = r.data;
+  const email = data?.email ?? user.email ?? "";
+  const name = data?.full_name || email.split("@")[0] || "—";
+  if (r.loading && !data)
+    return (
+      <View style={{ gap: 16 }}>
+        <Glass clear style={{ padding: 24, alignItems: "center", gap: 12 }}>
+          <Skeleton width={phone(80)} height={phone(80)} radius={phone(40)} />
+          <Skeleton width="50%" />
+          <Skeleton width="65%" />
+        </Glass>
+        <Glass clear style={{ padding: 16, gap: 16 }}>
+          <Skeleton />
+          <Skeleton />
+          <Skeleton />
+        </Glass>
+      </View>
+    );
   return (
-    <SettingsSection
-      title="账户信息"
-      action={
-        <Button
-          icon={
-            <SymbolView
-              name={{ ios: "pencil", android: "edit", web: "edit" }}
-              size={12}
-              tintColor={t.text}
-            />
-          }
-          onPress={() => router.push("/account")}
-        >
-          编辑
-        </Button>
-      }
-    >
-      {r.loading && !data ? (
-        <View style={{ gap: 16, paddingVertical: 20 }}>
-          <Skeleton width={phone(72)} height={phone(72)} radius={phone(36)} />
-          <Skeleton width="60%" />
-          <Skeleton width="40%" />
-        </View>
-      ) : (
-        <>
-          {!!r.error && <Failure message={r.error} retry={r.refresh} />}
+    <View style={{ gap: 16 }}>
+      {!!r.error && <Failure message={r.error} retry={r.refresh} />}
+      {/* Profile: who is signed in, with the one action that changes it. */}
+      <Glass clear style={{ padding: 24, alignItems: "center", gap: 6 }}>
+        {data?.avatar_url ? (
+          <Image
+            source={{ uri: data.avatar_url }}
+            accessibilityIgnoresInvertColors
+            style={{
+              width: phone(80),
+              height: phone(80),
+              borderRadius: phone(40),
+            }}
+          />
+        ) : (
           <View
             style={{
-              paddingVertical: 18,
-              borderBottomWidth: 1,
+              width: phone(80),
+              height: phone(80),
+              borderRadius: phone(40),
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: t.brand,
+            }}
+          >
+            <Copy size={26} bold color={t.onBrand} localize={false}>
+              {(email || "US").slice(0, 2).toUpperCase()}
+            </Copy>
+          </View>
+        )}
+        <View style={{ alignItems: "center", gap: 2, marginTop: 8 }}>
+          <Copy size={20} bold lines={1} localize={false}>
+            {name}
+          </Copy>
+          <Copy size={14} muted lines={1} localize={false}>
+            {email || "—"}
+          </Copy>
+        </View>
+        <View style={{ marginTop: 10 }}>
+          <Button
+            size="sm"
+            icon={
+              <SymbolView
+                name={{ ios: "pencil", android: "edit", web: "edit" }}
+                size={12}
+                tintColor={t.text}
+              />
+            }
+            onPress={() => router.push("/account")}
+          >
+            编辑资料
+          </Button>
+        </View>
+      </Glass>
+      {/* Details: label on the left, value on the right, like iOS Settings. */}
+      <Glass clear style={{ paddingHorizontal: 16 }}>
+        {(
+          [
+            [{ ios: "envelope", android: "mail" }, "邮箱地址", email || "—"],
+            [
+              { ios: "person", android: "person" },
+              "姓名",
+              data?.full_name || "—",
+            ],
+            [
+              { ios: "phone", android: "phone" },
+              "手机号码",
+              data?.phone_e164 || "—",
+            ],
+          ] as const
+        ).map(([icon, label, value], index) => (
+          <View
+            key={label}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 10,
+              minHeight: 52,
+              borderTopWidth: index ? 1 : 0,
               borderColor: t.border,
             }}
           >
-            {data?.avatar_url ? (
-              <Image
-                source={{ uri: data.avatar_url }}
-                style={{
-                  width: phone(72),
-                  height: phone(72),
-                  borderRadius: phone(36),
-                }}
-              />
-            ) : (
-              <View
-                style={{
-                  width: phone(72),
-                  height: phone(72),
-                  borderRadius: phone(36),
-                  alignItems: "center",
-                  justifyContent: "center",
-                  backgroundColor: t.brand,
-                }}
-              >
-                <Copy size={24} bold color={t.onBrand} localize={false}>
-                  {(data?.email ?? user.email ?? "US").slice(0, 2).toUpperCase()}
-                </Copy>
-              </View>
-            )}
+            <SymbolView
+              name={{ ...icon, web: icon.android } as never}
+              size={15}
+              tintColor={t.secondary}
+            />
+            <Copy size={15} muted>
+              {label}
+            </Copy>
+            <View style={{ flex: 1, alignItems: "flex-end" }}>
+              <Copy size={15} lines={1} selectable localize={false}>
+                {value}
+              </Copy>
+            </View>
           </View>
-          <FieldRow icon={{ ios: "envelope", android: "mail" }} label="邮箱地址">
-            <Copy size={15} localize={false}>
-              {data?.email ?? user.email ?? "—"}
-            </Copy>
-          </FieldRow>
-          <FieldRow icon={{ ios: "person", android: "person" }} label="姓名">
-            <Copy size={15} localize={false}>
-              {data?.full_name || "—"}
-            </Copy>
-          </FieldRow>
-          <FieldRow icon={{ ios: "phone", android: "phone" }} label="手机号码">
-            <Copy size={15} localize={false}>
-              {data?.phone_e164 || "—"}
-            </Copy>
-          </FieldRow>
-        </>
-      )}
-    </SettingsSection>
+        ))}
+      </Glass>
+      <Glass clear style={{ overflow: "hidden" }}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => void auth.signOut()}
+          style={({ pressed }) => ({
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            minHeight: 52,
+            backgroundColor: pressed ? t.wash : "transparent",
+          })}
+        >
+          <SymbolView
+            name={{
+              ios: "rectangle.portrait.and.arrow.right",
+              android: "logout",
+              web: "logout",
+            }}
+            size={16}
+            tintColor={t.negative}
+          />
+          <Copy size={15} bold color={t.negative}>
+            退出登录
+          </Copy>
+        </Pressable>
+      </Glass>
+    </View>
   );
 }
 
@@ -347,7 +408,12 @@ function ProviderRow({
             accessibilityRole="link"
             hitSlop={10}
             onPress={() => void Linking.openURL(docs).catch(() => undefined)}
-            style={{ flexDirection: "row", alignItems: "center", gap: 4, minHeight: 28 }}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 4,
+              minHeight: 28,
+            }}
           >
             <Copy size={13} bold muted>
               获取密钥
@@ -377,7 +443,9 @@ function ProviderRow({
           </Copy>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={confirming ? "再点一次删除" : `删除 ${info.name}`}
+            accessibilityLabel={
+              confirming ? "再点一次删除" : `删除 ${info.name}`
+            }
             disabled={busy !== null}
             onPress={() =>
               confirming ? void run("delete") : setConfirming(true)
@@ -388,7 +456,9 @@ function ProviderRow({
               borderRadius: 19,
               alignItems: "center",
               justifyContent: "center",
-              backgroundColor: confirming ? "rgba(239,68,68,0.15)" : "transparent",
+              backgroundColor: confirming
+                ? "rgba(239,68,68,0.15)"
+                : "transparent",
               opacity: busy === "delete" ? 0.4 : 1,
             }}
           >
@@ -487,7 +557,13 @@ function ApiKeys() {
       ) : (
         <>
           {!!r.error && <Failure message={r.error} retry={r.refresh} />}
-          <Glass style={{ paddingHorizontal: 14, paddingVertical: 12, marginTop: 14 }}>
+          <Glass
+            style={{
+              paddingHorizontal: 14,
+              paddingVertical: 12,
+              marginTop: 14,
+            }}
+          >
             <Copy size={13} muted>
               您的 API
               密钥已安全存储并加密保存。仅在您发送消息时使用——如果设置了某个提供商的密钥，将使用它替代默认服务器密钥。
@@ -541,7 +617,10 @@ function Preferences() {
           onChange={(v) => void save({ locale: v as "zh" | "en" })}
         />
       </FieldRow>
-      <FieldRow icon={{ ios: "circle.lefthalf.filled", android: "contrast" }} label="主题">
+      <FieldRow
+        icon={{ ios: "circle.lefthalf.filled", android: "contrast" }}
+        label="主题"
+      >
         <Filters
           size="sm"
           disabled={busy}
@@ -571,8 +650,11 @@ export default function Settings() {
 function SettingsTabs({ initial }: { initial: string }) {
   const [tab, setTab] = useState(initial);
   return (
-    <Page title="设置" hideTitle>
-      <Filters values={TABS} value={tab} onChange={setTab} />
+    <Page
+      title="设置"
+      hideTitle
+      floatingHeader={<Filters values={TABS} value={tab} onChange={setTab} />}
+    >
       {tab === "preferences" ? (
         <Preferences />
       ) : (

@@ -208,3 +208,36 @@ New write UIs were verified by contracts/guards and static inspection, not by pr
 Final 0.3 evidence: light-theme Markets and technical chart previews were exercised at phone width; selecting a prior candle, zooming to 30 bars and changing oscillator changed the visible values. Cross-asset reads included real DGS2/DGS10/credit spread data with percentage-point units. Protected macro/admin/drawings/key/calendar endpoints returned 401 without a session. The static premium audit retains 73 `affordance.actionless-button` findings from its HTML matcher; an AST scan found all 127 literal native Button nodes have onPress handlers. The audit is not claimed clean. The design-document lint remains zero errors / seven warnings.
 
 Final locale/gesture check: the English preference changed the stack header, page labels, filters and account gate. A horizontal drag changed the 60-bar interval from 2026-08-07–2026-10-30 to 2026-06-29–2026-09-22 and updated the selected OHLC/indicator values. Light English technical and dark Chinese Markets screenshots are stored in `artifacts/mobile-v03-*`; they show the React Native Web adapter, not the iOS SwiftUI renderer. The 55-test total includes four bounded pan/pinch window tests and five locale/coverage tests.
+
+## Full-screen status area — 2026-11-10
+
+Owner request: the app must read as full screen; the status bar must not sit on a flat black band. Cause: `StatusScrim` painted `palette.dark.background` (#000000) over `insets.top` on every tab screen and on the conversation page, so the dark-mode backdrop was cut off by a hard edge exactly one status bar tall (the owner's simulator screenshot showed the band; the Web has no such band because `DashboardBackground` fixes to the viewport).
+
+- `StatusScrim` is removed from `components/UI.tsx`, `(tabs)/_layout.tsx` and `chat/[id].tsx`; nothing paints over the status area any more.
+- `(tabs)/news.tsx` and `(tabs)/search.tsx` own their roots, so `<Backdrop />` now layers over the whole screen and only their contents carry `insets.top` padding (the news glass card starts below the status bar; the search lists scroll under it, as on the Web).
+- Safe areas still govern content: scroll views keep `contentInsetAdjustmentBehavior="automatic"`, headers keep `insets.top` padding, and nothing is drawn underneath the home indicator.
+- `tests/full-bleed.test.ts` walks every route file and fails if a screen has neither the shared Page/ListPage shell nor its own `<Backdrop />` (or paints a `height: insets.top` band). It turned up the plain-black Search page, which now also shows the backdrop.
+- iPhone 17 Pro / iOS 26.0 simulator, dark and light: all five tabs plus chat welcome, markets, opinions, search, watchlist, briefs, news, settings and NVDA stock detail have a continuous top edge. Sampled top-strip pixels follow the backdrop itself (no uniform band, no seam at the status-bar boundary); light mode runs the ground colour to the top edge with dark status icons.
+- Evidence in `artifacts/mobile-v05-fullbleed-status-*`: chat welcome, Markets, News and light-mode Markets after the change, plus a before/after top-strip comparison against the simulator capture taken just before it.
+- Typecheck, lint and i18n check pass; 81 of 81 tests pass (79 existing + the 2 new full-bleed contracts).
+
+## Dock glass and icon size — 2026-11-10
+
+Owner request: the floating dock's icons should be a little smaller, and the dock itself should use the iOS glass components.
+
+- The bar already drew with SwiftUI `glassEffect`, but through `SwiftGlass`'s clear variant. Clear glass over the dark ground reads as a flat dark slab, and the selected capsule (regular glass, no tint) sampled ~rgb(31) against the ~rgb(22) track. The iOS 26 system tab bar on the same simulator (Photos, dark) samples ~rgb(56) on a ~rgb(23) track, so the selected tab had no visible glass pill.
+- `native/SwiftGlass.ios.tsx` now takes a `SwiftGlassVariant` (`clear` | `regular`); `UI.Glass` exposes it as `glassVariant` and keeps `clear` as the default, so every existing card surface is unchanged.
+- `components/Dock.tsx` draws its surface with `glassVariant="regular"` — the iOS 26 regular Liquid Glass component.
+- `native/GlassDockRow.ios.tsx` keeps the selected item a morphing glass capsule and gives it the Web's 10% foreground wash (`#FFFFFF1A`) as its glass tint in dark mode, so the selected pill matches the system tab bar instead of disappearing into the track. Light mode passes no tint: a fully transparent tint darkened the light-mode pill (SwiftUI still treats it as a tint), so light mode keeps the glass' own white pill.
+- Dock icons are 18pt (was 21pt) in both the SwiftUI row and the React Native fallback; the 46pt row, its horizontal geometry, safe-area padding and the menu/search expansion are unchanged. After the change the selected pill samples ~rgb(50), close to the system's ~rgb(56).
+- iPhone 17 Pro / iOS 26.0 simulator, dark and light, Opinions tab with the stock list scrolling under the dock, plus the open menu state: `artifacts/mobile-v05-dock-glass-dark.png`, `artifacts/mobile-v05-dock-glass-light.png`, `artifacts/mobile-v05-dock-glass-menu.png`. Before/after dock crop: `artifacts/mobile-v05-dock-glass-compare.png`. The app was reloaded from Metro each time; labels, hit targets and the expanded menu stay readable in both themes.
+- `npx tsc --noEmit`, `npx expo lint` and `npm run i18n:check` pass; `npm test` 81 of 81 tests pass. The changed dock/native files are Prettier-clean; the repo-wide `format:check` still flags pre-existing formatting in untracked earlier work (37 files, including untouched regions of `UI.tsx`). This is the Metro-served simulator build, not a fresh Xcode build.
+
+### Search state keeps the dock's navigation buttons — 2026-11-10
+
+Follow-up request: with the search screen shown, the dock had collapsed its row to a back chevron and the menu button, so the four navigation icons disappeared. The owner asked for the nav icon buttons to stay.
+
+- `components/Dock.tsx` builds one `navItems` list (four tabs plus the menu) and renders it through both the SwiftUI `GlassDockRow` and the React Native fallback, so the search screen's field and recent searches now stack above the unchanged five-button row instead of replacing it.
+- The search-only controls are gone: the standalone back chevron did nothing the field's own clear button and the navigation row do not, and the owner then asked to drop the `取消` button too. The field now takes the row's full width, and leaving the search happens through the dock's tabs (the search screen is a tab). `DockSearchSlot.onBack`/`onCancel`, `BACK_ICON` and the search screen's `back()`/`cancel()` (plus the unused `Keyboard` import) were removed with them.
+- iPhone 17 Pro / iOS 26.0 simulator, dark: search field above the normal row with the Search tab's glass pill highlighted, and the same stack with the keyboard-adjusting layout. Evidence: `artifacts/mobile-v05-dock-glass-search.png`.
+- `npx tsc --noEmit`, `npx expo lint`, `npm run i18n:check` and `npm test` (81/81) pass; both changed files are Prettier-clean.

@@ -6,7 +6,14 @@ import { useTheme } from "../../lib/theme";
 // native content's height so long text and forms retain their natural layout.
 const placement =
   /^(width|height|minWidth|maxWidth|minHeight|maxHeight|flex|flexGrow|flexShrink|flexBasis|alignSelf|margin.*|position|top|right|bottom|left|display)$/;
-export default function SwiftGlass({ children, style, ...props }: ViewProps) {
+/** `clear`: the system's see-through toolbar glass. `regular`: the frosted glass a dock reads against scrolling content. */
+export type SwiftGlassVariant = "clear" | "regular";
+export default function SwiftGlass({
+  children,
+  style,
+  variant = "clear",
+  ...props
+}: ViewProps & { variant?: SwiftGlassVariant }) {
   const t = useTheme();
   const flat = StyleSheet.flatten(style) || {};
   const layout = Object.fromEntries(
@@ -17,6 +24,9 @@ export default function SwiftGlass({ children, style, ...props }: ViewProps) {
   ) as ViewStyle;
   return (
     <Host
+      // Yoga places this host; SwiftUI must not push its content away from the
+      // status bar or keyboard when the host scrolls under them.
+      ignoreSafeArea="all"
       matchContents={{ vertical: true }}
       style={[{ alignSelf: "stretch" }, layout]}
       colorScheme={t.dark ? "dark" : "light"}
@@ -24,7 +34,7 @@ export default function SwiftGlass({ children, style, ...props }: ViewProps) {
       <Group
         modifiers={[
           glassEffect({
-            glass: { variant: "clear" },
+            glass: { variant },
             shape: "roundedRectangle",
             cornerRadius:
               typeof flat.borderRadius === "number" ? flat.borderRadius : 24,

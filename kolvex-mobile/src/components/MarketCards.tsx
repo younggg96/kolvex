@@ -17,9 +17,10 @@ import {
   type MarketObservation,
 } from "../lib/marketObservations";
 import { useTheme } from "../lib/theme";
+import GlassTabs, { glassTabsAvailable } from "./native/GlassTabs";
 import { useResource } from "../lib/useResource";
 import { usePreferences } from "../state/Preferences";
-import { Copy, Glass, Skeleton, phone } from "./UI";
+import { Copy, Glass, Skeleton, phone, useLiquidGlass } from "./UI";
 
 export type RangeKey = (typeof MARKET_RANGES)[number]["key"];
 type Bar = { date: string; close: number | null };
@@ -172,7 +173,7 @@ export function InstrumentCard({
           : `${sign(delta)}${fmt(Math.abs(delta))} (${sign(delta)}${Math.abs(percent).toFixed(2)}%)`;
   const spec = MARKET_RANGES.find((item) => item.key === range)!;
   const rangeLabel = versusPriorClose
-    ? "较昨收"
+    ? null
     : locale === "en"
       ? spec.en
       : spec.zh;
@@ -227,9 +228,11 @@ export function InstrumentCard({
             {changeText}
           </Copy>
         )}
-        <Copy size={12} muted lines={1}>
-          {rangeLabel}
-        </Copy>
+        {rangeLabel && (
+          <Copy size={12} muted lines={1}>
+            {rangeLabel}
+          </Copy>
+        )}
         <View style={{ marginTop: 8 }}>
           {series.loading && !series.data ? (
             <Skeleton height={phone(40)} />
@@ -377,9 +380,7 @@ export function ComparisonTable({
             borderColor: t.border,
           }}
         >
-          <View
-            style={[cell, { minHeight: 40, backgroundColor: t.wash }]}
-          >
+          <View style={[cell, { minHeight: 40, backgroundColor: t.wash }]}>
             <Copy size={12} muted>
               标的 / 日期
             </Copy>
@@ -391,9 +392,7 @@ export function ComparisonTable({
                 key={instrument.symbol}
                 accessibilityRole="button"
                 onPress={() =>
-                  router.push(
-                    `/stock/${encodeURIComponent(instrument.symbol)}`,
-                  )
+                  router.push(`/stock/${encodeURIComponent(instrument.symbol)}`)
                 }
                 style={({ pressed }) => [
                   cell,
@@ -508,6 +507,21 @@ export function ViewToggle({
   onChange: (value: "card" | "list") => void;
 }) {
   const t = useTheme();
+  const glass = useLiquidGlass();
+  // iOS draws the switch as the same native Liquid Glass track as the range tabs.
+  if (glass && glassTabsAvailable)
+    return (
+      <GlassTabs
+        size="sm"
+        values={[
+          ["card", "卡片"],
+          ["list", "列表"],
+        ]}
+        icons={{ card: "square.grid.2x2", list: "list.bullet" }}
+        value={value}
+        onChange={(key) => onChange(key as "card" | "list")}
+      />
+    );
   return (
     <View
       style={{

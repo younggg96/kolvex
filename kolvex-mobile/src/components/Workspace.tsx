@@ -5,6 +5,7 @@ import type {
   ResearchAgent,
   Stance,
 } from "../lib/researchWorkspaceApi";
+import { SKILL_ICONS } from "../lib/chatSkills";
 import { useTheme } from "../lib/theme";
 import { Copy } from "./UI";
 
@@ -14,6 +15,14 @@ export const AGENT_NAMES: Record<ResearchAgent, string> = {
   news: "新闻与事件",
   creators: "博主观点",
   portfolio: "我的持仓",
+};
+/** The Web's per-agent glyph (parts.tsx AGENT_META); [ios, android] symbol names. */
+export const AGENT_ICONS: Record<ResearchAgent, [string, string]> = {
+  market: SKILL_ICONS.market,
+  fundamentals: SKILL_ICONS.fundamentals,
+  news: SKILL_ICONS.news,
+  creators: SKILL_ICONS.creators,
+  portfolio: SKILL_ICONS.portfolio,
 };
 export const TOOL_NAMES: Record<string, string> = {
   get_options_chain_summary: "期权链",

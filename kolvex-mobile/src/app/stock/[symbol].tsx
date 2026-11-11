@@ -9,13 +9,7 @@ import { CompanyLogo } from "../../components/CompanyLogo";
 import { StockContent } from "../../components/StockContent";
 import { StockPriceCard } from "../../components/StockPriceCard";
 import { TextLine } from "../../components/Skeletons";
-import {
-  Copy,
-  Failure,
-  LoadingStatus,
-  Page,
-  phone,
-} from "../../components/UI";
+import { Copy, Failure, LoadingStatus, Page, phone } from "../../components/UI";
 import { apiRequest } from "../../lib/http";
 import { BENCHMARKS } from "../../lib/marketBenchmarks";
 import { isSymbol } from "../../lib/models";
@@ -78,7 +72,11 @@ function BackLink({ label }: { label: string }) {
       })}
     >
       <SymbolView
-        name={{ ios: "chevron.left", android: "chevron_left", web: "chevron_left" }}
+        name={{
+          ios: "chevron.left",
+          android: "chevron_left",
+          web: "chevron_left",
+        }}
         size={12}
         weight="semibold"
         tintColor={t.secondary}
@@ -145,10 +143,9 @@ export default function Stock() {
   const benchmark = BENCHMARKS.find((item) => item.symbol === symbol);
   const q = useResource(`stock-quote:${symbol}:${revision}`, (signal) =>
     valid
-      ? apiRequest<StockQuote>(
-          `/market/quote/${encodeURIComponent(symbol)}`,
-          { signal },
-        )
+      ? apiRequest<StockQuote>(`/market/quote/${encodeURIComponent(symbol)}`, {
+          signal,
+        })
       : Promise.reject(new Error("股票代码无效，请返回行情重新搜索。")),
   );
   const quote = q.data;
@@ -184,7 +181,9 @@ export default function Stock() {
       <Stack.Screen options={{ headerShown: false }} />
       <View style={{ gap: 12 }}>
         <BackLink label={params.from === "watchlist" ? "自选股" : "行情"} />
-        <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 8 }}>
+        <View
+          style={{ flexDirection: "row", alignItems: "flex-start", gap: 8 }}
+        >
           <CompanyLogo symbol={symbol} size={phone(40)} />
           <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
             <Copy size={18} bold lines={2} localize={false}>

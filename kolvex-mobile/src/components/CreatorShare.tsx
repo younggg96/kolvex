@@ -123,11 +123,38 @@ function Sheet({
       </View>
       {!!failed && <Failure message={failed} />}
       {r.loading ? (
-        <LoadingStatus><CardsSkeleton count={1} lines={[{ size: 12, width: "20%" }, { size: 16, width: "60%" }, { size: 12, width: "30%" }, { size: 14, width: "15%" }, { size: 13, width: "70%", lines: 2 }, { size: 14, width: "15%" }, { size: 13, width: "50%", lines: 2 }]} /></LoadingStatus>
+        <LoadingStatus>
+          <CardsSkeleton
+            count={1}
+            lines={[
+              { size: 12, width: "20%" },
+              { size: 16, width: "60%" },
+              { size: 12, width: "30%" },
+              { size: 14, width: "15%" },
+              { size: 13, width: "70%", lines: 2 },
+              { size: 14, width: "15%" },
+              { size: 13, width: "50%", lines: 2 },
+            ]}
+          />
+        </LoadingStatus>
       ) : r.error ? (
         <Failure message="最新观点加载失败，仍可分享链接。" retry={r.refresh} />
       ) : !hasOpinions ? (
-        <ResourceState skeleton={<CardsSkeleton count={1} lines={[{ size: 12, width: "20%" }, { size: 16, width: "60%" }, { size: 12, width: "30%" }, { size: 14, width: "15%" }, { size: 13, width: "70%", lines: 2 }, { size: 14, width: "15%" }, { size: 13, width: "50%", lines: 2 }]} />}
+        <ResourceState
+          skeleton={
+            <CardsSkeleton
+              count={1}
+              lines={[
+                { size: 12, width: "20%" },
+                { size: 16, width: "60%" },
+                { size: 12, width: "30%" },
+                { size: 14, width: "15%" },
+                { size: 13, width: "70%", lines: 2 },
+                { size: 14, width: "15%" },
+                { size: 13, width: "50%", lines: 2 },
+              ]}
+            />
+          }
           resource={r}
           empty
           message="这位创作者暂无可分享的观点。"
@@ -138,11 +165,11 @@ function Sheet({
           collapsable={false}
           style={{ backgroundColor: t.background, gap: 12, padding: 4 }}
         >
-          <Glass style={{ padding: 20, gap: 12 }}>
+          <Glass style={{ padding: 16, gap: 12 }}>
             <Copy size={12} bold color={t.accent}>
               KOLVEX
             </Copy>
-            <Copy bold localize={false}>
+            <Copy bold size={15} localize={false}>
               {content.title}
             </Copy>
             <Copy size={12} muted localize={false}>

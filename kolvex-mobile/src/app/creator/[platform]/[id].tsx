@@ -75,16 +75,18 @@ function YouTube({ id, ticker }: { id: string; ticker: string }) {
         message="资料暂不可用"
       />
       {c && (
-        <Glass style={{ padding: 20, gap: 12 }}>
-          <Copy localize={!c.description}>{c.description || "暂无简介"}</Copy>
-          <Copy muted>
+        <Glass style={{ padding: 16, gap: 12 }}>
+          <Copy size={14} localize={!c.description}>
+            {c.description || "暂无简介"}
+          </Copy>
+          <Copy muted size={12}>
             {c.country || "地区未提供"} · 订阅{" "}
             {c.hidden_subscriber_count
               ? "未公开"
               : number(c.subscriber_count, 0)}{" "}
             · 视频 {number(c.video_count, 0)}
           </Copy>
-          <Copy muted>
+          <Copy muted size={12}>
             {c.profile_status === "available"
               ? "公开频道资料"
               : "部分资料来自已导入内容"}
@@ -145,8 +147,12 @@ function XProfile({ id }: { id: string }) {
   const c = profiles.data?.creators.find((x) => x.username === id);
   return (
     <Page title={c?.display_name || `@${id}`} titleLocalize={!c?.display_name}>
-      <Copy localize={!c?.bio}>{c?.bio || "原文来自 X，观点保留来源。"}</Copy>
-      <Copy muted>关注者 {number(c?.followers_count, 0)}</Copy>
+      <Copy size={14} localize={!c?.bio}>
+        {c?.bio || "原文来自 X，观点保留来源。"}
+      </Copy>
+      <Copy muted size={12}>
+        关注者 {number(c?.followers_count, 0)}
+      </Copy>
       <XInsights author={id} />
       <ResourceState
         skeleton={
@@ -163,9 +169,13 @@ function XProfile({ id }: { id: string }) {
         message="暂无原文"
       />
       {r.data?.posts.map((p) => (
-        <Glass key={p.id} style={{ padding: 20, gap: 12 }}>
-          <Copy muted>{p.published_at}</Copy>
-          <Copy selectable>{p.text}</Copy>
+        <Glass key={p.id} style={{ padding: 16, gap: 12 }}>
+          <Copy muted size={12}>
+            {p.published_at}
+          </Copy>
+          <Copy size={15} selectable>
+            {p.text}
+          </Copy>
           {p.quoted_texts?.map((text, i) => (
             <Copy key={i} muted>
               {text}

@@ -468,18 +468,21 @@ function Shifts({ changes, stocks }: { changes: Change[]; stocks: Stock[] }) {
           >
             <CompanyLogo symbol={change.ticker} size={24} />
             <View style={{ flex: 1 }}>
-              <Copy size={14} bold localize={false}>
+              <Copy size={14} bold lines={1} localize={false}>
                 {change.ticker}
               </Copy>
             </View>
-            <OpinionStrength value={consensus.get(change.ticker)?.avg_score} />
+            <OpinionStrength
+              value={consensus.get(change.ticker)?.avg_score}
+              size={12}
+            />
             <View style={{ width: 1, height: 12, backgroundColor: t.border }} />
             {change.change == null ? (
               <Copy size={12} muted>
                 首次覆盖
               </Copy>
             ) : (
-              <OpinionStrength value={change.change} change />
+              <OpinionStrength value={change.change} change barsOnly />
             )}
           </Row>
         ))}

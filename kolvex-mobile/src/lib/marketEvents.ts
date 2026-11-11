@@ -22,6 +22,17 @@ export const EVENT_CATEGORIES = {
   economic: ["Economic data", "经济数据"],
   other: ["Major event", "其他大事件"],
 } as const;
+export function calendarDays(
+  start: string,
+  offset: number,
+  count = 7,
+): string[] {
+  return Array.from({ length: count }, (_, i) => {
+    const date = new Date(`${start}T12:00:00Z`);
+    date.setUTCDate(date.getUTCDate() + offset + i);
+    return date.toISOString().slice(0, 10);
+  });
+}
 export function eventTime(event: MarketEvent, english: boolean): string {
   if (event.starts_at)
     return new Intl.DateTimeFormat(english ? "en-US" : "zh-CN", {
@@ -38,4 +49,17 @@ export function eventTime(event: MarketEvent, english: boolean): string {
     scheduled: ["Time TBD", "时间待定"],
   };
   return labels[event.timing][english ? 0 : 1];
+}
+
+export function eventOrder(event: MarketEvent): number {
+  if (!event.starts_at)
+    return {
+      all_day: -2,
+      before_open: -1,
+      after_close: 1440,
+      tbd: 1441,
+      scheduled: 1441,
+    }[event.timing];
+  const [hour, minute] = eventTime(event, true).split(":").map(Number);
+  return hour * 60 + minute;
 }

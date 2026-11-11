@@ -70,7 +70,13 @@ export function DiscoverySection({
 }
 
 /** The Web's ListFooterLink: a top-divided quiet link inside the card. */
-function FooterLink({ label, onPress }: { label: string; onPress: () => void }) {
+function FooterLink({
+  label,
+  onPress,
+}: {
+  label: string;
+  onPress: () => void;
+}) {
   const t = useTheme();
   return (
     <Pressable
@@ -133,7 +139,12 @@ function GridSkeleton({ avatar = 28 }: { avatar?: number }) {
       {Array.from({ length: 8 }, (_, i) => (
         <View
           key={i}
-          style={{ flexDirection: "row", alignItems: "center", gap: 8, minHeight: 52 }}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+            minHeight: 52,
+          }}
         >
           <Skeleton width={avatar} height={avatar} radius={avatar / 2} />
           <View style={{ flex: 1, gap: 6 }}>
@@ -237,7 +248,6 @@ export function TrendingStocks({
                     {stock.name}
                   </Copy>
                 </View>
-                <Arrow />
               </Pressable>
             ))}
           </Grid>
@@ -249,7 +259,11 @@ export function TrendingStocks({
           </Copy>
         )}
         <FooterLink
-          label={source === "youtube" ? "探索博主的完整观点" : "查看 Reddit 完整讨论榜"}
+          label={
+            source === "youtube"
+              ? "探索博主的完整观点"
+              : "查看 Reddit 完整讨论榜"
+          }
           onPress={onViewAll}
         />
       </Glass>
@@ -317,7 +331,6 @@ export function DiscoverCreators({
                     {creator.detail}
                   </Copy>
                 </View>
-                <Arrow />
               </Pressable>
             ))}
           </Grid>
@@ -372,7 +385,9 @@ export function LatestRows({
               opacity: pressed ? 0.6 : 1,
             })}
           >
-            {logo && !!row.ticker && <CompanyLogo symbol={row.ticker} size={24} />}
+            {logo && !!row.ticker && (
+              <CompanyLogo symbol={row.ticker} size={24} />
+            )}
             <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
               <Copy
                 size={14}
@@ -391,9 +406,6 @@ export function LatestRows({
                 {row.trailing}
               </Copy>
             )}
-            <View style={{ paddingTop: multiline ? 3 : 0 }}>
-              <Arrow size={14} />
-            </View>
           </Pressable>
         ))}
       </Glass>

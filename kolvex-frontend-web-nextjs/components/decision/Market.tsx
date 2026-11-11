@@ -126,7 +126,7 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
               ? `${positive ? "+" : "−"}${indexValue(Math.abs(change))} (${positive ? "+" : "−"}${Math.abs(percent).toFixed(2)}%)`
               : quoteLoading || seriesState === "loading" ? <Skeleton className="inline-block h-4 w-32 align-middle" /> : c("Change unavailable", "暂无涨跌数据")}
           {benchmark.daily && range === "1D" && <span className="ml-1 text-muted-foreground">{c("vs. prior observation", "较前次观测")}</span>}
-          <span className="ml-1 truncate text-muted-foreground max-md:ml-0 max-md:block"><span className="max-md:hidden"> · </span>{versusPriorClose && !scrub ? c("vs. prior close", "较昨收") : c(spec.en, spec.zh)}</span></>);
+          {!(versusPriorClose && !scrub) && <span className="ml-1 truncate text-muted-foreground max-md:ml-0 max-md:block"><span className="max-md:hidden"> · </span>{c(spec.en, spec.zh)}</span>}</>);
   const chartDisplay = (<>{seriesState === "loading" ? (
             <Skeleton className="h-full w-full" />
           ) : seriesState === "error" ? (
@@ -168,9 +168,11 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
         <div className="mt-2 h-16 max-md:h-10" aria-busy={seriesState === "loading"}>
           {chartDisplay}
         </div>
-        <p className="mt-2 truncate text-xs text-muted-foreground max-md:hidden" title={benchmark.note ? c(benchmark.note.en, benchmark.note.zh) : undefined}>
-          {benchmark.note ? c(benchmark.note.en, benchmark.note.zh) : unit === "percent" ? c("FRED · Yield in %", "FRED · 收益率 %") : unit === "points" ? c("Index points", "指数点位") : c("USD price", "美元价格")}
-        </p>
+        {(benchmark.note || unit !== "points") && (
+          <p className="mt-2 truncate text-xs text-muted-foreground max-md:hidden" title={benchmark.note ? c(benchmark.note.en, benchmark.note.zh) : undefined}>
+            {benchmark.note ? c(benchmark.note.en, benchmark.note.zh) : unit === "percent" ? c("FRED · Yield in %", "FRED · 收益率 %") : c("USD price", "美元价格")}
+          </p>
+        )}
       </Link>
       {seriesState === "error" && (
         <Button

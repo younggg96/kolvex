@@ -21,7 +21,13 @@ export default function SwiftButton({
 }: SwiftButtonProps) {
   const t = useTheme();
   return (
-    <Host matchContents colorScheme={t.dark ? "dark" : "light"}>
+    <Host
+      // Yoga places this host; SwiftUI must not push its content away from the
+      // status bar or keyboard when the host scrolls under them.
+      ignoreSafeArea="all"
+      matchContents
+      colorScheme={t.dark ? "dark" : "light"}
+    >
       <Button
         onPress={disabled ? undefined : onPress}
         modifiers={[

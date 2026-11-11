@@ -1,14 +1,16 @@
-// The Web's docked ChatInput: one glass surface with the field, then a footer with "+"
-// (the skills popover), the model chip and a round send button.
-import { useEffect, useRef, useState } from "react";
+// A compact glass composer that grows with the message. The footer holds skills,
+// the model picker, and the send or stop button.
+import { useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
-  TextInput,
   View,
   useWindowDimensions,
 } from "react-native";
+import { BottomSheet, RNHostView } from "@expo/ui";
 import { router } from "expo-router";
 import { GlassView } from "expo-glass-effect";
 import { SymbolView } from "expo-symbols";
@@ -23,11 +25,12 @@ import { apiRequest } from "../lib/http";
 import { useText } from "../lib/i18n";
 import { useResource } from "../lib/useResource";
 import { useTheme } from "../lib/theme";
-import { Copy, phone, useLiquidGlass } from "./UI";
+import NativeField from "./native/NativeField";
+import { Copy, Failure, phone, useLiquidGlass } from "./UI";
 
-type Anchor = { x: number; y: number; width: number };
+type Anchor = { x: number; bottom: number };
 
-/** A card that opens upwards from the composer, like the Web's side="top" popovers. */
+/** The skills menu opens over the leading edge of the composer. */
 function Popover({
   anchor,
   width,
@@ -43,7 +46,7 @@ function Popover({
   const glass = useLiquidGlass();
   const screen = useWindowDimensions();
   // Until the composer is measured, open from the bottom-left above the dock.
-  const at = anchor ?? { x: 16, y: screen.height - 200, width: 0 };
+  const at = anchor ?? { x: 16, bottom: screen.height - 100 };
   return (
     <Modal transparent visible animationType="fade" onRequestClose={onClose}>
       <Pressable
@@ -58,11 +61,11 @@ function Popover({
         style={{
           position: "absolute",
           left: at.x,
-          bottom: screen.height - at.y + 8,
+          bottom: Math.max(12, screen.height - at.bottom),
           width: Math.min(width, screen.width - 32),
-          maxHeight: at.y - 80,
-          borderRadius: phone(24),
-          padding: 8,
+          maxHeight: Math.max(96, at.bottom - 72),
+          borderRadius: 32,
+          padding: 12,
           backgroundColor: glass ? undefined : t.card,
           borderWidth: glass ? 0 : 1,
           borderColor: t.rim,
@@ -84,45 +87,6 @@ function SkillsMenu({
   const t = useTheme();
   return (
     <>
-      <View
-        style={{
-          gap: 4,
-          paddingHorizontal: 10,
-          paddingTop: 6,
-          paddingBottom: 10,
-          marginBottom: 4,
-          borderBottomWidth: 1,
-          borderColor: t.border,
-        }}
-      >
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <Copy size={14} bold>
-            技能
-          </Copy>
-          <View
-            style={{
-              paddingHorizontal: 8,
-              paddingVertical: 2,
-              borderRadius: 999,
-              backgroundColor: t.wash,
-            }}
-          >
-            <Copy
-              size={12}
-              muted
-            >{`已选 ${skills.length}/${CHAT_SKILLS.length}`}</Copy>
-          </View>
-        </View>
-        <Copy size={12} muted>
-          选择这段对话可以使用的研究工具。
-        </Copy>
-      </View>
       {CHAT_SKILLS.map((skill) => {
         const on = skills.includes(skill);
         const [ios, android] = SKILL_ICONS[skill];
@@ -143,42 +107,40 @@ function SkillsMenu({
             style={({ pressed }) => ({
               flexDirection: "row",
               alignItems: "center",
-              gap: 10,
-              minHeight: phone(44),
-              paddingHorizontal: 10,
-              borderRadius: phone(16),
+              gap: 12,
+              minHeight: 52,
+              paddingHorizontal: 8,
+              borderRadius: 22,
               backgroundColor: pressed ? t.wash : "transparent",
             })}
           >
-            <SymbolView
-              name={{ ios, android, web: android } as never}
-              size={15}
-              tintColor={t.secondary}
-            />
-            <View style={{ flex: 1 }}>
-              <Copy size={14}>{SKILL_LABELS[skill]}</Copy>
-            </View>
             <View
               style={{
-                width: 18,
-                height: 18,
-                borderRadius: 5,
-                borderWidth: on ? 0 : 1.5,
-                borderColor: t.secondary,
-                backgroundColor: on ? t.wash : "transparent",
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: t.wash,
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              {on && (
-                <SymbolView
-                  name={{ ios: "checkmark", android: "check", web: "check" }}
-                  size={11}
-                  weight="bold"
-                  tintColor={t.text}
-                />
-              )}
+              <SymbolView
+                name={{ ios, android, web: android } as never}
+                size={17}
+                tintColor={t.text}
+              />
             </View>
+            <View style={{ flex: 1 }}>
+              <Copy size={17}>{SKILL_LABELS[skill]}</Copy>
+            </View>
+            {on && (
+              <SymbolView
+                name={{ ios: "checkmark", android: "check", web: "check" }}
+                size={14}
+                weight="semibold"
+                tintColor={t.accent}
+              />
+            )}
           </Pressable>
         );
       })}
@@ -200,22 +162,22 @@ function useProviders(user?: string) {
 function ModelMenu({
   value,
   available,
-  loaded,
   onChange,
+  onOpenKeys,
 }: {
   value: string;
   available: (id: string) => boolean;
-  loaded: boolean;
   onChange: (id: string) => void;
+  onOpenKeys: () => void;
 }) {
   const t = useTheme();
   const any = MODEL_CONFIGS.some((m) => available(m.id));
   return (
     <>
-      {loaded && !any && (
+      {!any && (
         <Pressable
           accessibilityRole="link"
-          onPress={() => router.push("/settings?tab=api-keys")}
+          onPress={onOpenKeys}
           style={{ padding: 12, alignItems: "center", gap: 6 }}
         >
           <Copy size={12} muted>
@@ -240,7 +202,7 @@ function ModelMenu({
               flexDirection: "row",
               alignItems: "center",
               gap: 8,
-              minHeight: phone(40),
+              minHeight: 44,
               paddingHorizontal: 10,
               borderRadius: phone(12),
               backgroundColor: selected || pressed ? t.wash : "transparent",
@@ -266,7 +228,7 @@ function ModelMenu({
               )}
             </View>
             <View style={{ flex: 1 }}>
-              <Copy size={12} bold={selected} localize={false}>
+              <Copy size={14} bold={selected} localize={false}>
                 {model.name}
               </Copy>
             </View>
@@ -291,6 +253,124 @@ function ModelMenu({
   );
 }
 
+function ModelSheet({
+  draft,
+  available,
+  loading,
+  error,
+  onRetry,
+  onChange,
+  onDone,
+  onClose,
+}: {
+  draft: string | null;
+  available: (id: string) => boolean;
+  loading: boolean;
+  error?: string;
+  onRetry: () => void;
+  onChange: (id: string) => void;
+  onDone: () => void;
+  onClose: () => void;
+}) {
+  const t = useTheme();
+  const glass = useLiquidGlass();
+  const { height } = useWindowDimensions();
+  const selected = MODEL_CONFIGS.find((model) => model.id === draft);
+  const canApply = !!draft && available(draft);
+  return (
+    <BottomSheet
+      isPresented={draft !== null}
+      onDismiss={onClose}
+      snapPoints={["half"]}
+      containerColor={Platform.OS === "ios" && glass ? undefined : t.surface}
+      contentPadding={{ top: 22, bottom: 16, left: 22, right: 22 }}
+    >
+      <RNHostView>
+        <View style={{ flex: 1, gap: 16 }}>
+          <View style={{ alignItems: "center" }} accessibilityRole="header">
+            <Copy size={18} bold>
+              模型配置
+            </Copy>
+          </View>
+          <View
+            style={{
+              borderRadius: 22,
+              backgroundColor: t.wash,
+              paddingHorizontal: 12,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                minHeight: 44,
+                gap: 12,
+              }}
+            >
+              <Copy size={15}>模型</Copy>
+              <View style={{ flex: 1, alignItems: "flex-end" }}>
+                {selected ? (
+                  <Copy size={15} muted lines={1} localize={false}>
+                    {selected.name}
+                  </Copy>
+                ) : (
+                  <Copy size={15} muted lines={1}>
+                    选择模型
+                  </Copy>
+                )}
+              </View>
+            </View>
+            <ScrollView
+              style={{
+                height: Math.min(220, Math.max(96, height / 2 - 180)),
+                borderTopWidth: 1,
+                borderColor: t.border,
+              }}
+              contentContainerStyle={{ paddingVertical: 6 }}
+            >
+              {loading ? (
+                <ActivityIndicator
+                  color={t.secondary}
+                  style={{ padding: 12 }}
+                />
+              ) : error ? (
+                <Failure message={error} retry={onRetry} />
+              ) : (
+                <ModelMenu
+                  value={draft ?? ""}
+                  available={available}
+                  onChange={onChange}
+                  onOpenKeys={() => {
+                    onClose();
+                    router.push("/settings?tab=api-keys");
+                  }}
+                />
+              )}
+            </ScrollView>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            disabled={!canApply}
+            onPress={onDone}
+            style={({ pressed }) => ({
+              minHeight: 44,
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: 22,
+              backgroundColor: t.text,
+              opacity: !canApply ? 0.4 : pressed ? 0.8 : 1,
+            })}
+          >
+            <Copy size={16} bold color={t.background}>
+              完成
+            </Copy>
+          </Pressable>
+        </View>
+      </RNHostView>
+    </BottomSheet>
+  );
+}
+
 export function ChatComposer({
   value,
   onChange,
@@ -299,7 +379,6 @@ export function ChatComposer({
   busy = false,
   disabled = false,
   placeholder = "问一只股票、一位博主，或和持仓的关系...",
-  tall = false,
   skills,
   onSkills,
   model,
@@ -314,8 +393,6 @@ export function ChatComposer({
   busy?: boolean;
   disabled?: boolean;
   placeholder?: string;
-  /** The new-chat page's taller field (the Web's min-h-24). */
-  tall?: boolean;
   skills?: ChatSkill[];
   onSkills?: (next: ChatSkill[]) => void;
   model?: string;
@@ -328,7 +405,8 @@ export function ChatComposer({
   const text = useText();
   const glass = useLiquidGlass();
   const host = useRef<React.ComponentRef<typeof View>>(null);
-  const [menu, setMenu] = useState<"skills" | "model" | null>(null);
+  const [skillsOpen, setSkillsOpen] = useState(false);
+  const [modelDraft, setModelDraft] = useState<string | null>(null);
   const [anchor, setAnchor] = useState<Anchor | null>(null);
   const providers = useProviders(onModel ? user : undefined);
   const available = (id: string) => {
@@ -340,65 +418,45 @@ export function ChatComposer({
       )
     );
   };
-  const first = MODEL_CONFIGS.find((m) => available(m.id))?.id;
-  // As on the Web, the first model with a key is chosen once keys load.
-  useEffect(() => {
-    if (!onModel || !first || (model && available(model))) return;
-    const timer = setTimeout(() => onModel(first), 0);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [first, model]);
-  const canSend = !!value.trim() && !busy && !disabled;
   const current = MODEL_CONFIGS.find((m) => m.id === model && available(m.id));
+  const canSend =
+    !!value.trim() && !busy && !disabled && (!onModel || !!current);
   const anyModel = MODEL_CONFIGS.some((m) => available(m.id));
-  const open = (next: "skills" | "model") => {
-    setMenu(next);
-    const node = host.current as unknown as {
-      measureInWindow?: (
-        cb: (x: number, y: number, width: number) => void,
-      ) => void;
-    } | null;
-    node?.measureInWindow?.((x, y, width) => setAnchor({ x, y, width }));
+  const openSkills = () => {
+    setSkillsOpen(true);
+    host.current?.measureInWindow((x, y, _width, height) =>
+      setAnchor({ x, bottom: y + height }),
+    );
   };
-  const close = () => setMenu(null);
   return (
     <View ref={host} collapsable={false}>
       <GlassView
         glassEffectStyle={glass ? "regular" : "none"}
         colorScheme={t.dark ? "dark" : "light"}
         style={{
-          borderRadius: phone(28),
+          borderRadius: phone(26),
           borderWidth: glass ? 0 : 1,
           borderColor: t.rim,
           backgroundColor: glass ? undefined : t.card,
           paddingTop: phone(14),
-          paddingBottom: phone(10),
+          paddingBottom: phone(8),
           paddingHorizontal: phone(10),
           gap: 4,
         }}
       >
         {!!note && <View style={{ paddingHorizontal: phone(8) }}>{note}</View>}
-        <TextInput
-          value={value}
-          onChangeText={onChange}
-          placeholder={text(placeholder)}
-          placeholderTextColor={t.secondary}
-          accessibilityLabel={text(placeholder)}
-          multiline
-          maxLength={100000}
-          editable={!disabled}
-          style={{
-            // Fields stay 16px on phones so iOS never zooms, as on the Web.
-            fontSize: 16,
-            lineHeight: 24,
-            color: t.text,
-            minHeight: tall ? phone(96) - phone(24) : 28,
-            maxHeight: 160,
-            paddingTop: 0,
-            paddingHorizontal: phone(8),
-            textAlignVertical: "top",
-          }}
-        />
+        <View style={{ paddingHorizontal: phone(8) }}>
+          <NativeField
+            value={value}
+            onChange={onChange}
+            placeholder={text(placeholder)}
+            editable={!disabled}
+            multiline
+            maxLength={100000}
+            minHeight={phone(32)}
+            maxLines={6}
+          />
+        </View>
         <View
           style={{
             flexDirection: "row",
@@ -419,7 +477,7 @@ export function ChatComposer({
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={text("技能")}
-                onPress={() => open("skills")}
+                onPress={openSkills}
                 hitSlop={6}
                 style={({ pressed }) => ({
                   width: phone(32) + 4,
@@ -428,7 +486,7 @@ export function ChatComposer({
                   alignItems: "center",
                   justifyContent: "center",
                   backgroundColor:
-                    pressed || menu === "skills" ? t.wash : "transparent",
+                    pressed || skillsOpen ? t.wash : "transparent",
                 })}
               >
                 <SymbolView
@@ -442,7 +500,7 @@ export function ChatComposer({
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={text("选择模型")}
-                onPress={() => open("model")}
+                onPress={() => setModelDraft(current?.id ?? "")}
                 hitSlop={6}
                 style={({ pressed }) => ({
                   flexDirection: "row",
@@ -453,7 +511,7 @@ export function ChatComposer({
                   borderRadius: 999,
                   flexShrink: 1,
                   backgroundColor:
-                    pressed || menu === "model" ? t.wash : "transparent",
+                    pressed || modelDraft !== null ? t.wash : "transparent",
                 })}
               >
                 <SymbolView
@@ -507,7 +565,11 @@ export function ChatComposer({
               justifyContent: "center",
               borderWidth: busy ? 1 : 0,
               borderColor: t.rim,
-              backgroundColor: busy ? "transparent" : canSend ? t.brand : t.wash,
+              backgroundColor: busy
+                ? "transparent"
+                : canSend
+                  ? t.brand
+                  : t.wash,
               opacity: pressed ? 0.75 : 1,
             })}
           >
@@ -528,23 +590,29 @@ export function ChatComposer({
           </Pressable>
         </View>
       </GlassView>
-      {menu === "skills" && skills && onSkills && (
-        <Popover anchor={anchor} width={256} onClose={close}>
+      {skillsOpen && skills && onSkills && (
+        <Popover
+          anchor={anchor}
+          width={256}
+          onClose={() => setSkillsOpen(false)}
+        >
           <SkillsMenu skills={skills} onChange={onSkills} />
         </Popover>
       )}
-      {menu === "model" && onModel && (
-        <Popover anchor={anchor} width={208} onClose={close}>
-          <ModelMenu
-            value={model ?? ""}
-            available={available}
-            loaded={!providers.loading}
-            onChange={(id) => {
-              onModel(id);
-              close();
-            }}
-          />
-        </Popover>
+      {onModel && (
+        <ModelSheet
+          draft={modelDraft}
+          available={available}
+          loading={providers.loading}
+          error={providers.error}
+          onRetry={providers.refresh}
+          onChange={setModelDraft}
+          onClose={() => setModelDraft(null)}
+          onDone={() => {
+            if (modelDraft && available(modelDraft)) onModel(modelDraft);
+            setModelDraft(null);
+          }}
+        />
       )}
     </View>
   );

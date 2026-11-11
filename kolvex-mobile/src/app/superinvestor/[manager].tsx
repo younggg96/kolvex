@@ -1,9 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { ScrollView, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { AuthGate, Field } from "../../components/Content";
+import { AuthGate, Field, Filters } from "../../components/Content";
 import {
-  FactList,
   Note,
   SecLink,
   SEC_TIMEOUT,
@@ -187,6 +186,7 @@ function Overview({
   held: Holding[];
   totalValue: number;
 }) {
+  const t = useTheme();
   const f = useFormat();
   const quarterLabel = useQuarterLabel();
   const filing = data.filing!;
@@ -195,24 +195,65 @@ function Overview({
   )[0];
   return (
     <View style={{ gap: 8 }}>
-      <FactList
-        items={[
-          ["申报市值", `$${f.number(totalValue)}`],
-          ["持仓数", f.number(held.length, false)],
-          [
-            "第一大持仓",
-            largest
-              ? `${largest.ticker || largest.issuer} · ${f.percent(largest.weight)}`
-              : "—",
-          ],
-          [
-            "持仓截止日",
-            `${f.date(filing.period)}${quarterLabel(filing.period) ? ` · ${quarterLabel(filing.period)}` : ""}`,
-          ],
-          ["申报日", `${f.date(filing.filed)} · ${filing.form}`],
-        ]}
-      />
+      <View
+        style={{
+          flexDirection: "row",
+          flexWrap: "wrap",
+          rowGap: 20,
+          borderBottomWidth: 1,
+          borderColor: t.border,
+          paddingBottom: 24,
+        }}
+      >
+        <OverviewStat label="申报市值">{`$${f.number(totalValue)}`}</OverviewStat>
+        <OverviewStat label="持仓数">
+          {f.number(held.length, false)}
+        </OverviewStat>
+        <OverviewStat
+          label="第一大持仓"
+          hint={largest ? <HoldingName row={largest} size={14} /> : undefined}
+        >
+          {f.percent(largest?.weight)}
+        </OverviewStat>
+        <OverviewStat
+          label="持仓截止日"
+          hint={quarterLabel(filing.period) ?? undefined}
+        >
+          {f.date(filing.period)}
+        </OverviewStat>
+        <OverviewStat label="申报日" hint={filing.form}>
+          {f.date(filing.filed)}
+        </OverviewStat>
+      </View>
       <SecLink href={filing.source_url} label="在 SEC 查看原始申报 ↗" />
+    </View>
+  );
+}
+function OverviewStat({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: ReactNode;
+  children: string;
+}) {
+  return (
+    <View style={{ width: "50%", paddingRight: 24, gap: 4 }}>
+      <Copy size={12} muted>
+        {label}
+      </Copy>
+      <Copy size={18} bold localize={false}>
+        {children}
+      </Copy>
+      {!!hint &&
+        (typeof hint === "string" ? (
+          <Copy size={12} muted localize={false}>
+            {hint}
+          </Copy>
+        ) : (
+          <View style={{ flexShrink: 1 }}>{hint}</View>
+        ))}
     </View>
   );
 }
@@ -223,12 +264,17 @@ function Allocation({ held }: { held: Holding[] }) {
     .slice(0, TOP);
   const share = sumWeights(top);
   return (
-    <Glass style={{ padding: 20, gap: 12 }}>
+    <Glass style={{ padding: 20, gap: 16 }}>
       <View style={styles.row}>
         <Copy size={14} bold>
           持仓集中度
         </Copy>
-        <Copy size={12} muted>{`前 ${top.length} 大 ${f.percent(share)}`}</Copy>
+        <View style={{ flexDirection: "row", gap: 4 }}>
+          <Copy size={12} muted>{`前 ${top.length} 大`}</Copy>
+          <Copy size={14} bold localize={false}>
+            {f.percent(share)}
+          </Copy>
+        </View>
       </View>
       <AllocationBar
         height={10}
@@ -243,19 +289,19 @@ function Allocation({ held }: { held: Holding[] }) {
               flexDirection: "row",
               alignItems: "center",
               gap: 8,
-              minHeight: 44,
+              minHeight: 36,
             }}
           >
             <ShadeDot index={index} />
-            <View style={{ width: 20 }}>
+            <View style={{ width: 16 }}>
               <Copy size={12} muted localize={false}>
                 {index + 1}
               </Copy>
             </View>
             <View style={{ flex: 1, alignItems: "flex-start" }}>
-              <HoldingName row={row} size={13} />
+              <HoldingName row={row} size={12} />
             </View>
-            <Copy size={13} localize={false}>
+            <Copy size={12} localize={false}>
               {f.percent(row.weight)}
             </Copy>
           </View>
@@ -301,7 +347,7 @@ function QuarterActivity({ data }: { data: Institution }) {
     .slice(0, 4);
   const previous = data.previous_filing;
   return (
-    <Glass style={{ padding: 20, gap: 12 }}>
+    <Glass style={{ padding: 20, gap: 16 }}>
       <View style={[styles.row, { flexWrap: "wrap" }]}>
         <Copy size={14} bold>
           较上季变动
@@ -313,7 +359,7 @@ function QuarterActivity({ data }: { data: Institution }) {
           />
         )}
       </View>
-      <ChangeBreakdown changes={changes} />
+      <ChangeBreakdown changes={changes} size={14} />
       {changes ? (
         <>
           <MoveList title="主要买入" rows={buys} empty="本季无买入" />
@@ -340,11 +386,19 @@ function MoveList({
   const f = useFormat();
   return (
     <View>
-      <Copy size={12} muted>
-        {title}
-      </Copy>
+      <View
+        style={{
+          borderBottomWidth: 1,
+          borderColor: t.border,
+          paddingBottom: 8,
+        }}
+      >
+        <Copy size={12} muted>
+          {title}
+        </Copy>
+      </View>
       {rows.length ? (
-        rows.map((row) => (
+        rows.map((row, index) => (
           <View
             key={rowKey(row)}
             style={{
@@ -352,12 +406,13 @@ function MoveList({
               alignItems: "center",
               gap: 8,
               minHeight: 44,
-              borderTopWidth: 1,
+              paddingVertical: 6,
+              borderBottomWidth: index === rows.length - 1 ? 0 : 1,
               borderColor: t.border,
             }}
           >
             <View style={{ flex: 1, alignItems: "flex-start" }}>
-              <HoldingName row={row} size={13} />
+              <HoldingName row={row} size={12} />
             </View>
             <ActivityBadge kind={row.activity} />
             <View style={{ minWidth: 56, alignItems: "flex-end" }}>
@@ -432,27 +487,20 @@ function Holdings({ data }: { data: Institution }) {
             : `${f.number(filtered.length, false)} / ${f.number(holdings.length, false)} 行`
         }
       />
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        accessibilityLabel="按季度变化筛选"
-        contentContainerStyle={{ gap: 8 }}
-      >
-        {FILTERS.map((kind) =>
-          kind !== "all" && !counts[kind] ? null : (
-            <Chip
-              key={kind}
-              selected={filter === kind}
-              onPress={() => {
-                setFilter(kind);
-                setVisible(PAGE);
-              }}
-            >
-              {`${kind === "all" ? "全部" : ACTIVITY_LABELS[kind]} ${f.number(counts[kind], false)}`}
-            </Chip>
-          ),
+      <Filters
+        values={FILTERS.filter((kind) => kind === "all" || counts[kind]).map(
+          (kind) =>
+            [
+              kind,
+              `${kind === "all" ? "全部" : ACTIVITY_LABELS[kind]} ${f.number(counts[kind], false)}`,
+            ] as const,
         )}
-      </ScrollView>
+        value={filter}
+        onChange={(kind) => {
+          setFilter(kind as typeof filter);
+          setVisible(PAGE);
+        }}
+      />
       <Field
         label="按代码、公司或 CUSIP 筛选"
         value={query}

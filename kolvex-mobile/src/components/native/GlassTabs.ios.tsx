@@ -8,6 +8,7 @@ import {
   Group,
   HStack,
   Host,
+  Image,
   Namespace,
   ScrollView,
   Text,
@@ -45,6 +46,7 @@ export default function GlassTabs({
   stretch = false,
   disabled = false,
   maxWidth,
+  icons,
 }: GlassTabsProps) {
   const t = useTheme();
   const screen = useWindowDimensions();
@@ -59,44 +61,55 @@ export default function GlassTabs({
   const height = phone(size === "sm" ? 32 : 40);
   const items = values.map(([key, label], index) => {
     const active = index === selected;
-    return (
-      <Text
-        key={key}
-        modifiers={[
-          font({ size: size === "sm" ? 13 : 14, weight: "semibold" }),
-          foregroundStyle(active ? "#111111" : t.text),
-          padding({ horizontal: phone(size === "sm" ? 12 : 16) }),
-          frame(
+    const icon = icons?.[key];
+    const modifiers = [
+      font({ size: size === "sm" ? 13 : 14, weight: "semibold" }),
+      foregroundStyle(active ? "#111111" : t.text),
+      // Icon tabs are round; text tabs take their label's width.
+      ...(icon
+        ? []
+        : [padding({ horizontal: phone(size === "sm" ? 12 : 16) })]),
+      icon
+        ? frame({ width: height, height })
+        : frame(
             stretch
               ? { minHeight: height, maxWidth: 10_000 }
               : { minHeight: height },
           ),
-          // The selected pill is one glass shape that moves between tabs.
-          ...(active
-            ? [
-                glassEffect({
-                  glass: {
-                    variant: "regular",
-                    interactive: true,
-                    tint: "#FFFFFFF2",
-                  },
-                  shape: "capsule",
-                }),
-                glassEffectId("selected-tab", namespace),
-              ]
-            : []),
-          contentShape(shapes.capsule()),
-          accessibilityLabel(text(label)),
-          accessibilityAddTraits(
-            active ? ["isButton", "isSelected"] : ["isButton"],
-          ),
-          onTapGesture(() => {
-            if (disabled || active) return;
-            void Haptics.selectionAsync().catch(() => {});
-            onChange(key);
-          }),
-        ]}
-      >
+      // The selected pill is one glass shape that moves between tabs.
+      ...(active
+        ? [
+            glassEffect({
+              glass: {
+                variant: "regular",
+                interactive: true,
+                tint: "#FFFFFFF2",
+              },
+              shape: "capsule",
+            }),
+            glassEffectId("selected-tab", namespace),
+          ]
+        : []),
+      contentShape(shapes.capsule()),
+      accessibilityLabel(text(label)),
+      accessibilityAddTraits(
+        active ? ["isButton", "isSelected"] : ["isButton"],
+      ),
+      onTapGesture(() => {
+        if (disabled || active) return;
+        void Haptics.selectionAsync().catch(() => {});
+        onChange(key);
+      }),
+    ];
+    return icon ? (
+      <Image
+        key={key}
+        systemName={icon as never}
+        size={size === "sm" ? 13 : 15}
+        modifiers={modifiers}
+      />
+    ) : (
+      <Text key={key} modifiers={modifiers}>
         {text(label)}
       </Text>
     );
@@ -116,18 +129,28 @@ export default function GlassTabs({
       <HStack spacing={2}>{items}</HStack>
     </GlassEffectContainer>
   );
+  // The track's height is known up front (tab + 3pt padding on each side). Giving the
+  // host that height, rather than measuring it, keeps the rows below from laying out
+  // against a zero-height host and drawing under the tabs on first mount.
+  const trackHeight = height + 6;
   return (
     <Host
+      // Yoga places this host; SwiftUI must not push its content away from the
+      // status bar or keyboard when the host scrolls under them.
+      ignoreSafeArea="all"
       // A full-width bar fills its row; otherwise the track takes its own width,
       // capped by the row, and scrolls when the tabs are wider.
-      matchContents={
-        stretch ? { vertical: true } : { vertical: true, horizontal: true }
-      }
+      matchContents={stretch ? false : { horizontal: true }}
       colorScheme={t.dark ? "dark" : "light"}
       style={
         stretch
-          ? { alignSelf: "stretch" }
-          : { alignSelf: "flex-start", maxWidth: "100%", flexShrink: 1 }
+          ? { alignSelf: "stretch", height: trackHeight }
+          : {
+              alignSelf: "flex-start",
+              maxWidth: "100%",
+              flexShrink: 1,
+              height: trackHeight,
+            }
       }
     >
       <Namespace id={namespace}>

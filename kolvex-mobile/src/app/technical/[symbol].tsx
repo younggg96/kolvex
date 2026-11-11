@@ -218,19 +218,21 @@ function Workspace({ symbol }: { symbol: string }) {
           )}
         </>
       )}
-      {indicatorOrder.map((k) => (
-        <Button
-          key={k}
-          selected={enabled.includes(k)}
-          onPress={() =>
-            setEnabled((v) =>
-              v.includes(k) ? v.filter((x) => x !== k) : [...v, k],
-            )
-          }
-        >
-          {k.toUpperCase()}
-        </Button>
-      ))}
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+        {indicatorOrder.map((k) => (
+          <Button
+            key={k}
+            selected={enabled.includes(k)}
+            onPress={() =>
+              setEnabled((v) =>
+                v.includes(k) ? v.filter((x) => x !== k) : [...v, k],
+              )
+            }
+          >
+            {k.toUpperCase()}
+          </Button>
+        ))}
+      </View>
       <Copy size={12} muted>
         指标使用与 Web 相同的计算。缺少完整预热区间时以 — 显示；VWAP
         在日线及更长周期以首根为锚。

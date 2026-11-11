@@ -5,6 +5,7 @@ import { StockOpinions } from "./StockOpinions";
 import { StockOptionsChain } from "./StockOptionsChain";
 import { StockValuation } from "./StockValuation";
 import { AiFundamentals } from "./AiFundamentals";
+import { StockFundamentals } from "./StockFundamentals";
 import { StockPaperTrading } from "./StockPaperTrading";
 import { Multicharts, Earnings, Analysts } from "./StockResearch";
 import { EarningsMaterials, FinancialsTab, Ownership } from "./SecResearch";
@@ -16,7 +17,6 @@ import { SymbolView } from "expo-symbols";
 import { useTheme } from "../lib/theme";
 import { BENCHMARKS } from "../lib/marketBenchmarks";
 import { useAuth } from "../state/Auth";
-import { apiRequest } from "../lib/http";
 import { demoMode } from "../lib/config";
 import { news, reports, stockFacts } from "../lib/contentApi";
 import { number } from "../lib/models";
@@ -108,7 +108,7 @@ export function StockContent({
         <>
           {/* The Web shows fundamentals for companies only; an index shows its chart. */}
           {!benchmark && !!user && <AiFundamentals symbol={symbol} />}
-          {!benchmark && <Financials symbol={symbol} />}
+          {!benchmark && <StockFundamentals symbol={symbol} />}
         </>
       ) : tab === "valuation" ? (
         <StockValuation key={symbol} symbol={symbol} />
@@ -219,98 +219,6 @@ function Company({ symbol }: { symbol: string }) {
           {!!data.website && (
             <SourceLink url={data.website}>公司网站 ↗</SourceLink>
           )}
-        </Glass>
-      )}
-    </>
-  );
-}
-function Financials({ symbol }: { symbol: string }) {
-  const t = useTheme();
-  const resource = useResource(symbol, (signal) =>
-    apiRequest<Record<string, unknown>>(
-      `/market/financials/${encodeURIComponent(symbol)}`,
-      { signal },
-    ),
-  );
-  const data = resource.data;
-  const fields = [
-    ["pe_ratio", "市盈率"],
-    ["forward_pe", "预期市盈率"],
-    ["price_to_book", "市净率"],
-    ["price_to_sales", "市销率"],
-    ["profit_margins", "净利率"],
-    ["operating_margins", "营业利润率"],
-    ["return_on_equity", "净资产收益率"],
-    ["revenue_growth", "营收增长率"],
-    ["debt_to_equity", "负债权益比"],
-    ["free_cash_flow", "自由现金流"],
-  ];
-  return (
-    <>
-      <ResourceState
-        skeleton={
-          <CardsSkeleton
-            count={1}
-            lines={[
-              { size: 20, width: "50%" },
-              { size: 12, width: "60%" },
-              { size: 14, width: "30%" },
-              { size: 16, width: "40%" },
-              { size: 14, width: "30%" },
-              { size: 16, width: "40%" },
-              { size: 14, width: "30%" },
-              { size: 16, width: "40%" },
-              { size: 14, width: "30%" },
-              { size: 16, width: "40%" },
-              { size: 14, width: "30%" },
-              { size: 16, width: "40%" },
-              { size: 14, width: "30%" },
-              { size: 16, width: "40%" },
-            ]}
-            gap={16}
-          />
-        }
-        resource={resource}
-        empty={!data}
-        message="暂无财务指标。"
-      />
-      {data && (
-        // The Web's fundamentals group card: a quiet heading, then label / value rows.
-        <Glass style={{ padding: 16, gap: 4 }}>
-          <Copy size={14} muted>
-            核心财务指标
-          </Copy>
-          {fields.map(([key, label], index) => {
-            const value =
-              typeof data[key] === "number" ? (data[key] as number) : undefined;
-            const pct = [
-              "profit_margins",
-              "operating_margins",
-              "return_on_equity",
-              "revenue_growth",
-            ].includes(key);
-            return (
-              <View
-                key={key}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "baseline",
-                  justifyContent: "space-between",
-                  gap: 16,
-                  paddingVertical: 10,
-                  borderTopWidth: index ? 1 : 0,
-                  borderColor: t.border,
-                }}
-              >
-                <Copy size={14} muted>
-                  {label}
-                </Copy>
-                <Copy size={14} bold localize={false}>
-                  {`${number(value == null ? undefined : pct ? value * 100 : value)}${value != null && pct ? "%" : ""}`}
-                </Copy>
-              </View>
-            );
-          })}
         </Glass>
       )}
     </>

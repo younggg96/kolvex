@@ -89,38 +89,20 @@ export default function Watchlist() {
     });
   }, [watchlist, query, sort, quotes]);
   const returnHref = `/dashboard/watchlist${params.size ? `?${params}` : ""}`;
-  const showingCount = c(`Showing ${Math.min(rows, filtered.length)} of ${filtered.length} stocks`, `已显示 ${Math.min(rows, filtered.length)} / ${filtered.length} 只`);
 
   return <DashboardLayout title={c("Watchlist", "自选股")}>
     <main className="flex-1 overflow-y-auto">
       <div className="mx-auto max-w-6xl space-y-6 px-[16px] pb-10 pt-6 md:px-8 md:pt-8">
-        <div className="flex items-start justify-between gap-4">
-          <div><h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{c("Watchlist", "自选股")}</h1></div>
-          <Button variant="ghost" size="icon" className="h-11 w-11 shrink-0" aria-label={c("Refresh Watchlist quotes", "刷新自选股行情")} title={c("Refresh quotes", "刷新行情")} disabled={!ready || loading || !watchlist.length} onClick={() => setAttempt(value => value + 1)}><RefreshCw className="h-4 w-4" aria-hidden="true" /></Button>
-        </div>
-        <form noValidate onSubmit={addTicker} aria-label={c("Add a stock", "添加自选股")} className="space-y-2">
-          <label htmlFor="watchlist-ticker" className="block text-sm font-medium">{c("Add a stock", "添加股票")}</label>
-          <div className="flex gap-2">
-            <div className="relative min-w-0 flex-1"><Input ref={tickerInput} id="watchlist-ticker" disabled={pending} value={ticker} onChange={event => { setTicker(event.target.value); setInvalid(false); }} placeholder={c("Stock symbol, e.g. AAPL or BRK-B", "输入股票代码，如 AAPL、BRK-B")} maxLength={20} autoComplete="off" autoCapitalize="characters" spellCheck={false} aria-invalid={invalid} aria-describedby="watchlist-ticker-help" className="h-11 pr-11"
-              onCompositionStart={() => { tickerComposing.current = true; }} onCompositionEnd={() => { tickerComposing.current = false; }} onKeyDown={event => { if (event.key === "Enter" && (event.nativeEvent.isComposing || tickerComposing.current || event.keyCode === 229)) event.preventDefault(); }} />
-              {ticker && <Button type="button" variant="ghost" size="icon" className="absolute right-0 top-0 h-11 w-11" aria-label={c("Clear stock symbol", "清空股票代码")} onClick={() => { setTicker(""); setInvalid(false); tickerInput.current?.focus(); }}><X className="h-4 w-4" aria-hidden="true" /></Button>}
-            </div>
-            <Button type="submit" disabled={!canEdit} aria-busy={pending} className="h-11 shrink-0"><Plus className="mr-2 h-4 w-4" aria-hidden="true" />{c("Add", "添加")}</Button>
-          </div>
-          <p id="watchlist-ticker-help" role={invalid ? "alert" : undefined} className={`text-xs ${invalid ? "text-negative" : "text-muted-foreground"}`}>{invalid ? c("Enter a valid symbol, e.g. AAPL or BRK-B.", "请输入有效的股票代码，如 AAPL、BRK-B。") : c("Shared with your Reddit follows and synced to your account.", "与 Reddit 关注共用，登录后同步到账号。")}</p>
-        </form>
         {!ready ? <WatchlistCardSkeleton /> : (!userId || error) && !watchlist.length ? null : !watchlist.length ? <div className="glass-card bg-card-glass rounded-3xl border border-foreground/10 py-16 text-center">
           <Star className="mx-auto h-8 w-8 text-muted-foreground" aria-hidden="true" /><h2 className="mt-4 text-lg font-semibold">{c("No stocks in your Watchlist yet", "还没有自选股")}</h2><Button asChild variant="outline" className="mt-6"><Link href="/dashboard">{c("Browse Markets", "浏览行情")}</Link></Button>
         </div> : <section aria-label={c("Saved stocks", "已添加的股票")} className="space-y-3">
           <ListCard>
-            <div className="flex items-center justify-between gap-3 lg:grid lg:grid-cols-[minmax(0,1fr)_12rem]">
-              <p role="status" className="text-xs tabular-nums text-muted-foreground lg:hidden">{showingCount}</p>
+            <div className="flex items-center justify-end gap-3 lg:grid lg:grid-cols-[minmax(0,1fr)_12rem]">
               <div className="hidden lg:block"><label htmlFor="watchlist-search" className="mb-2 block text-xs text-muted-foreground">{c("Search Watchlist", "搜索自选股")}</label><div className="relative"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" /><Input id="watchlist-search" ref={search} value={draft} placeholder={c("Ticker or company name", "股票代码或公司名称")} className="h-11 pl-10 pr-11" maxLength={100} onChange={event => { setDraft(event.target.value); if (!composing.current) update(event.target.value); }} onCompositionStart={() => { composing.current = true; }} onCompositionEnd={event => { composing.current = false; update(event.currentTarget.value); }} onKeyDown={event => { if (event.key === "Escape" && !composing.current) clear(); }} />{draft && <Button type="button" variant="ghost" size="icon" className="absolute right-0 top-0 h-11 w-11" aria-label={c("Clear Watchlist search", "清除自选股搜索")} onClick={clear}><X className="h-4 w-4" aria-hidden="true" /></Button>}</div></div>
               <FilterSheet title={c("Sort", "排序")} summary={sortOptions.find(option => option.value === sort)?.label} active={sort !== "added"} onReset={() => update(query, "added")} triggerClassName="shrink-0"><FilterSheetGroup label={c("Sort", "排序")} options={sortOptions} value={sort} onChange={value => update(query, value)} /></FilterSheet>
               <div className="hidden lg:block"><label htmlFor="watchlist-sort" className="mb-2 block text-xs text-muted-foreground">{c("Sort", "排序")}</label><Select value={sort} onValueChange={value => update(query, value)}><SelectTrigger id="watchlist-sort" className="h-11"><SelectValue /></SelectTrigger><SelectContent align="end">{sortOptions.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select></div>
             </div>
             <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs leading-5 text-muted-foreground">
-              <p role="status" className="hidden tabular-nums lg:block">{showingCount}</p>
               <p>{c("Saved stocks · ranked within this list", "自选名单 · 名单内排序")}</p>
             </div>
             {unavailable && <div role="status" className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground"><p>{c("Some quotes are unavailable. Check the symbol or retry; saved stocks are retained.", "部分报价暂不可用，请检查代码或重试，自选股仍会保留。")}</p><Button variant="outline" size="sm" disabled={loading} onClick={() => setAttempt(value => value + 1)}>{c("Retry quotes", "重试报价")}</Button></div>}
@@ -150,7 +132,6 @@ export default function Watchlist() {
             {!filtered.length && <div className="py-12 text-center"><p className="text-sm text-muted-foreground">{c("No saved stocks match your search.", "没有符合搜索条件的自选股。")}</p><Button variant="outline" className="mt-4" onClick={clear}>{c("Clear search", "清除搜索")}</Button></div>}
             {filtered.length > rows && <ListLoadMore onClick={() => setRows(value => value + PAGE_SIZE)}>{c("Load more", "加载更多")}</ListLoadMore>}
           </ListCard>
-          <p className="text-xs leading-5 text-muted-foreground">{c("Prices use the existing market data source and may be delayed. Unavailable quotes show a dash.", "报价来自现有行情数据源，可能存在延迟；缺失报价显示为横线。")}</p>
         </section>}
       </div>
     </main>

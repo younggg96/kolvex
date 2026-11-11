@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { AuthGate, Filters } from "../components/Content";
-import { PaperReviews } from "../components/PaperReviews";
+import { AuthGate, Filters } from "../../../components/Content";
+import { PaperReviews } from "../../../components/PaperReviews";
 import {
   EquityChart,
   ExitsSheet,
@@ -13,8 +13,8 @@ import {
   usePaperAccount,
   usePnlColor,
   type TicketDraft,
-} from "../components/PaperTrading";
-import { CardsSkeleton } from "../components/Skeletons";
+} from "../../../components/PaperTrading";
+import { CardsSkeleton } from "../../../components/Skeletons";
 import {
   Button,
   Copy,
@@ -24,13 +24,13 @@ import {
   LoadingStatus,
   Page,
   Section,
-} from "../components/UI";
+} from "../../../components/UI";
 import {
   money,
   PAPER_SYMBOL,
   signedMoney,
   type Position,
-} from "../lib/paperTrading";
+} from "../../../lib/paperTrading";
 
 const skeleton = (
   <>
@@ -163,7 +163,7 @@ function Workspace() {
             {cards.map(([label, value, detail, tone]) => (
               <Glass
                 key={label}
-                style={{ flexGrow: 1, flexBasis: "45%", padding: 16, gap: 4 }}
+                style={{ flexGrow: 1, flexBasis: "45%", padding: 16, gap: 8 }}
               >
                 <Copy size={12} muted>
                   {label}
@@ -204,7 +204,7 @@ function Workspace() {
             <>
               <View style={{ gap: 12 }}>
                 <Section title="净值变化" />
-                <Glass style={{ padding: 16 }}>
+                <Glass style={{ padding: 12 }}>
                   <EquityChart snapshots={account.state.snapshots} />
                 </Glass>
               </View>

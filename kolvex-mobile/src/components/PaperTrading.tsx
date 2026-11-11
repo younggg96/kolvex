@@ -1027,7 +1027,7 @@ export function EquityChart({
           {money(high)}
         </Copy>
       </View>
-      <Svg width="100%" height={180} viewBox="0 0 320 192" accessible={false}>
+      <Svg width="100%" height={140} viewBox="0 0 320 192" accessible={false}>
         <Line x1={8} x2={312} y1={176} y2={176} stroke={t.border} />
         <Polyline
           points={points}

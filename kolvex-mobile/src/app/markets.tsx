@@ -131,7 +131,17 @@ export default function MarketBoard() {
             日线仅含已完成的交易日。收益率与利差使用百分点变动；ETF
             是行业或风格的代表，不是指数点位。
           </Copy>
-          <ResourceState skeleton={<CardsSkeleton count={4} lines={[{ size: 16 }, { size: 28, width: "40%" }, { size: 16, width: "50%" }]} />}
+          <ResourceState
+            skeleton={
+              <CardsSkeleton
+                count={4}
+                lines={[
+                  { size: 16 },
+                  { size: 28, width: "40%" },
+                  { size: 16, width: "50%" },
+                ]}
+              />
+            }
             resource={r}
             empty={!r.loading && !rows.length}
             message="无匹配市场工具"

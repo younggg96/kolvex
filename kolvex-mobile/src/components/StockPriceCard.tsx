@@ -37,7 +37,13 @@ const W = 320;
 const H = 180;
 const SCALE = 44;
 
-function Graph({ bars, up }: { bars: { date: string; close: number }[]; up: boolean }) {
+function Graph({
+  bars,
+  up,
+}: {
+  bars: { date: string; close: number }[];
+  up: boolean;
+}) {
   const t = useTheme();
   const values = bars.map((b) => b.close);
   const min = Math.min(...values);
@@ -179,7 +185,9 @@ export function StockPriceCard({
         <Pressable
           accessibilityRole="link"
           hitSlop={8}
-          onPress={() => router.push(`/technical/${encodeURIComponent(symbol)}`)}
+          onPress={() =>
+            router.push(`/technical/${encodeURIComponent(symbol)}`)
+          }
           style={({ pressed }) => ({
             flexDirection: "row",
             alignItems: "center",
@@ -208,7 +216,8 @@ export function StockPriceCard({
       </View>
       {info && (
         <Copy size={12} muted>
-          涨跌按所选区间首尾价格计算。高级图表提供 K 线、指标、AI 画线与画线图层。
+          涨跌按所选区间首尾价格计算。高级图表提供 K 线、指标、AI
+          画线与画线图层。
         </Copy>
       )}
       {bars.loading && !bars.data ? (
@@ -216,7 +225,9 @@ export function StockPriceCard({
       ) : bars.error && !bars.data ? (
         <Failure message="走势暂不可用。" retry={bars.refresh} />
       ) : points.length < 2 ? (
-        <View style={{ height: H, alignItems: "center", justifyContent: "center" }}>
+        <View
+          style={{ height: H, alignItems: "center", justifyContent: "center" }}
+        >
           <Copy size={12} muted>
             这个区间暂无走势数据。
           </Copy>

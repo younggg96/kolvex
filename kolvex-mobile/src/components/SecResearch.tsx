@@ -26,7 +26,15 @@ import { usePreferences } from "../state/Preferences";
 import { DataTable } from "./DataTable";
 import { Field, Filters } from "./Content";
 import { MetricBars, Statements } from "./StockResearch";
-import { Button, Copy, Empty, Failure, Glass, Section, LoadingStatus } from "./UI";
+import {
+  Button,
+  Copy,
+  Empty,
+  Failure,
+  Glass,
+  Section,
+  LoadingStatus,
+} from "./UI";
 export const SEC_TIMEOUT = 55_000;
 export function useFormat() {
   return financialFormat(usePreferences().locale);
@@ -262,7 +270,16 @@ function LongTermFinancials({ symbol }: { symbol: string }) {
         value={frequency}
         onChange={setFrequency}
       />
-      <SecState skeleton={<CardsSkeleton count={2} padding={16} gap={8} lines={[{ size: 16, width: "30%" }]} chartHeight={120} />}
+      <SecState
+        skeleton={
+          <CardsSkeleton
+            count={2}
+            padding={16}
+            gap={8}
+            lines={[{ size: 16, width: "30%" }]}
+            chartHeight={120}
+          />
+        }
         resource={resource}
         empty={!columns.length}
         emptyText="SEC 没有这只证券的美国会计准则财务数据。按 IFRS 申报的外国公司和 ETF 不在覆盖范围内。"
@@ -375,7 +392,18 @@ function RevenueEstimates({ symbol }: { symbol: string }) {
   return (
     <View style={{ gap: 12 }}>
       <Section title="营收预期" />
-      <SecState skeleton={<CardsSkeleton count={1} padding={16} gap={8} lines={[{ size: 14, width: "40%" }, { size: 14, lines: 8, width: "80%" }]} />}
+      <SecState
+        skeleton={
+          <CardsSkeleton
+            count={1}
+            padding={16}
+            gap={8}
+            lines={[
+              { size: 14, width: "40%" },
+              { size: 14, lines: 8, width: "80%" },
+            ]}
+          />
+        }
         resource={resource}
         empty={!rows.length}
         emptyText="免费数据源暂无这只股票的营收预期。"
@@ -443,7 +471,22 @@ function EarningsFilings({ symbol }: { symbol: string }) {
         value={scope}
         onChange={setScope}
       />
-      <SecState skeleton={<CardsSkeleton count={1} padding={16} gap={8} lines={[{ size: 13, width: "50%" }, { size: 12, width: "30%" }, { size: 13, width: "60%" }, { size: 12, width: "30%" }, { size: 13, width: "45%" }, { size: 12, width: "30%" }]} />}
+      <SecState
+        skeleton={
+          <CardsSkeleton
+            count={1}
+            padding={16}
+            gap={8}
+            lines={[
+              { size: 13, width: "50%" },
+              { size: 12, width: "30%" },
+              { size: 13, width: "60%" },
+              { size: 12, width: "30%" },
+              { size: 13, width: "45%" },
+              { size: 12, width: "30%" },
+            ]}
+          />
+        }
         resource={resource}
         empty={!rows.length}
         emptyText="SEC 暂无这只证券的相关申报。"
@@ -530,7 +573,28 @@ function Insiders({ symbol }: { symbol: string }) {
     side.count ? `$${f.number(side.value)}${side.incomplete ? "+" : ""}` : "无";
   return (
     <View style={{ gap: 16 }}>
-      <SecState skeleton={<><CardsSkeleton count={1} padding={16} gap={8} lines={[{ size: 12, width: "30%" }, { size: 16, width: "40%" }, { size: 12, width: "30%" }, { size: 16, width: "40%" }]} /><CardsSkeleton count={1} padding={16} gap={8} lines={[{ size: 13, lines: 6, width: "70%" }]} /></>}
+      <SecState
+        skeleton={
+          <>
+            <CardsSkeleton
+              count={1}
+              padding={16}
+              gap={8}
+              lines={[
+                { size: 12, width: "30%" },
+                { size: 16, width: "40%" },
+                { size: 12, width: "30%" },
+                { size: 16, width: "40%" },
+              ]}
+            />
+            <CardsSkeleton
+              count={1}
+              padding={16}
+              gap={8}
+              lines={[{ size: 13, lines: 6, width: "70%" }]}
+            />
+          </>
+        }
         resource={resource}
         empty={!rows.length}
         emptyText="最近的申报中没有 Form 4 交易。外国私人发行人通常不提交 Form 4。"
@@ -677,7 +741,28 @@ function Institutions({ companyName }: { companyName?: string | null }) {
         }}
         autoCorrect={false}
       />
-      <SecState skeleton={<><CardsSkeleton count={1} padding={16} gap={8} lines={[{ size: 12, width: "30%" }, { size: 16, width: "40%" }, { size: 12, width: "30%" }, { size: 16, width: "40%" }]} /><CardsSkeleton count={1} padding={16} gap={8} lines={[{ size: 13, lines: 8, width: "70%" }]} /></>}
+      <SecState
+        skeleton={
+          <>
+            <CardsSkeleton
+              count={1}
+              padding={16}
+              gap={8}
+              lines={[
+                { size: 12, width: "30%" },
+                { size: 16, width: "40%" },
+                { size: 12, width: "30%" },
+                { size: 16, width: "40%" },
+              ]}
+            />
+            <CardsSkeleton
+              count={1}
+              padding={16}
+              gap={8}
+              lines={[{ size: 13, lines: 8, width: "70%" }]}
+            />
+          </>
+        }
         resource={resource}
         empty={!holdings.length}
         emptyText="这家机构暂无可用的 13F 持仓。"

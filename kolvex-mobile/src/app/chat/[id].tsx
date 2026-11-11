@@ -1,10 +1,12 @@
 import { findSymbols } from "../../lib/stockMentions";
-import { ChatWorkspace } from "../../components/ChatWorkspace";
+import { useChatWorkspace } from "../../components/ChatWorkspace";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { CardsSkeleton } from "../../components/Skeletons";
-import { useLocalSearchParams } from "expo-router";
+import { router, Stack, useLocalSearchParams } from "expo-router";
+import ChatGlassButton from "../../components/native/ChatGlassButton";
 import {
   Keyboard,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -33,9 +35,12 @@ import {
   Failure,
   Glass,
   phone,
-  StatusScrim,
   styles,
 } from "../../components/UI";
+
+// Copy applies the app's 0.875 scale, yielding roughly 17pt type on device.
+const MESSAGE_SIZE = 19.5;
+
 export default function ChatRoom() {
   return (
     <AuthGate
@@ -158,6 +163,11 @@ function Room() {
       content.length > 100000
     )
       return;
+    if (!model) {
+      setInput(content);
+      setError("请先选择模型。");
+      return;
+    }
     const controller = new AbortController();
     action.current = controller;
     setUncertain(false);
@@ -203,7 +213,7 @@ function Room() {
         },
         context,
         sources,
-        model || undefined,
+        model,
         skills,
       );
       // Reconcile the authoritative history before re-enabling Send. A stream's
@@ -232,6 +242,7 @@ function Room() {
     }
   }
   const data = replacement ?? resource.data;
+  const workspace = useChatWorkspace(id, user);
   // Tickers the reader named in their own questions become links in the answers, as on the Web.
   const knownSymbols = [
     ...new Set(
@@ -264,11 +275,57 @@ function Room() {
         })
       : "";
   const bottom = keyboard ? keyboard + 8 : Math.max(12, insets.bottom) + 4;
+  const newChat = () =>
+    router.dismissTo({
+      pathname: "/chat",
+      params: { fresh: Date.now().toString() },
+    });
   return (
     <View style={{ flex: 1, backgroundColor: t.background }}>
-      <Backdrop />
+      {/* As in ChatGPT, no title: new chat and the workspace sit together on the right. */}
+      <Stack.Screen
+        options={{
+          headerTitle: "",
+          ...(Platform.OS !== "ios" && {
+            headerRight: () => (
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                <ChatGlassButton
+                  icon="new"
+                  label={text("新建对话")}
+                  onPress={newChat}
+                />
+                {workspace.available && (
+                  <ChatGlassButton
+                    icon={workspace.workspace ? "workspaceFilled" : "workspace"}
+                    label={text(workspace.label)}
+                    onPress={workspace.press}
+                  />
+                )}
+              </View>
+            ),
+          }),
+        }}
+      />
+      {Platform.OS === "ios" && (
+        <Stack.Toolbar placement="right">
+          <Stack.Toolbar.Button
+            icon="square.and.pencil"
+            accessibilityLabel={text("新建对话")}
+            onPress={newChat}
+          />
+          <Stack.Toolbar.Button
+            icon={workspace.workspace ? "folder.fill" : "folder"}
+            accessibilityLabel={text(workspace.label)}
+            hidden={!workspace.available}
+            disabled={workspace.loading}
+            onPress={workspace.press}
+          />
+        </Stack.Toolbar>
+      )}
+      {workspace.sheet}
       <ScrollView
         ref={scroll}
+        style={{ flex: 1, zIndex: 1 }}
         contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
@@ -285,13 +342,13 @@ function Room() {
           />
         }
         contentContainerStyle={{
-          paddingHorizontal: phone(16),
+          paddingLeft: Math.max(14, insets.left),
+          paddingRight: Math.max(14, insets.right),
           paddingTop: phone(8),
           paddingBottom: bottom + composerHeight + 16,
           gap: phone(24),
         }}
       >
-        <TitlePill title={data?.title} conversationId={id} user={user} />
         <ResourceState
           skeleton={
             <CardsSkeleton
@@ -320,7 +377,7 @@ function Room() {
                 <TextBody
                   text={message.content}
                   symbols={knownSymbols}
-                  size={15}
+                  size={MESSAGE_SIZE}
                 />
               </Answer>
             ),
@@ -331,7 +388,11 @@ function Room() {
         {(busy || !!partial) && (
           <Answer time={busy ? status : "未完成的回复，保存状态未确认"} live>
             {!!partial && (
-              <TextBody text={partial} symbols={knownSymbols} size={15} />
+              <TextBody
+                text={partial}
+                symbols={knownSymbols}
+                size={MESSAGE_SIZE}
+              />
             )}
           </Answer>
         )}
@@ -355,7 +416,7 @@ function Room() {
           AI 回复可能有误，请核实来源。对话仅保存在你的账户中。
         </Copy>
       </ScrollView>
-      <StatusScrim />
+      <Backdrop />
       {!uncertain && (
         <View
           onLayout={(event) =>
@@ -363,6 +424,7 @@ function Room() {
           }
           style={{
             position: "absolute",
+            zIndex: 2,
             left: phone(16),
             right: phone(16),
             bottom,
@@ -407,36 +469,6 @@ function Room() {
   );
 }
 
-/** The Web's chat header: a glass pill with the conversation title and its workspace. */
-function TitlePill({
-  title,
-  conversationId,
-  user,
-}: {
-  title?: string;
-  conversationId: string;
-  user: string;
-}) {
-  return (
-    <Glass
-      style={{
-        borderRadius: 999,
-        paddingHorizontal: 20,
-        paddingVertical: 8,
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 10,
-      }}
-    >
-      <View style={{ flex: 1 }}>
-        <Copy size={15} bold lines={1} localize={false}>
-          {title || "Ask Kolvex"}
-        </Copy>
-      </View>
-      <ChatWorkspace conversationId={conversationId} user={user} compact />
-    </Glass>
-  );
-}
 /** The reader's question: a right-aligned glass bubble with its time below. */
 function UserBubble({ text, time }: { text: string; time: string }) {
   return (
@@ -448,7 +480,7 @@ function UserBubble({ text, time }: { text: string; time: string }) {
           paddingVertical: 10,
         }}
       >
-        <Copy size={15} localize={false} selectable>
+        <Copy size={MESSAGE_SIZE} localize={false} selectable>
           {text}
         </Copy>
       </Glass>

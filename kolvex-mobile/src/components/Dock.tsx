@@ -14,7 +14,7 @@ import {
   StyleSheet,
   View,
 } from "react-native";
-import { router, type Tabs } from "expo-router";
+import { router, usePathname, type Tabs } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { profile } from "../lib/contentApi";
@@ -22,14 +22,7 @@ import { useText } from "../lib/i18n";
 import { useTheme } from "../lib/theme";
 import { useResource } from "../lib/useResource";
 import { useAuth } from "../state/Auth";
-import GlassDockRow, { glassDockAvailable } from "./native/GlassDockRow";
-import { Copy, Glass, useLiquidGlass } from "./UI";
-
-/** The iOS SF Symbol name of an icon. */
-const symbolOf = (icon: SymbolName) =>
-  typeof icon === "object" && icon && "ios" in icon
-    ? String(icon.ios)
-    : "circle";
+import { Copy, Glass } from "./UI";
 
 type SymbolName = ComponentProps<typeof SymbolView>["name"];
 type DockProps = Parameters<
@@ -157,16 +150,6 @@ const ADMIN_ICON: SymbolName = {
   android: "verified_user",
   web: "verified_user",
 };
-const LOGOUT_ICON: SymbolName = {
-  ios: "rectangle.portrait.and.arrow.right",
-  android: "logout",
-  web: "logout",
-};
-const BACK_ICON: SymbolName = {
-  ios: "chevron.backward",
-  android: "arrow_back",
-  web: "arrow_back",
-};
 
 /** What the focused search screen shows inside the dock's expanded surface. */
 export type DockSearchSlot = {
@@ -174,10 +157,6 @@ export type DockSearchSlot = {
   field: ReactNode;
   /** Recent searches, shown above the field. */
   recent: ReactNode;
-  /** Leaves the search screen and restores the tab dock. */
-  onCancel: () => void;
-  /** Back out of the screen; returns false to stay and only clear the query. */
-  onBack: () => boolean;
 };
 
 /**
@@ -228,14 +207,10 @@ function useDockSlot() {
   return slot.current?.content;
 }
 
-/** Floating glass dock matching the Web phone navigation in components/layout/MobileTabBar.tsx. */
+/** Floating navigation for Android and web. */
 export function Dock({ state }: DockProps) {
-  const t = useTheme();
-  const liquidGlass = useLiquidGlass();
   const text = useText();
   const insets = useSafeAreaInsets();
-  const auth = useAuth();
-  const user = auth.session?.user.id;
   const [open, setOpen] = useState(false);
   // The search screen expands the dock into its search bar, above the keyboard.
   const search = useDockSlot();
@@ -256,12 +231,7 @@ export function Dock({ state }: DockProps) {
       );
     });
   };
-  const account = useResource(`dock-profile:${user}`, (signal) =>
-    user ? profile(user, signal) : Promise.resolve(null),
-  );
   const current = state.routes[state.index]?.name;
-  // iOS draws the buttons in SwiftUI so the selection morphs between tabs in Liquid Glass.
-  const nativeRow = glassDockAvailable && liquidGlass;
 
   function toggle(next: boolean) {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -271,12 +241,35 @@ export function Dock({ state }: DockProps) {
     toggle(false);
     router.navigate((route === "index" ? "/" : `/${route}`) as never);
   }
-  function openLink(item: { href: string; route?: string }) {
-    if (item.route) openTab(item.route);
-    else {
-      toggle(false);
-      router.push(item.href as never);
-    }
+  // The search screen's field sits above this row, so the dock never trades its
+  // navigation buttons for a search-only control: the field clears its own query
+  // and the row's tabs leave the search.
+  const navItems: {
+    key: string;
+    label: string;
+    icon: SymbolName;
+    selected?: boolean;
+    highlighted: boolean;
+    expanded?: boolean;
+  }[] = [
+    ...TABS.map((tab) => ({
+      key: tab.route,
+      label: tab.label,
+      icon: tab.icon,
+      selected: tab.route === current,
+      highlighted: tab.route === current && !open,
+    })),
+    {
+      key: "menu",
+      label: "打开导航菜单",
+      icon: MENU_ICON,
+      highlighted: open,
+      expanded: open,
+    },
+  ];
+  function pressDock(key: string) {
+    if (key === "menu") toggle(!open);
+    else openTab(key);
   }
 
   return (
@@ -310,158 +303,38 @@ export function Dock({ state }: DockProps) {
         >
           <Glass
             material
+            glassVariant="regular"
             style={{
               width: "100%",
               borderRadius: 28,
               padding: 4,
             }}
           >
-            {open && (
-              <View
-                style={{
-                  flexDirection: "row",
-                  flexWrap: "wrap",
-                  padding: 4,
-                  paddingBottom: 8,
-                }}
-              >
-                {MENU.map((item) => (
-                  <MenuItem
-                    key={item.href}
-                    label={item.label}
-                    icon={item.icon}
-                    active={item.route === current}
-                    onPress={() => openLink(item)}
-                  />
-                ))}
-                {account.data?.is_admin && (
-                  <MenuItem
-                    label="管理员"
-                    icon={ADMIN_ICON}
-                    onPress={() => openLink({ href: "/admin" })}
-                  />
-                )}
-                <MenuItem
-                  label="退出登录"
-                  icon={LOGOUT_ICON}
-                  color={t.negative}
-                  onPress={() => {
-                    toggle(false);
-                    void auth.signOut();
-                  }}
-                />
-              </View>
-            )}
+            {open && <DockMenu onNavigate={() => toggle(false)} />}
             {!!search && (
-              <View pointerEvents="box-none" style={{ paddingBottom: 8 }}>
+              <View
+                pointerEvents="box-none"
+                style={{ paddingTop: 4, paddingBottom: 8 }}
+              >
                 {search.recent}
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 4,
-                    paddingTop: 4,
-                  }}
-                >
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
                   {search.field}
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => search.onCancel()}
-                    style={{
-                      height: 46,
-                      minWidth: 44,
-                      paddingHorizontal: 8,
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <Copy>取消</Copy>
-                  </Pressable>
                 </View>
               </View>
             )}
-            {nativeRow ? (
-              <GlassDockRow
-                items={
-                  search
-                    ? [
-                        {
-                          key: "back",
-                          label: "返回",
-                          symbol: symbolOf(BACK_ICON),
-                          highlighted: false,
-                        },
-                        {
-                          key: "menu",
-                          label: "打开导航菜单",
-                          symbol: symbolOf(MENU_ICON),
-                          highlighted: open,
-                          expanded: open,
-                        },
-                      ]
-                    : [
-                        ...TABS.map((tab) => ({
-                          key: tab.route,
-                          label: tab.label,
-                          symbol: symbolOf(tab.icon),
-                          selected: tab.route === current,
-                          highlighted: tab.route === current && !open,
-                        })),
-                        {
-                          key: "menu",
-                          label: "打开导航菜单",
-                          symbol: symbolOf(MENU_ICON),
-                          highlighted: open,
-                          expanded: open,
-                        },
-                      ]
-                }
-                onPress={(key) => {
-                  if (key === "menu") toggle(!open);
-                  else if (key === "back") {
-                    if (search && !search.onBack()) search.onCancel();
-                  } else openTab(key);
-                }}
-              />
-            ) : search ? (
-              <View style={{ flexDirection: "row", height: 46 }}>
+            <View style={{ flexDirection: "row", height: 46 }}>
+              {navItems.map((item) => (
                 <DockButton
-                  label="返回"
-                  icon={BACK_ICON}
-                  highlighted={false}
-                  onPress={() => {
-                    if (!search.onBack()) search.onCancel();
-                  }}
+                  key={item.key}
+                  label={item.label}
+                  icon={item.icon}
+                  selected={item.selected}
+                  expanded={item.expanded}
+                  highlighted={item.highlighted}
+                  onPress={() => pressDock(item.key)}
                 />
-                <DockButton
-                  label="打开导航菜单"
-                  icon={MENU_ICON}
-                  expanded={open}
-                  highlighted={open}
-                  onPress={() => toggle(!open)}
-                />
-              </View>
-            ) : (
-              <View style={{ flexDirection: "row", height: 46 }}>
-                {TABS.map((tab) => (
-                  <DockButton
-                    key={tab.route}
-                    label={tab.label}
-                    icon={tab.icon}
-                    selected={tab.route === current}
-                    highlighted={tab.route === current && !open}
-                    onPress={() => openTab(tab.route)}
-                  />
-                ))}
-                <DockButton
-                  label="打开导航菜单"
-                  icon={MENU_ICON}
-                  expanded={open}
-                  highlighted={open}
-                  onPress={() => toggle(!open)}
-                />
-              </View>
-            )}
+              ))}
+            </View>
           </Glass>
         </View>
       </View>
@@ -502,11 +375,54 @@ function DockButton({
     >
       <SymbolView
         name={icon}
-        size={21}
+        size={18}
         weight={highlighted ? "semibold" : "regular"}
         tintColor={highlighted ? t.text : t.secondary}
       />
     </Pressable>
+  );
+}
+
+export function DockMenu({ onNavigate }: { onNavigate?: () => void }) {
+  const pathname = usePathname();
+  const auth = useAuth();
+  const user = auth.session?.user.id;
+  const account = useResource(`dock-profile:${user}`, (signal) =>
+    user ? profile(user, signal) : Promise.resolve(null),
+  );
+
+  function openLink(item: { href: string; route?: string }) {
+    onNavigate?.();
+    if (item.route) router.navigate(item.href as never);
+    else router.push(item.href as never);
+  }
+
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        flexWrap: "wrap",
+        padding: 4,
+        paddingBottom: 8,
+      }}
+    >
+      {MENU.map((item) => (
+        <MenuItem
+          key={item.href}
+          label={item.label}
+          icon={item.icon}
+          active={item.href === pathname}
+          onPress={() => openLink(item)}
+        />
+      ))}
+      {account.data?.is_admin && (
+        <MenuItem
+          label="管理员"
+          icon={ADMIN_ICON}
+          onPress={() => openLink({ href: "/admin" })}
+        />
+      )}
+    </View>
   );
 }
 

@@ -75,9 +75,11 @@ function Directory({ stocks }: { stocks: boolean }) {
         ? (r.data?.stocks ?? [])
             .filter((s) => s.ticker.includes(search.toUpperCase()))
             .map((s) => (
-              <Glass key={s.ticker} style={{ padding: 20, gap: 12 }}>
-                <Copy bold>{s.ticker}</Copy>
-                <Copy muted>
+              <Glass key={s.ticker} style={{ padding: 12, gap: 8 }}>
+                <Copy bold size={15}>
+                  {s.ticker}
+                </Copy>
+                <Copy muted size={12}>
                   {s.total_opinions} 条观点 · {s.creator_count} 位创作者
                 </Copy>
                 <Button onPress={() => router.push(`/stock/${s.ticker}`)}>
@@ -86,11 +88,11 @@ function Directory({ stocks }: { stocks: boolean }) {
               </Glass>
             ))
         : rows.map((c) => (
-            <Glass key={c.channel_id} style={{ padding: 20, gap: 12 }}>
-              <Copy bold localize={false}>
+            <Glass key={c.channel_id} style={{ padding: 12, gap: 8 }}>
+              <Copy bold size={15} localize={false}>
                 {c.channel_title || c.channel_id}
               </Copy>
-              <Copy muted>
+              <Copy muted size={13}>
                 {number(c.total_opinions, 0)} 条观点 ·{" "}
                 {c.top_tickers?.map((x) => x.ticker).join(" / ")}
               </Copy>
@@ -128,11 +130,11 @@ function XDirectory() {
         message="暂无 X 博主"
       />
       {r.data?.creators.map((c) => (
-        <Glass key={c.username} style={{ padding: 20, gap: 12 }}>
-          <Copy bold>
+        <Glass key={c.username} style={{ padding: 12, gap: 8 }}>
+          <Copy bold size={15}>
             {c.display_name} · @{c.username}
           </Copy>
-          <Copy>{c.bio}</Copy>
+          <Copy size={14}>{c.bio}</Copy>
           <Button
             onPress={() =>
               router.push(`/creator/x/${encodeURIComponent(c.username)}`)
@@ -167,13 +169,17 @@ function VideoFeed() {
         message="暂无视频"
       />
       {r.data?.videos.map((v) => (
-        <Glass key={v.videoId} style={{ padding: 20, gap: 12 }}>
+        <Glass key={v.videoId} style={{ padding: 12, gap: 8 }}>
           <Copy bold>{v.video.video_title || v.videoId}</Copy>
-          <Copy muted>
+          <Copy muted size={13}>
             {v.creator?.channel_title} ·{" "}
             {v.video.video_published_at?.slice(0, 10)}
           </Copy>
-          {v.video_summary && <Copy selectable>{v.video_summary}</Copy>}
+          {v.video_summary && (
+            <Copy size={14} selectable>
+              {v.video_summary}
+            </Copy>
+          )}
           {!!v.opinions.length && (
             <Button
               selected={open === v.videoId}

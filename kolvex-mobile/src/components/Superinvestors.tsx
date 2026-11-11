@@ -137,18 +137,24 @@ export const sumWeights = (rows: { weight: number | null }[]) =>
 /** New / added / reduced / exited counts, each with its written label. */
 export function ChangeBreakdown({
   changes,
+  size = 12,
+  compact = false,
 }: {
   changes: InstitutionSummary["changes"];
+  size?: number;
+  compact?: boolean;
 }) {
   const f = useFormat();
   const color = useActivityColor();
   const t = useTheme();
   if (!changes)
     return (
-      <Copy size={12} muted>
+      <Copy size={size} muted>
         未比较季度变化
       </Copy>
     );
+  const label = (kind: HoldingActivity) =>
+    compact && kind === "new" ? "新建" : ACTIVITY_LABELS[kind];
   const items: [HoldingActivity, number][] = [
     ["new", changes.new],
     ["increased", changes.increased],
@@ -166,11 +172,11 @@ export function ChangeBreakdown({
     >
       {items.map(([kind, count]) => (
         <View key={kind} style={{ flexDirection: "row", gap: 4 }}>
-          <Copy size={12} muted>
-            {ACTIVITY_LABELS[kind]}
+          <Copy size={size} muted>
+            {label(kind)}
           </Copy>
           <Copy
-            size={12}
+            size={size}
             bold
             localize={false}
             color={count ? color(kind) : t.secondary}

@@ -86,11 +86,14 @@ export function Pill({
 export function ResultRow({
   title,
   detail,
+  leading,
   trailing,
   onPress,
 }: {
   title: string;
   detail: string;
+  /** A company logo or icon before the text. */
+  leading?: ReactNode;
   trailing?: ReactNode;
   onPress: () => void;
 }) {
@@ -110,17 +113,22 @@ export function ResultRow({
         onPress={onPress}
         style={({ pressed }) => ({
           flex: 1,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 12,
           paddingVertical: 14,
-          gap: 2,
           opacity: pressed ? 0.7 : 1,
         })}
       >
-        <Copy localize={false} lines={1}>
-          {title}
-        </Copy>
-        <Copy size={14} muted localize={false} lines={1}>
-          {detail}
-        </Copy>
+        {leading}
+        <View style={{ flex: 1, gap: 2 }}>
+          <Copy localize={false} lines={1}>
+            {title}
+          </Copy>
+          <Copy size={14} muted localize={false} lines={1}>
+            {detail}
+          </Copy>
+        </View>
       </Pressable>
       {trailing}
     </View>

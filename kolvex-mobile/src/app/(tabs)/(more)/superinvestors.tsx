@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { router } from "expo-router";
-import { AuthGate, Filters } from "../components/Content";
-import { FactList, Note, useFormat } from "../components/SecResearch";
-import { CardsSkeleton } from "../components/Skeletons";
+import { AuthGate, Filters } from "../../../components/Content";
+import { Note, useFormat } from "../../../components/SecResearch";
+import { CardsSkeleton } from "../../../components/Skeletons";
 import {
   ActivityBadge,
   AllocationBar,
@@ -14,7 +14,7 @@ import {
   sumWeights,
   useInvestorByline,
   useQuarterLabel,
-} from "../components/Superinvestors";
+} from "../../../components/Superinvestors";
 import {
   Button,
   Copy,
@@ -25,19 +25,19 @@ import {
   Page,
   Section,
   styles,
-} from "../components/UI";
+} from "../../../components/UI";
 import {
   reportingQuarter,
   type InstitutionManager,
   type InstitutionSummary,
-} from "../lib/freeResearch";
+} from "../../../lib/freeResearch";
 import {
   forgetInstitutions,
   institutionSummary,
   managers,
-} from "../lib/freeResearchApi";
-import { useTheme } from "../lib/theme";
-import { useResource } from "../lib/useResource";
+} from "../../../lib/freeResearchApi";
+import { useTheme } from "../../../lib/theme";
+import { useResource } from "../../../lib/useResource";
 
 type Entry = {
   manager: InstitutionManager;
@@ -190,6 +190,7 @@ function Directory() {
               }
             />
             <Filters
+              size="sm"
               values={[
                 ["latest", "最新申报"],
                 ["size", "规模"],
@@ -243,7 +244,7 @@ function LeadCard({ entry }: { entry: Loaded }) {
   const topShare = sumWeights(summary.top);
   const changes = changeTotal(summary);
   return (
-    <Glass style={{ padding: 20, gap: 16 }}>
+    <Glass style={{ padding: 20, gap: 24 }}>
       <View style={{ flexDirection: "row", gap: 12 }}>
         <InvestorAvatar
           id={entry.manager.id}
@@ -267,25 +268,42 @@ function LeadCard({ entry }: { entry: Loaded }) {
           </Copy>
         </View>
       </View>
-      <FactList
-        items={[
-          ["申报市值", `$${f.number(summary.value)}`],
-          ["持仓数", f.number(summary.positions, false)],
-          ["季度变动", changes < 0 ? "—" : f.number(changes, false)],
-          [`前 ${summary.top.length} 大持仓集中度`, f.percent(topShare)],
-        ]}
-      />
+      <View style={{ flexDirection: "row", gap: 16 }}>
+        <Stat label="申报市值">{`$${f.number(summary.value)}`}</Stat>
+        <Stat label="持仓数">{f.number(summary.positions, false)}</Stat>
+        <Stat label="季度变动">
+          {changes < 0 ? "—" : f.number(changes, false)}
+        </Stat>
+      </View>
       {summary.top.length > 0 && (
-        <AllocationBar
-          weights={summary.top.map((row) => row.weight)}
-          label={`前 ${summary.top.length} 大持仓占申报市值 ${f.percent(topShare)}`}
-        />
+        <View style={{ gap: 8 }}>
+          <View style={styles.row}>
+            <Copy
+              size={12}
+              muted
+            >{`前 ${summary.top.length} 大持仓集中度`}</Copy>
+            <Copy size={12} bold localize={false}>
+              {f.percent(topShare)}
+            </Copy>
+          </View>
+          <AllocationBar
+            weights={summary.top.map((row) => row.weight)}
+            label={`前 ${summary.top.length} 大持仓占申报市值 ${f.percent(topShare)}`}
+          />
+        </View>
       )}
-      <View style={{ gap: 4 }}>
+      <View
+        style={{
+          gap: 6,
+          paddingTop: 16,
+          borderTopWidth: 1,
+          borderColor: t.border,
+        }}
+      >
         <Copy size={12} muted>
           较上季
         </Copy>
-        <ChangeBreakdown changes={summary.changes} />
+        <ChangeBreakdown changes={summary.changes} size={14} />
       </View>
       <View>
         <Copy size={12} muted>{`前 ${summary.top.length} 大持仓`}</Copy>
@@ -295,19 +313,35 @@ function LeadCard({ entry }: { entry: Loaded }) {
             style={{
               flexDirection: "row",
               alignItems: "center",
-              gap: 8,
-              minHeight: 52,
+              gap: 12,
+              minHeight: 48,
               paddingVertical: 8,
               borderTopWidth: index ? 1 : 0,
               borderColor: t.border,
             }}
           >
-            <ShadeDot index={index} />
-            <Copy size={12} muted localize={false}>
-              {index + 1}
-            </Copy>
-            <View style={{ flex: 1, gap: 4, alignItems: "flex-start" }}>
-              <HoldingName row={row} detail />
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 6,
+                width: 32,
+              }}
+            >
+              <ShadeDot index={index} />
+              <Copy size={12} muted localize={false}>
+                {index + 1}
+              </Copy>
+            </View>
+            <View
+              style={{
+                flex: 1,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <HoldingName row={row} />
               <ActivityBadge kind={row.activity} />
             </View>
             <View style={{ alignItems: "flex-end" }}>
@@ -327,7 +361,20 @@ function LeadCard({ entry }: { entry: Loaded }) {
     </Glass>
   );
 }
+function Stat({ label, children }: { label: string; children: string }) {
+  return (
+    <View style={{ flex: 1, gap: 4 }}>
+      <Copy size={12} muted>
+        {label}
+      </Copy>
+      <Copy size={18} bold localize={false}>
+        {children}
+      </Copy>
+    </View>
+  );
+}
 function InvestorCard({ entry }: { entry: Loaded }) {
+  const t = useTheme();
   const f = useFormat();
   const byline = useInvestorByline()(entry.manager.id);
   const summary = entry.summary;
@@ -340,7 +387,7 @@ function InvestorCard({ entry }: { entry: Loaded }) {
       onPress={() => open(entry.manager.id)}
       style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
     >
-      <Glass style={{ padding: 16, gap: 12 }}>
+      <Glass style={{ padding: 16, gap: 16 }}>
         <View style={{ flexDirection: "row", gap: 12 }}>
           <InvestorAvatar id={entry.manager.id} name={entry.manager.name} />
           <View style={{ flex: 1, gap: 2 }}>
@@ -405,7 +452,15 @@ function InvestorCard({ entry }: { entry: Loaded }) {
             </View>
           </View>
         )}
-        <ChangeBreakdown changes={summary.changes} />
+        <View
+          style={{
+            borderTopWidth: 1,
+            borderColor: t.border,
+            paddingTop: 12,
+          }}
+        >
+          <ChangeBreakdown changes={summary.changes} compact />
+        </View>
       </Glass>
     </Pressable>
   );

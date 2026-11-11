@@ -11,7 +11,33 @@ export default function Portfolio() {
   // Disabled in the Web feature manifest, whose middleware redirects to Markets.
   if (!portfolioEnabled) return <Redirect href="/" />;
   return (
-    <AuthGate skeleton={<><CardsSkeleton count={1} lines={[{ size: 14, width: "50%" }, { size: 36, width: "60%" }, { size: 12, width: "40%" }]} padding={24} gap={8} /><CardsSkeleton count={2} lines={[{ size: 20, width: "50%" }, { size: 12, width: "30%" }, { size: 16 }, { size: 16 }]} gap={16} /></>} title="投资组合">
+    <AuthGate
+      skeleton={
+        <>
+          <CardsSkeleton
+            count={1}
+            lines={[
+              { size: 14, width: "50%" },
+              { size: 36, width: "60%" },
+              { size: 12, width: "40%" },
+            ]}
+            padding={24}
+            gap={8}
+          />
+          <CardsSkeleton
+            count={2}
+            lines={[
+              { size: 20, width: "50%" },
+              { size: 12, width: "30%" },
+              { size: 16 },
+              { size: 16 },
+            ]}
+            gap={16}
+          />
+        </>
+      }
+      title="投资组合"
+    >
       <Positions />
     </AuthGate>
   );
@@ -27,7 +53,35 @@ function Positions() {
       onRefresh={resource.refresh}
       refreshing={resource.loading && !!data}
     >
-      <ResourceState skeleton={<><CardsSkeleton count={1} lines={[{ size: 14, width: "50%" }, { size: 36, width: "60%" }, { size: 12, width: "40%" }]} padding={24} gap={8} /><CardsSkeleton count={2} lines={[{ size: 20, width: "50%" }, { size: 12, width: "30%" }, { size: 16 }, { size: 16 }]} gap={16} /></>} resource={resource} empty={false} message="" />
+      <ResourceState
+        skeleton={
+          <>
+            <CardsSkeleton
+              count={1}
+              lines={[
+                { size: 14, width: "50%" },
+                { size: 36, width: "60%" },
+                { size: 12, width: "40%" },
+              ]}
+              padding={24}
+              gap={8}
+            />
+            <CardsSkeleton
+              count={2}
+              lines={[
+                { size: 20, width: "50%" },
+                { size: 12, width: "30%" },
+                { size: 16 },
+                { size: 16 },
+              ]}
+              gap={16}
+            />
+          </>
+        }
+        resource={resource}
+        empty={false}
+        message=""
+      />
       {data && !data.is_connected && (
         <Empty
           title="尚未连接投资账户"

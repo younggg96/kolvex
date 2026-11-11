@@ -119,7 +119,7 @@ test("Website URLs resolve to the native screen for the same content", () => {
     ["/dashboard/journal", "/updates"],
     ["/dashboard/x-opinions", "/opinions"],
     ["/dashboard/youtube-opinions?creator=UC9", "/creator/youtube/UC9"],
-    ["/dashboard/ai-research?view=authoring", "/research-tasks"],
+    ["/dashboard/ai-research?view=authoring", "/research"],
     ["/auth/reset-password?code=1", "/auth/recovery?code=1"],
     ["/auth/callback?code=1", "/auth/callback?code=1"],
     ["kolvex://stock/AAPL", "/stock/AAPL"],

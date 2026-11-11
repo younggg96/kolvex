@@ -7,7 +7,11 @@ import { Glass, Skeleton, styles } from "./UI";
  */
 
 /** One Copy line: the box is the text's line height (size × 1.45), the bar sits inside it. */
-export type Line = { size?: number; width?: ViewStyle["width"]; lines?: number };
+export type Line = {
+  size?: number;
+  width?: ViewStyle["width"];
+  lines?: number;
+};
 
 export function TextLine({ size = 16, width = "100%" }: Line) {
   return (
@@ -34,7 +38,11 @@ function Lines({ lines }: { lines: Line[] }) {
 }
 
 /** A 44pt pill button, as `Button` renders. */
-export function ButtonSkeleton({ width = 120 }: { width?: ViewStyle["width"] }) {
+export function ButtonSkeleton({
+  width = 120,
+}: {
+  width?: ViewStyle["width"];
+}) {
   return <Skeleton width={width} height={44} radius={24} />;
 }
 
@@ -90,7 +98,9 @@ export function ArticleSkeleton({ paragraphs = 3 }: { paragraphs?: number }) {
       <TextLine size={24} width="70%" />
       {Array.from({ length: paragraphs }, (_, i) => (
         <View key={i} style={{ gap: 0 }}>
-          <Lines lines={[{ size: 16, lines: 4, width: i % 2 ? "45%" : "65%" }]} />
+          <Lines
+            lines={[{ size: 16, lines: 4, width: i % 2 ? "45%" : "65%" }]}
+          />
         </View>
       ))}
     </View>
@@ -103,7 +113,13 @@ export function ChartSkeleton({ height = 200 }: { height?: number }) {
 }
 
 /** QuoteRow: symbol + company on the start side, price + change on the end side. */
-export function QuoteRowsSkeleton({ count = 5, withButton = false }: { count?: number; withButton?: boolean }) {
+export function QuoteRowsSkeleton({
+  count = 5,
+  withButton = false,
+}: {
+  count?: number;
+  withButton?: boolean;
+}) {
   return (
     <>
       {Array.from({ length: count }, (_, i) => (
@@ -130,11 +146,25 @@ export function QuoteRowsSkeleton({ count = 5, withButton = false }: { count?: n
 }
 
 /** Search result rows: title + detail, hairline-separated. */
-export function ResultRowsSkeleton({ count = 4, trailing = false }: { count?: number; trailing?: boolean }) {
+export function ResultRowsSkeleton({
+  count = 4,
+  trailing = false,
+}: {
+  count?: number;
+  trailing?: boolean;
+}) {
   return (
     <View>
       {Array.from({ length: count }, (_, i) => (
-        <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 14 }}>
+        <View
+          key={i}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 12,
+            paddingVertical: 14,
+          }}
+        >
           <View style={{ flex: 1, gap: 2 }}>
             <TextLine size={16} width={i % 2 ? "50%" : "65%"} />
             <TextLine size={14} width="30%" />

@@ -16,6 +16,9 @@ export default function DateField({ value, onChange, label }: DateFieldProps) {
   const date = calendarDate(value) ? new Date(`${value}T12:00:00`) : new Date();
   return (
     <Host
+      // Yoga places this host; SwiftUI must not push its content away from the
+      // status bar or keyboard when the host scrolls under them.
+      ignoreSafeArea="all"
       matchContents={{ vertical: true }}
       style={{ width: "100%" }}
       colorScheme={t.dark ? "dark" : "light"}
