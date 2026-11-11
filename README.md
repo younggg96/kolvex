@@ -1,6 +1,12 @@
-# Kolvex — 股票观点与 AI 投资分析平台
+# Kolvex
 
-Kolvex 整合 YouTube 创作者股票观点、市场行情、个人投资组合和 AI 投资分析。本仓库包含 Next.js 前端和 FastAPI 后端。
+Kolvex 是一个开源美股研究平台。按股票比较 YouTube 创作者的观点，查看观点日期和原视频，也可以阅读已发布的 AI 研究报告。
+
+Kolvex is an open-source U.S. stock research platform. Compare creator viewpoints by ticker, check when each view was published, and follow it back to the original video.
+
+[免登录体验 · Try MSFT](https://kolvex.app/stocks/MSFT) · [本地运行 · Run locally](#本地启动) · [Star on GitHub](https://github.com/younggg96/kolvex)
+
+[![Kolvex 的 MSFT 研究页，展示博主观点、原视频与已发布研究](docs/images/kolvex-msft.jpg)](https://kolvex.app/stocks/MSFT)
 
 本文以当前代码中的路由和服务为准。第三方服务需要配置对应凭据；代码实现不代表线上环境已经配置或通过验证。
 
