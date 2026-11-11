@@ -1351,6 +1351,8 @@
     "ai": {
       "button": "AI 画线",
       "actions": "AI 图表操作",
+      "collapsePanel": "收起 AI",
+      "expandPanel": "展开 AI",
       "chartSettings": "AI 设置",
       "submitting": "正在提交任务…",
       "queued": "任务已排队。可以离开页面，完成后会自动保存。",

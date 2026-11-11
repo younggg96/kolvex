@@ -9,6 +9,6 @@ const source = fs.readFileSync(path.join(__dirname, "../components/youtube/chart
 test("runAi's model dialog is mounted in the standard and advanced layouts", () => {
   assert.match(source, /setSettingsOpen\(true\)/, "runAi still opens the dialog through settingsOpen");
   assert.match(source, /showAi && !advanced && <Dialog open=\{settingsOpen\}[^\n]*\{aiSettingsDialogContent\}<\/Dialog>/, "standard layout");
-  assert.match(source, /showAi && advanced && <aside[^\n]*\n\s*\{aiControls\}/, "advanced layout");
+  assert.match(source, /showAi && advanced && <aside\b[^>]*>\s*\{aiControls\}/, "advanced layout");
   assert.match(source, /const aiControls = \([\s\S]*?<Dialog open=\{settingsOpen\}[\s\S]*?\{aiSettingsDialogContent\}/, "advanced controls");
 });

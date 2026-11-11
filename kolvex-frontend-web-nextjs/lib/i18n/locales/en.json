@@ -1351,6 +1351,8 @@
     "ai": {
       "button": "AI lines",
       "actions": "AI chart actions",
+      "collapsePanel": "Hide AI panel",
+      "expandPanel": "Show AI panel",
       "chartSettings": "AI settings",
       "submitting": "Submitting task…",
       "queued": "Task queued. You can leave this page; the result will be saved automatically.",

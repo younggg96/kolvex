@@ -43,6 +43,8 @@ import {
   Magnet,
   Minus,
   MousePointer2,
+  PanelRightClose,
+  PanelRightOpen,
   MoveUpRight,
   MoveVertical,
   MoveHorizontal,
@@ -295,6 +297,7 @@ export default function ChartView({
     ? "h-[20rem] sm:h-[26.25rem]"
     : HEIGHT_CLASS[mode];
   const drawingToolbarId = useId();
+  const aiPanelId = useId();
   const [oscillator, setOscillator] = useState<Oscillator | null>("kdj");
   /**
    * Compact: the host owns the range (it decides which history to load), so the local state is
@@ -346,6 +349,7 @@ export default function ChartView({
     status: "idle",
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [aiPanelOpen, setAiPanelOpen] = useState(true);
   const [aiSheetOpen, setAiSheetOpen] = useState(false);
   /** Phones put the settings one step inside the AI sheet; the sheet never stacks a second one. */
   const [aiSheetView, setAiSheetView] = useState<"actions" | "settings">("actions");
@@ -1610,6 +1614,22 @@ export default function ChartView({
               </span>
             )}
             <div className="ml-auto flex shrink-0 items-center gap-2">
+              {showAi && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="hidden lg:inline-flex"
+                  aria-expanded={aiPanelOpen}
+                  aria-controls={aiPanelId}
+                  onClick={() => setAiPanelOpen(open => !open)}
+                >
+                  {aiPanelOpen
+                    ? <PanelRightClose className="h-4 w-4" aria-hidden="true" />
+                    : <PanelRightOpen className="h-4 w-4" aria-hidden="true" />}
+                  {t(aiPanelOpen ? "youtubeOpinions.ai.collapsePanel" : "youtubeOpinions.ai.expandPanel")}
+                </Button>
+              )}
               {showAi && <div className="lg:hidden">
                 {/* Phones: one sheet over the chart. Settings are a step inside this sheet, never a second stacked sheet. */}
                 <Dialog open={aiSheetOpen} onOpenChange={(open) => {
@@ -1942,7 +1962,11 @@ export default function ChartView({
           (resultsContainer ? createPortal(aiResults, resultsContainer) : aiResults)}
         {showAi && !advanced && compactLayout === "workspace" && resultsContainer && createPortal(aiResults, resultsContainer)}
       </div>
-      {showAi && advanced && <aside aria-label={t("youtubeOpinions.ai.actions")} className="hidden min-h-0 w-[clamp(22rem,28vw,30rem)] shrink-0 overflow-y-auto overscroll-contain border-l border-border pl-4 lg:block">
+      {showAi && advanced && <aside
+        id={aiPanelId}
+        aria-label={t("youtubeOpinions.ai.actions")}
+        className={cn("hidden min-h-0 w-[clamp(22rem,28vw,30rem)] shrink-0 overflow-y-auto overscroll-contain border-l border-border pl-4", aiPanelOpen && "lg:block")}
+      >
         {aiControls}{!activeJob && aiStatus}{aiResults}
       </aside>}
     </div>

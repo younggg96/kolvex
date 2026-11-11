@@ -204,8 +204,9 @@ visible window. The Creator Opinions page keeps its own range control only for t
 opinion-strength view; the price view uses the graph's bar. AI actions live in a
 collapsed disclosure below the preview; Analysis and Drawings use neutral outlined
 controls. Advanced mode keeps its manual toolbar, with AI controls in a desktop side
-panel or mobile popover. The desktop panel scales from 22rem to 30rem with the
-viewport (28vw), keeping analysis paragraphs readable beside the plot. Drawing
+panel or a sheet on narrow screens. The desktop panel scales from 22rem to 30rem with
+the viewport (28vw). The chart header can hide or show the panel; when hidden, the
+plot fills the available width and retains its range, drawings and AI results. Drawing
 overlays take dimensions and anchor mappings directly from the mounted price graph. Settings and reversible drawing visibility retain their
 existing dialogs.
 Advanced charts default to a KDJ (9,3,3) subpane, switchable to Wilder RSI (14)
