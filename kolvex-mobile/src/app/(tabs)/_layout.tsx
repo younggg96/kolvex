@@ -16,6 +16,7 @@ export default function TabsLayout() {
           sceneStyle: { backgroundColor: t.background },
         }}
       >
+        <Tabs.Screen name="chat" />
         <Tabs.Screen name="index" />
         <Tabs.Screen name="opinions" />
         <Tabs.Screen name="search" />

@@ -1,13 +1,11 @@
 import { usePreferences } from "../../state/Preferences";
 import { CardsSkeleton } from "../../components/Skeletons";
 import { useState } from "react";
-import { View } from "react-native";
 import { router } from "expo-router";
-import { xPosts, youtube } from "../../lib/contentApi";
+import { xPosts } from "../../lib/contentApi";
 import { demoMode } from "../../lib/config";
 import { isSymbol, number, percent } from "../../lib/models";
 import { useResource } from "../../lib/useResource";
-import { useTheme } from "../../lib/theme";
 import {
   REDDIT_COMMUNITIES,
   mentionChange,
@@ -18,6 +16,7 @@ import {
 } from "../../lib/reddit";
 import { useWatchlist } from "../../state/Watchlist";
 import { TranslatableText } from "../../components/Translate";
+import { YouTubeOverview } from "../../components/YouTubeOverview";
 import {
   Filters,
   Pager,
@@ -29,151 +28,35 @@ import {
   Copy,
   Failure,
   Glass,
-  NavRow,
   Page,
   Search,
-  styles,
 } from "../../components/UI";
-const sentiments = {
-  bullish: "看多",
-  bearish: "看空",
-  neutral: "中性",
-  mixed: "观点分歧",
-};
 export default function Opinions() {
   const [source, setSource] = useState("youtube");
   const [revision, setRevision] = useState(0);
   return (
     <Page
-      title="创作者观点"
-      subtitle="观点有出处，讨论有边界。"
+      title="KOL 观点"
+      hideTitle
       onRefresh={() => setRevision((v) => v + 1)}
     >
-      <Glass>
-        <NavRow
-          title="创作者目录 / 视频历史"
-          onPress={() => router.push("/creators")}
-        />
-        <NavRow title="观点动态" last onPress={() => router.push("/updates")} />
-      </Glass>
       <Filters
         values={[
           ["youtube", "YouTube"],
-          ["x", "X 原文"],
           ["reddit", "Reddit"],
+          ["x", "X"],
         ]}
         value={source}
         onChange={setSource}
       />
       {source === "youtube" ? (
-        <YouTube revision={revision} />
+        <YouTubeOverview revision={revision} />
       ) : source === "x" ? (
         <XFeed revision={revision} />
       ) : (
         <Reddit revision={revision} />
       )}
     </Page>
-  );
-}
-function YouTube({ revision }: { revision: number }) {
-  const t = useTheme();
-  const [input, setInput] = useState("");
-  const [ticker, setTicker] = useState("");
-  const [direction, setDirection] = useState("all");
-  const [page, setPage] = useState(1);
-  const resource = useResource(
-    `youtube:${revision}:${ticker}:${direction}:${page}`,
-    (signal) => youtube(signal, (page - 1) * 20, direction, ticker),
-  );
-  const rows = resource.data?.latest ?? [];
-  const apply = () => {
-    setTicker(input.trim().toUpperCase());
-    setPage(1);
-  };
-  return (
-    <>
-      <Search
-        value={input}
-        onChange={(v) => {
-          setInput(v);
-          if (!v.trim()) {
-            setTicker("");
-            setPage(1);
-          }
-        }}
-        onSubmit={apply}
-        placeholder="输入股票代码，按搜索筛选"
-      />
-      <Button onPress={apply}>按股票筛选</Button>
-      <Filters
-        values={[
-          ["all", "全部方向"],
-          ["bullish", "看多"],
-          ["bearish", "看空"],
-          ["neutral", "中性"],
-          ["mixed", "分歧"],
-        ]}
-        value={direction}
-        onChange={(v) => {
-          setDirection(v);
-          setPage(1);
-        }}
-      />
-      <ResourceState skeleton={<CardsSkeleton lines={[{ size: 20, width: "25%" }, { size: 14, width: "50%" }, { size: 16, width: "60%", lines: 3 }]} />}
-        resource={resource}
-        empty={!rows.length}
-        message={
-          demoMode
-            ? "连接后端后显示真实创作者观点，演示模式不生成虚构观点。"
-            : "此筛选下暂无观点，请试试其他股票或方向。"
-        }
-      />
-      {rows.map((item) => (
-        <Glass key={item.id} style={{ padding: 20, gap: 12 }}>
-          <View style={styles.row}>
-            <Copy size={20} bold>
-              {item.ticker}
-            </Copy>
-            <Copy
-              size={12}
-              color={
-                item.sentiment === "bearish"
-                  ? t.negative
-                  : item.sentiment === "bullish"
-                    ? t.accent
-                    : t.secondary
-              }
-            >
-              {sentiments[item.sentiment] ?? "未分类"}
-            </Copy>
-          </View>
-          <Copy size={14} muted>
-            {item.channel_title || "来源频道未提供"} · {item.opinion_date}
-          </Copy>
-          <Copy>{item.summary || item.thesis || "暂无摘要"}</Copy>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-            {!!item.video_url && (
-              <SourceLink url={item.video_url}>查看原视频 ↗</SourceLink>
-            )}
-            {isSymbol(item.ticker) && (
-              <Button
-                onPress={() =>
-                  router.push(`/stock/${encodeURIComponent(item.ticker)}`)
-                }
-              >
-                查看股票
-              </Button>
-            )}
-          </View>
-        </Glass>
-      ))}
-      <Pager
-        page={page}
-        hasMore={resource.data?.pagination?.has_more ?? rows.length === 20}
-        loading={resource.loading}
-        onChange={setPage}
-      />
-    </>
   );
 }
 function XFeed({ revision }: { revision: number }) {
@@ -204,7 +87,16 @@ function XFeed({ revision }: { revision: number }) {
         onSubmit={apply}
       />
       <Button onPress={apply}>按股票筛选</Button>
-      <ResourceState skeleton={<CardsSkeleton lines={[{ size: 16, width: "40%" }, { size: 12, width: "30%" }, { size: 16, width: "70%", lines: 3 }]} />}
+      <ResourceState
+        skeleton={
+          <CardsSkeleton
+            lines={[
+              { size: 16, width: "40%" },
+              { size: 12, width: "30%" },
+              { size: 16, width: "70%", lines: 3 },
+            ]}
+          />
+        }
         resource={resource}
         empty={!rows.length}
         message="暂无匹配的 X 原文，试试其他股票或稍后刷新。"
@@ -300,7 +192,16 @@ function Reddit({ revision }: { revision: number }) {
         </Copy>
       )}
       {!!list.error && <Failure message={list.error} retry={list.refresh} />}
-      <ResourceState skeleton={<CardsSkeleton lines={[{ size: 20, width: "20%" }, { size: 14, width: "40%" }, { size: 16, width: "60%", lines: 2 }]} />}
+      <ResourceState
+        skeleton={
+          <CardsSkeleton
+            lines={[
+              { size: 20, width: "20%" },
+              { size: 14, width: "40%" },
+              { size: 16, width: "60%", lines: 2 },
+            ]}
+          />
+        }
         resource={resource}
         empty={!rows.length}
         message="此社区榜单中没有匹配的股票。榜单外的自选仍会保留。"

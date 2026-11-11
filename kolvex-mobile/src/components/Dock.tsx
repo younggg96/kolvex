@@ -29,7 +29,17 @@ type DockProps = Parameters<
   NonNullable<ComponentProps<typeof Tabs>["tabBar"]>
 >[0];
 
+// The Web's MobileTabBar: Chat, Markets and KOL opinions in the dock, then Search and Menu.
 const TABS: { route: string; label: string; icon: SymbolName }[] = [
+  {
+    route: "chat",
+    label: "对话",
+    icon: {
+      ios: "bubble.left.and.bubble.right",
+      android: "forum",
+      web: "forum",
+    },
+  },
   {
     route: "index",
     label: "行情",
@@ -37,7 +47,7 @@ const TABS: { route: string; label: string; icon: SymbolName }[] = [
   },
   {
     route: "opinions",
-    label: "观点",
+    label: "KOL 观点",
     icon: { ios: "text.bubble", android: "chat", web: "chat" },
   },
   {
@@ -55,6 +65,7 @@ const MENU_ICON: SymbolName = {
   android: "menu",
   web: "menu",
 };
+// Everything the Web's dock menu lists, in its order.
 const MENU: {
   href: string;
   route?: string;
@@ -64,7 +75,7 @@ const MENU: {
   {
     href: "/watchlist",
     route: "watchlist",
-    label: "自选",
+    label: "自选股",
     icon: { ios: "star", android: "star", web: "star" },
   },
   {
@@ -82,6 +93,11 @@ const MENU: {
     },
   },
   {
+    href: "/workspaces",
+    label: "工作区",
+    icon: { ios: "folder", android: "folder", web: "folder" },
+  },
+  {
     href: "/research",
     route: "research",
     label: "研究",
@@ -90,6 +106,34 @@ const MENU: {
       android: "travel_explore",
       web: "travel_explore",
     },
+  },
+  {
+    href: "/superinvestors",
+    label: "超级投资者",
+    icon: {
+      ios: "building.columns",
+      android: "account_balance",
+      web: "account_balance",
+    },
+  },
+  {
+    href: "/congress-trades",
+    label: "国会议员交易",
+    icon: { ios: "scroll", android: "receipt_long", web: "receipt_long" },
+  },
+  {
+    href: "/options-activity",
+    label: "期权异动",
+    icon: {
+      ios: "waveform.path.ecg",
+      android: "monitor_heart",
+      web: "monitor_heart",
+    },
+  },
+  {
+    href: "/paper-trading",
+    label: "虚拟交易",
+    icon: { ios: "book", android: "menu_book", web: "menu_book" },
   },
   {
     href: "/settings",
@@ -238,7 +282,7 @@ export function Dock({ state }: DockProps) {
       <View
         pointerEvents="box-none"
         style={{
-          paddingHorizontal: 20,
+          paddingHorizontal: 16,
           // Browsers report no keyboard resize, so the focused field lifts itself above it.
           paddingBottom: Math.max(16, insets.bottom) + webLift,
           alignItems: "center",
@@ -279,7 +323,7 @@ export function Dock({ state }: DockProps) {
                 ))}
                 {account.data?.is_admin && (
                   <MenuItem
-                    label="管理"
+                    label="管理员"
                     icon={ADMIN_ICON}
                     onPress={() => openLink({ href: "/admin" })}
                   />

@@ -1,5 +1,14 @@
 export type TextBlock =
-  { kind: "heading" | "paragraph" | "bullet"; text: string } | { kind: "rule" };
+  | { kind: "heading" | "paragraph" | "bullet"; text: string }
+  | { kind: "rule" }
+  | { kind: "table"; header: string[]; rows: string[][] };
+const cells = (line: string) =>
+  line
+    .replace(/^\|/, "")
+    .replace(/\|$/, "")
+    .split("|")
+    .map((cell) => cell.trim());
+const isDivider = (line: string) => /^\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?$/.test(line);
 /** The small Markdown subset AI reports and chat answers actually use. */
 export function textBlocks(source: string): TextBlock[] {
   const blocks: TextBlock[] = [];
@@ -9,8 +18,27 @@ export function textBlocks(source: string): TextBlock[] {
       blocks.push({ kind: "paragraph", text: paragraph.join("\n") });
     paragraph = [];
   };
-  for (const raw of source.split("\n")) {
-    const line = raw.trim();
+  const lines = source.split("\n");
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index].trim();
+    // A GitHub table: header row, a |---| divider, then body rows.
+    if (
+      line.startsWith("|") &&
+      index + 1 < lines.length &&
+      isDivider(lines[index + 1].trim())
+    ) {
+      flush();
+      const header = cells(line);
+      const rows: string[][] = [];
+      index += 2;
+      while (index < lines.length && lines[index].trim().startsWith("|")) {
+        rows.push(cells(lines[index].trim()));
+        index++;
+      }
+      index--;
+      blocks.push({ kind: "table", header, rows });
+      continue;
+    }
     const heading = /^#{1,6}\s+(.*)$/.exec(line);
     const bullet = /^[-*•]\s+(.*)$/.exec(line);
     if (!line) flush();

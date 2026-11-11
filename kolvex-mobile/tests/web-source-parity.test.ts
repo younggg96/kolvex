@@ -126,3 +126,9 @@ for (const [file, names] of [
     }
   });
 }
+test("native stock mentions follow the Web's ticker rules", () => {
+  assert.deepEqual(
+    canonical(ast(new URL("stockMentions.ts", native))),
+    canonical(ast(new URL("lib/markdown/stockMentions.ts", web))),
+  );
+});

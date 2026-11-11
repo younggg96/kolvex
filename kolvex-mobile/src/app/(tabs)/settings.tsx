@@ -44,6 +44,7 @@ export default function More() {
           title="创作者、视频与股票目录"
           onPress={() => router.push("/creators")}
         />
+        <NavRow title="工作区" onPress={() => router.push("/workspaces")} />
         <NavRow
           title="虚拟交易"
           onPress={() => router.push("/paper-trading")}

@@ -60,7 +60,28 @@ export function StockOpinions({ symbol }: { symbol: string }) {
       >
         应用日期范围
       </Button>
-      <ResourceState skeleton={<><CardsSkeleton count={1} lines={[{ size: 20, width: "40%" }, { size: 16, width: "30%" }, { size: 12, width: "50%" }]} chartHeight={120} /><CardsSkeleton lines={[{ size: 16, width: "40%" }, { size: 12, width: "50%" }, { size: 16, width: "60%", lines: 3 }]} buttons={1} /></>}
+      <ResourceState
+        skeleton={
+          <>
+            <CardsSkeleton
+              count={1}
+              lines={[
+                { size: 20, width: "40%" },
+                { size: 16, width: "30%" },
+                { size: 12, width: "50%" },
+              ]}
+              chartHeight={120}
+            />
+            <CardsSkeleton
+              lines={[
+                { size: 16, width: "40%" },
+                { size: 12, width: "50%" },
+                { size: 16, width: "60%", lines: 3 },
+              ]}
+              buttons={1}
+            />
+          </>
+        }
         resource={r}
         empty={!r.data?.latest.length}
         message="此范围没有已收录的股票观点。"
@@ -69,7 +90,7 @@ export function StockOpinions({ symbol }: { symbol: string }) {
         <OpinionOverview summary={r.data.summary} daily={r.data.daily} />
       )}
       {r.data?.latest.map((o) => (
-        <OpinionCard key={o.id} item={o} />
+        <OpinionCard key={o.id} item={o} creatorTicker />
       ))}
       <Pager
         page={page}

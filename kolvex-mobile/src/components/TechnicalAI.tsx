@@ -166,7 +166,20 @@ export function TechnicalAI({
         ID；遇到连接中断请先刷新任务，不会自动重新生成。
       </Copy>
       <MutationStatus {...m} />
-      <ResourceState skeleton={<CardsSkeleton count={2} lines={[{ size: 16, width: "60%" }]} buttons={2} padding={12} gap={8} />} resource={jobs} empty={false} message="暂无任务" />
+      <ResourceState
+        skeleton={
+          <CardsSkeleton
+            count={2}
+            lines={[{ size: 16, width: "60%" }]}
+            buttons={2}
+            padding={12}
+            gap={8}
+          />
+        }
+        resource={jobs}
+        empty={false}
+        message="暂无任务"
+      />
       {jobs.data?.items.map((j) => (
         <Glass key={j.id} style={{ padding: 12, gap: 8 }}>
           <Copy>
@@ -197,7 +210,19 @@ export function TechnicalAI({
           setPage(1);
         }}
       />
-      <ResourceState skeleton={<CardsSkeleton count={2} lines={[{ size: 12, width: "40%" }, { size: 16, width: "60%", lines: 2 }]} buttons={1} padding={12} gap={8} />}
+      <ResourceState
+        skeleton={
+          <CardsSkeleton
+            count={2}
+            lines={[
+              { size: 12, width: "40%" },
+              { size: 16, width: "60%", lines: 2 },
+            ]}
+            buttons={1}
+            padding={12}
+            gap={8}
+          />
+        }
         resource={history}
         empty={!history.data?.items.length}
         message="尚无分析版本"
@@ -268,7 +293,7 @@ export function TechnicalResult({
       <Copy muted>
         {r.view.start} — {r.view.end} · {r.model}
       </Copy>
-      <TextBody text={r.summary} />
+      <TextBody text={r.summary} symbols={symbol ? [symbol] : []} />
       {r.levels.map((l, i) => (
         <Copy key={i}>
           {l.kind === "support" ? "支撑" : "阻力"} {number(l.price)} ·{" "}

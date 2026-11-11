@@ -148,7 +148,7 @@ export interface TradingAnalysis {
   error_message?: string | null;
   progress_stage?: string | null;
   progress_message?: string | null;
-  progress_events?: ProgressEvent[] | null;
+  progress_events?: AnalysisProgressEvent[] | null;
   duration_seconds?: number | null;
   is_published?: boolean;
   published_at?: string | null;
@@ -236,6 +236,19 @@ export type Message = {
   content: string;
   created_at: string;
 };
+/** A research task's progress record (the Web's tradingAnalysisApi ProgressEvent). */
+export interface AnalysisProgressEvent {
+  stage: string;
+  message?: string;
+  node?: string;
+  elapsed?: number;
+  status?: string;
+  decision?: string;
+  final_decision?: string;
+  error_message?: string;
+  detail?: string;
+  detail_type?: "tool_call" | "tool_result" | "thinking" | "report_preview";
+}
 export type ProgressEvent = {
   type: string;
   content?: string;

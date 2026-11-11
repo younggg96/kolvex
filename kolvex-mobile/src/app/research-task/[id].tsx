@@ -9,6 +9,7 @@ import type { TradingAnalysis } from "../../lib/contentTypes";
 import { Page, Copy, Button } from "../../components/UI";
 import { AuthGate, ResourceState } from "../../components/Content";
 import { ReportBody } from "../../components/ReportBody";
+import { ResearchProgress } from "../../components/ResearchProgress";
 import { ConfirmAction } from "../../components/ConfirmAction";
 import { MutationStatus } from "../../components/MutationStatus";
 export default function Task() {
@@ -42,11 +43,22 @@ function Reader() {
       onRefresh={r.refresh}
       refreshing={r.loading}
     >
-      <ResourceState skeleton={<ArticleSkeleton />} resource={r} empty={!r.data} message="任务不可用" />
+      <ResourceState
+        skeleton={<ArticleSkeleton />}
+        resource={r}
+        empty={!r.data}
+        message="任务不可用"
+      />
       {running && (
-        <Copy>
-          研究正在服务器运行，每 5 秒更新；离开此页不会取消服务器任务。
-        </Copy>
+        <>
+          <ResearchProgress
+            events={r.data?.progress_events ?? []}
+            stage={r.data?.progress_stage}
+          />
+          <Copy size={12} muted>
+            研究正在服务器运行，每 5 秒更新；离开此页不会取消服务器任务。
+          </Copy>
+        </>
       )}
       {r.data && <ReportBody item={r.data} />}
       <ConfirmAction

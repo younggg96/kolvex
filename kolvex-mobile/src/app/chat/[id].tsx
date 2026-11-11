@@ -1,8 +1,20 @@
-import { useEffect, useRef, useState } from "react";
+import { findSymbols } from "../../lib/stockMentions";
+import { ChatWorkspace } from "../../components/ChatWorkspace";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { CardsSkeleton } from "../../components/Skeletons";
 import { useLocalSearchParams } from "expo-router";
-import { ModelPicker } from "../../components/ModelPicker";
-import { View } from "react-native";
+import {
+  Keyboard,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ChatComposer } from "../../components/ChatComposer";
+import { useText } from "../../lib/i18n";
+import { useTheme } from "../../lib/theme";
+import { usePreferences } from "../../state/Preferences";
 import { useAuth } from "../../state/Auth";
 import { ConfirmAction } from "../../components/ConfirmAction";
 import { conversation } from "../../lib/contentApi";
@@ -12,22 +24,44 @@ import { isSymbol } from "../../lib/models";
 import { useResource } from "../../lib/useResource";
 import { sendChat } from "../../lib/stream";
 import type { Conversation } from "../../lib/contentTypes";
+import { AuthGate, ResourceState, TextBody } from "../../components/Content";
 import {
-  AuthGate,
-  Field,
-  ResourceState,
-  TextBody,
-} from "../../components/Content";
-import { Button, Copy, Failure, Glass, Page } from "../../components/UI";
+  Backdrop,
+  Button,
+  Copy,
+  Failure,
+  Glass,
+  phone,
+  StatusScrim,
+  styles,
+} from "../../components/UI";
 export default function ChatRoom() {
   return (
-    <AuthGate skeleton={<CardsSkeleton count={2} lines={[{ size: 12, width: "30%" }, { size: 16, width: "60%", lines: 4 }]} />} title="Ask Kolvex">
+    <AuthGate
+      skeleton={
+        <CardsSkeleton
+          count={2}
+          lines={[
+            { size: 12, width: "30%" },
+            { size: 16, width: "60%", lines: 4 },
+          ]}
+        />
+      }
+      title="Ask Kolvex"
+    >
       <Room />
     </AuthGate>
   );
 }
 function Room() {
-  const params = useLocalSearchParams<{ id: string; ticker?: string }>();
+  const params = useLocalSearchParams<{
+    id: string;
+    ticker?: string;
+    /** A first question handed over by the new-chat page. */
+    q?: string;
+    sources?: string;
+    model?: string;
+  }>();
   const id = params.id;
   const user = useAuth().session!.user.id;
   const ticker =
@@ -40,9 +74,15 @@ function Room() {
   const market = useResource(`context:${ticker}`, (signal) =>
     ticker && !demoMode ? quote(ticker, signal) : Promise.resolve(null),
   );
-  const [model, setModel] = useState("");
+  const [model, setModel] = useState(
+    typeof params.model === "string" ? params.model : "",
+  );
   const [attach, setAttach] = useState(true);
-  const [sources, setSources] = useState(["web"]);
+  const [sources, setSources] = useState(
+    typeof params.sources === "string" && params.sources
+      ? params.sources.split(",")
+      : ["web"],
+  );
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [recovering, setRecovering] = useState(false);
@@ -54,6 +94,23 @@ function Room() {
   const [replacement, setReplacement] = useState<Conversation>();
   const action = useRef<AbortController | null>(null);
   const alive = useRef(true);
+  const t = useTheme();
+  const text = useText();
+  const { locale } = usePreferences();
+  const insets = useSafeAreaInsets();
+  const scroll = useRef<React.ComponentRef<typeof ScrollView>>(null);
+  const [composerHeight, setComposerHeight] = useState(96);
+  const [keyboard, setKeyboard] = useState(0);
+  useEffect(() => {
+    const show = Keyboard.addListener("keyboardWillShow", (event) =>
+      setKeyboard(event.endCoordinates.height),
+    );
+    const hide = Keyboard.addListener("keyboardWillHide", () => setKeyboard(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
   useEffect(() => {
     alive.current = true;
     return () => {
@@ -171,125 +228,255 @@ function Room() {
     }
   }
   const data = replacement ?? resource.data;
+  // Tickers the reader named in their own questions become links in the answers, as on the Web.
+  const knownSymbols = [
+    ...new Set(
+      (data?.messages ?? [])
+        .filter((message) => message.role === "user")
+        .flatMap((message) => findSymbols(message.content))
+        .concat(sent ? findSymbols(sent) : []),
+    ),
+  ];
+  // The new-chat page's question is sent once, after the conversation has loaded.
+  const opening = useRef(false);
+  const sendOpening = useEffectEvent((question: string) => void send(question));
+  useEffect(() => {
+    if (opening.current || !resource.data || typeof params.q !== "string")
+      return;
+    const question = params.q;
+    const empty = !resource.data.messages.length;
+    // Deferred out of the effect body; marked done only when it actually runs.
+    const timer = setTimeout(() => {
+      opening.current = true;
+      if (empty) sendOpening(question);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [resource.data, params.q]);
+  const timeOf = (iso?: string) =>
+    iso
+      ? new Date(iso).toLocaleTimeString(locale === "en" ? "en-US" : "zh-CN", {
+          hour: "numeric",
+          minute: "2-digit",
+        })
+      : "";
+  const bottom = keyboard ? keyboard + 8 : Math.max(12, insets.bottom) + 4;
   return (
-    <Page
-      followContent
-      title="Ask Kolvex"
-      subtitle={data?.title}
-      subtitleLocalize={false}
-      onRefresh={() => {
-        if (!busy) void recover();
-      }}
-      refreshing={recovering}
-    >
-      <ResourceState skeleton={<CardsSkeleton count={2} lines={[{ size: 12, width: "30%" }, { size: 16, width: "60%", lines: 4 }]} />} resource={resource} empty={false} message="" />
-      {(data?.messages ?? [])
-        .filter((message) => message.role !== "system")
-        .map((message) => (
-          <Glass key={message.id} style={{ padding: 20, gap: 12 }}>
-            <Copy size={12} muted>
-              {message.role === "user" ? "你" : "Kolvex"}
-            </Copy>
-            <TextBody text={message.content} />
-          </Glass>
-        ))}
-      {!!sent && (
-        <Glass style={{ padding: 20, gap: 12 }}>
-          <Copy size={12} muted>
-            你 · {busy ? "本轮问题" : "待核对保存状态"}
-          </Copy>
-          <Copy localize={false}>{sent}</Copy>
-        </Glass>
-      )}
-      {(busy || !!partial) && (
-        <Glass style={{ padding: 20, gap: 12 }}>
-          <Copy size={12} muted>
-            Kolvex · {busy ? status : "未完成的回复，保存状态未确认"}
-          </Copy>
-          {!!partial && <TextBody text={partial} />}
-        </Glass>
-      )}
-      {!!error && <Failure message={error} />}
-      {uncertain && (
-        <>
-          <Button disabled={recovering} onPress={() => void recover()}>
-            {recovering ? "正在读取…" : "读取最新记录"}
-          </Button>
-          {!!sent && (
-            <ConfirmAction
-              label="重试"
-              description="上一轮可能已保存。重试会再次发送这个问题，并可能重复计费或产生重复消息。"
-              disabled={recovering}
-              onConfirm={() => void send(sent)}
+    <View style={{ flex: 1, backgroundColor: t.background }}>
+      <Backdrop />
+      <ScrollView
+        ref={scroll}
+        contentInsetAdjustmentBehavior="automatic"
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        onContentSizeChange={() =>
+          scroll.current?.scrollToEnd({ animated: false })
+        }
+        refreshControl={
+          <RefreshControl
+            refreshing={recovering}
+            onRefresh={() => {
+              if (!busy) void recover();
+            }}
+            tintColor={t.accent}
+          />
+        }
+        contentContainerStyle={{
+          paddingHorizontal: phone(16),
+          paddingTop: phone(8),
+          paddingBottom: bottom + composerHeight + 16,
+          gap: phone(24),
+        }}
+      >
+        <TitlePill title={data?.title} conversationId={id} user={user} />
+        <ResourceState
+          skeleton={
+            <CardsSkeleton
+              count={2}
+              lines={[
+                { size: 12, width: "30%" },
+                { size: 16, width: "60%", lines: 4 },
+              ]}
             />
+          }
+          resource={resource}
+          empty={false}
+          message=""
+        />
+        {(data?.messages ?? [])
+          .filter((message) => message.role !== "system")
+          .map((message) =>
+            message.role === "user" ? (
+              <UserBubble
+                key={message.id}
+                text={message.content}
+                time={timeOf(message.created_at)}
+              />
+            ) : (
+              <Answer key={message.id} time={timeOf(message.created_at)}>
+                <TextBody
+                  text={message.content}
+                  symbols={knownSymbols}
+                  size={15}
+                />
+              </Answer>
+            ),
           )}
-        </>
-      )}
-      {!uncertain && (
-        <>
-          {attach && market.data && (
-            <Glass material style={{ padding: 16, gap: 8 }}>
-              <Copy size={12}>已附加 {ticker} 报价资料，仅用于本轮提问。</Copy>
-              <Button disabled={busy} onPress={() => setAttach(false)}>
-                移除报价资料
-              </Button>
-            </Glass>
-          )}
-          <Copy size={12} muted>
-            可用资料来源 · 模型沿用服务端默认配置
-          </Copy>
+        {!!sent && (
+          <UserBubble text={sent} time={busy ? "" : text("待核对保存状态")} />
+        )}
+        {(busy || !!partial) && (
+          <Answer time={busy ? status : "未完成的回复，保存状态未确认"} live>
+            {!!partial && (
+              <TextBody text={partial} symbols={knownSymbols} size={15} />
+            )}
+          </Answer>
+        )}
+        {!!error && <Failure message={error} />}
+        {uncertain && (
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-            {[
-              ["web", "网页"],
-              ["portfolio", "持仓"],
-              ["plaid", "账户交易"],
-            ].map(([key, label]) => (
-              <Button
-                key={key}
-                disabled={busy}
-                selected={sources.includes(key)}
-                onPress={() =>
-                  setSources((old) =>
-                    old.includes(key)
-                      ? old.filter((s) => s !== key)
-                      : [...old, key],
-                  )
-                }
-              >
-                {label}
-              </Button>
-            ))}
-          </View>
-          <ModelPicker
-            user={user}
-            value={model}
-            onChange={setModel}
-            disabled={busy}
-          />
-          <Field
-            label="你的问题"
-            value={input}
-            onChangeText={setInput}
-            multiline
-            maxLength={100000}
-            editable={!busy}
-            style={{ minHeight: 120, textAlignVertical: "top" }}
-          />
-          {busy ? (
-            <Button onPress={() => action.current?.abort()}>停止回复</Button>
-          ) : (
-            <Button
-              disabled={!data || !input.trim() || recovering}
-              onPress={() => void send()}
-            >
-              发送问题
+            <Button disabled={recovering} onPress={() => void recover()}>
+              {recovering ? "正在读取…" : "读取最新记录"}
             </Button>
-          )}
-        </>
+            {!!sent && (
+              <ConfirmAction
+                label="重试"
+                description="上一轮可能已保存。重试会再次发送这个问题，并可能重复计费或产生重复消息。"
+                disabled={recovering}
+                onConfirm={() => void send(sent)}
+              />
+            )}
+          </View>
+        )}
+        <Copy size={12} muted>
+          AI 回复可能有误，请核实来源。对话仅保存在你的账户中。
+        </Copy>
+      </ScrollView>
+      <StatusScrim />
+      {!uncertain && (
+        <View
+          onLayout={(event) =>
+            setComposerHeight(event.nativeEvent.layout.height)
+          }
+          style={{
+            position: "absolute",
+            left: phone(16),
+            right: phone(16),
+            bottom,
+          }}
+        >
+          <ChatComposer
+            value={input}
+            onChange={setInput}
+            onSend={() => void send()}
+            onStop={() => action.current?.abort()}
+            busy={busy}
+            disabled={!data || recovering}
+            sources={sources}
+            onSources={setSources}
+            model={model}
+            onModel={setModel}
+            user={user}
+            note={
+              attach && market.data ? (
+                <View style={[styles.row, { gap: 8 }]}>
+                  <View style={{ flex: 1 }}>
+                    <Copy size={13} muted>{`使用资料 · ${ticker} 报价`}</Copy>
+                  </View>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={text("移除报价资料")}
+                    hitSlop={10}
+                    disabled={busy}
+                    onPress={() => setAttach(false)}
+                  >
+                    <Copy muted localize={false}>
+                      ×
+                    </Copy>
+                  </Pressable>
+                </View>
+              ) : undefined
+            }
+          />
+        </View>
       )}
-      <Copy size={12} muted>
-        AI 回复可能有误，请核实来源。对话仅保存在你的账户中。
-      </Copy>
-    </Page>
+    </View>
+  );
+}
+
+/** The Web's chat header: a glass pill with the conversation title and its workspace. */
+function TitlePill({
+  title,
+  conversationId,
+  user,
+}: {
+  title?: string;
+  conversationId: string;
+  user: string;
+}) {
+  return (
+    <Glass
+      style={{
+        borderRadius: 999,
+        paddingHorizontal: 20,
+        paddingVertical: 8,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+      }}
+    >
+      <View style={{ flex: 1 }}>
+        <Copy size={15} bold lines={1} localize={false}>
+          {title || "Ask Kolvex"}
+        </Copy>
+      </View>
+      <ChatWorkspace conversationId={conversationId} user={user} compact />
+    </Glass>
+  );
+}
+/** The reader's question: a right-aligned glass bubble with its time below. */
+function UserBubble({ text, time }: { text: string; time: string }) {
+  return (
+    <View style={{ alignItems: "flex-end", gap: 4 }}>
+      <Glass
+        style={{
+          maxWidth: "88%",
+          paddingHorizontal: 16,
+          paddingVertical: 10,
+        }}
+      >
+        <Copy size={15} localize={false} selectable>
+          {text}
+        </Copy>
+      </Glass>
+      {!!time && (
+        <Copy size={11} muted localize={false}>
+          {time}
+        </Copy>
+      )}
+    </View>
+  );
+}
+/** Kolvex's answer: plain prose on the page, under a "Kolvex · time" line. */
+function Answer({
+  time,
+  live = false,
+  children,
+}: {
+  time: string;
+  live?: boolean;
+  children?: React.ReactNode;
+}) {
+  return (
+    <View style={{ gap: 8 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <Copy size={12} bold localize={false}>
+          Kolvex
+        </Copy>
+        <Copy size={12} muted localize={live}>
+          {time}
+        </Copy>
+      </View>
+      {children}
+    </View>
   );
 }

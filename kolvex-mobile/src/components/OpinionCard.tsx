@@ -12,9 +12,12 @@ const names = {
 export function OpinionCard({
   item,
   creatorLink = true,
+  creatorTicker = false,
 }: {
   item: Opinion;
   creatorLink?: boolean;
+  /** Open the creator filtered to this card's stock, with other creators' views below. */
+  creatorTicker?: boolean;
 }) {
   const t = useTheme();
   return (
@@ -52,7 +55,11 @@ export function OpinionCard({
         <Button
           onPress={() =>
             router.push(
-              `/creator/youtube/${encodeURIComponent(item.channel_id!)}`,
+              `/creator/youtube/${encodeURIComponent(item.channel_id!)}${
+                creatorTicker && item.ticker
+                  ? `?ticker=${encodeURIComponent(item.ticker)}`
+                  : ""
+              }`,
             )
           }
         >

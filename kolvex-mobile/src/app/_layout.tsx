@@ -31,9 +31,14 @@ function AppContent() {
         <Stack
           screenOptions={{
             headerTintColor: t.text,
-            headerStyle: { backgroundColor: t.background },
+            // No bar behind Back: the page's backdrop runs to the top, as on the Web.
+            // ScrollViews inset themselves below it (contentInsetAdjustmentBehavior).
+            headerTransparent: true,
             headerShadowVisible: false,
             headerBackButtonDisplayMode: "minimal",
+            // Each page draws its own large title, as on the Web; the bar keeps only Back.
+            // `title` stays set per screen for VoiceOver and the app switcher.
+            headerTitle: "",
             contentStyle: { backgroundColor: t.background },
           }}
         >
@@ -93,6 +98,14 @@ function AppContent() {
               options={{ title: text("页面未找到") }}
             />
             <Stack.Screen
+              name="workspaces"
+              options={{ title: text("工作区") }}
+            />
+            <Stack.Screen
+              name="workspace/[id]"
+              options={{ title: text("工作区") }}
+            />
+            <Stack.Screen
               name="congress-trades"
               options={{ title: text("国会议员交易") }}
             />
@@ -119,10 +132,7 @@ function AppContent() {
               name="portfolio"
               options={{ title: text("投资组合") }}
             />
-            <Stack.Screen
-              name="chat/index"
-              options={{ title: text("AI 对话") }}
-            />
+
             <Stack.Screen name="chat/[id]" options={{ title: "Ask Kolvex" }} />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen

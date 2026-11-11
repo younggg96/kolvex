@@ -42,6 +42,141 @@ const barLabel = (date: string) =>
   date.slice(11, 16) === "00:00" || date.length <= 10
     ? date.slice(0, 10)
     : date.slice(0, 16).replace("T", " ");
+export type CallEvent = {
+  opinion_date?: string | null;
+  sentiment?: string | null;
+};
+type CallCounts = { bullish: number; bearish: number; other: number };
+/**
+ * Opinions bucketed onto visible bars (the Web's ChartView `calls`), then merged so marks
+ * closer than ~20pt share one marker on the later bar (`mergeNearbyCalls`).
+ */
+function callMarks(
+  visible: PriceBar[],
+  calls: readonly CallEvent[],
+  containing: boolean,
+  minGap: number,
+  xOf: (i: number) => number,
+) {
+  const byBar = new Map<number, CallCounts>();
+  if (!visible.length || !calls.length) return [];
+  const starts = visible.map((bar) => bar.date.slice(0, 10));
+  for (const opinion of calls) {
+    const date = opinion.opinion_date?.slice(0, 10);
+    if (!date || date < starts[0]) continue;
+    let index = containing
+      ? starts.findLastIndex((start) => start <= date)
+      : starts.findIndex((start) => start >= date);
+    if (index === -1) {
+      if (containing) continue;
+      if (
+        (Date.parse(date) - Date.parse(starts[starts.length - 1])) /
+          86_400_000 >
+        4
+      )
+        continue;
+      index = starts.length - 1;
+    }
+    const entry = byBar.get(index) ?? { bullish: 0, bearish: 0, other: 0 };
+    entry[
+      opinion.sentiment === "bullish"
+        ? "bullish"
+        : opinion.sentiment === "bearish"
+          ? "bearish"
+          : "other"
+    ] += 1;
+    byBar.set(index, entry);
+  }
+  const merged: { index: number; startX: number; entry: CallCounts }[] = [];
+  for (const [index, entry] of [...byBar.entries()].sort(([a], [b]) => a - b)) {
+    const cx = xOf(index);
+    const group = merged[merged.length - 1];
+    if (group && cx - group.startX < minGap) {
+      group.index = index;
+      group.entry = {
+        bullish: group.entry.bullish + entry.bullish,
+        bearish: group.entry.bearish + entry.bearish,
+        other: group.entry.other + entry.other,
+      };
+    } else merged.push({ index, startX: cx, entry });
+  }
+  return merged;
+}
+/** Bearish calls point down above the bar, bullish up below it, others are a dot. */
+function CallMarks({
+  cx,
+  high,
+  low,
+  entry,
+  up,
+  down,
+  dot,
+}: {
+  cx: number;
+  high: number;
+  low: number;
+  entry: CallCounts;
+  up: string;
+  down: string;
+  dot: string;
+}) {
+  const top = Math.max(high - 4, 8);
+  const bottom = Math.min(low + 4, 236);
+  return (
+    <>
+      {entry.bearish > 0 && (
+        <>
+          <Polygon
+            points={`${cx - 3},${top - 5} ${cx + 3},${top - 5} ${cx},${top}`}
+            fill={down}
+          />
+          {entry.bearish > 1 && (
+            <SvgText
+              x={cx}
+              y={top - 7}
+              fontSize={7}
+              fontWeight="600"
+              fill={down}
+              textAnchor="middle"
+            >
+              {entry.bearish}
+            </SvgText>
+          )}
+        </>
+      )}
+      {entry.bullish > 0 && (
+        <>
+          <Polygon
+            points={`${cx},${bottom} ${cx - 3},${bottom + 5} ${cx + 3},${bottom + 5}`}
+            fill={up}
+          />
+          {entry.bullish > 1 && (
+            <SvgText
+              x={cx}
+              y={bottom + 12}
+              fontSize={7}
+              fontWeight="600"
+              fill={up}
+              textAnchor="middle"
+            >
+              {entry.bullish}
+            </SvgText>
+          )}
+        </>
+      )}
+      {entry.other > 0 && (
+        <Rect
+          x={cx - 1.5}
+          y={Math.min(bottom + (entry.bullish ? 15 : 3), 240)}
+          width={3}
+          height={3}
+          rx={1.5}
+          fill={dot}
+        />
+      )}
+    </>
+  );
+}
 export function CandleGraph({
   bars,
   start,
@@ -52,7 +187,13 @@ export function CandleGraph({
   drawings = [],
   analysis,
   draw,
+  calls = [],
+  containing = false,
 }: {
+  /** Creator opinions to mark on the bar of their date, as on the Web's PriceGraph. */
+  calls?: readonly CallEvent[];
+  /** Weekly or monthly bars: an opinion belongs to the bar that contains its date. */
+  containing?: boolean;
   bars: PriceBar[];
   start: number;
   count: number;
@@ -94,6 +235,13 @@ export function CandleGraph({
       min,
       span,
     );
+  const marks = callMarks(
+    visible,
+    calls,
+    containing,
+    (320 / size.width) * 20,
+    x,
+  );
   const bar = bars[Math.min(bars.length - 1, Math.max(0, selected))];
   const path = (values: (number | null)[]) =>
     values
@@ -187,6 +335,24 @@ export function CandleGraph({
                 opacity={0.5}
               />
             ))}
+          {marks.map(({ index, entry }) => {
+            const b = visible[index];
+            const cx = x(index);
+            const high = y(b.high);
+            const low = y(b.low);
+            return (
+              <CallMarks
+                key={`call${index}`}
+                cx={cx}
+                high={high}
+                low={low}
+                entry={entry}
+                up={t.chartUp}
+                down={t.chartDown}
+                dot={t.secondary}
+              />
+            );
+          })}
           {selected >= start && selected < start + count && (
             <Line
               x1={x(selected - start)}

@@ -18,7 +18,7 @@ import {
 } from "../../lib/technicalIndicators";
 import { Page, Button, Copy, Glass } from "../../components/UI";
 import { Filters, ResourceState, AuthGate } from "../../components/Content";
-import { CandleGraph } from "../../components/CandleGraph";
+import { CandleGraph, type CallEvent } from "../../components/CandleGraph";
 import {
   DrawingEditor,
   type DrawingEditorHandle,
@@ -51,6 +51,14 @@ function Workspace({ symbol }: { symbol: string }) {
   const [drawMode, setDrawMode] = useState(false);
   const editor = useRef<DrawingEditorHandle>(null);
   const signedIn = !!useAuth().session;
+  const [showCalls, setShowCalls] = useState(true);
+  // Creator opinions on this stock, marked on their bars as on the Web's price chart.
+  const opinions = useResource(`chart-calls:${symbol}`, (signal) =>
+    apiRequest<{ opinions?: CallEvent[] }>(
+      `/youtube-opinions/stocks/${encodeURIComponent(symbol)}`,
+      { signal, timeout: 30_000 },
+    ).then((data) => data.opinions ?? []),
+  );
   const r = useResource(
     `technical:${symbol}:${period}:${interval}`,
     async (signal) => {
@@ -117,7 +125,8 @@ function Workspace({ symbol }: { symbol: string }) {
         value={count}
         onChange={setCount}
       />
-      <ResourceState skeleton={<ChartCardSkeleton />}
+      <ResourceState
+        skeleton={<ChartCardSkeleton />}
         resource={r}
         empty={!bars.length}
         message="数据源未提供此周期 K 线"
@@ -153,6 +162,8 @@ function Workspace({ symbol }: { symbol: string }) {
               analysis={
                 showAI && analysis?.interval === interval ? analysis : undefined
               }
+              calls={showCalls && interval !== "1h" ? opinions.data : undefined}
+              containing={interval === "1wk" || interval === "1mo"}
             />
           </View>
           <Copy size={12} muted>
@@ -160,6 +171,14 @@ function Workspace({ symbol }: { symbol: string }) {
               ? "拖动绘制两点画线，水平线和垂直线轻点放置。"
               : "横向拖动浏览 K 线，双指缩放；也可使用窗口和前后按钮。"}
           </Copy>
+          {!!opinions.data?.length && interval !== "1h" && (
+            <Button
+              selected={showCalls}
+              onPress={() => setShowCalls((v) => !v)}
+            >
+              {showCalls ? "隐藏博主观点" : "显示博主观点"}
+            </Button>
+          )}
           {signedIn && (
             <Button selected={drawMode} onPress={() => setDrawMode((v) => !v)}>
               {drawMode ? "完成绘制" : "在图上绘制"}
@@ -216,7 +235,11 @@ function Workspace({ symbol }: { symbol: string }) {
         指标使用与 Web 相同的计算。缺少完整预热区间时以 — 显示；VWAP
         在日线及更长周期以首根为锚。
       </Copy>
-      <AuthGate inline title="画线与 AI 技术研究" skeleton={<FormSkeleton fields={2} />}>
+      <AuthGate
+        inline
+        title="画线与 AI 技术研究"
+        skeleton={<FormSkeleton fields={2} />}
+      >
         <DrawingEditor
           symbol={symbol}
           bar={bars[current]}

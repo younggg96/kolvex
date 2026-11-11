@@ -28,9 +28,16 @@ import {
   Failure,
   Page,
   LoadingStatus,
+  phone,
   useLiquidGlass,
 } from "./UI";
 import { textBlocks } from "../lib/markdownBlocks";
+import {
+  isBareTicker,
+  isSymbolShape,
+  normalizeSymbol,
+  splitStockMentions,
+} from "../lib/stockMentions";
 import { safeExternal } from "../lib/links";
 
 export function AuthGate({
@@ -81,8 +88,14 @@ export function AuthGate({
 export function Field({
   label,
   error,
+  trailing,
   ...props
-}: ComponentProps<typeof TextInput> & { label: string; error?: string }) {
+}: ComponentProps<typeof TextInput> & {
+  label: string;
+  error?: string;
+  /** A control inside the pill after the text, such as a show-password eye. */
+  trailing?: React.ReactNode;
+}) {
   const t = useTheme();
   const glass = useLiquidGlass();
   const text = useText();
@@ -99,7 +112,11 @@ export function Field({
         glassEffectStyle={glass ? "regular" : "none"}
         colorScheme={t.dark ? "dark" : "light"}
         style={{
-          paddingHorizontal: 16,
+          flexDirection: "row",
+          alignItems: "center",
+          // The Web's h-10 px-3.5 field; text stays 16px so iOS never zooms, as on the Web.
+          paddingLeft: phone(14),
+          paddingRight: trailing ? 4 : phone(14),
           borderRadius: props.multiline ? 24 : 999,
           borderWidth: glass && !error ? 0 : 1,
           borderColor: error ? t.negative : t.rim,
@@ -113,10 +130,17 @@ export function Field({
           placeholderTextColor={t.secondary}
           {...props}
           style={[
-            { minHeight: 48, color: t.text, fontSize: 16, paddingVertical: 12 },
+            {
+              flex: 1,
+              minHeight: phone(40),
+              color: t.text,
+              fontSize: 16,
+              paddingVertical: phone(8),
+            },
             props.style,
           ]}
         />
+        {trailing}
       </GlassView>
       {!!error && <Failure message={error} />}
     </View>
@@ -154,14 +178,47 @@ export function Filters({
   value,
   onChange,
   disabled = false,
+  stretch = false,
 }: {
   values: readonly (readonly [string, string])[];
   value: string;
   onChange: (v: string) => void;
   disabled?: boolean;
+  /** Fill the row and share it equally, like the Web's full-width segmented control. */
+  stretch?: boolean;
 }) {
   const t = useTheme();
   const glass = useLiquidGlass();
+  const chips = values.map(([key, name]) => (
+    <View key={key} style={stretch ? { flex: 1 } : undefined}>
+      <Chip
+        bare
+        disabled={disabled}
+        selected={key === value}
+        onPress={() => onChange(key)}
+      >
+        {name}
+      </Chip>
+    </View>
+  ));
+  if (stretch)
+    return (
+      <GlassView
+        glassEffectStyle={glass ? "regular" : "none"}
+        colorScheme={t.dark ? "dark" : "light"}
+        style={{
+          flexDirection: "row",
+          gap: 4,
+          padding: 4,
+          borderRadius: 999,
+          borderWidth: glass ? 0 : 1,
+          borderColor: t.rim,
+          backgroundColor: glass ? undefined : t.field,
+        }}
+      >
+        {chips}
+      </GlassView>
+    );
   return (
     <GlassView
       glassEffectStyle={glass ? "regular" : "none"}
@@ -182,17 +239,7 @@ export function Filters({
         style={{ flexGrow: 0 }}
         contentContainerStyle={{ gap: 4, padding: 4 }}
       >
-        {values.map(([key, name]) => (
-          <Chip
-            bare
-            key={key}
-            disabled={disabled}
-            selected={key === value}
-            onPress={() => onChange(key)}
-          >
-            {name}
-          </Chip>
-        ))}
+        {chips}
       </ScrollView>
     </GlassView>
   );
@@ -267,9 +314,56 @@ export function ResourceState({
   );
 }
 // Render native text, never execute report HTML or inject it into a WebView.
-export function TextBody({ text }: { text: string }) {
+/**
+ * The small Markdown subset AI answers use. Stock mentions follow the Web's rules
+ * (lib/stockMentions.ts): `$TICKER`, `` `TICKER` `` and tickers the reader already
+ * named become links to that stock; ordinary capitals such as AI or EPS stay text.
+ */
+export function TextBody({
+  text,
+  symbols = [],
+  size = 16,
+}: {
+  text: string;
+  /** Body size in the Web's desktop px; chat prose uses 15 (text-[0.9375rem]). */
+  size?: number;
+  /** Tickers already identified for this text, such as the ones the reader asked about. */
+  symbols?: readonly string[];
+}) {
   const theme = useTheme();
   const [linkError, setLinkError] = useState(false);
+  const universe = new Set(
+    symbols.map(normalizeSymbol).filter((symbol) => isSymbolShape(symbol)),
+  );
+  const stock = (symbol: string, key: string) => (
+    <Text
+      key={key}
+      accessibilityRole="link"
+      style={{ color: theme.accent, fontWeight: "600" }}
+      onPress={() => router.push(`/stock/${encodeURIComponent(symbol)}`)}
+    >
+      {symbol}
+    </Text>
+  );
+  const mentions = (value: string, key: number) =>
+    value.split(/(`[^`\n]+`)/g).flatMap((piece, i) => {
+      const code = /^`([^`]+)`$/.exec(piece);
+      if (code) {
+        const raw = code[1].trim();
+        const symbol = normalizeSymbol(raw);
+        // Same caps convention as prose: `AVGO` is a ticker, `code` is a word.
+        return raw === raw.toUpperCase() &&
+          isSymbolShape(symbol) &&
+          isBareTicker(symbol)
+          ? [stock(symbol, `${key}-${i}`)]
+          : [code[1]];
+      }
+      return splitStockMentions(piece, universe).map((part, j) =>
+        typeof part === "string"
+          ? part
+          : stock(part.symbol, `${key}-${i}-${j}`),
+      );
+    });
   const inline = (value: string) =>
     value
       .split(/(\*\*[^*]+\*\*|\[[^\]]+\]\(https:\/\/[^)\s]+\))/g)
@@ -277,7 +371,7 @@ export function TextBody({ text }: { text: string }) {
         if (part.startsWith("**") && part.endsWith("**"))
           return (
             <Text key={index} style={{ fontWeight: "600" }}>
-              {part.slice(2, -2)}
+              {mentions(part.slice(2, -2), index)}
             </Text>
           );
         const link = /^\[([^\]]+)\]\((https:\/\/[^)\s]+)\)$/.exec(part);
@@ -295,18 +389,68 @@ export function TextBody({ text }: { text: string }) {
               {link[1]}
             </Text>
           );
-        return part;
+        return <Text key={index}>{mentions(part, index)}</Text>;
       });
   return (
     <View style={{ gap: 12 }}>
       {textBlocks(text).map((block, i) =>
         block.kind === "rule" ? (
           <View key={i} style={{ height: 1, backgroundColor: theme.border }} />
+        ) : block.kind === "table" ? (
+          // The Web's prose table: a hairline card that scrolls sideways when wide.
+          <ScrollView
+            key={i}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: theme.rim,
+            }}
+          >
+            <View>
+              {[block.header, ...block.rows].map((row, r) => (
+                <View
+                  key={r}
+                  style={{
+                    flexDirection: "row",
+                    borderTopWidth: r ? 1 : 0,
+                    borderColor: theme.border,
+                    backgroundColor: r ? undefined : theme.wash,
+                  }}
+                >
+                  {block.header.map((_, c) => (
+                    <View
+                      key={c}
+                      style={{
+                        width: c === 0 ? 96 : 132,
+                        paddingHorizontal: 10,
+                        paddingVertical: 8,
+                      }}
+                    >
+                      <Copy
+                        size={r ? size - 2 : size - 3}
+                        bold={!r}
+                        muted={!r}
+                        selectable
+                      >
+                        {inline(row[c] ?? "")}
+                      </Copy>
+                    </View>
+                  ))}
+                </View>
+              ))}
+            </View>
+          </ScrollView>
         ) : block.kind === "bullet" ? (
           <View key={i} style={{ flexDirection: "row", gap: 8 }}>
-            <Copy localize={false}>•</Copy>
+            <Copy size={size} localize={false}>
+              •
+            </Copy>
             <View style={{ flex: 1 }}>
-              <Copy selectable>{inline(block.text)}</Copy>
+              <Copy size={size} selectable>
+                {inline(block.text)}
+              </Copy>
             </View>
           </View>
         ) : (
@@ -314,7 +458,7 @@ export function TextBody({ text }: { text: string }) {
             key={i}
             selectable
             bold={block.kind === "heading"}
-            size={block.kind === "heading" ? 20 : 16}
+            size={block.kind === "heading" ? size + 2 : size}
           >
             {inline(block.text)}
           </Copy>

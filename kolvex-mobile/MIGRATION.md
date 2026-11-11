@@ -86,15 +86,12 @@ Status abbreviations: `C` Code, `B` Bundle, `W` RN-Web. `Auth` means the screen 
 
 ## Known remaining work
 
-Added 2026-11-09: the seven rows from Superinvestors to Kronos forecast. Added 2026-11-10: Congress trades (`/dashboard/congress-trades` → `/congress-trades`, under Settings). Still unported from the Web: research workspaces (`/dashboard/workspaces`), stock discovery on search, stock mentions in Markdown, the company valuation calculator, and options-activity admin controls.
+Added 2026-11-09: the seven rows from Superinvestors to Kronos forecast. Added 2026-11-10: Congress trades (`/congress-trades`, under Settings), the company valuation calculator (valuation tab → 公司估值计算), stock mentions in AI Markdown (`src/lib/stockMentions.ts`, a verbatim Web copy checked by the parity test), the home tab's 股票观察 lists (今日异动 / 放量活跃 / 常看美股 from `/market/discovery`), options-activity admin controls (管理中心 → 期权异动) and research workspaces (`/workspaces`, `/workspace/[id]`, under Settings). Later the same day: the 博主热议 scope of 股票观察 (`src/lib/creatorBuzz.ts`), adding a chat to a workspace from the chat screen, creator-opinion markers on the technical chart, and the research task's stage progress, agent log and debate card (fed by the polled `progress_events`, not SSE). Not ported: the 我的持仓 scope (the portfolio feature is disabled, as on the Web). Also ported: upload-coverage hints and other creators' views on YouTube creator pages (`src/components/CreatorExtras.tsx`, opened with `?ticker=` from a stock's opinions), personal AI research on the stock research tab (`src/components/PersonalResearch.tsx`), and single titles on pushed screens (the navigation bar keeps only Back).
 
 1. **Native acceptance of the remaining screens on iOS.** Android is set aside for now.
 2. **Signed-in writes.** Sign-in, restore, sign-out and read paths passed on the owner's account; writes need a disposable test account.
-3. Creator-opinion markers on the price chart.
-4. Other creators' opinions and upload-coverage hints in the YouTube explorer.
-5. Personal stock research on the stock screen; SSE progress log and debate card for research tasks.
-6. Dragging saved drawings by their handles; paged share images; X translation on creator profiles.
-7. Universal links once the Team ID is known.
-8. A line-by-line re-audit of `Market.tsx` and `YouTubeOpinionExplorer.tsx`, which were reviewed by feature rather than by every control.
+3. Dragging saved drawings by their handles; paged share images; X translation on creator profiles.
+4. Universal links once the Team ID is known.
+5. A line-by-line re-audit of `Market.tsx` and `YouTubeOpinionExplorer.tsx`, which were reviewed by feature rather than by every control.
 
 No RLS, administrator grants or OAuth settings were changed.

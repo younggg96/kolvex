@@ -1,4 +1,6 @@
 import {
+  createContext,
+  useContext,
   useEffect,
   useRef,
   useState,
@@ -32,6 +34,15 @@ import { translateNodes, useText } from "../lib/i18n";
 import { useTheme } from "../lib/theme";
 import SwiftGlass from "./native/SwiftGlass";
 
+/**
+ * The Web shrinks its rem from 16px to 14px on phones, so every size there is 87.5% of its
+ * desktop value (globals.css). Sizes in this app are written in the Web's desktop px and
+ * scaled here once, the way the Web's rem does; tiny labels keep its 11px floor.
+ */
+export const PHONE_SCALE = 0.875;
+export const phone = (px: number) => px * PHONE_SCALE;
+const fontPx = (size: number) =>
+  size <= 12 ? Math.max(phone(size), 11) : phone(size);
 export function Copy({
   children,
   size = 16,
@@ -64,9 +75,10 @@ export function Copy({
       accessibilityRole={role}
       style={{
         color: color ?? (muted ? t.secondary : t.text),
-        fontSize: size,
+        fontSize: fontPx(size),
         fontWeight: bold ? "600" : "400",
-        lineHeight: size * 1.45,
+        lineHeight: fontPx(size) * (size >= 20 ? 1.3 : 1.5),
+        letterSpacing: size >= 20 ? -0.2 : 0,
         fontVariant: ["tabular-nums"],
       }}
     >
@@ -76,6 +88,19 @@ export function Copy({
 }
 // Reading and data sit on an opaque surface. Only toolbars and overlays ask for
 // `material`: real SwiftUI glass on iOS 26+, blur on older iOS, opaque elsewhere.
+const SPACING =
+  /^(padding|paddingHorizontal|paddingVertical|paddingTop|paddingBottom|paddingLeft|paddingRight|gap|rowGap|columnGap)$/;
+/** Card padding and gaps are written in the Web's desktop px; phones get 87.5%, as on the Web. */
+function scaleSpacing(style: StyleProp<ViewStyle>): StyleProp<ViewStyle> {
+  const flat = StyleSheet.flatten(style);
+  if (!flat) return style;
+  return Object.fromEntries(
+    Object.entries(flat).map(([key, value]) => [
+      key,
+      SPACING.test(key) && typeof value === "number" ? value * 0.875 : value,
+    ]),
+  ) as ViewStyle;
+}
 // Reduce Transparency is one system setting; every glass surface reads the same copy.
 let reduceTransparency = true;
 const reduceListeners = new Set<() => void>();
@@ -115,9 +140,16 @@ export function Glass({
   children,
   style,
   material = false,
-}: PropsWithChildren<{ style?: StyleProp<ViewStyle>; material?: boolean }>) {
+  clear = false,
+}: PropsWithChildren<{
+  style?: StyleProp<ViewStyle>;
+  material?: boolean;
+  /** Clear glass over artwork, darkened like the Web's bg-card-glass so text stays legible. */
+  clear?: boolean;
+}>) {
   const t = useTheme();
   const glass = useLiquidGlass();
+  style = scaleSpacing(style);
   // Liquid Glass draws its own lit edge; the Web rim is only for solid surfaces.
   const shell = [
     styles.glass,
@@ -129,7 +161,8 @@ export function Glass({
   if (glass)
     return (
       <GlassView
-        glassEffectStyle="regular"
+        glassEffectStyle={clear ? "clear" : "regular"}
+        tintColor={clear && t.dark ? "rgba(0,0,0,0.35)" : undefined}
         colorScheme={t.dark ? "dark" : "light"}
         style={shell}
       >
@@ -160,6 +193,7 @@ export function Button({
   label,
   variant = "neutral",
   block = variant === "primary",
+  icon,
 }: PropsWithChildren<{
   onPress: () => void;
   selected?: boolean;
@@ -167,6 +201,8 @@ export function Button({
   label?: string;
   variant?: "neutral" | "primary";
   block?: boolean;
+  /** Leading artwork, such as a provider logo. */
+  icon?: React.ReactNode;
 }>) {
   const t = useTheme();
   const { locale } = usePreferences();
@@ -174,9 +210,12 @@ export function Button({
   const glass = useLiquidGlass();
   const primary = variant === "primary";
   const label_ = (
-    <Copy size={14} bold color={primary ? t.onBrand : t.text}>
-      {translateNodes(children, locale)}
-    </Copy>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+      {icon}
+      <Copy size={14} bold color={primary ? t.onBrand : t.text}>
+        {translateNodes(children, locale)}
+      </Copy>
+    </View>
   );
   return (
     <Pressable
@@ -184,6 +223,7 @@ export function Button({
       accessibilityLabel={label ? text(label) : undefined}
       accessibilityState={{ selected, disabled }}
       disabled={disabled}
+      hitSlop={{ top: 3, bottom: 3 }}
       onPress={() => {
         if (Platform.OS !== "web")
           void Haptics.selectionAsync().catch(() => {});
@@ -210,7 +250,6 @@ export function Button({
       {glass ? (
         // Interactive glass gives the system's own press response.
         <GlassView
-          isInteractive={!disabled}
           glassEffectStyle="regular"
           tintColor={primary ? t.brand : selected ? t.washStrong : undefined}
           colorScheme={t.dark ? "dark" : "light"}
@@ -262,6 +301,8 @@ export function Chip({
       accessibilityRole="button"
       accessibilityState={{ selected, disabled }}
       disabled={disabled}
+      // Drawn at the Web's phone size; the touch area stays at least 44pt.
+      hitSlop={{ top: 5, bottom: 5 }}
       onPress={() => {
         if (Platform.OS !== "web")
           void Haptics.selectionAsync().catch(() => {});
@@ -270,8 +311,10 @@ export function Chip({
       style={({ pressed }) => [
         styles.button,
         {
-          minHeight: 36,
-          paddingVertical: 6,
+          // The Web's md segmented item: min-h-10 px-4.
+          minHeight: phone(40),
+          paddingHorizontal: phone(16),
+          paddingVertical: phone(6),
           borderWidth: 0,
           // The Web's glass thumb: a white pill with near-black text.
           backgroundColor: selected
@@ -317,6 +360,14 @@ export function Backdrop() {
     </View>
   );
 }
+/**
+ * Inside an EmbeddedPage a screen's Page or ListPage renders only its content: the host
+ * (the Markets tabs) owns the title, backdrop and scrolling, as the Web's tabbed pages do.
+ */
+const Embedded = createContext(false);
+export function EmbeddedPage({ children }: PropsWithChildren) {
+  return <Embedded.Provider value>{children}</Embedded.Provider>;
+}
 export function Page({
   title,
   subtitle,
@@ -327,9 +378,12 @@ export function Page({
   onRefresh,
   followContent = false,
   scrollEnabled = true,
+  hideTitle = false,
 }: PropsWithChildren<{
   title: string;
   subtitle?: string;
+  /** The Web's tab pages show no page heading; `title` still names the screen. */
+  hideTitle?: boolean;
   titleLocalize?: boolean;
   subtitleLocalize?: boolean;
   refreshing?: boolean;
@@ -341,6 +395,8 @@ export function Page({
   const insets = useSafeAreaInsets();
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
   const nearEnd = useRef(true);
+  const embedded = useContext(Embedded);
+  if (embedded) return <View style={{ gap: phone(24) }}>{children}</View>;
   return (
     <View style={{ flex: 1, backgroundColor: t.background }}>
       <Backdrop />
@@ -364,10 +420,11 @@ export function Page({
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets
         contentContainerStyle={{
-          paddingHorizontal: 16,
-          paddingTop: Platform.OS === "android" ? insets.top + 16 : 16,
+          paddingHorizontal: phone(16),
+          paddingTop:
+            Platform.OS === "android" ? insets.top + phone(16) : phone(16),
           paddingBottom: insets.bottom + 100,
-          gap: 24,
+          gap: phone(24),
         }}
         refreshControl={
           onRefresh ? (
@@ -379,16 +436,18 @@ export function Page({
           ) : undefined
         }
       >
-        <View style={{ gap: 4 }}>
-          <Copy size={26} bold localize={titleLocalize}>
-            {title}
-          </Copy>
-          {!!subtitle && (
-            <Copy size={14} muted localize={subtitleLocalize}>
-              {subtitle}
+        {!hideTitle && (
+          <View style={{ gap: 4 }}>
+            <Copy size={24} bold localize={titleLocalize}>
+              {title}
             </Copy>
-          )}
-        </View>
+            {!!subtitle && (
+              <Copy size={14} muted localize={subtitleLocalize}>
+                {subtitle}
+              </Copy>
+            )}
+          </View>
+        )}
         {demoMode && (
           <Glass style={{ padding: 12 }}>
             <Copy size={12} muted>
@@ -420,9 +479,9 @@ export function NavRow({
       accessibilityLabel={text(title)}
       onPress={onPress}
       style={({ pressed }) => ({
-        minHeight: 52,
-        paddingHorizontal: 20,
-        paddingVertical: 12,
+        minHeight: 48,
+        paddingHorizontal: phone(20),
+        paddingVertical: phone(12),
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
@@ -662,14 +721,15 @@ export function Search({
 }
 export const styles = StyleSheet.create({
   glass: {
-    borderRadius: 24,
+    borderRadius: phone(24),
     borderWidth: StyleSheet.hairlineWidth,
     overflow: "hidden",
   },
+  // The Web's h-11 button (38.5px on phones) with px-6 padding.
   button: {
-    minHeight: 44,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    minHeight: phone(44),
+    paddingHorizontal: phone(24),
+    paddingVertical: phone(8),
     borderRadius: 999,
     borderWidth: StyleSheet.hairlineWidth,
     alignItems: "center",
@@ -709,6 +769,19 @@ export function ListPage<T>({
 }) {
   const t = useTheme();
   const insets = useSafeAreaInsets();
+  const embedded = useContext(Embedded);
+  if (embedded)
+    return (
+      <View style={{ gap: phone(16) }}>
+        {header}
+        {items.length
+          ? items.map((item) => (
+              <View key={keyFor(item)}>{renderItem(item)}</View>
+            ))
+          : empty}
+        {footer}
+      </View>
+    );
   return (
     <View style={{ flex: 1, backgroundColor: t.background }}>
       <Backdrop />
@@ -720,8 +793,9 @@ export function ListPage<T>({
         contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{
-          paddingHorizontal: 16,
-          paddingTop: Platform.OS === "android" ? insets.top + 16 : 16,
+          paddingHorizontal: phone(16),
+          paddingTop:
+            Platform.OS === "android" ? insets.top + phone(16) : phone(16),
           paddingBottom: insets.bottom + 100,
         }}
         ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
@@ -733,9 +807,9 @@ export function ListPage<T>({
           />
         }
         ListHeaderComponent={
-          <View style={{ gap: 24, paddingBottom: 24 }}>
+          <View style={{ gap: phone(24), paddingBottom: phone(24) }}>
             <View style={{ gap: 4 }}>
-              <Copy size={26} bold>
+              <Copy size={24} bold>
                 {title}
               </Copy>
               {!!subtitle && (

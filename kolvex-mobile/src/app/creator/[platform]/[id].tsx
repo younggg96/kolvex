@@ -9,15 +9,28 @@ import {
 } from "../../../lib/featureApi";
 import { useResource } from "../../../lib/useResource";
 import { XInsights } from "../../../components/XInsights";
-import { number } from "../../../lib/models";
-import { Page, Glass, Copy, Button } from "../../../components/UI";
+import { isSymbol, number } from "../../../lib/models";
+import { View } from "react-native";
+import { Page, Glass, Copy, Button, Chip } from "../../../components/UI";
+import {
+  CoverageNote,
+  OtherCreatorOpinions,
+} from "../../../components/CreatorExtras";
 import { Pager, ResourceState, SourceLink } from "../../../components/Content";
 import { OpinionCard } from "../../../components/OpinionCard";
 import { CreatorShare } from "../../../components/CreatorShare";
 export default function CreatorDetail() {
-  const p = useLocalSearchParams<{ id: string; platform: string }>();
+  const p = useLocalSearchParams<{
+    id: string;
+    platform: string;
+    ticker?: string;
+  }>();
+  const ticker =
+    typeof p.ticker === "string" && isSymbol(p.ticker.toUpperCase())
+      ? p.ticker.toUpperCase()
+      : "";
   return p.platform === "youtube" ? (
-    <YouTube id={p.id} />
+    <YouTube key={`${p.id}:${ticker}`} id={p.id} ticker={ticker} />
   ) : p.platform === "x" ? (
     <XProfile id={p.id} />
   ) : (
@@ -26,13 +39,13 @@ export default function CreatorDetail() {
     </Page>
   );
 }
-function YouTube({ id }: { id: string }) {
+function YouTube({ id, ticker }: { id: string; ticker: string }) {
   const [page, setPage] = useState(1);
   const profile = useResource(`creator:${id}`, (s) => creatorProfile(id, s));
-  const history = useResource(`creator-history:${id}:${page}`, (s) =>
+  const history = useResource(`creator-history:${id}:${ticker}:${page}`, (s) =>
     catalogue(
       s,
-      `&channel_id=${encodeURIComponent(id)}&offset=${(page - 1) * 20}`,
+      `&channel_id=${encodeURIComponent(id)}${ticker ? `&ticker=${encodeURIComponent(ticker)}` : ""}&offset=${(page - 1) * 20}`,
     ),
   );
   const c = profile.data;
@@ -46,7 +59,21 @@ function YouTube({ id }: { id: string }) {
       }}
       refreshing={profile.loading || history.loading}
     >
-      <ResourceState skeleton={<CardsSkeleton count={1} lines={[{ size: 16, width: "60%", lines: 3 }, { size: 16, width: "40%" }, { size: 16, width: "30%" }]} />} resource={profile} empty={!c} message="资料暂不可用" />
+      <ResourceState
+        skeleton={
+          <CardsSkeleton
+            count={1}
+            lines={[
+              { size: 16, width: "60%", lines: 3 },
+              { size: 16, width: "40%" },
+              { size: 16, width: "30%" },
+            ]}
+          />
+        }
+        resource={profile}
+        empty={!c}
+        message="资料暂不可用"
+      />
       {c && (
         <Glass style={{ padding: 20, gap: 12 }}>
           <Copy localize={!c.description}>{c.description || "暂无简介"}</Copy>
@@ -65,10 +92,35 @@ function YouTube({ id }: { id: string }) {
           {!!c.channel_url && (
             <SourceLink url={c.channel_url}>打开频道</SourceLink>
           )}
+          <CoverageNote channelId={id} titles />
           <CreatorShare creator={c} />
         </Glass>
       )}
-      <ResourceState skeleton={<CardsSkeleton lines={[{ size: 16, width: "40%" }, { size: 12, width: "50%" }, { size: 16, width: "60%", lines: 3 }]} buttons={1} />}
+      {!!ticker && (
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+          <Chip selected onPress={() => {}}>
+            {ticker}
+          </Chip>
+          <Button
+            onPress={() =>
+              router.replace(`/creator/youtube/${encodeURIComponent(id)}`)
+            }
+          >
+            查看全部观点
+          </Button>
+        </View>
+      )}
+      <ResourceState
+        skeleton={
+          <CardsSkeleton
+            lines={[
+              { size: 16, width: "40%" },
+              { size: 12, width: "50%" },
+              { size: 16, width: "60%", lines: 3 },
+            ]}
+            buttons={1}
+          />
+        }
         resource={history}
         empty={!history.data?.latest.length}
         message="暂无观点"
@@ -82,6 +134,7 @@ function YouTube({ id }: { id: string }) {
         loading={history.loading}
         onChange={setPage}
       />
+      {!!ticker && <OtherCreatorOpinions ticker={ticker} currentCreator={id} />}
     </Page>
   );
 }
@@ -95,7 +148,16 @@ function XProfile({ id }: { id: string }) {
       <Copy localize={!c?.bio}>{c?.bio || "原文来自 X，观点保留来源。"}</Copy>
       <Copy muted>关注者 {number(c?.followers_count, 0)}</Copy>
       <XInsights author={id} />
-      <ResourceState skeleton={<CardsSkeleton lines={[{ size: 16, width: "30%" }, { size: 16, width: "70%", lines: 3 }]} buttons={1} />}
+      <ResourceState
+        skeleton={
+          <CardsSkeleton
+            lines={[
+              { size: 16, width: "30%" },
+              { size: 16, width: "70%", lines: 3 },
+            ]}
+            buttons={1}
+          />
+        }
         resource={r}
         empty={!r.data?.posts.length}
         message="暂无原文"

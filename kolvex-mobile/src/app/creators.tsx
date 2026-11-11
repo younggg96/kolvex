@@ -1,6 +1,7 @@
+import { CoverageNote } from "../components/CreatorExtras";
 import { useState } from "react";
 import { CardsSkeleton } from "../components/Skeletons";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { catalogue, videos, xCreators } from "../lib/featureApi";
 import { useResource } from "../lib/useResource";
 import { number } from "../lib/models";
@@ -13,7 +14,12 @@ import {
 } from "../components/Content";
 import { OpinionCard } from "../components/OpinionCard";
 export default function Creators() {
-  const [tab, setTab] = useState("youtube");
+  const params = useLocalSearchParams<{ tab?: string }>();
+  const [tab, setTab] = useState(
+    params.tab === "stocks" || params.tab === "videos" || params.tab === "x"
+      ? params.tab
+      : "youtube",
+  );
   return (
     <Page title="创作者与视频" subtitle="完整资料、来源和观点历史。">
       <Filters
@@ -51,7 +57,16 @@ function Directory({ stocks }: { stocks: boolean }) {
         onChange={setSearch}
         placeholder={stocks ? "搜索股票代码" : "搜索创作者"}
       />
-      <ResourceState skeleton={<CardsSkeleton lines={[{ size: 16, width: "20%" }, { size: 16, width: "60%", lines: 2 }]} buttons={1} />}
+      <ResourceState
+        skeleton={
+          <CardsSkeleton
+            lines={[
+              { size: 16, width: "20%" },
+              { size: 16, width: "60%", lines: 2 },
+            ]}
+            buttons={1}
+          />
+        }
         resource={r}
         empty={!r.data?.creators.length}
         message="暂无收录资料"
@@ -79,6 +94,7 @@ function Directory({ stocks }: { stocks: boolean }) {
                 {number(c.total_opinions, 0)} 条观点 ·{" "}
                 {c.top_tickers?.map((x) => x.ticker).join(" / ")}
               </Copy>
+              <CoverageNote channelId={c.channel_id} />
               <Button
                 onPress={() =>
                   router.push(
@@ -100,7 +116,13 @@ function XDirectory() {
   const r = useResource("x-creators", xCreators);
   return (
     <>
-      <ResourceState skeleton={<CardsSkeleton lines={[{ size: 16 }, { size: 16, width: "70%", lines: 2 }]} buttons={1} />}
+      <ResourceState
+        skeleton={
+          <CardsSkeleton
+            lines={[{ size: 16 }, { size: 16, width: "70%", lines: 2 }]}
+            buttons={1}
+          />
+        }
         resource={r}
         empty={!r.data?.creators.length}
         message="暂无 X 博主"
@@ -129,7 +151,17 @@ function VideoFeed() {
   const r = useResource(`videos:${page}`, (s) => videos(page, s));
   return (
     <>
-      <ResourceState skeleton={<CardsSkeleton lines={[{ size: 16, width: "50%", lines: 2 }, { size: 16, width: "40%" }, { size: 16, width: "60%", lines: 3 }]} buttons={1} />}
+      <ResourceState
+        skeleton={
+          <CardsSkeleton
+            lines={[
+              { size: 16, width: "50%", lines: 2 },
+              { size: 16, width: "40%" },
+              { size: 16, width: "60%", lines: 3 },
+            ]}
+            buttons={1}
+          />
+        }
         resource={r}
         empty={!r.data?.videos.length}
         message="暂无视频"

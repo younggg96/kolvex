@@ -16,9 +16,13 @@ import {
 import { ConfirmAction } from "../components/ConfirmAction";
 import { MutationStatus } from "../components/MutationStatus";
 import { AdminBriefs, AdminSourceEditor } from "../components/AdminEditors";
+import { OptionsActivityAdmin } from "../components/OptionsActivityAdmin";
 export default function Admin() {
   return (
-    <AuthGate skeleton={<CardsSkeleton count={2} lines={[{ size: 16 }]} padding={16} />} title="管理中心">
+    <AuthGate
+      skeleton={<CardsSkeleton count={2} lines={[{ size: 16 }]} padding={16} />}
+      title="管理中心"
+    >
       <Gate />
     </AuthGate>
   );
@@ -29,7 +33,14 @@ function Gate() {
   if (!r.data)
     return (
       <Page title="管理中心">
-        <ResourceState skeleton={<CardsSkeleton count={2} lines={[{ size: 16 }]} padding={16} />} resource={r} empty={false} message="读取权限中" />
+        <ResourceState
+          skeleton={
+            <CardsSkeleton count={2} lines={[{ size: 16 }]} padding={16} />
+          }
+          resource={r}
+          empty={false}
+          message="读取权限中"
+        />
       </Page>
     );
   return r.data.is_admin ? (
@@ -55,6 +66,7 @@ function AdminContent({ user }: { user: string }) {
           ["events", "市场事件"],
           ["youtube", "YouTube"],
           ["x", "X 内容"],
+          ["options", "期权异动"],
         ]}
         value={tab}
         onChange={setTab}
@@ -65,6 +77,8 @@ function AdminContent({ user }: { user: string }) {
         <Users user={user} />
       ) : tab === "briefs" ? (
         <AdminBriefs user={user} />
+      ) : tab === "options" ? (
+        <OptionsActivityAdmin user={user} />
       ) : (
         <AdminSourceEditor
           key={tab}
@@ -85,7 +99,14 @@ function Overview({ user }: { user: string }) {
   );
   return (
     <>
-      <ResourceState skeleton={<CardsSkeleton count={4} lines={[{ size: 16 }]} padding={16} />} resource={r} empty={!r.data} message="没有概览数据" />
+      <ResourceState
+        skeleton={
+          <CardsSkeleton count={4} lines={[{ size: 16 }]} padding={16} />
+        }
+        resource={r}
+        empty={!r.data}
+        message="没有概览数据"
+      />
       {Object.entries(r.data?.tables || {}).map(([name, count]) => (
         <Glass key={name} style={{ padding: 16 }}>
           <Copy>
@@ -128,7 +149,13 @@ function Users({ user }: { user: string }) {
       >
         搜索
       </Button>
-      <ResourceState skeleton={<CardsSkeleton lines={[{ size: 16 }, { size: 16, width: "50%" }]} buttons={1} />}
+      <ResourceState
+        skeleton={
+          <CardsSkeleton
+            lines={[{ size: 16 }, { size: 16, width: "50%" }]}
+            buttons={1}
+          />
+        }
         resource={r}
         empty={!r.data?.users.length}
         message="无匹配用户"

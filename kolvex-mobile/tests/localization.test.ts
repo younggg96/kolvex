@@ -18,7 +18,7 @@ test("dynamic labels retain ticker, provider and status values", () => {
     translate("服务暂时不可用（503），请稍后重试。", "en"),
     "Service temporarily unavailable (503). Please retry later.",
   );
-  assert.equal(translate("  自选  ", "en"), "  Watchlist  ");
+  assert.equal(translate("  自选股  ", "en"), "  Watchlist  ");
 });
 test("template translations never lose or introduce interpolation fields", () => {
   for (const [source, en] of Object.entries(templates)) {
