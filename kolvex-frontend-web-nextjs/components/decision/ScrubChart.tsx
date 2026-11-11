@@ -66,7 +66,7 @@ export default function ScrubChart({
             dataKey="value"
             stroke={stroke}
             strokeWidth={2}
-            dot={false}
+            dot={data.length === 1 ? { r: 3, fill: stroke } : false}
             activeDot={{ r: 4.5, fill: stroke, stroke: "rgb(var(--background))", strokeWidth: 3 }}
             isAnimationActive={false}
           />

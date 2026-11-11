@@ -33,6 +33,15 @@ test("employment converts thousands into Chinese ten-thousands without changing 
   assert.equal(helpers.indicatorValue(0, "percent", "en-US"), "0.00%");
   assert.equal(helpers.indicatorValue(null, "percent", "en-US"), "—");
 });
+test("short chart windows respect publication frequency and calendar boundaries", () => {
+  const data = ["2023-03-31", "2024-02-29", "2024-03-22", "2024-03-28", "2024-03-31"].map((date) => ({ date, value: 1 }));
+  assert.deepEqual(helpers.macroHistory(data, "daily", "1D"), data.slice(-2));
+  assert.deepEqual(helpers.macroHistory(data, "monthly", "1D"), data.slice(-1));
+  assert.deepEqual(helpers.macroHistory(data, "daily", "1W"), data.slice(-2));
+  assert.deepEqual(helpers.macroHistory(data, "daily", "1M"), data.slice(1));
+  assert.deepEqual(helpers.macroHistory(data, "daily", "1Y"), data);
+  assert.equal(helpers.macroHistory([], "daily", "1D").length, 0);
+});
 test("economic proxy is authenticated, private, and reads the government snapshot", async () => {
   let sent;
   const proxy = load("app/api/market/indicators/route.ts", {

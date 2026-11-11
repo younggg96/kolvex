@@ -25,7 +25,7 @@ UTC = timezone.utc
 CACHE_KEY = "macro:government:v1"
 LEASE_KEY = "macro:government:refresh"
 REFRESH_HOURS = 6
-FRED_IDS = ("DGS2", "DGS10", "CPIAUCNS", "CPILFENS", "UNRATE", "PAYEMS", "A191RL1Q225SBEA")
+FRED_IDS = ("DGS2", "DGS10", "DGS30", "CPIAUCNS", "CPILFENS", "UNRATE", "PAYEMS", "A191RL1Q225SBEA")
 
 
 @dataclass(frozen=True)
@@ -46,6 +46,7 @@ class Indicator:
 INDICATORS = (
     Indicator("us2y", "2-year Treasury yield", "2年美债收益率", "rates", "daily", "percent", "bp", "Federal Reserve via FRED", "https://fred.stlouisfed.org/series/DGS2", "DGS2"),
     Indicator("us10y", "10-year Treasury yield", "10年美债收益率", "rates", "daily", "percent", "bp", "Federal Reserve via FRED", "https://fred.stlouisfed.org/series/DGS10", "DGS10"),
+    Indicator("us30y", "30-year Treasury yield", "30年美债收益率", "rates", "daily", "percent", "bp", "Federal Reserve via FRED", "https://fred.stlouisfed.org/series/DGS30", "DGS30"),
     Indicator("spread", "10Y − 2Y yield spread", "10年－2年美债利差", "rates", "daily", "pp", "bp", "Federal Reserve via FRED", "https://fred.stlouisfed.org/series/T10Y2Y", "DGS10 − DGS2", "spread"),
     Indicator("cpi", "CPI inflation, YoY", "CPI 同比", "inflation", "monthly", "percent", "pp", "BLS via FRED", "https://fred.stlouisfed.org/series/CPIAUCNS", "CPIAUCNS", "yoy"),
     Indicator("core_cpi", "Core CPI inflation, YoY", "核心 CPI 同比", "inflation", "monthly", "percent", "pp", "BLS via FRED", "https://fred.stlouisfed.org/series/CPILFENS", "CPILFENS", "yoy"),

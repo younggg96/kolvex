@@ -82,10 +82,13 @@ class EconomicCalculationTests(unittest.TestCase):
         self.assertIsNone(item["change"])
 
     def test_daily_yields_preserve_zero_and_skip_holiday_missing_values(self):
-        content = b"observation_date,DGS2,DGS10\n2026-10-21,0,4.9\n2026-10-22,.,\n2027-01-01,99,99\n"
+        content = b"observation_date,DGS2,DGS10,DGS30\n2026-10-21,0,4.9,5.01\n2026-10-22,.,,.\n2026-10-23,,,5.06\n2027-01-01,99,99,99\n"
         parsed = economic.parse_fred(content, NOW.date(), date(2020, 1, 1))
         self.assertEqual(parsed["DGS2"], {date(2026, 10, 21): 0})
         self.assertEqual(parsed["DGS10"], {date(2026, 10, 21): 4.9})
+        item = economic.build_indicator(spec("us30y"), parsed, NOW)
+        self.assertEqual((item["value"], item["unit"], item["change"], item["change_unit"]), (5.06, "percent", 5, "bp"))
+        self.assertEqual([point["date"] for point in item["history"]], ["2026-10-21", "2026-10-23"])
 
 
 class EconomicServiceTests(unittest.IsolatedAsyncioTestCase):

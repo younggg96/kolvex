@@ -9,24 +9,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useIsPhone } from "@/hooks/useIsPhone";
 import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
-import { EconomicRequestError, getEconomicIndicators, indicatorPeriod, indicatorValue, type EconomicIndicator, type EconomicSnapshot } from "@/lib/economicIndicators";
+import { EconomicRequestError, getEconomicIndicators, indicatorPeriod, indicatorValue, type EconomicIndicator, macroHistory, MACRO_RANGES, type MacroRange } from "@/lib/economicIndicators";
 import ScrubChart, { type ScrubPoint } from "./ScrubChart";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { MarketRefreshButton, MarketToolbarControls } from "./MarketToolbar";
 import { useCopy } from "./shared";
 import { useDecisionCommand } from "./CommandLayer";
-
-const RANGES = [1, 3, 5] as const;
+import FedCutChart from "./FedCutChart";
 
 /** Facts shared by the desktop card and the compact phone row. */
-function useIndicatorFacts(indicator: EconomicIndicator, years: number) {
+function useIndicatorFacts(indicator: EconomicIndicator, range: MacroRange) {
   const c = useCopy();
-  const history = useMemo(() => {
-    const latest = indicator.history.at(-1)?.date;
-    if (!latest) return [];
-    const cutoff = `${Number(latest.slice(0, 4)) - years}${latest.slice(4)}`;
-    return indicator.history.filter((point) => point.date >= cutoff);
-  }, [indicator.history, years]);
+  const history = useMemo(() => macroHistory(indicator.history, indicator.frequency, range), [indicator.history, indicator.frequency, range]);
+  const selected = MACRO_RANGES.find((option) => option.value === range)!;
   const name = c(indicator.name_en, indicator.name_zh);
   const rangeChange = history.length > 1 ? history[history.length - 1].value - history[0].value : 0;
   return {
@@ -37,7 +32,8 @@ function useIndicatorFacts(indicator: EconomicIndicator, years: number) {
     frequency: indicator.frequency === "daily" ? c("Daily", "日度") : indicator.frequency === "monthly" ? c("Monthly", "月度") : c("Quarterly", "季度"),
     comparison: indicator.frequency === "daily" ? c("vs. prior observation", "较前一观测日") : indicator.frequency === "monthly" ? c("vs. prior month", "较前月") : c("vs. prior quarter", "较前季"),
     method: indicator.method === "yoy" ? c("Not seasonally adjusted · year-over-year", "未季调 · 同比") : indicator.id === "gdp" ? c("Seasonally adjusted · annualized QoQ", "季调 · 季环比折年率") : indicator.id === "payrolls" ? c("Seasonally adjusted · monthly jobs added", "季调 · 当月就业人数净增") : indicator.id === "unemployment" ? c("Seasonally adjusted · U-3", "季调 · U-3 失业率") : indicator.method === "spread" ? c("10-year minus 2-year · same date", "同日10年收益率减2年收益率") : c("Daily constant-maturity Treasury yield", "日度国债固定期限收益率"),
-    chartLabel: c(`${name}, ${years} year history, ${rangeChange > 0 ? "up" : rangeChange < 0 ? "down" : "unchanged"} over this range`, `${name}，近${years}年走势，区间${rangeChange > 0 ? "上升" : rangeChange < 0 ? "下降" : "持平"}`),
+    chartLabel: c(`${name}, ${selected.en} history`, `${name}，近${selected.zh}走势`) +
+      (history.length < 2 ? "" : rangeChange > 0 ? c(" · rising", " · 上升") : rangeChange < 0 ? c(" · falling", " · 下降") : c(" · unchanged", " · 持平")),
     baseline: indicator.id === "spread" || indicator.id === "gdp" ? 0 : undefined,
   };
 }
@@ -66,11 +62,12 @@ function RecentValues({ indicator, name, locale }: { indicator: EconomicIndicato
 }
 
 /** One line per indicator, so a phone shows the whole set; details open in place. */
-function IndicatorRow({ indicator, years, locale }: { indicator: EconomicIndicator; years: number; locale: string }) {
+function IndicatorRow({ indicator, range, locale }: { indicator: EconomicIndicator; range: MacroRange; locale: string }) {
   const c = useCopy();
-  const facts = useIndicatorFacts(indicator, years);
+  const facts = useIndicatorFacts(indicator, range);
   const [open, setOpen] = useState(false);
   const [scrub, setScrub] = useState<ScrubPoint | null>(null);
+  useEffect(() => setScrub(null), [facts.history]);
   const signed = indicator.id === "payrolls" || indicator.id === "spread";
   return (
     <li className="border-b border-border/60 last:border-b-0">
@@ -93,7 +90,7 @@ function IndicatorRow({ indicator, years, locale }: { indicator: EconomicIndicat
           <div className="pb-3 text-xs leading-5 text-muted-foreground">
             <p>{scrub ? <><span className="figure font-medium text-foreground">{indicatorValue(scrub.value, indicator.unit, locale, signed)}</span> · {indicatorPeriod(indicator, scrub.date, locale)}</> : <>{facts.comparison} · {facts.method}</>}</p>
             <div className="mt-2 h-28 [--positive-fill:var(--positive)] [--negative-fill:var(--negative)]">
-              {facts.history.length > 1 ? <ScrubChart data={facts.history} positive={facts.rangeChange >= 0} tone={facts.rangeChange === 0 ? "neutral" : "direction"} height="100%" baseline={facts.baseline} onScrub={setScrub} label={facts.chartLabel} /> : <p role="status" className="flex h-full items-center justify-center">{c("History unavailable", "暂无历史走势")}</p>}
+              {facts.history.length > 0 ? <ScrubChart data={facts.history} positive={facts.rangeChange >= 0} tone={facts.rangeChange === 0 ? "neutral" : "direction"} height="100%" baseline={facts.baseline} onScrub={setScrub} label={facts.chartLabel} /> : <p role="status" className="flex h-full items-center justify-center">{c("History unavailable", "暂无历史走势")}</p>}
             </div>
             <IndicatorStatus indicator={indicator} />
             <IndicatorSource indicator={indicator} name={facts.name} />
@@ -105,9 +102,9 @@ function IndicatorRow({ indicator, years, locale }: { indicator: EconomicIndicat
   );
 }
 
-function IndicatorCard({ indicator, years, locale }: { indicator: EconomicIndicator; years: number; locale: string }) {
+function IndicatorCard({ indicator, range, locale }: { indicator: EconomicIndicator; range: MacroRange; locale: string }) {
   const c = useCopy();
-  const { history, name, rangeChange, deltaTone, frequency, comparison, method, chartLabel, baseline } = useIndicatorFacts(indicator, years);
+  const { history, name, rangeChange, deltaTone, frequency, comparison, method, chartLabel, baseline } = useIndicatorFacts(indicator, range);
   const [scrub, setScrub] = useState<ScrubPoint | null>(null);
   useEffect(() => setScrub(null), [history]);
   const period = scrub?.date ?? indicator.period;
@@ -125,7 +122,7 @@ function IndicatorCard({ indicator, years, locale }: { indicator: EconomicIndica
         {scrub ? c("Historical observation", "历史观测值") : indicator.change === null ? c("Previous-period change unavailable", "暂无上期变动") : <><span className={cn("figure font-medium", deltaTone)}>{indicatorValue(indicator.change, indicator.change_unit, locale, true)}</span><span className="ml-1.5">{comparison}</span></>}
       </p>
       <div className="mt-3 h-24 [--positive-fill:var(--positive)] [--negative-fill:var(--negative)]">
-        {history.length > 1 ? <ScrubChart data={history} positive={rangeChange >= 0} tone={rangeChange === 0 ? "neutral" : "direction"} height="6rem" baseline={baseline} onScrub={setScrub} label={chartLabel} /> : <div role="status" className="flex h-full items-center justify-center text-xs text-muted-foreground">{c("History unavailable", "暂无历史走势")}</div>}
+        {history.length > 0 ? <ScrubChart data={history} positive={rangeChange >= 0} tone={rangeChange === 0 ? "neutral" : "direction"} height="6rem" baseline={baseline} onScrub={setScrub} label={chartLabel} /> : <div role="status" className="flex h-full items-center justify-center text-xs text-muted-foreground">{c("History unavailable", "暂无历史走势")}</div>}
       </div>
       <p className="mt-3 min-h-5 text-xs leading-5 text-muted-foreground">{method}</p>
       <IndicatorStatus indicator={indicator} />
@@ -148,7 +145,7 @@ export default function MacroIndicators({ toolbar }: { toolbar: HTMLElement | nu
   const snapshot = resource.data ?? null;
   const error = resource.error ? resource.error instanceof EconomicRequestError ? resource.error.status : 503 : null;
   const loading = resource.loading;
-  const [years, setYears] = useState<number>(3);
+  const [range, setRange] = useState<MacroRange>("3Y");
   const isPhone = useIsPhone();
 
   const context = JSON.stringify({ workspace: "Markets / Economic indicators", snapshot, requestFailed: error !== null });
@@ -160,22 +157,24 @@ export default function MacroIndicators({ toolbar }: { toolbar: HTMLElement | nu
     <section aria-labelledby="economic-indicators-heading" className="pt-2 max-md:pt-0">
       <h1 id="economic-indicators-heading" className="sr-only">{c("Macro indicators", "宏观指标")}</h1>
       <MarketToolbarControls toolbar={toolbar}>
-        <SegmentedControl label={c("Indicator history range", "指标走势区间")} value={String(years)} onChange={(value) => setYears(Number(value))} className="border border-border max-md:flex-1" itemClassName="!min-h-9 max-md:!min-h-8 max-md:!flex-1 max-md:!text-[0.8125rem]" options={RANGES.map((range) => ({ value: String(range), label: c(`${range}Y`, `${range}年`) }))} />
+        <SegmentedControl<MacroRange> size="sm" label={c("Indicator history range", "指标走势区间")} value={range} onChange={setRange} className="border border-border max-md:flex-1" itemClassName="!min-h-9 max-md:!min-w-0 max-md:!flex-1 max-md:!px-0" options={MACRO_RANGES.map((option) => ({ value: option.value, label: c(option.value, option.zh), ariaLabel: c(option.en, option.zh) }))} />
         <MarketRefreshButton refreshing={resource.refreshing} onClick={resource.refresh} />
       </MarketToolbarControls>
       <div aria-live="polite" aria-atomic="true" className={notice ? "mt-4 text-sm leading-6 text-muted-foreground" : "sr-only"}>{notice && <p>{notice}</p>}{loading && !snapshot && <p>{c("Loading official economic indicators", "正在加载官方宏观指标")}</p>}</div>
       {error === 401 && <Button asChild variant="outline" size="sm" className="mb-4 rounded-full"><Link href="/auth?redirectTo=%2Fdashboard%3Ftab%3Dmacro">{c("Sign in", "重新登录")}</Link></Button>}
+      <FedCutChart />
+      {range === "1D" && <p className="mt-3 text-xs leading-5 text-muted-foreground">{c("Daily series compare the last two observations. Monthly and quarterly series show the latest release.", "日度指标对比最近两次观测；月度和季度指标只显示最新一期。")}</p>}
       {isPhone ? (
         <ul className="mt-[16px] rounded-3xl border border-foreground/10 glass-card bg-card-glass px-3" aria-busy={loading}>
-          {loading && !snapshot ? Array.from({ length: 8 }, (_, index) => <li key={index} aria-hidden="true" className="border-b border-border/60 last:border-b-0"><div className="grid min-h-16 grid-cols-[minmax(0,1fr)_3.5rem_minmax(5rem,auto)_1rem] items-center gap-2 py-2">
+          {loading && !snapshot ? Array.from({ length: 9 }, (_, index) => <li key={index} aria-hidden="true" className="border-b border-border/60 last:border-b-0"><div className="grid min-h-16 grid-cols-[minmax(0,1fr)_3.5rem_minmax(5rem,auto)_1rem] items-center gap-2 py-2">
             <span className="flex flex-col gap-1.5"><Skeleton className={cn("h-4 rounded-md", index % 2 ? "w-24" : "w-32")} /><Skeleton className="h-3 w-20 rounded-md" /></span>
             <Skeleton className="h-8 w-full rounded-lg" />
             <span className="flex flex-col items-end gap-1.5"><Skeleton className="h-5 w-14 rounded-md" /><Skeleton className="h-3 w-10 rounded-md" /></span>
             <Skeleton className="h-3.5 w-3.5 rounded" />
-          </div></li>) : snapshot?.indicators.map((indicator) => <IndicatorRow key={indicator.id} indicator={error && indicator.value !== null ? { ...indicator, status: "stale" } : indicator} years={years} locale={intlLocale} />)}
+          </div></li>) : snapshot?.indicators.map((indicator) => <IndicatorRow key={indicator.id} indicator={error && indicator.value !== null ? { ...indicator, status: "stale" } : indicator} range={range} locale={intlLocale} />)}
         </ul>
       ) : <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(min(100%,16.25rem),1fr))] items-start gap-4" aria-busy={loading}>
-        {loading && !snapshot ? Array.from({ length: 8 }, (_, index) => <div key={index} aria-hidden="true" className="min-w-0 rounded-3xl border border-foreground/10 glass-card bg-card-glass p-4">
+        {loading && !snapshot ? Array.from({ length: 9 }, (_, index) => <div key={index} aria-hidden="true" className="min-w-0 rounded-3xl border border-foreground/10 glass-card bg-card-glass p-4">
           <div className="flex items-start justify-between gap-3"><Skeleton className="h-5 w-32 rounded-md" /><Skeleton className="h-3.5 w-12 rounded-md" /></div>
           <Skeleton className="mt-1.5 h-3 w-20 rounded-md" />
           <Skeleton className="mt-2 h-9 w-28 rounded-lg" />
@@ -183,7 +182,7 @@ export default function MacroIndicators({ toolbar }: { toolbar: HTMLElement | nu
           <Skeleton className="mt-3 h-24 w-full rounded-xl" />
           <Skeleton className="mt-3 h-3.5 w-40 rounded-md" />
           <div className="mt-3 border-t border-border/60 pt-1"><div className="flex min-h-10 items-center justify-between px-2"><Skeleton className="h-3 w-20 rounded-md" /><Skeleton className="h-3.5 w-3.5 rounded" /></div></div>
-        </div>) : snapshot?.indicators.map((indicator) => <IndicatorCard key={indicator.id} indicator={error && indicator.value !== null ? { ...indicator, status: "stale" } : indicator} years={years} locale={intlLocale} />)}
+        </div>) : snapshot?.indicators.map((indicator) => <IndicatorCard key={indicator.id} indicator={error && indicator.value !== null ? { ...indicator, status: "stale" } : indicator} range={range} locale={intlLocale} />)}
       </div>}
       {!loading && !snapshot?.indicators.length && <p className="py-12 text-center text-sm text-muted-foreground">{c("No indicators to display. Try refreshing.", "暂无可显示的指标，请尝试刷新。")}</p>}
       <details open={isPhone ? undefined : true} key={isPhone ? "phone" : "wide"} className="mt-5 text-xs leading-6 text-muted-foreground">

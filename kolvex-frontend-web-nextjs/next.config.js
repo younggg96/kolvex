@@ -173,6 +173,7 @@ const nextConfig = {
         https://twitter.com
         https://www.youtube.com
         https://embed.reddit.com
+        https://embed.polymarket.com
         https://*.tradingview.com
         https://*.financialjuice.com
         https://feed.financialjuice.com
