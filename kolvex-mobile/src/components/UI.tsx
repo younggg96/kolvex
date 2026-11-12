@@ -901,7 +901,7 @@ export function Search({
         style={{
           flex: 1,
           minHeight: 48,
-          fontSize: 16,
+          fontSize: phone(16),
           color: t.text,
           paddingVertical: 12,
         }}

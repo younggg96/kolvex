@@ -1,4 +1,10 @@
-"""Validated, directly reported revenue observations from the chat tool."""
+"""Validated, directly reported revenue observations from the chat tool.
+
+Source "sec": a fact from a 10-K/10-Q, with its filing date and filing link.
+Source "yahoo": Yahoo Finance's reported income statement, used only when SEC has no
+directly reported period (foreign filers on 20-F/6-K such as TSM). Yahoo gives a period
+end but neither a start nor a filing date, so those stay empty.
+"""
 
 from datetime import date
 from typing import Annotated, Literal
@@ -12,12 +18,14 @@ class RevenueEvidence(BaseModel):
     value: Annotated[float, Field(allow_inf_nan=False)]
     currency: Annotated[str, Field(pattern=r"^[A-Z]{3}$")]
     period_kind: Literal["quarterly", "annual"]
-    period_start: date
+    period_start: date | None = None
     period_end: date
-    filed_on: date
+    filed_on: date | None = None
     source_url: Annotated[str, Field(
-        pattern=r"^https://www\.sec\.gov/Archives/edgar/data/\d+/\d{18}/\d{10}-\d{2}-\d{6}-index\.html$"
+        pattern=r"^(https://www\.sec\.gov/Archives/edgar/data/\d+/\d{18}/\d{10}-\d{2}-\d{6}-index\.html"
+                r"|https://finance\.yahoo\.com/quote/[A-Z0-9.-]{1,32}/financials/)$"
     )]
+    source: Literal["sec", "yahoo"] = "sec"
     # Set only on the latest period of a year-over-year comparison, by the server.
     year_over_year_pct: Annotated[float, Field(allow_inf_nan=False)] | None = None
     compared_period_end: date | None = None
@@ -25,8 +33,14 @@ class RevenueEvidence(BaseModel):
 
     @model_validator(mode="after")
     def validate_dates(self):
-        if not self.period_start <= self.period_end <= self.filed_on:
-            raise ValueError("Invalid reporting or filing dates")
+        if self.source == "sec" and (self.period_start is None or self.filed_on is None):
+            raise ValueError("SEC evidence needs its reporting start and filing date")
+        if self.period_start and self.period_start > self.period_end:
+            raise ValueError("Invalid reporting dates")
+        if self.filed_on and self.period_end > self.filed_on:
+            raise ValueError("Filed before the period ended")
+        if self.source.startswith("sec") != self.source_url.startswith("https://www.sec.gov/"):
+            raise ValueError("Source and link disagree")
         return self
 
 

@@ -384,6 +384,11 @@
       "interrupted": "回答已中断"
     },
     "tools": {
+      "get_user_watchlist": "读取你的自选股",
+      "get_daily_brief": "读取市场日报",
+      "get_options_chain_summary": "查看期权链",
+      "run_trading_analysis": "运行交易分析",
+      "generic": "查询更多数据",
       "get_plaid_account": "读取 Plaid 账户与持仓",
       "get_plaid_stock_trades": "读取 Plaid 股票交易",
       "get_plaid_option_trades": "读取 Plaid 期权交易",
@@ -433,12 +438,15 @@
       "annual": "年度营收",
       "period": "报告期",
       "filed": "SEC 申报日",
-      "openSource": "查看 {symbol} 的 SEC 文件",
+      "openSource": "查看 {symbol} 的营收来源",
       "yoy": "同比",
       "comparedWith": "对比 {date} 止",
-      "yoyUnavailable": "缺少可比的去年同期数据"
+      "yoyUnavailable": "缺少可比的去年同期数据",
+      "periodEnding": "截至 {date}"
     },
     "quoteEvidence": {
+      "collapse": "收起",
+      "expand": "展开其余 {count} 条行情",
       "title": "行情证据",
       "unknownTime": "报价时间未知",
       "unknownCurrency": "币种未知",

@@ -63,49 +63,89 @@ def get_stock_financials(symbol: str) -> str:
         return json.dumps({"error": f"Failed to get financials for {symbol}: {str(e)}"})
 
 
+def _sec_revenue(history: dict, period: str) -> list[RevenueEvidence]:
+    facts = []
+    for row in history[period]:
+        source = row["sources"].get("revenue")
+        if not source or source.get("derived") is not False:
+            continue
+        try:
+            facts.append(RevenueEvidence(
+                symbol=history["symbol"], value=row["revenue"], currency=history["currency"],
+                period_kind=period, period_start=row["start"], period_end=row["period"],
+                filed_on=source["filed"], source_url=source["source_url"],
+            ))
+        except ValidationError:
+            continue
+    return facts
+
+
+def _yahoo_revenue(symbol: str, period: str) -> list[RevenueEvidence]:
+    """Yahoo's reported income statement, newest first, in the company's financial currency."""
+    ticker = get_yfinance_service().get_ticker(symbol)
+    frame = ticker.quarterly_income_stmt if period == "quarterly" else ticker.income_stmt
+    currency = (ticker.info or {}).get("financialCurrency")
+    if frame is None or frame.empty or "Total Revenue" not in frame.index or not currency:
+        return []
+    symbol = symbol.upper()
+    facts = []
+    for end, value in frame.loc["Total Revenue"].items():
+        if value is None or not math.isfinite(float(value)):
+            continue  # Yahoo pads older columns with NaN
+        try:
+            facts.append(RevenueEvidence(
+                symbol=symbol, value=float(value), currency=currency, period_kind=period,
+                period_end=end.date(), source="yahoo",
+                source_url=f"https://finance.yahoo.com/quote/{symbol}/financials/",
+            ))
+        except (ValidationError, AttributeError):
+            continue
+    return sorted(facts, key=lambda f: f.period_end, reverse=True)
+
+
+def _comparable(latest: RevenueEvidence, prior: RevenueEvidence) -> bool:
+    # Fiscal weeks can move period boundaries by up to a week from year to year.
+    gaps = [(latest.period_end - prior.period_end).days]
+    if latest.period_start and prior.period_start:
+        gaps.append((latest.period_start - prior.period_start).days)
+    return all(358 <= gap <= 373 for gap in gaps)
+
+
 @tool
 async def get_reported_revenue(
     symbol: str,
     period: Literal["quarterly", "annual"] = "quarterly",
     year_over_year: bool = False,
 ) -> str:
-    """Get up to two latest directly reported quarterly or annual revenue figures from SEC EDGAR.
-    Includes reporting dates, currency, SEC filing date, and the original filing link.
+    """Get up to two latest directly reported quarterly or annual revenue figures.
+    Uses SEC EDGAR (10-K/10-Q) with the filing date and original filing link. When SEC has no
+    directly reported period, e.g. foreign companies filing 20-F/6-K such as TSM, falls back to
+    Yahoo Finance's reported income statement, in the company's reporting currency (source "yahoo").
     Derived quarters and TTM are excluded. Use annual only when the user asks for full-year revenue.
     Set year_over_year to true to compare the latest directly reported period with the same
     period a year earlier and return a server-calculated percentage, if comparable data exists.
     """
+    facts: list[RevenueEvidence] = []
     try:
-        history = await sec_client.financials(symbol)
+        facts = _sec_revenue(await sec_client.financials(symbol), period)
     except (SecNotFound, SecUnavailable):
-        return json.dumps({"error": "SEC revenue data unavailable for this symbol"})
-
-    evidence = []
-    for row in history[period]:
-        source = row["sources"].get("revenue")
-        if not source or source.get("derived") is not False:
-            continue
+        pass
+    if not facts:
         try:
-            fact = RevenueEvidence(
-                symbol=history["symbol"], value=row["revenue"], currency=history["currency"],
-                period_kind=period, period_start=row["start"], period_end=row["period"],
-                filed_on=source["filed"], source_url=source["source_url"],
-            )
-        except ValidationError:
+            facts = await asyncio.to_thread(_yahoo_revenue, symbol, period)
+        except Exception as error:  # noqa: BLE001
+            logger.warning(f"Yahoo revenue fallback failed for {symbol}: {error}")
+
+    evidence: list[RevenueEvidence] = []
+    for fact in facts:
+        if year_over_year and evidence and not _comparable(evidence[0], fact):
             continue
-        if year_over_year and evidence:
-            latest = evidence[0]
-            # Fiscal weeks can move period boundaries by up to a week from year to year.
-            start_gap = (latest.period_start - fact.period_start).days
-            end_gap = (latest.period_end - fact.period_end).days
-            if not (358 <= start_gap <= 373 and 358 <= end_gap <= 373):
-                continue
         evidence.append(fact)
         if len(evidence) == 2:
             break
 
     if not evidence:
-        return json.dumps({"error": "No directly reported SEC revenue for this period"})
+        return json.dumps({"error": "No directly reported revenue for this period from SEC or Yahoo Finance"})
     if not year_over_year:
         return json.dumps([fact.model_dump(mode="json", exclude_none=True) for fact in evidence])
 

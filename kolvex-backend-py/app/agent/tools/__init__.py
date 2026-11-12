@@ -16,6 +16,7 @@ from app.agent.tools.stock_tools import (
     get_company_info,
 )
 from app.agent.tools.brief_tools import get_daily_brief
+from app.agent.tools.news_flash_tools import search_news_flashes
 from app.agent.tools.watchlist_tools import create_watchlist_tool_for_user
 from app.agent.tools.portfolio_tools import (
     get_user_portfolio,
@@ -63,6 +64,7 @@ FINANCIAL_TOOLS = [
     get_options_chain_summary,
     get_creator_opinions,
     get_daily_brief,
+    search_news_flashes,
     web_search,
 ]
 
@@ -76,6 +78,7 @@ RESEARCH_TOOLS = [
     get_options_chain_summary,
     get_creator_opinions,
     get_daily_brief,
+    search_news_flashes,
     web_search,
 ]
 
@@ -107,6 +110,7 @@ _CHAT_TOOL_SKILLS = {
     "get_user_portfolio": "portfolio",
     "get_user_watchlist": "market",
     "get_daily_brief": "news",
+    "search_news_flashes": "news",
 }
 
 
@@ -180,4 +184,5 @@ __all__ = [
     "create_trading_analysis_tool",
     "get_creator_opinions",
     "get_daily_brief",
+    "search_news_flashes",
 ]

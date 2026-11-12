@@ -33,6 +33,7 @@ import { MARKET_RANGES } from "@/lib/marketObservations";
 import { Change, Empty, HeldMark, Panel, TextLink, money, useCopy, useCreatorCatalogue, useHeldTickers } from "./shared";
 import StockTrend from "./StockTrend";
 import WatchlistButton from "./WatchlistButton";
+import StockSearchSuggestions from "./StockSearchSuggestions";
 
 const ROW_GRID = "grid grid-cols-[minmax(0,1fr)_80px] gap-x-2 min-[360px]:grid-cols-[minmax(0,1fr)_60px_80px] sm:grid-cols-[minmax(0,1fr)_100px_100px] sm:gap-x-4";
 const scopes: { key: StockScope; en: string; zh: string }[] = [
@@ -73,6 +74,7 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
   const [searchDraft, setSearchDraft] = useState(state.search ?? "");
   const searchRef = useRef<HTMLInputElement>(null);
   const composing = useRef(false);
+  const [suggestOpen, setSuggestOpen] = useState(false);
   useEffect(() => { if (!composing.current) setSearchDraft(state.search ?? ""); }, [state.search]);
   const [ready, setReady] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -227,7 +229,9 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
             <Input shape="pill" ref={searchRef} id="stock-search" type="text" autoComplete="off" maxLength={100} placeholder={c("Ticker or company name", "股票代码或公司名称")} value={searchDraft}
               className="h-11 pl-10 pr-12" onChange={event => { setSearchDraft(event.target.value); if (!composing.current) commitSearch(event.target.value); }}
               onCompositionStart={() => { composing.current = true; }} onCompositionEnd={event => { composing.current = false; commitSearch(event.currentTarget.value); }}
-              onKeyDown={event => { if (event.key === "Escape" && !composing.current) clearSearch(); }} />
+              onFocus={() => setSuggestOpen(true)} onBlur={event => { if (!event.currentTarget.parentElement?.contains(event.relatedTarget as Node | null)) setSuggestOpen(false); }}
+              onKeyDown={event => { if (event.key === "Escape" && !composing.current) { setSuggestOpen(false); clearSearch(); } }} />
+            {suggestOpen && <StockSearchSuggestions query={searchDraft} onPick={() => setSuggestOpen(false)} />}
             {searchDraft && <Button type="button" variant="icon" size="icon" onClick={clearSearch} aria-label={c("Clear stock search", "清除股票搜索")} className="absolute right-1 top-1 h-9 w-9 shadow-sm"><X className="h-4 w-4" aria-hidden="true" /></Button>}
           </div>
         </div>

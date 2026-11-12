@@ -30,6 +30,7 @@ import re
 from app.agent.answer_check import _NUMBER, _SCALES, check_answer, revenue_claims, stated_numbers
 from app.agent.quote_evidence import extract_quote_evidence
 from app.agent.revenue_evidence import extract_revenue_evidence
+from app.agent.unit_fix import figures_by_trust, fix_unit_slips
 
 DEFAULT_SKILLS = ["market", "fundamentals", "options", "news", "creators"]
 RESULTS_DIR = Path(__file__).parent / "results"
@@ -92,7 +93,7 @@ CASES = [
     # Fundamentals and news both off: no tool in the turn can know revenue. With news on,
     # web_search is a real (if unchecked) source, so that is not a no-data turn.
     Case("skill_off", "NVDA 最新季度营收是多少？", expect_period=None, no_data=True, skills=["market"]),
-    # Files 20-F/6-K, which the SEC parser does not read: the SEC tool has no quarter to return.
+    # Files 20-F/6-K, which the SEC parser does not read: revenue comes from the Yahoo fallback.
     Case("foreign_filer", "台积电 TSM 最新季度营收同比增长多少？", expect_yoy=True),
 ]
 
@@ -169,12 +170,14 @@ def score_run(case: Case, answer: str, tool_calls: list[dict], quotes: list[dict
             for args in revenue_calls
         )
     check = check_answer(answer, quotes, revenues) or {"matched": 0, "mismatch": 0, "unverified": 0, "claims": []}
+    numbers = tool_numbers(tool_outputs or [])
     invented: list[dict] = []
     if case.no_data or case.no_growth:
         matched = {c["text"] for c in check["claims"] if c["status"] == "matched"}
+        # A figure some tool returned (a market cap near the word 营收) was read, not invented.
         invented = [c for c in revenue_claims(answer)
-                    if c["text"] not in matched and (case.no_data or c["kind"] == "percent")]
-    numbers = tool_numbers(tool_outputs or [])
+                    if c["text"] not in matched and not grounded(c, numbers)
+                    and (case.no_data or c["kind"] == "percent")]
     # Operands for derived figures: amounts the answer states (units applied) that a tool returned.
     operands = {c["value"] for c in stated_numbers(answer)
                 if c["kind"] == "money" and grounded(c, numbers)}
@@ -221,11 +224,15 @@ async def run_case(case: Case, model_id: Optional[str]) -> dict[str, Any]:
                    if isinstance(m, AIMessage) and m.content and not m.tool_calls), "")
     answer = answer if isinstance(answer, str) else json.dumps(answer, ensure_ascii=False)
     outputs = [str(m.content) for m in produced if isinstance(m, ToolMessage)]
+    # The same repair the chat applies before saving, so the eval judges what users see.
+    named = [(m.name or "", str(m.content)) for m in produced if isinstance(m, ToolMessage)]
+    answer, unit_fixes = fix_unit_slips(answer, figures_by_trust(named), [r["value"] for r in revenues])
     tool_errors = [text[:200] for text in outputs if '"error"' in text]
     if not answer.strip():
         return {"error": "no final answer", "route": route, "tool_calls": tool_calls}
     return {"route": route, "tool_calls": tool_calls, "tool_errors": tool_errors, "answer": answer,
             "tool_outputs": [text[:20_000] for text in outputs],
+            "unit_fixes": unit_fixes,
             "seconds": round(time.monotonic() - started, 1),
             **score_run(case, answer, tool_calls, quotes, revenues, outputs)}
 

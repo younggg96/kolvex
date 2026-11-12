@@ -30,6 +30,10 @@ class AnswerCheckTests(unittest.TestCase):
         self.assertEqual(verdicts("Revenue was $49.2B."), {"$49.2B": "mismatch"})
         self.assertEqual(verdicts("Revenue was $46.7 million."), {"$46.7 million": "mismatch"})
         self.assertEqual(verdicts("营收同比增长 65%。"), {"65%": "mismatch"})
+        # NT$1,494,243 million written as "1,494,243 亿" is 100x too large.
+        check = check_answer("该季营收（NT$1,494,243 亿）", [], [
+            {"symbol": "TSM", "value": 1_494_243_284_000, "period_end": "2026-09-30"}])
+        self.assertEqual([c["status"] for c in check["claims"]], ["mismatch"])
 
     def test_correct_arithmetic_on_evidence_is_matched(self):
         # 467.43 - 300.40 = 167.03 亿; 467.43 / 300.40 - 1 = 55.6%
@@ -41,6 +45,10 @@ class AnswerCheckTests(unittest.TestCase):
         check = check_answer("合并营收新台币 1 兆 460.9 亿元。", [], [
             {"symbol": "TSM", "value": 1_046_090_000_000, "period_end": "2025-12-31"}])
         self.assertEqual([c["status"] for c in check["claims"]], ["matched"])
+
+    def test_bounds_are_not_mismatches(self):
+        self.assertEqual(verdicts("同比增速超过 50%，属于高速增长。"), {"50%": "unverified"})
+        self.assertEqual(verdicts("50% 以上的同比增长。"), {"50%": "unverified"})
 
     def test_unrelated_figures_are_unverified_not_wrong(self):
         self.assertEqual(verdicts("Gross margin was 72.4%. Analysts target $180. FY2027 Q2."),

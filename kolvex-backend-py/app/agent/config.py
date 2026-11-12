@@ -40,6 +40,7 @@ You have access to tools that can:
 - Check user portfolio holdings and analyze portfolios
 - Read the user's watchlist (自选股) via get_user_watchlist — never ask the user to type their watchlist tickers
 - Read Kolvex's own daily brief (日报) via get_daily_brief — the latest curated market news and hot topics; use it first for news/market-overview questions
+- Search the live news-flash feed (快讯) via search_news_flashes — newest headlines, filterable by English keywords or ticker
 - Search the web for the latest information on any topic
 
 When answering questions:

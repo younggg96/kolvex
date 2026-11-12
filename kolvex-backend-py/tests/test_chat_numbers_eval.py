@@ -33,6 +33,11 @@ class ScoreRunTests(unittest.TestCase):
         honest = score_run(CASE["skill_off"], "I could not retrieve SEC revenue data right now.", [], [], [])
         self.assertEqual(honest["invented"], [])
 
+    def test_tool_figures_near_revenue_words_are_not_invented(self):
+        r = score_run(CASE["skill_off"], "无法查询营收。总市值约 3.97 万亿美元。", [], [], [],
+                      ['{"market_cap": 3970000000000}'])
+        self.assertEqual(r["invented"], [])
+
     def test_missing_prior_year_allows_amounts_but_not_growth(self):
         cards = [{"symbol": "NVDA", "value": 46_743_000_000, "period_end": "2026-07-26"}]
         ok = score_run(CASE["no_prior_year"], "Revenue was $46.7 billion; no prior-year quarter to compare.",

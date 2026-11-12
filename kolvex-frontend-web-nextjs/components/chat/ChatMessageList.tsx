@@ -24,10 +24,10 @@ const USER_SCROLL_THRESHOLD_PX = 12;
 
 // Tool category icons
 function getToolIcon(toolName: string) {
-  if (toolName.includes("stock") || toolName.includes("quote") || toolName.includes("financials") || toolName === "get_reported_revenue" || toolName.includes("history") || toolName.includes("company") || toolName.includes("analyst")) {
+  if (toolName === "get_user_watchlist" || toolName.includes("stock") || toolName.includes("quote") || toolName.includes("financials") || toolName === "get_reported_revenue" || toolName.includes("history") || toolName.includes("company") || toolName.includes("analyst")) {
     return <BarChart3 className="w-3 h-3" />;
   }
-  if (toolName.includes("news") || toolName.includes("trending")) {
+  if (toolName === "get_daily_brief" || toolName.includes("news") || toolName.includes("trending")) {
     return <Newspaper className="w-3 h-3" />;
   }
   if (toolName.includes("portfolio") || toolName.includes("plaid")) {

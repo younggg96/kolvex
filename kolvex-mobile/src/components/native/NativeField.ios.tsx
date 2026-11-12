@@ -10,10 +10,11 @@ import {
   padding,
 } from "@expo/ui/swift-ui/modifiers";
 import { useTheme } from "../../lib/theme";
+import { phone } from "../UI";
 import type { NativeFieldProps } from "./NativeField";
 
 export const nativeFieldAvailable = true;
-const inputFont = font({ textStyle: "callout" });
+const inputFont = font({ size: phone(16) });
 
 /** The iOS native text field: a real SwiftUI `TextField`, controlled from JS state. */
 export default function NativeField({

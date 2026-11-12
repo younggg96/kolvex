@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowUp, Newspaper, Pause, Play, RefreshCw } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
+import { SearchInput } from "@/components/ui/search-input";
 import { ListCard, ListLoadMore, ListToolbar } from "@/components/ui/list-card";
 import { useCopy } from "@/components/decision/shared";
 import { useTranslation } from "@/lib/i18n";
@@ -18,13 +19,20 @@ export default function NewsFeed() {
   const { locale } = useTranslation();
   const terminal = useNewsTerminal();
   const [limit, setLimit] = useState(40);
+  const [query, setQuery] = useState("");
   const scrollArea = useRef<HTMLDivElement>(null);
   const title = c("News terminal", "新闻终端");
 
   useEffect(() => { document.title = `${title} | Kolvex`; }, [title]);
   const articles = terminal.feed.articles;
-  const visibleArticles = articles.slice(0, limit);
-  const translation = useNewsTranslations(visibleArticles, locale);
+  const needle = query.trim().toLowerCase();
+  // While searching, translate every loaded headline so Chinese keywords can match too.
+  const translation = useNewsTranslations(needle ? articles : articles.slice(0, limit), locale);
+  const matches = needle
+    ? articles.filter(article => [article.title, translation.translations[article.title] ?? "", ...(article.symbols ?? [])]
+      .some(text => text.toLowerCase().includes(needle.replace(/^\$/, ""))))
+    : articles;
+  const visibleArticles = matches.slice(0, limit);
   const status = terminal.error || terminal.meta?.stale
     ? c("Update unavailable", "更新异常")
     : terminal.paused ? c("Paused", "已暂停") : c("Auto · 60s", "自动更新 · 60秒");
@@ -53,6 +61,21 @@ export default function NewsFeed() {
                 </Button>
               </div>
             </ListToolbar>
+            <div className="shrink-0 border-b border-border/70 py-2 max-md:px-[16px]">
+              <SearchInput
+                size="sm"
+                containerClassName="w-full md:max-w-sm"
+                className="w-full"
+                aria-label={c("Search headlines", "搜索快讯")}
+                placeholder={c("Search headlines or tickers", "搜索快讯关键词或股票代码")}
+                value={query}
+                onChange={event => { setQuery(event.target.value); setLimit(40); }}
+              />
+              {needle && <p role="status" className="mt-1.5 text-xs text-muted-foreground">
+                {c(`${matches.length} of ${articles.length} headlines match`, `${articles.length} 条中匹配 ${matches.length} 条`)}
+                {translation.pending > 0 && c(" · translating, results may grow", " · 正在翻译，结果可能增加")}
+              </p>}
+            </div>
             {(terminal.error || terminal.meta?.stale) && <p role="alert" className="shrink-0 border-b border-border/70 py-2 text-sm max-md:px-[16px]">
               {c("Refresh failed. Showing the last available headlines.", "更新失败，正在显示最近可用的快讯。")}
             </p>}
@@ -72,9 +95,11 @@ export default function NewsFeed() {
                 <Button variant="outline" size="sm" className="mt-4" onClick={terminal.refresh}>
                   {c("Retry", "重试")}
                 </Button>
-              </div> : <>
+              </div> : needle && matches.length === 0 ? <p className="px-6 py-16 text-center text-sm text-muted-foreground">
+                {c("No headlines match this search.", "没有匹配的快讯。")}
+              </p> : <>
                 <NewsRows articles={visibleArticles} translations={translation.translations} locale={locale} />
-                {articles.length > limit && <ListLoadMore onClick={() => setLimit(value => value + 40)}>{c("Show more headlines", "显示更多快讯")}</ListLoadMore>}
+                {matches.length > limit && <ListLoadMore onClick={() => setLimit(value => value + 40)}>{c("Show more headlines", "显示更多快讯")}</ListLoadMore>}
               </>}
             </div>
           </ListCard>

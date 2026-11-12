@@ -17,6 +17,8 @@ CHECK_VERSION = 1
 # Relative distance within which an unmatched claim reads as a copy error, not another figure.
 NEAR = 0.2
 CONTEXT_CHARS = 48
+# Scale errors seen in real answers: billion as 亿 (10x), million as 亿 (100x), 1000x unit swaps.
+_UNIT_SLIPS = tuple(f for k in (10, 100, 1e3, 1e4, 1e5, 1e6) for f in (k, 1 / k))
 
 _SCALES = {
     "trillion": 1e12, "tn": 1e12, "t": 1e12, "万亿": 1e12,
@@ -35,6 +37,8 @@ _MONEY = re.compile(
     re.IGNORECASE,
 )
 _PERCENT = re.compile(rf"(?P<num>{_NUMBER})\s?[%％]")
+_BOUND_BEFORE = re.compile(r"(超过|高于|低于|逾|近|above|over|below|under|more than|less than|nearly)\s*$", re.IGNORECASE)
+_BOUND_AFTER = re.compile(r"\s*(以上|以下|左右|上下|\+)")
 _REVENUE_WORDS = re.compile(r"revenue|sales|营收|收入|营业额", re.IGNORECASE)
 _GROWTH_WORDS = re.compile(r"year[- ]over[- ]year|yoy|y/y|growth|grew|increase|同比|增长|增幅|上升|下降", re.IGNORECASE)
 
@@ -52,8 +56,11 @@ def _claims(text: str) -> Iterable[dict[str, Any]]:
     for match in _PERCENT.finditer(text):
         raw = match.group("num")
         taken.append(match.span())
+        # "超过 100%" / "50% 以上" / "over 50%" state a bound, not the figure itself.
+        bound = bool(_BOUND_BEFORE.search(text[max(0, match.start() - 6):match.start()])
+                     or _BOUND_AFTER.match(text[match.end():match.end() + 4]))
         yield {"kind": "percent", "span": match.span(), "value": float(raw.replace(",", "")),
-               "half_step": 0.5 * 10 ** -_decimals(raw)}
+               "half_step": 0.5 * 10 ** -_decimals(raw), "bound": bound}
     for match in _MONEY.finditer(text):
         cur, raw, unit = match.group("cur"), match.group("num"), match.group("unit")
         if not cur and not unit:
@@ -122,10 +129,11 @@ def _judge(claim: dict, candidates: list[dict], context: str,
         if not target:
             continue
         if claim["kind"] == "percent":
-            if _GROWTH_WORDS.search(context) and abs(value - target) / abs(target) <= NEAR:
+            if _GROWTH_WORDS.search(context) and not claim.get("bound") \
+                    and abs(value - target) / abs(target) <= NEAR:
                 return "mismatch", expected
         elif expected["source"] == "revenue":
-            unit_slip = any(_close(value * factor, target, claim["half_step"] * factor) for factor in (1e3, 1e-3))
+            unit_slip = any(_close(value * factor, target, claim["half_step"] * factor) for factor in _UNIT_SLIPS)
             near = abs(value - target) / abs(target) <= NEAR and _REVENUE_WORDS.search(context)
             if unit_slip or near:
                 return "mismatch", expected

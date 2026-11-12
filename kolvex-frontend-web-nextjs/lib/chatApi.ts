@@ -22,10 +22,13 @@ export interface RevenueEvidence {
   value: number;
   currency: string;
   period_kind: "quarterly" | "annual";
-  period_start: string;
+  /** Absent for Yahoo Finance evidence, which reports only the period end. */
+  period_start?: string | null;
   period_end: string;
-  filed_on: string;
+  /** SEC filing date; absent for Yahoo Finance evidence. */
+  filed_on?: string | null;
   source_url: string;
+  source?: "sec" | "yahoo";
   /** Server-calculated, on the latest period of a year-over-year comparison only. */
   year_over_year_pct?: number | null;
   compared_period_end?: string | null;

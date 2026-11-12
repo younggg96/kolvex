@@ -25,7 +25,6 @@ import type {
   ToolStatus,
 } from "./types";
 import { readChatSkills, toggleChatSkill } from "./chatSkills";
-import { TOOL_LABELS as toolLabels } from "./types";
 import {
   evidenceStorageKey,
   formatEvidenceLabel,
@@ -261,7 +260,7 @@ export function ChatDetailContainer({
               const translatedLabel = t(translationKey);
               const label =
                 translatedLabel === translationKey
-                  ? toolLabels[toolName] || toolName
+                  ? t("chat.tools.generic")
                   : translatedLabel;
               setActiveTools((prev) => [
                 ...prev.filter((tool) => tool.name !== toolName),

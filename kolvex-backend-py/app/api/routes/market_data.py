@@ -419,6 +419,16 @@ def get_multiple_quotes(
         raise HTTPException(status_code=500, detail=f"批量获取报价失败: {str(e)}")
 
 
+@router.get("/search", summary="按代码或公司名搜索股票")
+async def search_stocks(q: str = Query(..., min_length=1, max_length=50)):
+    from app.services.finnhub import get_finnhub_client
+    try:
+        return {"results": await get_finnhub_client().search_symbols(q.strip())}
+    except Exception as error:
+        logger.exception("Stock search failed")
+        raise HTTPException(status_code=503, detail="Stock search unavailable") from error
+
+
 @router.get("/discovery", summary="股票发现：今日异动与放量活跃")
 def get_market_discovery():
     try:

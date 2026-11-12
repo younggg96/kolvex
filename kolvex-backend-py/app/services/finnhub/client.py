@@ -54,6 +54,23 @@ class FinnhubClient:
             logger.error(f"Finnhub API 请求异常: {e}")
             raise
     
+    async def search_symbols(self, query: str, limit: int = 8) -> List[Dict[str, str]]:
+        """按代码或公司名搜索美股（普通股，排除带 . 的二级代码）"""
+        data = await self._request("search", {"q": query})
+        out: List[Dict[str, str]] = []
+        seen = set()
+        for item in data.get("result", []) or []:
+            symbol = str(item.get("symbol") or "").upper()
+            if not symbol or "." in symbol or ":" in symbol or symbol in seen:
+                continue
+            if item.get("type") not in ("Common Stock", "ETP", "ADR"):
+                continue
+            seen.add(symbol)
+            out.append({"symbol": symbol, "name": str(item.get("description") or symbol).title()})
+            if len(out) >= limit:
+                break
+        return out
+
     # ==================== 实时报价 ====================
     
     async def get_quote(self, symbol: str) -> Dict[str, Any]:

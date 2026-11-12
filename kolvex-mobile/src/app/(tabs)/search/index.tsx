@@ -872,7 +872,7 @@ export default function Search() {
             flex: 1,
             height: "100%",
             paddingHorizontal: 12,
-            fontSize: 16,
+            fontSize: phone(16),
             color: t.text,
           }}
         />

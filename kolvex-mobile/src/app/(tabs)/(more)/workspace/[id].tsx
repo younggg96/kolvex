@@ -607,7 +607,7 @@ function Launcher({
             borderRadius: phone(12),
             borderWidth: StyleSheet.hairlineWidth,
             borderColor: t.rim,
-            fontSize: 16,
+            fontSize: phone(16),
             color: t.text,
             padding: phone(10),
             textAlignVertical: "top",

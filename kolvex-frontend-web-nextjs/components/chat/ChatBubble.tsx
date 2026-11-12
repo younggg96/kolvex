@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Copy, Check, RotateCcw } from "lucide-react";
+import { Copy, Check, RotateCcw, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { visibleQuestion } from "./pageEvidence";
@@ -13,6 +13,8 @@ import { Button } from "../ui/button";
 import { useTranslation } from "@/lib/i18n";
 import { RICH_MARKDOWN_COMPONENTS } from "@/components/markdown/rich-markdown";
 import { richRemarkPlugins, richUrlTransform, stripEmoji } from "@/lib/markdown/prose";
+
+const QUOTE_COLLAPSE_LIMIT = 3;
 
 const CHAT_PROSE_CLASSES = cn(
   "prose prose-sm dark:prose-invert w-full min-w-0 max-w-none break-words text-[0.9375rem] leading-7 text-foreground/90",
@@ -45,6 +47,7 @@ export function ChatBubble({
   const { t } = useTranslation();
   const remarkPlugins = richRemarkPlugins(symbols);
   const [copied, setCopied] = useState(false);
+  const [quotesExpanded, setQuotesExpanded] = useState(false);
   const isUser = role === "user";
   const question = isUser ? visibleQuestion(content) : content;
   // Assistant text is a report: emoji come from the model, not from this design.
@@ -119,7 +122,22 @@ export function ChatBubble({
           {!!(quoteEvidence?.length || revenueEvidence?.length) && (
             <div className="mt-4 grid max-w-md gap-2">
               {answerCheck && <AnswerCheckNote check={answerCheck} />}
-              {quoteEvidence?.map((quote) => <QuoteEvidenceCard key={quote.symbol} quote={quote} />)}
+              {quoteEvidence
+                ?.slice(0, quotesExpanded ? undefined : QUOTE_COLLAPSE_LIMIT)
+                .map((quote) => <QuoteEvidenceCard key={quote.symbol} quote={quote} />)}
+              {(quoteEvidence?.length ?? 0) > QUOTE_COLLAPSE_LIMIT && (
+                <button
+                  type="button"
+                  onClick={() => setQuotesExpanded((v) => !v)}
+                  aria-expanded={quotesExpanded}
+                  className="flex items-center gap-1 justify-self-start px-1 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", quotesExpanded && "rotate-180")} />
+                  {quotesExpanded
+                    ? t("chat.quoteEvidence.collapse")
+                    : t("chat.quoteEvidence.expand", { count: String((quoteEvidence?.length ?? 0) - QUOTE_COLLAPSE_LIMIT) })}
+                </button>
+              )}
               {revenueEvidence?.map((revenue) => (
                 <RevenueEvidenceCard
                   key={`${revenue.symbol}:${revenue.period_kind}:${revenue.period_end}`}

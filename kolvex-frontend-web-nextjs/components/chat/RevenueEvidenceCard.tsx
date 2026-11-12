@@ -25,7 +25,11 @@ export function RevenueEvidenceCard({ revenue }: { revenue: RevenueEvidence }) {
         <dl className="space-y-1">
           <div className="flex flex-wrap gap-x-2">
             <dt>{t("chat.revenueEvidence.period")}</dt>
-            <dd className="tabular-nums">{revenue.period_start} – {revenue.period_end}</dd>
+            <dd className="tabular-nums">
+              {revenue.period_start
+                ? `${revenue.period_start} – ${revenue.period_end}`
+                : t("chat.revenueEvidence.periodEnding", { date: revenue.period_end })}
+            </dd>
           </div>
           {revenue.year_over_year_pct != null ? (
             <div className="flex flex-wrap gap-x-2">
@@ -47,10 +51,12 @@ export function RevenueEvidenceCard({ revenue }: { revenue: RevenueEvidence }) {
               <dd>{t("chat.revenueEvidence.yoyUnavailable")}</dd>
             </div>
           ) : null}
-          <div className="flex flex-wrap gap-x-2">
-            <dt>{t("chat.revenueEvidence.filed")}</dt>
-            <dd className="tabular-nums"><time dateTime={revenue.filed_on}>{revenue.filed_on}</time></dd>
-          </div>
+          {revenue.filed_on && (
+            <div className="flex flex-wrap gap-x-2">
+              <dt>{t("chat.revenueEvidence.filed")}</dt>
+              <dd className="tabular-nums"><time dateTime={revenue.filed_on}>{revenue.filed_on}</time></dd>
+            </div>
+          )}
         </dl>
         <a
           href={revenue.source_url}
@@ -59,7 +65,7 @@ export function RevenueEvidenceCard({ revenue }: { revenue: RevenueEvidence }) {
           className="inline-flex items-center gap-1 rounded-sm font-medium text-foreground underline-offset-2 hover:underline focus-visible:ring-2 focus-visible:ring-foreground/60"
           aria-label={t("chat.revenueEvidence.openSource", { symbol: revenue.symbol })}
         >
-          SEC EDGAR
+          {revenue.source === "yahoo" ? "Yahoo Finance" : "SEC EDGAR"}
           <ArrowUpRight className="size-3" aria-hidden="true" />
         </a>
       </div>

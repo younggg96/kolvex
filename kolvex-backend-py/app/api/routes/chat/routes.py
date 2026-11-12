@@ -15,6 +15,7 @@ from starlette import status as http_status
 from typing import Optional
 
 from app.agent.answer_check import check_answer
+from app.agent.unit_fix import fix_unit_slips, with_unit_fixes
 from app.api.dependencies.auth import get_current_user_id
 from app.services.chat_service import ChatService, get_chat_service
 from app.services.user_api_keys_service import (
@@ -465,8 +466,15 @@ async def stream_message(
                 if full_response.strip():
                     quotes = event.get("quote_evidence") or []
                     revenues = event.get("revenue_evidence") or []
+                    # Streamed tokens may hold "1,270.38 亿" for a tool's "1,270.38 billion";
+                    # the saved message and the done event carry the repaired text.
+                    full_response, unit_fixes = fix_unit_slips(
+                        full_response, event.get("scaled_figures") or {},
+                        [r["value"] for r in revenues if isinstance(r.get("value"), (int, float))])
                     # Checked here, against the exact text saved, in the same row as its evidence.
                     answer_check = check_answer(full_response, quotes, revenues)
+                    if unit_fixes:
+                        answer_check = with_unit_fixes(answer_check, unit_fixes)
                     ai_msg = await save_message(
                         user_id=current_user_id,
                         conversation_id=conversation_id,

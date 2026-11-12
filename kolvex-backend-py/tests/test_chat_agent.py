@@ -50,7 +50,7 @@ class ToolSelectionTests(unittest.TestCase):
         selected = ["market", "news", "portfolio"]
         self.assertEqual(
             names(get_tools_for_sources(["web"], "financial", "user-1", skills=selected)),
-            {"get_stock_quote", "get_stock_history", "web_search", "get_user_watchlist", "get_daily_brief"},
+            {"get_stock_quote", "get_stock_history", "web_search", "get_user_watchlist", "get_daily_brief", "search_news_flashes"},
         )
 
     def test_empty_skills_disable_all_tools(self):
@@ -101,6 +101,19 @@ class ToolSelectionTests(unittest.TestCase):
         client.table.assert_called_once_with("daily_briefs")
         self.assertIn("NVDA 财报超预期", out)
         self.assertIn("[NVDA]", out)
+
+    def test_news_flash_search_filters_by_keyword_and_ticker(self):
+        import asyncio
+        from app.agent.tools import news_flash_tools
+        feed = {"articles": [
+            {"title": "Siemens CEO: partnership with NVIDIA continues $NVDA", "symbols": ["NVDA"], "publish_time": 1, "link": "x"},
+            {"title": "UK GDP MoM 0.2%", "symbols": [], "publish_time": 2, "link": "y"},
+        ], "fetched_at": "now"}
+        with patch.object(news_flash_tools.news_feed_service, "get_feed", new=unittest.mock.AsyncMock(return_value=feed)):
+            by_ticker = json.loads(asyncio.run(news_flash_tools.search_news_flashes.ainvoke({"ticker": "nvda"})))
+            by_word = json.loads(asyncio.run(news_flash_tools.search_news_flashes.ainvoke({"query": "gdp cpi"})))
+        self.assertEqual([h["title"][:7] for h in by_ticker["headlines"]], ["Siemens"])
+        self.assertEqual(by_word["match_count"], 1)
 
     def test_portfolio_is_bound_to_the_current_user(self):
         with patch("app.agent.tools.create_portfolio_tool_for_user") as bind:
@@ -153,6 +166,40 @@ class RevenueComparisonTests(unittest.IsolatedAsyncioTestCase):
                 self.assertTrue(comparison["unavailable_reason"])
                 self.assertEqual(len(cards), card_count)
                 self.assertEqual(cards[0].unavailable_reason, comparison["unavailable_reason"])
+
+
+class YahooRevenueFallbackTests(unittest.IsolatedAsyncioTestCase):
+    async def test_foreign_filer_falls_back_to_yahoo_with_its_currency(self):
+        import pandas as pd
+        from app.agent.revenue_evidence import extract_revenue_evidence
+        from app.agent.tools.stock_tools import get_reported_revenue
+        from app.services.sec.client import SecNotFound
+
+        frame = pd.DataFrame({pd.Timestamp("2026-09-30"): [1_494_243_284_000.0],
+                              pd.Timestamp("2026-06-30"): [1_270_380_000_000.0],
+                              pd.Timestamp("2025-09-30"): [989_918_000_000.0],
+                              pd.Timestamp("2025-06-30"): [float("nan")]}, index=["Total Revenue"])
+        ticker = SimpleNamespace(quarterly_income_stmt=frame, income_stmt=frame, info={"financialCurrency": "TWD"})
+        with patch("app.agent.tools.stock_tools.sec_client.financials", AsyncMock(side_effect=SecNotFound("TSM"))), \
+                patch("app.agent.tools.stock_tools.get_yfinance_service",
+                      return_value=SimpleNamespace(get_ticker=lambda _symbol: ticker)):
+            result = await get_reported_revenue.ainvoke({
+                "type": "tool_call", "name": "get_reported_revenue", "id": "r",
+                "args": {"symbol": "tsm", "year_over_year": True},
+            })
+        comparison = json.loads(result.content)
+        self.assertEqual(comparison["year_over_year_pct"], 50.95)
+        cards = extract_revenue_evidence(result)
+        self.assertEqual([(c.source, c.currency, str(c.period_end)) for c in cards],
+                         [("yahoo", "TWD", "2026-09-30"), ("yahoo", "TWD", "2025-09-30")])
+        self.assertIsNone(cards[0].filed_on)
+
+    def test_sec_evidence_still_needs_its_filing_date_and_link(self):
+        from pydantic import ValidationError
+        from app.agent.revenue_evidence import RevenueEvidence
+        with self.assertRaises(ValidationError):
+            RevenueEvidence(symbol="NVDA", value=1, currency="USD", period_kind="quarterly",
+                            period_end="2026-07-26", source_url="https://finance.yahoo.com/quote/NVDA/financials/")
 
 
 class TradingAnalysisKeyTests(unittest.TestCase):

@@ -46,8 +46,8 @@ export default function NativeField({
       onSubmitEditing={onSubmit}
       // Fields stay 16px on phones so iOS never zooms, as on the Web.
       style={{
-        fontSize: 16,
-        lineHeight: 24,
+        fontSize: phone(16),
+        lineHeight: phone(24),
         color: t.text,
         minHeight: minHeight ?? phone(28),
         maxHeight: 160,

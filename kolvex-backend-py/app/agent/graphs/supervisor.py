@@ -7,12 +7,13 @@ Supervisor Graph
 import logging
 from typing import Dict, Any, Optional, AsyncGenerator, List
 
-from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, ToolMessage
 from langgraph.prebuilt import create_react_agent
 
 from app.agent.quote_evidence import QuoteEvidence, extract_quote_evidence
 from app.agent.revenue_evidence import RevenueEvidence, extract_revenue_evidence, merge_revenue_evidence
 from app.agent.state import AgentState
+from app.agent.unit_fix import figures_by_trust, fix_unit_slips
 from app.agent.llm import get_llm, get_fast_llm, resolve_model_id
 from app.agent.config import SYSTEM_PROMPT, MAX_TOOL_ITERATIONS
 from app.agent.tools import get_tools_for_sources
@@ -138,7 +139,8 @@ def _create_agent_for_request(
     if "get_reported_revenue" in available_tools:
         source_hint += (
             "\n\nUse get_reported_revenue for reported quarterly or annual revenue amounts. "
-            "Match the period and currency in the returned evidence, and identify the date as the SEC filing date. "
+            "Match the period and currency in the returned evidence. With source \"sec\", identify the date as the SEC filing date; "
+            "with source \"yahoo\", name Yahoo Finance as the source and give no filing date. "
             "Identify periods by their reported end dates. Do not infer fiscal-year labels or quarter numbers from calendar dates. "
             "The tool returns only directly reported figures. If the requested period is absent, state that limitation. "
             "For year-over-year revenue, set year_over_year=true and use year_over_year_pct. "
@@ -232,7 +234,12 @@ async def run_agent(
                         for revenue in extract_revenue_evidence(item):
                             merge_revenue_evidence(revenues, revenue)
                     revenue_evidence.extend(revenues.values())
-                return msg.content
+                tool_texts = [(item.name or "", str(item.content)) for item in final_messages[len(messages):]
+                              if isinstance(item, ToolMessage)]
+                values = [revenue.value for item in final_messages[len(messages):]
+                          for revenue in extract_revenue_evidence(item)]
+                content, _ = fix_unit_slips(_content_to_text(msg.content), figures_by_trust(tool_texts), values)
+                return content
 
         return "I'm sorry, I wasn't able to generate a response. Please try again."
 
@@ -298,6 +305,7 @@ async def stream_agent(
         final_response_emitted = False
         quotes: dict[str, QuoteEvidence] = {}
         revenues: dict[tuple, RevenueEvidence] = {}
+        tool_texts: list[tuple[str, str]] = []
         writing = {"type": "status", "stage": "writing", "content": "Writing the response"}
 
         async for event in agent.astream_events(
@@ -364,6 +372,9 @@ async def stream_agent(
                 }
 
             elif kind == "on_tool_end":
+                output = event.get("data", {}).get("output")
+                if isinstance(output, ToolMessage) and isinstance(output.content, str):
+                    tool_texts.append((event.get("name", ""), output.content))
                 if quote := extract_quote_evidence(event.get("data", {}).get("output")):
                     quotes[quote.symbol] = quote
                 for revenue in extract_revenue_evidence(event.get("data", {}).get("output")):
@@ -383,6 +394,10 @@ async def stream_agent(
             return
 
         done: Dict[str, Any] = {"type": "done", "content": ""}
+        # The caller repairs "1,270.38 billion" copied as "1,270.38 亿" against these.
+        figures = figures_by_trust(tool_texts)
+        if figures["trusted"] or figures["web"]:
+            done["scaled_figures"] = figures
         if quotes:
             done["quote_evidence"] = [quote.model_dump(mode="json") for quote in quotes.values()]
         if revenues:

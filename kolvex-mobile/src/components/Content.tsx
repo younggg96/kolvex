@@ -139,7 +139,7 @@ export function Field({
               flex: 1,
               minHeight: phone(40),
               color: t.text,
-              fontSize: 16,
+              fontSize: phone(16),
               paddingVertical: phone(8),
             },
             props.style,

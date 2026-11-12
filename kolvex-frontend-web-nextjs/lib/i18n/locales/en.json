@@ -384,6 +384,11 @@
       "interrupted": "Response interrupted"
     },
     "tools": {
+      "get_user_watchlist": "Loading your watchlist",
+      "get_daily_brief": "Reading the daily market brief",
+      "get_options_chain_summary": "Checking the options chain",
+      "run_trading_analysis": "Running trading analysis",
+      "generic": "Checking additional data",
       "get_plaid_account": "Loading Plaid account and positions",
       "get_plaid_stock_trades": "Loading Plaid stock trades",
       "get_plaid_option_trades": "Loading Plaid option trades",
@@ -433,12 +438,15 @@
       "annual": "Annual revenue",
       "period": "Reporting period",
       "filed": "SEC filing date",
-      "openSource": "View SEC filing for {symbol}",
+      "openSource": "Open the {symbol} revenue source",
       "yoy": "Year over year",
       "comparedWith": "vs. period ending {date}",
-      "yoyUnavailable": "No comparable prior-year period"
+      "yoyUnavailable": "No comparable prior-year period",
+      "periodEnding": "Ending {date}"
     },
     "quoteEvidence": {
+      "collapse": "Collapse",
+      "expand": "Show {count} more quotes",
       "title": "Quote evidence",
       "unknownTime": "Quote time unavailable",
       "unknownCurrency": "Currency unavailable",

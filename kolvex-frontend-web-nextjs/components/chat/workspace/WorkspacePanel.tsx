@@ -405,7 +405,7 @@ function ResultRow({ result, c, symbols }: { result: AgentResult; c: Copy; symbo
     if (local) return c(local[0], local[1]);
     const key = `chat.tools.${name}`;
     const label = t(key);
-    return label === key ? name : label;
+    return label === key ? t("chat.tools.generic") : label;
   };
   const Icon = AGENT_META[result.agent].icon;
   const expandable = result.status === "completed" || result.status === "failed";
