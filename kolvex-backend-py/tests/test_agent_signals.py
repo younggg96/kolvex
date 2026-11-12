@@ -102,6 +102,13 @@ class SignalRowTests(unittest.TestCase):
         self.assertIsNone(row["position_action"])
         self.assertIsNone(row["portfolio_context"])
 
+    def test_only_a_same_day_analysis_is_point_in_time(self):
+        for live, expected in [(True, True), (False, False)]:
+            with self.subTest(live=live), patch.object(service, "is_live_trade_date", return_value=live) as check:
+                row = service.build_signal_row("a-1", "u-1", "nvda", "2026-11-06", self.config, self.extraction)
+                self.assertIs(row["point_in_time"], expected)
+                check.assert_called_with("2026-11-06")
+
     def test_save_signal_swallows_db_errors(self):
         db = Mock()
         db.table.return_value.upsert.return_value.execute.side_effect = RuntimeError("no table")

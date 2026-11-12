@@ -37,6 +37,8 @@ class ScoreTests(unittest.TestCase):
         self.assertEqual(r["excess_return_pct"], 8.0)
         self.assertEqual(r["signed_excess_pct"], 8.0)
         self.assertTrue(r["hit"])
+        self.assertTrue(r["direction_hit"])
+        self.assertEqual(r["method_version"], 2)
         self.assertEqual(r["max_adverse_pct"], -2.0)
         self.assertIsNone(r["bracket_outcome"])
 
@@ -48,7 +50,8 @@ class ScoreTests(unittest.TestCase):
 
     def test_hold_hits_inside_band(self):
         flat = [bar(2, 100), bar(3, 100), bar(6, 100, c=101)]
-        self.assertTrue(score_signal(signal(rating="HOLD"), flat, [], TODAY)["hit"])
+        flat_spy = [bar(2, 500), bar(3, 500), bar(6, 500)]
+        self.assertTrue(score_signal(signal(rating="HOLD"), flat, flat_spy, TODAY)["hit"])
         self.assertFalse(score_signal(signal(rating="HOLD"), STOCK, SPY, TODAY)["hit"])
 
     def test_stop_first_when_bar_touches_both(self):
@@ -70,10 +73,19 @@ class ScoreTests(unittest.TestCase):
         r = score_signal(signal(), [], [], TODAY)
         self.assertEqual(r["status"], "unscoreable")
 
-    def test_benchmark_mismatch_falls_back_to_raw_return(self):
+    def test_missing_benchmark_leaves_relative_hit_unjudged(self):
         r = score_signal(signal(), STOCK, [bar(6, 500)], TODAY)
         self.assertIsNone(r["excess_return_pct"])
-        self.assertEqual(r["signed_excess_pct"], 10.0)
+        self.assertIsNone(r["signed_excess_pct"])
+        self.assertIsNone(r["hit"])
+        self.assertTrue(r["direction_hit"])
+
+    def test_direction_and_relative_hits_can_disagree(self):
+        # Stock +10%, SPY +20%: right direction, wrong relative call.
+        spy = [bar(2, 500), bar(3, 500), bar(6, 500, c=600)]
+        r = score_signal(signal(), STOCK, spy, TODAY)
+        self.assertFalse(r["hit"])
+        self.assertTrue(r["direction_hit"])
 
 
 class JobTests(unittest.TestCase):
@@ -81,20 +93,32 @@ class JobTests(unittest.TestCase):
         db = MagicMock()
         tables = {ev.SIGNALS_TABLE: MagicMock(), ev.EVALUATIONS_TABLE: MagicMock()}
         db.table.side_effect = lambda name: tables[name]
-        q = tables[ev.SIGNALS_TABLE].select.return_value.eq.return_value.lt.return_value.gte.return_value
+        q = tables[ev.SIGNALS_TABLE].select.return_value.eq.return_value.eq.return_value.lt.return_value.gte.return_value
         q.order.return_value.range.return_value.execute.return_value.data = signals
         tables[ev.EVALUATIONS_TABLE].select.return_value.in_.return_value.execute.return_value.data = [
-            {"signal_id": i} for i in evaluated]
+            {"signal_id": i, "method_version": v} for i, v in evaluated]
         return db, tables
 
     def test_scores_unevaluated_and_fetches_each_symbol_once(self):
-        db, tables = self.db_with([signal(), signal(id="s2"), signal(id="s3")], evaluated=["s3"])
+        db, tables = self.db_with([signal(), signal(id="s2"), signal(id="s3")], evaluated=[("s3", 2)])
         history = Mock(side_effect=lambda sym, start, end: STOCK if sym == "NVDA" else SPY)
         counts = evaluate_due_signals(db, history, TODAY)
         self.assertEqual(counts["due"], 2)
         self.assertEqual(counts["scored"], 2)
         self.assertEqual(sorted(c.args[0] for c in history.call_args_list), ["NVDA", "SPY"])
         self.assertEqual(tables[ev.EVALUATIONS_TABLE].upsert.call_count, 2)
+
+    def test_only_point_in_time_signals_are_queried(self):
+        db, tables = self.db_with([])
+        evaluate_due_signals(db, Mock(), TODAY)
+        select = tables[ev.SIGNALS_TABLE].select.return_value
+        select.eq.assert_called_with("extraction_status", "structured")
+        select.eq.return_value.eq.assert_called_with("point_in_time", True)
+
+    def test_older_method_rows_are_rescored(self):
+        db, tables = self.db_with([signal(), signal(id="s2")], evaluated=[("s1", 1), ("s2", 2)])
+        history = Mock(side_effect=lambda sym, start, end: STOCK if sym == "NVDA" else SPY)
+        self.assertEqual(evaluate_due_signals(db, history, TODAY)["due"], 1)
 
     def test_history_failure_leaves_signal_pending(self):
         db, tables = self.db_with([signal()])
@@ -103,15 +127,23 @@ class JobTests(unittest.TestCase):
         tables[ev.EVALUATIONS_TABLE].upsert.assert_not_called()
 
 
+def summary_row(conv=0.5, hit=True, direction_hit=None, status="structured", evaluation=True,
+                rating="BUY", point_in_time=True, method_version=2):
+    e = {"status": "scored", "method_version": method_version, "hit": hit,
+         "direction_hit": hit if direction_hit is None else direction_hit,
+         "excess_return_pct": None if hit is None else (2.0 if hit else -2.0),
+         "signed_excess_pct": None if hit is None else (2.0 if hit else -2.0),
+         "bracket_outcome": None} if evaluation else None
+    return {"rating": rating, "conviction": conv, "model_id": "m", "position_action": None,
+            "extraction_status": status, "point_in_time": point_in_time, "evaluation": e}
+
+
 class SummaryTests(unittest.TestCase):
     def test_counts_calibration_and_degraded(self):
-        def row(conv, hit, status="structured", evaluation=True, rating="BUY"):
-            e = {"status": "scored", "hit": hit, "excess_return_pct": 2.0 if hit else -2.0,
-                 "signed_excess_pct": 2.0 if hit else -2.0, "bracket_outcome": None} if evaluation else None
-            return {"rating": rating, "conviction": conv, "model_id": "m", "position_action": None,
-                    "extraction_status": status, "evaluation": e}
+        row = summary_row
         s = summarize([row(0.9, True), row(0.85, True), row(0.3, False), row(0.5, True, evaluation=False),
                        row(0.5, True, status="rating_only")])
+        self.assertEqual(s["method_version"], 2)
         self.assertEqual(s["by_extraction_status"], {"structured": 4, "rating_only": 1})
         self.assertEqual(s["awaiting_evaluation"], 1)
         self.assertEqual(s["overall"]["count"], 3)
@@ -119,6 +151,32 @@ class SummaryTests(unittest.TestCase):
         self.assertEqual(s["by_conviction"]["0.8-1"]["hit_rate"], 100.0)
         self.assertEqual(s["by_conviction"]["0-0.4"]["hit_rate"], 0.0)
         self.assertEqual(s["by_conviction"]["0.6-0.8"]["count"], 0)
+
+
+class LeakageEvalTests(unittest.TestCase):
+    """Repeatable check that future-informed signals cannot move the reported metrics."""
+
+    LIVE = [summary_row(0.9, True), summary_row(0.7, False, rating="SELL"),
+            summary_row(0.5, True, rating="HOLD"),
+            # No SPY window: direction is judged, the relative hit is not.
+            summary_row(0.6, None, direction_hit=True)]
+
+    def summary(self, backfilled_hit):
+        backfilled = [summary_row(0.9, backfilled_hit, point_in_time=False) for _ in range(3)]
+        return summarize(self.LIVE + backfilled + [summary_row(0.9, True, method_version=1)])
+
+    def test_backfilled_signals_never_change_the_metrics(self):
+        all_hit, all_miss = self.summary(True), self.summary(False)
+        self.assertEqual(all_hit["overall"], all_miss["overall"])
+        self.assertEqual(all_hit["by_conviction"], all_miss["by_conviction"])
+        self.assertEqual(all_hit["backfilled"], 3)
+
+    def test_relative_and_direction_hit_rates_are_separate(self):
+        s = self.summary(True)
+        self.assertEqual(s["overall"]["count"], 4)
+        self.assertEqual(s["overall"]["hit_rate"], 66.67)            # 2 of 3 with a benchmark
+        self.assertEqual(s["overall"]["direction_hit_rate"], 75.0)   # 3 of 4
+        self.assertEqual(s["outdated_method"], 1)
 
 
 class RouteTests(unittest.TestCase):

@@ -502,6 +502,8 @@ def build_signal_row(
         "user_id": user_id,
         "ticker": ticker.upper(),
         "trade_date": trade_date,
+        # Only an analysis run on its own trade date saw nothing from the future.
+        "point_in_time": is_live_trade_date(trade_date),
         "rating": signal.rating,
         "conviction": round(signal.conviction, 3),
         "horizon_days": signal.horizon_days,
