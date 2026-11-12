@@ -1,0 +1,59 @@
+"""Fixed answers with known errors: the checker must flag each miscopy and nothing else."""
+import unittest
+
+from app.agent.answer_check import check_answer
+from app.agent.revenue_evidence import RevenueEvidence, merge_revenue_evidence
+
+REVENUES = [
+    {"symbol": "NVDA", "value": 46_743_000_000, "period_end": "2026-07-26", "year_over_year_pct": 55.6},
+    {"symbol": "NVDA", "value": 30_040_000_000, "period_end": "2025-07-27"},
+]
+QUOTES = [{"symbol": "NVDA", "price": 177.82}]
+
+
+def verdicts(text):
+    check = check_answer(text, QUOTES, REVENUES)
+    return {claim["text"]: claim["status"] for claim in check["claims"]}
+
+
+class AnswerCheckTests(unittest.TestCase):
+    def test_correct_and_rounded_figures_match(self):
+        self.assertEqual(verdicts(
+            "NVDA revenue was $46.7 billion, up 56% year over year from $30.04B. Shares trade at $177.82."
+        ), {"$46.7 billion": "matched", "56%": "matched", "$30.04B": "matched", "$177.82": "matched"})
+
+    def test_chinese_units_match(self):
+        self.assertEqual(verdicts("营收 467.4 亿美元，同比增长 55.6%。"),
+                         {"467.4 亿": "matched", "55.6%": "matched"})
+
+    def test_wrong_amount_unit_and_percentage_are_mismatches(self):
+        self.assertEqual(verdicts("Revenue was $49.2B."), {"$49.2B": "mismatch"})
+        self.assertEqual(verdicts("Revenue was $46.7 million."), {"$46.7 million": "mismatch"})
+        self.assertEqual(verdicts("营收同比增长 65%。"), {"65%": "mismatch"})
+
+    def test_unrelated_figures_are_unverified_not_wrong(self):
+        self.assertEqual(verdicts("Gross margin was 72.4%. Analysts target $180. FY2027 Q2."),
+                         {"72.4%": "unverified", "$180": "unverified"})
+
+    def test_mismatches_are_listed_first_with_the_evidence(self):
+        check = check_answer("Revenue rose 56% YoY to $49.2B.", QUOTES, REVENUES)
+        self.assertEqual((check["matched"], check["mismatch"]), (1, 1))
+        self.assertEqual(check["claims"][0]["expected"]["value"], 46_743_000_000)
+
+    def test_no_evidence_means_no_check(self):
+        self.assertIsNone(check_answer("Revenue was $46.7 billion.", [], []))
+
+
+class MergeTests(unittest.TestCase):
+    def test_plain_lookup_keeps_an_earlier_comparison(self):
+        base = dict(symbol="NVDA", value=1, currency="USD", period_kind="quarterly",
+                    period_start="2026-04-28", period_end="2026-07-26", filed_on="2026-08-27",
+                    source_url="https://www.sec.gov/Archives/edgar/data/1/000000000126000001/0000000001-26-000001-index.html")
+        found = {}
+        merge_revenue_evidence(found, RevenueEvidence(**base, year_over_year_pct=55.6))
+        merge_revenue_evidence(found, RevenueEvidence(**base))
+        self.assertEqual(next(iter(found.values())).year_over_year_pct, 55.6)
+
+
+if __name__ == "__main__":
+    unittest.main()

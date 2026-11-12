@@ -107,7 +107,7 @@ async def get_reported_revenue(
     if not evidence:
         return json.dumps({"error": "No directly reported SEC revenue for this period"})
     if not year_over_year:
-        return json.dumps([fact.model_dump(mode="json") for fact in evidence])
+        return json.dumps([fact.model_dump(mode="json", exclude_none=True) for fact in evidence])
 
     growth = None
     reason = "No comparable directly reported period a year earlier."
@@ -118,9 +118,13 @@ async def get_reported_revenue(
             change = (latest.value / prior.value - 1) * 100
             if math.isfinite(change):
                 growth, reason = round(change, 2), None
-    return RevenueComparison(
-        evidence=evidence, year_over_year_pct=growth, unavailable_reason=reason,
-    ).model_dump_json()
+    comparison = RevenueComparison(evidence=evidence, year_over_year_pct=growth, unavailable_reason=reason)
+    # Facts omit their optional comparison fields; the comparison lives at the top level only.
+    return json.dumps({
+        "evidence": [fact.model_dump(mode="json", exclude_none=True) for fact in comparison.evidence],
+        "year_over_year_pct": comparison.year_over_year_pct,
+        "unavailable_reason": comparison.unavailable_reason,
+    })
 
 
 @tool

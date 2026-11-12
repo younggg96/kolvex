@@ -433,7 +433,10 @@
       "annual": "年度营收",
       "period": "报告期",
       "filed": "SEC 申报日",
-      "openSource": "查看 {symbol} 的 SEC 文件"
+      "openSource": "查看 {symbol} 的 SEC 文件",
+      "yoy": "同比",
+      "comparedWith": "对比 {date} 止",
+      "yoyUnavailable": "缺少可比的去年同期数据"
     },
     "quoteEvidence": {
       "title": "行情证据",
@@ -467,6 +470,13 @@
         "web": "网页",
         "portfolio": "投资组合"
       }
+    },
+    "answerCheck": {
+      "mismatch": "{count} 个数字与证据不一致",
+      "matched": "{count} 个数字已与证据核对",
+      "details": "数字核对详情",
+      "expected": "证据：{value}（{label}）",
+      "unverified": "{count} 个数字本轮没有可核对的证据"
     }
   },
   "analytics": {

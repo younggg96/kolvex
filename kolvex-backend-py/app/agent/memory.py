@@ -103,6 +103,7 @@ async def save_message(
     content: str,
     quote_evidence: Optional[List[Dict[str, Any]]] = None,
     revenue_evidence: Optional[List[Dict[str, Any]]] = None,
+    answer_check: Optional[Dict[str, Any]] = None,
 ) -> Optional[Dict[str, Any]]:
     """
     保存消息到数据库
@@ -138,6 +139,8 @@ async def save_message(
             row["quote_evidence"] = quote_evidence
         if revenue_evidence:
             row["revenue_evidence"] = revenue_evidence
+        if answer_check:
+            row["answer_check"] = answer_check
 
         # 保存消息
         result = (

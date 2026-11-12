@@ -26,6 +26,26 @@ export interface RevenueEvidence {
   period_end: string;
   filed_on: string;
   source_url: string;
+  /** Server-calculated, on the latest period of a year-over-year comparison only. */
+  year_over_year_pct?: number | null;
+  compared_period_end?: string | null;
+  unavailable_reason?: string | null;
+}
+
+export interface AnswerCheckClaim {
+  text: string;
+  kind: "money" | "percent";
+  status: "matched" | "mismatch" | "unverified";
+  expected?: { value: number; label: string };
+}
+
+/** Server check of the numbers in an answer against that turn's evidence. */
+export interface AnswerCheck {
+  version: number;
+  matched: number;
+  mismatch: number;
+  unverified: number;
+  claims: AnswerCheckClaim[];
 }
 
 export interface ChatMessage {
@@ -35,6 +55,7 @@ export interface ChatMessage {
   created_at: string;
   quote_evidence?: QuoteEvidence[] | null;
   revenue_evidence?: RevenueEvidence[] | null;
+  answer_check?: AnswerCheck | null;
 }
 
 export interface ChatConversation {
@@ -214,6 +235,7 @@ export interface AgentStreamEvent {
   user_message?: ChatMessage;
   quote_evidence?: QuoteEvidence[];
   revenue_evidence?: RevenueEvidence[];
+  answer_check?: AnswerCheck | null;
   created_at?: string;
 }
 

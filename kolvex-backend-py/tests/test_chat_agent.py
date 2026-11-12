@@ -99,6 +99,11 @@ class RevenueComparisonTests(unittest.IsolatedAsyncioTestCase):
         comparison, cards = await self.get_comparison(100)
         self.assertEqual(comparison["year_over_year_pct"], 100)
         self.assertEqual([str(row.period_end) for row in cards], ["2026-06-30", "2025-06-30"])
+        # The card carries the server's percentage; the tool output keeps it at the top level only.
+        self.assertEqual(cards[0].year_over_year_pct, 100)
+        self.assertEqual(str(cards[0].compared_period_end), "2025-06-30")
+        self.assertIsNone(cards[1].year_over_year_pct)
+        self.assertNotIn("year_over_year_pct", comparison["evidence"][0])
 
     async def test_missing_or_zero_base_does_not_produce_a_growth_percentage(self):
         for prior_value, card_count in [(None, 1), (0, 2)]:
@@ -107,6 +112,7 @@ class RevenueComparisonTests(unittest.IsolatedAsyncioTestCase):
                 self.assertIsNone(comparison["year_over_year_pct"])
                 self.assertTrue(comparison["unavailable_reason"])
                 self.assertEqual(len(cards), card_count)
+                self.assertEqual(cards[0].unavailable_reason, comparison["unavailable_reason"])
 
 
 class TradingAnalysisKeyTests(unittest.TestCase):
@@ -253,6 +259,10 @@ class StreamRouteTests(unittest.TestCase):
         self.assertEqual(events[-1]["content"], "Answer")
         self.assertEqual(save.await_args_list[-1].kwargs["quote_evidence"], quotes)
         self.assertEqual(events[-1]["quote_evidence"], quotes)
+        # "Answer" states no number, so every claim list is empty but the check still ran.
+        check = save.await_args_list[-1].kwargs["answer_check"]
+        self.assertEqual((check["matched"], check["mismatch"]), (0, 0))
+        self.assertEqual(events[-1]["answer_check"], check)
 
         from app.api.routes.chat.schemas import MessageSchema
         history_message = MessageSchema(id="m1", role="assistant", content="Answer",

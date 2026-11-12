@@ -513,6 +513,7 @@ export function ChatDetailContainer({
             created_at: completion.created_at,
             quote_evidence: completion.quote_evidence,
             revenue_evidence: completion.revenue_evidence,
+            answer_check: completion.answer_check,
           });
         }
         rememberMessages(conversationId, committed);

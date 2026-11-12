@@ -3,7 +3,7 @@ Chat API Schemas
 """
 
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Any, Optional, List
 from datetime import datetime
 
 from app.agent.quote_evidence import QuoteEvidence
@@ -18,6 +18,7 @@ class MessageSchema(BaseModel):
     created_at: datetime
     quote_evidence: list[QuoteEvidence] | None = None
     revenue_evidence: list[RevenueEvidence] | None = None
+    answer_check: dict[str, Any] | None = None
 
 
 class ConversationSchema(BaseModel):
@@ -84,6 +85,7 @@ class MessageResponse(BaseModel):
     created_at: datetime
     quote_evidence: list[QuoteEvidence] | None = None
     revenue_evidence: list[RevenueEvidence] | None = None
+    answer_check: dict[str, Any] | None = None
 
 
 class AgentMessageResponse(BaseModel):

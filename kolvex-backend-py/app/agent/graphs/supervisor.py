@@ -11,7 +11,7 @@ from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langgraph.prebuilt import create_react_agent
 
 from app.agent.quote_evidence import QuoteEvidence, extract_quote_evidence
-from app.agent.revenue_evidence import RevenueEvidence, extract_revenue_evidence
+from app.agent.revenue_evidence import RevenueEvidence, extract_revenue_evidence, merge_revenue_evidence
 from app.agent.state import AgentState
 from app.agent.llm import get_llm, get_fast_llm, resolve_model_id
 from app.agent.config import SYSTEM_PROMPT, MAX_TOOL_ITERATIONS
@@ -226,7 +226,7 @@ async def run_agent(
                     revenues = {}
                     for item in final_messages[len(messages):]:
                         for revenue in extract_revenue_evidence(item):
-                            revenues[(revenue.symbol, revenue.period_kind, revenue.period_end)] = revenue
+                            merge_revenue_evidence(revenues, revenue)
                     revenue_evidence.extend(revenues.values())
                 return msg.content
 
@@ -363,7 +363,7 @@ async def stream_agent(
                 if quote := extract_quote_evidence(event.get("data", {}).get("output")):
                     quotes[quote.symbol] = quote
                 for revenue in extract_revenue_evidence(event.get("data", {}).get("output")):
-                    revenues[(revenue.symbol, revenue.period_kind, revenue.period_end)] = revenue
+                    merge_revenue_evidence(revenues, revenue)
                 # 工具调用结束
                 tool_name = event.get("name", "")
                 yield {
@@ -382,7 +382,9 @@ async def stream_agent(
         if quotes:
             done["quote_evidence"] = [quote.model_dump(mode="json") for quote in quotes.values()]
         if revenues:
-            done["revenue_evidence"] = [revenue.model_dump(mode="json") for revenue in revenues.values()]
+            done["revenue_evidence"] = [
+                revenue.model_dump(mode="json", exclude_none=True) for revenue in revenues.values()
+            ]
         yield done
 
     except Exception as e:

@@ -1,4 +1,4 @@
-import type { QuoteEvidence, RevenueEvidence } from "@/lib/chatApi";
+import type { AnswerCheck, QuoteEvidence, RevenueEvidence } from "@/lib/chatApi";
 import type { ChatSkill } from "./chatSkills";
 
 // Chat component types and interfaces
@@ -10,6 +10,7 @@ export interface Message {
   timestamp?: Date;
   revenueEvidence?: RevenueEvidence[] | null;
   quoteEvidence?: QuoteEvidence[] | null;
+  answerCheck?: AnswerCheck | null;
 }
 
 export interface ChatConversation {
@@ -111,6 +112,7 @@ export interface ChatBubbleProps {
   symbols?: string[];
   revenueEvidence?: RevenueEvidence[] | null;
   quoteEvidence?: QuoteEvidence[] | null;
+  answerCheck?: AnswerCheck | null;
 }
 
 export interface ChatHistorySidebarProps {

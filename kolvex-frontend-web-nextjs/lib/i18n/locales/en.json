@@ -433,7 +433,10 @@
       "annual": "Annual revenue",
       "period": "Reporting period",
       "filed": "SEC filing date",
-      "openSource": "View SEC filing for {symbol}"
+      "openSource": "View SEC filing for {symbol}",
+      "yoy": "Year over year",
+      "comparedWith": "vs. period ending {date}",
+      "yoyUnavailable": "No comparable prior-year period"
     },
     "quoteEvidence": {
       "title": "Quote evidence",
@@ -467,6 +470,13 @@
         "web": "Web",
         "portfolio": "Portfolio"
       }
+    },
+    "answerCheck": {
+      "mismatch": "{count} numbers differ from the evidence",
+      "matched": "{count} numbers checked against the evidence",
+      "details": "Number check details",
+      "expected": "Evidence: {value} ({label})",
+      "unverified": "{count} numbers had no evidence to check against this turn"
     }
   },
   "analytics": {

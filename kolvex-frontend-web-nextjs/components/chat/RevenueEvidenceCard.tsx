@@ -27,6 +27,26 @@ export function RevenueEvidenceCard({ revenue }: { revenue: RevenueEvidence }) {
             <dt>{t("chat.revenueEvidence.period")}</dt>
             <dd className="tabular-nums">{revenue.period_start} – {revenue.period_end}</dd>
           </div>
+          {revenue.year_over_year_pct != null ? (
+            <div className="flex flex-wrap gap-x-2">
+              <dt>{t("chat.revenueEvidence.yoy")}</dt>
+              <dd className="tabular-nums font-medium text-foreground">
+                {revenue.year_over_year_pct > 0 ? "+" : ""}
+                {revenue.year_over_year_pct}%
+                {revenue.compared_period_end && (
+                  <span className="font-normal text-muted-foreground">
+                    {" "}
+                    {t("chat.revenueEvidence.comparedWith", { date: revenue.compared_period_end })}
+                  </span>
+                )}
+              </dd>
+            </div>
+          ) : revenue.unavailable_reason ? (
+            <div className="flex flex-wrap gap-x-2">
+              <dt>{t("chat.revenueEvidence.yoy")}</dt>
+              <dd>{t("chat.revenueEvidence.yoyUnavailable")}</dd>
+            </div>
+          ) : null}
           <div className="flex flex-wrap gap-x-2">
             <dt>{t("chat.revenueEvidence.filed")}</dt>
             <dd className="tabular-nums"><time dateTime={revenue.filed_on}>{revenue.filed_on}</time></dd>

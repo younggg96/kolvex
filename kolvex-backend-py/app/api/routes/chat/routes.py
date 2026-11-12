@@ -14,6 +14,7 @@ from fastapi.responses import StreamingResponse
 from starlette import status as http_status
 from typing import Optional
 
+from app.agent.answer_check import check_answer
 from app.api.dependencies.auth import get_current_user_id
 from app.services.chat_service import ChatService, get_chat_service
 from app.services.user_api_keys_service import (
@@ -340,13 +341,16 @@ async def send_message(
         ai_response_text = "I'm sorry, I encountered an error processing your request. Please try again."
 
     # 4. 保存 AI 回复
+    quote_rows = [quote.model_dump(mode="json") for quote in quotes]
+    revenue_rows = [revenue.model_dump(mode="json", exclude_none=True) for revenue in revenues]
     ai_msg = await save_message(
         user_id=current_user_id,
         conversation_id=conversation_id,
         role="assistant",
         content=ai_response_text,
-        quote_evidence=[quote.model_dump(mode="json") for quote in quotes],
-        revenue_evidence=[revenue.model_dump(mode="json") for revenue in revenues],
+        quote_evidence=quote_rows,
+        revenue_evidence=revenue_rows,
+        answer_check=check_answer(ai_response_text, quote_rows, revenue_rows),
     )
 
     if not ai_msg:
@@ -461,6 +465,8 @@ async def stream_message(
                 if full_response.strip():
                     quotes = event.get("quote_evidence") or []
                     revenues = event.get("revenue_evidence") or []
+                    # Checked here, against the exact text saved, in the same row as its evidence.
+                    answer_check = check_answer(full_response, quotes, revenues)
                     ai_msg = await save_message(
                         user_id=current_user_id,
                         conversation_id=conversation_id,
@@ -468,6 +474,7 @@ async def stream_message(
                         content=full_response,
                         quote_evidence=quotes,
                         revenue_evidence=revenues,
+                        answer_check=answer_check,
                     )
                     if not ai_msg:
                         publish(json.dumps({
@@ -480,6 +487,7 @@ async def stream_message(
                         created_at=ai_msg["created_at"],
                         quote_evidence=quotes,
                         revenue_evidence=revenues,
+                        answer_check=answer_check,
                     )
                 publish(json.dumps(done))
                 return

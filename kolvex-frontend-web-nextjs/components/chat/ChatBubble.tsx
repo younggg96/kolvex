@@ -7,6 +7,7 @@ import ReactMarkdown from "react-markdown";
 import { visibleQuestion } from "./pageEvidence";
 import { RevenueEvidenceCard } from "./RevenueEvidenceCard";
 import { QuoteEvidenceCard } from "./QuoteEvidenceCard";
+import { AnswerCheckNote } from "./AnswerCheckNote";
 import type { ChatBubbleProps } from "./types";
 import { Button } from "../ui/button";
 import { useTranslation } from "@/lib/i18n";
@@ -39,6 +40,7 @@ export function ChatBubble({
   symbols,
   quoteEvidence,
   revenueEvidence,
+  answerCheck,
 }: ChatBubbleProps) {
   const { t } = useTranslation();
   const remarkPlugins = richRemarkPlugins(symbols);
@@ -116,6 +118,7 @@ export function ChatBubble({
 
           {!!(quoteEvidence?.length || revenueEvidence?.length) && (
             <div className="mt-4 grid max-w-md gap-2">
+              {answerCheck && <AnswerCheckNote check={answerCheck} />}
               {quoteEvidence?.map((quote) => <QuoteEvidenceCard key={quote.symbol} quote={quote} />)}
               {revenueEvidence?.map((revenue) => (
                 <RevenueEvidenceCard
