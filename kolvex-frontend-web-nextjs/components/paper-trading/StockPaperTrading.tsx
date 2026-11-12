@@ -135,7 +135,7 @@ export default function StockPaperTrading({
             <RefreshCw aria-hidden className="size-4" />
             {c("Refresh", "刷新")}
           </Button>
-          <Button variant="ghost" asChild>
+          <Button variant="outline" asChild>
             <Link href="/dashboard/paper-trading">
               {c("Full trading desk", "全部虚拟交易")}
             </Link>

@@ -211,7 +211,6 @@ export default function SearchWithAutocomplete<T extends SearchItem>({
         onChange={(e) => setSearchTerm(e.target.value)}
         onClick={handleInputClick}
         containerClassName="flex-none w-full"
-        iconClassName="z-10"
         className={cn("h-9", inputClassName)}
       />
 

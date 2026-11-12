@@ -37,6 +37,7 @@ import StockObservationList from "./StockObservationList";
 import MarketComparison from "./MarketComparison";
 import MarketCompareDialog from "./MarketCompareChart";
 import MarketWatchlistCard from "./MarketWatchlistCard";
+import { MarketInfoButton } from "./MarketToolbar";
 
 const OVERVIEW_GROUPS = MARKET_GROUPS.filter(group => group.key === "indices");
 const TREND_GROUPS = MARKET_GROUPS.filter(group => group.key !== "indices");
@@ -59,6 +60,8 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
   const c = useCopy();
   const isIndex = isMarketIndex(benchmark.symbol);
   const unit = benchmark.unit ?? (isIndex ? "points" : "usd");
+  const note = benchmark.note ? c(benchmark.note.en, benchmark.note.zh) : unit === "percent" ? c("FRED · Yield in %", "FRED · 收益率 %") : null;
+  const hasInfo = Boolean(note || benchmark.daily);
   const host = useRef<HTMLElement>(null);
   const [near, setNear] = useState(false);
   useEffect(() => {
@@ -146,7 +149,7 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
 
 
   return (
-    <article ref={host} className="relative h-60 w-60 shrink-0 snap-start max-md:h-auto max-md:w-[11.25rem] overflow-hidden rounded-3xl border border-foreground/10 glass-card bg-card-glass transition-colors duration-200 hover:border-foreground/25 hover:bg-foreground/[0.04] xl:w-auto xl:min-w-0">
+    <article ref={host} className={cn("relative w-60 shrink-0 snap-start max-md:h-auto max-md:w-[11.25rem] overflow-hidden rounded-3xl border border-foreground/10 glass-card bg-card-glass transition-colors duration-200 hover:border-foreground/25 hover:bg-foreground/[0.04] xl:w-auto xl:min-w-0", isIndex ? "h-60" : "h-56")}>
       <Link
         href={benchmark.sourceUrl ?? marketStockHref(benchmark.symbol)}
         target={benchmark.sourceUrl ? "_blank" : undefined}
@@ -158,7 +161,7 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
           <h3 className="min-w-0 truncate text-sm font-medium" title={c(benchmark.en, benchmark.zh)}>{c(benchmark.en, benchmark.zh)}</h3>
           <time dateTime={date} className="figure shrink-0 text-xs text-muted-foreground">{date ? `${date.slice(5, 7)}/${date.slice(8, 10)}` : "—"}</time>
         </div>
-        <p className="mt-0.5 truncate text-xs text-muted-foreground">{benchmark.symbol}{benchmark.daily && c(" · Daily", " · 日度")}</p>
+        <p className={cn("mt-0.5 truncate text-xs text-muted-foreground", hasInfo && "pr-8")}>{benchmark.symbol}</p>
         <div className="figure mt-3 min-h-8 text-2xl font-semibold tracking-tight max-md:mt-1.5 max-md:min-h-0 max-md:text-xl">
           {valueDisplay}
         </div>
@@ -168,17 +171,20 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
         <div className="mt-2 h-16 max-md:h-10" aria-busy={seriesState === "loading"}>
           {chartDisplay}
         </div>
-        {(benchmark.note || unit !== "points") && (
-          <p className="mt-2 truncate text-xs text-muted-foreground max-md:hidden" title={benchmark.note ? c(benchmark.note.en, benchmark.note.zh) : undefined}>
-            {benchmark.note ? c(benchmark.note.en, benchmark.note.zh) : unit === "percent" ? c("FRED · Yield in %", "FRED · 收益率 %") : c("USD price", "美元价格")}
-          </p>
-        )}
       </Link>
+      {hasInfo && (
+        <div className="absolute right-2 top-9 max-md:right-1">
+          <MarketInfoButton label={c(`About ${benchmark.en}`, `${benchmark.zh}说明`)}>
+            {note && <p>{note}</p>}
+            {benchmark.daily && <p>{c("Daily observations", "日度观测")}</p>}
+          </MarketInfoButton>
+        </div>
+      )}
       {seriesState === "error" && (
         <Button
           size="xs"
           variant="ghost"
-          className="absolute bottom-12 left-1/2 -translate-x-1/2 max-md:bottom-3"
+          className={cn("absolute left-1/2 -translate-x-1/2 max-md:bottom-3", isIndex ? "bottom-12" : "bottom-8")}
           aria-label={c(`Retry ${benchmark.en} chart`, `重试${benchmark.zh}走势`)}
           onClick={onRetry}
         >

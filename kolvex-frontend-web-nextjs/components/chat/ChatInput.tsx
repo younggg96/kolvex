@@ -413,16 +413,13 @@ export function ChatInput({
 
       {/* Main Container */}
       <div className={cn("group/composer relative", inline && "bg-transparent")}>
-        {/* The glass is its own layer so it can shrink to a circle while the content keeps
-            its size, and fading the content never touches the glass's backdrop blur. Same
-            material, radius and rim as the mobile dock (MobileTabBar). The rim is a shadow,
-            so focus brightens the shadow rather than a border. */}
+        {/* Keep the surface separate so it can shrink to a circle without resizing the input. */}
         {!inline && (
           <div
             aria-hidden
             className={cn(
-              "glass-track glass-track-strong absolute inset-0 rounded-[28px]",
-              "[transition:top_var(--spring-standard)_var(--spring),left_var(--spring-standard)_var(--spring),box-shadow_150ms]",
+              "chat-composer-surface glass-track glass-track-strong absolute inset-0 rounded-[28px]",
+              "[transition:top_var(--spring-standard)_var(--spring),left_var(--spring-standard)_var(--spring),box-shadow_150ms,border-color_150ms]",
               "group-focus-within/composer:[box-shadow:var(--glass-drop),inset_0_0_0_1px_rgb(var(--foreground)/0.35),var(--glass-sheen)]",
               collapsed && "max-lg:left-[calc(100%-48px)] max-lg:top-[calc(100%-48px)]"
             )}

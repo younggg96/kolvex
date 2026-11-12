@@ -51,6 +51,7 @@ import {
   priceTickValues,
   viewForRange,
   zoomGraphView,
+  zoomPriceDomain,
   type GraphView,
   type PriceRangeKey,
 } from "@/lib/chart/graph";
@@ -74,6 +75,7 @@ export type { GraphView, PriceRangeKey };
 
 /** Wheel-zoom strength per px of trackpad scroll. */
 const ZOOM_PER_PX = 0.0015;
+const AXIS_DRAG_ZOOM_PER_PX = 0.006;
 const DRAG_THRESHOLD = 5;
 /** One date label per this many px of plot, capped at four. */
 const BARS_PER_LABEL = 84;
@@ -81,6 +83,13 @@ const FADE_MS = 190;
 /** Creator-call markers closer than this many px merge into one. */
 const CALL_MIN_GAP = 20;
 const AXIS_BLOCK = { x: 0, y: 0, w: GRAPH_AXIS_WIDTH, h: 0 };
+type PriceDomain = ReturnType<typeof priceDomain>;
+type ScaleAxis = "time" | "price";
+
+function scaleAxisAt(target: EventTarget | null): ScaleAxis | null {
+  const axis = target instanceof Element ? target.closest<HTMLElement>("[data-scale-axis]")?.dataset.scaleAxis : undefined;
+  return axis === "time" || axis === "price" ? axis : null;
+}
 
 const toneColor: Record<StrengthTone, string> = {
   positive: "rgb(var(--chart-up))",
@@ -143,6 +152,7 @@ export function graphGeometry({
   timeAxis = GRAPH_TIME_AXIS,
   topPad = GRAPH_TOP_PAD,
   priceExtent = null,
+  priceDomainOverride = null,
 }: {
   bars: PriceBar[] | null | undefined;
   /** `Date.parse(bar.date)` per bar; parsed from `bars` when omitted. */
@@ -156,6 +166,7 @@ export function graphGeometry({
   topPad?: number;
   /** Prices outside the bars the scale must still fit (forecast band). */
   priceExtent?: { lo: number; hi: number } | null;
+  priceDomainOverride?: PriceDomain | null;
 }): GraphGeometry {
   const list = bars || [];
   const count = list.length;
@@ -168,7 +179,7 @@ export function graphGeometry({
   const closeOnly = interval === "1d" || interval === "1wk" || interval === "1mo";
   const firstIndex = Math.max(Math.floor(view.start), 0);
   const lastIndex = Math.min(Math.ceil(view.end) - 1, count - 1);
-  const domain = priceDomain(list, count ? view : { start: 0, end: 1 }, priceExtent);
+  const domain = priceDomainOverride ?? priceDomain(list, count ? view : { start: 0, end: 1 }, priceExtent);
   let priceHigh = -Infinity;
   let priceLow = Infinity;
   for (let index = firstIndex; index <= lastIndex; index++) {
@@ -177,7 +188,7 @@ export function graphGeometry({
     priceHigh = Math.max(priceHigh, closeOnly ? bar.close : bar.high);
     priceLow = Math.min(priceLow, closeOnly ? bar.close : bar.low);
   }
-  if (!Number.isFinite(priceHigh) || priceHigh <= priceLow) {
+  if (priceDomainOverride || !Number.isFinite(priceHigh) || priceHigh <= priceLow) {
     priceHigh = domain.hi;
     priceLow = domain.lo;
   }
@@ -402,6 +413,9 @@ export interface PriceGraphProps {
   onGeometry?: (geometry: GraphGeometry) => void;
   /** Prices outside the bars the scale must still fit (forecast band). */
   priceExtent?: { lo: number; hi: number } | null;
+  /** Advanced: an explicit price scale shared with chart drawings and indicators. */
+  priceDomainOverride?: PriceDomain | null;
+  onPriceDomainChange?: (domain: PriceDomain | null) => void;
   formatDate: (date: string) => string;
   t: Translate;
   symbol: string;
@@ -461,6 +475,8 @@ export default function PriceGraph({
   trailingControls,
   onGeometry,
   priceExtent = null,
+  priceDomainOverride = null,
+  onPriceDomainChange,
   formatDate,
   t,
   symbol,
@@ -479,6 +495,16 @@ export default function PriceGraph({
   const plotRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [dragging, setDragging] = useState(false);
+  const [draggingAxis, setDraggingAxis] = useState<ScaleAxis | null>(null);
+  const axisGesture = useRef<{
+    axis: ScaleAxis;
+    pointer: number;
+    origin: number;
+    view: GraphView;
+    domain: PriceDomain;
+    referenceSpan: number;
+    moved: boolean;
+  } | null>(null);
   const [panMode, setPanMode] = useState(false);
   const [fading, setFading] = useState<{ bars: PriceBar[]; view: GraphView } | null>(null);
   const gesture = useRef<{ kind: "pan"; x: number; moved: boolean; view: GraphView; last: number } | { kind: "pinch"; distance: number; mid: number; view: GraphView } | null>(null);
@@ -526,11 +552,14 @@ export default function PriceGraph({
     [view, defaultView, count],
   );
   /** The "Reset zoom" affordance; ±0.5 bars of slack absorbs float drift. */
-  const modified = Boolean(defaultView && view && (Math.abs(view.start - defaultView.start) > 0.5 || Math.abs(view.end - defaultView.end) > 0.5));
+  const modified = Boolean(priceDomainOverride || (defaultView && view && (Math.abs(view.start - defaultView.start) > 0.5 || Math.abs(view.end - defaultView.end) > 0.5)));
 
+  const automaticDomain = useMemo(() => priceDomain(bars ?? [], current, priceExtent), [bars, current, priceExtent]);
+  const activeDomain = priceDomainOverride ?? automaticDomain;
+  const referencePriceSpan = automaticDomain.hi - automaticDomain.lo;
   const geometry = useMemo(
-    () => graphGeometry({ bars, times, view: current, width: size.width, height: size.height, intraday, interval, topPad: advanced ? GRAPH_TOP_PAD : GRAPH_TOP_PAD - 6, priceExtent }),
-    [bars, times, current, size.width, size.height, intraday, interval, advanced, priceExtent],
+    () => graphGeometry({ bars, times, view: current, width: size.width, height: size.height, intraday, interval, topPad: advanced ? GRAPH_TOP_PAD : GRAPH_TOP_PAD - 6, priceExtent, priceDomainOverride }),
+    [bars, times, current, size.width, size.height, intraday, interval, advanced, priceExtent, priceDomainOverride],
   );
   const loaded = Boolean(count && size.width >= 40 && size.height >= 40);
   /**
@@ -573,10 +602,15 @@ export default function PriceGraph({
     if (!count) return;
     commit({ start: current.start + bars, end: current.end + bars });
   };
-  const resetView = () => {
+  const resetAxis = (axis?: ScaleAxis) => {
     stopSettling();
-    onViewChange(null);
+    if (axis !== "price") onViewChange(null);
+    if (axis !== "time") onPriceDomainChange?.(null);
     onActiveChange(null);
+  };
+  const resetView = () => resetAxis();
+  const zoomPriceBy = (factor: number, ratio: number) => {
+    onPriceDomainChange?.(zoomPriceDomain(activeDomain, factor, ratio, referencePriceSpan));
   };
 
   /* -------------------------------------------------------------- physics */
@@ -622,6 +656,21 @@ export default function PriceGraph({
     const onWheel = (event: WheelEvent) => {
       const rect = box.getBoundingClientRect();
       const ratio = Math.min(Math.max((event.clientX - rect.left) / geometry.plotWidth, 0), 1);
+      const axis = scaleAxisAt(event.target);
+      if (axis) {
+        event.preventDefault();
+        if (axisGesture.current) return;
+        stopSettling();
+        const delta = event.deltaY || event.deltaX;
+        const units = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? geometry.plotHeight : 1;
+        const factor = Math.exp(Math.min(Math.max(delta * units * ZOOM_PER_PX, -2), 2));
+        if (axis === "time") zoomBy(factor, ratio);
+        else {
+          const priceRatio = Math.min(Math.max((event.clientY - rect.top - geometry.priceTop) / (geometry.priceBottom - geometry.priceTop), 0), 1);
+          zoomPriceBy(factor, priceRatio);
+        }
+        return;
+      }
       const span = current.end - current.start || 1;
       if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
         event.preventDefault();
@@ -672,7 +721,20 @@ export default function PriceGraph({
   };
 
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    if (!loaded || drawingPointer.current !== null) return;
+    if (!loaded || drawingPointer.current !== null || axisGesture.current) return;
+    const axis = scaleAxisAt(event.target);
+    if (axis) {
+      if (event.button !== 0 || pointers.current.size || !(event.target instanceof Element)) return;
+      stopSettling();
+      onActiveChange(null);
+      event.target.setPointerCapture(event.pointerId);
+      axisGesture.current = {
+        axis, pointer: event.pointerId, origin: axis === "time" ? event.clientX : event.clientY,
+        view: current, domain: activeDomain, referenceSpan: referencePriceSpan, moved: false,
+      };
+      setDraggingAxis(axis);
+      return;
+    }
     // Catch the view where it is: a touch stops a settling spring, as a finger stops a scroll.
     stopSettling();
     tracker.current.reset();
@@ -696,6 +758,21 @@ export default function PriceGraph({
 
   const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
     if (!loaded) return;
+    const scale = axisGesture.current;
+    if (scale) {
+      if (scale.pointer !== event.pointerId) return;
+      const distance = (scale.axis === "time" ? event.clientX : event.clientY) - scale.origin;
+      if (!scale.moved && Math.abs(distance) < DRAG_THRESHOLD) return;
+      scale.moved = true;
+      const factor = Math.exp(Math.min(Math.max(distance * AXIS_DRAG_ZOOM_PER_PX, -8), 8));
+      if (scale.axis === "time") commit(zoomGraphView(scale.view, 1 / factor, 1, count));
+      else onPriceDomainChange?.(zoomPriceDomain(scale.domain, factor, 0.5, scale.referenceSpan));
+      return;
+    }
+    if (scaleAxisAt(event.target) && !gesture.current && drawingPointer.current === null) {
+      if (activeIndex !== null) onActiveChange(null);
+      return;
+    }
     if (drawingPointer.current !== null) {
       if (drawingPointer.current === event.pointerId) drawingInteraction?.onPointerMove(event, geometry);
       return;
@@ -730,6 +807,11 @@ export default function PriceGraph({
   };
 
   const endGesture = (event: PointerEvent<HTMLDivElement>) => {
+    if (axisGesture.current?.pointer === event.pointerId) {
+      axisGesture.current = null;
+      setDraggingAxis(null);
+      return;
+    }
     if (drawingPointer.current !== null) {
       if (drawingPointer.current === event.pointerId) {
         drawingPointer.current = null;
@@ -757,12 +839,25 @@ export default function PriceGraph({
     if (activeIndex !== null) onActiveChange(null);
   };
 
-  const onPlotDoubleClick = () => {
+  const onPlotDoubleClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!count) return;
-    resetView();
+    resetAxis(scaleAxisAt(event.target) ?? undefined);
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const axis = scaleAxisAt(event.target);
+    if (axis) {
+      if (event.key === "0") resetAxis(axis);
+      else {
+        const factor = event.key === "+" || event.key === "=" ? 0.8 : event.key === "-" ? 1.25 : null;
+        if (factor === null) return;
+        stopSettling();
+        if (axis === "time") zoomBy(factor, 0.5);
+        else zoomPriceBy(factor, 0.5);
+      }
+      event.preventDefault();
+      return;
+    }
     drawingInteraction?.onKeyDown(event);
     if (event.defaultPrevented) return;
     const base = activeIndex ?? Math.max(Math.min(geometry.lastIndex, count - 1), 0);
@@ -998,6 +1093,9 @@ export default function PriceGraph({
             })
       }
       dragging={dragging}
+      draggingAxis={draggingAxis}
+      timeScaleLabel={advanced ? t("youtubeOpinions.timeAxisZoom") : undefined}
+      priceScaleLabel={advanced && onPriceDomainChange ? t("youtubeOpinions.priceAxisZoom") : undefined}
     />
   );
 
@@ -1164,6 +1262,9 @@ export function PriceGraphPlot({
   onKeyDown,
   ariaLabel,
   dragging,
+  draggingAxis,
+  timeScaleLabel,
+  priceScaleLabel,
 }: {
   advanced: boolean;
   size: { width: number; height: number };
@@ -1201,10 +1302,13 @@ export function PriceGraphPlot({
   onPointerUp: (event: PointerEvent<HTMLDivElement>) => void;
   onPointerCancel: (event: PointerEvent<HTMLDivElement>) => void;
   onPointerLeave: (event: PointerEvent<HTMLDivElement>) => void;
-  onDoubleClick: () => void;
+  onDoubleClick: (event: React.MouseEvent<HTMLDivElement>) => void;
   onKeyDown?: (event: KeyboardEvent<HTMLDivElement>) => void;
   ariaLabel: string;
   dragging: boolean;
+  draggingAxis?: ScaleAxis | null;
+  timeScaleLabel?: string;
+  priceScaleLabel?: string;
 }) {
   return (
     <div
@@ -1221,6 +1325,7 @@ export function PriceGraphPlot({
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerCancel}
+      onLostPointerCapture={onPointerCancel}
       onPointerLeave={onPointerLeave}
       onDoubleClick={onDoubleClick}
       onKeyDown={onKeyDown}
@@ -1229,6 +1334,8 @@ export function PriceGraphPlot({
         heightClass,
         advanced ? "touch-none" : "touch-pan-y",
         dragging && "cursor-grabbing",
+        draggingAxis === "time" && "cursor-ew-resize",
+        draggingAxis === "price" && "cursor-ns-resize",
       )}
     >
       {!loaded ? (
@@ -1372,6 +1479,28 @@ export function PriceGraphPlot({
             </div>
           )}
           {overlay}
+          {timeScaleLabel && (
+            <div
+              data-scale-axis="time"
+              role="group"
+              tabIndex={0}
+              aria-label={timeScaleLabel}
+              title={timeScaleLabel}
+              className="absolute bottom-0 left-0 cursor-ew-resize focus-visible:outline focus-visible:outline-1 focus-visible:-outline-offset-1"
+              style={{ width: geometry.plotWidth, height: geometry.timeAxis }}
+            />
+          )}
+          {priceScaleLabel && (
+            <div
+              data-scale-axis="price"
+              role="group"
+              tabIndex={0}
+              aria-label={priceScaleLabel}
+              title={priceScaleLabel}
+              className="absolute right-0 top-0 cursor-ns-resize focus-visible:outline focus-visible:outline-1 focus-visible:-outline-offset-1"
+              style={{ width: geometry.axisWidth, height: geometry.plotHeight }}
+            />
+          )}
         </>
       )}
     </div>

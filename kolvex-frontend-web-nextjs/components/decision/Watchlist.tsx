@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { Plus, RefreshCw, Search, Star, X } from "lucide-react";
+import { Plus, RefreshCw, Star, X } from "lucide-react";
 import { toast } from "sonner";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import CompanyLogo from "@/components/ui/company-logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SearchFieldIcon } from "@/components/ui/search-input";
 import { PendingValue } from "@/components/ui/content-loading";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StockRowsSkeleton } from "@/components/decision/StockRowsSkeleton";
@@ -98,7 +99,7 @@ export default function Watchlist() {
         </div> : <section aria-label={c("Saved stocks", "已添加的股票")} className="space-y-3">
           <ListCard>
             <div className="flex items-center justify-end gap-3 lg:grid lg:grid-cols-[minmax(0,1fr)_12rem]">
-              <div className="hidden lg:block"><label htmlFor="watchlist-search" className="mb-2 block text-xs text-muted-foreground">{c("Search Watchlist", "搜索自选股")}</label><div className="relative"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" /><Input id="watchlist-search" ref={search} value={draft} placeholder={c("Ticker or company name", "股票代码或公司名称")} className="h-11 pl-10 pr-11" maxLength={100} onChange={event => { setDraft(event.target.value); if (!composing.current) update(event.target.value); }} onCompositionStart={() => { composing.current = true; }} onCompositionEnd={event => { composing.current = false; update(event.currentTarget.value); }} onKeyDown={event => { if (event.key === "Escape" && !composing.current) clear(); }} />{draft && <Button type="button" variant="ghost" size="icon" className="absolute right-0 top-0 h-11 w-11" aria-label={c("Clear Watchlist search", "清除自选股搜索")} onClick={clear}><X className="h-4 w-4" aria-hidden="true" /></Button>}</div></div>
+              <div className="hidden lg:block"><label htmlFor="watchlist-search" className="mb-2 block text-xs text-muted-foreground">{c("Search Watchlist", "搜索自选股")}</label><div className="relative"><SearchFieldIcon /><Input id="watchlist-search" ref={search} value={draft} placeholder={c("Ticker or company name", "股票代码或公司名称")} className="h-11 pl-10 pr-11" maxLength={100} onChange={event => { setDraft(event.target.value); if (!composing.current) update(event.target.value); }} onCompositionStart={() => { composing.current = true; }} onCompositionEnd={event => { composing.current = false; update(event.currentTarget.value); }} onKeyDown={event => { if (event.key === "Escape" && !composing.current) clear(); }} />{draft && <Button type="button" variant="ghost" size="icon" className="absolute right-0 top-0 h-11 w-11" aria-label={c("Clear Watchlist search", "清除自选股搜索")} onClick={clear}><X className="h-4 w-4" aria-hidden="true" /></Button>}</div></div>
               <FilterSheet title={c("Sort", "排序")} summary={sortOptions.find(option => option.value === sort)?.label} active={sort !== "added"} onReset={() => update(query, "added")} triggerClassName="shrink-0"><FilterSheetGroup label={c("Sort", "排序")} options={sortOptions} value={sort} onChange={value => update(query, value)} /></FilterSheet>
               <div className="hidden lg:block"><label htmlFor="watchlist-sort" className="mb-2 block text-xs text-muted-foreground">{c("Sort", "排序")}</label><Select value={sort} onValueChange={value => update(query, value)}><SelectTrigger id="watchlist-sort" className="h-11"><SelectValue /></SelectTrigger><SelectContent align="end">{sortOptions.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select></div>
             </div>

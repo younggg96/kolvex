@@ -27,6 +27,19 @@ const sizeConfig = {
   },
 };
 
+export function SearchFieldIcon({ className = "left-3 h-4 w-4" }: { className?: string }) {
+  return (
+    <Search
+      aria-hidden="true"
+      data-slot="search-field-icon"
+      className={cn(
+        "pointer-events-none absolute top-1/2 z-10 -translate-y-1/2 text-muted-foreground",
+        className
+      )}
+    />
+  );
+}
+
 const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
   (
     { className, containerClassName, iconClassName, size = "md", ...props },
@@ -42,18 +55,12 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
           containerClassName
         )}
       >
-        <Search
-          className={cn(
-            "absolute top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground",
-            config.icon,
-            iconClassName
-          )}
-        />
+        <SearchFieldIcon className={cn(config.icon, iconClassName)} />
         <input
           ref={ref}
           type="text"
           className={cn(
-            "w-full rounded-full bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground dark:placeholder:text-white/40 focus-visible:outline-none transition-colors duration-200",
+            "w-full rounded-full bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground dark:placeholder:text-white/40 focus-visible:bg-transparent focus-visible:outline-none transition-colors duration-200",
             config.input,
             className
           )}

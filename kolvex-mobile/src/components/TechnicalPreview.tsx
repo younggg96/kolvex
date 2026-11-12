@@ -4,7 +4,7 @@
 // a collapsed 画线图层 line and the 高级 entry to the full-screen chart. The saved
 // AI analysis follows underneath.
 import { useMemo, useState } from "react";
-import { Alert, Pressable, View } from "react-native";
+import { Alert, Pressable, View, useWindowDimensions } from "react-native";
 import { router } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { apiRequest } from "../lib/http";
@@ -61,23 +61,22 @@ export function TechnicalPreview({ symbol }: { symbol: string }) {
   const t = useTheme();
   const text = useText();
   const user = useAuth().session?.user.id;
+  const { width } = useWindowDimensions();
   const [range, setRange] = useState<AdvancedRange>("3M");
   const [active, setActive] = useState<number | null>(null);
   const [layersOpen, setLayersOpen] = useState(false);
   const [drawingsHidden, setDrawingsHidden] = useState(false);
   const spec = PREVIEW[range];
   const intraday = isIntraday(spec.interval);
-  const history = useResource(
-    `preview:${symbol}:${range}`,
-    async (signal) =>
-      validBars(
-        (
-          await apiRequest<{ data: PriceBar[] }>(
-            `/market/history/${encodeURIComponent(symbol)}?period=${spec.period}&interval=${spec.interval}`,
-            { signal, timeout: 25_000 },
-          )
-        ).data,
-      ),
+  const history = useResource(`preview:${symbol}:${range}`, async (signal) =>
+    validBars(
+      (
+        await apiRequest<{ data: PriceBar[] }>(
+          `/market/history/${encodeURIComponent(symbol)}?period=${spec.period}&interval=${spec.interval}`,
+          { signal, timeout: 25_000 },
+        )
+      ).data,
+    ),
   );
   const bars = useMemo(() => history.data ?? [], [history.data]);
   const quote = useResource(`chart-quote:${symbol}`, (signal) =>
@@ -128,7 +127,10 @@ export function TechnicalPreview({ symbol }: { symbol: string }) {
   const price = activeBar
     ? activeBar.close
     : (latest?.price ?? bars.at(-1)?.close);
-  const change = price !== undefined && baseline ? ((price - baseline) / baseline) * 100 : null;
+  const change =
+    price !== undefined && baseline
+      ? ((price - baseline) / baseline) * 100
+      : null;
   const open = () => router.push(`/technical/${encodeURIComponent(symbol)}`);
 
   return (
@@ -136,19 +138,34 @@ export function TechnicalPreview({ symbol }: { symbol: string }) {
       <Glass style={{ padding: 16, gap: 8 }}>
         {/* Price · change · window label, with the quote details one tap away. */}
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <View style={{ flex: 1, flexDirection: "row", flexWrap: "wrap", alignItems: "center", columnGap: 8 }}>
+          <View
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              flexWrap: "wrap",
+              alignItems: "center",
+              columnGap: 8,
+            }}
+          >
             {price !== undefined && (
               <Copy size={18} bold localize={false}>
                 {formatPrice(price)}
               </Copy>
             )}
             {change !== null && (
-              <Copy size={15} bold localize={false} color={change >= 0 ? t.chartUp : t.chartDown}>
+              <Copy
+                size={15}
+                bold
+                localize={false}
+                color={change >= 0 ? t.chartUp : t.chartDown}
+              >
                 {signed(change)}
               </Copy>
             )}
             <Copy size={12} muted>
-              {activeBar ? activeBar.date.slice(0, intraday ? 16 : 10).replace("T", " ") : "所选区间"}
+              {activeBar
+                ? activeBar.date.slice(0, intraday ? 16 : 10).replace("T", " ")
+                : "所选区间"}
             </Copy>
             {latest && (
               <Pressable
@@ -162,7 +179,11 @@ export function TechnicalPreview({ symbol }: { symbol: string }) {
                   )
                 }
               >
-                <SymbolView name="info.circle" size={14} tintColor={t.secondary} />
+                <SymbolView
+                  name="info.circle"
+                  size={14}
+                  tintColor={t.secondary}
+                />
               </Pressable>
             )}
           </View>
@@ -179,7 +200,11 @@ export function TechnicalPreview({ symbol }: { symbol: string }) {
               opacity: pressed ? 0.6 : 1,
             })}
           >
-            <SymbolView name="arrow.up.left.and.arrow.down.right" size={13} tintColor={t.secondary} />
+            <SymbolView
+              name="arrow.up.left.and.arrow.down.right"
+              size={13}
+              tintColor={t.secondary}
+            />
             <Copy size={13} bold muted>
               高级
             </Copy>
@@ -196,7 +221,13 @@ export function TechnicalPreview({ symbol }: { symbol: string }) {
         ) : history.error && !history.data ? (
           <Failure message="走势暂不可用。" retry={history.refresh} />
         ) : bars.length < 2 ? (
-          <View style={{ height: HEIGHT, alignItems: "center", justifyContent: "center" }}>
+          <View
+            style={{
+              height: HEIGHT,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
             <Copy size={12} muted>
               这个区间暂无走势数据。
             </Copy>
@@ -232,6 +263,7 @@ export function TechnicalPreview({ symbol }: { symbol: string }) {
 
         <Filters
           size="sm"
+          maxWidth={width - 64}
           values={advancedRanges.map((r) => [r, rangeLabels[r]] as const)}
           value={range}
           onChange={(v) => {
@@ -247,9 +279,18 @@ export function TechnicalPreview({ symbol }: { symbol: string }) {
               accessibilityRole="button"
               accessibilityState={{ expanded: layersOpen }}
               onPress={() => setLayersOpen(!layersOpen)}
-              style={{ flexDirection: "row", alignItems: "center", gap: 10, minHeight: 44 }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 10,
+                minHeight: 44,
+              }}
             >
-              <SymbolView name="square.3.layers.3d" size={16} tintColor={t.secondary} />
+              <SymbolView
+                name="square.3.layers.3d"
+                size={16}
+                tintColor={t.secondary}
+              />
               <Copy size={14} bold>
                 画线图层
               </Copy>
@@ -258,28 +299,48 @@ export function TechnicalPreview({ symbol }: { symbol: string }) {
                   size={13}
                   lines={1}
                   muted={!!shownGroups.length && !drawingsHidden}
-                  color={shownGroups.length && !drawingsHidden ? undefined : t.chartDown}
+                  color={
+                    shownGroups.length && !drawingsHidden
+                      ? undefined
+                      : t.chartDown
+                  }
                 >
                   {shownGroups.length && !drawingsHidden
                     ? shownGroups.map((g) => drawingGroupLabels[g]).join("、")
                     : "已全部隐藏"}
                 </Copy>
               </View>
-              <SymbolView name={layersOpen ? "chevron.up" : "chevron.down"} size={12} tintColor={t.secondary} />
+              <SymbolView
+                name={layersOpen ? "chevron.up" : "chevron.down"}
+                size={12}
+                tintColor={t.secondary}
+              />
             </Pressable>
             {layersOpen && (
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, paddingBottom: 4 }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  gap: 8,
+                  paddingBottom: 4,
+                }}
+              >
                 {presentGroups.map((g) => (
                   <Chip
                     key={g}
                     size="sm"
                     selected={layerOn(g) && !drawingsHidden}
-                    onPress={() => setLayerPrefs({ ...layerPrefs, [g]: !layerOn(g) })}
+                    onPress={() =>
+                      setLayerPrefs({ ...layerPrefs, [g]: !layerOn(g) })
+                    }
                   >
                     {drawingGroupLabels[g]}
                   </Chip>
                 ))}
-                <Chip size="sm" onPress={() => setDrawingsHidden(!drawingsHidden)}>
+                <Chip
+                  size="sm"
+                  onPress={() => setDrawingsHidden(!drawingsHidden)}
+                >
                   {drawingsHidden ? "显示画线" : "隐藏画线"}
                 </Chip>
               </View>

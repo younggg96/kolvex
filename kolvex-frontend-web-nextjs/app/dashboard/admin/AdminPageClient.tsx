@@ -12,7 +12,7 @@ import XContentManager from "@/components/admin/XContentManager";
 import OptionsActivityManager from "@/components/admin/OptionsActivityManager";
 import { useUserProfileContext } from "@/components/user/UserProfileProvider";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface AdminUser { id: string; email: string; username?: string; is_admin: boolean }
@@ -131,12 +131,12 @@ export default function AdminPageClient({ initialTab }: { initialTab?: string })
           </TabsContent>
 
           <TabsContent value="users" className="mt-6 space-y-4">
-            <Input
+            <SearchInput
               aria-label="搜索用户"
               placeholder="搜索邮箱或用户名"
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              className="max-w-md rounded-full"
+              containerClassName="w-full max-w-md"
             />
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">

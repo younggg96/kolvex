@@ -11,7 +11,7 @@ export const metadata = publicPageMetadata(
 
 export default function ContactPage() {
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden transition-colors duration-300 flex flex-col">
+    <div className="site-page-surface min-h-screen bg-background relative overflow-hidden transition-colors duration-300 flex flex-col">
       {/* Background Pattern */}
       <div className="absolute inset-0 bg-grid z-0 opacity-50"></div>
       {/* <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background-light/90 dark:via-background-dark/90 to-background-light dark:to-background-dark z-0"></div> */}

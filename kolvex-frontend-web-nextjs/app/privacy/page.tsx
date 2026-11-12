@@ -9,36 +9,36 @@ export const metadata = publicPageMetadata(
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-white dark:bg-black">
+    <div className="site-page-surface min-h-screen bg-background">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="mb-8">
           <Link
             href="/"
-            className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+            className="text-sm text-muted-foreground dark:text-gray-400 hover:text-foreground dark:hover:text-white transition-colors"
           >
             ← Back to Home
           </Link>
         </div>
 
         <div className="prose prose-sm sm:prose lg:prose-lg dark:prose-invert max-w-none">
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-2">
+          <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-2">
             Privacy Policy
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mb-8">
+          <p className="text-muted-foreground dark:text-gray-400 mb-8">
             Last Updated: November 3, 2025
           </p>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mt-8 mb-4">
+            <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">
               1. Introduction
             </h2>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               Kolvex AI (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) is
               committed to protecting your privacy. This Privacy Policy explains
               how we collect, use, disclose, and safeguard your information when
               you use Kolvex (&quot;the Service&quot;).
             </p>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               Please read this Privacy Policy carefully. By accessing or using
               the Service, you agree to this Privacy Policy. If you do not agree
               with our policies and practices, please do not use the Service.
@@ -46,19 +46,19 @@ export default function PrivacyPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mt-8 mb-4">
+            <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">
               2. Information We Collect
             </h2>
 
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mt-6 mb-3">
+            <h3 className="text-xl font-semibold text-foreground mt-6 mb-3">
               2.1 Personal Information
             </h3>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               We collect information that identifies, relates to, or could
               reasonably be linked with you (&quot;Personal Information&quot;),
               including:
             </p>
-            <ul className="list-disc pl-6 text-gray-700 dark:text-gray-300 mb-4 space-y-2">
+            <ul className="list-disc pl-6 text-foreground dark:text-gray-300 mb-4 space-y-2">
               <li>
                 <strong>Account Information:</strong> Email address, username,
                 password (encrypted), and profile settings
@@ -78,14 +78,14 @@ export default function PrivacyPage() {
               </li>
             </ul>
 
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mt-6 mb-3">
+            <h3 className="text-xl font-semibold text-foreground mt-6 mb-3">
               2.2 Usage Information
             </h3>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               We automatically collect information about your interaction with
               the Service:
             </p>
-            <ul className="list-disc pl-6 text-gray-700 dark:text-gray-300 mb-4 space-y-2">
+            <ul className="list-disc pl-6 text-foreground dark:text-gray-300 mb-4 space-y-2">
               <li>
                 <strong>Device Information:</strong> IP address, browser type,
                 device type, operating system
@@ -104,13 +104,13 @@ export default function PrivacyPage() {
               </li>
             </ul>
 
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mt-6 mb-3">
+            <h3 className="text-xl font-semibold text-foreground mt-6 mb-3">
               2.3 Cookies and Tracking Technologies
             </h3>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               We use cookies, web beacons, and similar technologies to:
             </p>
-            <ul className="list-disc pl-6 text-gray-700 dark:text-gray-300 mb-4 space-y-2">
+            <ul className="list-disc pl-6 text-foreground dark:text-gray-300 mb-4 space-y-2">
               <li>Maintain your session and keep you logged in</li>
               <li>Remember your preferences and settings</li>
               <li>Analyze usage patterns and improve the Service</li>
@@ -119,13 +119,13 @@ export default function PrivacyPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mt-8 mb-4">
+            <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">
               3. How We Use Your Information
             </h2>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               We use the collected information for the following purposes:
             </p>
-            <ul className="list-disc pl-6 text-gray-700 dark:text-gray-300 mb-4 space-y-2">
+            <ul className="list-disc pl-6 text-foreground dark:text-gray-300 mb-4 space-y-2">
               <li>
                 <strong>Service Provision:</strong> To provide, maintain, and
                 improve the Service
@@ -163,22 +163,22 @@ export default function PrivacyPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mt-8 mb-4">
+            <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">
               4. Information Sharing and Disclosure
             </h2>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               We do not sell your Personal Information. We may share your
               information in the following circumstances:
             </p>
 
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mt-6 mb-3">
+            <h3 className="text-xl font-semibold text-foreground mt-6 mb-3">
               4.1 Service Providers
             </h3>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               We share information with third-party service providers who
               perform services on our behalf:
             </p>
-            <ul className="list-disc pl-6 text-gray-700 dark:text-gray-300 mb-4 space-y-2">
+            <ul className="list-disc pl-6 text-foreground dark:text-gray-300 mb-4 space-y-2">
               <li>
                 <strong>Hosting Providers:</strong> For server infrastructure
                 and data storage (e.g., Vercel, Supabase)
@@ -201,14 +201,14 @@ export default function PrivacyPage() {
               </li>
             </ul>
 
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mt-6 mb-3">
+            <h3 className="text-xl font-semibold text-foreground mt-6 mb-3">
               4.2 Legal Requirements
             </h3>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               We may disclose your information if required to do so by law or in
               response to:
             </p>
-            <ul className="list-disc pl-6 text-gray-700 dark:text-gray-300 mb-4 space-y-2">
+            <ul className="list-disc pl-6 text-foreground dark:text-gray-300 mb-4 space-y-2">
               <li>Legal process, court orders, or government requests</li>
               <li>Enforce our Terms of Service or other policies</li>
               <li>
@@ -220,10 +220,10 @@ export default function PrivacyPage() {
               </li>
             </ul>
 
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mt-6 mb-3">
+            <h3 className="text-xl font-semibold text-foreground mt-6 mb-3">
               4.3 Business Transfers
             </h3>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               If we are involved in a merger, acquisition, or sale of assets,
               your information may be transferred as part of that transaction.
               We will provide notice before your information becomes subject to
@@ -232,14 +232,14 @@ export default function PrivacyPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mt-8 mb-4">
+            <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">
               5. Data Security
             </h2>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               We implement appropriate technical and organizational measures to
               protect your Personal Information:
             </p>
-            <ul className="list-disc pl-6 text-gray-700 dark:text-gray-300 mb-4 space-y-2">
+            <ul className="list-disc pl-6 text-foreground dark:text-gray-300 mb-4 space-y-2">
               <li>
                 <strong>Encryption:</strong> Data is encrypted in transit
                 (HTTPS/TLS) and at rest
@@ -261,7 +261,7 @@ export default function PrivacyPage() {
                 for their security practices
               </li>
             </ul>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               However, no method of transmission over the internet or electronic
               storage is 100% secure. While we strive to protect your Personal
               Information, we cannot guarantee absolute security.
@@ -269,18 +269,18 @@ export default function PrivacyPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mt-8 mb-4">
+            <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">
               6. Data Retention
             </h2>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               We retain your Personal Information for as long as necessary to:
             </p>
-            <ul className="list-disc pl-6 text-gray-700 dark:text-gray-300 mb-4 space-y-2">
+            <ul className="list-disc pl-6 text-foreground dark:text-gray-300 mb-4 space-y-2">
               <li>Provide you with the Service</li>
               <li>Comply with legal obligations</li>
               <li>Resolve disputes and enforce our agreements</li>
             </ul>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               When you delete your account, we will delete or anonymize your
               Personal Information within 30 days, except where we are required
               to retain it for legal or compliance purposes.
@@ -288,14 +288,14 @@ export default function PrivacyPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mt-8 mb-4">
+            <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">
               7. Your Privacy Rights
             </h2>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               Depending on your location, you may have the following rights
               regarding your Personal Information:
             </p>
-            <ul className="list-disc pl-6 text-gray-700 dark:text-gray-300 mb-4 space-y-2">
+            <ul className="list-disc pl-6 text-foreground dark:text-gray-300 mb-4 space-y-2">
               <li>
                 <strong>Access:</strong> Request access to your Personal
                 Information
@@ -327,7 +327,7 @@ export default function PrivacyPage() {
                 <strong>Opt-Out:</strong> Opt-out of marketing communications
               </li>
             </ul>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               To exercise these rights, please contact us at{" "}
               <a
                 href="mailto:support@kolvex.app"
@@ -340,15 +340,15 @@ export default function PrivacyPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mt-8 mb-4">
+            <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">
               8. International Data Transfers
             </h2>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               Your information may be transferred to and processed in countries
               other than your country of residence. These countries may have
               data protection laws that differ from those in your country.
             </p>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               We take appropriate safeguards to ensure your Personal Information
               remains protected in accordance with this Privacy Policy,
               including using standard contractual clauses approved by relevant
@@ -357,10 +357,10 @@ export default function PrivacyPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mt-8 mb-4">
+            <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">
               9. Children&apos;s Privacy
             </h2>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               The Service is not intended for children under 18 years of age. We
               do not knowingly collect Personal Information from children under
               18. If you are a parent or guardian and believe your child has
@@ -370,16 +370,16 @@ export default function PrivacyPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mt-8 mb-4">
+            <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">
               10. Third-Party Links and Services
             </h2>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               The Service may contain links to third-party websites and
               services. We are not responsible for the privacy practices of
               these third parties. We encourage you to read their privacy
               policies before providing them with your information.
             </p>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               The Service presents creator stock opinions from YouTube. Your interactions with
               that content may be subject to those platforms&apos; privacy
               policies.
@@ -387,14 +387,14 @@ export default function PrivacyPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mt-8 mb-4">
+            <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">
               11. California Privacy Rights (CCPA)
             </h2>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               If you are a California resident, you have additional rights under
               the California Consumer Privacy Act (CCPA):
             </p>
-            <ul className="list-disc pl-6 text-gray-700 dark:text-gray-300 mb-4 space-y-2">
+            <ul className="list-disc pl-6 text-foreground dark:text-gray-300 mb-4 space-y-2">
               <li>
                 Right to know what Personal Information we collect, use,
                 disclose, and sell
@@ -408,7 +408,7 @@ export default function PrivacyPage() {
                 Right to non-discrimination for exercising your CCPA rights
               </li>
             </ul>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               To exercise these rights, contact us at{" "}
               <a
                 href="mailto:support@kolvex.app"
@@ -421,18 +421,18 @@ export default function PrivacyPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mt-8 mb-4">
+            <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">
               12. European Privacy Rights (GDPR)
             </h2>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               If you are in the European Economic Area (EEA) or United Kingdom,
               you have rights under the General Data Protection Regulation
               (GDPR), including the rights listed in Section 7 above.
             </p>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               Our legal basis for processing your Personal Information includes:
             </p>
-            <ul className="list-disc pl-6 text-gray-700 dark:text-gray-300 mb-4 space-y-2">
+            <ul className="list-disc pl-6 text-foreground dark:text-gray-300 mb-4 space-y-2">
               <li>
                 <strong>Contract:</strong> Processing necessary to provide the
                 Service
@@ -453,34 +453,34 @@ export default function PrivacyPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mt-8 mb-4">
+            <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">
               13. Changes to This Privacy Policy
             </h2>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               We may update this Privacy Policy from time to time. We will
               notify you of material changes by:
             </p>
-            <ul className="list-disc pl-6 text-gray-700 dark:text-gray-300 mb-4 space-y-2">
+            <ul className="list-disc pl-6 text-foreground dark:text-gray-300 mb-4 space-y-2">
               <li>Posting the new Privacy Policy on this page</li>
               <li>Updating the &quot;Last Updated&quot; date</li>
               <li>Sending you an email notification (for material changes)</li>
             </ul>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               Your continued use of the Service after changes become effective
               constitutes acceptance of the updated Privacy Policy.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mt-8 mb-4">
+            <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">
               14. Contact Us
             </h2>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               If you have questions, concerns, or requests regarding this
               Privacy Policy or our data practices, please contact us:
             </p>
-            <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-6 mb-4">
-              <p className="text-gray-700 dark:text-gray-300 mb-2">
+            <div className="bg-card dark:bg-gray-900 rounded-2xl p-6 mb-4">
+              <p className="text-foreground dark:text-gray-300 mb-2">
                 <strong>Email:</strong>{" "}
                 <a
                   href="mailto:support@kolvex.app"
@@ -492,8 +492,8 @@ export default function PrivacyPage() {
             </div>
           </section>
 
-          <div className="mt-12 pt-8 border-t border-gray-200 dark:border-gray-800">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+          <div className="mt-12 pt-8 border-t border-border dark:border-gray-800">
+            <p className="text-sm text-muted-foreground dark:text-gray-400">
               By using Kolvex, you acknowledge that you have read and understood
               this Privacy Policy and agree to the collection, use, and
               disclosure of your information as described herein.

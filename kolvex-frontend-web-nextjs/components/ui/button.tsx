@@ -19,11 +19,11 @@ const buttonVariants = cva(
         default:
           "glass-button glass-button-primary bg-primary/85 text-primary-foreground hover:bg-primary/75 active:bg-primary/70 disabled:opacity-40",
         secondary:
-          "glass-button glass-button-neutral bg-foreground/[0.14] text-secondary-foreground hover:bg-foreground/[0.2] active:bg-foreground/[0.25] disabled:opacity-40",
+          "glass-button glass-button-neutral bg-foreground/[0.14] text-foreground hover:bg-foreground/[0.2] focus-visible:bg-foreground/[0.2] active:bg-foreground/[0.25] disabled:opacity-40",
         /* Neutral actions take a grey wash on hover and press so green keeps
            meaning direction rather than interaction. */
         outline:
-          "glass-button glass-button-neutral border border-transparent bg-foreground/[0.08] text-foreground hover:bg-foreground/[0.13] hover:text-foreground active:bg-foreground/[0.18] disabled:opacity-40",
+          "glass-button glass-button-neutral border border-transparent bg-foreground/[0.08] text-foreground hover:bg-foreground/[0.13] focus-visible:bg-foreground/[0.13] active:bg-foreground/[0.18] disabled:opacity-40",
         destructive:
           "glass-button glass-button-destructive bg-destructive/85 text-destructive-foreground hover:bg-destructive/75 active:bg-destructive/70 disabled:opacity-40",
         /* Stays bare at rest so toolbars of icons don't become rows of bubbles;

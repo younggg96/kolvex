@@ -16,7 +16,7 @@ import {
 } from "@/lib/marketEvents";
 import { cn } from "@/lib/utils";
 import { MarketEventCalendarSkeleton } from "./MarketEventCalendarSkeleton";
-import { MarketRefreshButton, MarketToolbarControls } from "./MarketToolbar";
+import { MarketInfoButton, MarketRefreshButton, MarketToolbarControls } from "./MarketToolbar";
 import { useCopy } from "./shared";
 
 /** Event summary that shows the opening lines and only collapses the remainder. */
@@ -115,6 +115,12 @@ export default function MarketEventCalendar({ toolbar }: { toolbar: HTMLElement 
     });
   }
 
+  const weeks = data ? [0, 1, 2].map((index) => {
+    const days = calendarDays(data.start_date, index * 7);
+    return { days, events: data.events.filter((event) => days.includes(event.event_date)) };
+  }) : [];
+  const activeWeek = weeks[Number(week)];
+
   return (
     <section
       ref={calendarRoot}
@@ -176,15 +182,29 @@ export default function MarketEventCalendar({ toolbar }: { toolbar: HTMLElement 
                   </TabsTrigger>
                 ))}
               </TabsList>
-              {isCalendar && (
-                <div className="flex flex-wrap items-center gap-3 max-md:hidden">
-                  <p className="hidden text-xs text-muted-foreground sm:block">
-                    {c("Scroll to see all days", "左右滑动查看全部日期")}
-                  </p>
+              <div className="ml-auto flex shrink-0 items-center gap-2">
+                {activeWeek && (
+                  <MarketInfoButton label={c("Calendar information", "日历说明")}>
+                    <p className="figure text-foreground">
+                      <time dateTime={activeWeek.days[0]}>{activeWeek.days[0]}</time>
+                      {" ~ "}
+                      <time dateTime={activeWeek.days[6]}>{activeWeek.days[6]}</time>
+                      {" · "}
+                      {c(`${activeWeek.events.length} ${activeWeek.events.length === 1 ? "event" : "events"}`, `${activeWeek.events.length} 个事件`)}
+                    </p>
+                    {isCalendar && (
+                      <>
+                        <p className="max-md:hidden">{c("Scroll to see all days", "左右滑动查看全部日期")}</p>
+                        <p className="md:hidden">{c("Tap a date to see its events", "点选日期查看当天事件")}</p>
+                      </>
+                    )}
+                  </MarketInfoButton>
+                )}
+                {isCalendar && (
                   <div
                     role="group"
                     aria-label={c("Scroll calendar", "滚动日历")}
-                    className="flex gap-2"
+                    className="flex gap-2 max-md:hidden"
                   >
                     <Button
                       type="button"
@@ -214,17 +234,13 @@ export default function MarketEventCalendar({ toolbar }: { toolbar: HTMLElement 
                       />
                     </Button>
                   </div>
+                )}
+                <div className="md:hidden">
+                  <MarketRefreshButton refreshing={refreshing} disabled={loading || refreshing} onClick={refresh} />
                 </div>
-              )}
-              <div className="shrink-0 md:hidden">
-                <MarketRefreshButton refreshing={refreshing} disabled={loading || refreshing} onClick={refresh} />
               </div>
             </div>
-            {[0, 1, 2].map((w) => {
-              const days = calendarDays(data.start_date, w * 7);
-              const events = data.events.filter((event) =>
-                days.includes(event.event_date),
-              );
+            {weeks.map(({ days, events }, w) => {
               // Phones show one day at a time, opening on today within this week.
               const activeDay = pickedDay && days.includes(pickedDay)
                 ? pickedDay
@@ -237,10 +253,6 @@ export default function MarketEventCalendar({ toolbar }: { toolbar: HTMLElement 
                   value={String(w)}
                   className="min-w-0 space-y-3"
                 >
-                  <p className="figure px-1 text-xs text-muted-foreground">
-                    {days[0]} ~ {days[6]} · {events.length}{" "}
-                    {c("events", "个事件")}
-                  </p>
                   {isCalendar && (
                     <div role="group" aria-label={c("Choose a day", "选择日期")} className="grid grid-cols-7 gap-1 md:hidden">
                       {days.map((day) => {

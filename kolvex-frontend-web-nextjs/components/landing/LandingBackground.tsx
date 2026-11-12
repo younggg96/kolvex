@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTheme } from "next-themes";
-import Waves from "./react-bits/Waves";
 import LandingWaylumeBackground from "./LandingWaylumeBackground";
 import { useLandingReducedMotion } from "./useLandingReducedMotion";
 
@@ -53,28 +52,12 @@ export default function LandingBackground() {
     return () => query.removeEventListener("change", update);
   }, []);
 
-  // The artwork is near-black, so it only shows in the dark theme; the light
-  // theme keeps the Waves field. Until the theme is known it matches the dark default.
   const { resolvedTheme } = useTheme();
-  if (resolvedTheme !== "light") {
-    return (
-      <div className="landing-background landing-artwork" aria-hidden="true">
-        {touchDevice === true && <LandingVideo reduce={reduce} />}
-        {touchDevice === false && <LandingWaylumeBackground />}
-      </div>
-    );
-  }
+  if (touchDevice === null || resolvedTheme !== "dark") return null;
 
   return (
-    <div className="landing-background" aria-hidden="true">
-      <div className="hero-signal-field">
-        <Waves
-          lineColor="#00a904" accentColor="#00c805" spacing={9} lineWidth={1}
-          rotation={-38} amplitude={85} scale={0.7} twist={1.5} speed={0.55}
-          mouseRadius={160} mouseStrength={1.8} fade={0.12} opacity={0.55}
-          paused={reduce} mouseInteraction={!reduce} clickRipple={!reduce} dpr={1.5}
-        />
-      </div>
+    <div className="landing-background landing-artwork" aria-hidden="true">
+      {touchDevice ? <LandingVideo reduce={reduce} /> : <LandingWaylumeBackground />}
     </div>
   );
 }

@@ -20,6 +20,15 @@
         ],
         "createdAt": "2026-11-10T18:52:34.765Z",
         "reason": "Codex verified: the shared CSS easing stops increase monotonically from 0 to 1, with no overshoot or bounce."
+      },
+      {
+        "rule": "layout-transition",
+        "value": "*",
+        "files": [
+          "kolvex-frontend-web-nextjs/app/globals.css"
+        ],
+        "createdAt": "2026-11-12T05:45:41.037Z",
+        "reason": "Codex triage: the existing 200ms sidebar collapse intentionally resizes the fixed sidebar and its layout spacer together so the content follows the rail. The color update does not change this transition, and reduced-motion already removes the animation."
       }
     ]
   }

@@ -3,7 +3,7 @@
     {
       "category": "unresolved",
       "file": "app/dashboard/reddit-opinions/page.tsx",
-      "line": 119,
+      "line": 120,
       "message": "Native select is used without an explicit ownership decision.",
       "remediation": "Record Select/Listbox as native or reuse the authored canonical owner.",
       "ruleId": "ownership.native-select-undecided",
@@ -57,7 +57,7 @@
     {
       "category": "violation",
       "file": "app/globals.css",
-      "line": 414,
+      "line": 472,
       "message": "Base scrollbar theming is activated by an opt-in class.",
       "remediation": "Apply base scrollbar tokens globally; reserve classes for geometry or semantic exceptions.",
       "ruleId": "scrollbar.opt-in-base",

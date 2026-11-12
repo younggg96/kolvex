@@ -34,7 +34,7 @@ function ViewportProbe() {
     const card = table?.parentElement;
     setText(`vw${window.innerWidth} table${Math.round(table?.getBoundingClientRect().width ?? 0)} card${Math.round(card?.getBoundingClientRect().width ?? 0)}`);
   }, []);
-  return <p data-probe="viewport" className="text-xs text-white">{text}</p>;
+  return <p data-probe="viewport" className="text-xs text-muted-foreground dark:text-white">{text}</p>;
 }
 
 export default function PreviewOptionsPage() {

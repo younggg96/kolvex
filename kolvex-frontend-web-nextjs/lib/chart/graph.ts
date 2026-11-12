@@ -68,11 +68,14 @@ export function viewForRange(input: ViewInput): GraphView {
   return clampGraphView({ start: count - Math.min(minBars, count), end: count }, count, minBars);
 }
 
+function clampGraphSpan(span: number, count: number, minBars: number) {
+  return Math.min(Math.max(span, Math.min(minBars, count)), count * 1.15 + 4);
+}
+
 /** Keep the view inside the data with a little scroll room, as Apple Stocks does while panning. */
 export function clampGraphView(view: GraphView, count: number, minBars = GRAPH_MIN_BARS): GraphView {
   if (count <= 0) return { start: 0, end: 1 };
-  const minSpan = Math.min(minBars, count);
-  const span = Math.min(Math.max(view.end - view.start, minSpan), count * 1.15 + 4);
+  const span = clampGraphSpan(view.end - view.start, count, minBars);
   const { min, max } = graphPanBounds(span, count);
   const start = Math.min(Math.max(view.start, min), max);
   return { start, end: start + span };
@@ -87,7 +90,7 @@ export function graphPanBounds(span: number, count: number) {
 export function zoomGraphView(view: GraphView, factor: number, anchorRatio: number, count: number, minBars = GRAPH_MIN_BARS): GraphView {
   const span = view.end - view.start;
   const anchor = view.start + span * anchorRatio;
-  const nextSpan = span * factor;
+  const nextSpan = clampGraphSpan(span * factor, count, minBars);
   return clampGraphView({ start: anchor - nextSpan * anchorRatio, end: anchor - nextSpan * anchorRatio + nextSpan }, count, minBars);
 }
 
@@ -145,6 +148,15 @@ export function priceDomain(
   }
   const pad = (hi - lo || hi * 0.01 || 1) * 0.12;
   return { lo: lo - pad, hi: hi + pad };
+}
+
+/** Resize a linear price scale around a vertical anchor (0 = top, 1 = bottom). */
+export function zoomPriceDomain(domain: { lo: number; hi: number }, factor: number, ratio: number, referenceSpan: number) {
+  const span = domain.hi - domain.lo;
+  const nextSpan = Math.min(Math.max(span * factor, referenceSpan / 100), referenceSpan * 100);
+  const anchor = domain.hi - span * ratio;
+  const hi = anchor + nextSpan * ratio;
+  return { lo: hi - nextSpan, hi };
 }
 
 export type CallEntry = {

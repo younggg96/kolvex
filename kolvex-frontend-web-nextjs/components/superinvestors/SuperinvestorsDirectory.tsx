@@ -210,13 +210,6 @@ export default function SuperinvestorsDirectory() {
           </section>
         </>
       )}
-
-      <SourceNote>
-        {c(
-          "Source: SEC Form 13F-HR, latest original filing per investor. 13F is a quarter-end snapshot filed up to 45 days later. It is not live positions and excludes shorts and most non-US holdings. Investors are a curated list, not every institution.",
-          "来源：SEC Form 13F-HR，每位投资者最近一份原始申报。13F 是季度末持仓快照，最晚在季末 45 天后披露，不代表当前持仓，也不含空头和大部分非美股持仓。投资者为精选名单，并非全部机构。",
-        )}
-      </SourceNote>
     </div>
   );
 }

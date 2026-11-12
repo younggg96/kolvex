@@ -10,11 +10,10 @@ import { StockPaperTrading } from "./StockPaperTrading";
 import { Multicharts, Earnings, Analysts } from "./StockResearch";
 import { EarningsMaterials, FinancialsTab, Ownership } from "./SecResearch";
 import { StockPeers } from "./StockPeers";
+import { TechnicalPreview } from "./TechnicalPreview";
 import { useState } from "react";
 import { Linking, Pressable, View } from "react-native";
 import { router } from "expo-router";
-import { SymbolView } from "expo-symbols";
-import { useTheme } from "../lib/theme";
 import { BENCHMARKS } from "../lib/marketBenchmarks";
 import { useAuth } from "../state/Auth";
 import { demoMode } from "../lib/config";
@@ -53,7 +52,8 @@ const benchmarkTabs = [
   "options",
 ];
 /** Tabs that show the price card above their content, as on the Web. */
-const CHART_TABS = ["summary", "technical", "paper-trading"];
+// Technicals draws its own annotated chart card.
+const CHART_TABS = ["summary", "paper-trading"];
 export function StockContent({
   symbol,
   currency,
@@ -67,7 +67,6 @@ export function StockContent({
   initialTab?: string;
   chart?: React.ReactNode;
 }) {
-  const t = useTheme();
   const benchmark = BENCHMARKS.some((item) => item.symbol === symbol);
   const user = useAuth().session?.user.id;
   const tabs = benchmark
@@ -81,24 +80,7 @@ export function StockContent({
       <Filters values={tabs} value={tab} onChange={setTab} />
       {CHART_TABS.includes(tab) && chart}
       {tab === "technical" ? (
-        <Button
-          icon={
-            <SymbolView
-              name={{
-                ios: "chart.xyaxis.line",
-                android: "candlestick_chart",
-                web: "candlestick_chart",
-              }}
-              size={14}
-              tintColor={t.text}
-            />
-          }
-          onPress={() =>
-            router.push(`/technical/${encodeURIComponent(symbol)}`)
-          }
-        >
-          K 线、指标与 AI 画线
-        </Button>
+        <TechnicalPreview symbol={symbol} />
       ) : demoMode ? (
         <Empty
           title="连接真实数据后查看"

@@ -1317,6 +1317,8 @@
     "zoomOut": "缩小",
     "resetZoom": "重置缩放",
     "zoomHint": "拖动平移，⌘/Ctrl + 滚轮或双指缩放，双击重置",
+    "timeAxisZoom": "时间轴：拖动、滚动鼠标滚轮或按 + / − 缩放，双击或按 0 重置。",
+    "priceAxisZoom": "价格轴：拖动、滚动鼠标滚轮或按 + / − 缩放，双击或按 0 恢复自动缩放。",
     "advancedChart": "高级",
     "advancedChartTitle": "{symbol} 高级图表",
     "interval": "周期",

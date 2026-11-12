@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { Textarea } from "@/components/ui/textarea";
 import CreatorAvatar from "@/components/youtube/CreatorAvatar";
 import { cn } from "@/lib/utils";
@@ -387,7 +388,7 @@ export default function YouTubeCreatorManager() {
             </form>
           )}
 
-          <Input aria-label="搜索观点" placeholder="搜索股票、摘要或视频标题" value={opinionQuery} onChange={(event) => setOpinionQuery(event.target.value)} />
+          <SearchInput containerClassName="w-full" aria-label="搜索观点" placeholder="搜索股票、摘要或视频标题" value={opinionQuery} onChange={(event) => setOpinionQuery(event.target.value)} />
           {loadingOpinions ? <AdminRowsSkeleton label="正在加载观点" actions={2} /> : (
             <div className="divide-y divide-border">
               {visibleOpinions.map((opinion) => (
@@ -413,7 +414,7 @@ export default function YouTubeCreatorManager() {
 
       {!selected && (
         <>
-          <Input aria-label="搜索 YouTube 博主" placeholder="搜索博主名称、账号或频道 ID" value={search} onChange={(event) => setSearch(event.target.value)} />
+          <SearchInput containerClassName="w-full" aria-label="搜索 YouTube 博主" placeholder="搜索博主名称、账号或频道 ID" value={search} onChange={(event) => setSearch(event.target.value)} />
           {loading ? <><Skeleton className="h-3 w-20 rounded-md" /><AdminRowsSkeleton label="正在加载博主" avatar lines={2} /></> : (
             <>
               <p className="text-xs text-muted-foreground">共 {filtered.length} 位博主</p>

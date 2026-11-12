@@ -1,9 +1,10 @@
 "use client";
 
+import { SearchFieldIcon } from "@/components/ui/search-input";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { ArrowUpRight, Search, Star, X } from "lucide-react";
+import { ArrowUpRight, Star, X } from "lucide-react";
 import { XIcon, YouTubeIcon } from "@/components/common/PlatformIcons";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -269,7 +270,7 @@ export default function SearchPage() {
         <div className="flex items-center gap-1 lg:gap-3">
           <form role="search" noValidate onSubmit={submit} className="min-w-0 flex-1">
             <div className={cn("glass-field relative flex h-[44px] items-center rounded-full border border-transparent bg-foreground/[0.06] lg:h-14", styles.searchField)}>
-              <Search aria-hidden className="pointer-events-none absolute left-3.5 h-4 w-4 lg:left-5 lg:h-5 lg:w-5 text-muted-foreground" />
+              <SearchFieldIcon className="left-3.5 h-4 w-4 lg:left-5 lg:h-5 lg:w-5" />
               <input
                 ref={input}
                 value={value}

@@ -213,9 +213,6 @@ function Trades({
           onChange={setPage}
         />
       )}
-      <Note>
-        数据来源为 CongressInvests。金额按申报区间显示，申报可能晚于交易日。
-      </Note>
       <View style={{ flexDirection: "row", gap: 16 }}>
         <ExternalLink
           url="https://disclosures-clerk.house.gov/FinancialDisclosure"

@@ -2,9 +2,10 @@
 
 import { useId, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Search, X } from "lucide-react";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SearchFieldIcon } from "@/components/ui/search-input";
 import { validTicker } from "@/lib/decision";
 import { useCopy } from "./shared";
 
@@ -34,7 +35,7 @@ export default function StockLookup() {
     <form noValidate onSubmit={openStock} className="space-y-2" aria-label={c("Open a stock", "查看股票")}>
       <div className="flex items-center gap-2">
         <div className="relative min-w-0 flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+          <SearchFieldIcon />
           <Input
             shape="pill"
             ref={input}

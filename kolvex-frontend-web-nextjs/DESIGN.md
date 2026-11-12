@@ -3,26 +3,34 @@ version: alpha
 name: Kolvex
 description: Chinese-first equity research with source-linked opinions, quiet data lists and green navigation accents.
 colors:
-  primary: "#00C805"
-  background: "#EBECE9"
-  foreground: "#252925"
-  card: "#F4F5F2"
-  card-foreground: "#252925"
-  sidebar: "#EFF0ED"
-  muted: "#E3E5E0"
-  muted-foreground: "#5B615A"
-  secondary: "#DADDD7"
-  secondary-foreground: "#252925"
-  border: "#CFD4CC"
-  positive: "#007103"
-  negative: "#B4310D"
+  primary: "#16A34A"
+  button-primary: "#15803D"
+  primary-hover: "#166534"
+  primary-accent: "#22C55E"
+  market-up: "#16A34A"
+  market-down: "#E5484D"
+  market-neutral: "#64748B"
+  market-warning: "#F59E0B"
+  background: "#F7FAF6"
+  foreground: "#0F172A"
+  card: "#FFFFFF"
+  card-foreground: "#0F172A"
+  sidebar: "#EFF5ED"
+  muted: "#F3F8F2"
+  muted-foreground: "#64748B"
+  secondary: "#C6F4D5"
+  secondary-foreground: "#0C6524"
+  border: "#E2EAE1"
+  positive: "#166534"
+  negative: "#B42332"
   warning: "#855700"
-  destructive: "#B4310D"
+  destructive: "#B42332"
 typography:
   sans:
     fontFamily: "Inter, PingFang SC, Hiragino Sans GB, Microsoft YaHei, Noto Sans SC, sans-serif"
 rounded:
-  control: "9999px"
+  control: "10px"
+  card: "16px"
   row: "1rem"
   surface: "1.5rem"
 spacing:
@@ -78,20 +86,20 @@ it does not generate CSS or introduce a separate theme.
 
 `app/globals.css` owns semantic variables, which `tailwind.config.ts` maps to
 utilities consumed by shared components. The frontmatter mirrors light-mode
-values. Light mode uses a soft neutral grey ground with a restrained green
-undertone, a lighter grey-white card surface and an intermediate sidebar fill.
-Muted controls and selected neutral fills step down in brightness, while charcoal
-text softens the contrast of large reading areas. Avoid pure-white page, card or
-chrome fills; reserve white for image backplates, small control details and
-contrast text on solid semantic fills. Direction and warning text use deeper
-shades to retain at least 4.5:1 contrast on all five neutral light surfaces.
+values. Light mode uses a pale green canvas and sidebar, white cards, slate ink,
+and green actions. Standard cards use a 16px radius, and shared fields, buttons
+and segmented controls use a 10px radius. Surface fills carry most of the
+separation. Fields keep a visible edge and focus ring, and table dividers use
+the border token.
+
+Chart fills use the market green, red and amber. Small direction labels use
+deeper shades for contrast. In light mode, enabled primary buttons use white
+text on #15803D, with a darker green on hover and press. Tinted surfaces use
+#475569 for muted text.
+
 Dark mode uses black ground, #0E0F10 cards, #FFFFFF foreground,
-#9BA0A6 muted text and #282A2D borders. Primary remains #00C805 in both themes.
-Use `positive` and `negative` for direction text, with a written decision label;
-the primary green alone is not a small-text color on the light background.
-Interaction feedback (hover, focus, press) is neutral grey, layered as a
-transparent `foreground` over whatever surface it sits on. See **Interaction
-feedback** for the rules.
+#9BA0A6 muted text, #282A2D borders and #00C805 primary actions.
+Direction always pairs color with a sign, a written label or an icon.
 
 ## Typography
 
@@ -200,7 +208,11 @@ the view is modified. Phones stack the range row over the icon row so a long lab
 never hides the buttons. Clicking the plot or the single Advanced action beside the
 range row opens the fullscreen chart, which shares the same chrome and range row and adds candlesticks,
 volume, indicators, the KDJ/RSI/MACD subpane and saved/manual drawings on the same
-visible window. The Creator Opinions page keeps its own range control only for the
+visible window. In the advanced chart, dragging or scrolling over the bottom time
+axis zooms the visible dates. The right price axis adjusts the vertical scale and
+locks it until auto-scale is restored. Each axis also accepts +, − and 0 when
+focused. Double-clicking an axis resets that scale; the toolbar resets both.
+The Creator Opinions page keeps its own range control only for the
 opinion-strength view; the price view uses the graph's bar. AI actions live in a
 collapsed disclosure below the preview; Analysis and Drawings use neutral outlined
 controls. Advanced mode keeps its manual toolbar, with AI controls in a desktop side
@@ -977,13 +989,11 @@ The public `/` surface uses `components/pages/HomePageClient.tsx` and
 fonts, shared pill Buttons, navigation labels and public URLs remain canonical.
 The landing page is a marketing surface with stronger motion than the workspace.
 
-The hero is a centered overlay composition: stock-research copy and two links
-sit over a fixed, viewport-filling green signal-field background, owned by
-`LandingBackground`. It continues behind the feature links while scrolling.
-The shared page shell is transparent on the landing route; header fill is
-translucent. Waves uses a narrow edge fade so it fills the screen. A theme-aware
-radial veil softens the field behind the text for contrast. The former pause control is removed at the user’s request; a short caption
-remains at the bottom of the hero.
+The hero is a centered overlay composition. In light mode, stock-research copy
+and links sit over the shared Wayglim background mounted by `SiteBackground`.
+A soft veil follows the center of the viewport to keep the heading legible.
+The dark theme uses the existing Waylume artwork through `LandingBackground`.
+The landing shell and its header let the backdrop show through.
 The former closing CTA section is removed, including its accompanying text,
 as requested. The feature links lead directly into the existing footer.
 Header destinations are grouped in the shared Radix dropdown behind a single
@@ -997,8 +1007,14 @@ Selecting a destination closes the menu and opens its public route. The artwork 
 Logo disc or circular frame. The previous
 NVDA/TSLA/AMD stock reader is removed from the homepage. The signal field is
 abstract brand artwork, not a chart or a representation of market data.
-React Bits Waves is vendored under `components/landing/react-bits/`, alongside
-its license; it uses native WebGL2 without adding a runtime dependency. The artwork is decorative; navigation and copy remain usable without WebGL.
+The supplied Wayglim export is kept in `components/layout/WayglimBackground.tsx`.
+The root layout mounts one decorative background layer in light mode. The
+desktop homepage plays the Wayglim loop, and desktop interior routes pause it.
+Phones load a WebP of the exported opening frame, with portrait and landscape
+compositions in `public/media/wayglim-*.webp`. Reading and workspace routes add
+a light veil. The page theme supplies the fallback when desktop WebGL is
+unavailable. Higher contrast and reduced-transparency preferences show the
+solid page surface.
 
 The headline cycles through five localized two-line phrases using typing,
 reading pauses and deletion, with a blinking caret. Both line heights are reserved
@@ -1018,9 +1034,8 @@ modes use existing theme colors, with green as the only accent. The hero reserve
 
 System reduced motion makes the field static, removes pointer/click responses,
 disables magnetic movement and shows the complete first headline without a caret
-or typing timer. Waves suspends drawing while
-outside the viewport or when the document is hidden. Supporting reveals retain
-keyboard-focus handling and reduced-motion behavior. No global tokens, metadata, JSON-LD or authenticated workspace behavior change.
+or typing timer. The background engine suspends drawing when the document is hidden. Supporting reveals retain
+keyboard-focus handling and reduced-motion behavior.
 
 
 ### Portfolio visibility
@@ -1107,28 +1122,28 @@ minimum card width and collapses to one column on phones. Eight cards cover
 Treasury yields, the 10Y−2Y yield spread, CPI/core CPI YoY, unemployment, monthly
 nonfarm jobs added and real GDP annualized quarterly growth. Shared 1Y/3Y/5Y
 controls change every chart, with 3Y selected initially. Rates are daily, inflation
-and employment monthly, and GDP quarterly; each card states its observation
-period and calculation method instead of implying all data is from today.
+and employment monthly, and GDP quarterly. Each card shows the observation period.
 
 The selected tab provides the visible section title; the content heading is
 screen-reader-only and the redundant introductory subtitle is omitted. The compact
-toolbar contains only range controls and refresh. Empty status messages reserve
-no visual block between it and the cards. Card headings lead, with the publication
-frequency alongside them rather than a repeated category eyebrow.
+toolbar contains range controls, refresh and a data information button. Empty status
+messages reserve no visual block between it and the cards. Card headings lead, with
+an information button for publication frequency, calculation method, data status and
+the source link. On phones, the same button appears in the expanded indicator row.
 
 Macro curves use green/orange for the selected range's first-to-last movement;
 signed changes use the previous observation's direction. These encode increases
 and decreases, not economic desirability or investment returns. Macro chart fill
 roles locally map to the contrast-safe `positive`/`negative` text tokens, preserving
-existing market chart colors. A short footer explains the two comparison periods.
+existing market chart colors. The toolbar's information popover explains the two
+comparison periods, the one-day range, official sources and retrieval time.
 Hovered points
 show their own historical value/date and suppress the latest-period delta until
-hover ends. A native Recent values disclosure sits below the source link as its
-own full-width block, with a full-width summary, rotating chevron and fixed-layout
+hover ends. A native Recent values disclosure sits below the chart as a full-width
+block, with a rotating chevron and fixed-layout
 table. Date row headings align left and tabular numeric values align right without
 wrapping; expanding it never inherits the source link's remaining width. It provides keyboard-accessible
-dates and values for the latest 12 observations. Every card links to its source
-series, with government-origin attribution and retrieval time below the grid.
+dates and values for the latest 12 observations.
 
 The allowlisted public-domain Federal Reserve, BLS and BEA series are retrieved
 through FRED public CSV/ZIP downloads, without a paid key. Checks are cached for
@@ -1156,8 +1171,9 @@ banks, utilities, REITs, technology, healthcare, defense, insurance, semiconduct
 and software. Style cards use IWD, IWF, MAGS (explicitly an equal-weight ETF), RSP
 (ETF proxy for the equal-weight index) and SPHB (high-beta ETF).
 
-Both market and sector/style cards share 272 × 272px geometry, fixed single-line
-headings, an actual observation date, a 96px chart and a short unit/method caption.
+Market and trend cards use single-line headings, an actual observation date and
+a chart. Trend cards use the price symbol to indicate USD and show ETF methodology,
+special quote units and daily series notes behind an information button when applicable.
 All four groups scroll horizontally with the established visible scrollbar,
 keyboard focus and touch behavior. Shared 1D/1W/1M/3M/1Y/QTD/YTD controls update all groups and stock-list previews.
 The controls wrap on narrow screens. QTD and YTD follow the current New York
@@ -1176,7 +1192,7 @@ Gold is USD per troy ounce; WTI is USD per barrel. Treasury yields and ICE BofA
 high-yield OAS use allowlisted FRED CSV observations via
 `/api/market/observations/[series]`, cached for six hours with source attribution.
 These series remain distinct from the government-only macro snapshot service.
-Daily cards show actual release dates; 1D compares the last two observations.
+Daily cards show actual observation dates; 1D compares the last two observations.
 MOVE also uses daily history. Source cards link to FRED or Yahoo; tradable ETF
 and crypto cards retain their market-detail links. Futures and index data are
 not relabelled as ETFs. Ask Kolvex context lists all four instrument groups.
@@ -1235,7 +1251,7 @@ Markets adds Event calendar between Market trends and Macro indicators; URL stat
 uses `tab=calendar`. Shared Radix Tabs own the outer view and the three week
 selectors. The server fixes the window to last/current/next Monday-based weeks
 in America/New_York, including DST. Only published high-impact or hot events
-appear. Week selectors, the week summary and the calendar grid share one card body
+appear. Week selectors, the information button and the calendar grid share one card body
 below the section heading, matching the Markets observation card: 24px card radius,
 1px border, card surface and 12–16px inner padding. Day sections are their own
 cards with 16–20px padding, semantic headings, a per-day event count and divided
@@ -1247,8 +1263,9 @@ lines inline; only the remainder hides behind an explicit Event details/Show les
 disclosure, so the week reads without opening every event. Calendar columns retain
 a minimum width of 23rem (368px), with 16px gaps; the seven-column grid has a
 168rem minimum width. The calendar region is constrained to the content width and
-scrolls horizontally from the card body, with a visible scroll hint, labelled
-scroll buttons and keyboard focus. Day cards carry no background animation and event
+scrolls horizontally from the card body, with labelled scroll buttons and keyboard
+focus. The information popover shows the selected week's date range and event
+count, plus calendar navigation guidance for the current viewport. Day cards carry no background animation and event
 rows highlight on hover without moving; List keeps the same static cards. Long
 source names wrap within their event row. List preserves one reading column with
 full summaries and hides empty days. Both views retain event ordering, tickers and
@@ -1402,16 +1419,14 @@ after the stock observation list. No quotes or sector classifications are invent
 
 ## Interaction feedback
 
-Green means direction, not interaction. Hover, focus and press feedback is a
-neutral grey layer built from the `foreground` colour at low opacity, so a
-hovered row, chip or menu item never reads as a price signal and never competes
-with the green/orange-red the data already uses for up and down. Green is
-reserved for two things: direction semantics (`positive`, `negative`,
-`chart-up`, `chart-down`) and solid brand actions.
+In light mode, `surface-hover` supplies the hover wash, `secondary` marks
+selection with deep green labels, and deep green identifies keyboard focus and
+the active underline tab. Pill tabs and segmented controls use the same
+selection colors with a compact shadow. Standard cards and secondary
+controls use fills in place of repeated outlines. Fields keep an edge and
+validation state.
 
-There are no separate interaction tokens. Feedback is authored inline from the
-existing palette, which keeps dark mode correct without a second set of
-variables to maintain:
+Dark mode uses these glass and neutral interaction rules:
 
 - `bg-foreground/[0.04]`–`/[0.06]` fills a hovered or focused surface; rows use
   `/[0.06]`, form fields a lighter `/[0.04]`. Pressed states deepen to `/[0.1]`.
@@ -1438,8 +1453,7 @@ Rules that follow from that:
 - Tabs, `SegmentedControl`, `SwitchTab` and other tab-like pill groups use the
   iOS-style glass material from `app/globals.css`, matching the mobile dock: a
   smoky, blurred `glass-track` with a bright rim, holding a solid white
-  `glass-thumb` whose label is near-black (`--glass-thumb-foreground`) in both
-  themes; unselected labels are `foreground` at 70%. Unselected options preview with the
+  `glass-thumb` whose label is near-black (`--glass-thumb-foreground`); unselected labels are `foreground` at 70%. Unselected options preview with the
   same grey wash. Solid fallbacks apply without backdrop filters and under
   reduced-transparency or increased-contrast preferences.
   Selected controls retain that pairing during keyboard focus; the global
@@ -1450,9 +1464,9 @@ Rules that follow from that:
   `app/globals.css`: the same rim, top and bottom highlight, drop shadow and blur.
   Only the fill changes by role (controls about 8%, fields 6%, cards `--card-glass`,
   popups about 75%). Change those tokens rather than a single component's shadow.
-  The chat composer and the mobile dock are one surface: both use
-  `glass-track glass-track-strong` with 28px corners and the same neutral control
-  states, and share a 16px gutter on phones.
+  The chat composer and the mobile dock use `glass-track glass-track-strong`
+  with 28px corners and share a 16px gutter on phones. The light-mode composer
+  uses the white card fill, a field edge and a green edge when focused.
   Below `lg`, dragging or wheeling the thread shrinks an idle composer into a 48px
   round button at its bottom-right; a tap reopens and focuses it. It stays open while
   focused, holding a draft, or showing the API-key notice.

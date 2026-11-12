@@ -51,7 +51,7 @@ export default function HomePageClient() {
   }, []);
 
   return (
-    <div className="landing-page" lang={locale === "zh" ? "zh-CN" : "en"}>
+    <div className="landing-page site-page-surface" lang={locale === "zh" ? "zh-CN" : "en"}>
       <LandingBackground />
       <LandingScrollEffects />
       <BaseLayout>

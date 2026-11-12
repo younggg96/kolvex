@@ -23,7 +23,7 @@ export default function OpinionDistribution({
   const rows = [
     { key: "bullish", label: t("youtubeOpinions.bullish"), count: summary.bullish_count, fill: "bg-positive-fill", text: "text-positive" },
     { key: "neutral", label: t("youtubeOpinions.neutral"), count: summary.neutral_count, fill: "bg-foreground/40", text: "text-foreground" },
-    ...(mixed ? [{ key: "mixed", label: t("youtubeOpinions.mixed"), count: mixed, fill: "bg-warning", text: "text-warning" }] : []),
+    ...(mixed ? [{ key: "mixed", label: t("youtubeOpinions.mixed"), count: mixed, fill: "bg-warning-fill", text: "text-warning" }] : []),
     { key: "bearish", label: t("youtubeOpinions.bearish"), count: summary.bearish_count, fill: "bg-negative-fill", text: "text-negative" },
   ];
   const lead = rows.reduce((best, row) => (row.count > best.count ? row : best), rows[0]);

@@ -106,9 +106,6 @@ export function XOverview({ revision }: { revision: number }) {
         <Copy size={24} bold>
           X 博主观点
         </Copy>
-        <Copy size={14} muted>
-          了解博主在关注什么，并查看观点背后的原帖。
-        </Copy>
       </View>
       <Creators revision={revision} author={author} onAuthor={setAuthor} />
       <Posts key={author} revision={revision} author={author} />
@@ -165,9 +162,6 @@ function Creators({
             >{`生成于 ${date(briefs.data.generated_at)}`}</Copy>
           )}
         </View>
-        <Copy size={13} muted>
-          AI 按博主归纳部分已收录的推文。每条摘要都标注了覆盖日期和依据原帖。
-        </Copy>
       </View>
       <Glass style={{ paddingHorizontal: 12, paddingVertical: 10, gap: 4 }}>
         <View style={{ alignSelf: "flex-start" }}>

@@ -85,6 +85,7 @@ const TabsTrigger = React.forwardRef<
   return (
     <TabsPrimitive.Trigger
       ref={ref}
+      data-tab-variant={resolvedVariant}
       className={cn(
         "inline-flex shrink-0 items-center justify-center whitespace-nowrap text-sm font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:underline focus-visible:decoration-2 focus-visible:underline-offset-8",
         resolvedVariant === "pill"
@@ -93,7 +94,7 @@ const TabsTrigger = React.forwardRef<
             // paints a matching white fill of its own.
             // Unselected segments get a neutral wash: tabs are navigation, not
             // direction, so brand green here would compete with real signals.
-            "relative z-10 min-h-8 rounded-full px-3 [transform:translateZ(0)] sm:min-h-10 sm:px-4 data-[state=inactive]:hover:bg-foreground/[0.06] data-[state=inactive]:hover:text-foreground data-[state=inactive]:focus-visible:bg-foreground/[0.06] data-[state=inactive]:focus-visible:text-foreground data-[state=inactive]:active:bg-foreground/[0.1] data-[state=active]:bg-white data-[state=active]:text-glass-thumb-foreground group-data-[pill-ready=true]/tabs:data-[state=active]:bg-transparent"
+            "relative z-10 min-h-8 rounded-full px-3 [transform:translateZ(0)] sm:min-h-10 sm:px-4 data-[state=inactive]:hover:bg-foreground/[0.06] data-[state=inactive]:hover:text-foreground data-[state=inactive]:focus-visible:bg-foreground/[0.06] data-[state=inactive]:focus-visible:text-foreground data-[state=inactive]:active:bg-foreground/[0.1] data-[state=active]:bg-glass-thumb data-[state=active]:text-glass-thumb-foreground group-data-[pill-ready=true]/tabs:data-[state=active]:bg-transparent"
           : // The underline variant uses border as its only active affordance, so
             // the rule itself has to go neutral too — a green indicator line
             // would read as state colour on what is just a tab position.

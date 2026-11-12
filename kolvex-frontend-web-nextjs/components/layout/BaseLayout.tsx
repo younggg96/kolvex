@@ -12,7 +12,7 @@ export default function BaseLayout({
   hasFooter = true,
 }: BaseLayoutProps) {
   return (
-    <div className="relative flex min-h-screen w-full flex-col overflow-y-auto bg-background transition-colors duration-300">
+    <div className="site-page-surface relative flex min-h-screen w-full flex-col overflow-y-auto bg-background transition-colors duration-300">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 bg-grid" />
 
       {/* Header */}

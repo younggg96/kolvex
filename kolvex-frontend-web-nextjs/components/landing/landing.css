@@ -1,4 +1,4 @@
-/* Centered introduction over an interactive signal-field background. */
+/* Centered introduction over the viewport backdrop. */
 .landing-page {
   position: relative;
   isolation: isolate;
@@ -13,21 +13,21 @@
 }
 .landing-page > .relative { min-height: 100dvh; overflow: clip; z-index: 1; background: transparent; }
 .landing-background { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
-.landing-artwork { background: rgb(3 8 5); }
+.landing-artwork { display: none; }
+.dark .landing-artwork { display: block; background: rgb(3 8 5); }
 .landing-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: rgb(3 8 5); }
 /* Dark theme shows the Waylume light band: a scrim that travels with the hero copy keeps it legible. */
 .dark .hero-copy::before { content: ""; position: absolute; inset: -4rem -6rem; z-index: -1; pointer-events: none; background: radial-gradient(closest-side, rgb(3 8 5 / .78) 0%, rgb(3 8 5 / .55) 60%, rgb(3 8 5 / 0) 100%); }
 .landing-page > div > .bg-grid { display: none; }
 .landing-page main { animation: none; }
 .landing-width { width: min(1200px, calc(100% - 96px)); margin-inline: auto; }
-.landing-page ::selection { background: rgb(var(--primary)); color: #000; }
+.landing-page ::selection { background: rgb(var(--primary)); color: rgb(var(--primary-foreground)); }
 .landing-page :is(a, button):focus-visible { outline: 2px solid rgb(var(--positive)); outline-offset: 5px; }
 .landing-page :is(section, #product):focus { outline: none; }
 .landing-page a { transition: color 180ms var(--spring), background-color 180ms var(--spring); }
 .landing-page .landing-primary { min-height: 3rem; padding-inline: 1.625rem; gap: 1.5rem; font-size: 0.875rem; color: rgb(var(--primary-foreground)); background: rgb(var(--primary) / .85); }
 .landing-page .landing-primary:hover { background: rgb(var(--primary) / .75); }
 .landing-page .landing-nav-cta { padding-inline: 1.25rem; font-size: 0.8125rem; }
-/* React Bits Waves supplies the signal field; the rest uses existing brand tokens. */
 .landing-hero { position: relative; isolation: isolate; scroll-margin-top: 1.5rem; overflow: clip; }
 .kinetic-hero { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; align-items: center; min-height: 42.5rem; padding-block: 6.25rem 7.5rem; }
 .hero-copy { position: relative; z-index: 1; width: 100%; padding-block: 0.75rem; text-align: center; }
@@ -51,8 +51,6 @@
 .hero-explore svg { transition: transform 220ms var(--spring); }
 .hero-explore:hover svg { transform: translate(3px, -3px); }
 .hero-art { position: absolute; inset: 0; z-index: 0; min-width: 0; pointer-events: none; }
-.hero-signal-field { position: absolute; inset: 0; isolation: isolate; }
-.hero-signal-field::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 55%, rgb(var(--background) / .78) 100%), radial-gradient(ellipse 42% 60% at 50% 46%, rgb(var(--background) / .94) 0%, rgb(var(--background) / .78) 52%, rgb(var(--background) / 0) 100%); pointer-events: none; }
 .hero-art-caption { position: absolute; bottom: 1.5rem; inset-inline: 1.25rem; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 0.5rem 1.5rem; padding-inline: 1rem; color: var(--landing-muted); font-size: 0.75rem; }
 .simple-features { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: min(920px, calc(100% - 96px)); gap: 2rem; padding-block: 1.5rem 2rem; scroll-margin-top: 2.75rem; }
 .simple-features a { padding-block: 0.625rem; min-height: 2.75rem; }
@@ -105,8 +103,8 @@
 /* Glass surfaces keep small text legible where the light band runs behind it.
    Same material as the app glass: smoky fill, shared rim + sheen, one blur. */
 .landing-page {
-  --landing-glass-fill: rgb(var(--background) / .5);
-  --landing-glass-fill-hover: rgb(var(--background) / .62);
+  --landing-glass-fill: rgb(var(--card) / .86);
+  --landing-glass-fill-hover: rgb(var(--card) / .96);
 }
 .dark .landing-page, .landing-page.dark {
   --landing-glass-fill: rgb(6 12 8 / .68);
@@ -140,4 +138,12 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .simple-features a, .simple-features a:hover { transform: none; transition: background-color 180ms var(--spring); }
+}
+
+:root:not(.dark) .landing-page {
+  --landing-glass-fill-hover: rgb(var(--interaction-hover));
+}
+
+:root:not(.dark) :is(.hero-title-accent, .typewriter-caret, .hero-explore:hover, .simple-features a:hover h2) {
+  color: rgb(var(--primary-hover));
 }

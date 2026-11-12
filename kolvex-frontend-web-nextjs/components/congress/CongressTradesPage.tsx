@@ -6,6 +6,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SearchFieldIcon, SearchInput } from "@/components/ui/search-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import CongressTrades from "./CongressTrades";
 
@@ -40,23 +41,23 @@ export default function CongressTradesPage({ initialTicker }: { initialTicker: s
         <div className="mx-auto max-w-6xl space-y-5 px-4 pb-10 pt-4 md:space-y-6 md:px-8 md:py-8">
           <header className="space-y-2">
             <h1 className="text-2xl font-semibold tracking-tight md:text-[2rem]">{title}</h1>
-            <p className="text-sm text-muted-foreground">
-              {c("Securities transactions filed in the past year, newest filings first.", "查看最近一年的证券交易披露，按申报日倒序排列。")}
-            </p>
           </header>
           <form onSubmit={submit} className="grid grid-cols-2 items-end gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)_auto]">
             <div className="min-w-0 space-y-1.5">
               <Label htmlFor="congress-ticker">{c("Ticker", "股票代码")}</Label>
-              <Input className="max-md:min-h-11 max-md:text-base" autoCapitalize="characters" spellCheck={false} id="congress-ticker" value={filters.ticker} placeholder="NVDA" maxLength={20}
-                aria-invalid={invalidTicker} aria-describedby={invalidTicker ? "congress-ticker-error" : undefined}
-                onChange={(event) => {
-                  setInvalidTicker(false);
-                  setFilters({ ...filters, ticker: event.target.value });
-                }} />
+              <div className="relative">
+                <SearchFieldIcon />
+                <Input className="pl-9 max-md:min-h-11 max-md:text-base" autoCapitalize="characters" spellCheck={false} id="congress-ticker" value={filters.ticker} placeholder="NVDA" maxLength={20}
+                  aria-invalid={invalidTicker} aria-describedby={invalidTicker ? "congress-ticker-error" : undefined}
+                  onChange={(event) => {
+                    setInvalidTicker(false);
+                    setFilters({ ...filters, ticker: event.target.value });
+                  }} />
+              </div>
             </div>
             <div className="min-w-0 space-y-1.5">
               <Label htmlFor="congress-member">{c("Member", "议员姓名")}</Label>
-              <Input className="max-md:min-h-11 max-md:text-base" id="congress-member" value={filters.member} maxLength={100}
+              <SearchInput className="max-md:min-h-11 max-md:text-base" containerClassName="w-full" id="congress-member" value={filters.member} maxLength={100}
                 onChange={(event) => setFilters({ ...filters, member: event.target.value })} />
             </div>
             <div className="min-w-0 space-y-1.5">

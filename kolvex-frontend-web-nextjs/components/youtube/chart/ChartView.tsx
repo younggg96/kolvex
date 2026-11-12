@@ -99,14 +99,13 @@ import {
   type AdvancedRange,
   type ChartInterval,
 } from "./timeframes";
-import PriceGraph, { defaultGraphView, graphGeometry, type GraphGeometry } from "./PriceGraph";
+import PriceGraph, { defaultGraphView, type GraphGeometry } from "./PriceGraph";
 import { ExtremeTag } from "./ChartMarkers";
 import {
   GRAPH_AXIS_WIDTH,
   GRAPH_MIN_BARS,
-  GRAPH_TIME_AXIS,
-  GRAPH_TOP_PAD,
   clampGraphView,
+  priceDomain,
   zoomGraphView,
   type GraphView,
   type PriceRangeKey,
@@ -332,7 +331,8 @@ export default function ChartView({
   const [historyStale, setHistoryStale] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [view, setView] = useState<View | null>(null);
-  const [autoScale, setAutoScale] = useState(true);
+  const [priceDomainOverride, setPriceDomainOverride] = useState<ReturnType<typeof priceDomain> | null>(null);
+  const autoScale = priceDomainOverride === null;
   const [active, setActive] = useState<number | null>(null);
   const [tool, setTool] = useState<DrawingTool>("cursor");
   const [color, setColor] = useState(drawingColors[0]);
@@ -442,6 +442,7 @@ export default function ChartView({
     setHistoryStale(false);
     setActive(null);
     setView(null);
+    setPriceDomainOverride(null);
     if (snapshotBars) { setBars(snapshotBars); return () => controller.abort(); }
     getStockHistory(symbol, JSON.parse(paramsKey), controller.signal, force)
       .then(data => { if (!controller.signal.aborted) setBars(data); })
@@ -595,24 +596,8 @@ export default function ChartView({
   const activeIndicators = new Set(advanced ? indicators : []);
   const showVolume = activeIndicators.has("volume");
   const plotW = Math.max(size.width - GRAPH_AXIS_WIDTH, 1);
-  const plotH = Math.max(size.height - GRAPH_TIME_AXIS, 1);
-  const volumeH = showVolume ? plotH * 0.18 : 0;
-  /** Price scale rows: the candle body stops above the volume strip. */
-  const priceTop = GRAPH_TOP_PAD;
-  const priceBottom = Math.max(plotH - volumeH - 16, priceTop + 1);
   const span = current.end - current.start;
   const slot = plotW / Math.max(span, 1e-6);
-  /** Shared geometry: candles, drawings and the oscillator all read positions from it. */
-  const geometry = graphGeometry({
-    bars,
-    times,
-    view: current,
-    width: size.width,
-    height: size.height,
-    intraday,
-    interval: params.interval || "1d",
-    priceExtent,
-  });
   const xOf = (index: number) => (index - current.start + 0.5) * slot;
   const firstVisible = Math.max(Math.floor(current.start), 0);
   const lastVisible = Math.min(Math.ceil(current.end), count) - 1;
@@ -644,23 +629,6 @@ export default function ChartView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drawingRequest, count, aiBusy]);
 
-  const yRange = useMemo(() => {
-    if (!bars?.length) return { lo: 0, hi: 1, maxVolume: 1 };
-    const from = autoScale ? firstVisible : 0;
-    const to = autoScale ? lastVisible : bars.length - 1;
-    let lo = Infinity;
-    let hi = -Infinity;
-    let maxVolume = 1;
-    for (let index = Math.max(from, 0); index <= Math.min(to, bars.length - 1); index++) {
-      lo = Math.min(lo, advanced ? bars[index].low : bars[index].close);
-      hi = Math.max(hi, advanced ? bars[index].high : bars[index].close);
-      maxVolume = Math.max(maxVolume, bars[index].volume || 0);
-    }
-    if (!Number.isFinite(lo)) return { lo: 0, hi: 1, maxVolume };
-    const pad = (hi - lo || hi * 0.01 || 1) * 0.06;
-    return { lo: lo - pad, hi: hi + pad, maxVolume };
-  }, [bars, autoScale, firstVisible, lastVisible, advanced]);
-
   if (error) {
     return (
       <div
@@ -675,14 +643,6 @@ export default function ChartView({
     );
   }
 
-  /**
-   * The price scale comes from the shared geometry (optionally auto-scaled to the visible
-   * highs/lows), so drawings, call markers and the axis all agree on one mapping.
-   */
-  const yOf = (price: number) =>
-    autoScale
-      ? geometry.yOf(price)
-      : priceTop + ((yRange.hi - price) / (yRange.hi - yRange.lo)) * (priceBottom - priceTop);
   const barLabel = (bar: PriceBar) => `${formatDate(bar.date.slice(0, 10))}${intraday ? ` ${bar.date.slice(11, 16)}` : ""}`;
 
   const drawing = tool !== "cursor";
@@ -747,7 +707,7 @@ export default function ChartView({
 
   function resetView() {
     setView(null);
-    setAutoScale(true);
+    setPriceDomainOverride(null);
   }
 
   function handlePointerDown(event: PointerEvent<HTMLDivElement>, plot: GraphGeometry) {
@@ -891,33 +851,6 @@ export default function ChartView({
       "inline-flex h-8 shrink-0 items-center rounded-full px-3 text-[0.8125rem] font-semibold transition-colors duration-150 focus-visible:outline-none",
       isActive ? "glass-thumb text-foreground" : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]",
     );
-
-  const path = (values: Series) => {
-    let d = "";
-    let pen = false;
-    for (let index = Math.max(firstVisible - 1, 0); index <= Math.min(lastVisible + 1, count - 1); index++) {
-      const value = values[index];
-      if (value === null || value === undefined) {
-        pen = false;
-        continue;
-      }
-      d += `${pen ? "L" : "M"}${xOf(index).toFixed(1)},${yOf(value).toFixed(1)}`;
-      pen = true;
-    }
-    return d;
-  };
-  const band = () => {
-    const upper: string[] = [];
-    const lower: string[] = [];
-    for (let index = Math.max(firstVisible - 1, 0); index <= Math.min(lastVisible + 1, count - 1); index++) {
-      const top = series.bb.upper[index];
-      const bottom = series.bb.lower[index];
-      if (top === null || bottom === null) continue;
-      upper.push(`${xOf(index).toFixed(1)},${yOf(top).toFixed(1)}`);
-      lower.unshift(`${xOf(index).toFixed(1)},${yOf(bottom).toFixed(1)}`);
-    }
-    return upper.length ? `M${upper.join("L")}L${lower.join("L")}Z` : "";
-  };
 
   const hideDrawingsControl = (fill = false, chip = false) => (
             <Dialog open={hideDrawingsOpen} onOpenChange={setHideDrawingsOpen}>
@@ -1223,7 +1156,8 @@ export default function ChartView({
       return { high, low };
     })();
     const lastTone = last && last.close >= (bars[count - 2]?.close ?? last.open) ? "positive" : "negative";
-    const maxVolume = yRange.maxVolume || 1;
+    const visibleBars = bars.slice(firstVisible, lastVisible + 1);
+    const maxVolume = visibleBars.reduce((maximum, bar) => Math.max(maximum, bar.volume || 0), 1);
     return (
       <>
         {activeIndicators.has("bb") && (
@@ -1234,7 +1168,7 @@ export default function ChartView({
             <path d={path(series.bb.middle)} fill="none" stroke={indicatorMeta.bb.color} strokeWidth={1} strokeDasharray="3 3" />
           </>
         )}
-        {bars.slice(firstVisible, lastVisible + 1).map((bar, offset) => {
+        {visibleBars.map((bar, offset) => {
           const index = firstVisible + offset;
           const fill = bar.close >= bar.open ? "rgb(var(--chart-up))" : "rgb(var(--chart-down))";
           const top = y(Math.max(bar.open, bar.close));
@@ -1451,7 +1385,8 @@ export default function ChartView({
     <button
       type="button"
       aria-pressed={autoScale}
-      onClick={() => setAutoScale((value) => !value)}
+      disabled={!loaded}
+      onClick={() => setPriceDomainOverride(autoScale ? priceDomain(bars ?? [], current, priceExtent) : null)}
       className={cn(pill(autoScale), "gap-1.5")}
     >
       {autoScale ? <Lock className="h-3.5 w-3.5" aria-hidden="true" /> : <LockOpen className="h-3.5 w-3.5" aria-hidden="true" />}
@@ -1574,6 +1509,8 @@ export default function ChartView({
       renderPlot={advanced ? renderAdvancedPlot : undefined}
       onGeometry={receiveGraphGeometry}
       priceExtent={priceExtent}
+      priceDomainOverride={priceDomainOverride}
+      onPriceDomainChange={advanced ? setPriceDomainOverride : undefined}
       drawingLayer={drawingLayerNode}
       drawingInteraction={advanced ? {
         onPointerDown: handlePointerDown,
@@ -1896,7 +1833,7 @@ export default function ChartView({
               type="button"
               title={t("youtubeOpinions.resetZoom")}
               aria-label={t("youtubeOpinions.resetZoom")}
-              disabled={!view}
+              disabled={!view && autoScale}
               onClick={resetView}
               className={cn(iconButton(false), "max-sm:hidden")}
             >

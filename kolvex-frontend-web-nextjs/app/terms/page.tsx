@@ -9,35 +9,35 @@ export const metadata = publicPageMetadata(
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-white dark:bg-black">
+    <div className="site-page-surface min-h-screen bg-background">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="mb-8">
           <Link
             href="/"
-            className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+            className="text-sm text-muted-foreground dark:text-gray-400 hover:text-foreground dark:hover:text-white transition-colors"
           >
             ← Back to Home
           </Link>
         </div>
 
         <div className="prose prose-sm sm:prose lg:prose-lg dark:prose-invert max-w-none">
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-2">
+          <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-2">
             Terms of Service
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mb-8">
+          <p className="text-muted-foreground dark:text-gray-400 mb-8">
             Last Updated: November 3, 2025
           </p>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mt-8 mb-4">
+            <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">
               1. Acceptance of Terms
             </h2>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               By accessing or using Kolvex (&quot;the Service&quot;), you agree
               to be bound by these Terms of Service (&quot;Terms&quot;). If you
               do not agree to these Terms, please do not use the Service.
             </p>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               These Terms constitute a legally binding agreement between you and
               Kolvex AI (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;)
               regarding your use of the Service.
@@ -45,14 +45,14 @@ export default function TermsPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mt-8 mb-4">
+            <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">
               2. Description of Service
             </h2>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               Kolvex is an AI-powered investment intelligence platform that
               provides:
             </p>
-            <ul className="list-disc pl-6 text-gray-700 dark:text-gray-300 mb-4 space-y-2">
+            <ul className="list-disc pl-6 text-foreground dark:text-gray-300 mb-4 space-y-2">
               <li>YouTube creator stock opinion research</li>
               <li>Stock market data aggregation and visualization</li>
               <li>AI-generated investment insights and analysis</li>
@@ -61,26 +61,26 @@ export default function TermsPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mt-8 mb-4">
+            <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">
               3. Investment Disclaimer
             </h2>
             <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-2xl p-6 mb-4">
               <p className="text-gray-900 dark:text-yellow-100 font-semibold mb-2">
                 IMPORTANT: NOT FINANCIAL ADVICE
               </p>
-              <p className="text-gray-700 dark:text-gray-300 mb-4">
+              <p className="text-foreground dark:text-gray-300 mb-4">
                 The information provided through Kolvex is for informational and
                 educational purposes only. It does not constitute financial
                 advice, investment advice, trading advice, or any other sort of
                 advice.
               </p>
-              <p className="text-gray-700 dark:text-gray-300 mb-4">
+              <p className="text-foreground dark:text-gray-300 mb-4">
                 You should not treat any of the Service&apos;s content as a
                 recommendation to buy, sell, or hold any security or investment.
                 We are not registered investment advisors, and the Service does
                 not provide personalized investment recommendations.
               </p>
-              <p className="text-gray-700 dark:text-gray-300">
+              <p className="text-foreground dark:text-gray-300">
                 All investment decisions should be made based on your own
                 research and consultation with qualified financial
                 professionals. Investing involves risk, including the possible
@@ -90,14 +90,14 @@ export default function TermsPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mt-8 mb-4">
+            <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">
               4. User Accounts
             </h2>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               To access certain features of the Service, you may need to create
               an account. You agree to:
             </p>
-            <ul className="list-disc pl-6 text-gray-700 dark:text-gray-300 mb-4 space-y-2">
+            <ul className="list-disc pl-6 text-foreground dark:text-gray-300 mb-4 space-y-2">
               <li>
                 Provide accurate, current, and complete information during
                 registration
@@ -116,14 +116,14 @@ export default function TermsPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mt-8 mb-4">
+            <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">
               5. Subscription and Payments
             </h2>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               Kolvex offers both free and paid subscription tiers. Paid
               subscriptions are subject to the following terms:
             </p>
-            <ul className="list-disc pl-6 text-gray-700 dark:text-gray-300 mb-4 space-y-2">
+            <ul className="list-disc pl-6 text-foreground dark:text-gray-300 mb-4 space-y-2">
               <li>
                 Subscription fees are billed in advance on a recurring monthly
                 or annual basis
@@ -145,13 +145,13 @@ export default function TermsPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mt-8 mb-4">
+            <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">
               6. Acceptable Use
             </h2>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               You agree not to:
             </p>
-            <ul className="list-disc pl-6 text-gray-700 dark:text-gray-300 mb-4 space-y-2">
+            <ul className="list-disc pl-6 text-foreground dark:text-gray-300 mb-4 space-y-2">
               <li>
                 Use the Service for any illegal purpose or in violation of any
                 laws
@@ -181,30 +181,30 @@ export default function TermsPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mt-8 mb-4">
+            <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">
               7. Intellectual Property
             </h2>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               The Service and its original content, features, and functionality
               are owned by Kolvex AI and are protected by international
               copyright, trademark, patent, trade secret, and other intellectual
               property laws.
             </p>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               You may not copy, modify, distribute, sell, or lease any part of
               our Service without our express written permission.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mt-8 mb-4">
+            <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">
               8. Data Accuracy and Availability
             </h2>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               While we strive to provide accurate and timely information, we
               cannot guarantee:
             </p>
-            <ul className="list-disc pl-6 text-gray-700 dark:text-gray-300 mb-4 space-y-2">
+            <ul className="list-disc pl-6 text-foreground dark:text-gray-300 mb-4 space-y-2">
               <li>
                 The accuracy, completeness, or timeliness of any data or
                 analysis
@@ -216,24 +216,24 @@ export default function TermsPage() {
               </li>
               <li>The accuracy of AI-generated content or analysis</li>
             </ul>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               Third-party data sources may have delays, errors, or interruptions
               beyond our control.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mt-8 mb-4">
+            <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">
               9. Limitation of Liability
             </h2>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               TO THE MAXIMUM EXTENT PERMITTED BY LAW, KOLVEX AI SHALL NOT BE
               LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR
               PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS OR REVENUES, WHETHER
               INCURRED DIRECTLY OR INDIRECTLY, OR ANY LOSS OF DATA, USE,
               GOODWILL, OR OTHER INTANGIBLE LOSSES RESULTING FROM:
             </p>
-            <ul className="list-disc pl-6 text-gray-700 dark:text-gray-300 mb-4 space-y-2">
+            <ul className="list-disc pl-6 text-foreground dark:text-gray-300 mb-4 space-y-2">
               <li>Your use or inability to use the Service</li>
               <li>
                 Any investment decisions made based on information from the
@@ -245,15 +245,15 @@ export default function TermsPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mt-8 mb-4">
+            <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">
               10. Indemnification
             </h2>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               You agree to indemnify and hold harmless Kolvex AI, its officers,
               directors, employees, and agents from any claims, damages, losses,
               liabilities, and expenses (including attorney fees) arising from:
             </p>
-            <ul className="list-disc pl-6 text-gray-700 dark:text-gray-300 mb-4 space-y-2">
+            <ul className="list-disc pl-6 text-foreground dark:text-gray-300 mb-4 space-y-2">
               <li>Your use of the Service</li>
               <li>Your violation of these Terms</li>
               <li>Your violation of any rights of another party</li>
@@ -262,15 +262,15 @@ export default function TermsPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mt-8 mb-4">
+            <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">
               11. Termination
             </h2>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               We may terminate or suspend your account and access to the Service
               immediately, without prior notice or liability, for any reason,
               including if you breach these Terms.
             </p>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               Upon termination, your right to use the Service will immediately
               cease. All provisions of these Terms which by their nature should
               survive termination shall survive.
@@ -278,10 +278,10 @@ export default function TermsPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mt-8 mb-4">
+            <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">
               12. Changes to Terms
             </h2>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               We reserve the right to modify these Terms at any time. We will
               notify users of material changes via email or through the Service.
               Your continued use of the Service after changes constitutes
@@ -290,10 +290,10 @@ export default function TermsPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mt-8 mb-4">
+            <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">
               13. Governing Law
             </h2>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               These Terms shall be governed by and construed in accordance with
               the laws of the jurisdiction where Kolvex AI is registered,
               without regard to its conflict of law provisions.
@@ -301,13 +301,13 @@ export default function TermsPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mt-8 mb-4">
+            <h2 className="text-2xl font-semibold text-foreground mt-8 mb-4">
               14. Contact Information
             </h2>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
+            <p className="text-foreground dark:text-gray-300 mb-4">
               If you have any questions about these Terms, please contact us at:
             </p>
-            <p className="text-gray-700 dark:text-gray-300">
+            <p className="text-foreground dark:text-gray-300">
               Email:{" "}
               <a
                 href="mailto:support@kolvex.app"
@@ -318,8 +318,8 @@ export default function TermsPage() {
             </p>
           </section>
 
-          <div className="mt-12 pt-8 border-t border-gray-200 dark:border-gray-800">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+          <div className="mt-12 pt-8 border-t border-border dark:border-gray-800">
+            <p className="text-sm text-muted-foreground dark:text-gray-400">
               By using Kolvex, you acknowledge that you have read, understood,
               and agree to be bound by these Terms of Service.
             </p>

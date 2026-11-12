@@ -30,17 +30,19 @@ export function MarketEventCalendarSkeleton({ label, calendar }: { label: string
   return (
     <div role="status" aria-label={label} className="min-w-0">
       <div aria-hidden="true">
-        <div className="flex items-center justify-between gap-4 px-1 pb-3 max-md:px-0">
+        <div className="flex items-center justify-between gap-4 px-1 pb-3 max-md:px-0 max-md:pb-[16px]">
           <Skeleton className="h-11 w-48 min-w-0 rounded-full max-md:h-10" />
-          <Skeleton className="h-10 w-10 shrink-0 rounded-full md:hidden" />
-          {calendar && (
-            <div className="flex gap-2 max-md:hidden">
-              <Skeleton className="h-11 w-11 rounded-full" />
-              <Skeleton className="h-11 w-11 rounded-full" />
-            </div>
-          )}
+          <div className="flex shrink-0 items-center gap-2">
+            <Skeleton className="h-9 w-9 rounded-full" />
+            <Skeleton className="h-10 w-10 rounded-full md:hidden" />
+            {calendar && (
+              <div className="flex gap-2 max-md:hidden">
+                <Skeleton className="h-11 w-11 rounded-full" />
+                <Skeleton className="h-11 w-11 rounded-full" />
+              </div>
+            )}
+          </div>
         </div>
-        <Skeleton className="mx-1 mb-3 h-3 w-48" />
         {calendar && (
           <div className="mb-3 grid grid-cols-7 gap-1 md:hidden">
             {DAYS.map((day) => <Skeleton key={day} className="h-14 rounded-2xl" />)}

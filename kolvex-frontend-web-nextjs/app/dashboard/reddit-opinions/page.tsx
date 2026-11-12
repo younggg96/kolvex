@@ -4,10 +4,11 @@ import Link from "next/link";
 import { ContentLoading, SkeletonRepeat } from "@/components/ui/content-loading";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMemo, useRef, useState } from "react";
-import { ChevronDown, ExternalLink, Loader2, RefreshCw, Search, Star, X } from "lucide-react";
+import { ChevronDown, ExternalLink, Loader2, RefreshCw, Star, X } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SearchFieldIcon } from "@/components/ui/search-input";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FilterSheet, FilterSheetGroup, FilterSheetToggle } from "@/components/ui/filter-sheet";
@@ -77,7 +78,7 @@ export default function RedditOpinionsPage() {
 
   return (
     <DashboardLayout title={t("redditOpinions.header")}>
-      <div className="min-h-0 flex-1 overflow-y-auto bg-background dark:bg-transparent">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto max-w-6xl px-[16px] pb-6 pt-[12px] md:px-8 md:py-8">
           <div className="flex items-center justify-between gap-3">
             <h1 className="flex min-w-0 items-center gap-2 text-2xl font-semibold tracking-tight md:text-[2rem]">
@@ -110,7 +111,7 @@ export default function RedditOpinionsPage() {
             <ListCard>
               <div className="hidden items-center gap-3 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] xl:grid-cols-[minmax(0,1fr)_11rem_11rem_auto]">
                 <div className="relative lg:col-span-3 xl:col-span-1">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                  <SearchFieldIcon />
                   <Input ref={searchInput} type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("redditOpinions.search")} aria-label={t("redditOpinions.search")} className="h-11 pl-9 pr-10 [&::-webkit-search-cancel-button]:hidden" />
                   {query && <Button variant="ghost" size="icon" className="absolute right-0 top-0 h-11 w-11" aria-label={t("redditOpinions.clearSearch")} title={t("redditOpinions.clearSearch")}
                     onClick={() => { setQuery(""); searchInput.current?.focus(); }}><X className="h-4 w-4" aria-hidden="true" /></Button>}

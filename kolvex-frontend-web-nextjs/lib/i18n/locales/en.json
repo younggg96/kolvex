@@ -1317,6 +1317,8 @@
     "zoomOut": "Zoom out",
     "resetZoom": "Reset zoom",
     "zoomHint": "Drag to pan, ⌘/Ctrl + scroll or pinch to zoom, double-click to reset",
+    "timeAxisZoom": "Time axis. Drag, scroll, or press + or − to zoom. Double-click or press 0 to reset.",
+    "priceAxisZoom": "Price axis. Drag, scroll, or press + or − to zoom. Double-click or press 0 to restore auto-scale.",
     "advancedChart": "Advanced",
     "advancedChartTitle": "{symbol} advanced chart",
     "interval": "Interval",

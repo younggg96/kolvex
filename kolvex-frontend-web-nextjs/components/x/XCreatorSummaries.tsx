@@ -91,12 +91,6 @@ export default function XCreatorSummaries({
             {date.format(new Date(snapshot.generated_at))}
           </time>
         )}
-        <p className="basis-full text-sm leading-5 text-muted-foreground">
-          {c(
-            "AI summarized selected posts by creator. Each brief shows its own coverage dates and sources.",
-            "AI 按博主归纳部分已收录的推文。每条摘要都标注了覆盖日期和依据原帖。",
-          )}
-        </p>
       </div>
       <ListCard>
         <Button

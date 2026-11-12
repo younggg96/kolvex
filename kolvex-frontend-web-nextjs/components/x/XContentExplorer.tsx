@@ -8,12 +8,12 @@ import {
   ExternalLink,
   Loader2,
   RefreshCw,
-  Search,
   X,
 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SearchFieldIcon } from "@/components/ui/search-input";
 import {
   ListCard,
   ListRows,
@@ -106,12 +106,6 @@ export default function XContentExplorer() {
               <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
                 {title}
               </h1>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {c(
-                  "Read what creators are saying and check the posts behind their views.",
-                  "了解博主在关注什么，并查看观点背后的原帖。",
-                )}
-              </p>
             </div>
             <a href="#x-posts-heading" className={cn(focusClass, "inline-flex min-h-10 items-center text-sm text-muted-foreground underline underline-offset-4 xl:hidden")}>
               {c("Jump to original posts", "跳到原始推文")}
@@ -296,10 +290,7 @@ function XPosts({
             <label htmlFor="x-ticker" className="sr-only">
               {c("Stock ticker", "股票代码")}
             </label>
-            <Search
-              className="pointer-events-none absolute inset-y-0 left-3 z-10 my-auto h-4 w-4 text-muted-foreground"
-              aria-hidden="true"
-            />
+            <SearchFieldIcon />
             <Input
               ref={tickerRef}
               id="x-ticker"

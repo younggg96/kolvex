@@ -6,7 +6,7 @@ import "./reading-motion.css";
 
 export function ReadingLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div lang="zh-CN" className="reading-shell min-h-dvh bg-background text-foreground">
+    <div lang="zh-CN" className="site-page-surface reading-shell min-h-dvh bg-background text-foreground">
       <a href="#public-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-background focus:p-4">跳到正文</a>
       <ReadingHeader />
       <main id="public-content" className="mx-auto w-full max-w-[70rem] px-[16px] pb-10 pt-6 md:px-8 md:pt-8">{children}</main>

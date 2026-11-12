@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { ChipButton } from "@/components/ui/chip-button";
 import { ContentLoading } from "@/components/ui/content-loading";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { ListCard, ListLoadMore } from "@/components/ui/list-card";
 import { institutionKey, secSourceUrl, type HoldingActivity, type Institution } from "@/lib/freeResearch";
 import { cn } from "@/lib/utils";
@@ -351,9 +351,9 @@ function HoldingsTable({ data }: { data: Institution }) {
               ),
             )}
           </div>
-          <Input
+          <SearchInput
             type="search"
-            className="h-10 w-full px-4 text-sm md:w-64"
+            containerClassName="w-full md:w-64"
             value={query}
             onChange={(event) => {
               setQuery(event.target.value);

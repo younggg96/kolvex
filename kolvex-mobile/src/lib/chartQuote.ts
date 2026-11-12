@@ -36,15 +36,24 @@ export function latestQuote(
   let session: "regular" | "pre" | "post" = "regular";
   if (time && includeExtended)
     for (const c of [
-      { price: quote.pre_market_price, time: quote.pre_market_time, session: "pre" as const },
-      { price: quote.post_market_price, time: quote.post_market_time, session: "post" as const },
+      {
+        price: quote.pre_market_price,
+        time: quote.pre_market_time,
+        session: "pre" as const,
+      },
+      {
+        price: quote.post_market_price,
+        time: quote.post_market_time,
+        session: "post" as const,
+      },
     ])
       if (positive(c.price) && positive(c.time) && c.time > time) {
         price = c.price;
         time = c.time;
         session = c.session;
       }
-  const baseline = session === "regular" ? quote.previous_close : quote.current_price;
+  const baseline =
+    session === "regular" ? quote.previous_close : quote.current_price;
   const changePercent =
     session === "regular" && Number.isFinite(quote.change_percent)
       ? quote.change_percent
@@ -55,7 +64,10 @@ export function latestQuote(
 }
 
 /** The current saved technical analysis and AI drawings, as the Web loads them on open. */
-export function useSavedChartAnalysis(symbol: string, user: string | undefined) {
+export function useSavedChartAnalysis(
+  symbol: string,
+  user: string | undefined,
+) {
   const [analysis, setAnalysis] = useState<AiTechnicalAnalysis | null>(null);
   const [drawings, setDrawings] = useState<AiTechnicalAnalysis | null>(null);
   useEffect(() => {

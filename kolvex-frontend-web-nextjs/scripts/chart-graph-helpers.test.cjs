@@ -74,6 +74,9 @@ test('zoom and pan clamp to the data with a little scroll room', () => {
 
   const tiny = graph.zoomGraphView({ start: 0, end: 60 }, 0.01, 0.5, 60);
   assert.ok(Math.abs(tiny.end - tiny.start - graph.GRAPH_MIN_BARS) < 1e-6);
+  assert.equal((tiny.start + tiny.end) / 2, 30);
+  const rightAnchored = graph.zoomGraphView({ start: 30, end: 60 }, 0.01, 1, 60);
+  assert.equal(rightAnchored.end, 60);
 
   const wide = graph.zoomGraphView({ start: 0, end: 60 }, 100, 0.5, 60);
   assert.ok(wide.end - wide.start <= 60 * 1.15 + 4);
@@ -85,6 +88,19 @@ test('zoom and pan clamp to the data with a little scroll room', () => {
   assert.ok(panned.start >= -(panned.end - panned.start) * 0.1 - 1e-6);
   assert.equal(panned.end - panned.start, 60);
   assert.ok(panned.start >= -(panned.end - panned.start) * 0.1);
+});
+
+test('price zoom keeps the cursor price fixed and bounds extreme scale changes', () => {
+  const domain = { lo: 80, hi: 120 };
+  const cursorRatio = 0.25;
+  const zoomed = graph.zoomPriceDomain(domain, 0.5, cursorRatio, 40);
+  assert.equal(zoomed.hi - zoomed.lo, 20);
+  assert.equal(zoomed.hi - (zoomed.hi - zoomed.lo) * cursorRatio, 110);
+
+  const smallest = graph.zoomPriceDomain(domain, 0, 0.5, 40);
+  assert.ok(Math.abs(smallest.hi - smallest.lo - 0.4) < 1e-9);
+  const largest = graph.zoomPriceDomain(domain, 1000, 0.5, 40);
+  assert.equal(largest.hi - largest.lo, 4000);
 });
 
 test('date ticks are evenly spaced, unique and inside the visible window', () => {

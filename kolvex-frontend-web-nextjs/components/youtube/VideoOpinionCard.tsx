@@ -159,11 +159,14 @@ export default function VideoOpinionCard({
               : Math.round(opinion.confidence * 100);
           const summary = opinion.summary || opinion.thesis;
           return (
-            <li key={opinion.id} className="border-t border-border first:border-t-0 has-[button:hover]:border-transparent has-[button:focus-visible]:border-transparent">
+            <li key={opinion.id} className="border-t border-border/70 first:border-t-0">
               <button
                 type="button"
                 onClick={() => onStock?.(opinion.ticker)}
-                className={cn("group grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 rounded-2xl px-3 py-3 text-left transition-colors duration-150 hover:bg-foreground/[0.06] focus-visible:outline-none focus-visible:bg-foreground/[0.06]", !compact && "rounded-none sm:-mx-3 sm:w-[calc(100%+1.5rem)] sm:grid-cols-[7rem_7.5rem_minmax(0,1fr)_auto] sm:items-start sm:rounded-full sm:px-3")}
+                className={cn(
+                  "grid w-full min-w-0 cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 rounded-xl px-3 py-3 text-left transition-colors duration-150 hover:bg-foreground/[0.05] active:bg-foreground/[0.09] focus-visible:bg-foreground/[0.05] focus-visible:outline focus-visible:outline-1 focus-visible:-outline-offset-1 focus-visible:outline-primary motion-reduce:transition-none",
+                  !compact && "sm:grid-cols-[7rem_7.5rem_minmax(0,1fr)_auto]",
+                )}
               >
                 <span className="flex min-w-0 items-center gap-2.5">
                   <CompanyLogo symbol={opinion.ticker} size="sm" />
@@ -173,14 +176,14 @@ export default function VideoOpinionCard({
                 <span className={cn("hidden h-6 items-center", !compact && "sm:flex")}>
                   <OpinionStrength value={opinion.direction_score} />
                 </span>
-                <span className={cn("col-span-2 row-start-2 text-sm leading-6 text-muted-foreground transition-colors duration-150 group-hover:text-foreground", !compact && "sm:col-span-1 sm:col-start-3 sm:row-start-1", compact && !expanded && "line-clamp-2")}>
+                <span className={cn("col-span-2 row-start-2 min-w-0 break-words text-sm leading-6 text-muted-foreground", !compact && "sm:col-span-1 sm:col-start-3 sm:row-start-1", compact && !expanded && "line-clamp-2")}>
                   {opinion.sentiment === "mixed" && (
                     <span className="mr-1.5 font-semibold text-warning">{t("youtubeOpinions.mixed")}</span>
                   )}
                   {summary}
                 </span>
                 <span
-                  className={cn("col-start-2 row-start-1 flex items-center justify-end text-xs text-muted-foreground tabular-nums", !compact && "sm:col-start-4 sm:h-6")}
+                  className={cn("col-start-2 row-start-1 flex items-center justify-end text-xs text-muted-foreground tabular-nums", !compact && "sm:col-start-4 sm:min-w-10")}
                   title={t("youtubeOpinions.confidence")}
                 >
                   {confidence !== null && (
@@ -202,7 +205,7 @@ export default function VideoOpinionCard({
           aria-expanded={expanded}
           aria-controls={opinionsId}
           onClick={() => setExpanded((value) => !value)}
-          className="mt-2 inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-[0.8125rem] font-semibold text-muted-foreground transition-colors duration-150 hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-none sm:-ml-3"
+          className="mt-2 inline-flex min-h-10 cursor-pointer items-center gap-1.5 rounded-xl px-3 text-[0.8125rem] font-semibold text-muted-foreground transition-colors duration-150 hover:bg-foreground/[0.05] hover:text-foreground focus-visible:bg-foreground/[0.05] focus-visible:outline focus-visible:outline-1 focus-visible:-outline-offset-1 focus-visible:outline-primary motion-reduce:transition-none"
         >
           {expanded ? t("youtubeOpinions.collapseVideoOpinions") : t("youtubeOpinions.showRemainingVideoOpinions", { count: String(hidden) })}
           <ChevronDown

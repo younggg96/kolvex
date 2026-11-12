@@ -95,7 +95,7 @@ export function FilterSheet({
         >
           <Filter className="w-3 h-3" />
           {activeFilterCount > 0 && (
-            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[0.625rem] font-bold text-white">
+            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[0.625rem] font-bold text-primary-foreground dark:text-white">
               {activeFilterCount}
             </span>
           )}

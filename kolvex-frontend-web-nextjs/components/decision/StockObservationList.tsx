@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { Info, Search, X, RotateCcw } from "lucide-react";
+import { Info, X, RotateCcw } from "lucide-react";
 import { FilterSheet, FilterSheetGroup } from "@/components/ui/filter-sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
+import { SearchFieldIcon } from "@/components/ui/search-input";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -222,7 +223,7 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
         <div className="hidden min-w-0 lg:block">
           <label htmlFor="stock-search" className="sr-only">{c("Search this list", "搜索当前名单")}</label>
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+            <SearchFieldIcon />
             <Input shape="pill" ref={searchRef} id="stock-search" type="text" autoComplete="off" maxLength={100} placeholder={c("Ticker or company name", "股票代码或公司名称")} value={searchDraft}
               className="h-11 pl-10 pr-12" onChange={event => { setSearchDraft(event.target.value); if (!composing.current) commitSearch(event.target.value); }}
               onCompositionStart={() => { composing.current = true; }} onCompositionEnd={event => { composing.current = false; commitSearch(event.currentTarget.value); }}

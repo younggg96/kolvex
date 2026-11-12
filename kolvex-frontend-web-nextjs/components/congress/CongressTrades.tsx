@@ -175,12 +175,6 @@ export default function CongressTrades({ filters = "", page = 1, onPageChange }:
           </Button>
         </nav>
       )}
-      <SourceNote>
-        {c("Source: CongressInvests. Amounts show the reported range. Filings can appear after the trade date.", "数据来源为 CongressInvests。金额按申报区间显示，申报可能晚于交易日。")}{" "}
-        <a className={linkClass} href="https://disclosures-clerk.house.gov/FinancialDisclosure" target="_blank" rel="noreferrer">{c("House filings", "众议院披露")}</a>
-        {" · "}
-        <a className={linkClass} href="https://efdsearch.senate.gov/search/" target="_blank" rel="noreferrer">{c("Senate filings", "参议院披露")}</a>
-      </SourceNote>
     </div>
   );
 }

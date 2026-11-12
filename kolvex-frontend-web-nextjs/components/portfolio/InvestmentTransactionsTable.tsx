@@ -2,9 +2,9 @@
 
 import { Skeleton } from "@/components/ui/skeleton";
 import React, { useMemo, useState } from "react";
-import { Download, RefreshCw, Search } from "lucide-react";
+import { Download, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import {
   Table,
   TableBody,
@@ -135,14 +135,15 @@ export function InvestmentTransactionsTable({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <form onSubmit={applySymbolFilter} className="flex items-center gap-2">
-            <Input
+            <SearchInput
+              aria-label="Filter by symbol"
               value={symbolInput}
               onChange={(event) => setSymbolInput(event.target.value)}
               placeholder="Symbol"
-              className="h-8 w-28 text-xs"
+              size="sm"
+              containerClassName="w-28"
             />
             <Button type="submit" variant="outline" size="sm" className="h-8 gap-1.5">
-              <Search className="h-3.5 w-3.5" />
               Filter
             </Button>
           </form>

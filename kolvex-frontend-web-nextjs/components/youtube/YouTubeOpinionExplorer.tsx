@@ -18,10 +18,8 @@ import {
   type ReactNode,
 } from "react";
 import {
-  ArrowUpDown,
   LineChart,
   Loader2,
-  Search,
   X,
 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -42,6 +40,7 @@ import {
   listRowTargetClass,
 } from "@/components/ui/list-card";
 import { Input } from "@/components/ui/input";
+import { SearchFieldIcon } from "@/components/ui/search-input";
 import CompanyLogo, { phoneListLogoClass } from "@/components/ui/company-logo";
 import { marketStockHref } from "@/lib/stockLinks";
 import {
@@ -1080,7 +1079,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                     <section aria-labelledby="creator-directory-heading" className="min-w-0">
                       <ListCard>
                         {/* Below lg the dock's search replaces the field and every filter and sort lives in one sheet. */}
-                        <div className="flex min-w-0 flex-wrap items-center gap-x-2 lg:flex-nowrap lg:gap-x-3">
+                        <div className="flex min-w-0 flex-wrap items-center gap-x-2 mb-2 lg:flex-nowrap lg:gap-x-3">
                         <ListToolbar className="min-w-0 flex-1 flex-nowrap max-lg:hidden lg:flex-none">
                           <SegmentedControl
                             label={t("youtubeOpinions.filterBySentiment")}
@@ -1096,7 +1095,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                         </ListToolbar>
                         <div className="contents lg:flex lg:min-w-0 lg:flex-1 lg:flex-nowrap lg:items-center lg:gap-2">
                           <div className="relative hidden min-w-0 shrink lg:block lg:w-64 xl:w-72">
-                            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <SearchFieldIcon className="left-3.5 h-4 w-4" />
                             <Input
                               ref={searchInput}
                               aria-label={t("common.search")}
@@ -1137,9 +1136,8 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                             <Select value={sortBy} onValueChange={(value) => setSortBy(value as DirectorySort)}>
                               <SelectTrigger
                                 aria-label={t("common.sort")}
-                                className="h-8 w-auto rounded-full border-border bg-transparent text-xs font-semibold hover:border-foreground/25 hover:bg-foreground/[0.06] max-lg:!gap-1 max-lg:!px-2.5 lg:h-11 lg:text-[0.8125rem]"
+                                className="h-11 w-auto"
                               >
-                                <ArrowUpDown className="hidden h-3.5 w-3.5 text-muted-foreground sm:block" />
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent align="end">
@@ -1642,7 +1640,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                         <ListCard>
                           {showAllCreatorStocks && (
                             <div className="relative mb-3 hidden lg:block">
-                              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                              <SearchFieldIcon className="left-3.5 h-4 w-4" />
                               <Input
                                 aria-label={t("youtubeOpinions.searchStocks")}
                                 value={search}

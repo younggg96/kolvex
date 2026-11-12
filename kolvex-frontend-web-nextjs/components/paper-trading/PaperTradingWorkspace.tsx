@@ -209,18 +209,6 @@ export default function PaperTradingWorkspace() {
               </Button>
             </div>
           </header>
-          <p className="text-xs leading-5 text-muted-foreground">
-            {c(
-              "Simulation only · USD stocks and ETFs · No leverage · Quotes may be delayed. Valuations include available after-hours quotes. Matches use observed regular-session prices, without replaying missed price moves.",
-              "仅模拟交易 · 美元股票与 ETF · 无杠杆 · 行情可能延迟。持仓与净值计入可用盘后报价，按常规时段实际观察报价撮合，不补算遗漏的价格路径。",
-            )}
-          </p>
-          <div aria-live="polite" className={cn("text-sm md:min-h-6", !error && !message && "max-md:sr-only")}>
-            <p role="alert" className="text-negative">
-              {error}
-            </p>
-            {message && <p>{message}</p>}
-          </div>
           {loading && !account ? (
             <div role="status" aria-label={c("Loading virtual account", "正在加载虚拟账户")} className="space-y-6">
               <div aria-hidden="true" className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
@@ -332,12 +320,6 @@ export default function PaperTradingWorkspace() {
                         surface="card"
                       >
                         <EquityChart snapshots={account.state.snapshots} />
-                        <p className="mt-2 text-xs text-muted-foreground">
-                          {c(
-                            "Samples on account sync, including after-hours quotes; keeps previous marks when a new quote is unavailable. Open entry fees are reflected in equity; realized P&L includes their allocated cost on close.",
-                            "按账户同步采样，含盘后报价；没有新报价时沿用上次估值。开仓费用立即反映在净值中，平仓时分摊计入已实现盈亏。",
-                          )}
-                        </p>
                       </Panel>
                       <section
                         ref={positionsRef}

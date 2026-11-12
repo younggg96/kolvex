@@ -8,6 +8,7 @@ import { LanguageProvider } from "@/lib/i18n";
 import { UserProfileProvider } from "@/components/user/UserProfileProvider";
 import { StockDataCacheProvider } from "@/components/portfolio/hooks/useStockDataCache";
 import NavigationProgress from "@/components/layout/NavigationProgress";
+import SiteBackground from "@/components/layout/SiteBackground";
 
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
@@ -73,6 +74,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <SiteBackground />
           <LanguageProvider>
             <UserProfileProvider>
               <StockDataCacheProvider>

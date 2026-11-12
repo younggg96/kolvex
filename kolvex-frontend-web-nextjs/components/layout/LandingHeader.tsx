@@ -120,7 +120,7 @@ export default function LandingHeader() {
                         />
                       </div>
                     ) : (
-                      <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white text-xs font-semibold transition-all">
+                      <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground dark:text-white text-xs font-semibold transition-all">
                         {getInitials()}
                       </div>
                     )}
