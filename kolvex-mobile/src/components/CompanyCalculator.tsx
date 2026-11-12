@@ -30,6 +30,7 @@ import { useResource } from "../lib/useResource";
 import { useAuth } from "../state/Auth";
 import { usePreferences } from "../state/Preferences";
 import { Field, Filters } from "./Content";
+import { SelectRow } from "./StockBlocks";
 import {
   Button,
   Copy,
@@ -191,7 +192,9 @@ function Disclosure({
         onPress={() => setOpen((v) => !v)}
         style={[styles.row, { minHeight: 44 }]}
       >
-        <Copy bold>{title}</Copy>
+        <Copy size={15} bold>
+          {title}
+        </Copy>
         <Copy muted localize={false}>
           {open ? "⌃" : "⌄"}
         </Copy>
@@ -210,7 +213,7 @@ export function CompanyCalculator({ symbol }: { symbol: string }) {
   if (resource.loading && !resource.data)
     return (
       <LoadingStatus label="正在读取公司财务数据…">
-        <Glass style={{ padding: 20, gap: 12 }}>
+        <Glass style={{ padding: 16, gap: 12 }}>
           <Skeleton height={20} width="50%" />
           <Skeleton height={14} width="80%" />
           <Skeleton height={120} />
@@ -219,14 +222,18 @@ export function CompanyCalculator({ symbol }: { symbol: string }) {
     );
   if (!resource.data || resource.data.status !== "available")
     return (
-      <Glass style={{ padding: 20, gap: 12 }}>
+      <Glass style={{ padding: 16, gap: 12 }}>
         <Section title="公司估值计算" />
         <Copy size={14} muted>
           {resource.data?.status === "unsupported"
             ? "自动取数目前支持美元上市、使用美元财报的美国公司普通股。"
             : "财务数据暂时不可用，请重试获取。"}
         </Copy>
-        <Button onPress={resource.refresh} disabled={resource.loading}>
+        <Button
+          size="sm"
+          onPress={resource.refresh}
+          disabled={resource.loading}
+        >
           重试
         </Button>
       </Glass>
@@ -539,7 +546,7 @@ function Calculator({
         <Copy size={12} muted localize={false}>
           {`${data.income_periods[0] ?? "—"} · ${data.balance_period ?? "—"}`}
         </Copy>
-        <Button onPress={refresh} disabled={refreshing}>
+        <Button size="sm" onPress={refresh} disabled={refreshing}>
           {refreshing ? "刷新中…" : "刷新财务数据"}
         </Button>
         {refreshFailed && (
@@ -550,7 +557,9 @@ function Calculator({
       </View>
 
       <Glass style={{ padding: 16, gap: 12 }}>
-        <Copy bold>AI 一键估值</Copy>
+        <Copy size={15} bold>
+          AI 一键估值
+        </Copy>
         <Copy size={12} muted>
           AI
           读取财务数据和分析师预期，提出三个情景的假设；所有估值都由下方模型计算。当前股价不会发给
@@ -561,14 +570,19 @@ function Calculator({
             <Copy size={14} muted>
               还没有配置 API Key。
             </Copy>
-            <Button onPress={() => router.push("/settings?tab=api-keys")}>
+            <Button
+              size="sm"
+              onPress={() => router.push("/settings?tab=api-keys")}
+            >
               前往设置添加
             </Button>
           </>
         ) : (
           <>
-            <Filters
-              values={eligible.map((item) => [item.id, item.name] as const)}
+            <SelectRow
+              label="模型"
+              title="选择模型"
+              options={eligible.map((item) => [item.id, item.name] as const)}
               value={aiModel}
               onChange={setChosenModel}
               disabled={aiRequest.pending}
@@ -587,26 +601,23 @@ function Calculator({
           </>
         )}
         {runs.length > 1 && (
-          <View style={{ gap: 8 }}>
-            <Copy size={14} bold>
-              已保存的结果
-            </Copy>
-            <Filters
-              values={runs.map(
-                (run) =>
-                  [
-                    run.run_id!,
-                    `${f.time(run.generated_at)} · ${modelName(run.model_id)}`,
-                  ] as const,
-              )}
-              value={ai?.run_id ?? ""}
-              disabled={aiRequest.pending}
-              onChange={(id) => {
-                const run = runs.find((item) => item.run_id === id);
-                if (run) showRun(run);
-              }}
-            />
-          </View>
+          <SelectRow
+            label="已保存"
+            title="已保存的结果"
+            options={runs.map(
+              (run) =>
+                [
+                  run.run_id!,
+                  `${f.time(run.generated_at)} · ${modelName(run.model_id)}`,
+                ] as const,
+            )}
+            value={ai?.run_id ?? ""}
+            disabled={aiRequest.pending}
+            onChange={(id: string) => {
+              const run = runs.find((item) => item.run_id === id);
+              if (run) showRun(run);
+            }}
+          />
         )}
         {runsFailed && (
           <Copy size={14} muted>
@@ -628,6 +639,7 @@ function Calculator({
       </Glass>
 
       <Filters
+        size="sm"
         values={[
           ["dcf", "DCF · 现金流折现"],
           ["pe", "PE"],
@@ -647,7 +659,9 @@ function Calculator({
 
       <Glass style={{ padding: 16, gap: 12 }}>
         <View style={styles.row}>
-          <Copy bold>估值结果</Copy>
+          <Copy size={15} bold>
+            估值结果
+          </Copy>
           <Copy size={12} muted>
             {status}
           </Copy>
@@ -745,7 +759,9 @@ function Calculator({
 
       {ai && (
         <Glass style={{ padding: 16, gap: 12 }}>
-          <Copy bold>AI 的假设依据</Copy>
+          <Copy size={15} bold>
+            AI 的假设依据
+          </Copy>
           <Copy size={12} muted localize={false}>
             {`${modelName(ai.model_id)} · ${f.time(ai.generated_at)}`}
           </Copy>
@@ -820,11 +836,14 @@ function Calculator({
       )}
 
       <Glass style={{ padding: 16, gap: 16 }}>
-        <Copy bold>情景假设</Copy>
+        <Copy size={15} bold>
+          情景假设
+        </Copy>
         <Copy size={12} muted>
           {ASSUMPTION_NOTES[model]}
         </Copy>
         <Button
+          size="sm"
           disabled={pristine}
           onPress={() => {
             setDraft(initialCompanyDraft(data));
@@ -870,6 +889,7 @@ function Calculator({
               预测期
             </Copy>
             <Filters
+              size="sm"
               values={[
                 ["5", "5年"],
                 ["10", "10年"],
@@ -907,6 +927,7 @@ function Calculator({
         )}
         {(error === "network" || error === "snapshot") && (
           <Button
+            size="sm"
             onPress={() => {
               if (error === "snapshot") refresh();
               else {
@@ -958,7 +979,9 @@ function Calculator({
 
       {model === "dcf" && base?.enterprise_value != null && (
         <Glass style={{ padding: 16, gap: 12 }}>
-          <Copy bold>基准情景 · 企业价值到股权价值</Copy>
+          <Copy size={15} bold>
+            基准情景 · 企业价值到股权价值
+          </Copy>
           <View style={{ flexDirection: "row", flexWrap: "wrap", rowGap: 12 }}>
             {(
               [

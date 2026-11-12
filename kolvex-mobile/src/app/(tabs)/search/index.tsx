@@ -22,6 +22,7 @@ import {
   SearchGroup,
 } from "../../../components/search/SearchSections";
 import { useDockSearch } from "../../../components/Dock";
+import { MarketHeatmap } from "../../../components/search/MarketHeatmap";
 import TabScrollMarker from "../../../components/native/TabScrollMarker";
 import {
   DiscoverCreators,
@@ -620,6 +621,7 @@ export default function Search() {
     const blocks: ReactNode[] = [];
     // The Web's discovery cards, in its order: trending stocks, creators, then the latest.
     blocks.push(
+      <MarketHeatmap key="heatmap" onOpen={openStock} />,
       <TrendingStocks
         key="trending"
         youtube={youtubePicks.map((stock) => ({

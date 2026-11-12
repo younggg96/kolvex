@@ -26,6 +26,7 @@ import {
 } from "react-native";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import { BlurView } from "expo-blur";
+import { SymbolView, type SymbolViewProps } from "expo-symbols";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
@@ -194,6 +195,71 @@ export function Glass({
     <View style={[shell, { backgroundColor: material ? t.surface : t.card }]}>
       {children}
     </View>
+  );
+}
+/** A round Liquid Glass icon button: back, star, filter, new — the header controls. */
+export function GlassIconButton({
+  icon,
+  label,
+  onPress,
+  tint,
+  disabled = false,
+  selected,
+  badge = false,
+}: {
+  icon: SymbolViewProps["name"];
+  label: string;
+  onPress: () => void;
+  tint?: string;
+  disabled?: boolean;
+  selected?: boolean;
+  /** A small green dot, e.g. while a filter is applied. */
+  badge?: boolean;
+}) {
+  const t = useTheme();
+  const text = useText();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={text(label)}
+      accessibilityState={{ disabled, selected }}
+      disabled={disabled}
+      onPress={onPress}
+      hitSlop={4}
+      style={({ pressed }) => ({
+        opacity: disabled ? 0.5 : pressed ? 0.65 : 1,
+      })}
+    >
+      <Glass
+        style={{
+          width: phone(40),
+          height: phone(40),
+          borderRadius: phone(20),
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <SymbolView
+          name={icon}
+          size={phone(16)}
+          weight="semibold"
+          tintColor={tint ?? t.text}
+        />
+      </Glass>
+      {badge && (
+        <View
+          style={{
+            position: "absolute",
+            top: 2,
+            right: 2,
+            width: 8,
+            height: 8,
+            borderRadius: 4,
+            backgroundColor: t.accent,
+          }}
+        />
+      )}
+    </Pressable>
   );
 }
 /**

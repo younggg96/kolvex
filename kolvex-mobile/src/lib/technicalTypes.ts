@@ -21,11 +21,13 @@ export interface AiTechnicalAnalysis {
     level?: number;
     detected_at?: string;
     label: string;
-    shape: "line" | "area";
+    shape: "line" | "area" | "channel" | "pitchfork";
     direction: "bullish" | "bearish" | "neutral";
     points: AiChartPoint[];
   }[];
   operation?: "analysis" | "drawings";
+  /** Kronos forecast saved with the analysis, so its band matches the text. */
+  forecast?: import("./stockExtrasApi").KlineForecast | null;
   categories?: TechnicalCategory[];
   custom_scenarios?: string[];
   findings?: {
@@ -83,12 +85,47 @@ export type Drawing = {
     | "measure"
     | "vline"
     | "extended"
-    | "fibext";
+    | "fibext"
+    | "polyline"
+    | "channel"
+    | "pitchfork";
+  /** `time` is epoch milliseconds, as the Web stores it (synced drawings are shared). */
   points: { time: number; price: number }[];
   color: string;
   label?: string;
   source?: "ai";
+  /** AI layer the chart can toggle; manual drawings carry none and are always shown. */
+  group?: DrawingGroup;
+  /** Higher wins label space when labels collide (0–100). */
+  priority?: number;
 };
+export type DrawingGroup =
+  "plan" | "levels" | "trend" | "fib" | "zones" | "pattern";
+export const drawingGroups: DrawingGroup[] = [
+  "plan",
+  "levels",
+  "trend",
+  "fib",
+  "zones",
+  "pattern",
+];
+export const drawingGroupLabels: Record<DrawingGroup, string> = {
+  plan: "交易计划",
+  levels: "支撑阻力",
+  trend: "趋势线",
+  fib: "斐波那契",
+  zones: "区域",
+  pattern: "形态",
+};
+/** Manual tools in the Web toolbar's order; polylines, channels and pitchforks are AI-only. */
+export type DrawingTool =
+  "cursor" | Exclude<Drawing["type"], "polyline" | "channel" | "pitchfork">;
+export const drawingColors = [
+  "rgb(41 98 255)",
+  "rgb(245 158 11)",
+  "rgb(168 85 247)",
+  "rgb(var(--foreground))",
+];
 export type ChartVersion = {
   id: string;
   user_id: string;

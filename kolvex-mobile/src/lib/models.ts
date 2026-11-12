@@ -9,6 +9,7 @@ export type Quote = {
   day_high?: number | null;
   day_low?: number | null;
   volume?: number | null;
+  market_cap?: number | null;
 };
 export type Bar = { date: string; close: number | null };
 export type Opinion = {

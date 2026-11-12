@@ -11,7 +11,7 @@ import { Multicharts, Earnings, Analysts } from "./StockResearch";
 import { EarningsMaterials, FinancialsTab, Ownership } from "./SecResearch";
 import { StockPeers } from "./StockPeers";
 import { useState } from "react";
-import { View } from "react-native";
+import { Linking, Pressable, View } from "react-native";
 import { router } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useTheme } from "../lib/theme";
@@ -24,6 +24,8 @@ import { useResource } from "../lib/useResource";
 import { useNewsTranslations } from "../lib/useNewsTranslations";
 import { Button, Copy, Empty, Glass, Section } from "./UI";
 import { Filters, ResourceState, SourceLink } from "./Content";
+import { ListItem, type } from "./StockBlocks";
+import { safeExternal } from "../lib/links";
 // The Web's StockWorkspace tab order and phone labels.
 const allTabs = [
   ["summary", "概览"],
@@ -167,12 +169,15 @@ function StockReports({ symbol }: { symbol: string }) {
         message="这只股票还没有已发布的研究报告。"
       />
       {rows.map((item) => (
-        <Glass key={item.id} style={{ padding: 20, gap: 12 }}>
-          <Copy bold>{item.trade_date}</Copy>
+        <Glass key={item.id} style={{ padding: 16, gap: 12 }}>
+          <Copy size={15} bold>
+            {item.trade_date}
+          </Copy>
           <Copy size={14} localize={false}>
             {item.final_decision?.slice(0, 240) || "—"}
           </Copy>
           <Button
+            size="sm"
             onPress={() =>
               router.push(`/report/${encodeURIComponent(item.id)}`)
             }
@@ -207,12 +212,12 @@ function Company({ symbol }: { symbol: string }) {
         message="暂无公司资料。"
       />
       {data && (
-        <Glass style={{ padding: 20, gap: 12 }}>
+        <Glass style={{ padding: 16, gap: 12 }}>
           <Section
             title={data.name || symbol}
             note={[data.sector, data.industry].filter(Boolean).join(" · ")}
           />
-          <Copy>{data.business_summary || "公司简介未提供。"}</Copy>
+          <Copy size={14}>{data.business_summary || "公司简介未提供。"}</Copy>
           <Copy size={14} muted>
             员工数：{number(data.employees, 0)}
           </Copy>
@@ -247,25 +252,50 @@ function StockNews({ symbol }: { symbol: string }) {
         empty={!rows.length}
         message="暂未返回这只股票的新闻。"
       />
-      {rows.map((item, i) => (
-        <Glass key={item.uuid || i} style={{ padding: 20, gap: 12 }}>
-          <Copy bold localize={false}>
-            {locale === "zh"
-              ? item.title_zh || translated.title(item.title) || item.title
-              : item.title}
-          </Copy>
-          <Copy size={12} muted>
-            {item.publisher || "来源未提供"} ·{" "}
-            {item.publish_time
-              ? new Date(item.publish_time * 1000).toLocaleString(
-                  locale === "en" ? "en-US" : "zh-CN",
-                )
-              : "时间未提供"}
-          </Copy>
-          {!!item.summary && <Copy localize={false}>{item.summary}</Copy>}
-          <SourceLink url={item.link}>阅读原文 ↗</SourceLink>
-        </Glass>
-      ))}
+      {/* The Web's phone news feed: edge-to-edge rows, the whole row opens the article. */}
+      <View>
+        {rows.map((item, i) => {
+          const url = safeExternal(item.link);
+          return (
+            <Pressable
+              key={item.uuid || i}
+              accessibilityRole="link"
+              disabled={!url}
+              onPress={() => url && void Linking.openURL(url).catch(() => {})}
+              style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+            >
+              <ListItem last={i === rows.length - 1}>
+                <Copy size={type.item} bold localize={false} lines={3}>
+                  {locale === "zh"
+                    ? item.title_zh ||
+                      translated.title(item.title) ||
+                      item.title
+                    : item.title}
+                </Copy>
+                {!!item.summary && (
+                  <Copy size={type.body} muted localize={false} lines={3}>
+                    {item.summary}
+                  </Copy>
+                )}
+                <Copy size={type.meta} muted>
+                  {item.publisher || "来源未提供"} ·{" "}
+                  {item.publish_time
+                    ? new Date(item.publish_time * 1000).toLocaleString(
+                        locale === "en" ? "en-US" : "zh-CN",
+                        {
+                          month: "numeric",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        },
+                      )
+                    : "时间未提供"}
+                </Copy>
+              </ListItem>
+            </Pressable>
+          );
+        })}
+      </View>
     </>
   );
 }

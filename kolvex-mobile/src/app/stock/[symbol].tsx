@@ -1,15 +1,21 @@
 // The Web's stock workspace (components/decision/StockWorkspace.tsx) at phone size:
-// a back link, logo and name, "ticker · exchange · currency", the watch star, the price
+// a pinned back button and watch star, logo and name, "ticker · exchange · currency", the watch star, the price
 // with its change and New York time, then the pill tabs over the price card and panels.
 import { useState } from "react";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 import { Stack, router, useLocalSearchParams } from "expo-router";
-import { SymbolView } from "expo-symbols";
 import { CompanyLogo } from "../../components/CompanyLogo";
 import { StockContent } from "../../components/StockContent";
 import { StockPriceCard } from "../../components/StockPriceCard";
 import { TextLine } from "../../components/Skeletons";
-import { Copy, Failure, LoadingStatus, Page, phone } from "../../components/UI";
+import {
+  Copy,
+  Failure,
+  GlassIconButton,
+  LoadingStatus,
+  Page,
+  phone,
+} from "../../components/UI";
 import { apiRequest } from "../../lib/http";
 import { BENCHMARKS } from "../../lib/marketBenchmarks";
 import { isSymbol } from "../../lib/models";
@@ -42,87 +48,35 @@ const money = (value: number, currency: string, _locale?: string) =>
     minimumFractionDigits: 2,
   }).format(value);
 
-const nyTime = (seconds: number, locale: string, timeOnly = false) => {
-  const date = new Date(seconds * 1000);
-  const options: Intl.DateTimeFormatOptions = {
+/** "11/11 16:00 EST": New York market time, the same in both languages. */
+const nyTime = (seconds: number, timeOnly = false) =>
+  new Intl.DateTimeFormat("en-US", {
     timeZone: "America/New_York",
     timeZoneName: "short",
-  };
-  return timeOnly
-    ? date.toLocaleTimeString(locale === "en" ? "en-US" : "zh-CN", options)
-    : date.toLocaleString(locale === "en" ? "en-US" : "zh-CN", options);
-};
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+    ...(timeOnly ? {} : { month: "2-digit", day: "2-digit" }),
+  })
+    .format(new Date(seconds * 1000))
+    .replace(",", "");
 
-function BackLink({ label }: { label: string }) {
-  const t = useTheme();
-  return (
-    <Pressable
-      accessibilityRole="link"
-      hitSlop={10}
-      onPress={() =>
-        router.canGoBack() ? router.back() : router.navigate("/")
-      }
-      style={({ pressed }) => ({
-        flexDirection: "row",
-        alignItems: "center",
-        alignSelf: "flex-start",
-        gap: 4,
-        minHeight: 32,
-        opacity: pressed ? 0.6 : 1,
-      })}
-    >
-      <SymbolView
-        name={{
-          ios: "chevron.left",
-          android: "chevron_left",
-          web: "chevron_left",
-        }}
-        size={12}
-        weight="semibold"
-        tintColor={t.secondary}
-      />
-      <Copy size={14} muted>
-        {label}
-      </Copy>
-    </Pressable>
-  );
-}
+const signed = (value: number, digits = 2) =>
+  `${value >= 0 ? "+" : "−"}${Math.abs(value).toFixed(digits)}`;
 
 function WatchButton({ symbol }: { symbol: string }) {
   const t = useTheme();
   const list = useWatchlist();
   const saved = list.symbols.includes(symbol);
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={
-        saved ? `将 ${symbol} 移出自选股` : `将 ${symbol} 加入自选股`
-      }
-      accessibilityState={{ selected: saved, disabled: !list.ready }}
+    <GlassIconButton
+      icon={{ ios: saved ? "star.fill" : "star", android: "star", web: "star" }}
+      label={saved ? `将 ${symbol} 移出自选股` : `将 ${symbol} 加入自选股`}
+      selected={saved}
+      tint={saved ? t.text : t.secondary}
       disabled={!list.ready || list.pending}
       onPress={() => list.toggle(symbol)}
-      hitSlop={4}
-      style={({ pressed }) => ({
-        width: phone(44),
-        height: phone(44),
-        borderRadius: 999,
-        borderWidth: 1,
-        borderColor: t.rim,
-        alignItems: "center",
-        justifyContent: "center",
-        opacity: !list.ready ? 0.5 : pressed ? 0.6 : 1,
-      })}
-    >
-      <SymbolView
-        name={{
-          ios: saved ? "star.fill" : "star",
-          android: "star",
-          web: "star",
-        }}
-        size={15}
-        tintColor={saved ? t.text : t.secondary}
-      />
-    </Pressable>
+    />
   );
 }
 
@@ -171,75 +125,126 @@ export default function Stock() {
             label: "盘前",
           }
         : null;
+  const extendedChange =
+    extended && quote?.current_price
+      ? ((extended.price - quote.current_price) / quote.current_price) * 100
+      : null;
   return (
     <Page
       title={symbol || "股票详情"}
       hideTitle
       refreshing={q.loading && !!q.data}
       onRefresh={() => setRevision((v) => v + 1)}
+      // Back and the watch star stay pinned while the page scrolls, like a nav bar.
+      floatingHeader={
+        <View
+          style={{
+            minHeight: phone(48),
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <GlassIconButton
+            icon={{
+              ios: "chevron.left",
+              android: "chevron_left",
+              web: "chevron_left",
+            }}
+            label={params.from === "watchlist" ? "自选股" : "行情"}
+            onPress={() =>
+              router.canGoBack() ? router.back() : router.navigate("/")
+            }
+          />
+          {valid && <WatchButton symbol={symbol} />}
+        </View>
+      }
     >
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={{ gap: 12 }}>
-        <BackLink label={params.from === "watchlist" ? "自选股" : "行情"} />
-        <View
-          style={{ flexDirection: "row", alignItems: "flex-start", gap: 8 }}
-        >
-          <CompanyLogo symbol={symbol} size={phone(40)} />
+      <View style={{ gap: 16 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+          <CompanyLogo symbol={symbol} size={phone(48)} />
           <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-            <Copy size={18} bold lines={2} localize={false}>
+            <Copy size={20} bold lines={2} localize={false}>
               {name}
             </Copy>
-            <Copy size={12} muted localize={false}>
-              {[symbol, quote?.exchange, currency].filter(Boolean).join(" · ")}
+            <Copy size={13} muted localize={false}>
+              {[name === symbol ? null : symbol, quote?.exchange, currency]
+                .filter(Boolean)
+                .join(" · ")}
             </Copy>
           </View>
-          {valid && <WatchButton symbol={symbol} />}
         </View>
         {!!q.error && <Failure message={q.error} retry={q.refresh} />}
         {q.loading && !quote ? (
           <LoadingStatus>
-            <View style={{ gap: 4 }}>
-              <TextLine size={24} width="40%" />
-              <TextLine size={12} width="30%" />
+            <View style={{ gap: 6 }}>
+              <TextLine size={34} width="45%" />
+              <TextLine size={14} width="35%" />
             </View>
           </LoadingStatus>
         ) : quote ? (
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 24 }}>
-            <View style={{ gap: 2 }}>
-              <Copy size={24} bold localize={false}>
+          <View style={{ gap: 6 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "baseline",
+                flexWrap: "wrap",
+                columnGap: 10,
+              }}
+            >
+              <Copy size={34} bold localize={false}>
                 {quote.current_price == null
                   ? "—"
                   : money(quote.current_price, currency, locale)}
               </Copy>
               {quote.change != null && quote.change_percent != null && (
                 <Copy
-                  size={12}
+                  size={16}
                   bold
                   localize={false}
                   color={up ? t.accent : t.negative}
                 >
-                  {`${up ? "+" : "−"}${Math.abs(quote.change).toFixed(2)} (${up ? "+" : "−"}${Math.abs(quote.change_percent).toFixed(2)}%)`}
+                  {`${signed(quote.change)} (${signed(quote.change_percent)}%)`}
                 </Copy>
               )}
-              <Copy size={11} muted localize={!quote.market_time}>
-                {quote.market_time
-                  ? nyTime(quote.market_time, locale)
-                  : "最新可用报价"}
-              </Copy>
             </View>
+            <Copy size={12} muted localize={!quote.market_time}>
+              {quote.market_time ? nyTime(quote.market_time) : "最新可用报价"}
+            </Copy>
             {extended && (
-              <View style={{ gap: 2 }}>
-                <Copy size={20} bold localize={false}>
+              <View
+                style={{
+                  alignSelf: "flex-start",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
+                  marginTop: 4,
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  borderRadius: 999,
+                  backgroundColor: t.wash,
+                }}
+              >
+                <Copy size={12} muted>
+                  {extended.label}
+                </Copy>
+                <Copy size={13} bold localize={false}>
                   {money(extended.price, currency, locale)}
                 </Copy>
-                <View style={{ flexDirection: "row", gap: 4 }}>
-                  <Copy size={11} muted>
-                    {extended.label}
+                {extendedChange != null && (
+                  <Copy
+                    size={12}
+                    bold
+                    localize={false}
+                    color={extendedChange >= 0 ? t.accent : t.negative}
+                  >
+                    {`${signed(extendedChange)}%`}
                   </Copy>
-                  <Copy size={11} muted localize={false}>
-                    {`· ${nyTime(extended.time, locale, true)}`}
-                  </Copy>
-                </View>
+                )}
+                <Copy size={12} muted localize={false}>
+                  {nyTime(extended.time, true)}
+                </Copy>
               </View>
             )}
           </View>

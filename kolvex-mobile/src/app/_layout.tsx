@@ -51,7 +51,12 @@ function AppContent() {
             <Stack.Screen
               name="technical/[symbol]"
               // iOS 26 pops on a horizontal swipe anywhere, which would take over chart panning.
-              options={{ title: text("技术图表"), gestureEnabled: false }}
+              options={{
+                title: text("技术图表"),
+                gestureEnabled: false,
+                // Full-screen chart with its own close button, like the Web.
+                headerShown: false,
+              }}
             />
             <Stack.Screen
               name="markets"

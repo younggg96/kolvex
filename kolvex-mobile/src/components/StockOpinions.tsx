@@ -205,7 +205,7 @@ export function StockOpinions({ symbol }: { symbol: string }) {
           <Copy size={14} muted>
             这只股票暂时没有博主观点，仍可在本页使用 AI 分析和 AI 研究。
           </Copy>
-          <Button onPress={() => router.navigate("/opinions")}>
+          <Button size="sm" onPress={() => router.navigate("/opinions")}>
             浏览博主观点
           </Button>
         </Glass>

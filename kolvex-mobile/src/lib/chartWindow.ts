@@ -1,14 +1,22 @@
-export type ChartWindow = { count: number; offset: number; length: number };
+export type ChartWindow = {
+  count: number;
+  offset: number;
+  length: number;
+  /** Fewest and most bars a window may show; the Web's advanced chart allows 8 to all. */
+  min?: number;
+  max?: number;
+};
 const clamp = (value: number, min: number, max: number) =>
   Math.max(min, Math.min(max, value));
 export function normalizedWindow(value: ChartWindow): ChartWindow {
   const length = Math.max(0, Math.floor(value.length));
   const count = clamp(
     Math.round(value.count),
-    Math.min(15, length),
-    Math.min(240, length),
+    Math.min(value.min ?? 15, length),
+    Math.min(value.max ?? 240, length),
   );
   return {
+    ...value,
     length,
     count,
     offset: clamp(Math.round(value.offset), 0, Math.max(0, length - count)),

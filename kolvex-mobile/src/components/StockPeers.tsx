@@ -244,8 +244,11 @@ export function StockPeers({ symbol }: { symbol: string }) {
         title="同行比较"
         note={`同行由你选择，最多 ${MAX_PEERS} 家，分享链接会保留所选公司。`}
       />
+      {/* One input row with its action, as the Web's phone search fields. */}
       <Field
         label="添加同行股票代码"
+        hideLabel
+        placeholder="输入股票代码，如 AMD"
         value={draft}
         editable={peers.length < MAX_PEERS}
         maxLength={12}
@@ -257,14 +260,17 @@ export function StockPeers({ symbol }: { symbol: string }) {
           setDraft(value);
           setInputError(undefined);
         }}
+        trailing={
+          <Button
+            size="sm"
+            disabled={peers.length >= MAX_PEERS || !draft.trim()}
+            onPress={add}
+          >
+            添加
+          </Button>
+        }
       />
       {!!inputError && <Failure message={inputError} />}
-      <Button
-        disabled={peers.length >= MAX_PEERS || !draft.trim()}
-        onPress={add}
-      >
-        添加
-      </Button>
       {!peers.length && (
         <Copy size={14} muted>
           添加一家公司，比较估值、增长、利润率和收益走势。
@@ -281,6 +287,7 @@ export function StockPeers({ symbol }: { symbol: string }) {
           价格收益
         </Copy>
         <Filters
+          size="sm"
           values={[
             ["6M", "6月"],
             ["1Y", "1年"],
@@ -370,6 +377,7 @@ export function StockPeers({ symbol }: { symbol: string }) {
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
           {peers.map((peer) => (
             <Button
+              size="sm"
               key={peer}
               onPress={() => update(peers.filter((item) => item !== peer))}
             >

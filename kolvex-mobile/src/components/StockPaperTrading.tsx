@@ -70,11 +70,13 @@ function Trades({ symbol }: { symbol: string }) {
   return (
     <View style={{ gap: 16 }}>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-        <Button onPress={() => openTicket(null)}>模拟下单</Button>
-        <Button disabled={busy} onPress={state.sync}>
+        <Button size="sm" onPress={() => openTicket(null)}>
+          模拟下单
+        </Button>
+        <Button size="sm" disabled={busy} onPress={state.sync}>
           刷新
         </Button>
-        <Button onPress={() => router.push("/paper-trading")}>
+        <Button size="sm" onPress={() => router.push("/paper-trading")}>
           全部虚拟交易
         </Button>
       </View>
@@ -138,7 +140,7 @@ function Trades({ symbol }: { symbol: string }) {
             <FillCard key={fill.id} fill={fill} />
           ))}
           {data.fills.length > limit && (
-            <Button onPress={() => setLimit((value) => value + 10)}>
+            <Button size="sm" onPress={() => setLimit((value) => value + 10)}>
               加载更多成交
             </Button>
           )}

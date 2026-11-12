@@ -1,3 +1,4 @@
+import { SelectRow } from "./StockBlocks";
 import { useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 import { router } from "expo-router";
@@ -13,7 +14,6 @@ import { useTheme } from "../lib/theme";
 import { useResource } from "../lib/useResource";
 import { useAuth } from "../state/Auth";
 import { usePreferences } from "../state/Preferences";
-import { Filters } from "./Content";
 import { Button, Copy, Failure, Glass, Section } from "./UI";
 
 const DIMENSIONS: Record<DimensionKey, string> = {
@@ -118,26 +118,36 @@ function Analysis({ symbol, cacheKey }: { symbol: string; cacheKey: string }) {
       ).filter(([, items]) => items.length)
     : [];
   return (
-    <Glass style={{ padding: 20, gap: 12 }}>
+    <Glass style={{ padding: 16, gap: 12 }}>
       <Section title="AI 基本面分析" />
       {!providers.loading && !eligible.length ? (
         <>
           <Copy size={14} muted>
             还没有配置 API Key。
           </Copy>
-          <Button onPress={() => router.push("/settings?tab=api-keys")}>
+          <Button
+            size="sm"
+            onPress={() => router.push("/settings?tab=api-keys")}
+          >
             前往设置添加
           </Button>
         </>
       ) : (
         <>
-          <Filters
-            values={eligible.map((item) => [item.id, item.name] as const)}
+          {/* The model is one tap away in the shared sheet instead of a clipped chip row. */}
+          <SelectRow
+            label="模型"
+            title="选择模型"
+            options={eligible.map((item) => [item.id, item.name] as const)}
             value={model}
             onChange={setChosen}
-            disabled={request.pending}
+            disabled={request.pending || !eligible.length}
           />
-          <Button disabled={!model || request.pending} onPress={run}>
+          <Button
+            variant="primary"
+            disabled={!model || request.pending}
+            onPress={run}
+          >
             {request.pending
               ? "分析中…"
               : result

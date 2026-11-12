@@ -88,6 +88,7 @@ export function StockValuation({ symbol }: { symbol: string }) {
   return (
     <View style={{ gap: 16 }}>
       <Filters
+        size="sm"
         values={[
           ["calculator", "公司估值计算"],
           ["history", "历史估值走势"],
@@ -171,10 +172,12 @@ function HistoricalValuation({ symbol }: { symbol: string }) {
           更新失败，正在显示上次成功读取的快照。
         </Copy>
       )}
-      <Glass style={{ padding: 20, gap: 16 }}>
+      <Glass style={{ padding: 16, gap: 16 }}>
         <View style={styles.row}>
           <View style={{ flexShrink: 1, gap: 2 }}>
-            <Copy bold>{shown ? "我的模拟" : "当前参考估值"}</Copy>
+            <Copy size={15} bold>
+              {shown ? "我的模拟" : "当前参考估值"}
+            </Copy>
             <Copy size={12} muted>
               {`最近完整交易日收盘价 · ${data.current.price_date ?? "—"}`}
             </Copy>
@@ -206,6 +209,7 @@ function HistoricalValuation({ symbol }: { symbol: string }) {
       </Glass>
       <Glass style={{ padding: 16, gap: 12 }}>
         <Filters
+          size="sm"
           values={[
             ["price", "股价与参考值"],
             ["pe", "PE 倍数"],
@@ -215,6 +219,7 @@ function HistoricalValuation({ symbol }: { symbol: string }) {
           onChange={setView}
         />
         <Filters
+          size="sm"
           values={[
             ["1", "1年"],
             ["3", "3年"],
@@ -239,12 +244,14 @@ function HistoricalValuation({ symbol }: { symbol: string }) {
             </View>
             <View style={{ flexDirection: "row", gap: 8 }}>
               <Button
+                size="sm"
                 disabled={selectedIndex <= 0}
                 onPress={() => setSelectedDate(points[selectedIndex - 1].date)}
               >
                 上一交易日
               </Button>
               <Button
+                size="sm"
                 disabled={selectedIndex >= points.length - 1}
                 onPress={() => setSelectedDate(points[selectedIndex + 1].date)}
               >
@@ -366,7 +373,11 @@ function Sources({ event }: { event: ValuationEvent }) {
   const [open, setOpen] = useState(false);
   return (
     <View style={{ gap: 8 }}>
-      <Button selected={open} onPress={() => setOpen((value) => !value)}>
+      <Button
+        size="sm"
+        selected={open}
+        onPress={() => setOpen((value) => !value)}
+      >
         {`财务输入与来源 · ${event.period_end ?? "—"}`}
       </Button>
       {open &&
@@ -630,7 +641,7 @@ function SimulationPanel({
   }, [data, defaults, requestKey, edited, onSimulation, ready, valid]);
   if (!ready) return null;
   return (
-    <Glass style={{ padding: 20, gap: 12 }}>
+    <Glass style={{ padding: 16, gap: 12 }}>
       <Section
         title="假设与未来情景"
         note="未来 3、6、9 个自然月的情景目标价，不是公司财季日期。"
@@ -679,7 +690,11 @@ function SimulationPanel({
           </View>
         </View>
       ))}
-      <Button selected={open} onPress={() => setOpen((value) => !value)}>
+      <Button
+        size="sm"
+        selected={open}
+        onPress={() => setOpen((value) => !value)}
+      >
         调整假设
       </Button>
       {open && (
@@ -714,6 +729,7 @@ function SimulationPanel({
             须为正数且按保守、基准、乐观递增；增长率须大于 −100%。
           </Copy>
           <Button
+            size="sm"
             disabled={!edited}
             onPress={() => {
               setPe(initial());

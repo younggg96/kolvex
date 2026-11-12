@@ -26,6 +26,9 @@ import { usePreferences } from "../state/Preferences";
 import { DataTable } from "./DataTable";
 import { Field, Filters } from "./Content";
 import { MetricBars, Statements } from "./StockResearch";
+import { ListItem, ViewControls, type } from "./StockBlocks";
+import { OptionGroup } from "./OptionSheet";
+import type { StatementKind } from "../lib/stockResearch";
 import {
   Button,
   Copy,
@@ -156,21 +159,73 @@ const metrics: Metric[] = [
 ];
 /** Statements come from the provider; long-term history comes from SEC filings. */
 export function FinancialsTab({ symbol }: { symbol: string }) {
-  const [view, setView] = useState("statements");
+  const [view, setView] = useState("income-statement");
+  const [quarterly, setQuarterly] = useState("annual");
+  const [mode, setMode] = useState("chart");
+  const [all, setAll] = useState(false);
+  const changed = quarterly !== "annual" || mode !== "chart" || all;
   return (
     <View style={{ gap: 16 }}>
-      <Filters
+      <ViewControls
         values={[
-          ["statements", "财务报表"],
-          ["history", "长期历史 · TTM · 比率"],
+          ["income-statement", "利润表"],
+          ["balance-sheet", "资产负债表"],
+          ["cash-flow", "现金流量表"],
+          ["history", "长期历史"],
         ]}
         value={view}
         onChange={setView}
+        changed={view !== "history" && changed}
+        onReset={() => {
+          setQuarterly("annual");
+          setMode("chart");
+          setAll(false);
+        }}
+        options={
+          view === "history" ? undefined : (
+            <>
+              <OptionGroup
+                label="报告期"
+                options={[
+                  ["annual", "年度"],
+                  ["quarterly", "季度"],
+                ]}
+                value={quarterly}
+                onChange={setQuarterly}
+              />
+              <OptionGroup
+                label="显示方式"
+                options={[
+                  ["chart", "图表"],
+                  ["list", "列表"],
+                ]}
+                value={mode}
+                onChange={setMode}
+              />
+              <OptionGroup
+                label="项目"
+                options={[
+                  ["core", "核心项目"],
+                  ["all", "全部项目"],
+                ]}
+                value={all ? "all" : "core"}
+                onChange={(v) => setAll(v === "all")}
+              />
+            </>
+          )
+        }
       />
-      {view === "statements" ? (
-        <Statements symbol={symbol} />
-      ) : (
+      {view === "history" ? (
         <LongTermFinancials symbol={symbol} />
+      ) : (
+        <Statements
+          key={view}
+          symbol={symbol}
+          kind={view as StatementKind}
+          quarterly={quarterly}
+          mode={mode}
+          all={all}
+        />
       )}
     </View>
   );
@@ -263,6 +318,7 @@ function LongTermFinancials({ symbol }: { symbol: string }) {
         }
       />
       <Filters
+        size="sm"
         values={[
           ["annual", "年度"],
           ["quarterly", "季度"],
@@ -290,7 +346,9 @@ function LongTermFinancials({ symbol }: { symbol: string }) {
           {!!chartRows.length && (
             <>
               <Glass style={{ padding: 16, gap: 8 }}>
-                <Copy bold>营业收入</Copy>
+                <Copy size={15} bold>
+                  营业收入
+                </Copy>
                 <MetricBars
                   points={series("revenue")}
                   format={(v) => f.number(v)}
@@ -298,7 +356,9 @@ function LongTermFinancials({ symbol }: { symbol: string }) {
                 />
               </Glass>
               <Glass style={{ padding: 16, gap: 8 }}>
-                <Copy bold>净利率</Copy>
+                <Copy size={15} bold>
+                  净利率
+                </Copy>
                 <MetricBars
                   points={series("net_margin")}
                   format={f.percent}
@@ -306,7 +366,9 @@ function LongTermFinancials({ symbol }: { symbol: string }) {
                 />
               </Glass>
               <Glass style={{ padding: 16, gap: 8 }}>
-                <Copy bold>自由现金流</Copy>
+                <Copy size={15} bold>
+                  自由现金流
+                </Copy>
                 <MetricBars
                   points={series("free_cash_flow")}
                   format={(v) => f.number(v)}
@@ -346,7 +408,9 @@ function LongTermFinancials({ symbol }: { symbol: string }) {
               }),
             }))}
           />
-          <Button onPress={() => void share()}>导出 CSV</Button>
+          <Button size="sm" onPress={() => void share()}>
+            导出 CSV
+          </Button>
           {shareError && (
             <Failure message="此环境无法导出或分享，请使用报表列表查看数据。" />
           )}
@@ -464,6 +528,7 @@ function EarningsFilings({ symbol }: { symbol: string }) {
     <View style={{ gap: 12 }}>
       <Section title="财报原文" />
       <Filters
+        size="sm"
         values={[
           ["earnings", "财报相关"],
           ["all", "全部近期"],
@@ -543,6 +608,7 @@ export function Ownership({
   return (
     <View style={{ gap: 16 }}>
       <Filters
+        size="sm"
         values={[
           ["insiders", "内部人交易"],
           ["institutions", "投资机构 13F"],
@@ -618,51 +684,53 @@ function Insiders({ symbol }: { symbol: string }) {
               ],
             ]}
           />
-          <Glass style={{ paddingHorizontal: 16 }}>
+          <View>
             {rows.map((row, index) => (
-              <View
+              <ListItem
                 key={`${row.source_url}-${index}`}
-                style={{
-                  gap: 4,
-                  paddingVertical: 12,
-                  borderTopWidth: index ? 1 : 0,
-                  borderColor: t.border,
-                }}
+                last={index === rows.length - 1}
               >
-                <Copy bold size={14} localize={false}>
-                  {row.owner}
-                </Copy>
-                <Copy size={12} muted localize={false}>
-                  {row.position}
-                </Copy>
-                <Copy
-                  size={13}
-                  color={
-                    row.code === "P"
-                      ? t.accent
-                      : row.code === "S"
-                        ? t.negative
-                        : t.secondary
-                  }
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "baseline",
+                    gap: 8,
+                  }}
                 >
-                  {(row.code && codeLabels[row.code]) || row.code || "—"}
-                  {row.amended ? " · 修正" : ""}
+                  <View style={{ flex: 1 }}>
+                    <Copy bold size={type.item} localize={false} lines={1}>
+                      {row.owner}
+                    </Copy>
+                  </View>
+                  <Copy size={type.body} bold localize={false}>
+                    {row.value === null || row.value === 0
+                      ? "—"
+                      : `$${f.number(row.value)}`}
+                  </Copy>
+                </View>
+                <Copy size={type.body} muted>
+                  {row.position ? `${row.position} · ` : ""}
+                  <Copy
+                    size={type.body}
+                    color={
+                      row.code === "P"
+                        ? t.accent
+                        : row.code === "S"
+                          ? t.negative
+                          : t.secondary
+                    }
+                  >
+                    {(row.code && codeLabels[row.code]) || row.code || "—"}
+                    {row.amended ? " · 修正" : ""}
+                  </Copy>
                 </Copy>
-                <Copy size={13} localize={false}>
-                  {f.number(row.shares, false)} ×{" "}
-                  {row.price === null ? "—" : `$${f.number(row.price, false)}`}{" "}
-                  ={" "}
-                  {row.value === null || row.value === 0
-                    ? "—"
-                    : `$${f.number(row.value)}`}
-                </Copy>
-                <Copy size={12} muted>
-                  {`交易日 ${row.date ? f.date(row.date) : "—"} · 交易后持股 ${f.number(row.shares_after, false)}`}
+                <Copy size={type.meta} muted localize={false}>
+                  {`${f.number(row.shares, false)} × ${row.price === null ? "—" : `$${f.number(row.price, false)}`} · ${row.date ? f.date(row.date) : "—"} · 持股 ${f.number(row.shares_after, false)}`}
                 </Copy>
                 <SecLink href={row.source_url} label={f.date(row.filed)} />
-              </View>
+              </ListItem>
             ))}
-          </Glass>
+          </View>
         </>
       )}
       <Note>
@@ -720,6 +788,7 @@ function Institutions({ companyName }: { companyName?: string | null }) {
     <View style={{ gap: 16 }}>
       <Section title={data?.name ?? "投资机构 13F"} localize={!data?.name} />
       <Filters
+        size="sm"
         values={(
           list.data?.managers ?? [
             { id: "berkshire", name: "Berkshire Hathaway", cik: 0 },
@@ -838,7 +907,10 @@ function Institutions({ companyName }: { companyName?: string | null }) {
             )}
           </Glass>
           {filtered.length > visible && (
-            <Button onPress={() => setVisible((count) => count + PAGE)}>
+            <Button
+              size="sm"
+              onPress={() => setVisible((count) => count + PAGE)}
+            >
               {`显示更多（${filtered.length - visible}）`}
             </Button>
           )}

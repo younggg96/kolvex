@@ -88,7 +88,7 @@ export function PersonalResearch({ symbol }: { symbol: string }) {
   };
   const completedAt = latest?.completed_at || latest?.created_at;
   return (
-    <Glass style={{ padding: 20, gap: 12 }}>
+    <Glass style={{ padding: 16, gap: 12 }}>
       <Section title="AI 研究" />
       <Button
         variant="primary"
@@ -135,6 +135,7 @@ export function PersonalResearch({ symbol }: { symbol: string }) {
       )}
       {!!latest && !busy && (
         <Button
+          size="sm"
           onPress={() =>
             router.push(`/research-task/${encodeURIComponent(latest.id)}`)
           }

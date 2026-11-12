@@ -29,7 +29,7 @@ export type DrawGesture = {
   single: boolean;
   onComplete: (points: { time: number; price: number }[]) => void;
 };
-const colors: Record<string, string> = {
+export const colors: Record<string, string> = {
   ema5: "#14B8A6",
   ema20: "#A855F7",
   ema50: "#3B82F6",
@@ -38,7 +38,7 @@ const colors: Record<string, string> = {
   bb: "#94A3B8",
 };
 // Daily bars read as a date; intraday bars keep their exchange-local time.
-const barLabel = (date: string) =>
+export const barLabel = (date: string) =>
   date.slice(11, 16) === "00:00" || date.length <= 10
     ? date.slice(0, 10)
     : date.slice(0, 16).replace("T", " ");
@@ -51,7 +51,7 @@ type CallCounts = { bullish: number; bearish: number; other: number };
  * Opinions bucketed onto visible bars (the Web's ChartView `calls`), then merged so marks
  * closer than ~20pt share one marker on the later bar (`mergeNearbyCalls`).
  */
-function callMarks(
+export function callMarks(
   visible: PriceBar[],
   calls: readonly CallEvent[],
   containing: boolean,
@@ -103,7 +103,7 @@ function callMarks(
   return merged;
 }
 /** Bearish calls point down above the bar, bullish up below it, others are a dot. */
-function CallMarks({
+export function CallMarks({
   cx,
   high,
   low,
@@ -544,7 +544,7 @@ function ReactBar({
     </>
   );
 }
-function DrawingShape({
+export function DrawingShape({
   drawing: d,
   x,
   y,

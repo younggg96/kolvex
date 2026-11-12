@@ -1,5 +1,5 @@
 // The Web's stock-page price card (StockWorkspace "价格走势" + PriceGraph) at phone size:
-// the range's last price and change, an "Advanced" link to the technical chart, the line
+// the range's change, an "Advanced" link to the technical chart, the line
 // with its price scale, and the range chips 1日 … 5年.
 import { useState } from "react";
 import { Pressable, View } from "react-native";
@@ -18,7 +18,6 @@ import type { Bar } from "../lib/models";
 import { useTheme } from "../lib/theme";
 import { useResource } from "../lib/useResource";
 import { usePreferences } from "../state/Preferences";
-import { Filters } from "./Content";
 import { ChartSkeleton } from "./Skeletons";
 import { Copy, Failure, Glass, phone } from "./UI";
 
@@ -28,7 +27,7 @@ const RANGES = [
   { key: "1M", zh: "1月", en: "1M", period: "1mo", interval: "1h" },
   { key: "3M", zh: "3月", en: "3M", period: "3mo", interval: "1d" },
   { key: "6M", zh: "6月", en: "6M", period: "6mo", interval: "1d" },
-  { key: "YTD", zh: "年初至今", en: "YTD", period: "ytd", interval: "1d" },
+  { key: "YTD", zh: "今年", en: "YTD", period: "ytd", interval: "1d" },
   { key: "1Y", zh: "1年", en: "1Y", period: "1y", interval: "1d" },
   { key: "5Y", zh: "5年", en: "5Y", period: "5y", interval: "1wk" },
 ] as const;
@@ -137,12 +136,6 @@ export function StockPriceCard({
   const last = points.at(-1)?.close;
   const change = first && last != null ? ((last - first) / first) * 100 : null;
   const up = (change ?? 0) >= 0;
-  const money = (v: number) =>
-    new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: currency || "USD",
-      minimumFractionDigits: 2,
-    }).format(v);
   return (
     <Glass style={{ padding: 16, gap: 10 }}>
       <View
@@ -153,12 +146,9 @@ export function StockPriceCard({
           flexWrap: "wrap",
         }}
       >
-        <Copy size={16} bold localize={false}>
-          {last == null ? "—" : money(last)}
-        </Copy>
         {change != null && (
           <Copy
-            size={13}
+            size={16}
             bold
             localize={false}
             color={up ? t.accent : t.negative}
@@ -195,8 +185,7 @@ export function StockPriceCard({
             paddingHorizontal: phone(12),
             minHeight: phone(32),
             borderRadius: 999,
-            borderWidth: 1,
-            borderColor: t.rim,
+            backgroundColor: t.wash,
             opacity: pressed ? 0.6 : 1,
           })}
         >
@@ -235,14 +224,49 @@ export function StockPriceCard({
       ) : (
         <Graph bars={points} up={up} />
       )}
-      <Filters
-        size="sm"
-        values={RANGES.map(
-          (item) => [item.key, locale === "en" ? item.en : item.zh] as const,
-        )}
-        value={range}
-        onChange={(value) => setRange(value as typeof range)}
-      />
+      {/* Every range fits on one line, evenly spaced, like a segmented control. */}
+      <View
+        accessibilityRole="tablist"
+        style={{
+          flexDirection: "row",
+          padding: 3,
+          borderRadius: 999,
+          backgroundColor: t.wash,
+        }}
+      >
+        {RANGES.map((item) => {
+          const selected = item.key === range;
+          return (
+            <Pressable
+              key={item.key}
+              accessibilityRole="tab"
+              accessibilityState={{ selected }}
+              onPress={() => setRange(item.key)}
+              style={({ pressed }) => ({
+                flex: 1,
+                minHeight: phone(32),
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: 999,
+                backgroundColor: selected
+                  ? "rgba(255,255,255,0.97)"
+                  : "transparent",
+                opacity: pressed ? 0.65 : 1,
+              })}
+            >
+              <Copy
+                size={12}
+                bold={selected}
+                lines={1}
+                localize={false}
+                color={selected ? "#111111" : t.secondary}
+              >
+                {locale === "en" ? item.en : item.zh}
+              </Copy>
+            </Pressable>
+          );
+        })}
+      </View>
     </Glass>
   );
 }

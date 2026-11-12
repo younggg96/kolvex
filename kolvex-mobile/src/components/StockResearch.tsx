@@ -25,11 +25,22 @@ import {
 import { number, percent } from "../lib/models";
 import { Button, Copy, Empty, Failure, Glass, Section } from "./UI";
 import { Filters, ResourceState } from "./Content";
-export function Statements({ symbol }: { symbol: string }) {
-  const [kind, setKind] = useState<StatementKind>("income-statement");
-  const [quarterly, setQuarterly] = useState("annual");
-  const [mode, setMode] = useState("chart");
-  const [all, setAll] = useState(false);
+import { ListItem, ViewControls, type } from "./StockBlocks";
+import { OptionChip } from "./OptionSheet";
+/** One statement; the kind and display options come from the tab's control row and sheet. */
+export function Statements({
+  symbol,
+  kind,
+  quarterly,
+  mode,
+  all,
+}: {
+  symbol: string;
+  kind: StatementKind;
+  quarterly: string;
+  mode: string;
+  all: boolean;
+}) {
   const [selected, setSelected] = useState("");
   const [shareError, setShareError] = useState<string>();
   const [sharing, setSharing] = useState(false);
@@ -76,26 +87,6 @@ export function Statements({ symbol }: { symbol: string }) {
   }
   return (
     <View style={{ gap: 16 }}>
-      <Filters
-        values={[
-          ["income-statement", "利润表"],
-          ["balance-sheet", "资产负债表"],
-          ["cash-flow", "现金流量表"],
-        ]}
-        value={kind}
-        onChange={(v) => {
-          setKind(v as StatementKind);
-          setSelected("");
-        }}
-      />
-      <Filters
-        values={[
-          ["annual", "年度"],
-          ["quarterly", "季度"],
-        ]}
-        value={quarterly}
-        onChange={setQuarterly}
-      />
       <Copy size={12} muted>
         原始报表数值 · 财报币种 {currency.data || "未提供"} ·
         未自动换算为报价币种
@@ -119,20 +110,10 @@ export function Statements({ symbol }: { symbol: string }) {
       )}
       {!!rows.length && (
         <>
-          <Filters
-            values={[
-              ["chart", "图表"],
-              ["list", "列表"],
-            ]}
-            value={mode}
-            onChange={setMode}
-          />
-          <Button selected={all} onPress={() => setAll((v) => !v)}>
-            {all ? "显示核心项目" : "显示全部项目"}
-          </Button>
           {mode === "chart" && metric ? (
             <Glass style={{ padding: 16, gap: 16 }}>
               <Filters
+                size="sm"
                 values={keys.map(
                   (key) => [key, metricLabels[key] || key] as const,
                 )}
@@ -140,7 +121,7 @@ export function Statements({ symbol }: { symbol: string }) {
                 onChange={setSelected}
               />
               <Section title={title} note={rows[0]?.period.slice(0, 10)} />
-              <Copy size={30} bold>
+              <Copy size={24} bold>
                 {financialNumber(latest)}
               </Copy>
               <Copy size={14} muted>
@@ -162,7 +143,7 @@ export function Statements({ symbol }: { symbol: string }) {
           <Copy size={12} muted>
             M=百万，B=十亿，T=万亿；CSV 保留原始数值。
           </Copy>
-          <Button disabled={sharing} onPress={() => void share()}>
+          <Button size="sm" disabled={sharing} onPress={() => void share()}>
             导出 / 分享 CSV
           </Button>
           {shareError && <Failure message={shareError} />}
@@ -192,7 +173,9 @@ function StatementTable({
       <View style={{ gap: 16 }}>
         <View style={{ flexDirection: "row" }}>
           <View style={{ width: 180 }}>
-            <Copy bold>项目</Copy>
+            <Copy size={15} bold>
+              项目
+            </Copy>
           </View>
           {rows.map((row) => (
             <View key={row.period} style={{ width: 144, paddingHorizontal: 8 }}>
@@ -240,15 +223,11 @@ const chartMetrics = [
   { id: "operating", label: "营业利润", keys: ["Operating Income"] },
   { id: "ebitda", label: "息税折旧摊销前利润", keys: ["EBITDA"] },
 ];
+const DEFAULT_METRICS = ["revenue", "income", "margin", "eps"];
 /** Several income-statement trends at once, in the reporting currency. */
 export function Multicharts({ symbol }: { symbol: string }) {
   const [frequency, setFrequency] = useState("annual");
-  const [selected, setSelected] = useState([
-    "revenue",
-    "income",
-    "margin",
-    "eps",
-  ]);
+  const [selected, setSelected] = useState(DEFAULT_METRICS);
   const resource = useResource(
     `multicharts:${symbol}:${frequency}`,
     async (signal) => {
@@ -265,31 +244,41 @@ export function Multicharts({ symbol }: { symbol: string }) {
   return (
     <View style={{ gap: 16 }}>
       <Section title="指标趋势" />
-      <Filters
+      <ViewControls
         values={[
           ["annual", "年度"],
           ["quarterly", "季度"],
         ]}
         value={frequency}
         onChange={setFrequency}
+        optionsTitle="显示指标"
+        changed={selected.join() !== DEFAULT_METRICS.join()}
+        onReset={() => setSelected(DEFAULT_METRICS)}
+        options={
+          <View style={{ gap: 8 }}>
+            <Copy size={type.meta} muted>
+              {`已选 ${selected.length} 项`}
+            </Copy>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              {chartMetrics.map((metric) => (
+                <OptionChip
+                  key={metric.id}
+                  selected={selected.includes(metric.id)}
+                  onPress={() =>
+                    setSelected((items) =>
+                      items.includes(metric.id)
+                        ? items.filter((item) => item !== metric.id)
+                        : [...items, metric.id],
+                    )
+                  }
+                >
+                  {metric.label}
+                </OptionChip>
+              ))}
+            </View>
+          </View>
+        }
       />
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-        {chartMetrics.map((metric) => (
-          <Button
-            key={metric.id}
-            selected={selected.includes(metric.id)}
-            onPress={() =>
-              setSelected((items) =>
-                items.includes(metric.id)
-                  ? items.filter((item) => item !== metric.id)
-                  : [...items, metric.id],
-              )
-            }
-          >
-            {metric.label}
-          </Button>
-        ))}
-      </View>
       <ResourceState
         skeleton={
           <CardsSkeleton
@@ -328,7 +317,9 @@ export function Multicharts({ symbol }: { symbol: string }) {
           });
           return (
             <Glass key={id} style={{ padding: 16, gap: 8 }}>
-              <Copy bold>{metric.label}</Copy>
+              <Copy size={15} bold>
+                {metric.label}
+              </Copy>
               <MetricBars
                 points={points}
                 list={false}
@@ -452,6 +443,7 @@ function ViewlessBar({
   );
 }
 export function Earnings({ symbol }: { symbol: string }) {
+  const theme = useTheme();
   const resource = useResource(symbol, (signal) =>
     apiRequest<EarningsData>(`/market/earnings/${encodeURIComponent(symbol)}`, {
       signal,
@@ -478,25 +470,46 @@ export function Earnings({ symbol }: { symbol: string }) {
         empty={!rows.length}
         message="暂无盈利记录。"
       />
-      {[...rows].reverse().map((row) => {
-        const outcome = epsOutcome(row.actual, row.estimate);
-        return (
-          <Glass key={row.period} style={{ padding: 20, gap: 12 }}>
-            <Copy bold>{row.period.slice(0, 10)}</Copy>
-            <Copy>
-              实际 EPS {number(row.actual)} · 预期 {number(row.estimate)}
-            </Copy>
-            <Copy size={14}>
-              {outcome
-                ? `${outcome.kind === "beat" ? "高于预期" : outcome.kind === "miss" ? "低于预期" : "符合预期"} · 差额 ${number(outcome.delta)}`
-                : "尚无完整实际值与预期对比"}
-            </Copy>
-            <Copy size={12} muted>
-              数据源超预期幅度 {percent(row.surprise)}
-            </Copy>
-          </Glass>
-        );
-      })}
+      <View>
+        {[...rows].reverse().map((row, index, list) => {
+          const outcome = epsOutcome(row.actual, row.estimate);
+          const tone =
+            outcome?.kind === "beat"
+              ? theme.chartUp
+              : outcome?.kind === "miss"
+                ? theme.chartDown
+                : undefined;
+          return (
+            <ListItem key={row.period} last={index === list.length - 1}>
+              <View
+                style={{ flexDirection: "row", alignItems: "baseline", gap: 8 }}
+              >
+                <View style={{ flex: 1 }}>
+                  <Copy size={type.item} bold localize={false}>
+                    {row.period.slice(0, 10)}
+                  </Copy>
+                </View>
+                <Copy size={type.body} bold color={tone}>
+                  {outcome
+                    ? outcome.kind === "beat"
+                      ? "高于预期"
+                      : outcome.kind === "miss"
+                        ? "低于预期"
+                        : "符合预期"
+                    : "待公布"}
+                </Copy>
+              </View>
+              <Copy size={type.body}>
+                实际 EPS {number(row.actual)} · 预期 {number(row.estimate)}
+                {outcome ? ` · 差额 ${number(outcome.delta)}` : ""}
+              </Copy>
+              <Copy size={type.meta} muted>
+                数据源超预期幅度 {percent(row.surprise)}
+              </Copy>
+            </ListItem>
+          );
+        })}
+      </View>
     </View>
   );
 }
@@ -512,6 +525,7 @@ export function Analysts({
       signal,
     }),
   );
+  const theme = useTheme();
   const data = resource.data;
   const consensus = data?.recommendations_summary.find(
     (item) => item.period === "0m",
@@ -536,14 +550,14 @@ export function Analysts({
       />
       {data && (
         <>
-          <Glass style={{ padding: 20, gap: 12 }}>
+          <Glass style={{ padding: 16, gap: 12 }}>
             <Copy size={14} muted>
               平均目标价
             </Copy>
-            <Copy size={30} bold>
+            <Copy size={24} bold>
               {number(data.target_mean_price)}
             </Copy>
-            <Copy>
+            <Copy size={14}>
               最低 {number(data.target_low_price)} · 最高{" "}
               {number(data.target_high_price)}
             </Copy>
@@ -551,25 +565,65 @@ export function Analysts({
               分析师数量 {number(data.number_of_analyst_opinions, 0)}
             </Copy>
           </Glass>
-          <Glass style={{ padding: 20, gap: 12 }}>
-            <Section title="当前评级分布" />
-            {[
-              ["strong_buy", "强烈买入"],
-              ["buy", "买入"],
-              ["hold", "持有"],
-              ["sell", "卖出"],
-              ["strong_sell", "强烈卖出"],
-            ].map(([key, name]) => (
-              <Copy key={key}>
-                {name} ·{" "}
-                {number(
-                  consensus?.[key as keyof typeof consensus] as
-                    number | null | undefined,
-                  0,
-                )}
-              </Copy>
-            ))}
-          </Glass>
+          <View style={{ gap: 8 }}>
+            <Copy size={type.item} bold>
+              当前评级分布
+            </Copy>
+            {(() => {
+              const ratings = [
+                ["strong_buy", "强烈买入", theme.chartUp],
+                ["buy", "买入", theme.chartUp],
+                ["hold", "持有", theme.secondary],
+                ["sell", "卖出", theme.chartDown],
+                ["strong_sell", "强烈卖出", theme.chartDown],
+              ] as const;
+              const counts = ratings.map(
+                ([key]) =>
+                  (consensus?.[key as keyof typeof consensus] as
+                    number | null | undefined) ?? 0,
+              );
+              const total = counts.reduce((a, b) => a + b, 0) || 1;
+              return ratings.map(([key, name, tone], index) => (
+                <View
+                  key={key}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 12,
+                    minHeight: 28,
+                  }}
+                >
+                  <View style={{ width: 72 }}>
+                    <Copy size={type.body} muted>
+                      {name}
+                    </Copy>
+                  </View>
+                  <View
+                    style={{
+                      flex: 1,
+                      height: 6,
+                      borderRadius: 3,
+                      backgroundColor: theme.wash,
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: `${(counts[index] / total) * 100}%`,
+                        height: 6,
+                        borderRadius: 3,
+                        backgroundColor: tone,
+                      }}
+                    />
+                  </View>
+                  <View style={{ width: 28, alignItems: "flex-end" }}>
+                    <Copy size={type.body} bold localize={false}>
+                      {number(counts[index], 0)}
+                    </Copy>
+                  </View>
+                </View>
+              ));
+            })()}
+          </View>
           <Copy size={12} muted>
             分析师观点可能过时，不代表未来收益。目标价与实际报价的日期可能不同。
           </Copy>

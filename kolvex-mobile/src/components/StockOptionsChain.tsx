@@ -147,6 +147,7 @@ function Chain({ symbol }: { symbol: string }) {
         )}
       </View>
       <Filters
+        size="sm"
         values={chain.expirations.map((date) => [date, f.date(date)] as const)}
         value={expiration ?? chain.expiration}
         onChange={setExpiration}
@@ -198,6 +199,7 @@ function Chain({ symbol }: { symbol: string }) {
         </View>
       </Glass>
       <Filters
+        size="sm"
         values={[
           ["both", "看涨 + 看跌"],
           ["call", "看涨"],
@@ -207,6 +209,7 @@ function Chain({ symbol }: { symbol: string }) {
         onChange={setLayout}
       />
       <Filters
+        size="sm"
         values={[
           ["near", `近价 ${NEAR * 2} 档`],
           ["all", `全部 ${allRows.length} 档`],
@@ -468,7 +471,9 @@ function ContractSheet({
           </Glass>
         </View>
       ))}
-      <Button onPress={onClose}>完成</Button>
+      <Button size="sm" onPress={onClose}>
+        完成
+      </Button>
     </Sheet>
   );
 }
