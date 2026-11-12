@@ -31,6 +31,17 @@ class AnswerCheckTests(unittest.TestCase):
         self.assertEqual(verdicts("Revenue was $46.7 million."), {"$46.7 million": "mismatch"})
         self.assertEqual(verdicts("营收同比增长 65%。"), {"65%": "mismatch"})
 
+    def test_correct_arithmetic_on_evidence_is_matched(self):
+        # 467.43 - 300.40 = 167.03 亿; 467.43 / 300.40 - 1 = 55.6%
+        self.assertEqual(verdicts("营收较上年同期增加约 167.0 亿美元，同比 55.6%。"),
+                         {"167.0 亿": "matched", "55.6%": "matched"})
+        self.assertEqual(verdicts("营收较上年同期增加约 494.8 亿美元。"), {"494.8 亿": "mismatch"})
+
+    def test_taiwan_compound_amounts(self):
+        check = check_answer("合并营收新台币 1 兆 460.9 亿元。", [], [
+            {"symbol": "TSM", "value": 1_046_090_000_000, "period_end": "2025-12-31"}])
+        self.assertEqual([c["status"] for c in check["claims"]], ["matched"])
+
     def test_unrelated_figures_are_unverified_not_wrong(self):
         self.assertEqual(verdicts("Gross margin was 72.4%. Analysts target $180. FY2027 Q2."),
                          {"72.4%": "unverified", "$180": "unverified"})

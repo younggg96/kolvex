@@ -130,6 +130,10 @@ def _create_agent_for_request(
         "Only describe a quote as current when its returned market_time supports that claim. "
         "If the quote tool is unavailable or returns no price, say you could not verify the quote. "
         "If market_time is missing, state that the quote time is unknown."
+        "\n\nWhen a source states an amount in billions, millions or thousands, either keep that unit "
+        "(\"NT$3,809.05 billion\") or convert the number with it: 1 billion = 10亿, 1 trillion = 1万亿, "
+        "1 million = 100万 (NT$3,809.05 billion = 新台币 3.81 万亿 = 38,090.5 亿). "
+        "Never replace the unit word alone: \"3,809.05 billion\" is not \"3,809.05 亿\"."
     )
     if "get_reported_revenue" in available_tools:
         source_hint += (

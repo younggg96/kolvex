@@ -18,7 +18,11 @@ function pump() {
 export function trendPoints(bars: PriceBar[], singleSession: boolean): TrendPoint[] {
   const points = bars.filter(bar => Number.isFinite(bar.close) && bar.close > 0).map(bar => ({ date: bar.date, value: bar.close })).sort((a, b) => a.date.localeCompare(b.date));
   const lastDate = points.at(-1)?.date.slice(0, 10);
-  return singleSession ? points.filter(point => point.date.slice(0, 10) === lastDate) : points;
+  if (!singleSession) return points;
+  const session = points.filter(point => point.date.slice(0, 10) === lastDate);
+  // Anchor the session at the previous close so the line's direction matches the daily change.
+  const previousClose = points.findLast(point => point.date.slice(0, 10) !== lastDate);
+  return previousClose ? [previousClose, ...session] : session;
 }
 
 /** Passive list previews: viewport-driven, cancellable, cached, and three requests at most. */
@@ -43,7 +47,7 @@ export function loadStockTrend(symbol: string, params: PriceHistoryParams, signa
       start: () => {
         started = true;
         signal.removeEventListener("abort", cancel);
-        getStockHistory(symbol, params, signal, force).then(bars => {
+        getStockHistory(symbol, params.period === "1d" ? { ...params, period: "5d" } : params, signal, force).then(bars => {
           if (signal.aborted) throw new DOMException("Cancelled", "AbortError");
           const points = trendPoints(bars, params.period === "1d");
           if (points.length < 2) throw new Error("Trend unavailable");

@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import sys
 import tempfile
+from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parent
 BACKEND = ROOT.parents[1] / "kolvex-backend-py"
@@ -87,6 +88,27 @@ def plan(root, service=None):
     return {"sources": result}
 
 
+def add_sources(root, profiles):
+    handles = set()
+    for profile in profiles:
+        value = profile.strip()
+        if "://" in value:
+            url = urlsplit(value)
+            parts = url.path.strip("/").split("/")
+            if url.scheme != "https" or url.netloc.lower() not in ("x.com", "www.x.com") or len(parts) != 1:
+                raise ValueError("Use an X username or an https://x.com/<username> profile URL")
+            value = parts[0]
+        handles.add(username(value))
+    path = root / "sources.json"
+    config = read_json(path)
+    existing = {username(value) for value in config["usernames"]}
+    added = sorted(handles - existing)
+    if added:
+        config["usernames"].extend(added)
+        atomic_json(path, config)
+    return {"added": added, "already_tracked_locally": sorted(handles & existing)}
+
+
 def ingest(root, payload):
     if not isinstance(payload, dict):
         raise ValueError("Collector must provide an export object with posts and scan metadata")
@@ -146,10 +168,41 @@ def sync_file(root, path, service):
     return {"file": path.name, "inserted": result["inserted"], "skipped": result["skipped"], "pending": len(pending)}
 
 
+def sync_saved(root, service):
+    return [sync_file(root, path, service) for path in sorted((root / "data").glob("*.json"))]
+
+
+def prepare(root, service):
+    retried = sync_saved(root, service)
+    result = plan(root, service)
+    return {**result, "retried": sum(file["inserted"] for file in retried)}
+
+
+def finish_run(root, directory, service):
+    if not (directory / "plan.json").is_file():
+        raise ValueError("Provide a collection directory created by prepare")
+    saved_paths = []
+    for path in sorted(directory.glob("*-export.json")):
+        payload = read_json(path)
+        posts = normalize_import(payload)
+        handle = posts[0]["author_username"]
+        synced = set(state_for(root, handle).get("synced_post_ids", []))
+        if all(post["author_username"] == handle and post["id"] in synced for post in posts):
+            continue
+        saved_paths.append(Path(ingest(root, payload)["file"]))
+    return {"files": [sync_file(root, path, service) for path in saved_paths]}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("plan")
+    start = commands.add_parser("prepare", help="Retry saved batches and write a new browser run plan")
+    start.add_argument("directory", type=Path)
+    finish = commands.add_parser("finish", help="Ingest and sync browser exports from one run")
+    finish.add_argument("directory", type=Path)
+    add = commands.add_parser("add", help="Track X profiles on this machine")
+    add.add_argument("profiles", nargs="+")
     collect = commands.add_parser("ingest")
     collect.add_argument("file", type=Path)
     sync = commands.add_parser("sync")
@@ -159,13 +212,21 @@ def main():
         with locked(ROOT):
             if args.command == "ingest":
                 result = ingest(ROOT, read_json(args.file))
+            elif args.command == "add":
+                result = add_sources(ROOT, args.profiles)
             else:
                 service = XContentService(database())
                 if args.command == "plan":
                     result = plan(ROOT, service)
+                elif args.command == "prepare":
+                    args.directory.mkdir(parents=True, exist_ok=False)
+                    result = prepare(ROOT, service)
+                    atomic_json(args.directory / "plan.json", result)
+                elif args.command == "finish":
+                    result = finish_run(ROOT, args.directory, service)
                 else:
-                    paths = [args.file.resolve()] if args.file else sorted((ROOT / "data").glob("*.json"))
-                    result = {"files": [sync_file(ROOT, path, service) for path in paths]}
+                    files = [sync_file(ROOT, args.file.resolve(), service)] if args.file else sync_saved(ROOT, service)
+                    result = {"files": files}
             print(json.dumps(result, ensure_ascii=False))
     except Exception as exc:
         # Do not print database URLs, headers, credentials or raw provider errors.

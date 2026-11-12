@@ -26,7 +26,9 @@ import type { YouTubeOpinionDashboard } from "@/lib/youtubeOpinionsApi";
 import { useCopy, useDayLabel } from "./shared";
 import styles from "./search-page.module.css";
 
-const PICK_COUNT = 8;
+const TRENDING_STOCK_COUNT = 12;
+const CREATOR_COUNT = 8;
+const RESEARCH_COUNT = 6;
 type Resource<T> = { data?: T; loading: boolean; error: unknown; refresh: () => void };
 type Remember = (item: SearchHistoryItem) => void;
 
@@ -73,8 +75,8 @@ function TrendingStocks({ youtube, reddit, onRemember }: { youtube: Resource<You
   const [source, setSource] = useState<"youtube" | "reddit">("youtube");
   const resource = source === "youtube" ? youtube : reddit;
   const stocks = useMemo(() => source === "youtube"
-    ? [...(youtube.data?.stocks ?? [])].sort((a, b) => b.total_opinions - a.total_opinions).slice(0, PICK_COUNT).map(stock => ({ ticker: stock.ticker, name: stock.company_name || stock.ticker }))
-    : (reddit.data?.results ?? []).slice(0, PICK_COUNT).map(stock => ({ ticker: stock.ticker, name: stock.name })),
+    ? [...(youtube.data?.stocks ?? [])].sort((a, b) => b.total_opinions - a.total_opinions).slice(0, TRENDING_STOCK_COUNT).map(stock => ({ ticker: stock.ticker, name: stock.company_name || stock.ticker }))
+    : (reddit.data?.results ?? []).slice(0, TRENDING_STOCK_COUNT).map(stock => ({ ticker: stock.ticker, name: stock.name })),
   [source, youtube.data, reddit.data]);
   const href = source === "youtube" ? "/dashboard/youtube-opinions" : "/dashboard/reddit-opinions";
 
@@ -105,7 +107,7 @@ function TrendingStocks({ youtube, reddit, onRemember }: { youtube: Resource<You
               <ArrowUpRight aria-hidden className={cn("h-3.5 w-3.5", styles.rowArrow)} />
             </Link>
           </ListRow>)}
-        </ol> : <SourceState {...resource} retry={resource.refresh} className="lg:min-h-[22rem] xl:min-h-[26rem]" skeleton={<ol className={styles.stockList}>{Array.from({ length: PICK_COUNT }, (_, i) => <li key={i} className={cn("flex min-w-0 pr-0", styles.stockItem)}><div className={cn(listCompactRowClass, styles.stockLink, "hover:bg-transparent")}><Skeleton className="h-3 w-4 rounded" /><Skeleton className="h-8 w-8 shrink-0 rounded-full" /><span className="flex min-w-0 flex-1 flex-col gap-1.5"><Skeleton className="h-4 w-12 rounded-md" /><Skeleton className={cn("h-3 rounded-md", i % 2 ? "w-20" : "w-28")} /></span></div></li>)}</ol>} />}
+        </ol> : <SourceState {...resource} retry={resource.refresh} className="lg:min-h-[19rem]" skeleton={<ol className={styles.stockList}>{Array.from({ length: TRENDING_STOCK_COUNT }, (_, i) => <li key={i} className={cn("flex min-w-0 pr-0", styles.stockItem)}><div className={cn(listCompactRowClass, styles.stockLink, "hover:bg-transparent")}><Skeleton className={cn("h-3 rounded", styles.rank)} /><Skeleton className="h-6 w-6 shrink-0 rounded-full lg:h-8 lg:w-8" /><span className="flex min-w-0 flex-1 flex-col gap-1.5"><Skeleton className="h-4 w-12 rounded-md" /><Skeleton className={cn("h-3 rounded-md", i % 2 ? "w-20 max-w-full" : "w-28 max-w-full")} /></span></div></li>)}</ol>} />}
       </div>
       {stocks.length > 0 && <PartialError error={resource.error} retry={resource.refresh} />}
       <ListFooterLink href={href}>{source === "youtube" ? c("Explore creator opinions", "探索博主的完整观点") : c("Explore Reddit discussions", "查看 Reddit 完整讨论榜")}</ListFooterLink>
@@ -118,13 +120,13 @@ function CreatorPicks({ youtube, x, onRemember }: { youtube: Resource<YouTubeOpi
   const [source, setSource] = useState<"youtube" | "x">("youtube");
   const resource = source === "youtube" ? youtube : x;
   const creators = useMemo(() => source === "youtube"
-    ? [...(youtube.data?.creators ?? [])].sort((a, b) => b.total_opinions - a.total_opinions).slice(0, PICK_COUNT).map(creator => ({
+    ? [...(youtube.data?.creators ?? [])].sort((a, b) => b.total_opinions - a.total_opinions).slice(0, CREATOR_COUNT).map(creator => ({
       title: creator.channel_title || creator.channel_id,
       detail: creator.channel_handle || "YouTube",
       avatar: creator.channel_avatar_url,
       href: `/dashboard/youtube-opinions?${new URLSearchParams({ tab: "creators", creator: creator.channel_id })}`,
     }))
-    : (x.data?.creators ?? []).slice(0, PICK_COUNT).map(creator => ({
+    : (x.data?.creators ?? []).slice(0, CREATOR_COUNT).map(creator => ({
       title: creator.display_name || `@${creator.username}`,
       detail: `@${creator.username}`,
       avatar: creator.avatar_url,
@@ -157,7 +159,7 @@ function CreatorPicks({ youtube, x, onRemember }: { youtube: Resource<YouTubeOpi
               <ArrowUpRight aria-hidden className={cn("h-3.5 w-3.5", styles.rowArrow)} />
             </Link>
           </ListRow>)}
-        </ListRows> : <SourceState {...resource} retry={resource.refresh} className="lg:min-h-[22rem] xl:min-h-[26rem]" skeleton={<ul className={cn("min-w-0", styles.creatorList)}>{Array.from({ length: PICK_COUNT }, (_, i) => <li key={i} className="flex min-w-0 pr-0"><div className={cn(listCompactRowClass, styles.creatorLink, "w-full hover:bg-transparent")}><Skeleton className="h-8 w-8 shrink-0 rounded-full" /><span className="flex min-w-0 flex-1 flex-col gap-1.5"><Skeleton className={cn("h-4 rounded-md", i % 2 ? "w-20" : "w-28")} /><Skeleton className="h-3 w-16 rounded-md" /></span></div></li>)}</ul>} />}
+        </ListRows> : <SourceState {...resource} retry={resource.refresh} className="xl:min-h-96" skeleton={<ul className={cn("min-w-0", styles.creatorList)}>{Array.from({ length: CREATOR_COUNT }, (_, i) => <li key={i} className="flex min-w-0 pr-0"><div className={cn(listCompactRowClass, styles.creatorLink, "w-full hover:bg-transparent")}><Skeleton className="h-8 w-8 shrink-0 rounded-full" /><span className="flex min-w-0 flex-1 flex-col gap-1.5"><Skeleton className={cn("h-4 rounded-md", i % 2 ? "w-20" : "w-28")} /><Skeleton className="h-3 w-16 rounded-md" /></span></div></li>)}</ul>} />}
       </div>
       {creators.length > 0 && <PartialError error={resource.error} retry={resource.refresh} />}
       <ListFooterLink href={href}>{source === "youtube" ? c("Browse YouTube creators", "浏览 YouTube 创作者") : c("Browse X creators", "浏览 X 创作者")}</ListFooterLink>
@@ -168,22 +170,23 @@ function CreatorPicks({ youtube, x, onRemember }: { youtube: Resource<YouTubeOpi
 function ResearchPicks({ onRemember }: { onRemember: Remember }) {
   const c = useCopy();
   const dayLabel = useDayLabel();
-  const params = { limit: 4 };
+  const params = { limit: RESEARCH_COUNT };
   const resource = useCachedResource(publishedAnalysesKey(params), signal => getPublishedAnalyses(params, signal), { ttl: 60_000 });
   const reports = resource.data?.items ?? [];
+  const rowClassName = cn(listCompactRowClass, "min-h-12 w-full gap-2 px-1 lg:gap-3 lg:px-2");
   return <DiscoverySection id="search-research" title={c("Latest research", "最新研究")} icon={<FileText aria-hidden className="h-4 w-4 text-muted-foreground" />} href="/dashboard/ai-research" linkLabel={c("View all research", "查看全部研究")}>
     <ListCard>
       {reports.length ? <ListRows>{reports.map(report => {
         const item = { href: `/dashboard/trading-analysis/explore/${encodeURIComponent(report.id)}`, title: c(`${report.ticker} research report`, `${report.ticker} 研究报告`), detail: dayLabel(report.trade_date) };
         return <ListRow key={report.id} className="pr-0">
-          <Link href={item.href} onClick={() => onRemember(item)} className={cn(listCompactRowClass, styles.rowLink, "min-h-12 w-full gap-2 px-1 lg:min-h-[4.5rem] lg:gap-3 lg:px-2")}>
+          <Link href={item.href} onClick={() => onRemember(item)} className={cn(rowClassName, styles.rowLink)}>
             <span aria-hidden><CompanyLogo symbol={report.ticker} size="sm" className="max-lg:max-h-6 max-lg:max-w-6 max-lg:!p-0.5" /></span>
             <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{report.ticker}</span><span className="mt-0.5 block text-xs text-muted-foreground">{c("AI research report", "AI 研究报告")}</span></span>
             <span className="shrink-0 text-xs text-muted-foreground">{item.detail}</span>
             <ArrowUpRight aria-hidden className={cn("h-4 w-4", styles.rowArrow)} />
           </Link>
         </ListRow>;
-      })}</ListRows> : <SourceState {...resource} retry={resource.refresh} className="lg:min-h-72" skeleton={<ul className="min-w-0">{[0, 1, 2, 3].map(i => <li key={i} className={cn(listCompactRowClass, "min-h-12 w-full gap-2 px-1 lg:min-h-[4.5rem] lg:gap-3 lg:px-2 hover:bg-transparent")}><Skeleton className="h-8 w-8 shrink-0 rounded-full" /><span className="flex min-w-0 flex-1 flex-col gap-1.5"><Skeleton className="h-4 w-12 rounded-md" /><Skeleton className="h-3 w-24 rounded-md" /></span><Skeleton className="h-3 w-14 rounded-md" /></li>)}</ul>} />}
+      })}</ListRows> : <SourceState {...resource} retry={resource.refresh} className="lg:min-h-72" skeleton={<ul className="min-w-0">{Array.from({ length: RESEARCH_COUNT }, (_, i) => <li key={i} className={cn(rowClassName, "hover:bg-transparent")}><Skeleton className="h-8 w-8 shrink-0 rounded-full" /><span className="flex min-w-0 flex-1 flex-col gap-1.5"><Skeleton className="h-4 w-12 rounded-md" /><Skeleton className="h-3 w-24 rounded-md" /></span><Skeleton className="h-3 w-14 rounded-md" /></li>)}</ul>} />}
       {reports.length > 0 && <PartialError error={resource.error} retry={resource.refresh} />}
     </ListCard>
   </DiscoverySection>;

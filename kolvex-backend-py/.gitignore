@@ -55,3 +55,4 @@ htmlcov/
 # macOS
 .DS_Store
 
+evals/results/

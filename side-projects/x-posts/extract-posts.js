@@ -3,6 +3,7 @@ function extractXPosts(expectedUsername) {
   const expected = expectedUsername.replace(/^@/, "").toLowerCase();
   const posts = [];
   const rejected = [];
+  const order = [];
   const articles = [...document.querySelectorAll('article[data-testid="tweet"]')];
   // Server-rendered/loading variants do not expose the authored-text contract.
   // Report them explicitly; never treat an unrecognized DOM as an empty timeline.
@@ -15,6 +16,10 @@ function extractXPosts(expectedUsername) {
     const href = time?.closest("a")?.getAttribute("href");
     const match = href?.match(/^\/([A-Za-z0-9_]+)\/status\/(\d+)(?:\/history)?$/);
     if (!match || match[1].toLowerCase() !== expected) continue;
+    const social = article.querySelector('[data-testid="socialContext"]')?.textContent || "";
+    if (/reposted|retweeted|转帖|转发了/i.test(social)) continue;
+    const pinned = /pinned|置顶/i.test(social);
+    order.push([match[2], pinned]);
     if ([...article.querySelectorAll('a,button')].some(control => /^(Subscribe to unlock|订阅以解锁)$/.test(control.textContent?.trim() || ""))) {
       rejected.push({ id: match[2], reason: "Subscribers-only content; full original text unavailable" });
       continue;
@@ -23,8 +28,6 @@ function extractXPosts(expectedUsername) {
       rejected.push({ id: match[2], reason: "Translated content visible; select Show original before collecting" });
       continue;
     }
-    const social = article.querySelector('[data-testid="socialContext"]')?.textContent || "";
-    if (/reposted|retweeted|转帖|转发了/i.test(social)) continue;
     const texts = [...article.querySelectorAll('[data-testid="tweetText"]')];
     const own = texts.filter(el => !el.closest('[role="link"]'));
     const text = own.map(el => el.innerText).join("\n");
@@ -43,8 +46,8 @@ function extractXPosts(expectedUsername) {
       cashtags: [...new Set([...text.matchAll(/\$([A-Za-z][A-Za-z0-9.\-]{0,14})\b/g)].map(value => value[1].toUpperCase()))],
       metrics, metrics_label: label, quoted_texts: texts.filter(el => !own.includes(el)).map(el => el.innerText),
       media_links: [...new Set(media)].map(value => `https://x.com${value}`),
-      pinned: /pinned|置顶/i.test(social), truncated: Boolean(article.querySelector('[data-testid="tweet-text-show-more-link"]')),
+      pinned, truncated: Boolean(article.querySelector('[data-testid="tweet-text-show-more-link"]')),
     });
   }
-  return { posts, rejected, ready: true };
+  return { posts, rejected, order, ready: true };
 }

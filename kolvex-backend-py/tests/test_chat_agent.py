@@ -1,3 +1,4 @@
+import unittest.mock
 import asyncio
 import json
 import unittest
@@ -49,7 +50,7 @@ class ToolSelectionTests(unittest.TestCase):
         selected = ["market", "news", "portfolio"]
         self.assertEqual(
             names(get_tools_for_sources(["web"], "financial", "user-1", skills=selected)),
-            {"get_stock_quote", "get_stock_history", "web_search"},
+            {"get_stock_quote", "get_stock_history", "web_search", "get_user_watchlist", "get_daily_brief"},
         )
 
     def test_empty_skills_disable_all_tools(self):
@@ -61,6 +62,45 @@ class ToolSelectionTests(unittest.TestCase):
             names(get_tools_for_sources(None, "financial", "user-1", skills=selected)),
             names(get_tools_for_sources(None, "financial", "user-1")),
         )
+
+    def test_watchlist_available_without_sources_for_signed_in_user(self):
+        self.assertIn("get_user_watchlist", names(get_tools_for_sources([], "financial", "user-1")))
+        self.assertIn("get_user_watchlist", names(get_tools_for_sources([], "research", "user-1")))
+        self.assertNotIn("get_user_watchlist", names(get_tools_for_sources([], "financial", "")))
+
+    def test_watchlist_reads_only_current_users_rows(self):
+        from app.agent.tools import watchlist_tools
+        client = unittest.mock.MagicMock()
+        query = client.table.return_value.select.return_value.eq.return_value.order.return_value.limit.return_value
+        query.execute.return_value = SimpleNamespace(data=[{"ticker": "AAPL"}, {"ticker": "NVDA"}])
+        with patch.object(watchlist_tools, "get_supabase_service", return_value=client):
+            out = watchlist_tools.create_watchlist_tool_for_user("user-1").invoke({})
+        client.table.assert_called_once_with("user_watchlist")
+        client.table.return_value.select.return_value.eq.assert_called_once_with("user_id", "user-1")
+        self.assertIn('"tickers": ["AAPL", "NVDA"]', out)
+
+    def test_daily_brief_available_to_financial_and_research(self):
+        self.assertIn("get_daily_brief", names(get_tools_for_sources([], "financial", "user-1")))
+        self.assertIn("get_daily_brief", names(get_tools_for_sources([], "research", "user-1")))
+
+    def test_daily_brief_digest_lists_hot_topics(self):
+        from app.agent.tools import brief_tools
+        payload = {
+            "schema_version": "kolvex-brief/1.0",
+            "brief": {"id": "morning-2026-11-12", "type": "morning", "date": "2026-11-12",
+                      "title": "盘前日报", "headline": "芯片领涨", "generated_at_pt": "2026-11-12T05:00:00-08:00",
+                      "market_status": "trading_day"},
+            "sections": [{"section_id": "hot", "order": 1, "title": "热点",
+                          "items": [{"title": "NVDA 财报超预期", "summary": "营收大增", "related_tickers": ["NVDA"]}]}],
+        }
+        client = unittest.mock.MagicMock()
+        chain = client.table.return_value.select.return_value.order.return_value.order.return_value.limit.return_value
+        chain.execute.return_value = SimpleNamespace(data=[{"id": "morning-2026-11-12", "payload": payload}])
+        with patch.object(brief_tools, "get_supabase_service", return_value=client):
+            out = brief_tools.get_daily_brief.invoke({})
+        client.table.assert_called_once_with("daily_briefs")
+        self.assertIn("NVDA 财报超预期", out)
+        self.assertIn("[NVDA]", out)
 
     def test_portfolio_is_bound_to_the_current_user(self):
         with patch("app.agent.tools.create_portfolio_tool_for_user") as bind:

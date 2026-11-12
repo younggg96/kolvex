@@ -99,6 +99,13 @@ html {
     line-height: 1.5;
   }
 
+  /* Placeholder size does not trigger iOS focus zoom, so keep hints at the
+     regular UI size instead of the 16px entry floor. */
+  input::placeholder,
+  textarea::placeholder {
+    font-size: 14px;
+  }
+
   input:not(:where([type="hidden"], [type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"], [type="button"], [type="submit"], [type="reset"], [type="image"])),
   select {
     min-height: 44px;

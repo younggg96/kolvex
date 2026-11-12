@@ -15,6 +15,8 @@ from app.agent.tools.stock_tools import (
     get_stock_history,
     get_company_info,
 )
+from app.agent.tools.brief_tools import get_daily_brief
+from app.agent.tools.watchlist_tools import create_watchlist_tool_for_user
 from app.agent.tools.portfolio_tools import (
     get_user_portfolio,
     create_portfolio_tool_for_user,
@@ -60,6 +62,7 @@ FINANCIAL_TOOLS = [
     get_user_portfolio,
     get_options_chain_summary,
     get_creator_opinions,
+    get_daily_brief,
     web_search,
 ]
 
@@ -72,6 +75,7 @@ RESEARCH_TOOLS = [
     get_company_info,
     get_options_chain_summary,
     get_creator_opinions,
+    get_daily_brief,
     web_search,
 ]
 
@@ -101,6 +105,8 @@ _CHAT_TOOL_SKILLS = {
     "web_search": "news",
     "get_creator_opinions": "creators",
     "get_user_portfolio": "portfolio",
+    "get_user_watchlist": "market",
+    "get_daily_brief": "news",
 }
 
 
@@ -135,6 +141,10 @@ def get_tools_for_sources(
         else get_user_portfolio
     )
 
+    # 自选股是账户内数据，不依赖外部数据源开关；登录用户的分析类 Agent 都可用
+    if user_id and user_id.strip() and base_tools != "alert":
+        tools.append(create_watchlist_tool_for_user(user_id))
+
     # source → 工具映射
     source_tool_map = {
         "web": [web_search],
@@ -166,6 +176,8 @@ __all__ = [
     "ALERT_TOOLS",
     "get_tools_for_sources",
     "create_portfolio_tool_for_user",
+    "create_watchlist_tool_for_user",
     "create_trading_analysis_tool",
     "get_creator_opinions",
+    "get_daily_brief",
 ]

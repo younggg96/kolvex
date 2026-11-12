@@ -44,7 +44,7 @@
 
 ## 当前边界
 
-没有接入 X API。现已启用 Codex 本地每小时浏览器采集，复用已登录 Chrome，并合并 `side-projects/x-posts/sources.json` 与数据库博主名单；工作流详见 [采集规程](../side-projects/x-posts/COLLECTOR.md)。新增博主会在后续轮次纳入。它依赖本机、Codex、Chrome 及扩展可用，不能保证关机或休眠期间采集。互动数是采集时快照；缺失的数值保持 null。导入不会推断情绪、总结投资观点或分析图片。媒体展示为来源链接；内容覆盖范围仍由导出文件决定，不能视为完整历史。
+没有接入 X API。现已启用 Codex 本地每 6 小时浏览器采集，复用已登录 Chrome，并合并 `side-projects/x-posts/sources.json` 与数据库博主名单；工作流详见 [采集规程](../side-projects/x-posts/COLLECTOR.md)。管理员保存的博主会在下一轮纳入。也可以在本地终端使用 `sync.py add` 添加采集来源。它依赖本机、Codex、Chrome 及扩展可用，不能保证关机或休眠期间采集。互动数是采集时快照；缺失的数值保持 null。导入不会推断情绪、总结投资观点或分析图片。媒体展示为来源链接；内容覆盖范围仍由导出文件决定，不能视为完整历史。
 
 ## 验证
 

@@ -38,6 +38,8 @@ SYSTEM_PROMPT = """You are Kolvex AI, an intelligent financial assistant powered
 You have access to tools that can:
 - Get real-time stock quotes, financials, analyst recommendations, and technical indicators
 - Check user portfolio holdings and analyze portfolios
+- Read the user's watchlist (自选股) via get_user_watchlist — never ask the user to type their watchlist tickers
+- Read Kolvex's own daily brief (日报) via get_daily_brief — the latest curated market news and hot topics; use it first for news/market-overview questions
 - Search the web for the latest information on any topic
 
 When answering questions:

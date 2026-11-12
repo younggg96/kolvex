@@ -2,7 +2,7 @@
 
 首批目标：`https://x.com/MentoviaX`。
 
-通过已登录 Chrome 的公开 Posts 时间线采集原文，不依赖 yt-dlp 或 X API。现已提供 DOM 提取器、持久化与增量同步命令，由 Codex 本地每小时定时工作流调用；不是独立的无人值守 shell 爬虫。操作规程见 [COLLECTOR.md](./COLLECTOR.md)。
+通过已登录 Chrome 的公开 Posts 时间线采集原文。Codex 本地任务每 6 小时调用一次仓库中的采集和同步流程。操作规程见 [COLLECTOR.md](./COLLECTOR.md)。
 
 ## 最初手工导出
 
@@ -20,7 +20,22 @@
 
 ## 自动同步
 
-`sources.json` 是起始博主配置；每轮同时合并 Kolvex 数据库 `x_creators` 中的博主。当前起始账号为 MentoviaX。
+在 Kolvex「管理员 → X 内容」保存博主后，下一轮会自动从数据库 `x_creators` 纳入该账号。也可以从仓库根目录把用户名或主页链接添加到本地 `sources.json`，支持一次添加多个。
+
+```bash
+kolvex-backend-py/venv/bin/python side-projects/x-posts/sync.py add @username https://x.com/another_user
+```
+
+定时任务已在 Codex 桌面端启用。想立即运行时，在本地 Codex 对话发送「按 `side-projects/x-posts/COLLECTOR.md` 运行一次 X 博主同步」。运行时需要保持本机唤醒、Codex 和 Chrome 可用，且 Chrome 已登录 X。
+
+终端也可单独启动准备和入库阶段。在两条命令之间，按操作规程在 Codex 的 cua_repl 中运行浏览器采集。
+
+```bash
+run_dir="side-projects/x-posts/data/incoming/run-$(date -u +%Y%m%dT%H%M%SZ)"
+kolvex-backend-py/venv/bin/python side-projects/x-posts/sync.py prepare "$run_dir"
+# 完成浏览器采集后
+kolvex-backend-py/venv/bin/python side-projects/x-posts/sync.py finish "$run_dir"
+```
 
 ```bash
 # 查看名单与安全停止边界
@@ -39,6 +54,6 @@ kolvex-backend-py/venv/bin/python -m unittest discover -s side-projects/x-posts 
 
 ## 当前运行状态
 
-已创建并启用「同步 X 博主推文到 Kolvex」每小时本地定时任务（自动化 ID：`x-kolvex`）。2026-10-29 洛杉矶时间首轮采集 124 条，补全 21 条长文，新增入库 123 条；与原始 25 条快照合计 148 条。定时任务使用当前聊天作为执行入口，无更新时不提醒。
+「同步 X 博主推文到 Kolvex」（自动化 ID `x-kolvex`）每 6 小时在本地执行，有新增、失败或采集缺口变化时提醒。
 
 数据表迁移已应用到项目 Supabase。线上展示需要同时发布前端 X 页面与后端 API；本地采集不依赖页面服务运行。

@@ -8,6 +8,18 @@
 
 ## 每轮流程
 
+定时任务和手动运行使用同一套入口。从仓库根目录运行 `sync.py prepare <新的运行目录>`，它先重试已持久化批次，再保存本轮 `plan.json`。建议把每轮目录放在 `side-projects/x-posts/data/incoming/`，使用唯一的 UTC 时间作为目录名。初始化 cua_repl 后，在本轮新建的 Chrome 临时页上运行以下代码，把路径替换为绝对路径。每次工具调用可处理一个或几个账号，较长的时间线单独调用。
+
+```js
+const { createXCollector } = await import(root + "/collect-in-cua.mjs");
+const collector = await createXCollector(tab, root, runDirectory);
+nodeRepl.write(await collector.collect(handle));
+```
+
+`root` 是本目录，`tab` 是本轮创建的 Chrome 临时页，`runDirectory` 是刚才生成的目录，`handle` 来自 `collector.sources`。依次处理本轮名单后，关闭临时页并结束 CUA 操作，再执行 `sync.py finish <运行目录>`。该命令先持久化本轮导出，再逐批同步。若同步中断，下次 `prepare` 会重试已持久化的批次。若中断发生在 `finish` 前，可对原运行目录补跑 `finish`，已确认入库的导出会跳过。每轮的 `*-summary.json` 记录新增数、缺口及原因，可与上轮对比避免重复提醒。
+
+以下是采集脚本和手动恢复共同遵循的规则。
+
 1. 执行 `kolvex-backend-py/venv/bin/python side-projects/x-posts/sync.py sync`，先重试已保存但未提交的文件。任一文件失败则保留现场，按错误处理，不推进检查点。
 2. 执行 `kolvex-backend-py/venv/bin/python side-projects/x-posts/sync.py plan`，取得每位博主的 URL、stop_ids、max_posts 和 max_scrolls。此名单合并本地配置与数据库博主；查库失败不得静默缩减为本地名单。
 3. 初始化/恢复 cua_repl，遵守它返回的文档。先按工具要求选定 Chrome；为新采集任务命名。优先新建临时 Chrome 页以免改变用户阅读位置。加载目标公开 Posts 时间线，确认所选 tab 是 Posts、用户名一致且登录仍有效。若页面出现登录、验证、限流或不可访问，停止该博主，保留检查点并报告用户需要处理的事项；不绕过登录或挑战。

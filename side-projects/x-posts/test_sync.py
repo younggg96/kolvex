@@ -90,6 +90,36 @@ class SyncTests(unittest.TestCase):
         result = sync.plan(self.root, self.service)
         self.assertEqual([source["username"] for source in result["sources"]], ["other", "testuser"])
 
+    def test_add_normalizes_profile_urls_and_deduplicates(self):
+        config = self.root / "sources.json"
+        sync.atomic_json(config, {"usernames": ["TestUser"], "include_database_creators": True})
+        result = sync.add_sources(self.root, ["@testuser", "https://x.com/Other?lang=en", "@other"])
+        self.assertEqual(result, {"added": ["other"], "already_tracked_locally": ["testuser"]})
+        self.assertEqual(sync.read_json(config)["usernames"], ["TestUser", "other"])
+        with self.assertRaises(ValueError):
+            sync.add_sources(self.root, ["https://x.com/other/status/123"])
+
+    def test_finish_persists_all_exports_before_upload_and_prepare_retries(self):
+        sync.atomic_json(self.root / "sources.json", {"usernames": ["TestUser", "Other"]})
+        run = self.root / "run"
+        sync.atomic_json(run / "plan.json", sync.plan(self.root))
+        sync.atomic_json(run / "testuser-export.json", {"posts": [post()]})
+        sync.atomic_json(run / "other-export.json", {
+            "posts": [{**post("11"), "author_username": "Other"}],
+            "scan_complete": True,
+            "stop_reason": "initial_window",
+        })
+        self.service.upload.side_effect = RuntimeError("offline")
+        with self.assertRaises(RuntimeError):
+            sync.finish_run(self.root, run, self.service)
+        self.assertEqual(len(list((self.root / "data").glob("*.json"))), 2)
+        self.assertEqual(sync.state_for(self.root, "other"), {"username": "other"})
+        self.service.upload.side_effect = None
+        result = sync.prepare(self.root, self.service)
+        self.assertEqual(result["retried"], 2)
+        self.assertEqual(result["sources"][0]["stop_ids"], ["11"])
+        self.assertEqual(sync.finish_run(self.root, run, self.service), {"files": []})
+
 
 if __name__ == "__main__":
     unittest.main()
