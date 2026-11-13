@@ -19,15 +19,18 @@ import { cn } from "@/lib/utils";
 
 type Size = "sm" | "md";
 
-const SIZES: Record<Size, { item: string; gap: string; thumbPress: string }> = {
+const SIZES: Record<Size, { item: string; gap: string; pad: string; thumbPress: string }> = {
   sm: {
     item: "min-h-8 px-3 text-[0.8125rem]",
     gap: "gap-0.5",
+    pad: "p-1",
     thumbPress: "scale-y-[0.88]",
   },
   md: {
-    item: "min-h-10 px-4 text-sm",
-    gap: "gap-1",
+    item: "min-h-8 px-3 text-sm sm:min-h-10 sm:px-4",
+    // Same track as TabsList pills, so every switcher looks alike.
+    gap: "gap-0.5 sm:gap-1",
+    pad: "p-0.5 sm:p-1",
     thumbPress: "scale-y-[0.9]",
   },
 };
@@ -55,6 +58,8 @@ export interface SegmentedControlProps<T extends string>
   size?: Size;
   className?: string;
   itemClassName?: string;
+  /** Extra classes for the sliding thumb (e.g. a radius matching its container). */
+  thumbClassName?: string;
   /**
    * `single` is a one-of-many choice (`aria-pressed`); `tabs`, `radio` and
    * `nav` map to the matching WAI-ARIA patterns for switchers that behave
@@ -106,6 +111,7 @@ export function SegmentedControl<T extends string>({
   size = "md",
   className,
   itemClassName,
+  thumbClassName,
   semantics = "single",
   bare = false,
   wrap = false,
@@ -243,10 +249,11 @@ export function SegmentedControl<T extends string>({
       aria-label={pattern.group ? label : undefined}
       data-slot="segmented-control"
       className={cn(
-        "relative isolate inline-flex max-w-full shrink-0 items-center p-1",
+        "relative isolate inline-flex max-w-full shrink-0 items-center",
         wrap ? "flex-wrap" : "flex-nowrap",
         config.gap,
-        bare ? "" : "glass-track rounded-full",
+        config.pad,
+        bare ? "" : "glass-track glass-track-strong rounded-full",
         className,
       )}
       onKeyDown={(event) => {
@@ -274,6 +281,7 @@ export function SegmentedControl<T extends string>({
           "transition-[transform,width,height] duration-300 ease-out motion-reduce:!transition-none",
           hasThumb ? "opacity-100" : "opacity-0",
           pressed && config.thumbPress,
+          thumbClassName,
         )}
         style={{
           width: thumb ? `${thumb.width}px` : 0,
@@ -283,7 +291,12 @@ export function SegmentedControl<T extends string>({
           transitionTimingFunction: ready
             ? `${EASE}, ${EASE}, ${EASE}, ${EASE}`
             : "linear",
-          transform: `translate3d(${thumb?.left ?? 0}px, ${thumb?.top ?? 0}px, 0)`,
+          // A single row centres the thumb with CSS: offsetTop rounds to whole
+          // pixels, which sat it visibly low against fractional rem padding.
+          ...(wrap ? {} : { top: "50%" }),
+          transform: wrap
+            ? `translate3d(${thumb?.left ?? 0}px, ${thumb?.top ?? 0}px, 0)`
+            : `translate3d(${thumb?.left ?? 0}px, -50%, 0)`,
         }}
       />
       {options.map((option) => {

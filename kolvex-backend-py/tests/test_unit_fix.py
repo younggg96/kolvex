@@ -5,6 +5,14 @@ from app.agent.unit_fix import fix_unit_slips, scaled_figures
 TOOL = ["TSMC reported revenue of NT$1,270.38 billion and net income of NT$3,809.05 billion; US$40.27 billion."]
 
 
+
+def saving_user_through(save):
+    """Route the retry-aware user save through the test's save_message mock."""
+    async def save_user(user_id, conversation_id, content):
+        return await save(user_id=user_id, conversation_id=conversation_id, role="user", content=content)
+    return save_user
+
+
 class UnitFixTests(unittest.TestCase):
     def setUp(self):
         self.figures = scaled_figures(TOOL)
@@ -62,6 +70,7 @@ class UnitFixTests(unittest.TestCase):
             get_keys_dict=AsyncMock(return_value={}))
         save = AsyncMock(return_value={"id": "m1", "created_at": "now"})
         with patch("app.agent.memory.save_message", save), \
+                patch("app.agent.memory.save_user_message_once", new=saving_user_through(save)), \
                 patch("app.agent.memory.load_conversation_history", AsyncMock(return_value=[])), \
                 patch.object(routes, "turn_context", AsyncMock(return_value=None)), \
                 patch("app.agent.graphs.supervisor.stream_agent", fake_stream):

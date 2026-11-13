@@ -8,6 +8,7 @@ import { DataTableSkeleton } from "@/components/decision/StockTabSkeletons";
 import { useCopy } from "@/components/decision/shared";
 import { ListCard, ListRows } from "@/components/ui/list-card";
 import { Skeleton } from "@/components/ui/skeleton";
+import CompanyLogo from "@/components/ui/company-logo";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useCachedResource } from "@/hooks/useCachedResource";
@@ -27,6 +28,38 @@ type Trade = {
   amount_range: string | null;
   source_url: string | null;
 };
+
+/**
+ * House disclosures pack the whole filing line into the asset name
+ * ("Coca-Cola Company (KO) [ST] P 10/01/2026 … $1,001 - $15,000").
+ * Keep just the issuer so the row does not repeat the ticker, dates and range.
+ */
+export function cleanAssetName(name: string) {
+  return name
+    .replace(/^\d{6,}\s+/, "")
+    // Owner codes: spouse, joint, dependent child.
+    .replace(/^(?:SP|JT|DC)\s+/, "")
+    .replace(/\s+\([A-Z0-9.^=-]{1,10}\)[\s\S]*$/, "")
+    .replace(/\s+\[[A-Z]{2}\][\s\S]*$/, "")
+    .replace(/\s+(?:\(partial\)\s+)?[A-Z]{1,2}\s+\d{2}\/\d{2}\/\d{4}[\s\S]*$/, "")
+    .trim();
+}
+
+/** "$1,001 - $15,000" → "$1K–$15K" for the narrow phone row; the full range stays in the title. */
+export function compactRange(range: string | null) {
+  if (!range) return "—";
+  const short = (value: string) => {
+    const n = Number(value.replace(/[^0-9.]/g, ""));
+    if (!Number.isFinite(n) || n <= 0) return value.trim();
+    if (n >= 1_000_000) return `$${+(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 1_000) return `$${Math.round(n / 1_000)}K`;
+    return `$${n}`;
+  };
+  const parts = range.split(/\s*[-–]\s*/).filter(Boolean);
+  if (parts.length === 2) return `${short(parts[0])}–${short(parts[1])}`;
+  if (parts.length === 1) return /over/i.test(range) ? `${short(parts[0])}+` : short(parts[0]);
+  return range;
+}
 
 type TradePage = { trades: Trade[]; has_more: boolean; synced: boolean };
 
@@ -52,6 +85,11 @@ export default function CongressTrades({ filters = "", page = 1, onPageChange }:
   const side = { buy: c("Buy", "买入"), sell: c("Sell", "卖出"), exchange: c("Exchange", "交换"), other: c("Other", "其他") };
   const linkClass = "underline decoration-border underline-offset-4 hover:decoration-current focus-visible:outline-none focus-visible:decoration-current";
 
+  const assetName = (row: Trade) => {
+    if (!row.asset_name) return "";
+    const name = cleanAssetName(row.asset_name);
+    return name && name.toUpperCase() !== row.ticker?.toUpperCase() ? name : "";
+  };
   const filed = c("Filed", "申报日");
   const traded = c("Traded", "交易日");
   const chamber = (value: Trade["chamber"]) =>
@@ -95,29 +133,34 @@ export default function CongressTrades({ filters = "", page = 1, onPageChange }:
         <ListCard className="px-4 py-0 lg:hidden">
           <ListRows role="list" aria-label={c("Congress trades", "国会议员交易")} className="divide-y divide-border">
             {rows.map((row) => (
-              <li key={row.id} className="space-y-2.5 py-3 text-sm">
-                <div className="flex items-baseline justify-between gap-3">
-                  <p className="min-w-0 break-words font-semibold">{tickerLink(row.ticker) ?? c("Security", "证券")}</p>
-                  <p className="shrink-0 text-right font-medium">{direction(row)}</p>
+              <li key={row.id} className="py-3 text-sm">
+                <div className="flex items-center gap-3">
+                  {row.ticker && validTicker(row.ticker)
+                    ? <span aria-hidden><CompanyLogo symbol={row.ticker} customSize={36} /></span>
+                    : <span aria-hidden className="h-9 w-9 shrink-0 rounded-full bg-muted" />}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold">{tickerLink(row.ticker) ?? c("Security", "证券")}</p>
+                    {assetName(row) && <p className="truncate text-xs text-muted-foreground">{assetName(row)}</p>}
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="font-semibold">{direction(row)}</p>
+                    <p className="text-xs tabular-nums text-muted-foreground" title={row.amount_range ?? undefined}>
+                      <span className="sr-only">{c("Reported range in USD", "申报金额区间（美元）")} </span>
+                      {compactRange(row.amount_range)}
+                    </p>
+                  </div>
                 </div>
-                {row.asset_name && <p className="line-clamp-2 break-words text-xs leading-5 text-muted-foreground">{row.asset_name}</p>}
-                <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
-                  <p className="min-w-0 break-words">
-                    {row.member_name}
-                    {row.chamber && <span className="text-xs text-muted-foreground"> · {chamber(row.chamber)}</span>}
+                <div className="mt-2 flex items-center justify-between gap-3 pl-12 text-xs text-muted-foreground">
+                  <p className="min-w-0 truncate">
+                    <span className="text-foreground">{row.member_name}</span>
+                    {row.chamber && <> · {chamber(row.chamber)}</>}
                   </p>
-                  <p className="font-medium tabular-nums">
-                    <span className="sr-only">{c("Reported range in USD", "申报金额区间（美元）")} </span>
-                    {row.amount_range ?? "—"}
+                  <p className="shrink-0 tabular-nums">
+                    <span className="sr-only">{traded} </span>{date(row.trade_date)}
+                    <span className="max-[360px]:hidden"> · {filed} {date(row.filed_date)}</span>
                   </p>
                 </div>
-                <div className="flex flex-wrap items-center justify-between gap-x-3">
-                  <dl className="flex flex-wrap gap-x-3 gap-y-1 text-xs tabular-nums text-muted-foreground">
-                    <div className="flex gap-1"><dt>{filed}</dt><dd>{date(row.filed_date)}</dd></div>
-                    <div className="flex gap-1"><dt>{traded}</dt><dd>{date(row.trade_date)}</dd></div>
-                  </dl>
-                  {filingLink(row, "inline-flex min-h-11 items-center text-xs")}
-                </div>
+                {row.source_url && <div className="pl-12">{filingLink(row, "inline-flex min-h-9 items-center text-xs text-muted-foreground")}</div>}
               </li>
             ))}
           </ListRows>

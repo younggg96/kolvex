@@ -41,6 +41,23 @@ class FinancialHistoryTests(unittest.TestCase):
         self.assertTrue(latest["sources"]["revenue"]["derived"])
         self.assertEqual(result["ttm"]["revenue"], 100)
 
+    def test_fiscal_labels_come_from_the_periods_own_filing(self):
+        def f(start, end, val, form, filed, fy, fp):
+            return {**fact(start, end, val, form, filed), "fy": fy, "fp": fp}
+        result = parsers.financial_history(payload(Revenues=[
+            f("2025-04-28", "2025-07-27", 46, "10-Q", "2025-08-27", 2026, "Q2"),
+            # The next year's 10-Q repeats it as a comparative, tagged with its own fiscal year.
+            f("2025-04-28", "2025-07-27", 46, "10-Q", "2026-08-26", 2027, "Q2"),
+            f("2025-01-27", "2025-10-26", 148, "10-Q", "2025-11-19", 2026, "Q3"),
+            f("2025-07-28", "2025-10-26", 57, "10-Q", "2025-11-19", 2026, "Q3"),
+            f("2025-01-27", "2026-01-25", 216, "10-K", "2026-02-25", 2026, "FY"),
+        ]))
+        quarters = {r["period"]: r["fiscal_label"] for r in result["quarterly"]}
+        self.assertEqual(quarters["2025-07-27"], "FY2026 Q2")
+        self.assertEqual(quarters["2025-10-26"], "FY2026 Q3")
+        self.assertEqual(quarters["2026-01-25"], "FY2026 Q4")  # derived: annual minus nine months
+        self.assertEqual(result["annual"][0]["fiscal_label"], "FY2026")
+
     def test_capex_falls_back_to_productive_assets(self):
         result = parsers.financial_history(payload(
             Revenues=[fact("2025-01-01", "2025-12-31", 100)],

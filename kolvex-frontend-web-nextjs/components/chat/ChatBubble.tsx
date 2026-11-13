@@ -8,6 +8,7 @@ import { visibleQuestion } from "./pageEvidence";
 import { RevenueEvidenceCard } from "./RevenueEvidenceCard";
 import { QuoteEvidenceCard } from "./QuoteEvidenceCard";
 import { AnswerCheckNote } from "./AnswerCheckNote";
+import { DataGapNote } from "./DataGapNote";
 import type { ChatBubbleProps } from "./types";
 import { Button } from "../ui/button";
 import { useTranslation } from "@/lib/i18n";
@@ -118,6 +119,8 @@ export function ChatBubble({
               )}
             </div>
           </div>
+
+          {!isStreaming && answerCheck?.data_gaps && <DataGapNote gaps={answerCheck.data_gaps} />}
 
           {!!(quoteEvidence?.length || revenueEvidence?.length) && (
             <div className="mt-4 grid max-w-md gap-2">

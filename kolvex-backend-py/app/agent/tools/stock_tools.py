@@ -7,6 +7,8 @@ import json
 import asyncio
 import logging
 import math
+from datetime import date, datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 from typing import Literal, Optional
 from langchain_core.tools import tool
 from pydantic import ValidationError
@@ -36,6 +38,14 @@ def get_stock_quote(symbol: str) -> str:
 
         # 清理 None 值并格式化
         result = {k: v for k, v in quote.items() if v is not None}
+        # Models mis-convert epoch seconds or quote them raw; give the time already written.
+        market_time = result.get("market_time")
+        if isinstance(market_time, (int, float)) and market_time > 0:
+            try:
+                moment = datetime.fromtimestamp(market_time, tz=timezone.utc)
+                result["market_time_et"] = moment.astimezone(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %H:%M ET")
+            except (ValueError, OverflowError, OSError):
+                pass
         return json.dumps(result, indent=2, default=str)
     except Exception as e:
         logger.error(f"Error getting stock quote for {symbol}: {e}")
@@ -63,6 +73,13 @@ def get_stock_financials(symbol: str) -> str:
         return json.dumps({"error": f"Failed to get financials for {symbol}: {str(e)}"})
 
 
+def _newest_derived_end(history: dict, period: str):
+    """End date of the newest period whose revenue SEC data only yields by subtraction."""
+    ends = [row["period"] for row in history[period]
+            if (row["sources"].get("revenue") or {}).get("derived") is True]
+    return max(ends) if ends else None
+
+
 def _sec_revenue(history: dict, period: str) -> list[RevenueEvidence]:
     facts = []
     for row in history[period]:
@@ -74,6 +91,7 @@ def _sec_revenue(history: dict, period: str) -> list[RevenueEvidence]:
                 symbol=history["symbol"], value=row["revenue"], currency=history["currency"],
                 period_kind=period, period_start=row["start"], period_end=row["period"],
                 filed_on=source["filed"], source_url=source["source_url"],
+                fiscal_label=row.get("fiscal_label"),
             ))
         except ValidationError:
             continue
@@ -100,7 +118,30 @@ def _yahoo_revenue(symbol: str, period: str) -> list[RevenueEvidence]:
             ))
         except (ValidationError, AttributeError):
             continue
-    return sorted(facts, key=lambda f: f.period_end, reverse=True)
+    facts = sorted(facts, key=lambda f: f.period_end, reverse=True)
+    if facts and currency != "USD":
+        facts = _with_usd(facts, currency)
+    return facts
+
+
+def _with_usd(facts: list[RevenueEvidence], currency: str) -> list[RevenueEvidence]:
+    """Each period converted at the last {currency}USD close on or before its end."""
+    try:
+        start = min(f.period_end for f in facts) - timedelta(days=10)
+        closes = get_yfinance_service().get_ticker(f"{currency}USD=X").history(start=start.isoformat())["Close"]
+    except Exception as error:  # noqa: BLE001
+        logger.warning(f"FX history {currency}USD failed: {error}")
+        return facts
+    rates = [(stamp.date(), float(rate)) for stamp, rate in closes.items() if math.isfinite(float(rate)) and rate > 0]
+    out = []
+    for fact in facts:
+        prior = [(day, rate) for day, rate in rates if day <= fact.period_end]
+        if not prior:
+            out.append(fact)
+            continue
+        day, rate = prior[-1]
+        out.append(fact.model_copy(update={"usd_value": round(fact.value * rate, -6), "fx_rate": rate, "fx_date": day}))
+    return out
 
 
 def _comparable(latest: RevenueEvidence, prior: RevenueEvidence) -> bool:
@@ -126,14 +167,21 @@ async def get_reported_revenue(
     period a year earlier and return a server-calculated percentage, if comparable data exists.
     """
     facts: list[RevenueEvidence] = []
+    newer_derived = None
+    failed = []  # sources that errored, as opposed to answering with nothing
     try:
-        facts = _sec_revenue(await sec_client.financials(symbol), period)
-    except (SecNotFound, SecUnavailable):
+        history = await sec_client.financials(symbol)
+        facts = _sec_revenue(history, period)
+        newer_derived = _newest_derived_end(history, period)
+    except SecNotFound:
         pass
+    except SecUnavailable:
+        failed.append("SEC")
     if not facts:
         try:
             facts = await asyncio.to_thread(_yahoo_revenue, symbol, period)
         except Exception as error:  # noqa: BLE001
+            failed.append("Yahoo Finance")
             logger.warning(f"Yahoo revenue fallback failed for {symbol}: {error}")
 
     evidence: list[RevenueEvidence] = []
@@ -145,7 +193,14 @@ async def get_reported_revenue(
             break
 
     if not evidence:
-        return json.dumps({"error": "No directly reported revenue for this period from SEC or Yahoo Finance"})
+        if failed:
+            return json.dumps({"error": f"Revenue sources temporarily unavailable: {', '.join(failed)}",
+                               "gap": "unavailable"})
+        return json.dumps({"error": "No directly reported revenue for this period from SEC or Yahoo Finance",
+                           "gap": "no_data"})
+    if newer_derived and str(newer_derived) > str(evidence[0].period_end):
+        # "Latest quarter" would otherwise silently mean the one before the newest.
+        evidence[0] = evidence[0].model_copy(update={"newer_derived_period_end": date.fromisoformat(str(newer_derived))})
     if not year_over_year:
         return json.dumps([fact.model_dump(mode="json", exclude_none=True) for fact in evidence])
 

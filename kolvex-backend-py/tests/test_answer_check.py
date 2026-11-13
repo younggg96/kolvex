@@ -41,10 +41,36 @@ class AnswerCheckTests(unittest.TestCase):
                          {"167.0 亿": "matched", "55.6%": "matched"})
         self.assertEqual(verdicts("营收较上年同期增加约 494.8 亿美元。"), {"494.8 亿": "mismatch"})
 
+    def test_ratio_of_two_evidence_amounts_is_matched(self):
+        rev = [{"symbol": "NVDA", "value": 96_221_000_000, "period_end": "2026-07-26"},
+               {"symbol": "AMD", "value": 13_377_000_000, "period_end": "2026-09-26"}]
+        check = check_answer("NVDA 营收是 AMD 的 7.2 倍。", [], rev)
+        self.assertEqual([c["status"] for c in check["claims"]], ["matched"])
+        self.assertEqual([c["status"] for c in check_answer("NVDA 营收是 AMD 的 9 倍。", [], rev)["claims"]],
+                         ["unverified"])
+
     def test_taiwan_compound_amounts(self):
         check = check_answer("合并营收新台币 1 兆 460.9 亿元。", [], [
             {"symbol": "TSM", "value": 1_046_090_000_000, "period_end": "2025-12-31"}])
         self.assertEqual([c["status"] for c in check["claims"]], ["matched"])
+
+    def test_other_figures_near_a_correctly_stated_value_are_not_mismatches(self):
+        # Production answer: revenue stated correctly, then guidance and another quarter nearby.
+        self.assertEqual(verdicts("营收 467.4 亿美元；下季营收指引 500 亿美元，上一季营收 441 亿美元。"),
+                         {"467.4 亿": "matched", "500 亿": "unverified", "441 亿": "unverified"})
+        # A unit slip is still a mismatch even when the value is also stated correctly.
+        self.assertEqual(verdicts("营收 467.4 亿美元（即 4.674 亿美元）。")["4.674 亿"], "mismatch")
+
+    def test_growth_direction_must_match_the_sign(self):
+        down = [{"symbol": "INTC", "value": 12_000_000_000, "period_end": "2026-09-27", "year_over_year_pct": -3.2}]
+        verdict = lambda text: [c["status"] for c in check_answer(text, [], down)["claims"]]
+        self.assertEqual(verdict("营收同比下降 3.2%。"), ["matched"])
+        self.assertEqual(verdict("Revenue fell 3.2% year over year."), ["matched"])
+        self.assertEqual(verdict("营收同比增长 3.2%。"), ["mismatch"])
+        self.assertEqual(verdict("Revenue rose 3.2% YoY."), ["mismatch"])
+        self.assertEqual(verdict("同比 -3.2%。"), ["matched"])
+        self.assertEqual(verdict("同比变化 3.2%。"), ["matched"])  # no direction stated
+        self.assertEqual(verdicts("营收同比下降 55.6%。"), {"55.6%": "mismatch"})
 
     def test_bounds_are_not_mismatches(self):
         self.assertEqual(verdicts("同比增速超过 50%，属于高速增长。"), {"50%": "unverified"})

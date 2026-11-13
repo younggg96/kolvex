@@ -6,14 +6,13 @@ import type { RevenueEvidence } from "@/lib/chatApi";
 
 export function RevenueEvidenceCard({ revenue }: { revenue: RevenueEvidence }) {
   const { locale, t } = useTranslation();
-  const value = new Intl.NumberFormat(locale === "zh" ? "zh-CN" : "en-US", {
-    maximumFractionDigits: 20,
-  }).format(revenue.value);
+  const format = new Intl.NumberFormat(locale === "zh" ? "zh-CN" : "en-US", { maximumFractionDigits: 20 });
+  const value = format.format(revenue.value);
 
   return (
     <figure className="rounded-2xl border border-border bg-card px-3.5 py-3">
       <figcaption className="text-xs font-medium text-muted-foreground">
-        {t("chat.revenueEvidence.title")} · {t(`chat.revenueEvidence.${revenue.period_kind}`)}
+        {t("chat.revenueEvidence.title")} · {revenue.fiscal_label ?? t(`chat.revenueEvidence.${revenue.period_kind}`)}
       </figcaption>
       <div className="mt-1 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
         <span className="break-all text-sm font-semibold text-foreground">{revenue.symbol}</span>
@@ -51,6 +50,21 @@ export function RevenueEvidenceCard({ revenue }: { revenue: RevenueEvidence }) {
               <dd>{t("chat.revenueEvidence.yoyUnavailable")}</dd>
             </div>
           ) : null}
+          {revenue.usd_value != null && revenue.fx_date && (
+            <div className="flex flex-wrap gap-x-2">
+              <dt>{t("chat.revenueEvidence.usd")}</dt>
+              <dd className="tabular-nums">
+                {format.format(revenue.usd_value)} USD
+                <span className="text-muted-foreground"> {t("chat.revenueEvidence.fxAt", { date: revenue.fx_date })}</span>
+              </dd>
+            </div>
+          )}
+          {revenue.newer_derived_period_end && (
+            <div className="flex flex-wrap gap-x-2">
+              <dt>{t("chat.revenueEvidence.newerPeriod")}</dt>
+              <dd>{t("chat.revenueEvidence.newerDerived", { date: revenue.newer_derived_period_end })}</dd>
+            </div>
+          )}
           {revenue.filed_on && (
             <div className="flex flex-wrap gap-x-2">
               <dt>{t("chat.revenueEvidence.filed")}</dt>

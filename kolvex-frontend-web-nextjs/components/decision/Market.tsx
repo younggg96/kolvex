@@ -262,13 +262,13 @@ function MarketCharts({ groups, quotes, loading, range, attempt, onRetry, view, 
   const [comparing, setComparing] = useState<(typeof MARKET_GROUPS)[number] | null>(null);
   return (
             <section aria-label={groups.length === 1 ? c("Market indices", "市场指数") : c("Market trends", "市场走势")}>
-              {view === "list" && <div className="mb-3 flex min-h-14 max-md:min-h-0 items-center justify-between gap-3">
+              {view === "list" && <div className="mb-5 md:mb-3 flex min-h-14 max-md:min-h-0 items-center justify-between gap-3">
                 <h2 className="min-w-0 truncate text-xl font-semibold tracking-[-0.01em]">{c(groups[0].en, groups[0].zh)}</h2>
                 {sectionControls}
               </div>}
               {view === "list" ? <MarketComparison groups={groups} attempt={attempt} /> : groups.map((group, index) => (
                 <section key={group.key} aria-labelledby={`market-${group.key}-heading`} className="max-md:[&:not(:first-child)]:mt-8">
-                  <div className="mb-3 flex min-h-14 max-md:min-h-0 items-center justify-between gap-3">
+                  <div className="mb-5 md:mb-3 flex min-h-14 max-md:min-h-0 items-center justify-between gap-3">
                     <h2 id={`market-${group.key}-heading`} className="min-w-0 truncate text-xl font-semibold tracking-[-0.01em]">{c(group.en, group.zh)}</h2>
                     {index === 0 && sectionControls}
                     {comparable && <Button variant="outline" size="sm" className="shrink-0 gap-1.5" onClick={() => setComparing(group)}><LineChart className="h-3.5 w-3.5" aria-hidden />{c("Compare", "对比")}</Button>}

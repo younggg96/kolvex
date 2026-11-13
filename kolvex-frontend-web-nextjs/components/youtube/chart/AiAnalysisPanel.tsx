@@ -113,11 +113,11 @@ export default function AiAnalysisPanel({ state, busy = false, onRetry, showRetr
         </section>}
 
         {levels.length > 0 && <section className="mt-7" aria-label={t("youtubeOpinions.ai.levels")}>
-          <h4 className="text-base font-semibold">{t("youtubeOpinions.ai.levels")}</h4>
+          <h4 className="text-sm font-semibold">{t("youtubeOpinions.ai.levels")}</h4>
           <ul className="mt-2 space-y-2">
             {levels.map(level => <li key={`${level.kind}-${level.price}`} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 py-2.5">
               <div className="flex shrink-0 items-center gap-2">
-                <span className={cn("shrink-0 text-lg font-semibold tabular-nums tracking-tight sm:text-xl", toneText[level.kind === "support" ? "positive" : "negative"])}>{formatPrice(level.price)}</span>
+                <span className={cn("shrink-0 text-base font-semibold tabular-nums tracking-tight", toneText[level.kind === "support" ? "positive" : "negative"])}>{formatPrice(level.price)}</span>
                 <span className="text-[13px] font-medium">{t(`youtubeOpinions.ai.${level.kind}`)}</span>
               </div>
               <p className="min-w-[10rem] flex-1 break-words text-[13px] leading-5 text-muted-foreground">{level.reason}</p>
@@ -145,14 +145,14 @@ export default function AiAnalysisPanel({ state, busy = false, onRetry, showRetr
               <ul className="mt-2 space-y-3">
                 {result.trendlines.map(line => <li key={`${line.start.date}-${line.end.date}-${line.kind}`}>
                   <p className={cn("text-sm font-medium", toneText[line.kind === "support" ? "positive" : "negative"])}>{t(`youtubeOpinions.ai.${line.kind}Line`)}</p>
-                  <p className="mt-1 break-words text-sm leading-7 text-muted-foreground">{line.reason}</p>
+                  <p className="mt-1 break-words text-[13px] leading-6 text-muted-foreground">{line.reason}</p>
                 </li>)}
               </ul>
             </div>}
             {!result.findings?.length && result.signals.length > 0 && <div>
               <h4 className="text-sm font-medium">{t("youtubeOpinions.ai.signals")}</h4>
               <ul className="mt-2 space-y-2">
-                {result.signals.map(signal => <li key={signal} className="break-words text-sm leading-7 text-muted-foreground">{signal}</li>)}
+                {result.signals.map(signal => <li key={signal} className="break-words text-[13px] leading-6 text-muted-foreground">{signal}</li>)}
               </ul>
             </div>}
           </div>

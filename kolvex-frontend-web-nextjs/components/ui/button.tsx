@@ -36,7 +36,7 @@ const buttonVariants = cva(
         link: "text-foreground underline-offset-4 underline hover:text-muted-foreground active:opacity-80 disabled:opacity-40",
         text: "text-foreground hover:opacity-70 active:opacity-60 !p-0 !h-auto !w-auto disabled:opacity-40",
         /* Filter / option chip. Selected state comes from the `selected` prop. */
-        chip: "border border-border font-medium text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50",
+        chip: "border border-border font-medium text-muted-foreground hover:text-foreground focus-visible:no-underline focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-foreground/20 disabled:opacity-50",
         /* Bare icon in a toolbar (charts, editors). Selected state comes from `selected`. */
         toolbar: "font-medium text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1] disabled:opacity-40",
         icon: "glass-button glass-button-primary bg-primary/85 text-primary-foreground hover:bg-primary/75 active:bg-primary/70 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed",
@@ -68,7 +68,8 @@ export interface ButtonProps
 }
 
 const SELECTED: Partial<Record<string, string>> = {
-  chip: "border-foreground bg-foreground text-background hover:text-background",
+  /* Same green thumb as tabs and segmented controls, not a dark fill. */
+  chip: "glass-thumb border-transparent text-glass-thumb-foreground hover:text-glass-thumb-foreground",
   toolbar: "glass-thumb glass-thumb-touch text-foreground hover:bg-transparent",
 };
 

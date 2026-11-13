@@ -79,9 +79,13 @@ async def lifespan(app: FastAPI):
         asyncio.create_task(run_congress_trades_worker())
         if os.getenv("CONGRESS_TRADES_SYNC_ENABLED", "").lower() == "true" else None
     )
+    from app.services.email_service import run_email_worker
+    email_worker = asyncio.create_task(run_email_worker())
     try:
         yield
     finally:
+        email_worker.cancel()
+        await asyncio.gather(email_worker, return_exceptions=True)
         if congress_worker:
             congress_worker.cancel()
             await asyncio.gather(congress_worker, return_exceptions=True)

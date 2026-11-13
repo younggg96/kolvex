@@ -5,6 +5,7 @@ Supervisor Graph
 """
 
 import logging
+import re
 from typing import Dict, Any, Optional, AsyncGenerator, List
 
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, ToolMessage
@@ -14,6 +15,8 @@ from app.agent.quote_evidence import QuoteEvidence, extract_quote_evidence
 from app.agent.revenue_evidence import RevenueEvidence, extract_revenue_evidence, merge_revenue_evidence
 from app.agent.state import AgentState
 from app.agent.unit_fix import figures_by_trust, fix_unit_slips
+from app.agent.data_gaps import data_gap, merge_gaps
+from app.agent.financial_evidence import extract_financial_evidence
 from app.agent.llm import get_llm, get_fast_llm, resolve_model_id
 from app.agent.config import SYSTEM_PROMPT, MAX_TOOL_ITERATIONS
 from app.agent.tools import get_tools_for_sources
@@ -78,6 +81,15 @@ SOURCE_FOCUS_PROMPTS = {
 }
 
 
+# Quick questions get quick answers; the research agent keeps its long reports.
+ANSWER_SHAPE = (
+    "\n\nAnswer shape: put the direct answer in the first sentence. When the user asks for one or a few "
+    "figures, keep the whole answer under about 150 words (about 300 Chinese characters): the figures, "
+    "their period and source, and at most two sentences of context. Use a table only to compare three or "
+    "more figures. Do not end by offering further help or listing what else you could look up."
+)
+
+
 def _build_source_hint(sources: Optional[List[str]]) -> str:
     """根据激活的 sources 构建额外提示词"""
     if not sources:
@@ -129,6 +141,7 @@ def _create_agent_for_request(
     source_hint += (
         "\n\nFor a current quote, use the price and currency returned by get_stock_quote. "
         "Only describe a quote as current when its returned market_time supports that claim. "
+        "State the quote time as the returned market_time_et; never show or convert the raw market_time number. "
         "If the quote tool is unavailable or returns no price, say you could not verify the quote. "
         "If market_time is missing, state that the quote time is unknown."
         "\n\nWhen a source states an amount in billions, millions or thousands, either keep that unit "
@@ -141,10 +154,17 @@ def _create_agent_for_request(
             "\n\nUse get_reported_revenue for reported quarterly or annual revenue amounts. "
             "Match the period and currency in the returned evidence. With source \"sec\", identify the date as the SEC filing date; "
             "with source \"yahoo\", name Yahoo Finance as the source and give no filing date. "
-            "Identify periods by their reported end dates. Do not infer fiscal-year labels or quarter numbers from calendar dates. "
+            "Name a period by its returned fiscal_label (for example FY2027 Q2) together with its end date. "
+            "Without a fiscal_label, identify it by its end date only: never infer fiscal-year labels or quarter numbers "
+            "from calendar dates, and do not explain that you did not. "
             "The tool returns only directly reported figures. If the requested period is absent, state that limitation. "
             "For year-over-year revenue, set year_over_year=true and use year_over_year_pct. "
             "If that value is null, explain the reason in plain language and do not substitute the previous quarter. "
+            "If the latest evidence has newer_derived_period_end, a newer period exists but its revenue is only "
+            "derivable (for example annual minus nine months after a 10-K): say that the period ending on that date "
+            "is not directly reported, and present the returned period as the latest directly reported one. "
+            "When the evidence has usd_value, give the reporting-currency amount first and the dollar amount after it, "
+            "saying it is converted at the fx_date exchange rate. "
             "Keep internal field names out of the answer."
         )
     if skills is not None:
@@ -160,7 +180,7 @@ def _create_agent_for_request(
     elif agent_type == "alert":
         prompt = ALERT_SYSTEM_PROMPT + source_hint
     else:
-        prompt = FINANCIAL_SYSTEM_PROMPT + source_hint
+        prompt = FINANCIAL_SYSTEM_PROMPT + source_hint + ANSWER_SHAPE
 
     return create_react_agent(
         model=llm,
@@ -184,6 +204,8 @@ async def run_agent(
     skills: Optional[List[str]] = None,
     quote_evidence: Optional[List[QuoteEvidence]] = None,
     revenue_evidence: Optional[List[RevenueEvidence]] = None,
+    financial_evidence: Optional[List[Dict[str, Any]]] = None,
+    data_gaps: Optional[List[Dict[str, Any]]] = None,
 ) -> str:
     """
     运行 Agent 并返回最终回复
@@ -234,7 +256,13 @@ async def run_agent(
                         for revenue in extract_revenue_evidence(item):
                             merge_revenue_evidence(revenues, revenue)
                     revenue_evidence.extend(revenues.values())
-                tool_texts = [(item.name or "", str(item.content)) for item in final_messages[len(messages):]
+                produced = final_messages[len(messages):]
+                if financial_evidence is not None:
+                    found = {i["label"]: i for item in produced for i in extract_financial_evidence(item)}
+                    financial_evidence.extend(found.values())
+                if data_gaps is not None:
+                    data_gaps.extend(merge_gaps([g for item in produced if (g := data_gap(item))]))
+                tool_texts = [(item.name or "", str(item.content)) for item in produced
                               if isinstance(item, ToolMessage)]
                 values = [revenue.value for item in final_messages[len(messages):]
                           for revenue in extract_revenue_evidence(item)]
@@ -244,8 +272,9 @@ async def run_agent(
         return "I'm sorry, I wasn't able to generate a response. Please try again."
 
     except Exception as e:
+        # Provider errors can carry internal hosts, keys' prefixes or request ids: log, never show.
         logger.error(f"Agent execution failed: {e}", exc_info=True)
-        return f"An error occurred while processing your request: {str(e)}"
+        raise
 
 
 async def stream_agent(
@@ -306,6 +335,8 @@ async def stream_agent(
         quotes: dict[str, QuoteEvidence] = {}
         revenues: dict[tuple, RevenueEvidence] = {}
         tool_texts: list[tuple[str, str]] = []
+        gaps: list[dict] = []
+        financials: dict[str, dict] = {}
         writing = {"type": "status", "stage": "writing", "content": "Writing the response"}
 
         async for event in agent.astream_events(
@@ -375,6 +406,10 @@ async def stream_agent(
                 output = event.get("data", {}).get("output")
                 if isinstance(output, ToolMessage) and isinstance(output.content, str):
                     tool_texts.append((event.get("name", ""), output.content))
+                if gap := data_gap(output):
+                    gaps.append(gap)
+                for item in extract_financial_evidence(output):
+                    financials[item["label"]] = item  # the latest call per metric wins
                 if quote := extract_quote_evidence(event.get("data", {}).get("output")):
                     quotes[quote.symbol] = quote
                 for revenue in extract_revenue_evidence(event.get("data", {}).get("output")):
@@ -395,6 +430,11 @@ async def stream_agent(
 
         done: Dict[str, Any] = {"type": "done", "content": ""}
         # The caller repairs "1,270.38 billion" copied as "1,270.38 亿" against these.
+        if gaps:
+            done["data_gaps"] = merge_gaps(gaps)
+        if financials:
+            # Not shown as cards; the server checks the answer's ratios and margins against them.
+            done["financial_evidence"] = list(financials.values())
         figures = figures_by_trust(tool_texts)
         if figures["trusted"] or figures["web"]:
             done["scaled_figures"] = figures
@@ -410,13 +450,40 @@ async def stream_agent(
         logger.error(f"Agent streaming failed: {e}", exc_info=True)
         yield {
             "type": "error",
-            "content": f"An error occurred: {str(e)}",
+            # The exception text stays in the log; it is not the user's to read.
+            "content": "The agent could not complete the response. Please try again.",
         }
 
 
 # =====================================================================
 # 内部辅助函数
 # =====================================================================
+
+# Asking for a report, a recommendation or a bull/bear case means the research agent.
+_RESEARCH_WORDS = re.compile(
+    r"深度|研究报告|研报|deep[- ]?dive|research report|bull(?:ish)? (?:and|vs\.?|or) bear|bear case|bull case|"
+    r"多空|该不该买|值不值得|要不要买|能不能买|should i (?:buy|sell|hold)|worth (?:buying|holding)|"
+    r"trading analysis|交易分析|投资建议|全面分析|综合分析|comprehensive analysis",
+    re.IGNORECASE,
+)
+# A lookup: one figure or a follow-up. Anything longer or vaguer goes to the model router.
+_LOOKUP_WORDS = re.compile(
+    r"多少|是多少|几|股价|价格|报价|营收|收入|市盈率|市值|毛利率|净利率|利润率|同比|EPS|每股收益|期权|"
+    r"price|quote|trading at|revenue|sales|P/?E\b|market cap|margin|EPS|how much|what(?:'s| is| was)|"
+    r"^\s*(?:那|换成|and|what about|how about)\b",
+    re.IGNORECASE,
+)
+
+
+def route_by_keywords(message: str) -> Optional[str]:
+    """"research" or "financial" when the wording leaves no doubt, else None (ask the model)."""
+    text = message.split("\n\nKolvex page evidence", 1)[0].strip()
+    if _RESEARCH_WORDS.search(text):
+        return "research"
+    if len(text) <= 80 and _LOOKUP_WORDS.search(text):
+        return "financial"
+    return None
+
 
 async def _classify_intent(
     messages: list,
@@ -434,6 +501,11 @@ async def _classify_intent(
 
     if not last_user_msg:
         return "financial"
+
+    # Clear cases skip the ~1s router call: it was a quarter of a quick answer's latency.
+    if quick := route_by_keywords(last_user_msg if isinstance(last_user_msg, str) else str(last_user_msg)):
+        logger.info(f"Intent by keywords: '{str(last_user_msg)[:50]}...' -> {quick}")
+        return quick
 
     # 使用快速模型进行意图分类
     try:

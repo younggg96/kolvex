@@ -3,7 +3,7 @@ import asyncio
 import json
 import unittest
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import MagicMock, AsyncMock, Mock, patch
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -15,6 +15,14 @@ from app.agent.tools import create_trading_analysis_tool, get_tools_for_sources
 
 def names(tools) -> set[str]:
     return {t.name for t in tools}
+
+
+
+def saving_user_through(save):
+    """Route the retry-aware user save through the test's save_message mock."""
+    async def save_user(user_id, conversation_id, content):
+        return await save(user_id=user_id, conversation_id=conversation_id, role="user", content=content)
+    return save_user
 
 
 class ToolSelectionTests(unittest.TestCase):
@@ -168,6 +176,57 @@ class RevenueComparisonTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(cards[0].unavailable_reason, comparison["unavailable_reason"])
 
 
+class NewerDerivedPeriodTests(unittest.IsolatedAsyncioTestCase):
+    async def test_latest_direct_quarter_names_the_newer_derived_one(self):
+        from app.agent.revenue_evidence import extract_revenue_evidence
+        from app.agent.tools.stock_tools import get_reported_revenue
+        url = "https://www.sec.gov/Archives/edgar/data/1/000000000126000001/0000000001-26-000001-index.html"
+
+        def row(start, end, derived, value):
+            return {"start": start, "period": end, "revenue": value,
+                    "sources": {"revenue": {"derived": derived, "filed": "2027-02-25", "source_url": url}}}
+        history = {"symbol": "NVDA", "currency": "USD", "quarterly": [
+            row("2026-10-26", "2027-01-31", True, 108),
+            row("2026-07-27", "2026-10-25", False, 103),
+            row("2025-07-28", "2025-10-26", False, 57),
+            row("2025-10-27", "2026-01-25", True, 68),
+        ]}
+        with patch("app.agent.tools.stock_tools.sec_client.financials", AsyncMock(return_value=history)):
+            result = await get_reported_revenue.ainvoke({
+                "type": "tool_call", "name": "get_reported_revenue", "id": "r", "args": {"symbol": "NVDA"}})
+        cards = extract_revenue_evidence(result)
+        self.assertEqual(str(cards[0].period_end), "2026-10-25")
+        self.assertEqual(str(cards[0].newer_derived_period_end), "2027-01-31")
+        self.assertIsNone(cards[1].newer_derived_period_end)
+
+    async def test_no_note_when_the_newest_period_is_directly_reported(self):
+        from app.agent.revenue_evidence import extract_revenue_evidence
+        comparison, cards = await RevenueComparisonTests().get_comparison(100)
+        self.assertIsNone(cards[0].newer_derived_period_end)
+
+
+class QuoteTimeTests(unittest.TestCase):
+    def test_quote_carries_an_eastern_time_string(self):
+        from app.agent.tools.stock_tools import get_stock_quote
+        service = SimpleNamespace(get_quote=lambda _s: {"symbol": "NVDA", "current_price": 1.0,
+                                                         "market_time": 1794517201})
+        with patch("app.agent.tools.stock_tools.get_yfinance_service", return_value=service):
+            result = json.loads(get_stock_quote.invoke({"symbol": "NVDA"}))
+        self.assertEqual(result["market_time_et"], "2026-11-12 16:00 ET")
+
+
+class AnswerShapeTests(unittest.TestCase):
+    def test_only_the_quick_answer_agent_is_asked_to_be_brief(self):
+        from app.agent.graphs import supervisor
+        prompts = {}
+        with patch.object(supervisor, "get_llm", return_value=object()), \
+                patch.object(supervisor, "create_react_agent", side_effect=lambda **kw: kw["prompt"]):
+            for kind in ("financial", "research"):
+                prompts[kind] = supervisor._create_agent_for_request(kind, sources=[], skills=[])
+        self.assertIn("Answer shape", prompts["financial"])
+        self.assertNotIn("Answer shape", prompts["research"])
+
+
 class YahooRevenueFallbackTests(unittest.IsolatedAsyncioTestCase):
     async def test_foreign_filer_falls_back_to_yahoo_with_its_currency(self):
         import pandas as pd
@@ -193,6 +252,7 @@ class YahooRevenueFallbackTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([(c.source, c.currency, str(c.period_end)) for c in cards],
                          [("yahoo", "TWD", "2026-09-30"), ("yahoo", "TWD", "2025-09-30")])
         self.assertIsNone(cards[0].filed_on)
+        self.assertIsNone(cards[0].usd_value)  # FX lookup is patched out below
 
     def test_sec_evidence_still_needs_its_filing_date_and_link(self):
         from pydantic import ValidationError
@@ -310,6 +370,36 @@ class StreamAgentTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([quote.symbol for quote in evidence], ["NVDA"])
         self.assertEqual(evidence[0].quoted_at.timestamp(), 1793814337)
 
+    async def test_sync_agent_collects_financials_and_data_gaps(self):
+        initial = [HumanMessage(content="NVDA?")]
+        financials = ToolMessage(content=json.dumps({"symbol": "NVDA", "gross_margins": 0.75}),
+                                 name="get_stock_financials", tool_call_id="f")
+        failed = ToolMessage(content=json.dumps({"error": "Failed to get options chain for NVDA: timeout"}),
+                             name="get_options_chain_summary", tool_call_id="o")
+        agent = Mock(ainvoke=AsyncMock(return_value={
+            "messages": [*initial, financials, failed, AIMessage(content="毛利率 75%")]}))
+        found, gaps = [], []
+        with patch.object(supervisor, "_classify_intent", AsyncMock(return_value="financial")), \
+                patch.object(supervisor, "_create_agent_for_request", return_value=agent):
+            await supervisor.run_agent(initial, financial_evidence=found, data_gaps=gaps)
+        self.assertEqual([i["label"] for i in found], ["NVDA gross margin (Yahoo Finance)"])
+        self.assertEqual(gaps, [{"tool": "get_options_chain_summary", "kind": "unavailable"}])
+
+    async def test_stream_errors_do_not_show_the_exception_text(self):
+        from app.agent.graphs import supervisor
+
+        class Boom:
+            async def astream_events(self, *_args, **_kwargs):
+                raise RuntimeError("upstream 500 at http://10.0.0.7/v1 key=sk-live-123")
+                yield  # pragma: no cover
+
+        with patch.object(supervisor, "_classify_intent", AsyncMock(return_value="financial")), \
+                patch.object(supervisor, "_create_agent_for_request", return_value=Boom()):
+            events = [e async for e in supervisor.stream_agent(messages=[])]
+        self.assertEqual(events[-1]["type"], "error")
+        self.assertNotIn("10.0.0.7", events[-1]["content"])
+        self.assertNotIn("sk-live", events[-1]["content"])
+
     async def test_no_final_text_is_an_error(self):
         out = await self.run_stream([end("a", "")])
         self.assertEqual(out[-1]["type"], "error")
@@ -335,6 +425,7 @@ class StreamRouteTests(unittest.TestCase):
             get_keys_dict=AsyncMock(return_value={}))
         save = AsyncMock(return_value={"id": "m1", "created_at": "now"})
         with patch("app.agent.memory.save_message", save), \
+                patch("app.agent.memory.save_user_message_once", new=saving_user_through(save)), \
                 patch("app.agent.memory.load_conversation_history", AsyncMock(return_value=[])), \
                 patch.object(routes, "turn_context", AsyncMock(return_value=None)), \
                 patch("app.agent.graphs.supervisor.stream_agent", fake_stream):
@@ -375,6 +466,7 @@ class DetachedStreamTests(unittest.IsolatedAsyncioTestCase):
         request = routes.SendMessageRequest(content="hi")
 
         with patch("app.agent.memory.save_message", save), \
+                patch("app.agent.memory.save_user_message_once", new=saving_user_through(save)), \
                 patch("app.agent.memory.load_conversation_history", AsyncMock(return_value=[])), \
                 patch.object(routes, "turn_context", AsyncMock(return_value=None)), \
                 patch("app.agent.graphs.supervisor.stream_agent", fake_stream):
@@ -411,6 +503,7 @@ class DetachedStreamTests(unittest.IsolatedAsyncioTestCase):
         api_keys = SimpleNamespace(get_keys_dict=AsyncMock(return_value={}))
         request = routes.SendMessageRequest(content="hi")
         with patch("app.agent.memory.save_message", save), \
+                patch("app.agent.memory.save_user_message_once", new=saving_user_through(save)), \
                 patch("app.agent.memory.load_conversation_history", AsyncMock(return_value=[])), \
                 patch.object(routes, "turn_context", AsyncMock(return_value=None)), \
                 patch("app.agent.graphs.supervisor.stream_agent", fake_stream):
@@ -430,3 +523,34 @@ class DetachedStreamTests(unittest.IsolatedAsyncioTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RetryReuseTests(unittest.IsolatedAsyncioTestCase):
+    def db(self, latest):
+        tables = {"chat_conversations": MagicMock(), "chat_messages": MagicMock()}
+        tables["chat_conversations"].select.return_value.eq.return_value.eq.return_value.single.return_value \
+            .execute.return_value = SimpleNamespace(data={"id": "c1"})
+        tables["chat_messages"].select.return_value.eq.return_value.order.return_value.limit.return_value \
+            .execute.return_value = SimpleNamespace(data=[latest] if latest else [])
+        return SimpleNamespace(table=lambda name: tables[name])
+
+    async def run_save(self, latest, content="NVDA 营收？"):
+        from app.agent import memory
+        save = AsyncMock(return_value={"id": "new"})
+        with patch.object(memory, "get_supabase_service", return_value=self.db(latest)), \
+                patch.object(memory, "save_message", save):
+            row = await memory.save_user_message_once("u1", "c1", content)
+        return row, save
+
+    async def test_unanswered_same_question_is_reused(self):
+        row, save = await self.run_save({"id": "old", "role": "user", "content": "NVDA 营收？"})
+        self.assertEqual(row["id"], "old")
+        save.assert_not_awaited()
+
+    async def test_answered_or_different_questions_are_saved(self):
+        for latest in ({"id": "a", "role": "assistant", "content": "NVDA 营收？"},
+                       {"id": "old", "role": "user", "content": "AMD 营收？"}, None):
+            with self.subTest(latest=latest):
+                row, save = await self.run_save(latest)
+                self.assertEqual(row["id"], "new")
+                save.assert_awaited_once()

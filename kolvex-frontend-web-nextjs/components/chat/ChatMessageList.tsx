@@ -312,7 +312,7 @@ export function ChatMessageList({
         </div>
 
         {/* Scroll anchor */}
-        <div ref={actualEndRef} className="h-4" />
+        <div ref={actualEndRef} />
       </div>
 
       {/* Scroll to bottom button */}

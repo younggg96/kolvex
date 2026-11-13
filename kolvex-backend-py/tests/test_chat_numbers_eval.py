@@ -81,6 +81,31 @@ class ScoreRunTests(unittest.TestCase):
         self.assertEqual([c["text"] for c in r["ungrounded"]], ["40.2 亿"])
 
 
+    def test_newer_derived_period_must_be_named(self):
+        quiet = score_run(CASE["q4_derived_only"], "最新季度营收 1,031 亿美元（截至 2026-10-25），未做推算调整。", [], [], [])
+        told = score_run(CASE["q4_derived_only"], "截至 2027-01-31 的季度只有推算值；最新直接披露为 1,031 亿美元。", [], [], [])
+        self.assertEqual((quiet["disclosed"], told["disclosed"]), (False, True))
+
+
+    def test_followup_must_use_the_new_symbol(self):
+        wrong = [{"name": "get_reported_revenue", "args": {"symbol": "NVDA", "year_over_year": True}}]
+        right = [{"name": "get_reported_revenue", "args": {"symbol": "amd", "year_over_year": True}}]
+        self.assertFalse(score_run(CASE["followup_symbol"], "x", wrong, [], [])["tool_ok"])
+        self.assertTrue(score_run(CASE["followup_symbol"], "x", right, [], [])["tool_ok"])
+        annual = [{"name": "get_reported_revenue", "args": {"symbol": "NVDA", "period": "annual"}}]
+        self.assertTrue(score_run(CASE["followup_period"], "x", annual, [], [])["tool_ok"])
+
+
+    def test_earlier_answers_and_hedged_roundings_are_sources(self):
+        r = score_run(CASE["followup_symbol"], "AMD 增长 44.68%；NVDA 同期约 105.85%。", [], [], [],
+                      ['{"year_over_year_pct": 44.68}'])
+        self.assertEqual(r["ungrounded"], [])
+        hedged = score_run(CASE["skill_off"], "股价自 10 月中旬约 $228 回落。", [], [], [], ['"close": 228.52'])
+        self.assertEqual(hedged["ungrounded"], [])
+        plain = score_run(CASE["skill_off"], "股价 $228 回落。", [], [], [], ['"close": 228.52'])
+        self.assertEqual([c["text"] for c in plain["ungrounded"]], ["$228"])
+
+
 class SummaryTests(unittest.TestCase):
     def run_row(self, case="nvda_q_yoy", tool_ok=True, mismatch=0, invented=(), no_data=False):
         return {"case": case, "tool_ok": tool_ok, "mismatch": mismatch, "invented": list(invented),
@@ -96,7 +121,7 @@ class SummaryTests(unittest.TestCase):
         self.assertEqual(s["overall"]["mismatch_rate"], 0.25)
         self.assertEqual(s["overall"]["fabrication_rate"], 1.0)
         self.assertEqual(s["overall"]["ungrounded_rate"], 0.25)
-        self.assertEqual(set(s["failed"]), set(THRESHOLDS))
+        self.assertEqual(set(s["failed"]), set(THRESHOLDS) - {"disclosure_rate", "route_accuracy"})  # not measured here
 
     def test_clean_runs_pass(self):
         self.assertEqual(summarize([self.run_row(), self.run_row("skill_off", no_data=True)])["failed"], [])

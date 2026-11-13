@@ -23,6 +23,8 @@ import {
   X,
 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { opinionHeaderActionClass, useOpinionHeaderActionsSlot } from "@/components/layout/OpinionSourceNav";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -177,6 +179,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   const router = useRouter();
   const c = useCopy();
   const { t } = useTranslation();
+  const headerActions = useOpinionHeaderActionsSlot();
   const [route, setRoute] = useState<Route>({ tab: "stocks" });
   const [ready, setReady] = useState(false);
   const [catalogue, setCatalogue] = useState<YouTubeOpinionDashboard | null>(null);
@@ -1005,7 +1008,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
             </span>
           </div>
         )}
-        <div className="mx-auto w-full min-w-0 max-w-[100rem] px-[16px] pb-10 pt-[12px] md:px-8 md:pt-7">
+        <div className="mx-auto w-full min-w-0 max-w-[100rem] px-[16px] pb-4 md:pb-10 pt-[12px] md:px-8 md:pt-7">
           <Tabs
             value={route.tab}
             onValueChange={(value) => navigate({ tab: value as Route["tab"] })}
@@ -1115,19 +1118,6 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                           </div>
                           {route.tab === "stocks" && isProductFeatureEnabled("portfolio") && (
                             <div className="order-last flex w-full shrink-0 items-center gap-1 lg:order-none lg:w-auto">
-                              <SegmentedControl
-                                label={t("youtubeOpinions.directory.allStocks")}
-                                className="max-lg:hidden"
-                                bare
-                                value={stockScope}
-                                onChange={setStockScope}
-                                size="sm"
-                            itemClassName="font-medium max-lg:!px-2 max-lg:!text-xs lg:min-h-10 lg:px-4 lg:text-sm"
-                                options={[
-                                  { value: "all", label: t("youtubeOpinions.directory.allStocks") },
-                                  { value: "holdings", label: t("youtubeOpinions.directory.holdingsOnly") },
-                                ]}
-                              />
                               
                               {stockScope === "holdings" && held.error && <div role="alert" className="flex items-center gap-2 text-xs text-negative">{c("Holdings could not be loaded.", "暂时无法加载持仓。")}<Button size="xs" variant="outline" onClick={refresh}>{t("common.retry")}</Button></div>}
                             </div>
@@ -1318,14 +1308,20 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                       </div>
                       {(route.ticker || creator) && (
                         <div className={cn("flex shrink-0 flex-wrap items-center gap-2", creator && "w-full sm:w-auto")}>
-                          {route.ticker && (
-                            <Button variant="outline" size="sm" asChild>
+                          {route.ticker && (headerActions
+                            ? createPortal(
+                              <Link href={marketStockHref(route.ticker)} className={opinionHeaderActionClass}>
+                                <LineChart className="h-4 w-4" aria-hidden="true" />
+                                {c("View market data", "查看行情")}
+                              </Link>,
+                              headerActions,
+                            )
+                            : <Button variant="outline" size="sm" asChild>
                               <Link href={marketStockHref(route.ticker)}>
                                 <LineChart className="h-4 w-4" aria-hidden="true" />
                                 {c("View market data", "查看行情")}
                               </Link>
-                            </Button>
-                          )}
+                            </Button>)}
                           {creator && (
                             <>
                               <CreatorShare key={creator.channel_id} creator={creator} />

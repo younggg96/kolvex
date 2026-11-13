@@ -45,6 +45,14 @@ PAGE_EVIDENCE_NOTE = (
 )
 
 
+def _with_gaps(check: Optional[dict], gaps: list) -> Optional[dict]:
+    """Saved with the answer so history shows why a figure is missing."""
+    if not gaps:
+        return check
+    return {**(check or {"version": 1, "matched": 0, "mismatch": 0, "unverified": 0, "claims": []}),
+            "data_gaps": gaps}
+
+
 def attach_page_evidence(messages: list, context: Optional[str]) -> list:
     """Give the model this turn's page evidence without writing it into the transcript."""
     if not context or not context.strip():
@@ -294,17 +302,12 @@ async def send_message(
 
     需要认证：Bearer token
     """
-    from app.agent.memory import load_conversation_history, save_message
+    from app.agent.memory import load_conversation_history, save_message, save_user_message_once
     from app.agent.graphs.supervisor import run_agent
     from langchain_core.messages import HumanMessage
 
-    # 1. 保存用户消息
-    user_msg = await save_message(
-        user_id=current_user_id,
-        conversation_id=conversation_id,
-        role="user",
-        content=request.content,
-    )
+    # 1. 保存用户消息（重试时复用上一条未回复的同一问题）
+    user_msg = await save_user_message_once(current_user_id, conversation_id, request.content)
 
     if not user_msg:
         raise HTTPException(
@@ -325,6 +328,8 @@ async def send_message(
     # 4. 运行 Agent（传入模型、数据源和用户 API keys）
     quotes = []
     revenues = []
+    financials: list = []
+    gaps: list = []
     try:
         ai_response_text = await run_agent(
             messages=attach_page_evidence(history, context),
@@ -335,6 +340,8 @@ async def send_message(
             skills=request.skills,
             quote_evidence=quotes,
             revenue_evidence=revenues,
+            financial_evidence=financials,
+            data_gaps=gaps,
             user_api_keys=user_api_keys or None,
         )
     except Exception as e:
@@ -351,7 +358,7 @@ async def send_message(
         content=ai_response_text,
         quote_evidence=quote_rows,
         revenue_evidence=revenue_rows,
-        answer_check=check_answer(ai_response_text, quote_rows, revenue_rows),
+        answer_check=_with_gaps(check_answer(ai_response_text, quote_rows, revenue_rows, financials), gaps),
     )
 
     if not ai_msg:
@@ -404,7 +411,7 @@ async def stream_message(
     current_user_id: str = Depends(get_current_user_id),
     api_keys_service: UserApiKeysService = Depends(get_user_api_keys_service),
 ):
-    from app.agent.memory import load_conversation_history, save_message
+    from app.agent.memory import load_conversation_history, save_message, save_user_message_once
     from app.agent.graphs.supervisor import stream_agent
 
     key = (current_user_id, conversation_id)
@@ -428,12 +435,8 @@ async def stream_message(
         events.put_nowait(None if event is None else f"data: {event}\n\n")
 
     async def generate():
-        user_msg = await save_message(
-            user_id=current_user_id,
-            conversation_id=conversation_id,
-            role="user",
-            content=request.content,
-        )
+        # A retry after a failed reply reuses the unanswered question instead of adding it again.
+        user_msg = await save_user_message_once(current_user_id, conversation_id, request.content)
         if not user_msg:
             publish(json.dumps({"type": "error", "content": "Unable to save the user message."}))
             return
@@ -472,9 +475,11 @@ async def stream_message(
                         full_response, event.get("scaled_figures") or {},
                         [r["value"] for r in revenues if isinstance(r.get("value"), (int, float))])
                     # Checked here, against the exact text saved, in the same row as its evidence.
-                    answer_check = check_answer(full_response, quotes, revenues)
+                    answer_check = check_answer(full_response, quotes, revenues,
+                                                event.get("financial_evidence") or [])
                     if unit_fixes:
                         answer_check = with_unit_fixes(answer_check, unit_fixes)
+                    answer_check = _with_gaps(answer_check, event.get("data_gaps") or [])
                     ai_msg = await save_message(
                         user_id=current_user_id,
                         conversation_id=conversation_id,

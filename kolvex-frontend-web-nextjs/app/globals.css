@@ -1477,8 +1477,8 @@ html[data-chat-history-open] .app-workbench .app-sidebar {
   }
 }
 
-/* Full-screen phone lists scroll beneath the dock from an inner region. */
-@media (max-width: 767px) {
+/* Full-height lists scroll beneath the floating dock from an inner region (the dock shows below lg). */
+@media (max-width: 1023px) {
   .mobile-nav-inset:has(.dashboard-content [data-nav-underlay]) {
     padding-bottom: 0;
   }
@@ -1489,18 +1489,27 @@ html[data-chat-history-open] .app-workbench .app-sidebar {
   }
 }
 
-/* Explore reserves space for its search field directly above the floating dock. */
+/* Explore floats its search field above the dock; results scroll beneath both. */
 @media (max-width: 1023px) {
   .mobile-nav-inset:has([data-search-page]) {
-    padding-bottom: calc(62px + max(1rem, env(safe-area-inset-bottom, 0px)));
+    padding-bottom: 0;
   }
 
   .mobile-nav-inset:has([data-search-keyboard]) {
     padding-bottom: 0;
   }
 
+  /* With the keyboard up, the dock keeps only its search field and rides above the keys. */
   .mobile-nav-inset:has([data-search-keyboard]) [data-mobile-dock] {
-    visibility: hidden;
+    transform: translateY(calc(max(1rem, env(safe-area-inset-bottom, 0px)) - 0.5rem - var(--search-keyboard-inset, 0px)));
+  }
+
+  .mobile-nav-inset:has([data-search-keyboard]) [data-mobile-dock] [data-dock-tabs] {
+    display: none;
+  }
+
+  .mobile-nav-inset:has([data-search-keyboard]) [data-mobile-dock] #mobile-dock-slot > * {
+    padding-bottom: 0.25rem;
   }
 }
 
@@ -1849,13 +1858,15 @@ html[data-chat-history-open] .app-workbench .app-sidebar {
   background: rgb(var(--muted));
 }
 
+/* Same surface as the floating dock (floatingSurfaceClass): muted fill, faint edge, drop shadow. */
 :root:not(.dark) .chat-composer-surface {
-  background: rgb(var(--card));
-  border: 1px solid rgb(var(--field-edge) / 0.6);
+  background: rgb(var(--muted));
+  border: 1px solid rgb(var(--foreground) / 0.06);
+  box-shadow: 0 10px 30px -6px rgb(0 0 0 / 0.30), 0 2px 8px rgb(0 0 0 / 0.10);
 }
 
 :root:not(.dark) :focus-within > .chat-composer-surface {
-  border-color: rgb(var(--focus));
+  border-color: rgb(var(--foreground) / 0.35);
 }
 
 @media (prefers-contrast: more) {

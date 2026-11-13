@@ -128,7 +128,7 @@ export const listRowTargetClass =
  * keyboard focus, matching the compact list rows.
  */
 export const listFeedRowClass =
-  "list-row-interactive min-w-0 py-6 first:pt-2 last:border-0 [overflow-wrap:anywhere]";
+  "list-row-interactive min-w-0 py-2.5 first:pt-2 last:border-0 [overflow-wrap:anywhere]";
 
 /**
  * Feed row that holds its own hoverable rows (e.g. a video with one row per
@@ -148,11 +148,11 @@ export function ListLoadMore({
   return (
     <>
       {loading && skeleton}
-      <div className="flex justify-center py-4">
+      <div className="flex justify-center">
         <Button
           variant="outline"
           size="sm"
-          className={cn("min-h-11", className)}
+          className={cn("min-h-8", className)}
           disabled={disabled || loading}
           {...props}
         >

@@ -341,10 +341,6 @@ export function DiscoverCreators({
             暂时没有创作者。
           </Copy>
         )}
-        <FooterLink
-          label={source === "youtube" ? "浏览 YouTube 创作者" : "浏览 X 创作者"}
-          onPress={onViewAll}
-        />
       </Glass>
     </DiscoverySection>
   );

@@ -57,7 +57,7 @@ export default function AnalysisSummary({ text, t }: {
         id={id}
         ref={ref}
         className={cn(
-          "whitespace-pre-line break-words text-base leading-7",
+          "whitespace-pre-line break-words text-sm leading-6",
           !expanded && "line-clamp-3",
         )}
       >

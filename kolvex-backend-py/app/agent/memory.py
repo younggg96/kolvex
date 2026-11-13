@@ -176,3 +176,29 @@ async def save_message(
     except Exception as e:
         logger.error(f"Failed to save message: {e}")
         return None
+
+
+async def save_user_message_once(user_id: str, conversation_id: str, content: str) -> Optional[Dict[str, Any]]:
+    """Save the user's message, unless it is a retry of the last, unanswered one.
+
+    A reply that failed leaves the user's message as the conversation's latest row. Retrying
+    resends the same text; inserting it again would show the question twice and feed it to
+    the model twice. The latest row is reused only when it is that exact, unanswered question.
+    """
+    try:
+        supabase = get_supabase_service()
+        owned = await asyncio.to_thread(
+            supabase.table("chat_conversations").select("id")
+            .eq("id", conversation_id).eq("user_id", user_id).single().execute)
+        if owned.data:
+            latest = await asyncio.to_thread(
+                supabase.table("chat_messages").select("*")
+                .eq("conversation_id", conversation_id)
+                .order("created_at", desc=True).limit(1).execute)
+            row = (latest.data or [None])[0]
+            if row and row.get("role") == "user" and row.get("content") == content:
+                logger.info(f"Reusing unanswered user message {row.get('id')} for a retry")
+                return row
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"Retry check failed, saving the message normally: {e}")
+    return await save_message(user_id=user_id, conversation_id=conversation_id, role="user", content=content)

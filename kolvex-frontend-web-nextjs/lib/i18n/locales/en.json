@@ -442,7 +442,11 @@
       "yoy": "Year over year",
       "comparedWith": "vs. period ending {date}",
       "yoyUnavailable": "No comparable prior-year period",
-      "periodEnding": "Ending {date}"
+      "periodEnding": "Ending {date}",
+      "newerPeriod": "Newer period",
+      "newerDerived": "Period ending {date} is not directly reported",
+      "usd": "In USD",
+      "fxAt": "(at the {date} rate)"
     },
     "quoteEvidence": {
       "collapse": "Collapse",
@@ -485,6 +489,20 @@
       "details": "Number check details",
       "expected": "Evidence: {value} ({label})",
       "unverified": "{count} numbers had no evidence to check against this turn"
+    },
+    "dataGap": {
+      "unavailable": "{source} is temporarily unavailable; try again later",
+      "no_data": "{source} has no data for this",
+      "source": {
+        "revenue": "Revenue data",
+        "quote": "Market data",
+        "financials": "Financial data",
+        "analysts": "Analyst data",
+        "options": "Options data",
+        "web": "Web search",
+        "creators": "Creator opinions",
+        "other": "A data source"
+      }
     }
   },
   "analytics": {

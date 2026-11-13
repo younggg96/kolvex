@@ -79,6 +79,10 @@ def financial_history(payload):
     if not currency:
         return {"currency": None, "annual": [], "quarterly": [], "ttm": None}
     series, fiscal_years = {}, {}
+    # (start, end) -> (filed, fy, fp) of the earliest filing reporting that revenue period. A
+    # period's own 10-Q/10-K comes first; later filings repeat it as a comparative column but
+    # carry their own fy, so only the earliest one names the period correctly.
+    first_report: dict[tuple, tuple] = {}
     cik = payload["cik"]
     for metric, tags in TAGS.items():
         candidates, fiscal_years[metric] = {}, set()
@@ -98,6 +102,10 @@ def financial_history(payload):
                 # 10-Qs can report rolling twelve months (Amazon); only a 10-K establishes a fiscal year.
                 if fact["form"].startswith("10-K"):
                     fiscal_years[metric].add(key)
+                if metric == "revenue" and fact.get("fy") and fact.get("fp") in ("Q1", "Q2", "Q3", "Q4", "FY"):
+                    seen = first_report.get(key)
+                    if seen is None or fact.get("filed", "") < seen[0]:
+                        first_report[key] = (fact.get("filed", ""), fact["fy"], fact["fp"])
                 rank = (fact.get("filed", ""), -priority)
                 if key not in candidates or rank > candidates[key][0]:
                     candidates[key] = (rank, {"start": key[0], "period": end, "value": value,
@@ -132,6 +140,19 @@ def financial_history(payload):
                     row["sources"][metric] = {**fact, "derived": True,
                         "inputs": [fact["source_url"], previous["source_url"]]}
 
+    annual_label = {end: fy for (start, end), (_, fy, fp) in first_report.items() if fp == "FY"}
+
+    def fiscal_label(row):
+        """'FY2027 Q2' as the company names it; Q4 only exists derived, so it borrows the FY."""
+        reported = first_report.get((row["start"], row["period"]))
+        if reported and reported[2] == "FY":
+            return f"FY{reported[1]}"
+        if reported and days(row["start"], row["period"]) < 120:
+            return f"FY{reported[1]} {reported[2]}"
+        if row["period"] in annual_label and days(row["start"], row["period"]) < 120:
+            return f"FY{annual_label[row['period']]} Q4"
+        return None
+
     def enrich(row):
         for metric in INSTANT:
             fact = series[metric].get((None, row["period"]))
@@ -140,6 +161,7 @@ def financial_history(payload):
                 row["sources"][metric] = {**fact, "derived": False}
         if row.get("operating_cash_flow") is not None and row.get("capex") is not None:
             row["free_cash_flow"] = row["operating_cash_flow"] - row["capex"]
+        row["fiscal_label"] = fiscal_label(row)
         for metric, numerator in [("gross_margin", "gross_profit"), ("operating_margin", "operating_income"), ("net_margin", "net_income")]:
             row[metric] = row.get(numerator) / row["revenue"] if row.get(numerator) is not None and (row.get("revenue") or 0) > 0 else None
         return row

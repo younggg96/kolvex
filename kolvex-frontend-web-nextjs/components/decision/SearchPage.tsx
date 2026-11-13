@@ -4,7 +4,9 @@ import { SearchFieldIcon } from "@/components/ui/search-input";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { ArrowUpRight, Star, X } from "lucide-react";
+import { createPortal } from "react-dom";
+import { MOBILE_DOCK_SLOT_ID } from "@/components/layout/MobileTabBar";
+import { Star, X } from "lucide-react";
 import { XIcon, YouTubeIcon } from "@/components/common/PlatformIcons";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -57,7 +59,6 @@ function ResultRow({ href, title, detail, leading, trailing, onOpen }: { href: s
     <Link href={href} onClick={onOpen} className={cn(listRowTargetClass, styles.rowLink, "flex gap-2 max-lg:min-h-[48px] lg:gap-3")}>
       {leading}
       <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{title}</span><span className="mt-1 block truncate text-xs text-muted-foreground">{detail}</span></span>
-      <ArrowUpRight aria-hidden className={cn("h-4 w-4", styles.rowArrow)} />
     </Link>
     {trailing}
   </ListRow>;
@@ -87,6 +88,15 @@ export default function SearchPage() {
   const page = useRef<HTMLElement>(null);
   const scrollRegion = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
+  // On phones the search field lives inside the floating dock, above its tabs.
+  const [dockSlot, setDockSlot] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    const mobile = window.matchMedia("(max-width: 1023px)");
+    const sync = () => setDockSlot(mobile.matches ? document.getElementById(MOBILE_DOCK_SLOT_ID) : null);
+    sync();
+    mobile.addEventListener("change", sync);
+    return () => mobile.removeEventListener("change", sync);
+  }, []);
   const composition = useRef(false);
   const [composing, setComposing] = useState(false);
   const [history, setHistory] = useState<SearchHistoryItem[]>([]);
@@ -128,6 +138,7 @@ export default function SearchPage() {
         ? Math.max(0, shell.getBoundingClientRect().bottom - viewport.offsetTop - viewport.height)
         : 0;
       layout.style.setProperty("--search-keyboard-inset", `${inset}px`);
+      (shell as HTMLElement).style.setProperty("--search-keyboard-inset", `${inset}px`);
     };
     field.addEventListener("focus", syncKeyboardInset);
     viewport.addEventListener("resize", syncKeyboardInset);
@@ -139,7 +150,7 @@ export default function SearchPage() {
       viewport.removeEventListener("scroll", syncKeyboardInset);
       mobile.removeEventListener("change", syncKeyboardInset);
     };
-  }, []);
+  }, [dockSlot]);
 
   function saveHistory(next: SearchHistoryItem[]) {
     setHistory(next);
@@ -261,15 +272,11 @@ export default function SearchPage() {
     } else if (query) setSubmitFailed(true);
   }
 
-  return <DashboardLayout title={c("Search", "探索")}>
-    <main ref={page} data-search-page className={styles.page}>
-      <header className={styles.pageHeader}>
-        <h1 className="text-xl font-semibold tracking-tight lg:text-3xl">{c("Search", "探索")}</h1>
-      </header>
+  const searchDock = (
       <div className={styles.searchDock}>
         <div className="flex items-center gap-1 lg:gap-3">
           <form role="search" noValidate onSubmit={submit} className="min-w-0 flex-1">
-            <div className={cn("glass-field relative flex h-[44px] items-center rounded-full border border-transparent bg-foreground/[0.06] lg:h-14", styles.searchField)}>
+            <div className={cn("glass-field relative flex h-[44px] items-center rounded-3xl bg-foreground/[0.06] lg:h-14", styles.searchField)}>
               <SearchFieldIcon className="left-3.5 h-4 w-4 lg:left-5 lg:h-5 lg:w-5" />
               <input
                 ref={input}
@@ -303,12 +310,17 @@ export default function SearchPage() {
               {value && <Button type="button" variant="icon" size="icon" aria-label={c("Clear search", "清空搜索")} onClick={clearSearch} className="absolute right-1 shadow-sm max-lg:h-[36px] max-lg:w-[36px]"><X aria-hidden className="h-4 w-4" /></Button>}
             </div>
           </form>
-          <button type="button" onClick={() => router.back()} className="flex min-h-[44px] shrink-0 items-center gap-3 rounded-full px-2 text-xs text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground motion-reduce:transition-none lg:px-3 lg:text-sm">
-            {c("Cancel", "取消")}<kbd aria-hidden className="glass-button glass-button-neutral hidden rounded-md bg-foreground/[0.08] px-1.5 py-0.5 text-[0.6875rem] font-normal lg:inline">Esc</kbd>
-          </button>
         </div>
         {submitFailed && <p id="search-error" role="alert" className="mt-2 px-2 text-xs text-negative">{c("No matching stock. Choose a result or try a ticker like AAPL.", "没有匹配的股票。请选择一条结果，或试试 AAPL 这样的股票代码。")}</p>}
       </div>
+  );
+
+  return <DashboardLayout title={c("Search", "探索")}>
+    <main ref={page} data-search-page className={styles.page}>
+      <header className={styles.pageHeader}>
+        <h1 className="text-xl font-semibold tracking-tight lg:text-3xl">{c("Search", "探索")}</h1>
+      </header>
+      {dockSlot ? createPortal(searchDock, dockSlot) : searchDock}
       <div ref={scrollRegion} className={styles.scrollRegion}>
         {watchlistError && <p role="alert" className="mt-3 pl-5 text-sm text-negative">{c("Your watchlist couldn't be updated. Try again.", "自选更新失败，请重试。")}</p>}
 

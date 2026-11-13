@@ -26,10 +26,20 @@ class RevenueEvidence(BaseModel):
                 r"|https://finance\.yahoo\.com/quote/[A-Z0-9.-]{1,32}/financials/)$"
     )]
     source: Literal["sec", "yahoo"] = "sec"
+    # Non-USD revenue converted at the period-end close of {currency}USD=X (Yahoo Finance),
+    # so a Chinese or English answer can state a checkable dollar figure.
+    usd_value: Annotated[float, Field(allow_inf_nan=False)] | None = None
+    fx_rate: Annotated[float, Field(gt=0, allow_inf_nan=False)] | None = None
+    fx_date: date | None = None
+    # The company's own name for the period, from the filing's fiscal year/period: "FY2027 Q2".
+    fiscal_label: Annotated[str, Field(pattern=r"^FY\d{4}( Q[1-4])?$")] | None = None
     # Set only on the latest period of a year-over-year comparison, by the server.
     year_over_year_pct: Annotated[float, Field(allow_inf_nan=False)] | None = None
     compared_period_end: date | None = None
     unavailable_reason: str | None = None
+    # Set on the latest directly reported period when a newer period exists only as a derived
+    # figure (Q4 = annual minus nine months, after a 10-K). The user must be told it exists.
+    newer_derived_period_end: date | None = None
 
     @model_validator(mode="after")
     def validate_dates(self):
@@ -79,6 +89,7 @@ def merge_revenue_evidence(found: dict[tuple, RevenueEvidence], revenue: Revenue
     previous = found.get(key)
     if previous and revenue.year_over_year_pct is None and revenue.unavailable_reason is None:
         revenue = revenue.model_copy(update={
+            "newer_derived_period_end": revenue.newer_derived_period_end or previous.newer_derived_period_end,
             "year_over_year_pct": previous.year_over_year_pct,
             "compared_period_end": previous.compared_period_end,
             "unavailable_reason": previous.unavailable_reason,

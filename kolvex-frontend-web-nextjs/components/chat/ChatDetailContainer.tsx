@@ -34,6 +34,7 @@ import {
 import { useTranslation } from "@/lib/i18n";
 import { findSymbols } from "@/lib/markdown/stockMentions";
 import { PanelRight, SquarePen } from "lucide-react";
+import { FloatingBar } from "@/components/ui/floating-bar";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -751,7 +752,7 @@ export function ChatDetailContainer({
   return (
     <div className={cn("flex h-full min-h-0", className)}>
       <div data-chat-floating-composer className="flex-1 flex flex-col min-w-0 relative">
-        <div className="glass-track glass-track-strong z-30 flex h-14 shrink-0 items-center gap-1 pl-2 pr-2 max-lg:absolute max-lg:inset-x-3 max-lg:top-[max(0.5rem,env(safe-area-inset-top))] max-lg:h-[3.25rem] max-lg:rounded-full md:gap-2 md:px-8 lg:!bg-transparent lg:!shadow-none lg:![-webkit-backdrop-filter:none] lg:![backdrop-filter:none]">
+        <FloatingBar className="h-14 max-lg:h-[3.25rem] md:gap-2 md:px-8">
           <ChatHistorySheet className="md:-ml-2" />
           <h1 className="min-w-0 flex-1 truncate text-[0.9375rem] font-semibold text-foreground">
             {currentConversation?.title && currentConversation.title !== "New Chat"
@@ -776,7 +777,7 @@ export function ChatDetailContainer({
               <PanelRight className="h-4 w-4" aria-hidden="true" />
             </Button>
           )}
-        </div>
+        </FloatingBar>
 
         {/* Content Area */}
         <ChatMessageList

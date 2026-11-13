@@ -29,15 +29,23 @@ export interface RevenueEvidence {
   filed_on?: string | null;
   source_url: string;
   source?: "sec" | "yahoo";
+  /** The company's name for the period, e.g. "FY2027 Q2". */
+  fiscal_label?: string | null;
+  /** Non-USD revenue converted at the period-end exchange rate. */
+  usd_value?: number | null;
+  fx_rate?: number | null;
+  fx_date?: string | null;
   /** Server-calculated, on the latest period of a year-over-year comparison only. */
   year_over_year_pct?: number | null;
   compared_period_end?: string | null;
   unavailable_reason?: string | null;
+  /** A newer period exists, but its revenue is only derivable (e.g. Q4 after a 10-K). */
+  newer_derived_period_end?: string | null;
 }
 
 export interface AnswerCheckClaim {
   text: string;
-  kind: "money" | "percent";
+  kind: "money" | "percent" | "multiple";
   status: "matched" | "mismatch" | "unverified";
   expected?: { value: number; label: string };
 }
@@ -49,6 +57,8 @@ export interface AnswerCheck {
   mismatch: number;
   unverified: number;
   claims: AnswerCheckClaim[];
+  /** Tools that returned nothing this turn: failed ("unavailable") or empty source ("no_data"). */
+  data_gaps?: { tool: string; kind: "unavailable" | "no_data" }[];
 }
 
 export interface ChatMessage {

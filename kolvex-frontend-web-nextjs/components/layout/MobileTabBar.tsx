@@ -12,12 +12,15 @@ import { useTranslation } from "@/lib/i18n";
 import { isProductFeatureEnabled } from "@/lib/productFeatures";
 import { cn } from "@/lib/utils";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import { floatingSurfaceClass } from "@/components/ui/floating-bar";
 import { MAIN_NAV_ITEMS, SEARCH_HREF, isMainNavItemActive, isNavItemActive } from "./navItems";
 
 /** Dock tabs, left to right; everything else lives in the menu. */
 const DOCK_TAB_HREFS = ["/dashboard/chat", "/dashboard", "/dashboard/youtube-opinions"];
 /** Rounding and iOS rubber-banding can leave a scroller just short of its exact end. */
 const SCROLL_END_TOLERANCE_PX = 2;
+/** Pages portal a dock accessory (e.g. Explore's search field) into this slot. */
+export const MOBILE_DOCK_SLOT_ID = "mobile-dock-slot";
 /** Option value for the dock's menu toggle. */
 const MENU_VALUE = "__menu";
 
@@ -139,7 +142,7 @@ export default function MobileTabBar({ compact = false }: MobileTabBarProps) {
   /* Dock affordances are neutral: hover/press use a grey wash and the current
      page simply goes full-contrast. Green stays reserved for direction data. */
   const iconClass = "h-[1.375rem] w-[1.375rem]";
-  const menuItemClass = "mobile-nav-item flex min-h-[60px] w-full flex-col items-center justify-center gap-1 rounded-[20px] px-1 text-[12px] font-medium text-foreground/70 transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:bg-foreground/[0.06] focus-visible:text-foreground focus-visible:outline-none active:bg-foreground/[0.1] motion-reduce:transition-none";
+  const menuItemClass = "mobile-nav-item flex min-h-[60px] w-full flex-col items-center justify-center gap-1 rounded-3xl px-1 text-[12px] font-medium text-foreground/70 transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:bg-foreground/[0.06] focus-visible:text-foreground focus-visible:no-underline focus-visible:outline-none active:bg-foreground/[0.1] motion-reduce:transition-none";
 
   return (
     <nav
@@ -150,7 +153,7 @@ export default function MobileTabBar({ compact = false }: MobileTabBarProps) {
         ref={dock}
         data-mobile-dock
         className={cn(
-          "glass-track glass-track-strong pointer-events-auto mx-auto w-full max-w-md rounded-3xl p-1 ring-1 ring-foreground/[0.06] !shadow-[0_10px_30px_-6px_rgb(0_0_0/0.30),0_2px_8px_rgb(0_0_0/0.10)]",
+          floatingSurfaceClass, "pointer-events-auto mx-auto w-full max-w-md p-1",
         )}
       >
         <div
@@ -192,12 +195,16 @@ export default function MobileTabBar({ compact = false }: MobileTabBarProps) {
             </div>
           </div>
         </div>
+        {/* The page accessory (Explore's search) steps aside while the menu is open. */}
+        <div id={MOBILE_DOCK_SLOT_ID} className={cn("empty:hidden", menuOpen && "hidden")} />
         <SegmentedControl
+          data-dock-tabs
           bare
           semantics="nav"
           label={c("Main navigation", "主导航")}
           className="flex w-full"
-          itemClassName="h-11 min-h-11 flex-1 shrink px-0"
+          itemClassName="h-11 min-h-11 flex-1 shrink px-0 !rounded-3xl"
+          thumbClassName="!rounded-3xl !shadow-[0_0_8px_-2px_rgb(0_0_0/0.22),0_0_0_0.5px_rgb(0_0_0/0.06)]"
           value={dockValue}
           onChange={(next) => {
             if (next === MENU_VALUE) {
