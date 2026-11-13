@@ -904,7 +904,7 @@ function SettingsContent() {
                         <SettingsGroup label={t("settings.tabs.notifications")}>
                         <FieldRow icon={Mail} label={t("settings.account.briefEmail")}>
                           <Switch
-                            checked={!!profile?.brief_email_opt_in}
+                            checked={profile?.email_notifications_enabled ?? true}
                             onCheckedChange={async (checked) => {
                               const result = await updateBriefEmail(checked);
                               if (!result.success) toast.error(result.error || t("settings.account.failedToUpdate"));

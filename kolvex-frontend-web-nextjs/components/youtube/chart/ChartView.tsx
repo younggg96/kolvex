@@ -1024,8 +1024,8 @@ export default function ChartView({
       <Button size="sm" variant="ghost" onClick={aiJobs.refresh}>{t("youtubeOpinions.ai.checkStatus")}</Button>
     </div>
   ) : activeJob && activeOperation ? (
-    <AiJobStatusChip operation={activeOperation} phase={activeJob.phase} startedAt={activeJob.startedAt} t={t} className="mt-3" />
-  ) : advanced && aiFailure ? <div className="mt-3">{aiFailure}</div> : null;
+    <AiJobStatusChip operation={activeOperation} phase={activeJob.phase} startedAt={activeJob.startedAt} t={t} />
+  ) : advanced && aiFailure ? <div>{aiFailure}</div> : null;
   const stackedResults = !advanced && (compactLayout === "workspace" || Boolean(resultsContainer));
   const aiResults = (<>
     {activeJob && activeOperation && <AiJobProgress

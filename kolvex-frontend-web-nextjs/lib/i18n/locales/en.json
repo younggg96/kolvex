@@ -77,8 +77,9 @@
     "groups": {
       "track": "Track",
       "read": "Stay informed",
-      "research": "Dig deeper",
-      "trade": "Practice & holdings"
+      "signals": "Money flow",
+      "research": "AI research",
+      "trade": "Portfolio"
     }
   },
   "tabBar": {
@@ -969,7 +970,7 @@
       "viewDetails": "View your account details",
       "updateDetails": "Update your account details",
       "emailAddress": "Email Address",
-      "briefEmail": "Daily brief emails",
+      "briefEmail": "Email updates",
       "fullName": "Full Name",
       "enterFullName": "Enter your full name",
       "phoneNumber": "Phone Number",

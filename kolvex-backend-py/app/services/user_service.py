@@ -112,8 +112,8 @@ class UserService:
                 "username": profile_data.username,
                 "full_name": profile_data.full_name,
                 "avatar_url": profile_data.avatar_url,
-                # Retired notification preferences remain disabled for compatibility.
-                "email_notifications_enabled": False,
+                # New users receive the scheduled emails until they turn them off in settings.
+                "email_notifications_enabled": True,
             }
 
             response = (
@@ -260,11 +260,11 @@ class UserService:
 
 
     async def update_brief_email_opt_in(self, user_id: str, opt_in: bool) -> UserProfileResponse:
-        """开启或关闭每日简报邮件（默认关闭，需用户主动开启）"""
+        """开启或关闭邮件推送。定时邮件按 email_notifications_enabled 选收件人，两列保持一致。"""
         try:
             response = await asyncio.to_thread(
                 self.supabase.table("user_profiles")
-                .update({"brief_email_opt_in": opt_in})
+                .update({"brief_email_opt_in": opt_in, "email_notifications_enabled": opt_in})
                 .eq("id", user_id)
                 .execute
             )

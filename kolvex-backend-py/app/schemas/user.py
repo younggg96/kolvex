@@ -94,7 +94,7 @@ class UserProfileResponse(BaseModel):
     membership: MembershipEnum
     theme: Optional[ThemeEnum] = None
     locale: Optional[str] = None
-    email_notifications_enabled: bool = False
+    email_notifications_enabled: bool = True
     brief_email_opt_in: bool = False
     is_admin: bool = False
     created_at: datetime
