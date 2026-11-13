@@ -1515,7 +1515,7 @@ html[data-chat-history-open] .app-workbench .app-sidebar {
 
 /* Chat threads fill the screen, scrolling beneath the header, composer and dock. */
 @media (max-width: 1023px) {
-  .mobile-nav-inset:has([data-chat-floating-composer]) {
+  .mobile-nav-inset:has(:is([data-chat-floating-composer], [data-chat-welcome-dock])) {
     padding-bottom: 0;
   }
 

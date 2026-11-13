@@ -35,7 +35,7 @@ function Card({ initial, onSaved }: { initial: EmailSetting; onSaved: () => void
   const [message, setMessage] = useState("");
   const set = <K extends keyof EmailSetting>(key: K, value: EmailSetting[K]) => setForm((f) => ({ ...f, [key]: value }));
   const url = `/api/admin/email-settings?kind=${form.kind}`;
-  const input = "h-9 w-full max-w-[17.5rem] rounded-lg border border-border bg-background px-3 text-sm";
+  const input = "h-9 !min-h-9 w-full max-w-[14rem] rounded-lg border border-border bg-background px-2.5 !text-[0.8125rem] placeholder:text-[0.8125rem]";
 
   async function run(action: () => Promise<string>) {
     setBusy(true); setMessage("");
@@ -63,10 +63,10 @@ function Card({ initial, onSaved }: { initial: EmailSetting; onSaved: () => void
         <SettingsRow label="启用">
           <Switch checked={form.enabled} onCheckedChange={(v) => set("enabled", v)} aria-label="启用" />
         </SettingsRow>
-        <SettingsRow input label="发送时间"><input type="time" className={input} value={form.send_time} onChange={(e) => set("send_time", e.target.value)} /></SettingsRow>
-        <SettingsRow input label="时区"><input className={input} value={form.timezone} onChange={(e) => set("timezone", e.target.value)} /></SettingsRow>
+        <SettingsRow label="发送时间"><input type="time" className={input} value={form.send_time} onChange={(e) => set("send_time", e.target.value)} /></SettingsRow>
+        <SettingsRow label="时区"><input className={input} value={form.timezone} onChange={(e) => set("timezone", e.target.value)} /></SettingsRow>
         <SettingsRow label="发送日">
-          <div className="flex flex-wrap justify-end gap-x-3 gap-y-1 text-sm text-foreground">
+          <div className="flex flex-wrap justify-end gap-x-2.5 gap-y-1 text-[0.8125rem] text-foreground">
             {DAYS.map((label, day) => (
               <label key={day} className="flex items-center gap-1.5">
                 <input type="checkbox" checked={form.weekdays.includes(day)} onChange={(e) => set("weekdays", e.target.checked ? [...form.weekdays, day].sort() : form.weekdays.filter((d) => d !== day))} />{label}
@@ -77,10 +77,10 @@ function Card({ initial, onSaved }: { initial: EmailSetting; onSaved: () => void
       </SettingsGroup>
 
       <SettingsGroup label="发件">
-        <SettingsRow input label="发件人名称"><input className={input} value={form.from_name} onChange={(e) => set("from_name", e.target.value)} /></SettingsRow>
-        <SettingsRow input label="发件邮箱"><input type="email" className={input} value={form.from_email} onChange={(e) => set("from_email", e.target.value)} /></SettingsRow>
-        <SettingsRow input label="回复邮箱"><input type="email" className={input} value={form.reply_to} onChange={(e) => set("reply_to", e.target.value)} /></SettingsRow>
-        <SettingsRow input label="标题模板"><input className={input} value={form.subject_template} onChange={(e) => set("subject_template", e.target.value)} /></SettingsRow>
+        <SettingsRow label="发件人名称"><input className={input} value={form.from_name} onChange={(e) => set("from_name", e.target.value)} /></SettingsRow>
+        <SettingsRow label="发件邮箱"><input type="email" className={input} value={form.from_email} onChange={(e) => set("from_email", e.target.value)} /></SettingsRow>
+        <SettingsRow label="回复邮箱"><input type="email" className={input} value={form.reply_to} onChange={(e) => set("reply_to", e.target.value)} /></SettingsRow>
+        <SettingsRow label="标题模板"><input className={input} value={form.subject_template} onChange={(e) => set("subject_template", e.target.value)} /></SettingsRow>
       </SettingsGroup>
 
       <SettingsGroup label="运行状态">
@@ -90,8 +90,8 @@ function Card({ initial, onSaved }: { initial: EmailSetting; onSaved: () => void
           {form.last_recipient_count != null && ` · ${form.last_recipient_count} 人`}
         </SettingsRow>
         {form.last_error && <SettingsRow label="错误"><span className="text-negative">{form.last_error}</span></SettingsRow>}
-        <SettingsRow input label="发送测试">
-          <input type="email" placeholder="测试收件邮箱" className={`${input} max-w-60`} value={testTo} onChange={(e) => setTestTo(e.target.value)} />
+        <SettingsRow label="发送测试">
+          <input type="email" placeholder="测试收件邮箱" className={`${input} max-w-[14rem]`} value={testTo} onChange={(e) => setTestTo(e.target.value)} />
         </SettingsRow>
       </SettingsGroup>
 

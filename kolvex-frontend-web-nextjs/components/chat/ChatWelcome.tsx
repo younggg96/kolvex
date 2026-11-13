@@ -164,7 +164,8 @@ export function ChatWelcome({
     );
 
     return (
-      <div className="flex flex-1 flex-col px-4 pt-6 md:px-8 md:pt-10">
+      // Below lg the page runs under the dock, so the composer floats just above it like a thread's.
+      <div data-chat-welcome-dock className="flex flex-1 flex-col px-4 pt-6 max-lg:pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:px-8 md:pt-10">
         <ul className="mx-auto w-full max-w-2xl animate-fade-in">
           {suggestions.map((suggestion) => (
             <li key={suggestion.text}>
