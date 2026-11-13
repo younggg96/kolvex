@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { AlertCircle, Clock } from "lucide-react";
-import { SwitchTab } from "@/components/ui/switch-tab";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { EmptyState } from "@/components/common/EmptyState";
 import { calculateTotalValue, calculateTotalPnL } from "@/lib/portfolioApi";
 import { useTranslation } from "@/lib/i18n";
@@ -276,20 +276,14 @@ export default function PortfolioHoldings({
       {holdings?.accounts && holdings.accounts.length > 0 && (
         <>
           <div className="flex items-center justify-between gap-4">
-            <SwitchTab
+            <SegmentedControl
+              label={t("portfolio.tabs.holdings")}
+              semantics="tabs"
               options={tabOptions}
               value={activeTab}
-              onValueChange={(value) =>
-                setActiveTab(
-                  value as
-                    | "holdings"
-                    | "transactions"
-                    | "ai-insights",
-                )
+              onChange={(value) =>
+                setActiveTab(value as "holdings" | "transactions" | "ai-insights")
               }
-              variant="pills"
-              size="md"
-              className="!w-fit"
             />
 
             {formatLastRefresh && (

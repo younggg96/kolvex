@@ -11,12 +11,15 @@ import { usePathname, useRouter } from "next/navigation";
 import { useTranslation } from "@/lib/i18n";
 import { isProductFeatureEnabled } from "@/lib/productFeatures";
 import { cn } from "@/lib/utils";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { MAIN_NAV_ITEMS, SEARCH_HREF, isMainNavItemActive, isNavItemActive } from "./navItems";
 
 /** Dock tabs, left to right; everything else lives in the menu. */
 const DOCK_TAB_HREFS = ["/dashboard/chat", "/dashboard", "/dashboard/youtube-opinions"];
 /** Rounding and iOS rubber-banding can leave a scroller just short of its exact end. */
 const SCROLL_END_TOLERANCE_PX = 2;
+/** Option value for the dock's menu toggle. */
+const MENU_VALUE = "__menu";
 
 /**
  * Reports whether the page scroller last moved vertically is between its top and bottom.
@@ -78,14 +81,14 @@ export default function MobileTabBar({ compact = false }: MobileTabBarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const dock = useRef<HTMLDivElement>(null);
   const panelContent = useRef<HTMLDivElement>(null);
-  const menuButton = useRef<HTMLButtonElement>(null);
   const midScroll = useIsMidScroll(pathname, () => setMenuOpen(false));
   const searchActive = isNavItemActive(pathname, SEARCH_HREF);
-  // An open menu is the dock's only selected control; aria-current still names the page.
-  const searchHighlighted = searchActive && !menuOpen;
 
   const enabledItems = MAIN_NAV_ITEMS.filter((item) => isProductFeatureEnabled(item.featureId));
   const tabs = DOCK_TAB_HREFS.flatMap((href) => enabledItems.filter((item) => item.href === href));
+  const activeDockHref = tabs.find((item) => isMainNavItemActive(pathname, item))?.href ?? (searchActive ? SEARCH_HREF : null);
+  // An open menu is the dock's selected control; otherwise the current page is.
+  const dockValue = menuOpen ? MENU_VALUE : activeDockHref;
   const menuLinks = [
     ...enabledItems
       .filter((item) => !DOCK_TAB_HREFS.includes(item.href))
@@ -106,7 +109,7 @@ export default function MobileTabBar({ compact = false }: MobileTabBarProps) {
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       setMenuOpen(false);
-      menuButton.current?.focus({ preventScroll: true });
+      dock.current?.querySelector<HTMLElement>("[data-slot=segmented-control] button:last-child")?.focus({ preventScroll: true });
     };
     document.addEventListener("pointerdown", closeOnOutsidePress);
     document.addEventListener("keydown", closeOnEscape);
@@ -135,7 +138,6 @@ export default function MobileTabBar({ compact = false }: MobileTabBarProps) {
 
   /* Dock affordances are neutral: hover/press use a grey wash and the current
      page simply goes full-contrast. Green stays reserved for direction data. */
-  const targetClass = "mobile-nav-item flex h-11 min-w-11 items-center justify-center rounded-full text-foreground/70 transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:bg-foreground/[0.06] focus-visible:text-foreground active:bg-foreground/[0.1] motion-reduce:transition-none";
   const iconClass = "h-[1.375rem] w-[1.375rem]";
   const menuItemClass = "mobile-nav-item flex min-h-[60px] w-full flex-col items-center justify-center gap-1 rounded-[20px] px-1 text-[12px] font-medium text-foreground/70 transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:bg-foreground/[0.06] focus-visible:text-foreground focus-visible:outline-none active:bg-foreground/[0.1] motion-reduce:transition-none";
 
@@ -148,7 +150,8 @@ export default function MobileTabBar({ compact = false }: MobileTabBarProps) {
         ref={dock}
         data-mobile-dock
         className={cn(
-          "glass-track glass-track-strong pointer-events-auto mx-auto w-full max-w-md origin-bottom rounded-[28px] p-1 !shadow-[0_10px_30px_-6px_rgb(0_0_0/0.30),0_2px_8px_rgb(0_0_0/0.10)] ring-1 ring-foreground/[0.06] transition-transform duration-200 ease-out motion-reduce:transition-none",
+          "glass-track glass-track-strong pointer-events-auto mx-auto w-full max-w-md origin-bottom p-1 transition-[transform,border-radius] !shadow-[0_10px_30px_-6px_rgb(0_0_0/0.30),0_2px_8px_rgb(0_0_0/0.10)] ring-1 ring-foreground/[0.06] duration-200 ease-out motion-reduce:transition-none",
+          menuOpen ? "rounded-[28px]" : "rounded-full",
           midScroll && !menuOpen && "motion-safe:scale-[0.84]",
         )}
       >
@@ -173,7 +176,7 @@ export default function MobileTabBar({ compact = false }: MobileTabBarProps) {
                         href={item.href}
                         aria-current={active ? "page" : undefined}
                         onClick={() => setMenuOpen(false)}
-                        className={cn(menuItemClass, active && "bg-foreground/[0.16] text-foreground hover:bg-foreground/[0.16] hover:text-foreground dark:bg-foreground/20")}
+                        className={cn(menuItemClass, active && "glass-thumb text-glass-thumb-foreground hover:text-glass-thumb-foreground")}
                       >
                         <item.icon aria-hidden className="h-[20px] w-[20px]" strokeWidth={active ? 2 : 1.75} />
                         <span className="max-w-full truncate">{item.title}</span>
@@ -191,53 +194,46 @@ export default function MobileTabBar({ compact = false }: MobileTabBarProps) {
             </div>
           </div>
         </div>
-        <ul className="flex h-[46px] w-full items-center">
-          {tabs.map((item) => {
-            const active = isMainNavItemActive(pathname, item);
-            const highlighted = active && !menuOpen;
-            const Icon = item.featureId === "home" ? Globe2 : item.icon;
-            return (
-              <li className="min-w-0 flex-1" key={item.href}>
-                <Link
-                  href={item.href}
-                  aria-current={active ? "page" : undefined}
-                  aria-label={t(item.shortTitleKey)}
-                  title={t(item.shortTitleKey)}
-                  onClick={() => setMenuOpen(false)}
-                  className={cn(targetClass, highlighted && "bg-foreground/[0.16] text-foreground hover:bg-foreground/[0.16] hover:text-foreground active:bg-foreground/20 dark:bg-foreground/20")}
-                >
-                  <Icon aria-hidden className={iconClass} strokeWidth={highlighted ? 2 : 1.75} />
-                </Link>
-              </li>
-            );
-          })}
-          <li className="min-w-0 flex-1">
-            <Link
-              href={SEARCH_HREF}
-              aria-current={searchActive ? "page" : undefined}
-              aria-label={c("Search", "探索")}
-              title={c("Search", "探索")}
-              onClick={() => setMenuOpen(false)}
-              className={cn(targetClass, searchHighlighted && "bg-foreground/[0.16] text-foreground hover:bg-foreground/[0.16] hover:text-foreground active:bg-foreground/20 dark:bg-foreground/20")}
-            >
-              <Search aria-hidden className={iconClass} strokeWidth={searchHighlighted ? 2 : 1.75} />
-            </Link>
-          </li>
-          <li className="min-w-0 flex-1">
-            <button
-              ref={menuButton}
-              type="button"
-              onClick={toggleMenu}
-              aria-expanded={menuOpen}
-              aria-controls="mobile-dock-panel"
-              aria-label={c("Open navigation menu", "打开导航菜单")}
-              title={c("Menu", "菜单")}
-              className={cn(targetClass, "w-full", menuOpen && "bg-foreground/[0.16] text-foreground hover:bg-foreground/[0.16] hover:text-foreground active:bg-foreground/20 dark:bg-foreground/20")}
-            >
-              <Menu aria-hidden className={iconClass} strokeWidth={menuOpen ? 2 : 1.75} />
-            </button>
-          </li>
-        </ul>
+        <SegmentedControl
+          bare
+          semantics="nav"
+          label={c("Main navigation", "主导航")}
+          className="flex w-full"
+          itemClassName="h-11 min-h-11 flex-1 shrink px-0"
+          value={dockValue}
+          onChange={(next) => {
+            if (next === MENU_VALUE) {
+              toggleMenu();
+              return;
+            }
+            setMenuOpen(false);
+            if (next !== activeDockHref) router.push(next);
+          }}
+          options={[
+            ...tabs.map((item) => {
+              const Icon = item.featureId === "home" ? Globe2 : item.icon;
+              const on = dockValue === item.href;
+              return {
+                value: item.href,
+                ariaLabel: t(item.shortTitleKey),
+                title: t(item.shortTitleKey),
+                label: <Icon aria-hidden className={iconClass} strokeWidth={on ? 2 : 1.75} />,
+              };
+            }),
+            {
+              value: SEARCH_HREF,
+              ariaLabel: c("Search", "探索"),
+              title: c("Search", "探索"),
+              label: <Search aria-hidden className={iconClass} strokeWidth={dockValue === SEARCH_HREF ? 2 : 1.75} />,
+            },
+            {
+              value: MENU_VALUE,
+              ariaLabel: c("Open navigation menu", "打开导航菜单"),
+              title: c("Menu", "菜单"),
+              label: <Menu aria-hidden className={iconClass} strokeWidth={menuOpen ? 2 : 1.75} />,
+            },
+          ]}
+        />
       </div>
     </nav>
   );

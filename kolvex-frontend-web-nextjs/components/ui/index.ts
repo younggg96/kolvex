@@ -28,7 +28,6 @@ export {
 } from "./table";
 export { Skeleton } from "./skeleton";
 export { Switch } from "./switch";
-export { SwitchTab } from "./switch-tab";
 export {
   Dialog,
   DialogPortal,
