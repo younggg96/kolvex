@@ -1,9 +1,9 @@
 import asyncio
 import unittest
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 
 from app.services.options_activity import aggregate, selection
-from app.services.options_activity.universe import ACTIVE_LIMIT, KOL_LIMIT, MANUAL_LIMIT, MAX_UNIVERSE, MOVERS_LIMIT, UNIVERSE
+from app.services.options_activity.universe import ACTIVE_LIMIT, EARNINGS_LIMIT, KOL_LIMIT, MANUAL_LIMIT, MAX_UNIVERSE, MOVERS_LIMIT, UNIVERSE
 
 TODAY = date(2026, 11, 6)
 
@@ -27,6 +27,7 @@ def scan(symbol, call_volume, sources):
 class SelectionTests(unittest.TestCase):
     def test_core_first_then_dynamic_groups_with_reasons(self):
         symbols, sources = asyncio.run(selection.select_universe({
+            "earnings": fetcher(["ZZZH", "NVDA"]),
             "movers": fetcher(["ZZZA", "NVDA", "$zzzb"]),
             "active": fetcher(["ZZZA", "ZZZC"]),
             "reddit": fetcher(["ZZZD", "BRK.B", "ZZZF"]),
@@ -34,8 +35,9 @@ class SelectionTests(unittest.TestCase):
             "youtube": fetcher(error=RuntimeError("db down")),
         }))
         self.assertEqual(symbols[:len(UNIVERSE)], list(UNIVERSE))
-        self.assertEqual(symbols[len(UNIVERSE):], ["ZZZA", "ZZZB", "ZZZC", "ZZZD", "ZZZE"])
-        self.assertEqual(sources["NVDA"], ["core", "mover"])
+        self.assertEqual(symbols[len(UNIVERSE):], ["ZZZH", "ZZZA", "ZZZB", "ZZZC", "ZZZD", "ZZZE"])
+        self.assertEqual(sources["NVDA"], ["core", "earnings", "mover"])
+        self.assertEqual(sources["ZZZH"], ["earnings"])
         self.assertEqual(sources["ZZZA"], ["mover", "active"])
         self.assertEqual(sources["ZZZD"], ["kol"])  # Reddit + X
         self.assertNotIn("ZZZF", sources)  # Reddit only
@@ -49,12 +51,24 @@ class SelectionTests(unittest.TestCase):
 
     def test_group_limits_and_total_cap(self):
         many = lambda prefix: [f"{prefix}{chr(65 + i // 26)}{chr(65 + i % 26)}" for i in range(100)]
-        symbols, sources = selection.combine(UNIVERSE, many("M"), many("A"), many("K"))
+        symbols, sources = selection.combine(UNIVERSE, many("M"), many("A"), many("K"), many("E"))
         added = [s for s in symbols if "core" not in sources[s]]
+        self.assertEqual(sum(sources[s] == ["earnings"] for s in added), EARNINGS_LIMIT)
         self.assertEqual(sum(sources[s] == ["mover"] for s in added), MOVERS_LIMIT)
         self.assertEqual(sum(sources[s] == ["active"] for s in added), ACTIVE_LIMIT)
         self.assertEqual(sum(sources[s] == ["kol"] for s in added), KOL_LIMIT)
         self.assertLessEqual(len(symbols), MAX_UNIVERSE)
+
+    def test_earnings_picks_upcoming_large_us_listings(self):
+        now = datetime(2026, 11, 13, 19, 30, tzinfo=timezone.utc)
+        row = lambda symbol, cap, days: {"symbol": symbol, "market_cap": cap, "starts_at": now + timedelta(days=days)}
+        rows = [
+            row("HD", 3e11, 4), row("WMT", 1e12, 6), row("TCEHY", 4e11, 5), row("BABAF", 2e11, 6),
+            row("MUFG", 2e11, -0.5),  # already reported
+            row("LATE", 5e11, 9),  # beyond the window
+            row("SMALL", 1e9, 2),
+        ]
+        self.assertEqual(selection.earnings_picks(rows, now), ["WMT", "HD"])
 
     def test_movers_need_stock_dollar_volume(self):
         items = [{"symbol": "BIG", "price": 100, "volume": 3_000_000}, {"symbol": "TINY", "price": 10, "volume": 1_000_000}]

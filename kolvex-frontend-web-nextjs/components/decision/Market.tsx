@@ -37,20 +37,25 @@ import StockObservationList from "./StockObservationList";
 import MarketComparison from "./MarketComparison";
 import MarketCompareDialog from "./MarketCompareChart";
 import MarketWatchlistCard from "./MarketWatchlistCard";
+import FundHoldingsDialog from "./FundHoldingsDialog";
 import { MarketInfoButton } from "./MarketToolbar";
 
 const OVERVIEW_GROUPS = MARKET_GROUPS.filter(group => group.key === "indices");
 const TREND_GROUPS = MARKET_GROUPS.filter(group => group.key !== "indices");
 const TREND_QUOTE_SYMBOLS = TREND_GROUPS.flatMap(group => group.instruments.filter(item => item.source !== "fred").map(item => item.symbol));
 const RANGES = MARKET_RANGES;
+/** Equity ETF groups whose cards open the fund's top holdings. */
+const HOLDINGS_GROUPS = new Set<string>(["sectors", "styles"]);
 
 type MarketView = "card" | "list";
 const MARKET_VIEW_KEY = "kolvex:market-view";
 
 type RangeKey = (typeof RANGES)[number]["key"];
 
-function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, onRetry }: {
+function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, onRetry, onOpen }: {
   benchmark: MarketInstrument;
+  /** When set, the card opens this (e.g. the holdings sheet) instead of navigating. */
+  onOpen?: () => void;
   quote?: StockQuote;
   quoteLoading: boolean;
   range: RangeKey;
@@ -150,12 +155,11 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
 
   return (
     <article ref={host} className={cn("relative w-60 shrink-0 snap-start max-md:h-auto max-md:w-[11.25rem] overflow-hidden rounded-3xl border border-foreground/10 glass-card bg-card-glass transition-colors duration-200 hover:border-foreground/25 hover:bg-foreground/[0.04] xl:w-auto xl:min-w-0", isIndex ? "h-60" : "h-56")}>
-      <Link
+      <CardTarget
+        onOpen={onOpen}
         href={benchmark.sourceUrl ?? marketStockHref(benchmark.symbol)}
-        target={benchmark.sourceUrl ? "_blank" : undefined}
-        rel={benchmark.sourceUrl ? "noopener noreferrer" : undefined}
-        aria-label={c(`Open ${benchmark.en} market details`, `查看${benchmark.zh}行情详情`)}
-        className="block h-full cursor-pointer rounded-3xl p-4 focus-visible:outline-none max-md:p-3"
+        external={Boolean(benchmark.sourceUrl)}
+        label={onOpen ? c(`Show ${benchmark.en} top holdings`, `查看${benchmark.zh}权重股`) : c(`Open ${benchmark.en} market details`, `查看${benchmark.zh}行情详情`)}
       >
         <div className="flex h-6 min-w-0 items-baseline justify-between gap-x-2 max-md:h-5">
           <h3 className="min-w-0 truncate text-sm font-medium" title={c(benchmark.en, benchmark.zh)}>{c(benchmark.en, benchmark.zh)}</h3>
@@ -171,7 +175,7 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
         <div className="mt-2 h-16 max-md:h-10" aria-busy={seriesState === "loading"}>
           {chartDisplay}
         </div>
-      </Link>
+      </CardTarget>
       {hasInfo && (
         <div className="absolute right-2 top-9 max-md:right-1">
           <MarketInfoButton label={c(`About ${benchmark.en}`, `${benchmark.zh}说明`)}>
@@ -192,6 +196,34 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
         </Button>
       )}
     </article>
+  );
+}
+
+const CARD_TARGET_CLASS = "block h-full cursor-pointer rounded-3xl p-4 text-left focus-visible:outline-none max-md:p-3";
+
+/** The card body either navigates or, for ETFs with holdings, opens a sheet. A div keeps the block layout valid inside. */
+function CardTarget({ onOpen, href, external, label, children }: { onOpen?: () => void; href: string; external: boolean; label: string; children: React.ReactNode }) {
+  if (onOpen) return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-haspopup="dialog"
+      aria-label={label}
+      className={CARD_TARGET_CLASS}
+      onClick={onOpen}
+      onKeyDown={event => {
+        if (event.target !== event.currentTarget || (event.key !== "Enter" && event.key !== " ")) return;
+        event.preventDefault();
+        onOpen();
+      }}
+    >
+      {children}
+    </div>
+  );
+  return (
+    <Link href={href} target={external ? "_blank" : undefined} rel={external ? "noopener noreferrer" : undefined} aria-label={label} className={CARD_TARGET_CLASS}>
+      {children}
+    </Link>
   );
 }
 
@@ -260,6 +292,7 @@ function MarketCharts({ groups, quotes, loading, range, attempt, onRetry, view, 
 }) {
   const c = useCopy();
   const [comparing, setComparing] = useState<(typeof MARKET_GROUPS)[number] | null>(null);
+  const [holdingsOf, setHoldingsOf] = useState<MarketInstrument | null>(null);
   return (
             <section aria-label={groups.length === 1 ? c("Market indices", "市场指数") : c("Market trends", "市场走势")}>
               {view === "list" && <div className="mb-5 md:mb-3 flex min-h-14 max-md:min-h-0 items-center justify-between gap-3">
@@ -288,11 +321,13 @@ function MarketCharts({ groups, quotes, loading, range, attempt, onRetry, view, 
                         range={range}
                         attempt={attempt}
                         onRetry={onRetry}
+                        onOpen={HOLDINGS_GROUPS.has(group.key) ? () => setHoldingsOf(item) : undefined}
                       />
                     ))}
                   </div>
                 </section>
               ))}
+              {holdingsOf && <FundHoldingsDialog instrument={holdingsOf} onClose={() => setHoldingsOf(null)} />}
               {comparing && <MarketCompareDialog instruments={comparing.instruments} initialRange={range} attempt={attempt} title={c(comparing.en, comparing.zh)} onClose={() => setComparing(null)} />}
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground max-md:empty:hidden">
                 {view === "card" && !loading && groups.some(group => group.instruments.some(item => item.source !== "fred" && !quotes[item.symbol])) && (

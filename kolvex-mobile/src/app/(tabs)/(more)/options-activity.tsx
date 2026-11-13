@@ -78,7 +78,9 @@ function Report() {
     ACTIVITY_SESSIONS.find((item) => item === params.session) ?? null,
   );
   const kind: ContractFilter =
-    params.kind === "etf" || params.kind === "stock" ? params.kind : "all";
+    params.kind === "etf" || params.kind === "stock" || params.kind === "earnings"
+      ? params.kind
+      : "all";
   const list = useResource(
     `options-activity:runs:${user}:${date}`,
     (signal) => activityRuns(date, user, signal),

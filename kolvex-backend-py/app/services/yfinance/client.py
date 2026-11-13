@@ -22,6 +22,8 @@ import json
 
 _QUOTE_EXECUTOR = ThreadPoolExecutor(max_workers=6, thread_name_prefix="market-quotes")
 _QUOTE_BATCH_TIMEOUT = 12
+_FUND_HOLDINGS_TTL = timedelta(hours=6)
+_FUND_HOLDINGS_CACHE: Dict[str, tuple] = {}
 
 def _safe_float(value, default: float = 0.0) -> float:
     """Convert a value to float, handling NaN/Inf/None from pandas."""
@@ -407,6 +409,32 @@ class YFinanceService:
             "business_summary": info.get("longBusinessSummary"),
             "logo_url": info.get("logo_url"),
         }
+
+    def get_fund_holdings(self, symbol: str) -> Dict[str, Any]:
+        """ETF top holdings by weight; filings change slowly, so results are kept for hours."""
+        key = symbol.upper()
+        saved = _FUND_HOLDINGS_CACHE.get(key)
+        if saved and datetime.now() - saved[0] < _FUND_HOLDINGS_TTL:
+            return saved[1]
+        frame = self.get_ticker(key).funds_data.top_holdings
+        holdings = []
+        if frame is not None and not frame.empty:
+            for index, row in frame.iterrows():
+                weight = _optional_number(row.get("Holding Percent"), 6)
+                ticker = str(index).strip().upper() if index is not None and not pd.isna(index) else ""
+                name = row.get("Name")
+                if weight is None or weight <= 0 or not (ticker or name):
+                    continue
+                holdings.append({
+                    "symbol": ticker or None,
+                    "name": str(name).strip() if isinstance(name, str) and name.strip() else None,
+                    "weight": weight,
+                })
+        holdings.sort(key=lambda item: item["weight"], reverse=True)
+        data = {"symbol": key, "holdings": holdings}
+        if holdings:
+            _FUND_HOLDINGS_CACHE[key] = (datetime.now(), data)
+        return data
 
     def get_financials(self, symbol: str) -> Dict[str, Any]:
         """

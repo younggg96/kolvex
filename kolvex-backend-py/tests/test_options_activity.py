@@ -84,6 +84,15 @@ class AggregateTests(unittest.TestCase):
         self.assertFalse(aaa_put["flags"]["new_positions"])
 
 
+    def test_listed_contracts_keep_each_symbols_largest(self):
+        ranked = [{"underlying": "SPY", "premium": 1000 - i} for i in range(30)]
+        ranked += [{"underlying": "FN", "premium": 10 - i} for i in range(5)]
+        listed = aggregate.listed_contracts(ranked)
+        self.assertEqual(sum(c["underlying"] == "SPY" for c in listed), aggregate.TOP_CONTRACTS)
+        self.assertEqual([c["premium"] for c in listed if c["underlying"] == "FN"], [10, 9, 8])
+        self.assertEqual(listed, sorted(listed, key=lambda c: -c["premium"]))
+
+
 class CollectorTests(unittest.TestCase):
     def test_stock_quote_uses_eastern_bar_date(self):
         quote = stock_quote({"latestTrade": {"p": 110}, "dailyBar": {"t": "2026-11-06T05:00:00Z", "c": 109},

@@ -13,6 +13,7 @@ from app.services.options_chain import metrics
 
 TOP_CONTRIBUTORS = 5
 TOP_CONTRACTS = 20
+CONTRACTS_PER_SYMBOL = 3  # Every scanned symbol keeps its largest few, so index ETFs cannot crowd the rest out.
 MIN_RANGE_DAYS = 5
 MIN_CANDIDATE_DTE = 7
 CANDIDATES_PER_SYMBOL = 3
@@ -152,6 +153,18 @@ def _median(values: Iterable[Optional[float]]) -> Optional[float]:
     return round(median(clean), 4) if clean else None
 
 
+def listed_contracts(ranked: list[dict]) -> list[dict]:
+    """The overall largest contracts plus each symbol's largest few, still ranked by premium."""
+    per_symbol: dict[str, int] = {}
+    listed = []
+    for index, contract in enumerate(ranked):
+        count = per_symbol.get(contract["underlying"], 0)
+        if index < TOP_CONTRACTS or count < CONTRACTS_PER_SYMBOL:
+            listed.append(contract)
+        per_symbol[contract["underlying"]] = count + 1
+    return listed
+
+
 def candidate_pool(ranked: list[dict]) -> list[dict]:
     """Contracts the AI candidates may be picked from. Same-day expirations crowd the premium
     ranking, so this keeps longer-dated, not deep in-the-money contracts and caps each symbol."""
@@ -216,7 +229,7 @@ def build_report(scans: list[dict], history: list[dict], today: date) -> dict:
             "positive_total": round(sum(t["net_premium"] for t in tickers if t["net_premium"] > 0), 2),
             "negative_total": round(sum(t["net_premium"] for t in tickers if t["net_premium"] < 0), 2),
         },
-        "contracts": contracts[:TOP_CONTRACTS],
+        "contracts": listed_contracts(contracts),
         "tickers": sorted(tickers, key=lambda t: -(t["call_premium"] + t["put_premium"])),
     }
 

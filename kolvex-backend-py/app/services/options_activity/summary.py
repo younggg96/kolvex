@@ -26,7 +26,7 @@ Rules:
 - When mentioning an implied range, say it is the options-implied range, not a forecast (期权隐含区间，而非确定走势).
 - Large put activity may be hedging; say so when you highlight it.
 - Compare put/call ratios with their baseline (median of earlier runs in the same session) when a baseline exists.
-- "market" totals cover only the fixed core watchlist (market.tickers_scanned symbols). Other tickers were added for this run only; their "sources" say why: "mover" (big price move), "active" (unusually high volume), "kol" (much discussed by creators), "manual" (added by an admin for this run). Mention that reason when you highlight one of them.
+- "market" totals cover only the fixed core watchlist (market.tickers_scanned symbols). Other tickers were added for this run only; their "sources" say why: "earnings" (reports earnings within the next week; a core name can carry it too, and option premium before earnings often prices the expected move rather than a view), "mover" (big price move), "active" (unusually high volume), "kol" (much discussed by creators), "manual" (added by an admin for this run). Mention that reason when you highlight one of them.
 - 2 to 4 points per language, each one or two sentences. The Chinese and English points say the same thing.
 - sentiment: "bullish" if call premium clearly dominates, "bearish" if put premium clearly dominates, otherwise "mixed".
 """

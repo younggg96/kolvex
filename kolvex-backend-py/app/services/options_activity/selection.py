@@ -4,6 +4,7 @@ The fixed core watchlist is always scanned; it is the only part whose market
 totals are compared with earlier runs. On top of it each run adds symbols that
 are in play right now:
 
+- earnings: largest companies reporting within the next week (Yahoo earnings calendar)
 - mover:  biggest moves of the latest session (Yahoo gainers/losers)
 - active: highest volume versus their 3-month average (Yahoo most actives)
 - kol:    most discussed by creators (Reddit ranking, X cashtags, YouTube opinions)
@@ -20,6 +21,9 @@ from typing import Awaitable, Callable, Optional, Union
 
 from app.services.options_activity.universe import (
     ACTIVE_LIMIT,
+    EARNINGS_DAYS,
+    EARNINGS_LIMIT,
+    EARNINGS_MIN_MARKET_CAP,
     KOL_LIMIT,
     KOL_MIN_CREATORS,
     KOL_MIN_PLATFORMS,
@@ -36,6 +40,8 @@ logger = logging.getLogger(__name__)
 OPTIONABLE = re.compile(r"[A-Z]{1,5}")
 SOURCE_TIMEOUT = 20
 KOL_PLATFORMS = ("reddit", "x", "youtube")
+# Foreign OTC lines (TCEHY, BABAF) duplicate a US listing or have thin options.
+OTC_FOREIGN = re.compile(r"[A-Z]{4}[FY]")
 
 # Market sources return ranked tickers; KOL sources return ranked (ticker, distinct creators).
 Pick = Union[str, tuple[str, int]]
@@ -102,6 +108,41 @@ async def fetch_active() -> list[Pick]:
     return liquid((await _discovery())["active"]["items"])  # sorted by volume multiple
 
 
+def earnings_picks(rows: list[dict], now: datetime) -> list[str]:
+    """US listings that report after `now` and within EARNINGS_DAYS, largest market cap first.
+    rows: {symbol, market_cap, starts_at (aware datetime)} from the earnings calendar."""
+    end = now + timedelta(days=EARNINGS_DAYS)
+    upcoming = [
+        r for r in rows
+        if isinstance(r.get("symbol"), str) and not OTC_FOREIGN.fullmatch(r["symbol"])
+        and isinstance(r.get("starts_at"), datetime) and now < r["starts_at"] <= end
+        and (r.get("market_cap") or 0) >= EARNINGS_MIN_MARKET_CAP
+    ]
+    return [r["symbol"] for r in sorted(upcoming, key=lambda r: -r["market_cap"])]
+
+
+async def fetch_earnings(now: Optional[datetime] = None) -> list[Pick]:
+    now = now or datetime.now(timezone.utc)
+
+    def load() -> list[dict]:
+        import yfinance as yf
+
+        calendar = yf.Calendars(start=now.date(), end=(now + timedelta(days=EARNINGS_DAYS + 1)).date())
+        frame = calendar.get_earnings_calendar(market_cap=EARNINGS_MIN_MARKET_CAP, filter_most_active=False, limit=100)
+        if frame is None or frame.empty:
+            return []
+        return [
+            {"symbol": symbol, "market_cap": row.get("Marketcap"), "starts_at": row.get("Event Start Date")}
+            for symbol, row in frame.iterrows()
+        ]
+
+    rows = await asyncio.to_thread(load)
+    for row in rows:  # pandas Timestamps -> plain aware datetimes
+        if hasattr(row["starts_at"], "to_pydatetime"):
+            row["starts_at"] = row["starts_at"].to_pydatetime()
+    return earnings_picks(rows, now)
+
+
 async def fetch_reddit() -> list[Pick]:
     from app.services.reddit_opinions import reddit_opinion_service
 
@@ -144,6 +185,7 @@ def rank_youtube(rows: list[dict]) -> list[tuple[str, int]]:
 
 
 DEFAULT_SOURCES: dict[str, Fetch] = {
+    "earnings": fetch_earnings,
     "movers": fetch_movers,
     "active": fetch_active,
     "reddit": fetch_reddit,
@@ -162,12 +204,16 @@ async def _safe(name: str, fetch: Fetch) -> list[tuple[str, int]]:
         return []
 
 
-def combine(core: tuple[str, ...], movers: list[str], active: list[str], kol: list[str]) -> tuple[list[str], dict[str, list[str]]]:
+def combine(
+    core: tuple[str, ...], movers: list[str], active: list[str], kol: list[str], earnings: Optional[list[str]] = None,
+) -> tuple[list[str], dict[str, list[str]]]:
     """Core first, then each dynamic group up to its own limit. Returns (symbols, sources per symbol).
     A symbol can carry several reasons (e.g. a core name that is also a top mover)."""
     sources: dict[str, list[str]] = {s: ["core"] for s in core}
     order = list(core)
-    for name, picks, limit in (("mover", movers, MOVERS_LIMIT), ("active", active, ACTIVE_LIMIT), ("kol", kol, KOL_LIMIT)):
+    groups = (("earnings", earnings or [], EARNINGS_LIMIT), ("mover", movers, MOVERS_LIMIT),
+              ("active", active, ACTIVE_LIMIT), ("kol", kol, KOL_LIMIT))
+    for name, picks, limit in groups:
         added = 0
         for symbol in picks:
             if symbol in sources:
@@ -215,6 +261,6 @@ async def select_universe(fetchers: Optional[dict[str, Fetch]] = None) -> tuple[
     names = list(fetchers)
     results = dict(zip(names, await asyncio.gather(*(_safe(n, fetchers[n]) for n in names))))
     tickers = lambda name: [s for s, _ in results.get(name, [])]
-    symbols, sources = combine(UNIVERSE, tickers("movers"), tickers("active"), kol_picks(results))
+    symbols, sources = combine(UNIVERSE, tickers("movers"), tickers("active"), kol_picks(results), tickers("earnings"))
     logger.info("Options activity universe: %d symbols (%d core)", len(symbols), len(UNIVERSE))
     return symbols, sources

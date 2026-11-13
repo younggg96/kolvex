@@ -39,6 +39,7 @@ const SESSION_TIME: Record<ActivitySession, string> = { pre: "09:00", intraday: 
 const POLL_MS = 5000;
 const SOURCE_GROUPS: [SymbolSource, string, string][] = [
   ["core", "核心", "固定观察列表，市场总额只统计这一组"],
+  ["earnings", "财报前", "未来 7 天内发布财报、尚未发布，且市值不低于 200 亿美元，按市值取前 15 个"],
   ["mover", "异动", "今日涨跌幅居前，且股票成交额不低于 2 亿美元"],
   ["active", "放量", "成交量明显高于 3 个月均量，且股票成交额不低于 2 亿美元"],
   ["kol", "热议", "Reddit、X、YouTube 中至少两个平台提到，或被至少两位博主提到"],

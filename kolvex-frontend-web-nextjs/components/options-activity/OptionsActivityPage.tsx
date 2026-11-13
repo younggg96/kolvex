@@ -39,7 +39,7 @@ export default function OptionsActivityPage() {
   const [date, setDate] = useState<string | null>(() => searchParams.get("date"));
   const [runId, setRunId] = useState<string | null>(null);
   const kindParam = searchParams.get("kind");
-  const kind: Filter = kindParam === "etf" || kindParam === "stock" ? kindParam : "all";
+  const kind: Filter = kindParam === "etf" || kindParam === "stock" || kindParam === "earnings" ? kindParam : "all";
 
   const setQuery = useCallback(
     (updates: Record<string, string | null>) => {

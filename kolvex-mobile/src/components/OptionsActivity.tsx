@@ -16,7 +16,7 @@ import { useText } from "../lib/i18n";
 import { useTheme } from "../lib/theme";
 import { usePreferences } from "../state/Preferences";
 import { Filters } from "./Content";
-import { Copy, Glass, styles } from "./UI";
+import { Button, Copy, Glass, styles } from "./UI";
 
 export const SESSION_LABELS: Record<ActivitySession, string> = {
   pre: "盘前",
@@ -98,6 +98,7 @@ function Tag({ label }: { label: string }) {
   );
 }
 const SOURCE_LABELS: Record<Exclude<SymbolSource, "core">, string> = {
+  earnings: "财报前",
   mover: "异动",
   active: "放量",
   kol: "热议",
@@ -621,7 +622,8 @@ function ContractRow({
     </View>
   );
 }
-export type ContractFilter = "all" | "etf" | "stock";
+export type ContractFilter = "all" | "etf" | "stock" | "earnings";
+const CONTRACTS_SHOWN = 20;
 export function UnusualContracts({
   run,
   initial = "all",
@@ -630,17 +632,26 @@ export function UnusualContracts({
   initial?: ContractFilter;
 }) {
   const [filter, setFilter] = useState<string>(initial);
+  const [expanded, setExpanded] = useState(false);
   const sourcesOf = useSourcesBySymbol(run);
   const all = run.payload.contracts;
   const etf = all.filter((item) => item.is_etf).length;
-  const shown = all.filter(
-    (item) => filter === "all" || (filter === "etf") === item.is_etf,
+  const beforeEarnings = (item: ActivityContract) =>
+    Boolean(sourcesOf.get(item.underlying)?.includes("earnings"));
+  const earnings = all.filter(beforeEarnings).length;
+  const matching = all.filter((item) =>
+    filter === "all"
+      ? true
+      : filter === "earnings"
+        ? beforeEarnings(item)
+        : (filter === "etf") === item.is_etf,
   );
+  const shown = expanded ? matching : matching.slice(0, CONTRACTS_SHOWN);
   return (
     <View style={{ gap: 12 }}>
       <Header
         title="异动合约"
-        note="按成交权利金从大到小排序。量/持仓 超过 3 倍加粗：当日成交量超过原有持仓量。"
+        note="按成交权利金从大到小排序：全部标的中最大的 20 个，加上每个扫描标的各自最大的 3 个。量/持仓 超过 3 倍加粗：当日成交量超过原有持仓量。"
       />
       <Filters
         size="sm"
@@ -648,9 +659,15 @@ export function UnusualContracts({
           ["all", `全部 ${all.length}`],
           ["etf", `ETF指数 ${etf}`],
           ["stock", `个股 ${all.length - etf}`],
+          ...(earnings || filter === "earnings"
+            ? [["earnings", `财报前 ${earnings}`] as [string, string]]
+            : []),
         ]}
         value={filter}
-        onChange={setFilter}
+        onChange={(next) => {
+          setFilter(next);
+          setExpanded(false);
+        }}
       />
       <Glass style={{ paddingHorizontal: 16 }}>
         {shown.length === 0 ? (
@@ -670,6 +687,11 @@ export function UnusualContracts({
           ))
         )}
       </Glass>
+      {matching.length > CONTRACTS_SHOWN && (
+        <Button selected={expanded} onPress={() => setExpanded((value) => !value)}>
+          {expanded ? "收起" : `显示全部 ${matching.length} 个`}
+        </Button>
+      )}
     </View>
   );
 }

@@ -741,6 +741,32 @@ def get_company_info(
         raise HTTPException(status_code=500, detail=f"获取公司信息失败: {str(e)}")
 
 
+class FundHolding(BaseModel):
+    symbol: Optional[str] = None
+    name: Optional[str] = None
+    weight: float = Field(..., description="Share of fund assets, 0–1")
+
+
+class FundHoldingsResponse(BaseModel):
+    symbol: str
+    holdings: List[FundHolding]
+
+
+@router.get(
+    "/fund-holdings/{symbol}",
+    response_model=FundHoldingsResponse,
+    summary="获取 ETF 前十大持仓",
+)
+def get_fund_holdings(
+    symbol: str = Path(..., pattern=r"^[A-Za-z0-9.\-]{1,12}$", description="ETF 代码")
+):
+    try:
+        return FundHoldingsResponse(**get_yfinance_service().get_fund_holdings(symbol))
+    except Exception:
+        logger.exception("Fund holdings unavailable for %s", symbol)
+        raise HTTPException(status_code=502, detail="Fund holdings unavailable")
+
+
 @router.get(
     "/financials/{symbol}",
     response_model=FinancialsResponse,

@@ -13,7 +13,7 @@ export interface ActivityMarket {
 }
 
 /** Why a symbol was scanned. "core" is the fixed watchlist; absent on older runs. */
-export type SymbolSource = "core" | "mover" | "active" | "kol" | "manual";
+export type SymbolSource = "core" | "earnings" | "mover" | "active" | "kol" | "manual";
 
 export interface Contributor { symbol: string; is_etf: boolean; net_premium: number; sources?: SymbolSource[] }
 

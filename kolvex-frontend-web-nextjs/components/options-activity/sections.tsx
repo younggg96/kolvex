@@ -7,6 +7,7 @@ import { ChevronDown } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import CompanyLogo from "@/components/ui/company-logo";
 import { useCopy } from "@/components/decision/shared";
+import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useTranslation } from "@/lib/i18n";
 import { barShare, formatPremium, type ActivityCandidate, type ActivityCandidates, type ActivityContract, type ActivityRun, type ActivitySession, type Contributor, type SymbolSource } from "@/lib/optionsActivity";
@@ -35,6 +36,7 @@ const chip = "rounded bg-foreground/[0.06] px-1.5 py-0.5 text-[0.6875rem] text-m
 function SourceTags({ sources }: { sources?: SymbolSource[] }) {
   const c = useCopy();
   const labels: Record<Exclude<SymbolSource, "core">, [string, string]> = {
+    earnings: [c("Earnings ahead", "财报前"), c("Reports earnings within the next 7 days", "未来 7 天内发布财报")],
     mover: [c("Mover", "异动"), c("Among today's biggest price moves", "今日涨跌幅居前")],
     active: [c("Volume", "放量"), c("Volume well above its 3-month average", "成交量明显高于 3 个月均量")],
     kol: [c("Buzz", "热议"), c("Widely discussed on Reddit, X or YouTube", "Reddit、X、YouTube 博主热议")],
@@ -262,7 +264,7 @@ export function ContributionBoard({ run }: { run: ActivityRun }) {
   );
 }
 
-export type Filter = "all" | "etf" | "stock";
+export type Filter = "all" | "etf" | "stock" | "earnings";
 
 /** Expiry as the reader's locale writes month/day, from the ISO date the API returns. */
 function useExpiryLabel() {
@@ -400,6 +402,8 @@ function ContractRow({
   );
 }
 
+const CONTRACTS_SHOWN = 20;
+
 export function UnusualContracts({
   run,
   filter: controlled,
@@ -413,21 +417,28 @@ export function UnusualContracts({
   const c = useCopy();
   const [uncontrolled, setUncontrolled] = useState<Filter>("all");
   const filter = controlled ?? uncontrolled;
+  const [expanded, setExpanded] = useState(false);
   const setFilter = (next: Filter) => {
     setUncontrolled(next);
+    setExpanded(false);
     onFilterChange?.(next);
   };
   const sourcesOf = useSourcesBySymbol(run);
   const all = run.payload.contracts;
   const etf = all.filter((x) => x.is_etf).length;
-  const shown = all.filter((x) => filter === "all" || (filter === "etf") === x.is_etf);
+  const beforeEarnings = (x: ActivityContract) => Boolean(sourcesOf.get(x.underlying)?.includes("earnings"));
+  const earnings = all.filter(beforeEarnings).length;
+  const matching = all.filter((x) =>
+    filter === "all" ? true : filter === "earnings" ? beforeEarnings(x) : (filter === "etf") === x.is_etf,
+  );
+  const shown = expanded ? matching : matching.slice(0, CONTRACTS_SHOWN);
   const max = Math.max(0, ...all.map((x) => x.premium));
 
   return (
     <section aria-labelledby="activity-contracts">
       <SectionHeader
         title={c("Largest contracts", "异动合约")}
-        note={c("Ranked by premium traded, largest first. Volume/Open interest above 3× is bold: more contracts changed hands than were already open.", "按成交权利金从大到小排序。量/持仓 超过 3 倍加粗：当日成交量超过原有持仓量。")}
+        note={c("Ranked by premium traded, largest first: the 20 largest overall plus the 3 largest of every scanned symbol. Volume/Open interest above 3× is bold: more contracts changed hands than were already open.", "按成交权利金从大到小排序：全部标的中最大的 20 个，加上每个扫描标的各自最大的 3 个。量/持仓 超过 3 倍加粗：当日成交量超过原有持仓量。")}
       />
       <SegmentedControl
         size="sm"
@@ -439,14 +450,15 @@ export function UnusualContracts({
           { value: "all", label: `${c("All", "全部")} ${all.length}` },
           { value: "etf", label: `${c("ETFs", "ETF指数")} ${etf}` },
           { value: "stock", label: `${c("Stocks", "个股")} ${all.length - etf}` },
+          ...(earnings || filter === "earnings" ? [{ value: "earnings" as const, label: `${c("Earnings ahead", "财报前")} ${earnings}` }] : []),
         ]}
       />
       <div className="overflow-x-auto rounded-3xl border border-foreground/10 glass-card bg-card-glass">
         <table className="w-full table-fixed text-sm sm:min-w-[560px]">
           <caption className="sr-only">
             {c(
-              `${shown.length} largest ${filter === "stock" ? "stock" : filter === "etf" ? "ETF" : ""} option contracts by premium traded`,
-              `成交权利金最大的 ${shown.length} 个${filter === "stock" ? "个股" : filter === "etf" ? "ETF" : ""}期权合约`,
+              `${shown.length} largest ${filter === "stock" ? "stock" : filter === "etf" ? "ETF" : filter === "earnings" ? "pre-earnings" : ""} option contracts by premium traded`,
+              `成交权利金最大的 ${shown.length} 个${filter === "stock" ? "个股" : filter === "etf" ? "ETF" : filter === "earnings" ? "财报前" : ""}期权合约`,
             )}
           </caption>
           <thead className="text-xs text-muted-foreground">
@@ -474,6 +486,14 @@ export function UnusualContracts({
           </tbody>
         </table>
       </div>
+      {matching.length > CONTRACTS_SHOWN && (
+        <div className="mt-3 flex justify-center">
+          <Button variant="ghost" size="sm" aria-expanded={expanded} onClick={() => setExpanded((value) => !value)}>
+            {expanded ? c("Show fewer", "收起") : c(`Show all ${matching.length}`, `显示全部 ${matching.length} 个`)}
+            <ChevronDown aria-hidden="true" className={cn("h-4 w-4 transition-transform", expanded && "rotate-180")} />
+          </Button>
+        </div>
+      )}
     </section>
   );
 }
