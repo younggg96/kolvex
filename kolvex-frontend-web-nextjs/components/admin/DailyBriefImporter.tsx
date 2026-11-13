@@ -149,11 +149,11 @@ export default function DailyBriefImporter() {
       <div className="space-y-2"><h2 className="text-xl font-semibold">日报管理</h2><p id="brief-help" className="max-w-3xl text-sm leading-6 text-muted-foreground">管理盘前 1 小时、盘中、盘后 1 小时的中英文日报。每份 JSON 最大 2 MB；原文用 language 标记 zh 或 en，另一语言放在 translations.en 或 translations.zh。保存或编辑后，所有登录用户按语言偏好阅读。</p></div>
       <Button variant="outline" disabled={busy} onClick={() => protectDraft(reset)}>新增日报</Button>
     </div>
-    <SettingsGroup><SettingsRow label={<label id="brief-edition-label" htmlFor="brief-edition">期次筛选</label>}><Select value={edition} disabled={busy} onValueChange={value => { setEdition(value as "auto" | BriefType); setPage(1); if (!editing) setValidated(false); }}><SelectTrigger id="brief-edition" aria-labelledby="brief-edition-label"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="auto">全部期次</SelectItem>{BRIEF_TYPES.map(type => <SelectItem key={type} value={type}>{t(`briefs.${type}`)}</SelectItem>)}</SelectContent></Select></SettingsRow></SettingsGroup>
+    <SettingsGroup><SettingsRow input label={<label id="brief-edition-label" htmlFor="brief-edition">期次筛选</label>}><Select value={edition} disabled={busy} onValueChange={value => { setEdition(value as "auto" | BriefType); setPage(1); if (!editing) setValidated(false); }}><SelectTrigger id="brief-edition" aria-labelledby="brief-edition-label"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="auto">全部期次</SelectItem>{BRIEF_TYPES.map(type => <SelectItem key={type} value={type}>{t(`briefs.${type}`)}</SelectItem>)}</SelectContent></Select></SettingsRow></SettingsGroup>
     <section className="space-y-4" aria-label={editing ? "编辑日报" : "新增日报"}>
       <h3 className="break-all font-semibold">{editing ? `编辑 ${editing.id}` : "新增日报"}</h3>
       {editing && <p className="text-xs leading-5 text-muted-foreground">日期、期次和 ID 固定。可修改正文、标题，或补充 translations 中的另一种语言；修改后请重新校验。</p>}
-      <SettingsGroup><SettingsRow label={<label htmlFor="brief-file" className="flex items-center gap-2"><FileJson className="h-4 w-4" aria-hidden="true" />选择 JSON 文件</label>}><Input className="max-w-[17.5rem]" id="brief-file" type="file" accept=".json,application/json" disabled={busy} aria-describedby="brief-help" onChange={event => {
+      <SettingsGroup><SettingsRow input label={<label htmlFor="brief-file" className="flex items-center gap-2"><FileJson className="h-4 w-4" aria-hidden="true" />选择 JSON 文件</label>}><Input id="brief-file" type="file" accept=".json,application/json" disabled={busy} aria-describedby="brief-help" onChange={event => {
         const file = event.target.files?.[0]; event.target.value = "";
         if (!file) return;
         protectDraft(() => { void run(async () => {

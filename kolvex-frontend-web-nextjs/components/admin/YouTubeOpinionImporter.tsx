@@ -194,8 +194,8 @@ export default function YouTubeOpinionImporter({ onImported }: { onImported?: ()
         </div>
       </details>
       <SettingsGroup>
-        <SettingsRow label={<label htmlFor="youtube-json-file" className="flex items-center gap-2"><FileJson className="h-4 w-4" />JSON 文件</label>}>
-        <Input className="max-w-[17.5rem]" id="youtube-json-file" type="file" accept=".json,application/json" multiple disabled={busy} onChange={async (event) => {
+        <SettingsRow input label={<label htmlFor="youtube-json-file" className="flex items-center gap-2"><FileJson className="h-4 w-4" />JSON 文件</label>}>
+        <Input id="youtube-json-file" type="file" accept=".json,application/json" multiple disabled={busy} onChange={async (event) => {
           const files = Array.from(event.target.files ?? []);
           event.target.value = "";
           if (files.length) await addFiles(files);

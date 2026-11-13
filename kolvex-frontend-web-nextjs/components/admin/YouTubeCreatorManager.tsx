@@ -453,12 +453,12 @@ function Field({ label, id, hint, stacked, children }: { label: string; id: stri
     );
   }
   return (
-    <div className="flex min-h-[3.25rem] items-center justify-between gap-4 px-4 py-2.5">
+    <div className="flex min-h-[3.25rem] flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:py-2.5">
       <div className="min-w-0 shrink-0">
         <label htmlFor={id} className="text-[0.9375rem] font-medium">{label}</label>
         {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
       </div>
-      <div className="min-w-0 flex-1 [&>*]:ml-auto [&>*]:max-w-[17.5rem]">{children}</div>
+      <div className="min-w-0 flex-1 sm:[&>*]:ml-auto sm:[&>*]:max-w-[17.5rem]">{children}</div>
     </div>
   );
 }

@@ -121,7 +121,7 @@ function SettingsSection({
 }) {
   return (
     <section className="pt-2">
-      <div className="flex items-start justify-between gap-4 border-b border-border pb-4">
+      <div className="mb-5 flex items-start justify-between gap-4">
         <div className="min-w-0">
           <h2 className="flex items-center gap-2 text-[1.375rem] font-bold leading-tight text-foreground">
             {title}
@@ -138,13 +138,15 @@ function SettingsSection({
 function FieldRow({
   icon,
   label,
+  stacked,
   children,
 }: {
   icon?: React.ComponentType<{ className?: string }>;
   label: string;
+  stacked?: boolean;
   children: React.ReactNode;
 }) {
-  return <SettingsRow icon={icon} label={label}>{children}</SettingsRow>;
+  return <SettingsRow icon={icon} label={label} stacked={stacked}>{children}</SettingsRow>;
 }
 
 const settingsTabDefs = [
@@ -849,23 +851,12 @@ function SettingsContent() {
                           </DialogContent>
                         </Dialog>
 
+                        <div className="space-y-6">
                         <SettingsGroup>
                         <FieldRow icon={Mail} label={t("settings.account.emailAddress")}>
-                          <p className="break-all">{formData.email}</p>
+                          <p className="truncate" title={formData.email}>{formData.email}</p>
                         </FieldRow>
-
-                        <FieldRow icon={Mail} label={t("settings.account.briefEmail")}>
-                          <Switch
-                            checked={!!profile?.brief_email_opt_in}
-                            onCheckedChange={async (checked) => {
-                              const result = await updateBriefEmail(checked);
-                              if (!result.success) toast.error(result.error || t("settings.account.failedToUpdate"));
-                            }}
-                            aria-label={t("settings.account.briefEmail")}
-                          />
-                        </FieldRow>
-
-                        <FieldRow icon={UserCircle} label={t("settings.account.fullName")}>
+                        <FieldRow icon={UserCircle} label={t("settings.account.fullName")} stacked={isEditing}>
                           {isEditing ? (
                             <Input
                               id="full_name"
@@ -884,7 +875,7 @@ function SettingsContent() {
                           )}
                         </FieldRow>
 
-                        <FieldRow icon={Phone} label={t("settings.account.phoneNumber")}>
+                        <FieldRow icon={Phone} label={t("settings.account.phoneNumber")} stacked={isEditing}>
                           {isEditing ? (
                             <div className="space-y-1">
                               <Input
@@ -910,9 +901,24 @@ function SettingsContent() {
 
                         </SettingsGroup>
 
+                        <SettingsGroup label={t("settings.tabs.notifications")}>
+                        <FieldRow icon={Mail} label={t("settings.account.briefEmail")}>
+                          <Switch
+                            checked={!!profile?.brief_email_opt_in}
+                            onCheckedChange={async (checked) => {
+                              const result = await updateBriefEmail(checked);
+                              if (!result.success) toast.error(result.error || t("settings.account.failedToUpdate"));
+                            }}
+                            aria-label={t("settings.account.briefEmail")}
+                          />
+                        </FieldRow>
+
+                        </SettingsGroup>
+                        </div>
+
                         {/* Action Buttons */}
                         {isEditing && (
-                          <div className="flex flex-col-reverse items-center gap-2 pt-5 sm:flex-row sm:justify-end">
+                          <div className="flex flex-col-reverse gap-2 pt-5 sm:flex-row sm:justify-end">
                             <Button
                               variant="outline"
                               size="sm"
@@ -1107,7 +1113,7 @@ function SettingsContent() {
                     <SettingsGroup>
                       <FieldRow icon={Globe} label={t("settings.preferences.language")}>
                         <Select value={locale} onValueChange={handleLanguageChange}>
-                          <SelectTrigger className="w-[12.5rem]" aria-label={t("settings.preferences.language")}>
+                          <SelectTrigger className="w-auto min-w-[8.5rem] max-w-[12.5rem]" aria-label={t("settings.preferences.language")}>
                             <SelectValue placeholder={t("settings.preferences.selectLanguage")} />
                           </SelectTrigger>
                           <SelectContent>
@@ -1132,7 +1138,7 @@ function SettingsContent() {
                                 value: "light",
                                 label: (
                                   <>
-                                    <Sun className="h-4 w-4" />
+                                    <Sun className="hidden h-4 w-4 sm:block" />
                                     {t("settings.preferences.themeLight")}
                                   </>
                                 ),
@@ -1142,7 +1148,7 @@ function SettingsContent() {
                                 value: "dark",
                                 label: (
                                   <>
-                                    <Moon className="h-4 w-4" />
+                                    <Moon className="hidden h-4 w-4 sm:block" />
                                     {t("settings.preferences.themeDark")}
                                   </>
                                 ),
@@ -1152,14 +1158,14 @@ function SettingsContent() {
                                 value: "system",
                                 label: (
                                   <>
-                                    <Monitor className="h-4 w-4" />
+                                    <Monitor className="hidden h-4 w-4 sm:block" />
                                     {t("settings.preferences.themeSystem")}
                                   </>
                                 ),
                                 title: t("settings.preferences.themeSystemDesc"),
                               },
                             ]}
-                            itemClassName="min-h-9 px-4 text-[0.8125rem]"
+                            itemClassName="min-h-9 px-3 text-[0.8125rem] sm:px-4"
                           />
                         )}
                       </FieldRow>

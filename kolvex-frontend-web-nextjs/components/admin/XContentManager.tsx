@@ -180,8 +180,8 @@ export default function XContentManager({ onSaved }: { onSaved: () => void }) {
             )}
           </p>
           <SettingsGroup>
-            <SettingsRow label={c("X username", "X 用户名")}>
-              <Input className="max-w-[17.5rem]"
+            <SettingsRow input label={c("X username", "X 用户名")}>
+              <Input
                 ref={handleRef}
                 id="x-handle"
                 value={handle}
@@ -197,11 +197,11 @@ export default function XContentManager({ onSaved }: { onSaved: () => void }) {
                 placeholder="@username"
               />
             </SettingsRow>
-            <SettingsRow label={c("Display name", "显示名称")}>
-              <Input id="x-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={100} disabled={busy} className="max-w-[17.5rem]" />
+            <SettingsRow input label={c("Display name", "显示名称")}>
+              <Input id="x-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={100} disabled={busy} />
             </SettingsRow>
-            <SettingsRow label={c("Bio", "简介")}>
-              <Input id="x-bio" value={bio} onChange={(e) => setBio(e.target.value)} maxLength={1000} disabled={busy} className="max-w-[17.5rem]" />
+            <SettingsRow input label={c("Bio", "简介")}>
+              <Input id="x-bio" value={bio} onChange={(e) => setBio(e.target.value)} maxLength={1000} disabled={busy} />
             </SettingsRow>
             {[
               { id: "x-avatar", label: c("Avatar URL", "头像链接"), value: avatarUrl, set: setAvatarUrl, max: 2048 },
@@ -209,7 +209,7 @@ export default function XContentManager({ onSaved }: { onSaved: () => void }) {
               { id: "x-website", label: c("Website", "个人网站"), value: website, set: setWebsite, max: 2048 },
               { id: "x-followers", label: c("Followers (exact count)", "关注者（准确数量）"), value: followers, set: setFollowers, max: 16 },
               { id: "x-following", label: c("Following (exact count)", "正在关注（准确数量）"), value: following, set: setFollowing, max: 16 },
-            ].map(field => <SettingsRow key={field.id} label={field.label}><Input id={field.id} value={field.value} onChange={event => field.set(event.target.value)} maxLength={field.max} disabled={busy} className="max-w-[17.5rem]" /></SettingsRow>)}
+            ].map(field => <SettingsRow key={field.id} input label={field.label}><Input id={field.id} value={field.value} onChange={event => field.set(event.target.value)} maxLength={field.max} disabled={busy} /></SettingsRow>)}
           </SettingsGroup>
           <p className="text-xs text-muted-foreground">{c("Use public profile information only. Leave unknown fields blank.", "仅填写公开资料，不确定的字段请留空。")}</p>
           <Button type="button" variant="ghost" disabled={busy || !handle.trim()} onClick={() => void loadCreator()}>{c("Load saved profile", "读取已存资料")}</Button>
@@ -231,7 +231,7 @@ export default function XContentManager({ onSaved }: { onSaved: () => void }) {
             )}
           </p>
           <SettingsGroup>
-          <SettingsRow label={c("Post JSON file", "推文 JSON 文件")}>
+          <SettingsRow input label={c("Post JSON file", "推文 JSON 文件")}>
           <input
             id="x-file"
             type="file"

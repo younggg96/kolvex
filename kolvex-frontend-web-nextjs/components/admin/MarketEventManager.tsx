@@ -109,9 +109,8 @@ export default function MarketEventManager() {
         </a>
       </div>
       <SettingsGroup>
-        <SettingsRow label={<label htmlFor="event-file">上传 JSON（最大 1 MB）</label>}>
+        <SettingsRow input label={<label htmlFor="event-file">上传 JSON（最大 1 MB）</label>}>
         <Input
-          className="max-w-[17.5rem]"
           id="event-file"
           type="file"
           accept=".json,application/json"
