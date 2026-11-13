@@ -124,8 +124,8 @@ test("Website URLs resolve to the native screen for the same content", () => {
     ["/auth/callback?code=1", "/auth/callback?code=1"],
     ["kolvex://stock/AAPL", "/stock/AAPL"],
     ["kolvex://auth/callback?code=1", "/auth/callback?code=1"],
-    // Disabled on the Web, so it must not open a native portfolio.
-    ["/dashboard/portfolio", "/"],
+    // Follows the Web feature flag: the native portfolio when enabled, otherwise home.
+    ["/dashboard/portfolio", portfolioEnabled ? "/portfolio" : "/"],
     ["/dashboard/market/..%2Fusers", "/"],
   ];
   for (const [input, expected] of cases)

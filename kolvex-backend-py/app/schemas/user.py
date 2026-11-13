@@ -63,6 +63,12 @@ class UserThemeUpdate(BaseModel):
     model_config = ConfigDict(use_enum_values=True)
 
 
+class UserBriefEmailUpdate(BaseModel):
+    """开启或关闭每日简报邮件"""
+
+    opt_in: bool
+
+
 class UserLocaleUpdate(BaseModel):
     """更新用户语言偏好"""
 
@@ -89,6 +95,7 @@ class UserProfileResponse(BaseModel):
     theme: Optional[ThemeEnum] = None
     locale: Optional[str] = None
     email_notifications_enabled: bool = False
+    brief_email_opt_in: bool = False
     is_admin: bool = False
     created_at: datetime
     updated_at: datetime

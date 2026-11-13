@@ -1,4 +1,5 @@
 // Website URLs and Kolvex links resolve to the native screen for the same content.
+import { portfolioEnabled } from "./productFeatures";
 const encoded = encodeURIComponent;
 const SYMBOL = /^[A-Za-z0-9^][A-Za-z0-9.^=\-]{0,19}$/;
 export function nativePathFor(input: string): string {
@@ -95,8 +96,9 @@ export function nativePathFor(input: string): string {
     case "x-opinions":
     case "reddit-opinions":
       return "/opinions";
+    case "portfolio":
+      return portfolioEnabled ? "/portfolio" : "/";
     default:
-      // Includes the disabled portfolio feature, matching the Web's redirect.
       return "/";
   }
 }

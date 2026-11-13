@@ -15,6 +15,7 @@ export interface UserProfile {
   theme?: Theme;
   locale?: UserLocale;
   email_notifications_enabled?: boolean;
+  brief_email_opt_in?: boolean;
   is_admin?: boolean;
   created_at: string;
   updated_at: string;

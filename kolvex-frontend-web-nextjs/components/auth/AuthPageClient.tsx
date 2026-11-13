@@ -24,15 +24,25 @@ export default function AuthPageClient() {
     if (window.location.hash || searchParams.get("error") || searchParams.get("error_code")) return;
     const supabase = createClient();
     let redirectTimer: ReturnType<typeof setTimeout> | undefined;
+    let cancelled = false;
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "INITIAL_SESSION" && session) {
-        // Run navigation outside the auth callback's session lock.
-        redirectTimer = setTimeout(() => {
+        // Run outside the auth callback's session lock.
+        redirectTimer = setTimeout(async () => {
+          // The cookie session is unverified; middleware validates with getUser().
+          // Redirecting on a stale session would bounce /auth <-> /dashboard forever.
+          const { data, error } = await supabase.auth.getUser();
+          if (cancelled) return;
+          if (error || !data.user) {
+            await supabase.auth.signOut({ scope: "local" });
+            return;
+          }
           window.location.replace(getAuthRedirect(searchParams.get("redirectTo")));
         }, 0);
       }
     });
     return () => {
+      cancelled = true;
       subscription.unsubscribe();
       if (redirectTimer !== undefined) clearTimeout(redirectTimer);
     };

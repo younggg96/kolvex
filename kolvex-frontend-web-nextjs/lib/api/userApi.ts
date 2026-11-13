@@ -95,6 +95,24 @@ export function useCurrentUserProfile() {
   };
 
 
+  const updateBriefEmail = async (optIn: boolean): Promise<ApiResult> => {
+    try {
+      const response = await fetch("/api/users/me/brief-email", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ opt_in: optIn }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to update brief email");
+      }
+      const data = await response.json();
+      await refresh();
+      return { success: true, data };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : "An error occurred" };
+    }
+  };
 
   return {
     profile,
@@ -104,6 +122,7 @@ export function useCurrentUserProfile() {
     updateProfile,
     updateTheme,
     updateLocale,
+    updateBriefEmail,
   };
 }
 

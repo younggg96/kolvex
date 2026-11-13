@@ -89,6 +89,13 @@ export default function DailyBriefImporter() {
     catch (e) { setError(e instanceof Error ? e.message : "操作失败，请重试。"); }
     finally { lock.current = false; setBusy(false); }
   }
+  async function sendEmail(item: SavedBrief, mode: "test" | "all") {
+    if (mode === "all" && !window.confirm(`把「${item.headline}」发给所有开启邮件的用户？已发过的用户不会重复收到。`)) return;
+    const response = await fetch(`/api/admin/briefs/email?id=${encodeURIComponent(item.id)}&mode=${mode}`, { method: "POST" });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "发送失败，请重试。");
+    setMessage(mode === "test" ? "测试邮件已发到你的邮箱。" : `已发送 ${data.sent} 封${data.failed ? `，失败 ${data.failed} 封（可再次点击重试）` : ""}。`);
+  }
   async function validate() {
     setPreview(null); setValidated(false);
     try {
@@ -170,6 +177,8 @@ export default function DailyBriefImporter() {
       {listError ? <p role="alert" className="text-sm leading-6 text-negative">{listError}</p> : listBusy ? <AdminRowsSkeleton label="正在加载日报列表" actions={2} /> : !items.length ? <p className="text-sm text-muted-foreground">暂无符合期次的日报。</p> : <ul className="divide-y divide-border">{items.map(item => <li key={item.id} className="flex flex-wrap items-start justify-between gap-4 py-4"><div className="min-w-0 flex-1 basis-48"><p className="text-xs text-muted-foreground">{item.brief_date} · {t(`briefs.${item.brief_type}`)}</p><h4 className="mt-1 break-words text-sm font-semibold">{item.headline}</h4><p className="mt-1 text-xs text-muted-foreground">{item.title}</p></div><div className="flex flex-wrap gap-2">
         <Button size="sm" variant="outline" disabled={busy} onClick={() => void run(async () => { const result = await briefRequest<BriefDetail>(`?id=${encodeURIComponent(item.id)}`); setViewing(result.payload); })}>查看</Button>
         <Button size="sm" variant="outline" disabled={busy} onClick={() => protectDraft(() => { void run(() => edit(item)); })}>编辑</Button>
+        <Button size="sm" variant="outline" disabled={busy} onClick={() => void run(() => sendEmail(item, "test"))}>测试邮件</Button>
+        <Button size="sm" variant="outline" disabled={busy} onClick={() => void run(() => sendEmail(item, "all"))}>发送邮件</Button>
         <Button size="sm" variant="ghost" className="text-negative hover:text-negative" disabled={busy} onClick={() => void run(async () => { const result = await briefRequest<BriefDetail>(`?id=${encodeURIComponent(item.id)}`); setDeleteError(""); setDeleting({ item, revision: result.revision }); })}>删除</Button>
       </div></li>)}</ul>}
       <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-xs text-muted-foreground">第 {page} 页 · 共 {total} 份</p><div className="flex gap-2"><Button size="sm" variant="outline" disabled={listBusy || busy || page === 1} onClick={() => setPage(p => p - 1)}>上一页</Button><Button size="sm" variant="outline" disabled={listBusy || busy || page * 10 >= total} onClick={() => setPage(p => p + 1)}>下一页</Button></div></div>

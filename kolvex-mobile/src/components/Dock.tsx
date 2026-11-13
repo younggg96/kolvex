@@ -18,6 +18,7 @@ import { router, usePathname, type Tabs } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { profile } from "../lib/contentApi";
+import { portfolioEnabled } from "../lib/productFeatures";
 import { useText } from "../lib/i18n";
 import { useTheme } from "../lib/theme";
 import { useResource } from "../lib/useResource";
@@ -138,6 +139,15 @@ const MENU: {
     label: "虚拟交易",
     icon: { ios: "book", android: "menu_book", web: "menu_book" },
   },
+  ...(portfolioEnabled
+    ? [
+        {
+          href: "/portfolio",
+          label: "投资组合",
+          icon: { ios: "briefcase", android: "work", web: "work" } as SymbolName,
+        },
+      ]
+    : []),
   {
     href: "/settings",
     route: "settings",

@@ -3,6 +3,7 @@
 import { Pressable, View } from "react-native";
 import { router, usePathname } from "expo-router";
 import { SymbolView, type SymbolViewProps } from "expo-symbols";
+import { portfolioEnabled } from "../lib/productFeatures";
 import { useTheme } from "../lib/theme";
 import { Copy } from "./UI";
 
@@ -30,6 +31,9 @@ const ITEMS: Item[] = [
   { href: "/congress-trades", label: "国会议员交易", icon: "scroll" },
   { href: "/options-activity", label: "期权异动", icon: "waveform.path.ecg" },
   { href: "/paper-trading", label: "虚拟交易", icon: "book" },
+  ...(portfolioEnabled
+    ? [{ href: "/portfolio", label: "投资组合", icon: "briefcase" } as Item]
+    : []),
   { href: "/settings", route: true, label: "设置", icon: "gearshape" },
 ];
 const ADMIN: Item = {

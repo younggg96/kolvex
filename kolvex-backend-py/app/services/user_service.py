@@ -259,6 +259,26 @@ class UserService:
             )
 
 
+    async def update_brief_email_opt_in(self, user_id: str, opt_in: bool) -> UserProfileResponse:
+        """开启或关闭每日简报邮件（默认关闭，需用户主动开启）"""
+        try:
+            response = await asyncio.to_thread(
+                self.supabase.table("user_profiles")
+                .update({"brief_email_opt_in": opt_in})
+                .eq("id", user_id)
+                .execute
+            )
+            if not response.data:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="user profile not found")
+            return UserProfileResponse(**response.data[0])
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"update brief email error: {str(e)}",
+            )
+
     async def delete_user_profile(self, user_id: str) -> Dict[str, Any]:
         """
         删除用户资料（软删除或硬删除）

@@ -80,7 +80,7 @@ export const PRODUCT_FEATURES = [
   {
     id: "portfolio",
     label: "Portfolio",
-    enabled: false,
+    enabled: true,
     routePrefixes: ["/dashboard/portfolio"],
     apiPrefixes: [
       "/api/portfolio",

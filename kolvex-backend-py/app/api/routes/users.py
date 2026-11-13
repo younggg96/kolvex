@@ -13,6 +13,7 @@ from app.schemas.user import (
     UserProfileUpdate,
     UserProfileResponse,
     UserThemeUpdate,
+    UserBriefEmailUpdate,
     UserLocaleUpdate,
     MessageResponse,
 )
@@ -87,6 +88,16 @@ async def update_current_user_locale(
     return await user_service.update_user_locale(current_user_id, locale_update)
 
 
+
+
+@router.patch("/me/brief-email", response_model=UserProfileResponse, summary="开启或关闭每日简报邮件")
+async def update_current_user_brief_email(
+    update: UserBriefEmailUpdate,
+    current_user_id: str = Depends(get_current_user_id),
+    user_service: UserService = Depends(get_user_service),
+):
+    """需要认证：Bearer token"""
+    return await user_service.update_brief_email_opt_in(current_user_id, update.opt_in)
 
 
 @router.delete("/me", response_model=MessageResponse, summary="删除当前用户资料")

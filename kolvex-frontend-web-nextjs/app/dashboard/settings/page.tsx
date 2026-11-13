@@ -172,6 +172,7 @@ function SettingsContent() {
     updateProfile,
     updateTheme: updateProfileTheme,
     updateLocale: updateProfileLocale,
+    updateBriefEmail,
     refetch: refreshProfile,
   } = useCurrentUserProfile();
 
@@ -857,6 +858,17 @@ function SettingsContent() {
 
                         <FieldRow icon={Mail} label={t("settings.account.emailAddress")}>
                           <p className="break-all">{formData.email}</p>
+                        </FieldRow>
+
+                        <FieldRow icon={Mail} label={t("settings.account.briefEmail")}>
+                          <Switch
+                            checked={!!profile?.brief_email_opt_in}
+                            onCheckedChange={async (checked) => {
+                              const result = await updateBriefEmail(checked);
+                              if (!result.success) toast.error(result.error || t("settings.account.failedToUpdate"));
+                            }}
+                            aria-label={t("settings.account.briefEmail")}
+                          />
                         </FieldRow>
 
                         <FieldRow icon={UserCircle} label={t("settings.account.fullName")}>

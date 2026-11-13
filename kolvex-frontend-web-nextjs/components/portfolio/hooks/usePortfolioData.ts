@@ -111,11 +111,39 @@ function clearPortfolioCache(userId?: string) {
 
 subscribeClientCache(prefix => { if (!prefix) clearPortfolioCache(); });
 
+// OAuth institutions (e.g. Robinhood) leave the page; Link must resume with the same token.
+const PLAID_LINK_TOKEN_KEY = "kolvex:plaid-link-token";
+
+function storePlaidLinkToken(token: string | null) {
+  try {
+    if (token) localStorage.setItem(PLAID_LINK_TOKEN_KEY, token);
+    else localStorage.removeItem(PLAID_LINK_TOKEN_KEY);
+  } catch {}
+}
+
+function readPlaidLinkToken(): string | null {
+  try {
+    return localStorage.getItem(PLAID_LINK_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function clearPlaidOAuthState() {
+  storePlaidLinkToken(null);
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has("oauth_state_id")) return;
+  url.searchParams.delete("oauth_state_id");
+  window.history.replaceState(null, "", url.pathname + url.search + url.hash);
+}
+
 export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
   const [status, setStatus] = useState<PortfolioConnectionStatus | null>(null);
   const [plaidStatus, setPlaidStatus] = useState<PlaidConnectionStatus | null>(null);
   const [plaidLinkToken, setPlaidLinkToken] = useState<string | null>(null);
   const [shouldOpenPlaidLink, setShouldOpenPlaidLink] = useState(false);
+  const [plaidReceivedRedirectUri, setPlaidReceivedRedirectUri] =
+    useState<string | undefined>(undefined);
   const [transactions, setTransactions] = useState<PlaidInvestmentTransaction[]>([]);
   const [transactionsTotal, setTransactionsTotal] = useState(0);
   const [transactionsHasMore, setTransactionsHasMore] = useState(false);
@@ -318,6 +346,8 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
       } catch (error: any) {
         toast.error(error?.message || "Failed to finish Plaid connection");
       } finally {
+        clearPlaidOAuthState();
+        setPlaidReceivedRedirectUri(undefined);
         setConnecting(false);
         setShouldOpenPlaidLink(false);
       }
@@ -327,9 +357,27 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
 
   const handlePlaidExit = useCallback<PlaidLinkOnExit>((error) => {
     if (error) console.warn("Plaid Link exited with error:", error);
+    clearPlaidOAuthState();
+    setPlaidReceivedRedirectUri(undefined);
     setConnecting(false);
     setShouldOpenPlaidLink(false);
   }, []);
+
+  // Returning from an OAuth institution: Plaid appends oauth_state_id to the redirect URI.
+  useEffect(() => {
+    if (!isOwner) return;
+    if (!new URL(window.location.href).searchParams.has("oauth_state_id")) return;
+    const storedToken = readPlaidLinkToken();
+    if (!storedToken) {
+      clearPlaidOAuthState();
+      toast.error("Plaid session expired. Please connect again.");
+      return;
+    }
+    setPlaidReceivedRedirectUri(window.location.href);
+    setPlaidLinkToken(storedToken);
+    setConnecting(true);
+    setShouldOpenPlaidLink(true);
+  }, [isOwner]);
 
   const {
     open: openPlaidLink,
@@ -337,6 +385,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     error: plaidLinkError,
   } = usePlaidLink({
     token: plaidLinkToken,
+    receivedRedirectUri: plaidReceivedRedirectUri,
     onSuccess: handlePlaidSuccess,
     onExit: handlePlaidExit,
   });
@@ -362,6 +411,8 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     setConnecting(true);
     try {
       const { link_token } = await createPlaidLinkToken();
+      storePlaidLinkToken(link_token);
+      setPlaidReceivedRedirectUri(undefined);
       setPlaidLinkToken(link_token);
       setShouldOpenPlaidLink(true);
     } catch (error: any) {
