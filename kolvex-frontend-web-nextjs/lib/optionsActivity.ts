@@ -5,10 +5,17 @@ export const ACTIVITY_SESSIONS: ActivitySession[] = ["pre", "intraday", "post"];
 export interface ActivityMarket {
   call_premium: number; put_premium: number; net_premium: number;
   pc_premium_ratio: number | null; pc_baseline: number | null; baseline_runs: number;
-  etf_net_premium: number; stock_net_premium: number; tickers_scanned: number;
+  etf_net_premium: number; stock_net_premium: number;
+  /** Core watchlist symbols counted in the totals above. */
+  tickers_scanned: number;
+  /** Symbols added for this run only (movers, high volume, creator-discussed); absent on older runs. */
+  dynamic_scanned?: number;
 }
 
-export interface Contributor { symbol: string; is_etf: boolean; net_premium: number }
+/** Why a symbol was scanned. "core" is the fixed watchlist; absent on older runs. */
+export type SymbolSource = "core" | "mover" | "active" | "kol" | "manual";
+
+export interface Contributor { symbol: string; is_etf: boolean; net_premium: number; sources?: SymbolSource[] }
 
 export interface ActivityContract {
   symbol: string; underlying: string; is_etf: boolean; type: "call" | "put";
@@ -26,6 +33,7 @@ export interface ActivityTicker {
   max_pain: { expiration: string; strike: number } | null;
   gamma_level: { strike: number; gex: number; total_gex: number } | null;
   earnings_date: string | null;
+  sources?: SymbolSource[];
 }
 
 export interface ActivitySummary {

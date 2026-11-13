@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 from app.services.technical_analysis import STRUCTURED_METHODS, _is_auth_error, _is_unsupported
 
 logger = logging.getLogger(__name__)
-PROMPT_VERSION = "options-activity-v1"
+PROMPT_VERSION = "options-activity-v2"
 LLM_TIMEOUT_SECONDS = 60
 
 SYSTEM_PROMPT = """You summarize a US options-activity snapshot for retail investors, in both Simplified Chinese and English.
@@ -26,6 +26,7 @@ Rules:
 - When mentioning an implied range, say it is the options-implied range, not a forecast (期权隐含区间，而非确定走势).
 - Large put activity may be hedging; say so when you highlight it.
 - Compare put/call ratios with their baseline (median of earlier runs in the same session) when a baseline exists.
+- "market" totals cover only the fixed core watchlist (market.tickers_scanned symbols). Other tickers were added for this run only; their "sources" say why: "mover" (big price move), "active" (unusually high volume), "kol" (much discussed by creators), "manual" (added by an admin for this run). Mention that reason when you highlight one of them.
 - 2 to 4 points per language, each one or two sentences. The Chinese and English points say the same thing.
 - sentiment: "bullish" if call premium clearly dominates, "bearish" if put premium clearly dominates, otherwise "mixed".
 """
@@ -53,7 +54,7 @@ def prompt_input(report: dict, session: str, data_date: Optional[str]) -> dict:
             for c in report["contracts"][:8]
         ],
         "tickers": [
-            {k: tickers[s].get(k) for k in ("symbol", "spot", "change_pct", "net_premium", "pc_premium_ratio", "pc_baseline", "implied_range", "earnings_date")}
+            {k: tickers[s].get(k) for k in ("symbol", "sources", "spot", "change_pct", "net_premium", "pc_premium_ratio", "pc_baseline", "implied_range", "earnings_date")}
             for s in sorted(focus)
             if s in tickers
         ],
@@ -76,8 +77,8 @@ def template_summary(report: dict) -> Summary:
     sentiment = "mixed" if ratio is None else "bullish" if ratio < 0.8 else "bearish" if ratio > 1.25 else "mixed"
     net = _money(market["net_premium"])
     ratio_text = f"{ratio:.2f}" if ratio is not None else "—"
-    zh = [f"观察范围内 Call 成交额 {_money(market['call_premium'])}，Put 成交额 {_money(market['put_premium'])}，净额 {net}，Put/Call 成交额比 {ratio_text}。"]
-    en = [f"Across the watchlist, calls traded {_money(market['call_premium'])} and puts {_money(market['put_premium'])}: net {net}, put/call premium ratio {ratio_text}."]
+    zh = [f"核心观察列表 {market.get('tickers_scanned', 0)} 个标的 Call 成交额 {_money(market['call_premium'])}，Put 成交额 {_money(market['put_premium'])}，净额 {net}，Put/Call 成交额比 {ratio_text}。"]
+    en = [f"Across the {market.get('tickers_scanned', 0)}-symbol core watchlist, calls traded {_money(market['call_premium'])} and puts {_money(market['put_premium'])}: net {net}, put/call premium ratio {ratio_text}."]
     if report["contracts"]:
         top = report["contracts"][0]
         side = "Call" if top["type"] == "call" else "Put"

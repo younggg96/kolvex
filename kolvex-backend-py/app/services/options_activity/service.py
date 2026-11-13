@@ -18,6 +18,7 @@ from app.services.options_activity import store
 from app.services.options_activity.aggregate import build_report, candidate_pool
 from app.services.options_activity.candidates import generate_candidates
 from app.services.options_activity.collector import OptionsActivityCollector
+from app.services.options_activity.selection import add_manual, select_universe
 from app.services.options_activity.summary import summarize
 
 logger = logging.getLogger(__name__)
@@ -45,22 +46,36 @@ def _data_date(scans: list[dict]) -> Optional[str]:
 
 
 class OptionsActivityService:
-    def __init__(self, collector: Optional[OptionsActivityCollector] = None, db_factory=get_supabase_service, llm=None, candidates_llm=None):
+    def __init__(self, collector: Optional[OptionsActivityCollector] = None, db_factory=get_supabase_service, llm=None, candidates_llm=None,
+                 selector=select_universe):
         self.collector = collector or OptionsActivityCollector()
+        self._selector = selector
         self._db_factory = db_factory
         self._llm = llm
         self._candidates_llm = candidates_llm
         self._lock = asyncio.Lock()
 
-    async def run(self, session: str, now: Optional[datetime] = None, force: bool = False) -> dict:
-        """Scan, aggregate, summarize and save one run. Returns {status, ...}."""
+    async def run(self, session: str, now: Optional[datetime] = None, force: bool = False,
+                  manual_symbols: Optional[list[str]] = None) -> dict:
+        """Scan, aggregate, summarize and save one run. Returns {status, ...}.
+        `manual_symbols` are admin-chosen extras for this run only."""
         if session not in SESSIONS:
             raise ValueError(f"unknown session {session}")
         now = now or datetime.now(timezone.utc)
         today = now.astimezone(NY).date()
         db = self._db_factory()
 
-        scans, failed = await self.collector.scan(today)
+        symbols, sources = await self._selector()
+        if manual_symbols:
+            symbols, sources = add_manual(symbols, sources, manual_symbols)
+        scans, failed = await self.collector.scan(today, symbols)
+        for item in scans:
+            item["sources"] = sources.get(item["symbol"], ["core"])
+        # A dynamic pick without a quote (unlisted, not optionable) is skipped quietly; only core misses count as failures.
+        skipped = [s for s in failed if "core" not in sources.get(s, ["core"])]
+        failed = [s for s in failed if s not in skipped]
+        if skipped:
+            logger.info("Options activity skipped dynamic symbols without data: %s", ", ".join(skipped))
         if not scans:
             raise RuntimeError(f"options activity scan returned no data ({len(failed)} symbols failed)")
         data_date = _data_date(scans)
@@ -76,6 +91,9 @@ class OptionsActivityService:
 
         history = await store.recent_payloads(db, session, today)
         report = build_report(scans, history, today)
+        # What was selected and why, including dynamic picks that had no data (admin view).
+        report["universe"] = sources
+        report["skipped_symbols"] = skipped
         summary, candidates = await asyncio.gather(
             summarize(report, session, data_date, llm=self._llm),
             generate_candidates(report, session, data_date, llm=self._candidates_llm),
@@ -143,7 +161,8 @@ class OptionsActivityService:
 options_activity_service = OptionsActivityService()
 _manual_runs: set[asyncio.Task] = set()
 # Last admin-triggered run in this process, shown on the admin tab.
-manual_state: dict = {"session": None, "status": "idle", "started_at": None, "finished_at": None, "error": None, "result": None}
+manual_state: dict = {"session": None, "status": "idle", "started_at": None, "finished_at": None, "error": None, "result": None,
+                      "symbols": []}
 analysis_state: dict = {"status": "idle", "started_at": None, "finished_at": None, "error": None, "result": None}
 
 
@@ -151,16 +170,16 @@ def manual_run_in_progress() -> bool:
     return any(not task.done() for task in _manual_runs)
 
 
-def start_manual_run(session: str, force: bool = True) -> bool:
+def start_manual_run(session: str, force: bool = True, symbols: Optional[list[str]] = None) -> bool:
     """Admin trigger. Returns False when a run is already in progress in this process."""
     if manual_run_in_progress():
         return False
     manual_state.update(session=session, status="running", started_at=datetime.now(timezone.utc).isoformat(),
-                        finished_at=None, error=None, result=None)
+                        finished_at=None, error=None, result=None, symbols=symbols or [])
 
     async def runner():
         try:
-            result = await options_activity_service.run(session, force=force)
+            result = await options_activity_service.run(session, force=force, manual_symbols=symbols)
             manual_state.update(status="done", result=result)
         except Exception as exc:
             logger.exception("Manual options activity run failed")

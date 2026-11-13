@@ -880,7 +880,8 @@
   "放量活跃": "Volume surge",
   "数据不足": "Insufficient data",
   "数据日期未提供": "Data date not provided",
-  "数据暂不可用": "Data temporarily unavailable","数据来源暂未提供排名，请稍后刷新。": "No rankings are available right now. Try refreshing later.",
+  "数据暂不可用": "Data temporarily unavailable",
+  "数据来源暂未提供排名，请稍后刷新。": "No rankings are available right now. Try refreshing later.",
   "数据格式无效，请重试。": "Invalid data. Please retry.",
   "数据源尚未提供此区间的价格。": "The source has not provided prices for this range.",
   "数据源暂无可用的关键指标。": "No key indicators are available from the source.",
@@ -1842,5 +1843,9 @@
   "默认增长率为 0%，表示盈利保持不变，不是盈利预测。PE 须为正数且按保守、基准、乐观递增；增长率须大于 −100%。": "Default growth is 0%: constant earnings, not a forecast. PE must be positive and ordered from conservative to optimistic; growth must exceed −100%.",
   "（原文，新标签页）": "(original source, new tab)",
   "＋非经营现金": "+ Nonoperating cash",
-  "＝股权价值": "= Equity value"
+  "＝股权价值": "= Equity value",
+  "异动": "Mover",
+  "放量": "Volume",
+  "热议": "Buzz",
+  "手动": "Manual"
 }

@@ -167,7 +167,7 @@ export default function OptionsActivityPage() {
           {data ? (
             <div className="space-y-8 md:space-y-10">
               <SummaryCard run={data} />
-              <ResearchCandidates candidates={data.summary?.candidates} />
+              <ResearchCandidates candidates={data.summary?.candidates} run={data} />
               <MarketOverview run={data} />
               <ContributionBoard run={data} />
               <UnusualContracts run={data} filter={kind} onFilterChange={(next) => setQuery({ kind: next === "all" ? null : next })} />

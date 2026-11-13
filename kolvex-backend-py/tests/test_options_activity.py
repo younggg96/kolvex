@@ -250,13 +250,18 @@ class FakeCollector:
     def __init__(self, bar_date=TODAY.isoformat(), fail=False):
         self.bar_date, self.fail, self.calls = bar_date, fail, 0
 
-    async def scan(self, today):
+    async def scan(self, today, symbols=None):
         self.calls += 1
+        self.symbols = symbols
         if self.fail:
             raise RuntimeError("alpaca down")
         s = scan("AAA", [row("call", 105, volume=500, vwap=2.0)])
         s["stock"]["bar_date"] = self.bar_date
         return [s], ["BBB"]
+
+
+async def fake_selector():
+    return ["AAA", "BBB"], {"AAA": ["core", "kol"], "BBB": ["core"]}
 
 
 class FakeRedis:
@@ -301,7 +306,7 @@ class ServiceTests(unittest.TestCase):
         self.addCleanup(p.stop)
 
     def service(self, collector):
-        return OptionsActivityService(collector=collector, db_factory=lambda: object())
+        return OptionsActivityService(collector=collector, db_factory=lambda: object(), selector=fake_selector)
 
     def test_due_session_schedule(self):
         self.assertIsNone(due_session(at(8, 59)))
@@ -318,6 +323,27 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual((saved["trade_date"], saved["session"], saved["status"], saved["model_id"]), ("2026-11-06", "intraday", "ok", "m"))
         self.assertEqual(saved["payload"]["market"]["call_premium"], 100_000)
 
+    def test_run_scans_selected_symbols_and_skips_dynamic_misses_quietly(self):
+        async def selector():
+            return ["AAA", "BBB"], {"AAA": ["core", "kol"], "BBB": ["mover"]}
+
+        collector = FakeCollector()
+        service = OptionsActivityService(collector=collector, db_factory=lambda: object(), selector=selector)
+        result = asyncio.run(service.run("intraday", at(12, 30)))
+        self.assertEqual(collector.symbols, ["AAA", "BBB"])
+        self.assertEqual(result["failed_symbols"], [])
+        saved = self.store["save"].call_args.args[1]
+        self.assertEqual(saved["payload"]["tickers"][0]["sources"], ["core", "kol"])
+        self.assertEqual(saved["payload"]["universe"], {"AAA": ["core", "kol"], "BBB": ["mover"]})
+        self.assertEqual(saved["payload"]["skipped_symbols"], ["BBB"])
+
+    def test_manual_symbols_join_the_run_without_core_totals(self):
+        collector = FakeCollector()
+        asyncio.run(self.service(collector).run("intraday", at(12, 30), manual_symbols=["LLY", "AAA"]))
+        self.assertEqual(collector.symbols, ["AAA", "BBB", "LLY"])
+        universe = self.store["save"].call_args.args[1]["payload"]["universe"]
+        self.assertEqual((universe["LLY"], universe["AAA"]), (["manual"], ["core", "kol", "manual"]))
+
     def test_run_saves_candidates_inside_summary(self):
         asyncio.run(self.service(FakeCollector()).run("intraday", at(12, 30)))
         saved = self.store["save"].call_args.args[1]
@@ -332,7 +358,7 @@ class ServiceTests(unittest.TestCase):
                 raise RuntimeError("deepseek 503")
 
         self.candidates.side_effect = candidates.generate_candidates
-        service = OptionsActivityService(collector=FakeCollector(), db_factory=lambda: object(), candidates_llm=Down())
+        service = OptionsActivityService(collector=FakeCollector(), db_factory=lambda: object(), candidates_llm=Down(), selector=fake_selector)
         result = asyncio.run(service.run("intraday", at(12, 30)))
         self.assertEqual(result["status"], "ok")
         saved = self.store["save"].call_args.args[1]
@@ -374,7 +400,7 @@ class ManualRunTests(unittest.TestCase):
         async def main():
             gate = asyncio.Event()
 
-            async def slow_run(session, force=False):
+            async def slow_run(session, force=False, manual_symbols=None):
                 await gate.wait()
                 return {"status": "skipped", "data_date": "2026-11-05"}
 

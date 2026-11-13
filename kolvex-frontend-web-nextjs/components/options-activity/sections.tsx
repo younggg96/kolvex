@@ -1,7 +1,7 @@
 "use client";
 
 import { InfoTip } from "@/components/ui/info-tip";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -9,7 +9,7 @@ import CompanyLogo from "@/components/ui/company-logo";
 import { useCopy } from "@/components/decision/shared";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useTranslation } from "@/lib/i18n";
-import { barShare, formatPremium, type ActivityCandidate, type ActivityCandidates, type ActivityContract, type ActivityRun, type ActivitySession, type Contributor } from "@/lib/optionsActivity";
+import { barShare, formatPremium, type ActivityCandidate, type ActivityCandidates, type ActivityContract, type ActivityRun, type ActivitySession, type Contributor, type SymbolSource } from "@/lib/optionsActivity";
 import { marketStockHref } from "@/lib/stockLinks";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +28,34 @@ const pct = (value: number | null | undefined, signed = false) =>
     ? "—"
     : `${signed && value > 0 ? "+" : ""}${value.toFixed(2)}%`;
 const optionsHref = (symbol: string) => `${marketStockHref(symbol)}?tab=options`;
+
+const chip = "rounded bg-foreground/[0.06] px-1.5 py-0.5 text-[0.6875rem] text-muted-foreground";
+
+/** Why a symbol joined this run beyond the fixed watchlist. Core-only symbols show nothing. */
+function SourceTags({ sources }: { sources?: SymbolSource[] }) {
+  const c = useCopy();
+  const labels: Record<Exclude<SymbolSource, "core">, [string, string]> = {
+    mover: [c("Mover", "异动"), c("Among today's biggest price moves", "今日涨跌幅居前")],
+    active: [c("Volume", "放量"), c("Volume well above its 3-month average", "成交量明显高于 3 个月均量")],
+    kol: [c("Buzz", "热议"), c("Widely discussed on Reddit, X or YouTube", "Reddit、X、YouTube 博主热议")],
+    manual: [c("Manual", "手动"), c("Added by an admin for this run", "管理员为本轮手动添加")],
+  };
+  const shown = (sources ?? []).filter((s): s is Exclude<SymbolSource, "core"> => s !== "core");
+  if (!shown.length) return null;
+  return (
+    <>
+      {shown.map((source) => (
+        <span key={source} title={labels[source][1]} className={cn(chip, "whitespace-nowrap")}>
+          {labels[source][0]}
+        </span>
+      ))}
+    </>
+  );
+}
+
+function useSourcesBySymbol(run?: ActivityRun) {
+  return useMemo(() => new Map((run?.payload.tickers ?? []).map((t) => [t.symbol, t.sources])), [run]);
+}
 
 function SectionHeader({ title, note }: { title: string; note?: string }) {
   return (
@@ -124,7 +152,17 @@ export function MarketOverview({ run }: { run: ActivityRun }) {
 
   return (
     <section aria-labelledby="activity-market">
-      <SectionHeader title={c("Market overview", "市场概览")} note={c(`${m.tickers_scanned} symbols, contracts within ±15% of price and 45 days`, `${m.tickers_scanned} 个标的，现价 ±15%、45 天内到期的合约`)} />
+      <SectionHeader
+        title={c("Market overview", "市场概览")}
+        note={
+          m.dynamic_scanned
+            ? c(
+                `Totals cover the ${m.tickers_scanned}-symbol core watchlist, so they compare with earlier runs. ${m.dynamic_scanned} more symbols tagged Mover, Volume or Buzz were added for this run and appear in the rankings below. Contracts within ±15% of price and 45 days.`,
+                `总额只统计 ${m.tickers_scanned} 个核心标的，便于和往期对比。另有 ${m.dynamic_scanned} 个按异动、放量、热议临时加入的标的，只出现在下方排行中。合约范围：现价 ±15%、45 天内到期。`,
+              )
+            : c(`${m.tickers_scanned} symbols, contracts within ±15% of price and 45 days`, `${m.tickers_scanned} 个标的，现价 ±15%、45 天内到期的合约`)
+        }
+      />
       <div className="rounded-3xl border border-foreground/10 glass-card bg-card-glass p-4 sm:p-6">
         <dl className="grid grid-cols-2 gap-6 border-b border-border pb-6 lg:grid-cols-4">
           {figures.map(([label, value, className]) => (
@@ -176,10 +214,13 @@ function ContributorRow({ item, max }: { item: Contributor; max: number }) {
   const share = barShare(item.net_premium, max) * 50;
   const positive = item.net_premium > 0;
   return (
-    <li className="grid grid-cols-[4.5rem_1fr_5.5rem] items-center gap-3 py-1.5">
-      <Link href={optionsHref(item.symbol)} className="font-semibold hover:underline">
-        {item.symbol}
-      </Link>
+    <li className="grid grid-cols-[8rem_1fr_5.5rem] items-center gap-3 py-1.5">
+      <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">
+        <Link href={optionsHref(item.symbol)} className="font-semibold hover:underline">
+          {item.symbol}
+        </Link>
+        <SourceTags sources={item.sources} />
+      </span>
       <div className="relative h-2.5 rounded-full bg-muted" aria-hidden>
         <span className="absolute inset-y-0 left-1/2 w-px bg-border" />
         <span
@@ -249,10 +290,12 @@ function ContractRow({
   item,
   max,
   index,
+  sources,
 }: {
   item: ActivityContract;
   max: number;
   index: number;
+  sources?: SymbolSource[];
 }) {
   const c = useCopy();
   const { locale } = useTranslation();
@@ -295,8 +338,9 @@ function ContractRow({
             <span className="figure text-xs text-muted-foreground">
               {expiry(item.expiration)} · {c(`${item.dte}d`, `${item.dte} 天`)}
             </span>
-            {item.flags.new_positions && <span className="rounded bg-foreground/[0.06] px-1.5 py-0.5 text-[0.6875rem] text-muted-foreground">{c("New", "新开仓")}</span>}
-            {item.flags.crosses_earnings && <span className="rounded bg-foreground/[0.06] px-1.5 py-0.5 text-[0.6875rem] text-muted-foreground">{c("Earnings", "跨财报")}</span>}
+            {item.flags.new_positions && <span className={chip}>{c("New", "新开仓")}</span>}
+            {item.flags.crosses_earnings && <span className={chip}>{c("Earnings", "跨财报")}</span>}
+            <SourceTags sources={sources} />
           </div>
         </td>
         <td className="w-[5.5rem] px-2 py-2.5 text-right sm:w-[7.5rem]">
@@ -373,6 +417,7 @@ export function UnusualContracts({
     setUncontrolled(next);
     onFilterChange?.(next);
   };
+  const sourcesOf = useSourcesBySymbol(run);
   const all = run.payload.contracts;
   const etf = all.filter((x) => x.is_etf).length;
   const shown = all.filter((x) => filter === "all" || (filter === "etf") === x.is_etf);
@@ -424,7 +469,7 @@ export function UnusualContracts({
                 </td>
               </tr>
             ) : (
-              shown.map((item, index) => <ContractRow key={item.symbol} item={item} max={max} index={index} />)
+              shown.map((item, index) => <ContractRow key={item.symbol} item={item} max={max} index={index} sources={sourcesOf.get(item.underlying)} />)
             )}
           </tbody>
         </table>
@@ -433,7 +478,7 @@ export function UnusualContracts({
   );
 }
 
-function CandidateCard({ item }: { item: ActivityCandidate }) {
+function CandidateCard({ item, sources }: { item: ActivityCandidate; sources?: SymbolSource[] }) {
   const c = useCopy();
   const { locale } = useTranslation();
   const expiry = useExpiryLabel();
@@ -449,20 +494,23 @@ function CandidateCard({ item }: { item: ActivityCandidate }) {
   return (
     <li className="min-w-0 rounded-3xl border border-foreground/10 glass-card bg-card-glass p-4 md:p-5">
       <div className="flex items-start justify-between gap-3">
-        <Link
-          href={optionsHref(item.underlying)}
-          className="inline-flex min-w-0 items-center gap-2 rounded-full underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-        >
-          <span aria-hidden="true"><CompanyLogo symbol={item.underlying} size="sm" /></span>
-          <span className="figure text-[0.9375rem] font-semibold">{item.underlying}</span>
-        </Link>
+        <span className="flex min-w-0 flex-wrap items-center gap-1.5">
+          <Link
+            href={optionsHref(item.underlying)}
+            className="mr-0.5 inline-flex min-w-0 items-center gap-2 rounded-full underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          >
+            <span aria-hidden="true"><CompanyLogo symbol={item.underlying} size="sm" /></span>
+            <span className="figure text-[0.9375rem] font-semibold">{item.underlying}</span>
+          </Link>
+          <SourceTags sources={sources} />
+        </span>
         <span className="shrink-0 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">{confidence[item.confidence]}</span>
       </div>
       <p className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
         <span className="figure text-lg font-semibold">${item.strike}</span>
         <span className={cn("text-sm font-medium", call ? "text-positive" : "text-negative")}>{call ? c("Call · upside", "Call · 看涨") : c("Put · downside", "Put · 看跌")}</span>
         <span className="figure text-xs text-muted-foreground">{expiry(item.expiration)} · {c(`${item.dte}d`, `${item.dte} 天`)}</span>
-        {item.flags.crosses_earnings && <span className="rounded bg-foreground/[0.06] px-1.5 py-0.5 text-[0.6875rem] text-muted-foreground">{c("Earnings", "跨财报")}</span>}
+        {item.flags.crosses_earnings && <span className={chip}>{c("Earnings", "跨财报")}</span>}
       </p>
       <p className="figure mt-1 text-xs text-muted-foreground">
         {c("Traded", "成交额")} {formatPremium(item.premium)}
@@ -481,8 +529,9 @@ function CandidateCard({ item }: { item: ActivityCandidate }) {
   );
 }
 
-export function ResearchCandidates({ candidates }: { candidates?: ActivityCandidates | null }) {
+export function ResearchCandidates({ candidates, run }: { candidates?: ActivityCandidates | null; run?: ActivityRun }) {
   const c = useCopy();
+  const sourcesOf = useSourcesBySymbol(run);
   if (!candidates) return null;
   const title = c("AI research candidates", "AI 研究候选");
   return (
@@ -496,7 +545,7 @@ export function ResearchCandidates({ candidates }: { candidates?: ActivityCandid
       />
       {candidates.status === "ok" && candidates.items.length > 0 ? (
         <ul className="grid gap-4 md:grid-cols-2">
-          {candidates.items.map((item) => <CandidateCard key={item.symbol} item={item} />)}
+          {candidates.items.map((item) => <CandidateCard key={item.symbol} item={item} sources={sourcesOf.get(item.underlying)} />)}
         </ul>
       ) : (
         <p className="rounded-3xl border border-foreground/10 glass-card bg-card-glass p-4 text-sm text-muted-foreground md:p-5">
@@ -537,9 +586,12 @@ export function TickerLevels({ run }: { run: ActivityRun }) {
             {tickers.map((t) => (
               <tr key={t.symbol} className="border-t border-border transition-colors hover:bg-foreground/[0.03]">
                 <th scope="row" className="px-3 py-2 text-left font-semibold">
-                  <Link href={optionsHref(t.symbol)} className="hover:underline">
-                    {t.symbol}
-                  </Link>
+                  <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1 font-normal">
+                    <Link href={optionsHref(t.symbol)} className="font-semibold hover:underline">
+                      {t.symbol}
+                    </Link>
+                    <SourceTags sources={t.sources} />
+                  </span>
                 </th>
                 <td className="figure px-3 py-2 text-right">
                   ${fixed(t.spot)} <span className={tone(t.change_pct)}>{pct(t.change_pct, true)}</span>

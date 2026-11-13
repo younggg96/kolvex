@@ -132,7 +132,13 @@ async def send_batch(client: httpx.AsyncClient, row: dict, subject: str, body: s
         payload = [{"from": sender, "to": [addr], "subject": subject, "html": body,
                     **({"reply_to": row["reply_to"]} if row["reply_to"] else {})} for addr in to[start:start + BATCH]]
         response = await client.post(f"{RESEND_URL}/batch", json=payload, headers=headers)
-        response.raise_for_status()
+        if response.is_error:
+            # Resend explains rejections (unverified domain, test-mode recipient) in the body.
+            try:
+                reason = response.json().get("message") or response.text
+            except ValueError:
+                reason = response.text
+            raise RuntimeError(f"Resend {response.status_code}：{reason[:300]}")
 
 
 async def run_kind(row: dict, test_to: str | None = None) -> dict:

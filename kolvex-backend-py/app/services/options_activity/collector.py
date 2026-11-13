@@ -118,8 +118,10 @@ class OptionsActivityCollector:
                 rows.append(row)
         return {"symbol": symbol, "is_etf": is_etf(symbol), "rows": rows, "stock": stock, "earnings": earnings}
 
-    async def scan(self, today: date) -> tuple[list[dict], list[str]]:
-        """Returns (scans, failed_symbols). One symbol failing never sinks the run."""
+    async def scan(self, today: date, symbols: Optional[list[str]] = None) -> tuple[list[dict], list[str]]:
+        """Returns (scans, failed_symbols). One symbol failing never sinks the run.
+        `symbols` defaults to the fixed universe."""
+        universe = list(symbols) if symbols is not None else list(self.universe)
         semaphore = asyncio.Semaphore(CONCURRENCY)
 
         async def one(symbol: str):
@@ -130,7 +132,7 @@ class OptionsActivityCollector:
                     logger.warning("Options activity scan failed for %s: %s", symbol, exc)
                     return exc
 
-        results = await asyncio.gather(*(one(s) for s in self.universe))
+        results = await asyncio.gather(*(one(s) for s in universe))
         scans = [r for r in results if isinstance(r, dict)]
-        failed = [s for s, r in zip(self.universe, results) if not isinstance(r, dict)]
+        failed = [s for s, r in zip(universe, results) if not isinstance(r, dict)]
         return scans, failed

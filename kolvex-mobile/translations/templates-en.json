@@ -191,5 +191,6 @@
   "暂无足够数据 · {0}": "Not enough data · {0}",
   "{0} × {1} · {2} · 持股 {3}": "{0} × {1} · {2} · holds {3}",
   "已选 {0} 项": "{0} selected",
-  "· 差额 {0}": "· difference {0}"
+  "· 差额 {0}": "· difference {0}",
+  "总额只统计 {0} 个核心标的，便于和往期对比。另有 {1} 个按异动、放量、热议临时加入的标的，只出现在下方排行中。合约范围：现价 ±15%、45 天内到期。": "Totals cover the {0}-symbol core watchlist, so they compare with earlier runs. {1} more symbols tagged Mover, Volume or Buzz were added for this run and appear in the rankings below. Contracts within ±15% of price and 45 days."
 }

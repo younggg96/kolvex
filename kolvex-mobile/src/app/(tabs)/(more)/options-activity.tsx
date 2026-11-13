@@ -153,7 +153,7 @@ function Report() {
       {data ? (
         <>
           <SummaryCard run={data} />
-          <ResearchCandidates candidates={data.summary?.candidates} />
+          <ResearchCandidates candidates={data.summary?.candidates} run={data} />
           <MarketOverview run={data} />
           <ContributionBoard run={data} />
           <UnusualContracts key={data.id} run={data} initial={kind} />

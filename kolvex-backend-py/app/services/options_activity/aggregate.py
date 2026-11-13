@@ -178,6 +178,7 @@ def build_report(scans: list[dict], history: list[dict], today: date) -> dict:
         summary = ticker_summary(scan["symbol"], scan["is_etf"], scan["rows"], scan["stock"], today, scan.get("earnings"))
         past = [_ticker(h, scan["symbol"]) for h in history]
         summary["pc_baseline"] = _median(t.get("pc_premium_ratio") for t in past if t)
+        summary["sources"] = scan.get("sources") or ["core"]
         tickers.append(summary)
         contracts.extend(
             contract_entry(r, scan["symbol"], scan["is_etf"], summary["spot"], today, scan.get("earnings"))
@@ -185,8 +186,11 @@ def build_report(scans: list[dict], history: list[dict], today: date) -> dict:
             if premium(r) > 0
         )
 
-    call_total = sum(t["call_premium"] for t in tickers)
-    put_total = sum(t["put_premium"] for t in tickers)
+    # Market totals cover only the fixed core list, so they stay comparable with earlier runs
+    # whose dynamic additions were different symbols.
+    core = [t for t in tickers if "core" in t["sources"]]
+    call_total = sum(t["call_premium"] for t in core)
+    put_total = sum(t["put_premium"] for t in core)
     market = {
         "call_premium": round(call_total, 2),
         "put_premium": round(put_total, 2),
@@ -194,9 +198,10 @@ def build_report(scans: list[dict], history: list[dict], today: date) -> dict:
         "pc_premium_ratio": _ratio(put_total, call_total),
         "pc_baseline": _median((h.get("market") or {}).get("pc_premium_ratio") for h in history),
         "baseline_runs": len(history),
-        "etf_net_premium": round(sum(t["net_premium"] for t in tickers if t["is_etf"]), 2),
-        "stock_net_premium": round(sum(t["net_premium"] for t in tickers if not t["is_etf"]), 2),
-        "tickers_scanned": len(tickers),
+        "etf_net_premium": round(sum(t["net_premium"] for t in core if t["is_etf"]), 2),
+        "stock_net_premium": round(sum(t["net_premium"] for t in core if not t["is_etf"]), 2),
+        "tickers_scanned": len(core),
+        "dynamic_scanned": len(tickers) - len(core),
     }
     ranked = sorted((t for t in tickers if t["net_premium"]), key=lambda t: t["net_premium"], reverse=True)
     positive = [_contributor(t) for t in ranked if t["net_premium"] > 0][:TOP_CONTRIBUTORS]
@@ -217,7 +222,8 @@ def build_report(scans: list[dict], history: list[dict], today: date) -> dict:
 
 
 def _contributor(ticker: dict) -> dict:
-    return {"symbol": ticker["symbol"], "is_etf": ticker["is_etf"], "net_premium": ticker["net_premium"]}
+    return {"symbol": ticker["symbol"], "is_etf": ticker["is_etf"], "net_premium": ticker["net_premium"],
+            "sources": ticker["sources"]}
 
 
 def _ticker(payload: dict, symbol: str) -> Optional[dict]:

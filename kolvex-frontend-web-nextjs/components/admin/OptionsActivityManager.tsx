@@ -5,8 +5,11 @@ import Link from "next/link";
 import { Loader2, RefreshCw } from "lucide-react";
 import { AdminRowsSkeleton } from "@/components/admin/AdminSkeletons";
 import { Button } from "@/components/ui/button";
+import { InfoTip } from "@/components/ui/info-tip";
+import { Input } from "@/components/ui/input";
 import { ResearchCandidates } from "@/components/options-activity/sections";
-import { ACTIVITY_SESSIONS, type ActivityCandidates, type ActivitySession } from "@/lib/optionsActivity";
+import { ACTIVITY_SESSIONS, type ActivityCandidates, type ActivitySession, type SymbolSource } from "@/lib/optionsActivity";
+import { marketStockHref } from "@/lib/stockLinks";
 import { cn } from "@/lib/utils";
 
 interface AdminRun {
@@ -15,7 +18,7 @@ interface AdminRun {
   summary_source: "ai" | "template" | null;
 }
 interface ManualState {
-  session: ActivitySession | null; status: "idle" | "running" | "done" | "failed";
+  session: ActivitySession | null; status: "idle" | "running" | "done" | "failed"; symbols?: string[];
   started_at: string | null; finished_at: string | null; error: string | null;
   result: { status: string; data_date?: string | null; failed_symbols?: string[] } | null;
 }
@@ -24,12 +27,70 @@ interface AnalysisState {
   finished_at: string | null; error: string | null;
   result: { status: "ok" | "unavailable"; reason: string | null; count: number } | null;
 }
-interface LatestRun { id: string; trade_date: string; session: ActivitySession; candidates: ActivityCandidates | null }
+export interface LatestRun {
+  id: string; trade_date: string; session: ActivitySession; run_at: string; candidates: ActivityCandidates | null;
+  /** Absent on runs saved before the scan list was recorded. */
+  universe: Record<string, SymbolSource[]> | null; skipped_symbols: string[] | null; failed_symbols: string[];
+}
 interface AdminStatus { configured: boolean; worker_enabled: boolean; manual: ManualState; analysis: AnalysisState; latest: LatestRun | null; runs: AdminRun[] }
 
 const SESSION_LABEL: Record<ActivitySession, string> = { pre: "盘前", intraday: "盘中", post: "盘后" };
 const SESSION_TIME: Record<ActivitySession, string> = { pre: "09:00", intraday: "12:30", post: "16:20" };
 const POLL_MS = 5000;
+const SOURCE_GROUPS: [SymbolSource, string, string][] = [
+  ["core", "核心", "固定观察列表，市场总额只统计这一组"],
+  ["mover", "异动", "今日涨跌幅居前，且股票成交额不低于 2 亿美元"],
+  ["active", "放量", "成交量明显高于 3 个月均量，且股票成交额不低于 2 亿美元"],
+  ["kol", "热议", "Reddit、X、YouTube 中至少两个平台提到，或被至少两位博主提到"],
+  ["manual", "手动", "管理员手动运行时添加"],
+];
+
+export function ScannedSymbols({ run }: { run: LatestRun }) {
+  if (!run.universe) {
+    return <p className="text-sm text-muted-foreground">这一轮运行早于扫描列表记录功能，没有保存标的清单。</p>;
+  }
+  const missing = new Set([...(run.skipped_symbols ?? []), ...run.failed_symbols]);
+  const symbols = Object.keys(run.universe);
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">
+        {run.trade_date} {SESSION_LABEL[run.session]} · 共 {symbols.length} 个
+        {missing.size > 0 && `，其中 ${missing.size} 个没有取到数据（划线）`}
+      </p>
+      <dl className="divide-y divide-border rounded-2xl border border-border bg-card">
+        {SOURCE_GROUPS.map(([source, label, hint]) => {
+          const group = symbols.filter((symbol) => run.universe![symbol].includes(source));
+          return (
+            <div key={source} className="grid gap-2 px-4 py-3 sm:grid-cols-[6rem_1fr]">
+              <dt className="text-sm font-medium" title={hint}>
+                {label} <span className="figure text-muted-foreground">{group.length}</span>
+              </dt>
+              <dd className="flex flex-wrap gap-1.5">
+                {group.length ? (
+                  group.map((symbol) => (
+                    <Link
+                      key={symbol}
+                      href={`${marketStockHref(symbol)}?tab=options`}
+                      title={missing.has(symbol) ? "没有取到数据" : undefined}
+                      className={cn(
+                        "figure rounded-md bg-muted px-2 py-0.5 text-xs hover:bg-foreground/10",
+                        missing.has(symbol) && "text-muted-foreground line-through",
+                      )}
+                    >
+                      {symbol}
+                    </Link>
+                  ))
+                ) : (
+                  <span className="text-xs text-muted-foreground">本轮没有</span>
+                )}
+              </dd>
+            </div>
+          );
+        })}
+      </dl>
+    </div>
+  );
+}
 const ANALYSIS_REASON: Record<string, string> = {
   no_eligible_contracts: "这一轮没有到期日在 7 天以上的合约。",
   no_valid_candidates: "模型没有给出可用的候选。",
@@ -61,6 +122,7 @@ export default function OptionsActivityManager() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [starting, setStarting] = useState<ActivitySession | "analysis" | null>(null);
+  const [symbols, setSymbols] = useState("");
 
   const load = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -97,8 +159,9 @@ export default function OptionsActivityManager() {
     setError("");
     setMessage("");
     try {
-      await request(`?session=${session}`, "POST");
-      setMessage(`已开始${SESSION_LABEL[session]}运行，通常需要 1–2 分钟。`);
+      const extra = symbols.trim();
+      await request(`?${new URLSearchParams({ session, ...(extra ? { symbols: extra } : {}) })}`, "POST");
+      setMessage(`已开始${SESSION_LABEL[session]}运行${extra ? "（含自定义标的）" : ""}，通常需要几分钟。`);
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "启动失败，请重试。");
@@ -145,6 +208,24 @@ export default function OptionsActivityManager() {
 
       <div className="space-y-3">
         <h3 className="text-sm font-medium">手动运行</h3>
+        <div className="max-w-xl space-y-1.5">
+          <label htmlFor="activity-symbols" className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            自定义标的（可选）
+            <InfoTip label="自定义标的">
+              这些股票只加入这一次手动运行，最多 20 个，用逗号或空格分隔。和自动选出的标的一样，会出现在排行和 AI 候选里，但不计入核心市场总额。
+            </InfoTip>
+          </label>
+          <Input
+            id="activity-symbols"
+            value={symbols}
+            onChange={(event) => setSymbols(event.target.value.toUpperCase())}
+            placeholder="LLY, XOM, COST"
+            autoComplete="off"
+            spellCheck={false}
+            maxLength={300}
+            disabled={running || starting !== null}
+          />
+        </div>
         <div className="flex flex-wrap gap-2">
           {ACTIVITY_SESSIONS.map((session) => (
             <Button
@@ -168,6 +249,7 @@ export default function OptionsActivityManager() {
               <>
                 <Loader2 className="mr-1.5 inline h-3.5 w-3.5 animate-spin" />
                 {SESSION_LABEL[manual.session]}运行中，开始于 {etTime(manual.started_at)}
+                {manual.symbols?.length ? `，自定义标的 ${manual.symbols.join(", ")}` : ""}
               </>
             )}
             {manual.status === "done" &&
@@ -199,6 +281,13 @@ export default function OptionsActivityManager() {
         )}
         <ResearchCandidates candidates={latest?.candidates} />
       </div>
+
+      {latest && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium">本轮扫描标的</h3>
+          <ScannedSymbols run={latest} />
+        </div>
+      )}
 
       <div className="space-y-3">
         <h3 className="text-sm font-medium">最近运行</h3>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Pressable, View } from "react-native";
 import { router } from "expo-router";
 import {
@@ -10,6 +10,7 @@ import {
   type ActivityRun,
   type ActivitySession,
   type Contributor,
+  type SymbolSource,
 } from "../lib/optionsActivity";
 import { useText } from "../lib/i18n";
 import { useTheme } from "../lib/theme";
@@ -94,6 +95,34 @@ function Tag({ label }: { label: string }) {
         {label}
       </Copy>
     </View>
+  );
+}
+const SOURCE_LABELS: Record<Exclude<SymbolSource, "core">, string> = {
+  mover: "异动",
+  active: "放量",
+  kol: "热议",
+  manual: "手动",
+};
+/** Why a symbol joined this run beyond the fixed watchlist. Core-only symbols show nothing. */
+function SourceTags({ sources }: { sources?: SymbolSource[] }) {
+  const shown = (sources ?? []).filter(
+    (s): s is Exclude<SymbolSource, "core"> => s !== "core",
+  );
+  return (
+    <>
+      {shown.map((source) => (
+        <Tag key={source} label={SOURCE_LABELS[source]} />
+      ))}
+    </>
+  );
+}
+function useSourcesBySymbol(run?: ActivityRun) {
+  return useMemo(
+    () =>
+      new Map(
+        (run?.payload.tickers ?? []).map((t) => [t.symbol, t.sources]),
+      ),
+    [run],
   );
 }
 function SymbolLink({ symbol, size = 15 }: { symbol: string; size?: number }) {
@@ -234,7 +263,11 @@ export function MarketOverview({ run }: { run: ActivityRun }) {
     <View style={{ gap: 12 }}>
       <Header
         title="市场概览"
-        note={`${m.tickers_scanned} 个标的，现价 ±15%、45 天内到期的合约`}
+        note={
+          m.dynamic_scanned
+            ? `总额只统计 ${m.tickers_scanned} 个核心标的，便于和往期对比。另有 ${m.dynamic_scanned} 个按异动、放量、热议临时加入的标的，只出现在下方排行中。合约范围：现价 ±15%、45 天内到期。`
+            : `${m.tickers_scanned} 个标的，现价 ±15%、45 天内到期的合约`
+        }
       />
       <Glass style={{ padding: 16, gap: 16 }}>
         <View
@@ -371,8 +404,11 @@ function ContributorRow({ item, max }: { item: Contributor; max: number }) {
         minHeight: 44,
       }}
     >
-      <View style={{ width: 72 }}>
+      <View style={{ width: 72, gap: 2, alignItems: "flex-start" }}>
         <SymbolLink symbol={item.symbol} size={16} />
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4 }}>
+          <SourceTags sources={item.sources} />
+        </View>
       </View>
       <View
         accessibilityElementsHidden
@@ -481,9 +517,11 @@ function Details({ items }: { items: [string, string][] }) {
 function ContractRow({
   item,
   first,
+  sources,
 }: {
   item: ActivityContract;
   first: boolean;
+  sources?: SymbolSource[];
 }) {
   const t = useTheme();
   const text = useText();
@@ -531,6 +569,7 @@ function ContractRow({
             </Copy>
             {item.flags.new_positions && <Tag label="新开仓" />}
             {item.flags.crosses_earnings && <Tag label="跨财报" />}
+            <SourceTags sources={sources} />
           </View>
         </View>
         <Copy size={15} bold localize={false}>
@@ -591,6 +630,7 @@ export function UnusualContracts({
   initial?: ContractFilter;
 }) {
   const [filter, setFilter] = useState<string>(initial);
+  const sourcesOf = useSourcesBySymbol(run);
   const all = run.payload.contracts;
   const etf = all.filter((item) => item.is_etf).length;
   const shown = all.filter(
@@ -621,7 +661,12 @@ export function UnusualContracts({
           </View>
         ) : (
           shown.map((item, index) => (
-            <ContractRow key={item.symbol} item={item} first={!index} />
+            <ContractRow
+              key={item.symbol}
+              item={item}
+              first={!index}
+              sources={sourcesOf.get(item.underlying)}
+            />
           ))
         )}
       </Glass>
@@ -629,7 +674,13 @@ export function UnusualContracts({
   );
 }
 
-function CandidateCard({ item }: { item: ActivityCandidate }) {
+function CandidateCard({
+  item,
+  sources,
+}: {
+  item: ActivityCandidate;
+  sources?: SymbolSource[];
+}) {
   const t = useTheme();
   const { locale } = usePreferences();
   const expiry = useExpiryLabel();
@@ -643,7 +694,10 @@ function CandidateCard({ item }: { item: ActivityCandidate }) {
   return (
     <Glass style={{ padding: 16, gap: 8 }}>
       <View style={styles.row}>
-        <SymbolLink symbol={item.underlying} />
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <SymbolLink symbol={item.underlying} />
+          <SourceTags sources={sources} />
+        </View>
         <Tag
           label={
             { low: "低置信度", medium: "中置信度", high: "高置信度" }[
@@ -704,9 +758,12 @@ function CandidateCard({ item }: { item: ActivityCandidate }) {
 }
 export function ResearchCandidates({
   candidates,
+  run,
 }: {
   candidates?: ActivityCandidates | null;
+  run?: ActivityRun;
 }) {
+  const sourcesOf = useSourcesBySymbol(run);
   if (!candidates) return null;
   return (
     <View style={{ gap: 12 }}>
@@ -716,7 +773,11 @@ export function ResearchCandidates({
       />
       {candidates.status === "ok" && candidates.items.length > 0 ? (
         candidates.items.map((item) => (
-          <CandidateCard key={item.symbol} item={item} />
+          <CandidateCard
+            key={item.symbol}
+            item={item}
+            sources={sourcesOf.get(item.underlying)}
+          />
         ))
       ) : (
         <Glass style={{ padding: 16 }}>
@@ -744,7 +805,12 @@ export function TickerLevels({ run }: { run: ActivityRun }) {
       {tickers.map((item) => (
         <Glass key={item.symbol} style={{ padding: 16, gap: 12 }}>
           <View style={styles.row}>
-            <SymbolLink symbol={item.symbol} size={16} />
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+            >
+              <SymbolLink symbol={item.symbol} size={16} />
+              <SourceTags sources={item.sources} />
+            </View>
             <View style={{ flexDirection: "row", gap: 6 }}>
               <Copy size={14} localize={false}>
                 ${fixed(item.spot)}

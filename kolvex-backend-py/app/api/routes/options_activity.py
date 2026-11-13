@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from app.api.dependencies.auth import get_current_user_id, verify_admin
 from app.core.supabase import get_supabase_service
 from app.services.options_activity import store
+from app.services.options_activity.selection import parse_manual
 from app.core.config import settings
 from app.services.options_activity.service import analysis_state, manual_state, options_activity_service, start_analysis, start_manual_run
 
@@ -71,13 +72,18 @@ async def admin_status(response: Response, limit: int = Query(default=20, ge=1, 
 @admin_router.post("/run", status_code=202)
 async def trigger_run(
     session: Literal["pre", "intraday", "post"] = Query(...),
+    symbols: Optional[str] = Query(default=None, max_length=300, description="Extra symbols for this run, comma or space separated"),
     admin_id: str = Depends(verify_admin),
 ):
+    try:
+        extra = parse_manual(symbols)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="invalid_symbols")
     if not options_activity_service.collector.configured:
         raise HTTPException(status_code=503, detail="options_data_not_configured")
-    if not start_manual_run(session):
+    if not start_manual_run(session, symbols=extra):
         raise HTTPException(status_code=409, detail="run_in_progress")
-    return {"started": True, "session": session}
+    return {"started": True, "session": session, "symbols": extra}
 
 
 @admin_router.post("/analyze", status_code=202)

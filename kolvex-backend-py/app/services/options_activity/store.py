@@ -70,9 +70,11 @@ async def list_all(db, limit: int = 20) -> list[dict]:
 
 
 async def latest_candidates(db) -> Optional[dict]:
-    """The newest successful run's identity and AI candidates, for the admin tab."""
+    """The newest successful run's identity, AI candidates and scanned symbols, for the admin tab."""
     rows = await _execute(
-        db.table(TABLE).select("id,trade_date,session,candidates:summary->candidates").eq("status", "ok")
+        db.table(TABLE).select("id,trade_date,session,run_at,candidates:summary->candidates,"
+                               "universe:payload->universe,skipped_symbols:payload->skipped_symbols,failed_symbols")
+        .eq("status", "ok")
         .order("trade_date", desc=True).order("run_at", desc=True).limit(1)
     )
     return rows[0] if rows else None
