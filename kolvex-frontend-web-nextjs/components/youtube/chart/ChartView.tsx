@@ -833,11 +833,6 @@ export default function ChartView({
   }
 
 
-  const iconButton = (isActive: boolean) =>
-    cn(
-      "inline-flex h-11 w-11 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full transition-colors duration-150 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40",
-      isActive ? "glass-thumb glass-thumb-touch text-foreground" : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]",
-    );
   const stat = (label: string, value: string, tone?: string) => (
     <span className="whitespace-nowrap">
       <span className="text-muted-foreground">{label}</span>{" "}
@@ -1682,9 +1677,9 @@ export default function ChartView({
         >
           <Popover>
             <PopoverTrigger asChild>
-              <button type="button" aria-label={t("youtubeOpinions.drawTools")} title={t("youtubeOpinions.drawTools")} className={cn(iconButton(drawing), "sm:hidden")}>
+              <Button type="button" aria-label={t("youtubeOpinions.drawTools")} title={t("youtubeOpinions.drawTools")} variant="toolbar" size="toolbar" selected={drawing} className={"sm:hidden"}>
                 {(() => { const Icon = tools.find(item => item.value === tool)?.icon || MousePointer2; return <Icon className="h-4 w-4" />; })()}
-              </button>
+              </Button>
             </PopoverTrigger>
             <PopoverContent align="start" className="grid w-64 max-w-[calc(100vw-2rem)] grid-cols-2 gap-1 p-2">
               {tools.map(item => {
@@ -1700,7 +1695,7 @@ export default function ChartView({
           <div className="hidden items-center gap-1 sm:flex">{tools.map((item) => {
             const Icon = item.icon;
             return (
-              <button
+              <Button
                 key={item.value}
                 type="button"
                 title={t(`youtubeOpinions.${item.label}`)}
@@ -1711,18 +1706,18 @@ export default function ChartView({
                   setDraft(null);
                   if (item.value !== "cursor") setSelectedId(null);
                 }}
-                className={iconButton(tool === item.value)}
+                variant="toolbar" size="toolbar" selected={tool === item.value}
               >
                 <Icon className="h-4 w-4" />
-              </button>
+              </Button>
             );
           })}</div>
           <span className="mx-1 hidden h-5 w-px shrink-0 bg-border sm:block" aria-hidden="true" />
           <Popover>
             <PopoverTrigger asChild>
-              <button type="button" aria-label={t("youtubeOpinions.drawColor")} title={t("youtubeOpinions.drawColor")} className={iconButton(false)}>
+              <Button type="button" aria-label={t("youtubeOpinions.drawColor")} title={t("youtubeOpinions.drawColor")} variant="toolbar" size="toolbar" selected={false}>
                 <span className="h-4 w-4 rounded-full " style={{ backgroundColor: selected?.color ?? color }} />
-              </button>
+              </Button>
             </PopoverTrigger>
             <PopoverContent align="start" className="w-auto p-2">
               <div role="radiogroup" aria-label={t("youtubeOpinions.drawColor")} className="flex shrink-0 items-center gap-1">
@@ -1746,36 +1741,36 @@ export default function ChartView({
             </PopoverContent>
           </Popover>
           <span className="mx-1 hidden h-5 w-px shrink-0 bg-border sm:block" aria-hidden="true" />
-          <button
+          <Button
             type="button"
             title={t("youtubeOpinions.magnet")}
             aria-label={t("youtubeOpinions.magnet")}
             aria-pressed={magnet}
             onClick={() => setMagnet((value) => !value)}
-            className={iconButton(magnet)}
+            variant="toolbar" size="toolbar" selected={magnet}
           >
             <Magnet className="h-4 w-4" />
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             title={t("youtubeOpinions.showCalls")}
             aria-label={t("youtubeOpinions.showCalls")}
             aria-pressed={showCalls}
             onClick={() => setShowCalls((value) => !value)}
-            className={iconButton(showCalls)}
+            variant="toolbar" size="toolbar" selected={showCalls}
           >
             {showCalls ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-          </button>
+          </Button>
           <Popover>
             <PopoverTrigger asChild>
-              <button
+              <Button
                 type="button"
                 title={t("youtubeOpinions.indicators")}
                 aria-label={t("youtubeOpinions.indicators")}
-                className={iconButton(legend.length > 0)}
+                variant="toolbar" size="toolbar" selected={legend.length > 0}
               >
                 <Activity className="h-4 w-4" />
-              </button>
+              </Button>
             </PopoverTrigger>
             <PopoverContent align="start" className="w-56 p-1.5">
               <p className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{t("youtubeOpinions.indicators")}</p>
@@ -1809,36 +1804,36 @@ export default function ChartView({
             </PopoverContent>
           </Popover>
           <div className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-1">
-            <button
+            <Button
               type="button"
               title={t("youtubeOpinions.zoomIn")}
               aria-label={t("youtubeOpinions.zoomIn")}
               disabled={!loaded}
               onClick={() => zoom(0.7, 0.85)}
-              className={cn(iconButton(false), "max-sm:hidden")}
+              variant="toolbar" size="toolbar" selected={false} className={"max-sm:hidden"}
             >
               <ZoomIn className="h-4 w-4" />
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               title={t("youtubeOpinions.zoomOut")}
               aria-label={t("youtubeOpinions.zoomOut")}
               disabled={!loaded}
               onClick={() => zoom(1.4, 0.85)}
-              className={cn(iconButton(false), "max-sm:hidden")}
+              variant="toolbar" size="toolbar" selected={false} className={"max-sm:hidden"}
             >
               <ZoomOut className="h-4 w-4" />
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               title={t("youtubeOpinions.resetZoom")}
               aria-label={t("youtubeOpinions.resetZoom")}
               disabled={!view && autoScale}
               onClick={resetView}
-              className={cn(iconButton(false), "max-sm:hidden")}
+              variant="toolbar" size="toolbar" selected={false} className={"max-sm:hidden"}
             >
               <RotateCcw className="h-4 w-4" />
-            </button>
+            </Button>
             <span className="mx-1 h-5 w-px shrink-0 bg-border max-sm:hidden" aria-hidden="true" />
             <span
               role="status"
@@ -1853,27 +1848,27 @@ export default function ChartView({
             >
               <SyncIcon className={cn("h-4 w-4", (syncStatus === "loading" || syncStatus === "syncing") && "animate-spin")} />
             </span>
-            <button
+            <Button
               type="button"
               title={t("youtubeOpinions.undo")}
               aria-label={t("youtubeOpinions.undo")}
               disabled={!canUndo}
               onClick={undo}
-              className={iconButton(false)}
+              variant="toolbar" size="toolbar" selected={false}
             >
               <Undo2 className="h-4 w-4" />
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               title={t("youtubeOpinions.deleteDrawing")}
               aria-label={t("youtubeOpinions.deleteDrawing")}
               disabled={!selectedId}
               onClick={removeSelected}
-              className={iconButton(false)}
+              variant="toolbar" size="toolbar" selected={false}
             >
               <X className="h-4 w-4" />
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               title={t("youtubeOpinions.clearDrawings")}
               aria-label={t("youtubeOpinions.clearDrawings")}
@@ -1882,10 +1877,10 @@ export default function ChartView({
                 setDrawings([]);
                 setSelectedId(null);
               }}
-              className={iconButton(false)}
+              variant="toolbar" size="toolbar" selected={false}
             >
               <Trash2 className="h-4 w-4" />
-            </button>
+            </Button>
           </div>
         </div>
 

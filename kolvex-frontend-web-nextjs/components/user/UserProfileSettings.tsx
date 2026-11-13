@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect } from "react";
 import { useCurrentUserProfile } from "@/lib/api/userApi";
 import type { UserProfileUpdate } from "@/lib/api/userApi";
+import { Button } from "@/components/ui/button";
 
 export default function UserProfileSettings() {
   const {
@@ -184,13 +185,13 @@ export default function UserProfileSettings() {
             </p>
           </div>
 
-          <button
+          <Button
             type="submit"
             disabled={isSubmitting}
-            className="w-full glass-button glass-button-primary bg-primary/85 text-primary-foreground py-2 px-4 rounded-full font-semibold hover:bg-primary/75 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            className="w-full"
           >
             {isSubmitting ? "保存中..." : "保存更改"}
-          </button>
+          </Button>
         </form>
       </section>
 

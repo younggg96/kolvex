@@ -35,6 +35,10 @@ const buttonVariants = cva(
            read as "price is up". */
         link: "text-foreground underline-offset-4 underline hover:text-muted-foreground active:opacity-80 disabled:opacity-40",
         text: "text-foreground hover:opacity-70 active:opacity-60 !p-0 !h-auto !w-auto disabled:opacity-40",
+        /* Filter / option chip. Selected state comes from the `selected` prop. */
+        chip: "border border-border font-medium text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50",
+        /* Bare icon in a toolbar (charts, editors). Selected state comes from `selected`. */
+        toolbar: "font-medium text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1] disabled:opacity-40",
         icon: "glass-button glass-button-primary bg-primary/85 text-primary-foreground hover:bg-primary/75 active:bg-primary/70 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed",
       },
       size: {
@@ -44,6 +48,8 @@ const buttonVariants = cva(
         sm: "h-9 px-4 py-2",
         lg: "h-12 px-8 py-2.5 text-[0.9375rem]",
         icon: "h-9 w-9",
+        chip: "min-h-9 px-3.5",
+        toolbar: "h-11 w-11 sm:h-8 sm:w-8",
       },
     },
     defaultVariants: {
@@ -57,14 +63,21 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
   VariantProps<typeof buttonVariants> {
   asChild?: boolean;
+  /** Selected look for `chip` and `toolbar` buttons. */
+  selected?: boolean;
 }
 
+const SELECTED: Partial<Record<string, string>> = {
+  chip: "border-foreground bg-foreground text-background hover:text-background",
+  toolbar: "glass-thumb glass-thumb-touch text-foreground hover:bg-transparent",
+};
+
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, selected, ...props }, ref) => {
     const Comp = asChild ? Slot : "button";
     return (
       <Comp
-        className={cn(buttonVariants({ variant, size, className }))}
+        className={cn(buttonVariants({ variant, size }), selected && variant && SELECTED[variant], className)}
         ref={ref}
         {...props}
       />

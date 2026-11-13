@@ -7,6 +7,7 @@ import { ChatInput, MODEL_CONFIGS } from "./ChatInput";
 import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import type { ChatWelcomeProps } from "./types";
+import { Button } from "@/components/ui/button";
 
 const PROVIDER_NAME_TO_ID: Record<string, string> = {
   OpenAI: "openai",
@@ -130,15 +131,17 @@ export function ChatWelcome({
         {input}
         <div className="flex flex-wrap gap-2">
           {suggestions.map((suggestion) => (
-            <button
+            <Button
               key={suggestion.text}
               type="button"
               onClick={() => handleSuggestionClick(suggestion)}
               disabled={isBlocked || isLoading}
-              className="rounded-full border border-border px-3 py-1.5 text-left text-[0.8125rem] text-muted-foreground transition-colors duration-150 hover:border-foreground/25 hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none"
+              variant="chip"
+              size="chip"
+              className="h-auto min-h-8 whitespace-normal px-3 py-1.5 text-left text-[0.8125rem]"
             >
               {suggestion.text}
-            </button>
+            </Button>
           ))}
         </div>
       </div>

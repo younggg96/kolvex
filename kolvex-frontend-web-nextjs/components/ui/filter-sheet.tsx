@@ -33,7 +33,7 @@ export function FilterSheet({ title, summary, active = false, onReset, children,
           aria-label={summary ? `${title} · ${summary}` : title} title={summary ? `${title} · ${summary}` : title}
           className={cn("relative h-10 w-10 shrink-0 rounded-full lg:hidden", triggerClassName)}>
           <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
-          {active && <span aria-hidden="true" className="absolute right-0 top-0 h-2.5 w-2.5 rounded-full border-2 border-background bg-foreground" />}
+          {active && <span aria-hidden="true" className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-foreground" />}
         </Button>
       </DialogTrigger>
       <DialogContent layout="sheet" className={cn("flex flex-col lg:hidden", className)}>
@@ -51,11 +51,6 @@ export function FilterSheet({ title, summary, active = false, onReset, children,
   );
 }
 
-const chipClass = (selected: boolean) => cn(
-  "inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50",
-  selected ? "border-foreground bg-foreground text-background" : "border-border text-muted-foreground hover:text-foreground",
-);
-
 /** A single-choice group of chips inside a FilterSheet. */
 export function FilterSheetGroup<T extends string>({ label, options, value, onChange }: {
   label: string;
@@ -68,10 +63,10 @@ export function FilterSheetGroup<T extends string>({ label, options, value, onCh
       <legend className="mb-2 text-xs font-medium text-muted-foreground">{label}</legend>
       <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-2">
         {options.map(option => (
-          <button key={option.value} type="button" role="radio" aria-checked={option.value === value} disabled={option.disabled}
-            className={chipClass(option.value === value)} onClick={() => onChange(option.value)}>
+          <Button key={option.value} type="button" variant="chip" size="chip" role="radio" aria-checked={option.value === value} disabled={option.disabled}
+            selected={option.value === value} onClick={() => onChange(option.value)}>
             {option.label}
-          </button>
+          </Button>
         ))}
       </div>
     </fieldset>
@@ -89,7 +84,7 @@ export function FilterSheetToggle({ label, pressed, onChange, disabled, children
   return (
     <fieldset className="min-w-0">
       <legend className="mb-2 text-xs font-medium text-muted-foreground">{label}</legend>
-      <button type="button" aria-pressed={pressed} disabled={disabled} className={chipClass(pressed)} onClick={() => onChange(!pressed)}>{children}</button>
+      <Button type="button" variant="chip" size="chip" aria-pressed={pressed} disabled={disabled} selected={pressed} onClick={() => onChange(!pressed)}>{children}</Button>
     </fieldset>
   );
 }

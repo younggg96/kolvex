@@ -66,6 +66,7 @@ import {
   rubberBandClamp,
   type SpringAnimation,
 } from "@/lib/motion/spring";
+import { Button } from "@/components/ui/button";
 
 type Translate = (key: string, params?: Record<string, string>) => string;
 export type GraphMode = "compact" | "advanced";
@@ -1026,11 +1027,6 @@ export default function PriceGraph({
     </>
   );
 
-  const iconButton = (active: boolean) =>
-    cn(
-      "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors duration-150 focus-visible:outline-none sm:h-8 sm:w-8",
-      active ? "glass-thumb glass-thumb-touch text-foreground" : "text-muted-foreground hover:bg-muted/70 hover:text-foreground focus-visible:bg-muted/60",
-    );
 
   const plotTone = toneColor[tone];
 
@@ -1182,32 +1178,32 @@ export default function PriceGraph({
           <div className="-mx-1 flex min-w-0 items-center gap-1 overflow-x-auto overscroll-x-contain px-1 scrollbar-hide sm:mx-0 sm:shrink-0 sm:overflow-visible sm:px-0">
             {trailingControls}
             <span className="ml-auto" aria-hidden="true" />
-            <button type="button" aria-label={t("youtubeOpinions.zoomIn")} title={t("youtubeOpinions.zoomIn")} onClick={() => zoomBy(0.8, 0.5)} className={cn(iconButton(false), "max-sm:hidden")}>
+            <Button type="button" aria-label={t("youtubeOpinions.zoomIn")} title={t("youtubeOpinions.zoomIn")} onClick={() => zoomBy(0.8, 0.5)} variant="toolbar" size="toolbar" selected={false} className={"max-sm:hidden"}>
               <ZoomIn className="h-4 w-4" aria-hidden="true" />
-            </button>
-            <button type="button" aria-label={t("youtubeOpinions.zoomOut")} title={t("youtubeOpinions.zoomOut")} onClick={() => zoomBy(1.25, 0.5)} className={cn(iconButton(false), "max-sm:hidden")}>
+            </Button>
+            <Button type="button" aria-label={t("youtubeOpinions.zoomOut")} title={t("youtubeOpinions.zoomOut")} onClick={() => zoomBy(1.25, 0.5)} variant="toolbar" size="toolbar" selected={false} className={"max-sm:hidden"}>
               <ZoomOut className="h-4 w-4" aria-hidden="true" />
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               aria-pressed={panMode}
               aria-label={t("youtubeOpinions.graph.panMode")}
               title={t("youtubeOpinions.graph.panMode")}
               onClick={() => setPanMode((value) => !value)}
-              className={iconButton(panMode)}
+              variant="toolbar" size="toolbar" selected={panMode}
             >
               <MoveHorizontal className="h-4 w-4" aria-hidden="true" />
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               aria-label={t("youtubeOpinions.resetZoom")}
               title={t("youtubeOpinions.resetZoom")}
               onClick={resetView}
               disabled={!modified}
-              className={cn(iconButton(false), "disabled:pointer-events-none disabled:opacity-40")}
+              variant="toolbar" size="toolbar" selected={false} className={"disabled:pointer-events-none disabled:opacity-40"}
             >
               {modified ? <LocateFixed className="h-4 w-4" aria-hidden="true" /> : <RotateCcw className="h-4 w-4" aria-hidden="true" />}
-            </button>
+            </Button>
           </div>
         )}
       </div>

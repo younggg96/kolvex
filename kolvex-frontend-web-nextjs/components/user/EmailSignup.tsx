@@ -2,6 +2,7 @@
 
 import { useState, FormEvent, useEffect } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 // Country options with language mapping
 const countries = [
@@ -105,13 +106,14 @@ export default function EmailSignup() {
               disabled={isSubmitting}
             />
           </div>
-          <button
+          <Button
             type="submit"
+            size="lg"
             disabled={isSubmitting}
-            className="w-full h-12 rounded-full glass-button glass-button-primary bg-primary/85 text-primary-foreground text-sm font-bold tracking-wide hover:bg-primary/75 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full"
           >
             {isSubmitting ? "Submitting..." : "Get Early Access"}
-          </button>
+          </Button>
         </div>
 
         {/* Tablet & Desktop: Combined input and button */}

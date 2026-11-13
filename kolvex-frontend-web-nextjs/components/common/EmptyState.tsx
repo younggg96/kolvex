@@ -4,6 +4,7 @@
  */
 "use client";
 import { LucideIcon, Inbox, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface EmptyStateProps {
   icon?: LucideIcon;
@@ -33,12 +34,9 @@ export function EmptyState({
         </p>
       )}
       {action && (
-        <button
-          onClick={action.onClick}
-          className="px-4 py-2 glass-button glass-button-primary bg-primary/85 text-primary-foreground text-sm font-medium rounded-full hover:bg-primary/75 transition-colors"
-        >
+        <Button size="sm" onClick={action.onClick}>
           {action.label}
-        </button>
+        </Button>
       )}
     </div>
   );
@@ -65,12 +63,9 @@ export function ErrorState({
         {message}
       </p>
       {retry && (
-        <button
-          onClick={retry}
-          className="px-4 py-2 glass-button glass-button-neutral bg-foreground/[0.1] text-foreground text-sm font-medium rounded-full hover:bg-foreground/[0.16] transition-colors"
-        >
+        <Button size="sm" variant="outline" onClick={retry}>
           Try Again
-        </button>
+        </Button>
       )}
     </div>
   );
