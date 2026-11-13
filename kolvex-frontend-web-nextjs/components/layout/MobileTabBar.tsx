@@ -81,7 +81,7 @@ export default function MobileTabBar({ compact = false }: MobileTabBarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const dock = useRef<HTMLDivElement>(null);
   const panelContent = useRef<HTMLDivElement>(null);
-  const midScroll = useIsMidScroll(pathname, () => setMenuOpen(false));
+  useIsMidScroll(pathname, () => setMenuOpen(false));
   const searchActive = isNavItemActive(pathname, SEARCH_HREF);
 
   const enabledItems = MAIN_NAV_ITEMS.filter((item) => isProductFeatureEnabled(item.featureId));
@@ -144,15 +144,13 @@ export default function MobileTabBar({ compact = false }: MobileTabBarProps) {
   return (
     <nav
       aria-label={c("Main navigation", "主导航")}
-      className="pointer-events-none absolute inset-x-0 bottom-0 z-40 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 lg:hidden"
+      className="pointer-events-none absolute inset-x-0 bottom-0 z-40 lg:hidden"
     >
       <div
         ref={dock}
         data-mobile-dock
         className={cn(
-          "glass-track glass-track-strong pointer-events-auto mx-auto w-full max-w-md origin-bottom p-1 transition-[transform,border-radius] !shadow-[0_10px_30px_-6px_rgb(0_0_0/0.30),0_2px_8px_rgb(0_0_0/0.10)] ring-1 ring-foreground/[0.06] duration-200 ease-out motion-reduce:transition-none",
-          menuOpen ? "rounded-[28px]" : "rounded-full",
-          midScroll && !menuOpen && "motion-safe:scale-[0.84]",
+          "glass-track glass-track-strong pointer-events-auto w-full rounded-none border-t border-foreground/[0.06] px-2 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] !shadow-[0_-6px_20px_-8px_rgb(0_0_0/0.22)]",
         )}
       >
         <div
