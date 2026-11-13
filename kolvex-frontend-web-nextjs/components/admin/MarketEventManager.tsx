@@ -1,4 +1,5 @@
 "use client";
+import { SettingsGroup, SettingsRow } from "@/components/ui/settings-group";
 import { AdminRowsSkeleton } from "@/components/admin/AdminSkeletons";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -107,11 +108,10 @@ export default function MarketEventManager() {
           下载 JSON 模板（草稿示例）
         </a>
       </div>
-      <div className="space-y-2">
-        <label htmlFor="event-file" className="text-sm font-medium">
-          上传 JSON（最大 1 MB）
-        </label>
+      <SettingsGroup>
+        <SettingsRow label={<label htmlFor="event-file">上传 JSON（最大 1 MB）</label>}>
         <Input
+          className="max-w-[17.5rem]"
           id="event-file"
           type="file"
           accept=".json,application/json"
@@ -126,7 +126,8 @@ export default function MarketEventManager() {
             });
           }}
         />
-      </div>
+      </SettingsRow>
+      </SettingsGroup>
       <div className="space-y-2">
         <label htmlFor="event-json" className="text-sm font-medium">
           事件 JSON
@@ -201,7 +202,7 @@ export default function MarketEventManager() {
         <p
           id="event-error"
           role="alert"
-          className="glass-card bg-card-glass rounded-3xl border border-foreground/10 p-4 text-sm text-negative"
+          className="rounded-2xl border border-border bg-card p-4 text-sm text-negative"
         >
           {error}
         </p>
@@ -212,7 +213,7 @@ export default function MarketEventManager() {
         </p>
       )}
       {preview && (
-        <section className="glass-card bg-card-glass space-y-4 rounded-3xl border border-foreground/10 p-4">
+        <section className="space-y-4">
           <h3 className="font-semibold">
             保存预览 · {preview.events.length} 个事件
           </h3>
@@ -220,7 +221,7 @@ export default function MarketEventManager() {
             保存将更新这些 ID 的全部字段。若要下架，将 status 改为 draft 或
             cancelled 后重新保存。
           </p>
-          <ul className="divide-y divide-border">
+          <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card [&>li]:px-4">
             {preview.events.map((event) => (
               <li key={event.id} className="break-words py-3 text-sm">
                 <strong>{event.title}</strong>
@@ -258,7 +259,7 @@ export default function MarketEventManager() {
             暂无事件，请导入第一份 JSON。
           </p>
         ) : (
-          <ul className="divide-y divide-border">
+          <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card [&>li]:px-4">
             {list.events.map((event) => (
               <li
                 key={event.id}

@@ -283,7 +283,7 @@ export default function YouTubeCreatorManager() {
       {message && <p role="status" className="text-sm text-positive">{message}</p>}
 
       {selected && (
-        <section className="glass-card bg-card-glass space-y-4 rounded-3xl border border-foreground/10 p-4">
+        <section className="space-y-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
               <CreatorAvatar name={selected.channel_title || selected.channel_id} avatarUrl={selected.channel_avatar_url} />
@@ -301,7 +301,7 @@ export default function YouTubeCreatorManager() {
           {formOpen && (
             <form ref={formRef} onSubmit={save} className="space-y-4 border-t border-border pt-4">
               <h4 className="font-semibold">{editingId ? "编辑观点" : "新增观点"}</h4>
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
                 <Field label="股票代码" id="opinion-ticker">
                   <Input id="opinion-ticker" value={draft.ticker} required maxLength={20} disabled={saving} placeholder="NVDA"
                     onChange={(event) => setDraft((current) => ({ ...current, ticker: event.target.value.toUpperCase() }))} />
@@ -338,6 +338,7 @@ export default function YouTubeCreatorManager() {
                     onChange={(event) => setDraft((current) => ({ ...current, video_published_at: event.target.value }))} />
                 </Field>
               </div>
+              <div className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
               <Field label="视频标题" id="opinion-video-title">
                 <Input id="opinion-video-title" value={draft.video_title} maxLength={300} disabled={saving}
                   onChange={(event) => setDraft((current) => ({ ...current, video_title: event.target.value }))} />
@@ -346,20 +347,21 @@ export default function YouTubeCreatorManager() {
                 <Input id="opinion-video-url" type="url" value={draft.video_url} maxLength={2048} disabled={saving} placeholder="https://www.youtube.com/watch?v=…"
                   onChange={(event) => setDraft((current) => ({ ...current, video_url: event.target.value }))} />
               </Field>
-              <Field label="观点摘要" id="opinion-summary">
+              </div>
+              <Field stacked label="观点摘要" id="opinion-summary">
                 <Textarea id="opinion-summary" required maxLength={4000} value={draft.summary} disabled={saving}
                   onChange={(event) => setDraft((current) => ({ ...current, summary: event.target.value }))} />
               </Field>
-              <Field label="理由" id="opinion-thesis">
+              <Field stacked label="理由" id="opinion-thesis">
                 <Textarea id="opinion-thesis" maxLength={8000} value={draft.thesis} disabled={saving}
                   onChange={(event) => setDraft((current) => ({ ...current, thesis: event.target.value }))} />
               </Field>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="要点" id="opinion-points" hint="每行一条">
+                <Field stacked label="要点" id="opinion-points" hint="每行一条">
                   <Textarea id="opinion-points" value={draft.key_points} disabled={saving}
                     onChange={(event) => setDraft((current) => ({ ...current, key_points: event.target.value }))} />
                 </Field>
-                <Field label="风险" id="opinion-risks" hint="每行一条">
+                <Field stacked label="风险" id="opinion-risks" hint="每行一条">
                   <Textarea id="opinion-risks" value={draft.risks} disabled={saving}
                     onChange={(event) => setDraft((current) => ({ ...current, risks: event.target.value }))} />
                 </Field>
@@ -390,7 +392,7 @@ export default function YouTubeCreatorManager() {
 
           <SearchInput containerClassName="w-full" aria-label="搜索观点" placeholder="搜索股票、摘要或视频标题" value={opinionQuery} onChange={(event) => setOpinionQuery(event.target.value)} />
           {loadingOpinions ? <AdminRowsSkeleton label="正在加载观点" actions={2} /> : (
-            <div className="divide-y divide-border">
+            <div className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card [&>*]:px-4">
               {visibleOpinions.map((opinion) => (
                 <article key={opinion.id} className="flex items-start justify-between gap-3 py-4">
                   <div className="min-w-0 space-y-1">
@@ -418,7 +420,7 @@ export default function YouTubeCreatorManager() {
           {loading ? <><Skeleton className="h-3 w-20 rounded-md" /><AdminRowsSkeleton label="正在加载博主" avatar lines={2} /></> : (
             <>
               <p className="text-xs text-muted-foreground">共 {filtered.length} 位博主</p>
-              <div className="divide-y divide-border">
+              <div className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card [&>*]:px-4">
                 {filtered.map((creator) => (
                   <div key={creator.channel_id} className="flex items-start justify-between gap-3 py-4">
                     <CreatorAvatar name={creator.channel_title || creator.channel_id} avatarUrl={creator.channel_avatar_url} />
@@ -440,12 +442,23 @@ export default function YouTubeCreatorManager() {
   );
 }
 
-function Field({ label, id, hint, children }: { label: string; id: string; hint?: string; children: ReactNode }) {
+function Field({ label, id, hint, stacked, children }: { label: string; id: string; hint?: string; stacked?: boolean; children: ReactNode }) {
+  if (stacked) {
+    return (
+      <div className="min-w-0 space-y-2">
+        <label htmlFor={id} className="text-sm font-medium">{label}</label>
+        {children}
+        {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+      </div>
+    );
+  }
   return (
-    <div className="min-w-0 space-y-2">
-      <label htmlFor={id} className="text-sm font-medium">{label}</label>
-      {children}
-      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+    <div className="flex min-h-[3.25rem] items-center justify-between gap-4 px-4 py-2.5">
+      <div className="min-w-0 shrink-0">
+        <label htmlFor={id} className="text-[0.9375rem] font-medium">{label}</label>
+        {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+      </div>
+      <div className="min-w-0 flex-1 [&>*]:ml-auto [&>*]:max-w-[17.5rem]">{children}</div>
     </div>
   );
 }

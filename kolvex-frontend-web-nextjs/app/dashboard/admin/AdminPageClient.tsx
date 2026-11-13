@@ -10,8 +10,10 @@ import YouTubeOpinionImporter from "@/components/admin/YouTubeOpinionImporter";
 import YouTubeCreatorManager from "@/components/admin/YouTubeCreatorManager";
 import XContentManager from "@/components/admin/XContentManager";
 import OptionsActivityManager from "@/components/admin/OptionsActivityManager";
+import EmailSettingsManager from "@/components/admin/EmailSettingsManager";
 import { useUserProfileContext } from "@/components/user/UserProfileProvider";
 import { Button } from "@/components/ui/button";
+import { SettingsGroup, SettingsRow } from "@/components/ui/settings-group";
 import { SearchInput } from "@/components/ui/search-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -80,24 +82,21 @@ export default function AdminPageClient({ initialTab }: { initialTab?: string })
   return (
     <DashboardLayout title="管理后台">
       <div className="mx-auto min-h-0 w-full  flex-1 space-y-8 overflow-y-auto overscroll-contain px-[16px] pb-8 pt-6 md:px-8 md:pt-8">
-        <p className="text-[0.9375rem] text-muted-foreground">管理用户与研究数据</p>
-
-        <dl className="grid grid-cols-3 border-y border-border">
+        <SettingsGroup label="概览">
           {[
             { label: "数据表", value: tableCount },
             { label: "记录总数", value: recordCount },
             { label: "用户", value: total },
           ].map((item) => (
-            <div key={item.label} className="py-4 pr-4">
-              <dt className="text-[0.8125rem] text-muted-foreground">{item.label}</dt>
-              <dd className="figure mt-1 text-xl font-semibold">{item.value.toLocaleString()}</dd>
-            </div>
+            <SettingsRow key={item.label} label={item.label}>
+              <span className="figure text-base font-semibold text-foreground">{item.value.toLocaleString()}</span>
+            </SettingsRow>
           ))}
-        </dl>
+        </SettingsGroup>
 
         {error && <p role="alert" className="rounded-3xl bg-negative/10 px-4 py-3 text-sm text-foreground">{error}</p>}
 
-        <Tabs defaultValue={initialTab === "x" ? "x" : initialTab === "events" ? "events" : initialTab === "briefs" ? "briefs" : initialTab === "options" ? "options" : "database"}>
+        <Tabs defaultValue={initialTab === "x" ? "x" : initialTab === "events" ? "events" : initialTab === "briefs" ? "briefs" : initialTab === "options" ? "options" : initialTab === "email" ? "email" : "database"}>
           <TabsList className="max-w-full flex-wrap h-auto">
             <TabsTrigger value="database">数据库</TabsTrigger>
             <TabsTrigger value="users">用户</TabsTrigger>
@@ -107,27 +106,17 @@ export default function AdminPageClient({ initialTab }: { initialTab?: string })
             <TabsTrigger value="events">重大事件</TabsTrigger>
             <TabsTrigger value="briefs">日报管理</TabsTrigger>
             <TabsTrigger value="options">期权异动</TabsTrigger>
+            <TabsTrigger value="email">邮件设置</TabsTrigger>
           </TabsList>
 
           <TabsContent value="database" className="mt-6">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-border text-[0.8125rem] text-muted-foreground">
-                    <th className="py-2.5 font-medium">表</th>
-                    <th className="py-2.5 text-right font-medium">记录数</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {Object.entries(tables).map(([name, count]) => (
-                    <tr key={name}>
-                      <td className="break-all py-3 pr-4 font-mono text-[0.8125rem]">{name}</td>
-                      <td className="figure whitespace-nowrap py-3 text-right">{count.toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <SettingsGroup label="数据表">
+              {Object.entries(tables).map(([name, count]) => (
+                <SettingsRow key={name} label={<span className="break-all font-mono text-[0.8125rem]">{name}</span>}>
+                  <span className="figure">{count.toLocaleString()}</span>
+                </SettingsRow>
+              ))}
+            </SettingsGroup>
           </TabsContent>
 
           <TabsContent value="users" className="mt-6 space-y-4">
@@ -138,39 +127,32 @@ export default function AdminPageClient({ initialTab }: { initialTab?: string })
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               containerClassName="w-full max-w-md"
             />
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-border text-[0.8125rem] text-muted-foreground">
-                    <th className="py-2.5 font-medium">邮箱</th>
-                    <th className="py-2.5 font-medium">用户名</th>
-                    <th className="py-2.5 text-right font-medium">权限</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {users.map((user) => (
-                    <tr key={user.id}>
-                      <td className="py-3 pr-4">{user.email}</td>
-                      <td className="py-3 pr-4 text-muted-foreground">{user.username || "—"}</td>
-                      <td className="py-2 text-right">
-                        <span className="inline-flex items-center gap-2">
-                          {user.is_admin && <span className="rounded-full bg-positive/10 px-2 py-0.5 text-[0.6875rem] font-semibold text-positive">管理员</span>}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            disabled={busy || user.id === profile.id}
-                            onClick={() => void proxyAction(`/api/v1/admin/users/${user.id}/admin?is_admin=${!user.is_admin}`, "PATCH")}
-                          >
-                            {user.is_admin ? "取消管理员" : "设为管理员"}
-                          </Button>
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+            <SettingsGroup label="用户">
+              {users.map((user) => (
+                <SettingsRow
+                  key={user.id}
+                  label={
+                    <span className="flex min-w-0 flex-col">
+                      <span className="break-all">{user.email}</span>
+                      {user.username && <span className="text-[0.8125rem] font-normal text-muted-foreground">{user.username}</span>}
+                    </span>
+                  }
+                >
+                  <span className="inline-flex items-center gap-2">
+                    {user.is_admin && <span className="rounded-full bg-positive/10 px-2 py-0.5 text-[0.6875rem] font-semibold text-positive">管理员</span>}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={busy || user.id === profile.id}
+                      onClick={() => void proxyAction(`/api/v1/admin/users/${user.id}/admin?is_admin=${!user.is_admin}`, "PATCH")}
+                    >
+                      {user.is_admin ? "取消管理员" : "设为管理员"}
+                    </Button>
+                  </span>
+                </SettingsRow>
+              ))}
+            </SettingsGroup>
+            <div className="flex flex-wrap items-center justify-between gap-3 ">
               <span className="figure text-sm text-muted-foreground">第 {page} 页 · 共 {total} 人</span>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" disabled={busy || page === 1} onClick={() => setPage(page - 1)}>上一页</Button>
@@ -182,6 +164,9 @@ export default function AdminPageClient({ initialTab }: { initialTab?: string })
           <TabsContent value="events" forceMount className="mt-6 data-[state=inactive]:hidden"><MarketEventManager /></TabsContent>
           <TabsContent value="options" className="mt-6">
             <OptionsActivityManager />
+          </TabsContent>
+          <TabsContent value="email" className="mt-6">
+            <EmailSettingsManager />
           </TabsContent>
           <TabsContent value="briefs" className="mt-6">
             <DailyBriefImporter />

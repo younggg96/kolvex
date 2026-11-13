@@ -1,5 +1,6 @@
 "use client";
 
+import { SettingsGroup, SettingsRow } from "@/components/ui/settings-group";
 import { AdminRowsSkeleton } from "@/components/admin/AdminSkeletons";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -148,11 +149,11 @@ export default function DailyBriefImporter() {
       <div className="space-y-2"><h2 className="text-xl font-semibold">日报管理</h2><p id="brief-help" className="max-w-3xl text-sm leading-6 text-muted-foreground">管理盘前 1 小时、盘中、盘后 1 小时的中英文日报。每份 JSON 最大 2 MB；原文用 language 标记 zh 或 en，另一语言放在 translations.en 或 translations.zh。保存或编辑后，所有登录用户按语言偏好阅读。</p></div>
       <Button variant="outline" disabled={busy} onClick={() => protectDraft(reset)}>新增日报</Button>
     </div>
-    <div className="max-w-sm space-y-2"><label id="brief-edition-label" htmlFor="brief-edition" className="text-sm font-medium">期次筛选</label><Select value={edition} disabled={busy} onValueChange={value => { setEdition(value as "auto" | BriefType); setPage(1); if (!editing) setValidated(false); }}><SelectTrigger id="brief-edition" aria-labelledby="brief-edition-label"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="auto">全部期次</SelectItem>{BRIEF_TYPES.map(type => <SelectItem key={type} value={type}>{t(`briefs.${type}`)}</SelectItem>)}</SelectContent></Select></div>
-    <section className="glass-card bg-card-glass space-y-4 rounded-3xl border border-foreground/10 p-4 sm:p-6" aria-label={editing ? "编辑日报" : "新增日报"}>
+    <SettingsGroup><SettingsRow label={<label id="brief-edition-label" htmlFor="brief-edition">期次筛选</label>}><Select value={edition} disabled={busy} onValueChange={value => { setEdition(value as "auto" | BriefType); setPage(1); if (!editing) setValidated(false); }}><SelectTrigger id="brief-edition" aria-labelledby="brief-edition-label"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="auto">全部期次</SelectItem>{BRIEF_TYPES.map(type => <SelectItem key={type} value={type}>{t(`briefs.${type}`)}</SelectItem>)}</SelectContent></Select></SettingsRow></SettingsGroup>
+    <section className="space-y-4" aria-label={editing ? "编辑日报" : "新增日报"}>
       <h3 className="break-all font-semibold">{editing ? `编辑 ${editing.id}` : "新增日报"}</h3>
       {editing && <p className="text-xs leading-5 text-muted-foreground">日期、期次和 ID 固定。可修改正文、标题，或补充 translations 中的另一种语言；修改后请重新校验。</p>}
-      <div className="space-y-2"><label htmlFor="brief-file" className="flex items-center gap-2 text-sm font-medium"><FileJson className="h-4 w-4" aria-hidden="true" />选择 JSON 文件</label><Input id="brief-file" type="file" accept=".json,application/json" disabled={busy} aria-describedby="brief-help" onChange={event => {
+      <SettingsGroup><SettingsRow label={<label htmlFor="brief-file" className="flex items-center gap-2"><FileJson className="h-4 w-4" aria-hidden="true" />选择 JSON 文件</label>}><Input className="max-w-[17.5rem]" id="brief-file" type="file" accept=".json,application/json" disabled={busy} aria-describedby="brief-help" onChange={event => {
         const file = event.target.files?.[0]; event.target.value = "";
         if (!file) return;
         protectDraft(() => { void run(async () => {
@@ -160,7 +161,7 @@ export default function DailyBriefImporter() {
           if (file.size > MAX_BYTES) throw new Error("文件超过 2 MB，请缩小后重试。");
           update((await file.text()).replace(/^\uFEFF/, ""));
         }); });
-      }} /></div>
+      }} /></SettingsRow></SettingsGroup>
       <div className="space-y-2"><label htmlFor="brief-json" className="text-sm font-medium">JSON 内容</label><Textarea ref={editor} id="brief-json" value={text} disabled={busy} onChange={e => update(e.target.value)} spellCheck={false} aria-invalid={!!error} aria-describedby={error ? "brief-help brief-error" : "brief-help"} className="h-72 resize-none font-mono text-xs" /></div>
       <div className="flex flex-wrap items-center gap-3" aria-busy={busy}>
         <Button variant="outline" disabled={busy || !text.trim()} onClick={() => void run(validate)}>校验并预览</Button>
@@ -171,10 +172,10 @@ export default function DailyBriefImporter() {
       {error && <p id="brief-error" role="alert" className="rounded-3xl bg-negative/10 p-4 text-sm leading-6">{error}</p>}
       {message && <div role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-3xl bg-positive/10 p-4 text-sm"><p>{message}</p>{preview && <Link href={`/dashboard/briefs/${encodeURIComponent(preview.brief.id)}`} className="font-semibold underline underline-offset-4">在日报中查看</Link>}</div>}
     </section>
-    {preview && <div className="space-y-5 rounded-3xl border border-foreground/10 glass-card bg-card-glass p-4 sm:p-6"><div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-4"><h3 className="font-semibold">保存前预览</h3><span className="text-xs text-muted-foreground">语言：{preview.language ?? "zh"}{Object.keys(preview.translations ?? {}).map(language => ` / ${language}`).join("")}</span></div><BriefContent document={preview} /></div>}
+    {preview && <div className="space-y-5"><div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-4"><h3 className="font-semibold">保存前预览</h3><span className="text-xs text-muted-foreground">语言：{preview.language ?? "zh"}{Object.keys(preview.translations ?? {}).map(language => ` / ${language}`).join("")}</span></div><BriefContent document={preview} /></div>}
     <section className="space-y-4 border-t border-border pt-6" aria-busy={listBusy}>
       <div className="flex items-center justify-between gap-3"><h3 ref={listHeading} tabIndex={-1} className="text-lg font-semibold">已保存日报</h3><Button variant="ghost" size="sm" disabled={listBusy || busy} onClick={() => void refresh()}>刷新列表</Button></div>
-      {listError ? <p role="alert" className="text-sm leading-6 text-negative">{listError}</p> : listBusy ? <AdminRowsSkeleton label="正在加载日报列表" actions={2} /> : !items.length ? <p className="text-sm text-muted-foreground">暂无符合期次的日报。</p> : <ul className="divide-y divide-border">{items.map(item => <li key={item.id} className="flex flex-wrap items-start justify-between gap-4 py-4"><div className="min-w-0 flex-1 basis-48"><p className="text-xs text-muted-foreground">{item.brief_date} · {t(`briefs.${item.brief_type}`)}</p><h4 className="mt-1 break-words text-sm font-semibold">{item.headline}</h4><p className="mt-1 text-xs text-muted-foreground">{item.title}</p></div><div className="flex flex-wrap gap-2">
+      {listError ? <p role="alert" className="text-sm leading-6 text-negative">{listError}</p> : listBusy ? <AdminRowsSkeleton label="正在加载日报列表" actions={2} /> : !items.length ? <p className="text-sm text-muted-foreground">暂无符合期次的日报。</p> : <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card [&>li]:px-4">{items.map(item => <li key={item.id} className="flex flex-wrap items-start justify-between gap-4 py-4"><div className="min-w-0 flex-1 basis-48"><p className="text-xs text-muted-foreground">{item.brief_date} · {t(`briefs.${item.brief_type}`)}</p><h4 className="mt-1 break-words text-sm font-semibold">{item.headline}</h4><p className="mt-1 text-xs text-muted-foreground">{item.title}</p></div><div className="flex flex-wrap gap-2">
         <Button size="sm" variant="outline" disabled={busy} onClick={() => void run(async () => { const result = await briefRequest<BriefDetail>(`?id=${encodeURIComponent(item.id)}`); setViewing(result.payload); })}>查看</Button>
         <Button size="sm" variant="outline" disabled={busy} onClick={() => protectDraft(() => { void run(() => edit(item)); })}>编辑</Button>
         <Button size="sm" variant="outline" disabled={busy} onClick={() => void run(() => sendEmail(item, "test"))}>测试邮件</Button>

@@ -207,7 +207,7 @@ export default function OptionsActivityManager() {
         ) : !status?.runs.length ? (
           <p className="rounded-lg border border-border px-4 py-6 text-center text-sm text-muted-foreground">还没有运行记录。</p>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-border">
+          <div className="overflow-x-auto rounded-2xl border border-border bg-card">
             <table className="w-full min-w-[720px] text-sm">
               <thead className="bg-muted/50 text-xs text-muted-foreground">
                 <tr>

@@ -1,5 +1,6 @@
 "use client";
 
+import { SettingsGroup, SettingsRow } from "@/components/ui/settings-group";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -166,7 +167,7 @@ export default function XContentManager({ onSaved }: { onSaved: () => void }) {
   }
 
   return (
-    <section aria-label={c("Manage creators and import posts", "管理博主与导入推文")} className="rounded-3xl border border-foreground/10 glass-card bg-card-glass p-4">
+    <section aria-label={c("Manage creators and import posts", "管理博主与导入推文")} className="space-y-6">
       <div className="space-y-6" aria-busy={busy}>
         <form noValidate onSubmit={saveCreator} className="space-y-3">
           <h2 className="text-base font-semibold">
@@ -178,12 +179,9 @@ export default function XContentManager({ onSaved }: { onSaved: () => void }) {
               "相同用户名会更新该博主资料。推文需另行导入。",
             )}
           </p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label htmlFor="x-handle" className="mb-1 block text-sm">
-                {c("X username", "X 用户名")}
-              </label>
-              <Input
+          <SettingsGroup>
+            <SettingsRow label={c("X username", "X 用户名")}>
+              <Input className="max-w-[17.5rem]"
                 ref={handleRef}
                 id="x-handle"
                 value={handle}
@@ -198,41 +196,21 @@ export default function XContentManager({ onSaved }: { onSaved: () => void }) {
                 autoComplete="off"
                 placeholder="@username"
               />
-            </div>
-            <div>
-              <label htmlFor="x-name" className="mb-1 block text-sm">
-                {c("Display name", "显示名称")}
-              </label>
-              <Input
-                id="x-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                maxLength={100}
-                disabled={busy}
-              />
-            </div>
-          </div>
-          <div>
-            <label htmlFor="x-bio" className="mb-1 block text-sm">
-              {c("Bio", "简介")}
-            </label>
-            <Input
-              id="x-bio"
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              maxLength={1000}
-              disabled={busy}
-            />
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
+            </SettingsRow>
+            <SettingsRow label={c("Display name", "显示名称")}>
+              <Input id="x-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={100} disabled={busy} className="max-w-[17.5rem]" />
+            </SettingsRow>
+            <SettingsRow label={c("Bio", "简介")}>
+              <Input id="x-bio" value={bio} onChange={(e) => setBio(e.target.value)} maxLength={1000} disabled={busy} className="max-w-[17.5rem]" />
+            </SettingsRow>
             {[
               { id: "x-avatar", label: c("Avatar URL", "头像链接"), value: avatarUrl, set: setAvatarUrl, max: 2048 },
               { id: "x-location", label: c("Location", "所在地"), value: location, set: setLocation, max: 200 },
               { id: "x-website", label: c("Website", "个人网站"), value: website, set: setWebsite, max: 2048 },
               { id: "x-followers", label: c("Followers (exact count)", "关注者（准确数量）"), value: followers, set: setFollowers, max: 16 },
               { id: "x-following", label: c("Following (exact count)", "正在关注（准确数量）"), value: following, set: setFollowing, max: 16 },
-            ].map(field => <div key={field.id}><label htmlFor={field.id} className="mb-1 block text-sm">{field.label}</label><Input id={field.id} value={field.value} onChange={event => field.set(event.target.value)} maxLength={field.max} disabled={busy} /></div>)}
-          </div>
+            ].map(field => <SettingsRow key={field.id} label={field.label}><Input id={field.id} value={field.value} onChange={event => field.set(event.target.value)} maxLength={field.max} disabled={busy} className="max-w-[17.5rem]" /></SettingsRow>)}
+          </SettingsGroup>
           <p className="text-xs text-muted-foreground">{c("Use public profile information only. Leave unknown fields blank.", "仅填写公开资料，不确定的字段请留空。")}</p>
           <Button type="button" variant="ghost" disabled={busy || !handle.trim()} onClick={() => void loadCreator()}>{c("Load saved profile", "读取已存资料")}</Button>
           <Button type="submit" variant="outline" disabled={busy}>
@@ -252,21 +230,22 @@ export default function XContentManager({ onSaved }: { onSaved: () => void }) {
               "选择最多 500 条推文、大小不超过 2 MB 的 JSON 文件，预览后导入。已有推文 ID 会被跳过，保留已存内容。",
             )}
           </p>
-          <label htmlFor="x-file" className="block text-sm">
-            {c("Post JSON file", "推文 JSON 文件")}
-          </label>
+          <SettingsGroup>
+          <SettingsRow label={c("Post JSON file", "推文 JSON 文件")}>
           <input
             id="x-file"
             type="file"
             accept="application/json,.json"
             aria-describedby="x-file-help"
             disabled={busy}
-            className="block w-full min-w-0 rounded-full text-sm file:mr-3 file:rounded-full file:border-0 file:bg-muted file:px-3 file:py-2 file:text-foreground focus-visible:outline-none "
+            className="block w-full min-w-0 max-w-[17.5rem] rounded-full text-sm file:mr-3 file:rounded-full file:border-0 file:bg-muted file:px-3 file:py-2 file:text-foreground focus-visible:outline-none "
             onChange={(e) => {
               void chooseFile(e.target.files?.[0]);
               e.target.value = "";
             }}
           />
+          </SettingsRow>
+          </SettingsGroup>
           <details className="text-xs text-muted-foreground">
             <summary className="w-fit cursor-pointer rounded-sm py-2 focus-visible:outline-none ">
               {c("JSON format", "JSON 格式")}

@@ -52,6 +52,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { SettingsGroup, SettingsRow } from "@/components/ui/settings-group";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -82,7 +83,7 @@ import {
 function AccountSkeleton() {
   const { t } = useTranslation();
   return <ContentLoading label={t("common.loading")} className="min-h-0">
-    <div className="flex items-center gap-4 border-b border-border py-5"><Skeleton className="h-[4.5rem] w-[4.5rem] rounded-full" /></div>
+    <div className="flex items-center gap-4 pb-5"><Skeleton className="h-[4.5rem] w-[4.5rem] rounded-full" /></div>
     {[0, 1, 2].map((i) => <div key={i} className="grid gap-1.5 border-b border-border py-4 sm:grid-cols-[11.25rem_minmax(0,1fr)] sm:items-center sm:gap-6">
       <Skeleton className="h-4 w-24 rounded-md" /><Skeleton className={i === 1 ? "h-4 w-32 rounded-md" : "h-4 w-48 rounded-md"} />
     </div>)}
@@ -98,7 +99,7 @@ function SettingsFallback() {
         <div className="flex flex-col gap-8">
           <div className="flex gap-1">{settingsTabDefs.map((tab) => <Skeleton key={tab.value} className="h-10 w-20 rounded-full" />)}</div>
           <section className="pt-2">
-            <div className="flex items-start justify-between gap-4 border-b border-border pb-4"><div className="flex flex-col gap-2"><Skeleton className="h-7 w-32 rounded-lg" /><Skeleton className="h-4 w-48 rounded-md" /></div><Skeleton className="h-9 w-16 rounded-full" /></div>
+            <div className="mb-4 flex items-start justify-between gap-4 px-1"><div className="flex flex-col gap-2"><Skeleton className="h-7 w-32 rounded-lg" /><Skeleton className="h-4 w-48 rounded-md" /></div><Skeleton className="h-9 w-16 rounded-full" /></div>
             <AccountSkeleton />
           </section>
         </div>
@@ -135,7 +136,7 @@ function SettingsSection({
 }
 
 function FieldRow({
-  icon: Icon,
+  icon,
   label,
   children,
 }: {
@@ -143,15 +144,7 @@ function FieldRow({
   label: string;
   children: React.ReactNode;
 }) {
-  return (
-    <div className="grid gap-1.5 border-b border-border py-4 sm:grid-cols-[11.25rem_minmax(0,1fr)] sm:items-center sm:gap-6">
-      <Label className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
-        {Icon && <Icon className="h-3.5 w-3.5" />}
-        {label}
-      </Label>
-      <div className="min-w-0 text-[0.9375rem] text-foreground">{children}</div>
-    </div>
-  );
+  return <SettingsRow icon={icon} label={label}>{children}</SettingsRow>;
 }
 
 const settingsTabDefs = [
@@ -609,7 +602,7 @@ function SettingsContent() {
                     ) : (
                       <div>
                         {/* Avatar with fullscreen preview */}
-                        <div className="flex items-center gap-4 border-b border-border py-5">
+                        <div className="flex items-center gap-4 pb-5">
                           <div className="relative">
                             {profile?.avatar_url ? (
                               <button
@@ -856,6 +849,7 @@ function SettingsContent() {
                           </DialogContent>
                         </Dialog>
 
+                        <SettingsGroup>
                         <FieldRow icon={Mail} label={t("settings.account.emailAddress")}>
                           <p className="break-all">{formData.email}</p>
                         </FieldRow>
@@ -914,6 +908,8 @@ function SettingsContent() {
                           )}
                         </FieldRow>
 
+                        </SettingsGroup>
+
                         {/* Action Buttons */}
                         {isEditing && (
                           <div className="flex flex-col-reverse items-center gap-2 pt-5 sm:flex-row sm:justify-end">
@@ -966,7 +962,7 @@ function SettingsContent() {
                           </div>
 
                           {/* Provider list */}
-                          <div className="divide-y divide-border">
+                          <div className="mt-4 divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
                             {(supportedProviders.length > 0
                               ? supportedProviders
                               : Object.keys(PROVIDER_INFO)
@@ -985,7 +981,7 @@ function SettingsContent() {
                               return (
                                 <div
                                   key={provider}
-                                  className="py-5"
+                                  className="px-4 py-5"
                                 >
                                   {/* Provider header */}
                                   <div className="mb-3 flex items-start justify-between gap-4">
@@ -1108,10 +1104,10 @@ function SettingsContent() {
                   <SettingsSection
                     title={t("settings.preferences.title")}
                   >
-                    <div>
+                    <SettingsGroup>
                       <FieldRow icon={Globe} label={t("settings.preferences.language")}>
                         <Select value={locale} onValueChange={handleLanguageChange}>
-                          <SelectTrigger className="w-full sm:w-[17.5rem]" aria-label={t("settings.preferences.language")}>
+                          <SelectTrigger className="w-[12.5rem]" aria-label={t("settings.preferences.language")}>
                             <SelectValue placeholder={t("settings.preferences.selectLanguage")} />
                           </SelectTrigger>
                           <SelectContent>
@@ -1167,7 +1163,7 @@ function SettingsContent() {
                           />
                         )}
                       </FieldRow>
-                    </div>
+                    </SettingsGroup>
                   </SettingsSection>
                 </TabsContent>
               </div>

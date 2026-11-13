@@ -1,5 +1,6 @@
 "use client";
 
+import { SettingsGroup, SettingsRow } from "@/components/ui/settings-group";
 import { useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, ClipboardCopy, Download, FileJson, Loader2, Upload, X } from "lucide-react";
@@ -192,13 +193,16 @@ export default function YouTubeOpinionImporter({ onImported }: { onImported?: ()
           <Textarea aria-label="Gemini 提示词" readOnly value={prompt} className="mt-3 h-48 font-mono text-xs" />
         </div>
       </details>
-      <div className="space-y-2">
-        <label htmlFor="youtube-json-file" className="flex items-center gap-2 text-sm font-medium"><FileJson className="h-4 w-4" />JSON 文件</label>
-        <Input id="youtube-json-file" type="file" accept=".json,application/json" multiple disabled={busy} onChange={async (event) => {
+      <SettingsGroup>
+        <SettingsRow label={<label htmlFor="youtube-json-file" className="flex items-center gap-2"><FileJson className="h-4 w-4" />JSON 文件</label>}>
+        <Input className="max-w-[17.5rem]" id="youtube-json-file" type="file" accept=".json,application/json" multiple disabled={busy} onChange={async (event) => {
           const files = Array.from(event.target.files ?? []);
           event.target.value = "";
           if (files.length) await addFiles(files);
         }} />
+        </SettingsRow>
+      </SettingsGroup>
+      <div className="space-y-2">
         <p className="text-xs text-muted-foreground">可一次选择多个文件批量导入，单文件不超过 2 MB，单次最多 {MAX_VIDEOS} 个视频；每个文件可以是一个视频对象或一个视频数组。</p>
       </div>
       {sources.length > 0 && (
