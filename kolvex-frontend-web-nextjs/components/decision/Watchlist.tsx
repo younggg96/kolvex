@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { Plus, RefreshCw, Star, X } from "lucide-react";
+import { ChevronDown, Plus, RefreshCw, Star, X } from "lucide-react";
 import { toast } from "sonner";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import CompanyLogo from "@/components/ui/company-logo";
@@ -17,14 +17,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FilterSheet, FilterSheetGroup } from "@/components/ui/filter-sheet";
 import { ListCard, ListColumnHeader, ListLoadMore, ListRow, ListRows, listRowTargetClass } from "@/components/ui/list-card";
 import { useWatchlist } from "@/hooks/useWatchlist";
+import { groupBySector, sectorLabel, useStockSectors } from "@/hooks/useStockSectors";
 import { MARKET_RANGES } from "@/lib/marketObservations";
 import { normalizeWatchlistTicker } from "@/lib/watchlist";
 import { useMarketQuotes } from "@/hooks/useMarketQuotes";
 import { CORE_STOCKS } from "@/lib/stockDiscovery";
 import { cn } from "@/lib/utils";
-import { Change, money, useCopy } from "./shared";
+import { Change, money, useCopy, useCreatorCatalogue } from "./shared";
 import StockTrend from "./StockTrend";
 import WatchlistButton from "./WatchlistButton";
+import WatchlistStockSheet from "./WatchlistStockSheet";
+import StockDirectoryInsight from "@/components/youtube/StockDirectoryRow";
+import type { YouTubeStockSummary } from "@/lib/youtubeOpinionsApi";
 
 const names = new Map<string, string>(CORE_STOCKS.map(stock => [stock.symbol, stock.name]));
 const PAGE_SIZE = 20;
@@ -89,7 +93,24 @@ export default function Watchlist() {
       return sort === "gainers" ? right! - left! : left! - right!;
     });
   }, [watchlist, query, sort, quotes]);
+  const { sectors } = useStockSectors(watchlist);
+  // Group the sorted list by sector (group order follows its best-ranked stock); "Load more" counts rows across groups.
+  const groups = useMemo(() => {
+    let budget = rows;
+    return groupBySector(filtered, sectors).flatMap(([sector, symbols]) => {
+      if (budget <= 0) return [];
+      const shown = symbols.slice(0, budget);
+      budget -= shown.length;
+      return [[sector, shown] as const];
+    });
+  }, [filtered, sectors, rows]);
+  const { data: creatorCatalogue } = useCreatorCatalogue();
+  const creatorStocks = useMemo(() => new Map<string, YouTubeStockSummary>((creatorCatalogue?.stocks ?? []).map(stock => [stock.ticker.toUpperCase(), stock])), [creatorCatalogue]);
+  const companyName = (symbol: string) => quotes[symbol]?.name || names.get(symbol) || creatorStocks.get(symbol)?.company_name || undefined;
+  const [preview, setPreview] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const returnHref = `/dashboard/watchlist${params.size ? `?${params}` : ""}`;
+  const stockHref = (symbol: string) => `/dashboard/market/${encodeURIComponent(symbol)}?${new URLSearchParams({ from: returnHref })}`;
 
   return <DashboardLayout title={c("Watchlist", "自选股")}>
     <main className="flex-1 overflow-y-auto">
@@ -98,9 +119,9 @@ export default function Watchlist() {
           <Star className="mx-auto h-8 w-8 text-muted-foreground" aria-hidden="true" /><h2 className="mt-4 text-lg font-semibold">{c("No stocks in your Watchlist yet", "还没有自选股")}</h2><Button asChild variant="outline" className="mt-6"><Link href="/dashboard">{c("Browse Markets", "浏览行情")}</Link></Button>
         </div> : <section aria-label={c("Saved stocks", "已添加的股票")} className="space-y-3">
           <ListCard>
-            <div className="flex items-center justify-between gap-3 lg:hidden">
-              <h2 className="text-lg font-semibold">{c("Watchlist", "自选股")}</h2>
-              <div className="flex items-center justify-end gap-3 lg:grid lg:grid-cols-[minmax(0,1fr)_12rem]">
+            <div className="flex items-center justify-between gap-3 lg:block">
+              <h2 className="text-lg font-semibold lg:hidden">{c("Watchlist", "自选股")}</h2>
+              <div className="flex items-center justify-end gap-3 lg:grid lg:grid-cols-[minmax(0,1fr)_12rem] lg:items-end">
                 <div className="hidden lg:block"><label htmlFor="watchlist-search" className="mb-2 block text-xs text-muted-foreground">{c("Search Watchlist", "搜索自选股")}</label><div className="relative"><SearchFieldIcon /><Input id="watchlist-search" ref={search} value={draft} placeholder={c("Ticker or company name", "股票代码或公司名称")} className="h-11 pl-10 pr-11" maxLength={100} onChange={event => { setDraft(event.target.value); if (!composing.current) update(event.target.value); }} onCompositionStart={() => { composing.current = true; }} onCompositionEnd={event => { composing.current = false; update(event.currentTarget.value); }} onKeyDown={event => { if (event.key === "Escape" && !composing.current) clear(); }} />{draft && <Button type="button" variant="ghost" size="icon" className="absolute right-0 top-0 h-11 w-11" aria-label={c("Clear Watchlist search", "清除自选股搜索")} onClick={clear}><X className="h-4 w-4" aria-hidden="true" /></Button>}</div></div>
                 <FilterSheet title={c("Sort", "排序")} summary={sortOptions.find(option => option.value === sort)?.label} active={sort !== "added"} onReset={() => update(query, "added")} triggerClassName="shrink-0"><FilterSheetGroup label={c("Sort", "排序")} options={sortOptions} value={sort} onChange={value => update(query, value)} /></FilterSheet>
                 <div className="hidden lg:block"><label htmlFor="watchlist-sort" className="mb-2 block text-xs text-muted-foreground">{c("Sort", "排序")}</label><Select value={sort} onValueChange={value => update(query, value)}><SelectTrigger id="watchlist-sort" className="h-11"><SelectValue /></SelectTrigger><SelectContent align="end">{sortOptions.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select></div>
@@ -116,23 +137,40 @@ export default function Watchlist() {
                 </div>
                 <span className="w-11 shrink-0 text-center">{c("Watch", "自选")}</span>
               </ListColumnHeader>
-              <ListRows aria-label={c("Saved stocks", "已添加的股票")}>
-                {filtered.slice(0, rows).map(symbol => <ListRow key={symbol}>
-                  <Link href={`/dashboard/market/${encodeURIComponent(symbol)}?${new URLSearchParams({ from: returnHref })}`} className={cn(ROW_GRID, listRowTargetClass)}>
-                    <span className="flex min-w-0 items-center gap-2 sm:gap-3">
-                      <span aria-hidden="true" className="shrink-0"><CompanyLogo symbol={symbol} size="sm" /></span>
-                      <span className="min-w-0"><span className="block text-base font-semibold">{symbol}</span></span>
-                    </span>
-                    <span className="min-w-0"><StockTrend symbol={symbol} period={trend.period} interval={trend.interval} rangeLabel={c(trend.en, trend.zh)} rangeKey="1D" /></span>
-                    <span className="min-w-0 text-right">{loading && !quotes[symbol] ? <PendingValue className="h-10" /> : <><span className="figure block text-base font-medium">{money(quotes[symbol]?.price)}</span><Change value={quotes[symbol]?.changePercent} className="mt-1 block text-xs font-semibold" /></>}</span>
-                  </Link>
-                  <WatchlistButton ticker={symbol} onRemoved={() => tickerInput.current?.focus()} />
-                </ListRow>)}
-              </ListRows>
+              {groups.map(([sector, symbols]) => {
+                const label = sectorLabel(sector);
+                const list = <ListRows aria-label={sector === "pending" ? c("Saved stocks", "已添加的股票") : c(label.en, label.zh)}>
+                  {symbols.map(symbol => <ListRow key={symbol}>
+                    <Link href={stockHref(symbol)} className={cn(ROW_GRID, listRowTargetClass, "gap-y-1.5")} onClick={event => {
+                    // Phones preview the stock in a sheet; larger screens (and modified clicks) open the stock page.
+                    if (event.metaKey || event.ctrlKey || event.shiftKey || !window.matchMedia("(max-width: 639.98px)").matches) return;
+                    event.preventDefault();
+                    setPreview(symbol);
+                    setPreviewOpen(true);
+                  }}>
+                      <span className="flex min-w-0 items-center gap-2 sm:gap-3">
+                        <span aria-hidden="true" className="shrink-0"><CompanyLogo symbol={symbol} size="sm" /></span>
+                        <span className="min-w-0"><span className="block text-base font-semibold">{symbol}</span>{companyName(symbol) && <span className="mt-0.5 block truncate text-xs text-muted-foreground max-sm:hidden">{companyName(symbol)}</span>}</span>
+                      </span>
+                      <span className="min-w-0"><StockTrend symbol={symbol} period={trend.period} interval={trend.interval} rangeLabel={c(trend.en, trend.zh)} rangeKey="1D" /></span>
+                      <span className="min-w-0 text-right">{loading && !quotes[symbol] ? <PendingValue className="h-10" /> : <><span className="figure block text-base font-medium">{money(quotes[symbol]?.price)}</span><Change value={quotes[symbol]?.changePercent} className="mt-1 block text-xs font-semibold" /></>}</span>
+                      {creatorStocks.get(symbol) && <StockDirectoryInsight stock={creatorStocks.get(symbol)!} />}
+                    </Link>
+                    <WatchlistButton ticker={symbol} onRemoved={() => tickerInput.current?.focus()} />
+                  </ListRow>)}
+                </ListRows>;
+                return sector === "pending" ? <div key={sector}>{list}</div> : <details key={sector} open className="group mt-2 first:mt-0">
+                  <summary className="flex min-h-10 cursor-pointer list-none items-center gap-2 rounded-2xl px-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+                    <ChevronDown className="h-3.5 w-3.5 shrink-0 -rotate-90 transition-transform group-open:rotate-0" aria-hidden="true" />{c(label.en, label.zh)}
+                  </summary>
+                  {list}
+                </details>;
+              })}
             </div>
             {!filtered.length && <div className="py-12 text-center"><p className="text-sm text-muted-foreground">{c("No saved stocks match your search.", "没有符合搜索条件的自选股。")}</p><Button variant="outline" className="mt-4" onClick={clear}>{c("Clear search", "清除搜索")}</Button></div>}
             {filtered.length > rows && <ListLoadMore onClick={() => setRows(value => value + PAGE_SIZE)}>{c("Load more", "加载更多")}</ListLoadMore>}
           </ListCard>
+          <WatchlistStockSheet open={previewOpen} symbol={preview} name={preview ? companyName(preview) : undefined} price={preview ? quotes[preview]?.price : undefined} changePercent={preview ? quotes[preview]?.changePercent : undefined} href={preview ? stockHref(preview) : returnHref} onClose={() => setPreviewOpen(false)} />
         </section>}
       </div>
     </main>

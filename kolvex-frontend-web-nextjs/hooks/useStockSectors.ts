@@ -1,11 +1,32 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CORE_STOCKS } from "@/lib/stockDiscovery";
+import { CORE_STOCKS, STOCK_SECTORS } from "@/lib/stockDiscovery";
 import type { StockOverview } from "@/lib/stockApi";
 
 /** Sector keys used for grouping; extends the discovery filter keys with Yahoo's two extra sectors. */
 export type SectorKey = (typeof CORE_STOCKS)[number]["sector"] | "materials" | "real_estate" | "crypto" | "other";
+
+const EXTRA_SECTORS: Record<string, { en: string; zh: string }> = {
+  crypto: { en: "Crypto", zh: "加密资产" },
+  materials: { en: "Materials", zh: "原材料" },
+  real_estate: { en: "Real estate", zh: "房地产" },
+};
+
+/** Bilingual label for a grouping key; unknown keys (ETFs, funds) read as "Other stocks". */
+export function sectorLabel(key: string): { en: string; zh: string } {
+  return STOCK_SECTORS.find(sector => sector.key === key) ?? EXTRA_SECTORS[key] ?? { en: "Other stocks", zh: "其他股票" };
+}
+
+/** Group symbols by sector, keeping the input order; unresolved symbols go under "pending". */
+export function groupBySector(symbols: readonly string[], sectors: Record<string, SectorKey>) {
+  const groups = new Map<string, string[]>();
+  for (const symbol of symbols) {
+    const sector = sectors[symbol] ?? "pending";
+    groups.set(sector, [...(groups.get(sector) ?? []), symbol]);
+  }
+  return [...groups];
+}
 
 const STORAGE_KEY = "kolvex:stock-sectors:v1";
 const TTL = 30 * 24 * 60 * 60 * 1000;
