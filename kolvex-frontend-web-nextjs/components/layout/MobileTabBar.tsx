@@ -144,13 +144,13 @@ export default function MobileTabBar({ compact = false }: MobileTabBarProps) {
   return (
     <nav
       aria-label={c("Main navigation", "主导航")}
-      className="pointer-events-none absolute inset-x-0 bottom-0 z-40 lg:hidden"
+      className="pointer-events-none absolute inset-x-0 bottom-0 z-40 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 lg:hidden"
     >
       <div
         ref={dock}
         data-mobile-dock
         className={cn(
-          "glass-track glass-track-strong pointer-events-auto w-full rounded-none border-t border-foreground/[0.06] px-2 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] !shadow-[0_-6px_20px_-8px_rgb(0_0_0/0.22)]",
+          "glass-track glass-track-strong pointer-events-auto mx-auto w-full max-w-md rounded-3xl p-1 ring-1 ring-foreground/[0.06] !shadow-[0_10px_30px_-6px_rgb(0_0_0/0.30),0_2px_8px_rgb(0_0_0/0.10)]",
         )}
       >
         <div
