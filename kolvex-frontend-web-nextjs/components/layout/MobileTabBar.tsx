@@ -148,7 +148,7 @@ export default function MobileTabBar({ compact = false }: MobileTabBarProps) {
         ref={dock}
         data-mobile-dock
         className={cn(
-          "glass-track glass-track-strong pointer-events-auto mx-auto w-full max-w-md origin-bottom rounded-[28px] p-1 shadow-[0_8px_24px_-8px_rgb(0_0_0/0.22),0_1px_4px_rgb(0_0_0/0.06)] ring-1 ring-foreground/[0.05] transition-transform duration-200 ease-out motion-reduce:transition-none",
+          "glass-track glass-track-strong pointer-events-auto mx-auto w-full max-w-md origin-bottom rounded-[28px] p-1 !shadow-[0_10px_30px_-6px_rgb(0_0_0/0.30),0_2px_8px_rgb(0_0_0/0.10)] ring-1 ring-foreground/[0.06] transition-transform duration-200 ease-out motion-reduce:transition-none",
           midScroll && !menuOpen && "motion-safe:scale-[0.84]",
         )}
       >
@@ -173,7 +173,7 @@ export default function MobileTabBar({ compact = false }: MobileTabBarProps) {
                         href={item.href}
                         aria-current={active ? "page" : undefined}
                         onClick={() => setMenuOpen(false)}
-                        className={cn(menuItemClass, active && "glass-thumb text-foreground hover:text-foreground")}
+                        className={cn(menuItemClass, active && "bg-foreground/[0.16] text-foreground hover:bg-foreground/[0.16] hover:text-foreground dark:bg-foreground/20")}
                       >
                         <item.icon aria-hidden className="h-[20px] w-[20px]" strokeWidth={active ? 2 : 1.75} />
                         <span className="max-w-full truncate">{item.title}</span>
@@ -204,7 +204,7 @@ export default function MobileTabBar({ compact = false }: MobileTabBarProps) {
                   aria-label={t(item.shortTitleKey)}
                   title={t(item.shortTitleKey)}
                   onClick={() => setMenuOpen(false)}
-                  className={cn(targetClass, highlighted && "glass-thumb text-foreground hover:bg-transparent hover:text-foreground")}
+                  className={cn(targetClass, highlighted && "bg-foreground/[0.16] text-foreground hover:bg-foreground/[0.16] hover:text-foreground active:bg-foreground/20 dark:bg-foreground/20")}
                 >
                   <Icon aria-hidden className={iconClass} strokeWidth={highlighted ? 2 : 1.75} />
                 </Link>
@@ -218,7 +218,7 @@ export default function MobileTabBar({ compact = false }: MobileTabBarProps) {
               aria-label={c("Search", "探索")}
               title={c("Search", "探索")}
               onClick={() => setMenuOpen(false)}
-              className={cn(targetClass, searchHighlighted && "glass-thumb text-foreground hover:bg-transparent hover:text-foreground")}
+              className={cn(targetClass, searchHighlighted && "bg-foreground/[0.16] text-foreground hover:bg-foreground/[0.16] hover:text-foreground active:bg-foreground/20 dark:bg-foreground/20")}
             >
               <Search aria-hidden className={iconClass} strokeWidth={searchHighlighted ? 2 : 1.75} />
             </Link>
@@ -232,7 +232,7 @@ export default function MobileTabBar({ compact = false }: MobileTabBarProps) {
               aria-controls="mobile-dock-panel"
               aria-label={c("Open navigation menu", "打开导航菜单")}
               title={c("Menu", "菜单")}
-              className={cn(targetClass, "w-full", menuOpen && "glass-thumb text-foreground hover:bg-transparent hover:text-foreground")}
+              className={cn(targetClass, "w-full", menuOpen && "bg-foreground/[0.16] text-foreground hover:bg-foreground/[0.16] hover:text-foreground active:bg-foreground/20 dark:bg-foreground/20")}
             >
               <Menu aria-hidden className={iconClass} strokeWidth={menuOpen ? 2 : 1.75} />
             </button>
