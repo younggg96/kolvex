@@ -48,16 +48,21 @@ def calculate_position_snapshot_metrics(
     price = abs(_safe_number(position.get("price")))
     average_price = abs(_safe_number(position.get("average_purchase_price")))
     is_short = signed_units < 0
+    # Without a cost basis the gain is unknown; count it as zero, not as the full value.
+    has_cost = average_price > 0
 
     if position_type == "option":
         market_value = price * units * OPTION_CONTRACT_MULTIPLIER
         # Option average_purchase_price is stored as cost/credit per contract.
         cost_basis = average_price * units
-        unrealized_pnl = (
-            cost_basis - market_value
-            if is_short
-            else market_value - cost_basis
-        )
+        if not has_cost:
+            unrealized_pnl = 0.0
+        else:
+            unrealized_pnl = (
+                cost_basis - market_value
+                if is_short
+                else market_value - cost_basis
+            )
         signed_market_value = -market_value if is_short else market_value
     else:
         market_value = price * units
@@ -65,6 +70,8 @@ def calculate_position_snapshot_metrics(
         raw_open_pnl = position.get("open_pnl")
         if raw_open_pnl is not None:
             unrealized_pnl = _safe_number(raw_open_pnl)
+        elif not has_cost:
+            unrealized_pnl = 0.0
         else:
             unrealized_pnl = (
                 cost_basis - market_value

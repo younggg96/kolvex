@@ -22,7 +22,7 @@ import CompanyLogo from "@/components/ui/company-logo";
 import { Badge } from "@/components/ui/badge";
 import { WeightIndicator } from "@/components/ui/weight-indicator";
 import MiniSparkline from "@/components/common/MiniSparkline";
-import { formatCurrency } from "@/lib/portfolioApi";
+import { equityOpenPnl, formatCurrency } from "@/lib/portfolioApi";
 import { marketStockHref } from "@/lib/stockLinks";
 import { useTranslation } from "@/lib/i18n";
 import type { EquityPositionsTableProps, PortfolioPosition } from "./types";
@@ -138,8 +138,8 @@ export function EquityPositionsTable({
         <TableBody>
           {positions.map((pos: PortfolioPosition) => {
             const isHiddenPosition = pos.is_hidden || pos.units == null;
-            const pnl = pos.open_pnl ?? 0;
-            const profit = pnl >= 0;
+            const pnl = equityOpenPnl(pos);
+            const profit = (pnl ?? 0) >= 0;
             const isShort = !isHiddenValue(pos.units) && (pos.units as number) < 0;
             // P&L per share = current price - average purchase price
             const safePrice = isHiddenValue(pos.price) ? 0 : (pos.price as number);
@@ -247,8 +247,10 @@ export function EquityPositionsTable({
                   )}
                 </TableCell>
                 <TableCell className="text-right">
-                  {isSecretStock || isHiddenValue(pos.open_pnl) ? (
+                  {isSecretStock || (pos.open_pnl as unknown) === "***" ? (
                     <span className="text-muted-foreground">***</span>
+                  ) : pnl === null ? (
+                    <span className="text-muted-foreground">—</span>
                   ) : (
                     <span
                       className={`inline-flex items-center gap-0.5 tabular-nums font-medium ${profit ? "text-positive" : "text-negative"

@@ -602,7 +602,6 @@
     },
     "actions": {
       "refresh": "Refresh",
-      "autoSyncSchedule": "Auto-syncs after market close",
       "settings": "Settings",
       "community": "Community",
       "view": "View",
@@ -747,6 +746,7 @@
       "noAccountData": "No Account Data",
       "noAccountDataDesc": "Sync to fetch your latest positions from your connected broker",
       "syncNow": "Sync Now",
+      "notShared": "This portfolio isn't shared.",
       "aiOnlyOwner": "AI analysis is only available for your own portfolio."
     },
     "disconnectDialog": {

@@ -8,6 +8,7 @@ import { invalidateClientCache } from "./clientCache";
 import type {
   PortfolioConnectionStatus,
   PortfolioHoldings,
+  PortfolioPosition,
   PortfolioPublicHoldings,
   PublicUserSummary,
   PublicUsersResponse,
@@ -354,6 +355,29 @@ export function calculateTotalValue(holdings: PortfolioHoldings): number {
 }
 
 /**
+ * Open P&L of an equity position: the stored value, or price minus average
+ * cost when the broker did not report one. Null when masked or unknown.
+ */
+export function equityOpenPnl(position: PortfolioPosition): number | null {
+  const pnl: unknown = position.open_pnl;
+  if (typeof pnl === "number") return pnl;
+  if (pnl === "***") return null;
+  const price: unknown = position.price;
+  const average: unknown = position.average_purchase_price;
+  const units: unknown = position.units;
+  if (
+    typeof price === "number" &&
+    typeof average === "number" &&
+    typeof units === "number" &&
+    average > 0
+  ) {
+    // Negative units make this correct for short positions too.
+    return (price - average) * units;
+  }
+  return null;
+}
+
+/**
  * Calculate total P&L
  * For options: always calculate from current value - cost basis (API returns 0)
  * For equities: use open_pnl if available
@@ -378,14 +402,7 @@ export function calculateTotalPnL(holdings: PortfolioHoldings): number {
           total += isShort ? costBasis - currentValue : currentValue - costBasis;
         }
       } else {
-        // For equities: use open_pnl or calculate from average_purchase_price
-        if (position.open_pnl !== undefined && position.open_pnl !== null) {
-          total += position.open_pnl;
-        } else if (position.price && position.average_purchase_price) {
-          const currentValue = position.price * position.units;
-          const costBasis = position.average_purchase_price * position.units;
-          total += currentValue - costBasis;
-        }
+        total += equityOpenPnl(position) ?? 0;
       }
     }
   }

@@ -184,6 +184,13 @@ export default function PortfolioHoldings({
 
   if (loading) return <PortfolioSkeleton />;
 
+  // Visitors cannot connect or sync someone else's portfolio.
+  if (!isOwner && (!status?.is_connected || status.accounts_count === 0)) {
+    return (
+      <EmptyState icon={AlertCircle} title={t("portfolio.holdings.notShared")} />
+    );
+  }
+
   if (!status?.is_connected) {
     return (
       <NotConnectedState
@@ -209,6 +216,8 @@ export default function PortfolioHoldings({
             onConnect={handleConnectPlaid}
             onDisconnect={() => setDisconnectDialogOpen(true)}
             onDownload={handleDownload}
+            onRefresh={handleSync}
+            refreshing={syncing}
           />
         </div>
       )}

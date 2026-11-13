@@ -49,6 +49,7 @@ class HoldingsResponse(BaseModel):
     is_public: bool
     last_synced_at: Optional[str] = None
     accounts: List[Dict[str, Any]]
+    total_value: float = 0
 
 
 class PublicHoldingsResponse(BaseModel):

@@ -20,7 +20,7 @@ import {
   Eye,
   FileSpreadsheet,
   FileJson,
-  Clock3,
+  RefreshCw,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { PortfolioHoldings } from "@/lib/supabase/database.types";
@@ -38,6 +38,8 @@ export interface PortfolioHeaderActionsProps {
   onConnect: () => void;
   onDisconnect: () => void;
   onDownload: (format: DownloadFormat) => void;
+  onRefresh: () => void;
+  refreshing: boolean;
   size?: "sm" | "xs";
 }
 
@@ -53,22 +55,31 @@ export function PortfolioHeaderActions({
   onConnect,
   onDisconnect,
   onDownload,
+  onRefresh,
+  refreshing,
 }: PortfolioHeaderActionsProps) {
   const { t } = useTranslation();
 
   return (
     <div className="flex items-center gap-2">
-      <div className="text-xs text-muted-foreground hidden lg:flex flex-col items-end opacity-60">
-        <span>
-          {holdings?.last_synced_at
-            ? `Updated ${formatDistanceToNow(new Date(holdings.last_synced_at), { addSuffix: true })}`
-            : t("portfolio.actions.notSyncedYet")}
+      <span className="text-xs text-muted-foreground hidden lg:inline opacity-60">
+        {holdings?.last_synced_at
+          ? `Updated ${formatDistanceToNow(new Date(holdings.last_synced_at), { addSuffix: true })}`
+          : t("portfolio.actions.notSyncedYet")}
+      </span>
+
+      <Button
+        variant="outline"
+        size={size}
+        className="gap-1.5"
+        onClick={onRefresh}
+        disabled={refreshing}
+      >
+        <RefreshCw className={cn("w-3.5 h-3.5", refreshing && "animate-spin")} />
+        <span className={cn("hidden sm:inline", size === "xs" && "text-xs")}>
+          {t("portfolio.actions.refresh")}
         </span>
-        <span className="inline-flex items-center gap-1">
-          <Clock3 className="w-3 h-3" />
-          {t("portfolio.actions.autoSyncSchedule")}
-        </span>
-      </div>
+      </Button>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

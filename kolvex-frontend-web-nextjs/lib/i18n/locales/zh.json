@@ -602,7 +602,6 @@
     },
     "actions": {
       "refresh": "刷新",
-      "autoSyncSchedule": "工作日收盘后自动同步",
       "settings": "设置",
       "community": "社区",
       "view": "查看",
@@ -747,6 +746,7 @@
       "noAccountData": "暂无账户数据",
       "noAccountDataDesc": "同步以从已连接的券商获取最新持仓",
       "syncNow": "立即同步",
+      "notShared": "该用户未公开投资组合。",
       "aiOnlyOwner": "AI 分析仅适用于您自己的投资组合。"
     },
     "disconnectDialog": {

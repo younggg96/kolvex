@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
+import { equityOpenPnl } from "@/lib/portfolioApi";
 import type { PortfolioPosition, EquitySortKey, OptionSortKey } from "../types";
 
 const OPTION_CONTRACT_MULTIPLIER = 100;
@@ -100,8 +101,8 @@ export function useEquitySort() {
             bVal = (b.price || 0) * b.units;
             break;
           case "pnl":
-            aVal = a.open_pnl || 0;
-            bVal = b.open_pnl || 0;
+            aVal = equityOpenPnl(a) ?? 0;
+            bVal = equityOpenPnl(b) ?? 0;
             break;
           case "pnl_per_share":
             aVal = (a.price || 0) - (a.average_purchase_price || 0);

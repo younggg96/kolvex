@@ -7,14 +7,21 @@ import logging
 import os
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
+from zoneinfo import ZoneInfo
 
 import httpx
 from cryptography.fernet import Fernet
 
 from app.core.config import settings
 from app.core.supabase import get_supabase_service
+from app.services.portfolio_snapshot_service import (
+    calculate_position_snapshot_metrics,
+    get_portfolio_snapshot_service,
+)
 
 logger = logging.getLogger(__name__)
+
+NEW_YORK = ZoneInfo("America/New_York")
 
 PLAID_BASE_URLS = {
     "sandbox": "https://sandbox.plaid.com",
@@ -255,6 +262,8 @@ class PlaidService:
         if last_error and accounts_count == 0 and holdings_count == 0:
             raise PlaidApiError(last_error)
 
+        await self._record_snapshot(user_id, connection["id"])
+
         return {
             "success": True,
             "accounts_count": accounts_count,
@@ -302,6 +311,40 @@ class PlaidService:
                 "id", connection["id"]
             ).execute))
         return {"success": True, "message": "Plaid Investments disconnected"}
+
+    async def _record_snapshot(self, user_id: str, connection_id: str) -> None:
+        """Record today's portfolio value so the performance chart has history."""
+        try:
+            accounts = (
+                await asyncio.to_thread(
+                    self.supabase.table("portfolio_accounts")
+                    .select("id, portfolio_positions(*)")
+                    .eq("connection_id", connection_id)
+                    .execute
+                )
+            ).data or []
+            positions = [
+                position
+                for account in accounts
+                for position in account.get("portfolio_positions") or []
+            ]
+            totals = {"market_value": 0.0, "cost_basis": 0.0, "unrealized_pnl": 0.0}
+            for position in positions:
+                metrics = calculate_position_snapshot_metrics(position)
+                for key in totals:
+                    totals[key] += metrics[key]
+            await get_portfolio_snapshot_service().record_snapshot(
+                user_id=user_id,
+                total_value=round(totals["market_value"], 2),
+                total_cost_basis=round(totals["cost_basis"], 2),
+                unrealized_pnl=round(totals["unrealized_pnl"], 2),
+                positions_count=len(positions),
+                accounts_count=len(accounts),
+                snapshot_date=datetime.now(NEW_YORK).date(),
+            )
+        except Exception:
+            # A missing snapshot must not fail an otherwise successful sync.
+            logger.exception("Failed to record portfolio snapshot after Plaid sync")
 
     async def _get_portfolio_connection(self, user_id: str) -> Optional[Dict[str, Any]]:
         result = (
@@ -417,7 +460,14 @@ class PlaidService:
             quantity = _safe_float(holding.get("quantity")) or 0
             price = _safe_float(holding.get("institution_price"))
             cost_basis = _safe_float(holding.get("cost_basis"))
+            institution_value = _safe_float(holding.get("institution_value"))
             avg_price = cost_basis / quantity if cost_basis is not None and quantity else None
+            # Plaid reports total value and total cost basis, so their difference is the open P&L.
+            open_pnl = (
+                institution_value - cost_basis
+                if institution_value is not None and cost_basis is not None
+                else None
+            )
             data = {
                 "account_id": account_row_id,
                 "symbol": str(symbol).upper(),
@@ -425,7 +475,7 @@ class PlaidService:
                 "security_name": security.get("name") or symbol,
                 "units": quantity,
                 "price": price,
-                "open_pnl": None,
+                "open_pnl": open_pnl,
                 "fractional_units": quantity,
                 "average_purchase_price": avg_price,
                 "currency": holding.get("iso_currency_code")
