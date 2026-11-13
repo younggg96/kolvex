@@ -126,7 +126,7 @@ html {
   --primary-soft: 220 252 231;
   --primary-foreground: var(--foreground);
   --background: 247 250 246;
-  --sidebar: 239 245 237;
+  --sidebar: 255 255 255;
   --surface: 255 255 255;
   --surface-hover: 243 248 242;
   --foreground: 15 23 42;
@@ -1781,7 +1781,8 @@ html[data-chat-history-open] .app-workbench .app-sidebar {
 :root:not(.dark) :is(.glass-field, .glass-button.rounded-full, .glass-button-ghost.rounded-full),
 :root:not(.dark) :is([data-slot="segmented-control"], [role="tablist"].glass-track),
 :root:not(.dark) :is([data-slot="segmented-control"], [role="tablist"].glass-track) > :is(button, .glass-thumb),
-:root:not(.dark) .surface-overlay :is([role="option"], [role^="menuitem"]) {
+:root:not(.dark) .surface-overlay :is([role="option"], [role^="menuitem"]),
+:root:not(.dark) .app-workbench :is([data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]) {
   border-radius: var(--radius-control);
 }
 
