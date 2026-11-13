@@ -85,7 +85,7 @@ export function AccountCard({
 
   return (
     <Collapsible open={isExpanded} onOpenChange={onToggle}>
-      <ListCard className="overflow-hidden !p-0 sm:!p-0 max-md:-mx-[16px]">
+      <ListCard className="overflow-hidden !p-0 sm:!p-0">
         <CollapsibleTrigger asChild>
           <CardHeader className="cursor-pointer select-none transition-colors hover:bg-foreground/[0.06] py-3 px-4">
             <div className="flex items-center justify-between">
@@ -124,7 +124,7 @@ export function AccountCard({
         </CollapsibleTrigger>
 
         <CollapsibleContent>
-          <CardContent className="!p-0 border-t border-border">
+          <CardContent className="!px-2 !pb-2 !pt-0 border-t border-border">
             {/* Equities */}
             <EquityPositionsTable
               positions={sortEquityPositions(equityPositions)}

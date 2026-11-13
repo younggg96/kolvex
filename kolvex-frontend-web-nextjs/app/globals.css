@@ -1819,9 +1819,10 @@ html[data-chat-history-open] .app-workbench .app-sidebar {
   background: rgb(var(--secondary));
 }
 
+/* Fields carry no outline at rest; the fill marks them, and focus or an error brings the edge back. */
 :root:not(.dark) .glass-field {
   background: rgb(var(--muted));
-  border-color: rgb(var(--field-edge));
+  border-color: transparent;
   box-shadow: none;
 }
 
@@ -1870,7 +1871,7 @@ html[data-chat-history-open] .app-workbench .app-sidebar {
 }
 
 @media (prefers-contrast: more) {
-  :root:not(.dark) .chat-composer-surface {
+  :root:not(.dark) :is(.chat-composer-surface, .glass-field:not(:focus-within, [aria-invalid="true"])) {
     border-color: rgb(var(--foreground));
   }
 }

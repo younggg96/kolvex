@@ -29,7 +29,7 @@ import WatchlistButton from "./WatchlistButton";
 const names = new Map<string, string>(CORE_STOCKS.map(stock => [stock.symbol, stock.name]));
 const PAGE_SIZE = 20;
 const trend = MARKET_RANGES[0];
-const ROW_GRID = "grid grid-cols-[minmax(0,1fr)_80px] gap-x-2 min-[400px]:grid-cols-[minmax(0,1fr)_60px_80px] sm:grid-cols-[minmax(0,1fr)_100px_100px] sm:gap-x-4";
+const ROW_GRID = "grid grid-cols-[minmax(0,1fr)_52px_76px] gap-x-2 min-[400px]:grid-cols-[minmax(0,1fr)_60px_80px] sm:grid-cols-[minmax(0,1fr)_100px_100px] sm:gap-x-4";
 
 export default function Watchlist() {
   const c = useCopy();
@@ -98,20 +98,20 @@ export default function Watchlist() {
           <Star className="mx-auto h-8 w-8 text-muted-foreground" aria-hidden="true" /><h2 className="mt-4 text-lg font-semibold">{c("No stocks in your Watchlist yet", "还没有自选股")}</h2><Button asChild variant="outline" className="mt-6"><Link href="/dashboard">{c("Browse Markets", "浏览行情")}</Link></Button>
         </div> : <section aria-label={c("Saved stocks", "已添加的股票")} className="space-y-3">
           <ListCard>
-            <div className="flex items-center justify-end gap-3 lg:grid lg:grid-cols-[minmax(0,1fr)_12rem]">
-              <div className="hidden lg:block"><label htmlFor="watchlist-search" className="mb-2 block text-xs text-muted-foreground">{c("Search Watchlist", "搜索自选股")}</label><div className="relative"><SearchFieldIcon /><Input id="watchlist-search" ref={search} value={draft} placeholder={c("Ticker or company name", "股票代码或公司名称")} className="h-11 pl-10 pr-11" maxLength={100} onChange={event => { setDraft(event.target.value); if (!composing.current) update(event.target.value); }} onCompositionStart={() => { composing.current = true; }} onCompositionEnd={event => { composing.current = false; update(event.currentTarget.value); }} onKeyDown={event => { if (event.key === "Escape" && !composing.current) clear(); }} />{draft && <Button type="button" variant="ghost" size="icon" className="absolute right-0 top-0 h-11 w-11" aria-label={c("Clear Watchlist search", "清除自选股搜索")} onClick={clear}><X className="h-4 w-4" aria-hidden="true" /></Button>}</div></div>
-              <FilterSheet title={c("Sort", "排序")} summary={sortOptions.find(option => option.value === sort)?.label} active={sort !== "added"} onReset={() => update(query, "added")} triggerClassName="shrink-0"><FilterSheetGroup label={c("Sort", "排序")} options={sortOptions} value={sort} onChange={value => update(query, value)} /></FilterSheet>
-              <div className="hidden lg:block"><label htmlFor="watchlist-sort" className="mb-2 block text-xs text-muted-foreground">{c("Sort", "排序")}</label><Select value={sort} onValueChange={value => update(query, value)}><SelectTrigger id="watchlist-sort" className="h-11"><SelectValue /></SelectTrigger><SelectContent align="end">{sortOptions.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select></div>
-            </div>
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs leading-5 text-muted-foreground">
-              <p>{c("Saved stocks · ranked within this list", "自选名单 · 名单内排序")}</p>
+            <div className="flex items-center justify-between gap-3 lg:hidden">
+              <h2 className="text-lg font-semibold">{c("Watchlist", "自选股")}</h2>
+              <div className="flex items-center justify-end gap-3 lg:grid lg:grid-cols-[minmax(0,1fr)_12rem]">
+                <div className="hidden lg:block"><label htmlFor="watchlist-search" className="mb-2 block text-xs text-muted-foreground">{c("Search Watchlist", "搜索自选股")}</label><div className="relative"><SearchFieldIcon /><Input id="watchlist-search" ref={search} value={draft} placeholder={c("Ticker or company name", "股票代码或公司名称")} className="h-11 pl-10 pr-11" maxLength={100} onChange={event => { setDraft(event.target.value); if (!composing.current) update(event.target.value); }} onCompositionStart={() => { composing.current = true; }} onCompositionEnd={event => { composing.current = false; update(event.currentTarget.value); }} onKeyDown={event => { if (event.key === "Escape" && !composing.current) clear(); }} />{draft && <Button type="button" variant="ghost" size="icon" className="absolute right-0 top-0 h-11 w-11" aria-label={c("Clear Watchlist search", "清除自选股搜索")} onClick={clear}><X className="h-4 w-4" aria-hidden="true" /></Button>}</div></div>
+                <FilterSheet title={c("Sort", "排序")} summary={sortOptions.find(option => option.value === sort)?.label} active={sort !== "added"} onReset={() => update(query, "added")} triggerClassName="shrink-0"><FilterSheetGroup label={c("Sort", "排序")} options={sortOptions} value={sort} onChange={value => update(query, value)} /></FilterSheet>
+                <div className="hidden lg:block"><label htmlFor="watchlist-sort" className="mb-2 block text-xs text-muted-foreground">{c("Sort", "排序")}</label><Select value={sort} onValueChange={value => update(query, value)}><SelectTrigger id="watchlist-sort" className="h-11"><SelectValue /></SelectTrigger><SelectContent align="end">{sortOptions.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select></div>
+              </div>
             </div>
             {unavailable && <div role="status" className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground"><p>{c("Some quotes are unavailable. Check the symbol or retry; saved stocks are retained.", "部分报价暂不可用，请检查代码或重试，自选股仍会保留。")}</p><Button variant="outline" size="sm" disabled={loading} onClick={() => setAttempt(value => value + 1)}>{c("Retry quotes", "重试报价")}</Button></div>}
             <div aria-busy={loading} className="mt-3">
               <ListColumnHeader>
                 <div className={cn(ROW_GRID, "min-w-0 flex-1 px-2 py-3")}>
                   <span>{c("Stock", "股票")}</span>
-                  <span className="hidden text-center min-[400px]:block">{c(`Trend · ${trend.en}`, `走势 · ${trend.zh}`)}</span>
+                  <span className="truncate text-center"><span className="min-[400px]:hidden">{c("Trend", "走势")}</span><span className="hidden min-[400px]:inline">{c(`Trend · ${trend.en}`, `走势 · ${trend.zh}`)}</span></span>
                   <span className="text-right">{c("Price / Today", "价格 / 今日")}</span>
                 </div>
                 <span className="w-11 shrink-0 text-center">{c("Watch", "自选")}</span>
@@ -121,9 +121,9 @@ export default function Watchlist() {
                   <Link href={`/dashboard/market/${encodeURIComponent(symbol)}?${new URLSearchParams({ from: returnHref })}`} className={cn(ROW_GRID, listRowTargetClass)}>
                     <span className="flex min-w-0 items-center gap-2 sm:gap-3">
                       <span aria-hidden="true" className="shrink-0"><CompanyLogo symbol={symbol} size="sm" /></span>
-                      <span className="min-w-0"><span className="block truncate text-base font-semibold">{symbol}</span><span className="mt-1 block truncate text-xs text-muted-foreground">{quotes[symbol]?.name || names.get(symbol) || c("Stock details", "查看个股详情")}</span></span>
+                      <span className="min-w-0"><span className="block text-base font-semibold">{symbol}</span></span>
                     </span>
-                    <span className="hidden min-[400px]:block"><StockTrend symbol={symbol} period={trend.period} interval={trend.interval} rangeLabel={c(trend.en, trend.zh)} rangeKey="1D" /></span>
+                    <span className="min-w-0"><StockTrend symbol={symbol} period={trend.period} interval={trend.interval} rangeLabel={c(trend.en, trend.zh)} rangeKey="1D" /></span>
                     <span className="min-w-0 text-right">{loading && !quotes[symbol] ? <PendingValue className="h-10" /> : <><span className="figure block text-base font-medium">{money(quotes[symbol]?.price)}</span><Change value={quotes[symbol]?.changePercent} className="mt-1 block text-xs font-semibold" /></>}</span>
                   </Link>
                   <WatchlistButton ticker={symbol} onRemoved={() => tickerInput.current?.focus()} />
@@ -151,7 +151,7 @@ function WatchlistCardSkeleton() {
     <div className="mt-3 flex justify-between"><Skeleton className="hidden h-3.5 w-20 rounded-md lg:block" /><Skeleton className="h-3.5 w-40 rounded-md" /></div>
     <div className="mt-3">
       <div aria-hidden="true" className="border-b border-border px-2 py-3"><Skeleton className="h-3.5 w-1/3 rounded-md" /></div>
-      <StockRowsSkeleton grid={ROW_GRID} trendClass="hidden min-[400px]:block" label={c("Loading Watchlist", "正在加载自选股")} />
+      <StockRowsSkeleton grid={ROW_GRID} trendClass="min-w-0" label={c("Loading Watchlist", "正在加载自选股")} />
     </div>
   </ListCard>;
 }

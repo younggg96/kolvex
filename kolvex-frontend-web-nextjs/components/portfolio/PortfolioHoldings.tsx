@@ -207,7 +207,10 @@ export default function PortfolioHoldings({
   return (
     <div className="space-y-6">
       {isOwner && status?.is_connected && (
-        <div className="flex justify-end">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="min-w-0 truncate text-lg font-semibold text-foreground">
+            {t("portfolio.holdings.myPortfolio")}
+          </h2>
           <PortfolioHeaderActions
             holdings={holdings}
             onTogglePublic={handleTogglePublic}

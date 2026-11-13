@@ -557,7 +557,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     "group grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 border-b border-border py-3.5 transition-colors duration-150 hover:border-foreground/25 hover:bg-foreground/[0.06] focus-visible:bg-foreground/[0.06] focus-visible:outline-none sm:-mx-3 sm:rounded-3xl sm:border-transparent sm:px-3 sm:hover:border-transparent";
   // The link in rowClass already washes (wider than its ListRow), so the ListRow
   // around it stays flat; otherwise a hovered row shows two stacked greys.
-  const flatListRowClass = "hover:bg-transparent has-[:focus-visible]:bg-transparent active:bg-transparent";
+  const flatListRowClass = "hover:bg-transparent active:bg-transparent";
   const stockRowClass = cn(rowClass, "grid-cols-[minmax(0,1fr)_auto_auto] gap-x-3 sm:grid-cols-[minmax(0,1fr)_110px_160px] sm:gap-x-4");
   // Rows inside one card body reuse the shared row target metrics (rounded-2xl,
   // min-h-20, no ring) while the ListRow supplies the hover/focus-within surface.

@@ -754,6 +754,7 @@
       "noAiModel": "请在设置中添加 AI API 密钥"
     },
     "holdings": {
+      "myPortfolio": "我的持仓组合",
       "refreshing": "刷新中...",
       "refreshPrices": "刷新价格",
       "brokerageAccount": "券商账户",

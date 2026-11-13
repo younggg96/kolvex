@@ -217,6 +217,7 @@ function Detail({ id }: { id: string }) {
               reload();
             }}
           />
+          <Chats detail={detail} user={user} />
           {run && <RunView run={run} symbols={detail.tickers} />}
           {detail.runs.length > 1 && (
             <View style={{ gap: phone(8) }}>
@@ -239,7 +240,6 @@ function Detail({ id }: { id: string }) {
               </Glass>
             </View>
           )}
-          <Chats detail={detail} user={user} />
         </View>
       )}
     </Page>
@@ -905,6 +905,7 @@ function EarlierRun({
 
 function Chats({ detail, user }: { detail: WorkspaceDetail; user: string }) {
   const t = useTheme();
+  const text = useText();
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState(false);
   const newChat = async () => {
@@ -924,14 +925,36 @@ function Chats({ detail, user }: { detail: WorkspaceDetail; user: string }) {
     }
   };
   return (
-    <View style={{ gap: 8 }}>
+    <Glass clear style={{ padding: 16, gap: 12 }}>
       <View style={styles.row}>
         <Copy size={14} bold>
           对话
         </Copy>
-        <Button size="sm" disabled={creating} onPress={() => void newChat()}>
-          {creating ? "正在创建…" : "新对话"}
-        </Button>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={text("新对话")}
+          disabled={creating}
+          onPress={() => void newChat()}
+          style={({ pressed }) => ({
+            flexDirection: "row",
+            alignItems: "center",
+            gap: phone(4),
+            opacity: creating ? 0.5 : pressed ? 0.6 : 1,
+          })}
+        >
+          <SymbolView
+            name={{
+              ios: "square.and.pencil",
+              android: "edit_note",
+              web: "edit_note",
+            }}
+            size={phone(14)}
+            tintColor={t.secondary}
+          />
+          <Copy size={13} muted>
+            {creating ? "正在创建…" : "新对话"}
+          </Copy>
+        </Pressable>
       </View>
       {error ? <Failure message="出了点问题，请重试。" /> : null}
       {!detail.chats.length ? (
@@ -939,42 +962,47 @@ function Chats({ detail, user }: { detail: WorkspaceDetail; user: string }) {
           这个工作区还没有对话。
         </Copy>
       ) : (
-        <Glass style={{ paddingHorizontal: 16 }}>
-          {detail.chats.map((chat, index) => (
-            <Pressable
-              key={chat.id}
-              accessibilityRole="button"
-              onPress={() =>
-                router.push(`/chat/${encodeURIComponent(chat.id)}`)
-              }
-              style={({ pressed }) => ({
-                flexDirection: "row",
-                alignItems: "center",
-                minHeight: 48,
-                paddingVertical: 8,
-                borderTopWidth: index ? 1 : 0,
-                borderColor: t.border,
-                opacity: pressed ? 0.6 : 1,
-              })}
-            >
-              <View style={{ flex: 1 }}>
-                {chat.title ? (
-                  <Copy size={14} lines={1} localize={false}>
-                    {chat.title}
-                  </Copy>
-                ) : (
-                  <Copy size={14} lines={1}>
-                    未命名对话
-                  </Copy>
-                )}
-              </View>
-              <Copy muted localize={false}>
-                ›
-              </Copy>
-            </Pressable>
-          ))}
-        </Glass>
+        detail.chats.map((chat, index) => (
+          <Pressable
+            key={chat.id}
+            accessibilityRole="button"
+            onPress={() =>
+              router.push(`/chat/${encodeURIComponent(chat.id)}`)
+            }
+            style={({ pressed }) => ({
+              flexDirection: "row",
+              alignItems: "center",
+              gap: phone(10),
+              minHeight: phone(36),
+              paddingTop: index ? phone(12) : 0,
+              borderTopWidth: index ? 1 : 0,
+              borderColor: t.border,
+              opacity: pressed ? 0.6 : 1,
+            })}
+          >
+            <SymbolView
+              name={{
+                ios: "bubble.left",
+                android: "chat_bubble_outline",
+                web: "chat_bubble_outline",
+              }}
+              size={phone(14)}
+              tintColor={t.secondary}
+            />
+            <View style={{ flex: 1 }}>
+              {chat.title ? (
+                <Copy size={14} lines={1} localize={false}>
+                  {chat.title}
+                </Copy>
+              ) : (
+                <Copy size={14} lines={1} muted>
+                  未命名对话
+                </Copy>
+              )}
+            </View>
+          </Pressable>
+        ))
       )}
-    </View>
+    </Glass>
   );
 }

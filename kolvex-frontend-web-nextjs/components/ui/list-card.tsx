@@ -106,7 +106,7 @@ export const ListRow = React.forwardRef<
   <li
     ref={ref}
     className={cn(
-      "flex items-center gap-1 rounded-2xl pr-2 max-md:pr-0 max-md:[&>*]:!px-0 transition-colors hover:bg-foreground/[0.06] has-[:focus-visible]:bg-foreground/[0.06] active:bg-foreground/[0.1] motion-reduce:transition-none [&>a]:!bg-transparent",
+      "flex items-center gap-3 rounded-2xl pr-2 max-md:pr-0 max-md:[&>*]:!px-0 transition-colors hover:bg-foreground/[0.06] motion-reduce:transition-none [&>a]:!bg-transparent",
       className,
     )}
     {...props}

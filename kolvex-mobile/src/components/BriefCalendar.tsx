@@ -176,9 +176,7 @@ export function BriefCalendar({
                   style={[
                     styles.row,
                     {
-                      width: phone(240),
-                      maxWidth: "100%",
-                      alignSelf: "center",
+                      alignSelf: "stretch",
                       justifyContent: "space-between",
                     },
                   ]}
@@ -199,9 +197,8 @@ export function BriefCalendar({
                 </View>
                 <View
                   style={{
-                    alignSelf: "center",
+                    alignSelf: "stretch",
                     width: "100%",
-                    maxWidth: phone(280),
                   }}
                 >
                   <View style={styles.row}>
