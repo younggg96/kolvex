@@ -9,7 +9,7 @@ import {
   ListEmptyState,
   ListLoadMore,
   ListRows,
-  listFeedRowClass,
+  listFeedStaticRowClass,
 } from "@/components/ui/list-card";
 import { useTranslation } from "@/lib/i18n";
 import { getYouTubeStockDetail, type YouTubeOpinion } from "@/lib/youtubeOpinionsApi";
@@ -28,7 +28,7 @@ export default function OtherCreatorOpinions({
   const [visibleCount, setVisibleCount] = useState(3);
   const resource = useCachedResource(
     `/api/youtube-opinions/stocks/${encodeURIComponent(ticker)}`,
-    signal => getYouTubeStockDetail(ticker, {}, signal),
+    (signal) => getYouTubeStockDetail(ticker, {}, signal),
     { ttl: 60_000 },
   );
   const loading = resource.loading;
@@ -37,10 +37,12 @@ export default function OtherCreatorOpinions({
   // excluded creator only filters that snapshot; it does not fetch it again.
   const opinions = useMemo(() => {
     const latest = new Map<string, YouTubeOpinion>();
-    const sorted = [...(resource.data?.opinions ?? [])].sort((a, b) =>
-      b.opinion_date.localeCompare(a.opinion_date) ||
-      (b.video_published_at || "").localeCompare(a.video_published_at || "") ||
-      b.created_at.localeCompare(a.created_at) || a.id.localeCompare(b.id),
+    const sorted = [...(resource.data?.opinions ?? [])].sort(
+      (a, b) =>
+        b.opinion_date.localeCompare(a.opinion_date) ||
+        (b.video_published_at || "").localeCompare(a.video_published_at || "") ||
+        b.created_at.localeCompare(a.created_at) ||
+        a.id.localeCompare(b.id),
     );
     for (const opinion of sorted) {
       if (opinion.channel_id !== currentCreator && !latest.has(opinion.channel_id)) {
@@ -70,18 +72,25 @@ export default function OtherCreatorOpinions({
         {loading ? (
           <OpinionCardsSkeleton label={t("common.loadingStatus")} />
         ) : failed ? (
-          <ListEmptyState alert title={t("youtubeOpinions.otherCreatorOpinionsFailed")} action={
-            <Button size="sm" variant="outline" onClick={resource.refresh}>
-              {t("common.retry")}
-            </Button>
-          } />
+          <ListEmptyState
+            alert
+            title={t("youtubeOpinions.otherCreatorOpinionsFailed")}
+            action={
+              <Button size="sm" variant="outline" onClick={resource.refresh}>
+                {t("common.retry")}
+              </Button>
+            }
+          />
         ) : opinions.length === 0 ? (
           <ListEmptyState title={t("youtubeOpinions.noOtherCreatorOpinions", { ticker })} />
         ) : (
           <>
-            <ListRows id="other-creator-opinions-list" aria-label={t("youtubeOpinions.otherCreatorOpinions")}>
+            <ListRows
+              id="other-creator-opinions-list"
+              aria-label={t("youtubeOpinions.otherCreatorOpinions")}
+            >
               {opinions.slice(0, visibleCount).map((opinion) => (
-                <li key={opinion.id} className={listFeedRowClass}>
+                <li key={opinion.id} className={listFeedStaticRowClass}>
                   <OpinionCard opinion={opinion} t={t} showTicker={false} onCreator={onCreator} />
                 </li>
               ))}

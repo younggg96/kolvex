@@ -67,5 +67,6 @@ export {
   listRowTargetClass,
   listFeedRowClass,
   listFeedGroupRowClass,
+  listFeedStaticRowClass,
   listCompactRowClass,
 } from "./list-card";

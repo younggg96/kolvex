@@ -12,16 +12,11 @@ import { cn } from "@/lib/utils";
  * Every collection list (watchlist, KOL opinions, X, Reddit, news, holdings…)
  * uses this shell so lists read as the same surface across the workspace.
  */
-export const ListCard = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <Card
-    ref={ref}
-    className={cn("min-w-0 p-3 sm:p-4", className)}
-    {...props}
-  />
-));
+export const ListCard = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <Card ref={ref} className={cn("min-w-0 p-3 sm:p-4", className)} {...props} />
+  ),
+);
 ListCard.displayName = "ListCard";
 
 /** Compact empty/error content inside a ListCard, without another boxed surface. */
@@ -54,12 +49,7 @@ export function ListToolbar({
   children: React.ReactNode;
 }) {
   return (
-    <div
-      className={cn(
-        "flex flex-wrap items-center justify-between gap-x-4 gap-y-2",
-        className,
-      )}
-    >
+    <div className={cn("flex flex-wrap items-center justify-between gap-x-4 gap-y-2", className)}>
       {children}
     </div>
   );
@@ -77,7 +67,7 @@ export function ListColumnHeader({
     <div
       aria-hidden="true"
       className={cn(
-        "flex items-center gap-1 border-b border-border pr-2 text-xs text-muted-foreground max-md:!px-0 max-md:[&>*]:!px-0",
+        "flex items-center gap-1 border-b border-border pr-2 mb-1 text-xs text-muted-foreground max-md:!px-0 max-md:[&>*]:!px-0",
         className,
       )}
     >
@@ -99,19 +89,18 @@ export function ListRows({ className, ...props }: React.ComponentProps<"ul">) {
  * so the row never sticks grey or flashes when the pointer leaves. Grey keeps the row reading as a control rather than a signal.
  * The row owns the only wash: the link that fills it never adds its own grey.
  */
-export const ListRow = React.forwardRef<
-  HTMLLIElement,
-  React.LiHTMLAttributes<HTMLLIElement>
->(({ className, ...props }, ref) => (
-  <li
-    ref={ref}
-    className={cn(
-      "flex items-center gap-3 rounded-2xl pr-2 max-md:pr-0 max-md:[&>*]:!px-0 transition-colors hover:bg-foreground/[0.06] motion-reduce:transition-none [&>a]:!bg-transparent",
-      className,
-    )}
-    {...props}
-  />
-));
+export const ListRow = React.forwardRef<HTMLLIElement, React.LiHTMLAttributes<HTMLLIElement>>(
+  ({ className, ...props }, ref) => (
+    <li
+      ref={ref}
+      className={cn(
+        "flex items-center gap-3 rounded-2xl pr-2 max-md:pr-0 max-md:[&>*]:!px-0 transition-colors hover:bg-foreground/[0.06] motion-reduce:transition-none [&>a]:!bg-transparent",
+        className,
+      )}
+      {...props}
+    />
+  ),
+);
 ListRow.displayName = "ListRow";
 
 /**
@@ -135,6 +124,9 @@ export const listFeedRowClass =
  * stock opinion). The inner rows carry the wash, so the wrapper stays flat.
  */
 export const listFeedGroupRowClass = cn(listFeedRowClass, "list-row-group");
+
+/** Feed row whose body is read, not clicked (e.g. a full opinion card): keeps the hairline, no hover wash. */
+export const listFeedStaticRowClass = cn(listFeedRowClass, "list-row-static");
 
 /** Centered "load more" footer of a list card. While `loading`, `skeleton` (rows shaped like the list's own) stands in for the next page and the button is disabled. */
 export function ListLoadMore({

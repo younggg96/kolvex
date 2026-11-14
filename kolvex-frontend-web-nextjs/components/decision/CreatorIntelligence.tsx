@@ -242,7 +242,6 @@ export default function CreatorIntelligence({
                             onClick={() => selectOpinion(opinion, true)}
                             className={cn(
                               "group w-full cursor-pointer px-4 py-4 text-left transition-colors  focus-visible:outline-none",
-                              selected?.id === opinion.id && "bg-secondary",
                             )}
                           >
                             <span className="flex min-w-0 items-start gap-2.5">
@@ -338,7 +337,6 @@ export default function CreatorIntelligence({
                         onClick={() => selectOpinion(items[0])}
                         className={cn(
                           "relative flex w-full cursor-pointer flex-col items-start gap-2 rounded-full px-3 pb-3 pt-3 text-left transition-colors  focus-visible:outline-none",
-                          active && "bg-secondary",
                         )}
                       >
                         <span
@@ -393,7 +391,7 @@ export default function CreatorIntelligence({
                   className={cn(
                     "inline-flex max-w-full cursor-pointer items-center gap-2 rounded-full border px-3 py-3 text-left text-xs font-medium transition-colors hover:border-foreground/25  focus-visible:outline-none",
                     selected?.id === opinion.id
-                      ? "border-foreground/25 bg-secondary text-foreground"
+                      ? "border-foreground/25 text-foreground"
                       : "border-border",
                   )}
                 >
