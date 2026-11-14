@@ -11,7 +11,19 @@
 | `/auth` | 注册、登录、OAuth URL、退出、密码重置与修改、当前用户、令牌刷新 |
 | `/users` | 用户资料查询、创建和修改，主题和语言偏好、资料删除、用户列表 |
 | `/upload` | 文件或 Base64 头像上传、头像删除 |
-| `/market` | 单只及批量报价、批量近期涨跌表现、历史和日内数据、公司信息、财务指标、利润表、资产负债表、现金流、分红、分析师评级、财报信息、期权到期日和期权链、股票综合概览 |
+| `/market` | 单只及批量报价、批量近期涨跌表现、历史和日内数据、公司信息、财务指标、利润表、资产负债表、现金流、分红、分析师评级、财报信息、期权到期日、股票综合概览、股票观察列表（discovery）、AI 基本面与 AI 技术分析、图表分析任务、基金持仓 |
+| `/market/options-chain`、`/market/indicators`、`/market/observations`、`/market/forecast`、`/market/events` | 完整期权链；宏观指标；宏观序列；Kronos 价格预测（实验）；重大事件日历（管理员增改在 `/admin/market-events`） |
+| `/market/free-research` | 超级投资者（13F）机构列表、持仓与摘要；个股 SEC 财务等免费研究数据 |
+| `/market/options-activity` | 期权异动每日运行结果、最新一期及单期详情 |
+| `/valuation` | 估值输入、情景计算、AI 估值假设及历史、市销率历史、后台任务 |
+| `/chart-drawings` | 按股票读取和保存用户图表画线 |
+| `/paper-trading` | 虚拟账户、报价校验、下单命令、交易复盘的发布与撤回 |
+| `/research-workspaces` | 研究工作区、关联聊天、研究运行记录 |
+| `/briefs` | 早晚报列表、日历、详情（管理员增删改） |
+| `/news` | 新闻终端的标题流 |
+| `/reddit-opinions` | ApeWisdom Reddit 股票讨论热度榜 |
+| `/x-content` | X 博主、原帖、摘要、股票标签；管理员校验与导入 |
+| `/congress` | 国会议员股票交易披露 |
 | `/youtube-opinions` | 观点看板、股票详情、创作者资料；管理员 JSON 校验、单条和批量导入；按股票、创作者、情绪及日期筛选 |
 | `/plaid` | 连接状态、Link Token 创建、Public Token 交换、持仓和投资交易同步、交易查询、断开连接 |
 | `/portfolio` | 账户和持仓、公开分享、单个及批量持仓可见性、隐私设置、资产及盈亏历史、快照、组合与单只持仓 AI 分析 |
@@ -137,19 +149,25 @@ docker compose down
 
 ## 测试
 
-现有 YouTube 测试使用 Python `unittest`：
+`tests/` 下有 60 多个测试文件，覆盖行情、估值、期权、虚拟交易、日报、聊天 Agent、YouTube / X 导入等服务。CI 使用 `pytest` 运行（`unittest` 风格的测试同样会被收集）：
 
 ```bash
-python -m unittest discover -s tests -p 'test_*.py'
+pip install pytest pytest-asyncio
+python -m pytest tests/                       # 全部
+python -m pytest tests/test_paper_trading.py  # 单个文件
 ```
 
-这些测试覆盖导入校验、观点聚合与频道资料等行为，不代表所有 API 或外部服务均经过端到端验证。
+外部服务（yfinance、Supabase、模型）在测试中应被 mock。`test_mcp_server.py`、`test_mcp_live_http.py` 需要先安装 `requirements-mcp.txt`；虚拟交易的数据库测试 `tests/run_paper_trading_db.sh` 需在一次性 `postgres:17-alpine` 容器中单独运行。测试通过不代表所有 API 或外部服务均经过端到端验证。
+
+代码风格（ruff 检查与格式化）配置在 `pyproject.toml`，在仓库根目录运行 `scripts/style.sh check backend`。
 
 ## 已退役功能
 
-不再注册 Robinhood、IBKR、旧 Twitter／小红书 KOL、独立新闻聚合、超级投资者持仓、量化策略及回测、股票追踪、用户关注、通知及定时预警、期权异动及独立期权 AI 分析接口。当前启动流程没有启用旧 Finnhub WebSocket 监控或通知调度。
+不再注册 Robinhood、IBKR、SnapTrade、旧 Twitter／小红书 KOL、量化策略及回测、选股器、股票追踪、用户关注、通知及定时预警接口。`app/api/routes/` 下未在 `__init__.py` 注册的目录（`kol_tweets`、`xiaohongshu`、`snaptrade`、`stock_alerts`、`scraper`、`kol_subscriptions`、`stocks`、`dataroma`）都属于退役代码。当前启动流程没有启用旧 Finnhub WebSocket 监控或通知调度。
 
-历史 SQL、依赖、配置或残留辅助文件不代表这些功能仍可用。普通期权链、Plaid 连接和共享投资组合功能仍保留；Next.js 中的联系邮件接口已禁用。
+新闻（`/news`）、超级投资者（`/market/free-research/institutions`）和期权异动（`/market/options-activity`）曾经退役，现已以上表中的新接口重新上线。
+
+历史 SQL、依赖、配置或残留辅助文件不代表这些功能仍可用。Next.js 中的联系邮件接口已禁用。哪些功能启用以 `kolvex-frontend-web-nextjs/lib/productFeatures.ts` 和 `app/api/routes/__init__.py` 为准。
 # Background chart analysis and drawings
 
 Apply `supabase/migrations/20261016172845_stock_chart_jobs.sql` after the existing

@@ -202,7 +202,7 @@ function Analysis({ symbol, cacheKey }: { symbol: string; cacheKey: string }) {
                       backgroundColor: dot(row.rating),
                     }}
                   />
-                  <Copy size={12} muted>
+                  <Copy size={12} color={t.secondaryOnTint}>
                     {RATINGS[row.rating] ?? row.rating}
                   </Copy>
                 </View>
@@ -211,7 +211,12 @@ function Analysis({ symbol, cacheKey }: { symbol: string; cacheKey: string }) {
                 {row.headline}
               </Copy>
               {row.evidence.map((item, index) => (
-                <Copy key={index} size={12} muted selectable>
+                <Copy
+                  key={index}
+                  size={12}
+                  color={t.secondaryOnTint}
+                  selectable
+                >
                   · {item}
                 </Copy>
               ))}

@@ -91,7 +91,7 @@ function Tag({ label }: { label: string }) {
         backgroundColor: t.tint,
       }}
     >
-      <Copy size={11} muted>
+      <Copy size={11} color={t.secondaryOnTint}>
         {label}
       </Copy>
     </View>
@@ -120,9 +120,7 @@ function SourceTags({ sources }: { sources?: SymbolSource[] }) {
 function useSourcesBySymbol(run?: ActivityRun) {
   return useMemo(
     () =>
-      new Map(
-        (run?.payload.tickers ?? []).map((t) => [t.symbol, t.sources]),
-      ),
+      new Map((run?.payload.tickers ?? []).map((t) => [t.symbol, t.sources])),
     [run],
   );
 }
@@ -184,7 +182,7 @@ export function SummaryCard({ run }: { run: ActivityRun }) {
                   ? t.accent
                   : sentiment === "bearish"
                     ? t.negative
-                    : t.secondary
+                    : t.secondaryOnTint
               }
             >
               {{ bullish: "偏多", bearish: "偏空", mixed: "分歧" }[sentiment]}
@@ -306,7 +304,7 @@ export function MarketOverview({ run }: { run: ActivityRun }) {
               >
                 {pct(vsBaseline * 100, true)}
               </Copy>
-              <Copy size={12} muted>
+              <Copy size={12} color={t.secondaryOnTint}>
                 {`（前 ${m.baseline_runs} 次同时段中位数 ${fixed(m.pc_baseline)}）`}
               </Copy>
             </View>
@@ -688,7 +686,10 @@ export function UnusualContracts({
         )}
       </Glass>
       {matching.length > CONTRACTS_SHOWN && (
-        <Button selected={expanded} onPress={() => setExpanded((value) => !value)}>
+        <Button
+          selected={expanded}
+          onPress={() => setExpanded((value) => !value)}
+        >
           {expanded ? "收起" : `显示全部 ${matching.length} 个`}
         </Button>
       )}

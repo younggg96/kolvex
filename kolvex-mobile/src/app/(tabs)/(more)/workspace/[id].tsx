@@ -966,9 +966,7 @@ function Chats({ detail, user }: { detail: WorkspaceDetail; user: string }) {
           <Pressable
             key={chat.id}
             accessibilityRole="button"
-            onPress={() =>
-              router.push(`/chat/${encodeURIComponent(chat.id)}`)
-            }
+            onPress={() => router.push(`/chat/${encodeURIComponent(chat.id)}`)}
             style={({ pressed }) => ({
               flexDirection: "row",
               alignItems: "center",

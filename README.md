@@ -15,6 +15,12 @@ Kolvex is an open-source platform for researching U.S. stocks. Compare YouTube c
 | YouTube stock views | Filter by ticker, creator, sentiment, and date. Browse creator profiles, stock and creator summaries, and changes in daily views. Admins can validate and import individual or batched JSON records. |
 | X creator posts | Browse creator profiles and original posts, with ticker filters and pagination. Admins can validate JSON imports and remove duplicates. A scheduled local browser workflow collects new posts hourly. |
 | Market data | Look up quotes individually or in batches, historical and intraday prices, company details, financial metrics and statements, dividends, analyst ratings, earnings, and options expirations and chains. |
+| Market research | Read macro indicators, an event calendar and stock discovery lists. Check valuation ranges, run scenarios and the company valuation calculator, and request AI technical analysis with chart drawings. |
+| News and daily briefs | Read a delayed headline feed in Chinese or English, and pre-market, intraday and post-market briefs. Admins import and edit briefs. |
+| Reddit discussion | See ApeWisdom's top stock mentions by community, sorted by mentions, growth, rank change or upvotes. |
+| Filings | Browse superinvestors' 13F holdings by manager and quarter, and congressional stock trade disclosures. |
+| Options activity | Review daily unusual options activity runs with AI-selected candidates, a market overview and contract details. |
+| Paper trading | Trade U.S. stocks and ETFs with virtual funds, track positions and performance, and publish reviews of completed trades. |
 | Portfolios | Connect investment accounts through Plaid and sync accounts, holdings, and transactions. Manage public sharing and holdings visibility. Review historical snapshots of portfolio value and profit or loss. |
 | AI portfolio analysis | Use Ollama to review risk, diversification, strengths and weaknesses, potential adjustments, and individual holdings. |
 | AI financial assistant | Save conversations, stream replies, and switch models. The LangGraph assistant can use market data, web search, personal holdings, and trade analysis tools. |
@@ -107,7 +113,7 @@ Compose starts the backend on port `8080`, Redis, and a local PostgreSQL instanc
 
 ## Retired features
 
-Retired integrations and workflows include direct Robinhood and IBKR connections, the old Twitter and Xiaohongshu creator trackers, the standalone news aggregator, superinvestor holdings, strategy backtesting, stock tracking, following other users, scheduled alerts and notifications, and the previous options activity and standalone options AI features. Contact form email delivery is disabled. Standard options chains and Plaid portfolios remain available.
+Retired integrations and workflows include direct Robinhood and IBKR connections, the old Twitter and Xiaohongshu creator trackers, the stock screener, strategy backtesting, stock tracking, following other users, community pages, and scheduled alerts and notifications. Contact form email delivery is disabled. News, superinvestor holdings and options activity were retired once and have returned as the features listed above. `kolvex-frontend-web-nextjs/lib/productFeatures.ts` defines which features are enabled.
 
 The current X integration uses its own tables and import flow, with a scheduled local browser workflow to collect posts. See the [X content documentation](./docs/x-content.md) for setup and data formats.
 

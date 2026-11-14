@@ -68,7 +68,7 @@ export function DataTable({
             },
           ]}
         >
-          <Copy size={12} muted>
+          <Copy size={12} color={t.secondaryOnTint}>
             {corner}
           </Copy>
         </View>
@@ -125,7 +125,12 @@ export function DataTable({
                     {column.label}
                   </Copy>
                   {!!column.note && (
-                    <Copy size={11} muted lines={1} localize={false}>
+                    <Copy
+                      size={11}
+                      color={t.secondaryOnTint}
+                      lines={1}
+                      localize={false}
+                    >
                       {column.note}
                     </Copy>
                   )}

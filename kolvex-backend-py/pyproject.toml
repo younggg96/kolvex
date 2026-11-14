@@ -1,0 +1,33 @@
+# Tooling config only — the backend is not packaged; dependencies live in requirements*.txt.
+
+[tool.ruff]
+# Matches the Python version used in the Dockerfiles and CI.
+target-version = "py311"
+line-length = 100
+extend-exclude = [
+  "venv",
+  "venv.*",
+  ".venv*",
+  "path",
+  "data",
+  "migrations",
+  "supabase",
+]
+
+[tool.ruff.lint]
+# E4/E7/E9/F = ruff defaults (pyflakes + core pycodestyle); I = import sorting (replaces isort).
+# Line length is left to the formatter, so E501 is not selected.
+select = ["E4", "E7", "E9", "F", "I"]
+
+[tool.ruff.lint.per-file-ignores]
+# Package re-export modules commonly import names they don't use.
+"__init__.py" = ["F401"]
+# Tests often set up sys.path before importing app code.
+"tests/**" = ["E402"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "mcp_server", "forecast_service", "tradingagents", "evals"]
+
+[tool.ruff.format]
+# Black-compatible output (ruff format replaces black).
+quote-style = "double"

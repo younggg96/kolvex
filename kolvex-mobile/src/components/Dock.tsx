@@ -144,7 +144,11 @@ const MENU: {
         {
           href: "/portfolio",
           label: "投资组合",
-          icon: { ios: "briefcase", android: "work", web: "work" } as SymbolName,
+          icon: {
+            ios: "briefcase",
+            android: "work",
+            web: "work",
+          } as SymbolName,
         },
       ]
     : []),

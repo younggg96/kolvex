@@ -862,7 +862,7 @@ export default function Search() {
           onSubmitEditing={submit}
           accessibilityLabel={text("搜索股票和创作者")}
           placeholder={text("搜索股票、公司、创作者")}
-          placeholderTextColor={t.secondary}
+          placeholderTextColor={t.secondaryOnTint}
           autoCapitalize="none"
           autoCorrect={false}
           spellCheck={false}

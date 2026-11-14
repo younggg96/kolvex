@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Opt-in hook: `git config core.hooksPath .githooks`
+# Checks only staged files. Skip once with `git commit --no-verify`.
+set -euo pipefail
+ROOT="$(git rev-parse --show-toplevel)"
+if ! "$ROOT/scripts/style.sh" check all --staged; then
+  echo
+  echo "Run: scripts/style.sh fix all --staged   (then re-stage the files)"
+  exit 1
+fi

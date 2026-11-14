@@ -10,6 +10,29 @@
 | 文件     | 说明                           | 触发条件                |
 | -------- | ------------------------------ | ----------------------- |
 | `ci.yml` | 持续集成：代码检查、测试、构建 | Push/PR 到 main/develop |
+| `style.yml` | 代码风格：ruff / prettier / mobile ESLint | Push/PR 到 main/develop，手动触发 |
+
+## 🎨 代码风格检查
+
+所有检查都走 `scripts/style.sh`，本地和 CI 结果一致。
+
+| 项目 | 工具 | 配置 |
+| ---- | ---- | ---- |
+| 后端 `kolvex-backend-py` | `ruff check`（pyflakes + import 排序）+ `ruff format`（替代 black/isort） | `pyproject.toml`，版本锁在 `requirements-dev.txt` |
+| Web `kolvex-frontend-web-nextjs` | Prettier（`printWidth: 100`）；ESLint + tsc 仍在 `ci.yml` | `.prettierrc.json` / `.prettierignore` |
+| Mobile `kolvex-mobile` | Prettier（`printWidth: 80`）+ `expo lint` | `.prettierrc.json` |
+
+```bash
+scripts/style.sh check            # 检查相对 origin/main 改动过的文件（含未提交）
+scripts/style.sh fix              # 自动修复同一批文件
+scripts/style.sh fix web --all    # 整个项目格式化
+scripts/style.sh check all --staged
+git config core.hooksPath .githooks   # 可选：启用 pre-commit 钩子（只查已暂存文件）
+```
+
+**检查范围**：后端和 Web 历史代码未统一格式化，CI 目前只检查 PR 改动过的文件（`STYLE_SCOPE: changed`），改到哪个文件就要把那个文件格式化好。Mobile 已全量合规，CI 检查整个项目（`STYLE_SCOPE: all`）。某个项目做完一次全量格式化提交后，把 `style.yml` 里对应 job 的 `STYLE_SCOPE` 改成 `all`，并把该提交加入 `.git-blame-ignore-revs`。
+
+**合并保护**：在 GitHub 分支保护里把 `Code Style` 和 `CI Success` 设为 required checks。
 
 ## 🚀 部署配置
 

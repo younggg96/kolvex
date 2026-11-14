@@ -76,44 +76,12 @@ jobs:
           NEXT_PUBLIC_BACKEND_API_URL: ${{ secrets.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:8000' }}
 
   # ============================================
-  # 后端检查和测试 (Railway 部署)
+  # 后端测试 (Railway 部署)
+  # 代码风格检查 (ruff / prettier) 见 style.yml
   # ============================================
-  backend-lint:
-    name: Backend Lint
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./kolvex-backend-py
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: "pip"
-          cache-dependency-path: ./kolvex-backend-py/requirements.txt
-
-      - name: Install linting tools
-        run: |
-          python -m pip install --upgrade pip
-          pip install ruff black isort
-
-      - name: Run Ruff (linter)
-        run: ruff check . --output-format=github || true
-
-      - name: Check code formatting with Black
-        run: black --check --diff . || true
-
-      - name: Check import sorting with isort
-        run: isort --check-only --diff . || true
-
   backend-test:
     name: Backend Tests
     runs-on: ubuntu-latest
-    needs: backend-lint
     defaults:
       run:
         working-directory: ./kolvex-backend-py

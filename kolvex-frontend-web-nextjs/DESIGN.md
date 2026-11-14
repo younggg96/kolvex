@@ -2,6 +2,8 @@
 version: alpha
 name: Kolvex
 description: Chinese-first equity research with source-linked opinions, quiet data lists and green navigation accents.
+# Light-mode snapshot only. Dark mode differs (e.g. primary #00C805, ground #000000, card #0E0F10);
+# app/globals.css is the source of truth for both themes. See "## Colors" below.
 colors:
   primary: "#16A34A"
   button-primary: "#15803D"

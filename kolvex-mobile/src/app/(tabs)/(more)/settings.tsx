@@ -496,7 +496,12 @@ function ProviderRow({
             maxLength={500}
             editable={busy === null}
             onSubmitEditing={() => value.trim() && void run("save")}
-            style={{ flex: 1, fontSize: phone(16), color: t.text, paddingVertical: 8 }}
+            style={{
+              flex: 1,
+              fontSize: phone(16),
+              color: t.text,
+              paddingVertical: 8,
+            }}
           />
           <Pressable
             accessibilityRole="button"

@@ -143,7 +143,6 @@ function SkillsMenu({
   );
 }
 
-
 export function ChatComposer({
   value,
   onChange,

@@ -1,0 +1,2 @@
+# Dev / CI tooling. Keep ruff pinned so local and CI formatting agree.
+ruff==0.11.9

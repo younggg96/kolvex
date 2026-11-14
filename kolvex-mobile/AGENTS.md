@@ -1,5 +1,7 @@
 This is an Expo/React Native mobile application. Prioritize mobile-first patterns, performance, and cross-platform compatibility.
 
+> Repo-wide rules, feature catalog and design docs: `../AGENTS.md` → `../docs/README.md`. Porting from/to the Web: `../docs/engineering/web-mobile-parity.md`.
+
 ## Expo has changed — do not trust your training data
 
 Expo ships breaking changes every SDK release. APIs you remember are likely renamed, moved, or removed. Before writing any code that touches an Expo, EAS, or React Native API:

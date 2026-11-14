@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "generate-icons": "node scripts/generate-icons.js"
+    "generate-icons": "node scripts/generate-icons.js",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
@@ -64,6 +66,7 @@
     "eslint": "^8.57.0",
     "eslint-config-next": "14.2.3",
     "postcss": "^8.4.38",
+    "prettier": "3.9.10",
     "sharp": "^0.34.4",
     "tailwindcss": "^3.4.3",
     "typescript": "^5.4.5"

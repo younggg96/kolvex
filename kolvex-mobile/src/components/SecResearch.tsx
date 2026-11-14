@@ -870,7 +870,13 @@ function Institutions({ companyName }: { companyName?: string | null }) {
                 <Copy size={14} bold localize={false}>
                   {row.issuer}
                 </Copy>
-                <Copy size={12} muted localize={false}>
+                <Copy
+                  size={12}
+                  color={
+                    matches.includes(row) ? t.secondaryOnTint : t.secondary
+                  }
+                  localize={false}
+                >
                   {row.class}
                   {row.put_call ? ` · ${row.put_call}` : ""}
                 </Copy>
@@ -885,7 +891,9 @@ function Institutions({ companyName }: { companyName?: string | null }) {
                       ? t.accent
                       : row.activity === "reduced" || row.activity === "exited"
                         ? t.negative
-                        : t.secondary
+                        : matches.includes(row)
+                          ? t.secondaryOnTint
+                          : t.secondary
                   }
                 >
                   {activityLabels[row.activity]}

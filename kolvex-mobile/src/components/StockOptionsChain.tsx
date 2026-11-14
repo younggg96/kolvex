@@ -321,10 +321,11 @@ function ContractCell({
     borderColor: t.border,
     backgroundColor: itm ? t.tint : undefined,
   } as const;
+  const muted = itm ? t.secondaryOnTint : t.secondary;
   if (!contract)
     return (
       <View style={box}>
-        <Copy size={13} muted localize={false}>
+        <Copy size={13} color={muted} localize={false}>
           —
         </Copy>
       </View>
@@ -339,10 +340,10 @@ function ContractCell({
       <Copy size={14} bold localize={false}>
         {f.money(contract.bid)} × {f.money(contract.ask)}
       </Copy>
-      <Copy size={11} muted>
+      <Copy size={11} color={muted}>
         {`量 ${f.int(contract.volume)} · 仓 ${f.int(contract.open_interest)}`}
       </Copy>
-      <Copy size={11} muted localize={false}>
+      <Copy size={11} color={muted} localize={false}>
         IV {f.percent(contract.iv)} · Δ {f.greek(contract.delta)}
       </Copy>
     </Pressable>

@@ -1,3 +1,5 @@
+> 全仓库规则、功能总表、设计规范见 `../AGENTS.md` → `../docs/README.md`。改了已移植到 App 的功能，按 `../docs/engineering/web-mobile-parity.md` §7 同步。
+
 # 界面文案规则
 
 写或改界面时遵守：

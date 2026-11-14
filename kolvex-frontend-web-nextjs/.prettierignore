@@ -1,0 +1,14 @@
+node_modules
+.next
+out
+build
+coverage
+public
+.shared
+.agents
+.claude
+.cursor
+.impeccable
+package-lock.json
+next-env.d.ts
+*.min.js

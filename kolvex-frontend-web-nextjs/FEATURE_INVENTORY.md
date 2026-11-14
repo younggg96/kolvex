@@ -1,49 +1,47 @@
 # Kolvex 功能整合清单
 
-本清单对应 `lib/productFeatures.ts`。当前前端产品入口已收敛为少量核心功能；已删除功能的历史页面 URL 会由 middleware 重定向到 `/dashboard`。
+本清单对应 `lib/productFeatures.ts`（功能开关的唯一来源）。三端完整对照（Web / App / 后端 / 文档）见 [`docs/product/feature-catalog.md`](../docs/product/feature-catalog.md)。最后核对：2026-11-13。
 
-## 当前保留
+已删除功能的历史 URL 由 middleware（`isProductRouteDisabled`）重定向到 `/dashboard`；`enabled: false` 的功能同样会被重定向。
+
+## 当前启用
 
 | 功能 | ID | 页面入口 | 主要代码边界 |
 | --- | --- | --- | --- |
-| AI Chat | `chat` | `/dashboard`, `/dashboard/chat` | `components/chat`, `lib/chatApi.ts`, `/api/chat`, `/api/chat-history` |
-| Markets and stock page | `home` | `/dashboard`, `/dashboard/market/[ticker]` | `components/decision/Market.tsx`, `components/decision/StockWorkspace.tsx`, market/news APIs |
-| 博主观点 | `youtubeOpinions` | `/dashboard/youtube-opinions`（旧 `/dashboard/research` 重定向） | `components/youtube/YouTubeOpinionExplorer.tsx`, `/api/youtube-opinions` |
-| AI 研究 | `tradingAnalysis` | `/dashboard/ai-research`（旧 `/dashboard/research/deep-research` 和 `/dashboard/trading-analysis` 入口重定向） | `components/trading-analysis`, `lib/tradingAnalysisApi.ts`, `/api/trading-analysis` |
-| Portfolio | `portfolio` | `/dashboard/portfolio` | `components/portfolio`, Plaid Investments/portfolio APIs |
-| Settings | `settings` | `/dashboard/settings`, `/config` | `components/user`, user API key and avatar APIs |
-| Admin | `admin` | `/dashboard/admin` | `/api/admin` |
+| 行情与个股 | `home` | `/dashboard`、`/dashboard/market/[ticker]` | `components/decision/Market.tsx`、`components/decision/StockWorkspace.tsx`、`app/api/market/*` |
+| 自选股 | `watchlist` | `/dashboard/watchlist` | `components/decision/Watchlist.tsx`、`hooks/useWatchlist.ts`、`lib/watchlist*.ts` |
+| 观点更新 | `journal` | `/dashboard/journal` | `components/decision/Journal.tsx`、`/api/theses` |
+| AI 聊天、研究工作区 | `chat` | `/dashboard/chat`、`/dashboard/workspaces` | `components/chat`、`lib/chatApi.ts`、`lib/researchWorkspaceApi.ts`、`/api/chat`、`/api/chat-history`、`/api/research-workspaces` |
+| AI 研究 | `tradingAnalysis` | `/dashboard/ai-research`（旧 `/dashboard/research/deep-research`、`/dashboard/trading-analysis` 重定向） | `components/trading-analysis`、`lib/tradingAnalysisApi.ts`、`/api/trading-analysis` |
+| 博主观点（YouTube / Reddit / X） | `youtubeOpinions` | `/dashboard/youtube-opinions`、`/dashboard/reddit-opinions`、`/dashboard/x-opinions` | `components/youtube`、`components/x`、`lib/youtubeOpinionsApi.ts`、`lib/xContentApi.ts`、`lib/redditOpinions.ts` |
+| 早晚报 | `briefs` | `/dashboard/briefs` | `components/briefs`、`lib/dailyBriefs.ts`、`/api/briefs` |
+| 新闻终端 | `news` | `/dashboard/news` | `components/news`、`lib/newsFeed.ts`、`/api/news` |
+| 投资组合（Plaid） | `portfolio` | `/dashboard/portfolio`、公开页 `/portfolio/[userId]` | `components/portfolio`、`lib/portfolioApi.ts`、`lib/plaidApi.ts`、`/api/portfolio`、`/api/plaid` |
+| 虚拟交易 | `paperTrading` | `/dashboard/paper-trading` | `components/paper-trading`、`lib/paperTrading*.ts`、`/api/paper-trading` |
+| 超级投资者 | `superinvestors` | `/dashboard/superinvestors` | `components/superinvestors` |
+| 国会交易 | `congressTrades` | `/dashboard/congress-trades` | `components/congress`、`/api/congress/trades` |
+| 期权异动 | `optionsActivity` | `/dashboard/options-activity` | `components/options-activity`、`lib/optionsActivity.ts`、`/api/market/options-activity` |
+| 设置 | `settings` | `/dashboard/settings`、`/config` | `components/user`、`/api/user-api-keys`、`/api/upload/avatar` |
+| 管理后台 | `admin` | `/dashboard/admin` | `components/admin`、`/api/admin` |
 
-## 已删除的用户侧功能
+## 已删除的功能（`RETIRED_PRODUCT_ROUTE_PREFIXES`）
 
-| 功能 | 原 ID | 原页面入口 |
-| --- | --- | --- |
-| Analytics | `analytics` | `/dashboard/analytics` |
-| Social Platforms | `social` | `/dashboard/social` |
-| Stocks 页面与详情 | `stocks` | `/dashboard/stocks`, `/dashboard/stock/:symbol` |
-| Stock Screener | `stockScreener` | `/dashboard/stock-screener` |
-| Options Flow | `optionsFlow` | `/dashboard/options-flow` |
-| Superinvestors | `superinvestors` | `/dashboard/investors` |
-| KOL Tracker | `kolTracker` | `/dashboard/kol` |
-| News | `news` | `/dashboard/news` |
-| Community | `community` | `/community` |
-| Notifications 页面 | `notifications` | `/dashboard/notifications` |
+不得在导航中恢复：
 
-## 保留的共享能力
-
-Portfolio 和首页 ticker 仍依赖基础行情能力，因此保留：
-
-| 共享能力 | 路径 |
+| 功能 | 原页面入口 |
 | --- | --- |
-| 股票 quote/chart/overview API | `/api/stocks` |
-| 股票类型和格式化工具 | `lib/stockApi.ts`, `lib/stockApi.server.ts` |
-| 小型走势线组件 | `components/common/MiniSparkline.tsx` |
-
-股票讨论、情绪榜、股票搜索、追踪股票等用户侧股票功能已删除。
+| Community | `/community` |
+| Alerts | `/dashboard/alerts` |
+| Analytics | `/dashboard/analytics` |
+| 旧投资者页（已由 `/dashboard/superinvestors` 取代） | `/dashboard/investors` |
+| KOL Tracker | `/dashboard/kol` |
+| Notifications 页面 | `/dashboard/notifications` |
+| Options Flow（已由 `/dashboard/options-activity` 取代） | `/dashboard/options-flow` |
+| Social Platforms | `/dashboard/social` |
+| 旧股票页与详情（已由 `/dashboard/market/[ticker]` 取代） | `/dashboard/stock`、`/dashboard/stocks` |
+| Stock Screener | `/dashboard/stock-screener` |
 
 ## Plaid Investments 接入
-
-Portfolio 连接层已统一到 Plaid：
 
 | 能力 | 路径 |
 | --- | --- |
@@ -52,4 +50,4 @@ Portfolio 连接层已统一到 Plaid：
 | Plaid Link 连接入口 | `components/portfolio/ConnectionStates.tsx` |
 | 投资交易表 | `components/portfolio/InvestmentTransactionsTable.tsx` |
 
-后端需要提供 `/api/v1/plaid/status`、`/link-token`、`/exchange-token`、`/sync`、`/transactions`、`/disconnect`。
+后端提供 `/api/v1/plaid/status`、`/link-token`、`/exchange-token`、`/sync`、`/transactions`、`/disconnect`。
