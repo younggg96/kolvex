@@ -74,7 +74,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 | 登录注册、OAuth、找回密码 | — | `/auth/*` | `/sign-in`、`/auth/*` | `auth/` | — | ✅（App 必须登录） |
 | 个人资料、头像、主题、语言、模型 API Key | `settings` | `/dashboard/settings`、`/config` | `/account`、`/preferences`、`(more)/settings` | `users.py`、`upload/`、`user_api_keys/` | — | ✅ |
 | 管理后台（用户、日报、事件、YouTube、X、期权异动、邮件设置） | `admin` | `/dashboard/admin` | `(more)/admin` | `admin/` 等 | [mcp-content-admin.md](../mcp-content-admin.md) | ◐ |
-| 公开阅读页与 SEO | — | `app/(public)/`：`/stocks`、`/creators`、`/research` | —（App 无访客模式） | — | [public-reading.md](../public-reading.md) | — |
+| 公开阅读页与 SEO | — | `app/(public)/`：`/stocks`、`/creators`、`/research`（ISR 缓存 600 秒，分页用 `/page/N` 路径） | —（App 无访客模式） | — | [public-reading.md](../public-reading.md) | — |
 | 隐私政策、条款、联系 | — | `/privacy`、`/terms`、`/contact` | 打开网页 | 联系表单返回 410 | — | ✅ |
 
 ### 已退役（不得恢复）

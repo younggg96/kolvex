@@ -5,13 +5,14 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { PUBLIC_CONTENT_TAG } from "@/lib/publicContent";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300; // 5 min max for SSE proxy
 
-const BACKEND_API_URL =
-  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
+const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
 
 function buildUrl(path: string[], searchParams: string): string {
   const pathString = path.join("/");
@@ -28,9 +29,7 @@ async function getAuthHeader(): Promise<string | null> {
     const {
       data: { session },
     } = await supabase.auth.getSession();
-    return session?.access_token
-      ? `Bearer ${session.access_token}`
-      : null;
+    return session?.access_token ? `Bearer ${session.access_token}` : null;
   } catch {
     return null;
   }
@@ -86,7 +85,7 @@ function proxySSE(upstreamBody: ReadableStream<Uint8Array>): Response {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
+  { params }: { params: Promise<{ path: string[] }> },
 ) {
   try {
     const authHeader = await getAuthHeader();
@@ -116,10 +115,7 @@ export async function GET(
       } catch {
         errorDetail = errorBody || errorDetail;
       }
-      return NextResponse.json(
-        { error: errorDetail },
-        { status: response.status }
-      );
+      return NextResponse.json({ error: errorDetail }, { status: response.status });
     }
 
     if (isStream && response.body) {
@@ -132,17 +128,16 @@ export async function GET(
     console.error("Trading Analysis API error:", error);
     return NextResponse.json(
       {
-        error:
-          error instanceof Error ? error.message : "Internal server error",
+        error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
+  { params }: { params: Promise<{ path: string[] }> },
 ) {
   try {
     const authHeader = await getAuthHeader();
@@ -183,30 +178,29 @@ export async function POST(
         errorDetail = errorBody || errorDetail;
       }
       console.error(`[TradingAnalysis Proxy] POST ${url} -> ${response.status}: ${errorDetail}`);
-      return NextResponse.json(
-        { error: errorDetail },
-        { status: response.status }
-      );
+      return NextResponse.json({ error: errorDetail }, { status: response.status });
     }
 
     const data = await response.json();
     console.log(`[TradingAnalysis Proxy] POST ${url} -> 200, id=${data?.id}`);
+    // Publishing changes must reach the cached public reading pages and sitemap now, not after ISR expiry.
+    const action = path[path.length - 1];
+    if (action === "publish" || action === "unpublish") revalidateTag(PUBLIC_CONTENT_TAG);
     return NextResponse.json(data);
   } catch (error) {
     console.error("Trading Analysis API POST error:", error);
     return NextResponse.json(
       {
-        error:
-          error instanceof Error ? error.message : "Internal server error",
+        error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
+  { params }: { params: Promise<{ path: string[] }> },
 ) {
   try {
     const authHeader = await getAuthHeader();
@@ -234,10 +228,7 @@ export async function PATCH(
       } catch {
         errorDetail = errorBody || errorDetail;
       }
-      return NextResponse.json(
-        { error: errorDetail },
-        { status: response.status }
-      );
+      return NextResponse.json({ error: errorDetail }, { status: response.status });
     }
 
     const data = await response.json();
@@ -246,17 +237,16 @@ export async function PATCH(
     console.error("Trading Analysis API PATCH error:", error);
     return NextResponse.json(
       {
-        error:
-          error instanceof Error ? error.message : "Internal server error",
+        error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
+  { params }: { params: Promise<{ path: string[] }> },
 ) {
   try {
     const authHeader = await getAuthHeader();
@@ -284,22 +274,20 @@ export async function DELETE(
       } catch {
         errorDetail = errorBody || errorDetail;
       }
-      return NextResponse.json(
-        { error: errorDetail },
-        { status: response.status }
-      );
+      return NextResponse.json({ error: errorDetail }, { status: response.status });
     }
 
     const data = await response.json();
+    // A deleted report may have been published; drop it from cached public pages.
+    revalidateTag(PUBLIC_CONTENT_TAG);
     return NextResponse.json(data);
   } catch (error) {
     console.error("Trading Analysis API DELETE error:", error);
     return NextResponse.json(
       {
-        error:
-          error instanceof Error ? error.message : "Internal server error",
+        error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

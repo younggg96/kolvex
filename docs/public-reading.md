@@ -14,20 +14,38 @@ video; existing shared links keep working.
 - No auth cookie, user access token, service key or private analysis endpoint is
   used. Publishing remains an explicit existing author action. The frontend
   additionally checks `is_published === true` and `status === completed`.
-- Server fetches use `no-store` and bounded timeouts. Withdrawing a report removes
-  its public page and sitemap entry on the next request. IDs and tickers are
+- Server fetches are cached for 600 seconds under the `public-content` tag and
+  use bounded timeouts. Publishing, withdrawing or deleting a report through the
+  web proxy (`/api/trading-analysis/.../publish|unpublish`, `DELETE`) calls
+  `revalidateTag`, so the page and sitemap update on the next request. A change
+  made outside the web proxy (for example from the App directly against the
+  backend) can stay visible for up to 600 seconds. IDs and tickers are
   validated before upstream reads. A real missing report is a not-found response;
   unavailable backends show a retryable error rather than fabricated content.
 - Reading uses source text, dates, bylines and safe YouTube links. Reports are
   identified as AI-generated. Raw HTML from reports is not executed.
 - No backend permission rules, database policies or authenticated routes change.
 
+## Rendering cost
+
+Every public reading route (`/stocks`, `/stocks/{ticker}`, `/research`,
+`/research/{uuid}`, `/creators`, their `/page/{n}` variants,
+`/share/creators/{channelId}` and `/sitemap.xml`) is ISR: rendered on first
+request, then served from the CDN cache and revalidated at most every 600
+seconds. Do not read `searchParams`, cookies or headers in these routes, and do
+not reintroduce `force-dynamic` or `no-store`: that turns every crawler hit into
+a Vercel Function render. On 2026-11-14 that pattern exhausted the Hobby Fluid
+Active CPU allowance and paused deployments. Middleware skips the Supabase
+session refresh for these paths; it only redirects legacy `?page=` links.
+
 ## Discovery
 
 Titles, descriptions, self-referencing canonicals, article/breadcrumb structured
 metadata and server-rendered body text accompany the public pages. Pagination is
-20 items per URL with real links. Lowercase ticker URLs permanently redirect to
-their uppercase canonical. The dynamic `/sitemap.xml` walks all 100-report API
+20 items per URL with real links; pages 2+ use path URLs (`/stocks/page/2`,
+`/stocks/NVDA/page/3`) and legacy `?page=N` links 308-redirect to them, while
+`/page/1` redirects to the base URL. Lowercase ticker URLs permanently redirect to
+their uppercase canonical. The `/sitemap.xml` walks all 100-report API
 batches, includes creator and stock URLs and list pagination, and deduplicates
 entries. Backend failure causes sitemap failure, rather than a misleading empty
 successful sitemap. Split sitemaps before reaching 50,000 entries.

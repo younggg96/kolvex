@@ -1,16 +1,27 @@
 import { type NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
-import {
-  DISABLED_PRODUCT_REDIRECT,
-  isProductRouteDisabled,
-} from "@/lib/productFeatures";
+import { DISABLED_PRODUCT_REDIRECT, isProductRouteDisabled } from "@/lib/productFeatures";
+import { PAGINATED_PUBLIC_PATH, publicPage, publicPagePath } from "@/lib/publicRoutes";
+
+// Anonymous, ISR-cached reading pages: no session work, so crawlers cost no auth round trip.
+const PUBLIC_READING_PATH = /^\/(?:research|creators|stocks|share\/creators)(?:\/|$)/;
 
 export async function middleware(request: NextRequest) {
   if (isProductRouteDisabled(request.nextUrl.pathname)) {
-    return NextResponse.redirect(
-      new URL(DISABLED_PRODUCT_REDIRECT, request.url),
-    );
+    return NextResponse.redirect(new URL(DISABLED_PRODUCT_REDIRECT, request.url));
+  }
+
+  const { pathname, searchParams } = request.nextUrl;
+  if (PUBLIC_READING_PATH.test(pathname)) {
+    // Legacy `?page=N` links move to the cacheable `/page/N` path.
+    const page =
+      searchParams.has("page") && PAGINATED_PUBLIC_PATH.test(pathname)
+        ? publicPage(searchParams.get("page") ?? undefined)
+        : null;
+    if (page)
+      return NextResponse.redirect(new URL(publicPagePath(pathname, page), request.url), 308);
+    return NextResponse.next();
   }
 
   return await updateSession(request);

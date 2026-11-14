@@ -1,6 +1,6 @@
 import { buildPublicSitemap } from "@/lib/publicSitemap";
 
-// Read publication state afresh; withdrawn reports must leave discovery too.
-export const dynamic = "force-dynamic";
+// Cached like the reading pages (its reads revalidate every 600s); web publishing changes revalidate it at once via PUBLIC_CONTENT_TAG.
+export const revalidate = 600;
 
 export default buildPublicSitemap;

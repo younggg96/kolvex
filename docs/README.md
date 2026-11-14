@@ -66,6 +66,7 @@
 | [daily-briefs.md](daily-briefs.md) · [prompts/daily-brief-generator.md](prompts/daily-brief-generator.md) | 早晚报导入与生成提示词 |
 | [x-content.md](x-content.md) | X 博主内容 |
 | [youtube-channel-profiles.md](youtube-channel-profiles.md) | YouTube 博主主页 |
+| [opinion-backtest.md](opinion-backtest.md) | 博主观点回测（内部研究脚本，非产品功能） |
 | [public-reading.md](public-reading.md) | 未登录公开阅读页与 SEO |
 | [paper-trading/PLAN.md](paper-trading/PLAN.md) · [README.md](paper-trading/README.md) | 虚拟交易（规划 + 运行验证） |
 | [model-catalog.md](model-catalog.md) | 可选 AI 模型目录 |

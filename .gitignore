@@ -26,3 +26,6 @@ logs/
 .cursor/
 kolvex-backend-py/*.png
 kolvex-backend-py/tradingagents/dataflows/data_cache/*.csv
+
+# Local backtest output (scripts/backtest_kol_opinions.py)
+kolvex-backend-py/data/backtests/
