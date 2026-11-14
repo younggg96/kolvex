@@ -11,8 +11,10 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
-from collections import defaultdict
-from datetime import datetime, date, timezone, timedelta
+import threading
+import time
+from collections import OrderedDict, defaultdict
+from datetime import date, datetime, timedelta, timezone
 from hashlib import sha256
 from math import isfinite
 from statistics import mean
@@ -21,16 +23,15 @@ from urllib.parse import parse_qs, urlparse
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
-logger = logging.getLogger(__name__)
-
-from supabase import Client
 from app.services.youtube_channel_profiles import (
     channel_link,
     channel_profiles,
     parse_youtube_time,
     public_count,
 )
+from supabase import Client
 
+logger = logging.getLogger(__name__)
 
 TABLE_NAME = "youtube_stock_opinions"
 # An empty ticker stores a video-level analysis without inventing a stock.
@@ -40,15 +41,50 @@ OPINION_TIMEZONE = ZoneInfo("America/New_York")
 MAX_IMPORT_VIDEOS = 50
 # Public reads need channel metadata and video summaries, never the repeated
 # full analyzer payload (including every other opinion in that video).
-READ_COLUMNS = ",".join((
-    "id,video_id,video_title,video_url,thumbnail_url,video_published_at",
-    "channel_id,channel_title,channel_handle,channel_url,channel_avatar_url",
-    "ticker,company_name,sentiment,direction_score,confidence,time_horizon",
-    "thesis,summary,key_points,risks,price_targets,opinion_date,analyzed_at,source_model,created_at,updated_at",
-    "raw_channel:raw_payload->channel,raw_video:raw_payload->video",
-    "raw_summary:raw_payload->summary,raw_overall_summary:raw_payload->overall_summary",
-    "raw_market_summary:raw_payload->market_summary,raw_analysis:raw_payload->analysis",
-))
+READ_COLUMNS = ",".join(
+    (
+        "id,video_id,video_title,video_url,thumbnail_url,video_published_at",
+        "channel_id,channel_title,channel_handle,channel_url,channel_avatar_url",
+        "ticker,company_name,sentiment,direction_score,confidence,time_horizon",
+        "thesis,summary,key_points,risks,price_targets,opinion_date,analyzed_at,source_model,created_at,updated_at",
+        "raw_channel:raw_payload->channel,raw_video:raw_payload->video",
+        "raw_summary:raw_payload->summary,raw_overall_summary:raw_payload->overall_summary",
+        "raw_market_summary:raw_payload->market_summary,raw_analysis:raw_payload->analysis",
+    )
+)
+# Every public opinion page used to download the whole table (~6 MB) per
+# request, which alone exceeded the Supabase egress quota. Results are cached
+# per (client, filters) and revalidated with a tiny version probe (row count +
+# newest updated_at) at most once per REVALIDATE_SECONDS, so the table is only
+# re-read after it actually changes, including writes made outside this process.
+REVALIDATE_SECONDS = 60.0
+MAX_CACHED_QUERIES = 32
+
+
+class _RowCache:
+    def __init__(self) -> None:
+        self.lock = threading.Lock()
+        self.client: Any = None
+        self.version: Optional[tuple] = None
+        self.checked_at = 0.0
+        self.entries: "OrderedDict[tuple, List[Dict[str, Any]]]" = OrderedDict()
+
+    def reset(self, client: Any = None) -> None:
+        self.client = client
+        self.version = None
+        self.checked_at = 0.0
+        self.entries.clear()
+
+
+_row_cache = _RowCache()
+
+
+def invalidate_opinion_cache() -> None:
+    """Drop cached opinion reads after a write (also used by tests)."""
+    with _row_cache.lock:
+        _row_cache.reset(_row_cache.client)
+
+
 SENTIMENT_ALIASES = {
     "bull": "bullish",
     "bullish": "bullish",
@@ -93,15 +129,27 @@ class YouTubeStockOpinionService:
             if field in {"channel_url", "channel_avatar_url"} and text:
                 try:
                     parsed = urlparse(text)
-                    valid = parsed.scheme == "https" and parsed.hostname and not parsed.username and not parsed.password
+                    valid = (
+                        parsed.scheme == "https"
+                        and parsed.hostname
+                        and not parsed.username
+                        and not parsed.password
+                    )
                 except ValueError:
                     valid = False
                 if not valid:
                     raise ValueError("链接必须是有效的 HTTPS 地址。")
-                if field == "channel_url" and parsed.hostname not in {"youtube.com", "www.youtube.com", "m.youtube.com"}:
+                if field == "channel_url" and parsed.hostname not in {
+                    "youtube.com",
+                    "www.youtube.com",
+                    "m.youtube.com",
+                }:
                     raise ValueError("频道链接必须指向 YouTube。")
             cleaned[field] = text or None
-        result = self.supabase.table(TABLE_NAME).update(cleaned).eq("channel_id", channel_id).execute()
+        result = (
+            self.supabase.table(TABLE_NAME).update(cleaned).eq("channel_id", channel_id).execute()
+        )
+        invalidate_opinion_cache()
         if not result.data:
             raise LookupError("Creator not found")
         rows = self._fetch_rows(channel_id=channel_id)
@@ -120,14 +168,36 @@ class YouTubeStockOpinionService:
             return {"creator": None, "video": None, "opinions": []}
 
         def published(row):
-            return parse_youtube_time(row.get("video_published_at") or row.get("opinion_date")) or datetime.min.replace(tzinfo=timezone.utc)
+            return parse_youtube_time(
+                row.get("video_published_at") or row.get("opinion_date")
+            ) or datetime.min.replace(tzinfo=timezone.utc)
 
         newest = max(rows, key=lambda row: (published(row), str(row.get("video_id") or "")))
-        video_rows = sorted((row for row in rows if row.get("video_id") == newest.get("video_id")),
-                            key=lambda row: (str(row.get("ticker") or ""), str(row.get("id") or "")))
+        video_rows = sorted(
+            (row for row in rows if row.get("video_id") == newest.get("video_id")),
+            key=lambda row: (str(row.get("ticker") or ""), str(row.get("id") or "")),
+        )
         return {
-            "creator": {key: newest.get(key) for key in ("channel_id", "channel_title", "channel_handle", "channel_avatar_url", "channel_url")},
-            "video": {key: newest.get(key) for key in ("video_id", "video_title", "video_url", "video_published_at", "opinion_date")},
+            "creator": {
+                key: newest.get(key)
+                for key in (
+                    "channel_id",
+                    "channel_title",
+                    "channel_handle",
+                    "channel_avatar_url",
+                    "channel_url",
+                )
+            },
+            "video": {
+                key: newest.get(key)
+                for key in (
+                    "video_id",
+                    "video_title",
+                    "video_url",
+                    "video_published_at",
+                    "opinion_date",
+                )
+            },
             "opinions": [_public_opinion(row) for row in video_rows if row.get("ticker")],
         }
 
@@ -173,6 +243,7 @@ class YouTubeStockOpinionService:
             "uploaded_by": uploaded_by,
         }
         result = self.supabase.table(TABLE_NAME).insert(row).execute()
+        invalidate_opinion_cache()
         written = (result.data or [row])[0]
         return {"success": True, "opinion": _public_opinion(written)}
 
@@ -200,15 +271,15 @@ class YouTubeStockOpinionService:
             "price_targets": cleaned["price_targets"],
             "opinion_date": cleaned["opinion_date"],
         }
-        result = (
-            self.supabase.table(TABLE_NAME).update(changes).eq("id", opinion_id).execute()
-        )
+        result = self.supabase.table(TABLE_NAME).update(changes).eq("id", opinion_id).execute()
+        invalidate_opinion_cache()
         written = (result.data or [{**current, **changes}])[0]
         return {"success": True, "opinion": _public_opinion(written)}
 
     def delete_opinion(self, opinion_id: str) -> Dict[str, Any]:
         self._opinion_by_id(opinion_id)
         result = self.supabase.table(TABLE_NAME).delete().eq("id", opinion_id).execute()
+        invalidate_opinion_cache()
         if not result.data:
             raise LookupError("Opinion not found")
         return {"success": True, "id": opinion_id}
@@ -216,19 +287,15 @@ class YouTubeStockOpinionService:
     def _opinion_by_id(self, opinion_id: str) -> Dict[str, Any]:
         if not re.fullmatch(r"[0-9a-fA-F-]{32,36}", opinion_id or ""):
             raise LookupError("Opinion not found")
-        result = (
-            self.supabase.table(TABLE_NAME)
-            .select("*")
-            .eq("id", opinion_id)
-            .limit(1)
-            .execute()
-        )
+        result = self.supabase.table(TABLE_NAME).select("*").eq("id", opinion_id).limit(1).execute()
         rows = result.data or []
         if not rows:
             raise LookupError("Opinion not found")
         return rows[0]
 
-    def _ensure_unique_opinion(self, video_id: str, ticker: str, ignore_id: Optional[str] = None) -> None:
+    def _ensure_unique_opinion(
+        self, video_id: str, ticker: str, ignore_id: Optional[str] = None
+    ) -> None:
         result = (
             self.supabase.table(TABLE_NAME)
             .select("id")
@@ -264,9 +331,9 @@ class YouTubeStockOpinionService:
         await self.correct_publication_times(rows)
         corrected_channels = await self.correct_channel_ids(rows)
         await self._fill_missing_avatars(rows)
-        result = (await asyncio.to_thread(self.supabase.table(TABLE_NAME).upsert(
-            rows, on_conflict="video_id,ticker"
-        ).execute))
+        result = await asyncio.to_thread(
+            self.supabase.table(TABLE_NAME).upsert(rows, on_conflict="video_id,ticker").execute
+        )
         written_rows = result.data or []
 
         tickers_by_video: Dict[str, List[str]] = defaultdict(list)
@@ -274,12 +341,15 @@ class YouTubeStockOpinionService:
             tickers_by_video[row["video_id"]].append(row["ticker"])
         for video_id, tickers in tickers_by_video.items():
             (
-                (await asyncio.to_thread(self.supabase.table(TABLE_NAME)
-                .delete()
-                .eq("video_id", video_id)
-                .not_.in_("ticker", tickers)
-                .execute))
+                await asyncio.to_thread(
+                    self.supabase.table(TABLE_NAME)
+                    .delete()
+                    .eq("video_id", video_id)
+                    .not_.in_("ticker", tickers)
+                    .execute
+                )
             )
+        invalidate_opinion_cache()
 
         return {
             "success": True,
@@ -300,12 +370,15 @@ class YouTubeStockOpinionService:
 
     async def correct_publication_times(self, rows: List[Dict[str, Any]]) -> None:
         """Never persist analyzer-generated timestamps for a real YouTube video."""
-        video_ids = list(dict.fromkeys(row["video_id"] for row in rows
-                                      if _youtube_video_id(row.get("video_id"))))
+        video_ids = list(
+            dict.fromkeys(row["video_id"] for row in rows if _youtube_video_id(row.get("video_id")))
+        )
         if not video_ids:
             return
         publications = await channel_profiles.publications_for_videos(video_ids)
-        missing = [video_id for video_id in video_ids if not parse_youtube_time(publications.get(video_id))]
+        missing = [
+            video_id for video_id in video_ids if not parse_youtube_time(publications.get(video_id))
+        ]
         if missing:
             raise ValueError("无法核实 YouTube 视频发布时间，请稍后重试：" + ", ".join(missing))
         for row in rows:
@@ -318,9 +391,17 @@ class YouTubeStockOpinionService:
             video = raw.get("video") or {}
             row["raw_payload"] = {
                 **raw,
-                "video": {**video, "imported_published_at": video.get("imported_published_at", video.get("published_at")),
-                          "published_at": published},
-                "opinions": [{**opinion, "opinion_date": row["opinion_date"]} for opinion in raw.get("opinions", [])],
+                "video": {
+                    **video,
+                    "imported_published_at": video.get(
+                        "imported_published_at", video.get("published_at")
+                    ),
+                    "published_at": published,
+                },
+                "opinions": [
+                    {**opinion, "opinion_date": row["opinion_date"]}
+                    for opinion in raw.get("opinions", [])
+                ],
             }
 
     async def correct_channel_ids(self, rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -341,7 +422,9 @@ class YouTubeStockOpinionService:
             try:
                 return video_id, await channel_profiles.channel_id_for_video(video_id)
             except Exception:
-                logger.warning("YouTube channel lookup failed for video %s", video_id, exc_info=True)
+                logger.warning(
+                    "YouTube channel lookup failed for video %s", video_id, exc_info=True
+                )
                 return video_id, None
 
         owners = dict(await asyncio.gather(*(lookup(video_id) for video_id in by_video)))
@@ -374,7 +457,9 @@ class YouTubeStockOpinionService:
             elif changed_id:
                 identity["channel_avatar_url"] = None
             if changed_id:
-                corrections.append({"video_id": video_id, "from": video_rows[0].get("channel_id"), "to": owner})
+                corrections.append(
+                    {"video_id": video_id, "from": video_rows[0].get("channel_id"), "to": owner}
+                )
             for row in video_rows:
                 row.update(identity)
                 raw = row.get("raw_payload")
@@ -423,8 +508,10 @@ class YouTubeStockOpinionService:
 
     def validate_payload(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         """Validate the import contract before any database writes."""
-        for section, fields in (("channel", ("id", "title")),
-                                ("video", ("id", "title", "published_at"))):
+        for section, fields in (
+            ("channel", ("id", "title")),
+            ("video", ("id", "title", "published_at")),
+        ):
             obj = payload.get(section)
             if not isinstance(obj, dict):
                 raise ValueError(f"{section} must be an object")
@@ -447,7 +534,9 @@ class YouTubeStockOpinionService:
             if not isinstance(opinion, dict):
                 raise ValueError(f"{path} must be an object")
             ticker = opinion.get("ticker")
-            if not isinstance(ticker, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9.\-]{0,19}", ticker):
+            if not isinstance(ticker, str) or not re.fullmatch(
+                r"[A-Za-z0-9][A-Za-z0-9.\-]{0,19}", ticker
+            ):
                 raise ValueError(f"{path}.ticker must be a stock symbol, e.g. NVDA")
             if ticker.upper() in seen:
                 raise ValueError(f"{path}.ticker duplicates {ticker.upper()}")
@@ -458,25 +547,57 @@ class YouTubeStockOpinionService:
                 raise ValueError(f"{path}.summary is required")
             for field, low, high in (("direction_score", -100, 100), ("confidence", 0, 1)):
                 value = opinion.get(field)
-                if value is not None and (isinstance(value, bool) or not isinstance(value, (int, float)) or not isfinite(value) or not low <= value <= high):
+                if value is not None and (
+                    isinstance(value, bool)
+                    or not isinstance(value, (int, float))
+                    or not isfinite(value)
+                    or not low <= value <= high
+                ):
                     raise ValueError(f"{path}.{field} must be a number between {low} and {high}")
             for field in ("key_points", "risks"):
                 value = opinion.get(field, [])
                 if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
                     raise ValueError(f"{path}.{field} must be an array of strings")
             targets = opinion.get("price_targets", [])
-            if not isinstance(targets, list) or any(not isinstance(item, dict) or isinstance(item.get("value"), bool) or not isinstance(item.get("value"), (int, float)) or not isfinite(item["value"]) or item["value"] <= 0 for item in targets):
-                raise ValueError(f"{path}.price_targets must contain objects with positive numeric value")
+            if not isinstance(targets, list) or any(
+                not isinstance(item, dict)
+                or isinstance(item.get("value"), bool)
+                or not isinstance(item.get("value"), (int, float))
+                or not isfinite(item["value"])
+                or item["value"] <= 0
+                for item in targets
+            ):
+                raise ValueError(
+                    f"{path}.price_targets must contain objects with positive numeric value"
+                )
             if opinion.get("opinion_date"):
                 try:
                     date.fromisoformat(opinion["opinion_date"])
                 except (ValueError, TypeError):
                     raise ValueError(f"{path}.opinion_date must be YYYY-MM-DD")
         rows = self._rows_from_payload(payload, uploaded_by=None)
-        return {"video_id": rows[0]["video_id"], "video_title": rows[0]["video_title"],
-                "channel_title": rows[0]["channel_title"], "count": len(opinions),
-                "video_summary": _video_summary(payload),
-                "opinions": [{key: row[key] for key in ("ticker", "sentiment", "direction_score", "confidence", "summary", "opinion_date")} for row in rows if row.get("ticker")]}
+        return {
+            "video_id": rows[0]["video_id"],
+            "video_title": rows[0]["video_title"],
+            "channel_title": rows[0]["channel_title"],
+            "count": len(opinions),
+            "video_summary": _video_summary(payload),
+            "opinions": [
+                {
+                    key: row[key]
+                    for key in (
+                        "ticker",
+                        "sentiment",
+                        "direction_score",
+                        "confidence",
+                        "summary",
+                        "opinion_date",
+                    )
+                }
+                for row in rows
+                if row.get("ticker")
+            ],
+        }
 
     async def get_dashboard(
         self,
@@ -488,7 +609,8 @@ class YouTubeStockOpinionService:
         limit: int = 80,
         offset: int = 0,
     ) -> Dict[str, Any]:
-        rows = await asyncio.to_thread(self._fetch_rows,
+        rows = await asyncio.to_thread(
+            self._fetch_rows,
             ticker=ticker,
             channel_id=channel_id,
             sentiment=sentiment,
@@ -505,7 +627,9 @@ class YouTubeStockOpinionService:
         if stocks and (channel_id or sentiment or date_from or date_to):
             # Participation is a stock-wide count, even inside one creator's
             # stock list. Opinion totals and scores still describe the filters.
-            creator_counts = await asyncio.to_thread(self._stock_creator_counts, [stock["ticker"] for stock in stocks])
+            creator_counts = await asyncio.to_thread(
+                self._stock_creator_counts, [stock["ticker"] for stock in stocks]
+            )
             for stock in stocks:
                 stock["creator_count"] = creator_counts.get(stock["ticker"], 0)
 
@@ -515,11 +639,22 @@ class YouTubeStockOpinionService:
             "creators": self._build_creator_summaries(rows),
             "daily": self._build_daily_summaries(rows),
             "changes": self._build_daily_changes(rows),
-            "latest": [{**_public_opinion(row), **{field: row.get(field) for field in PROFILE_FIELDS},
-                        "analyzed_at": row.get("analyzed_at"), "source_model": row.get("source_model")}
-                       for row in rows[offset:offset + limit]],
+            "latest": [
+                {
+                    **_public_opinion(row),
+                    **{field: row.get(field) for field in PROFILE_FIELDS},
+                    "analyzed_at": row.get("analyzed_at"),
+                    "source_model": row.get("source_model"),
+                }
+                for row in rows[offset : offset + limit]
+            ],
             "latest_videos": self._build_video_groups(rows, distinct_creators=True)[:5],
-            "pagination": {"offset": offset, "limit": limit, "total": len(rows), "has_more": offset + limit < len(rows)},
+            "pagination": {
+                "offset": offset,
+                "limit": limit,
+                "total": len(rows),
+                "has_more": offset + limit < len(rows),
+            },
             "filters": {
                 "tickers": sorted({row["ticker"] for row in rows if row.get("ticker")}),
                 "creators": self._creator_filter_options(rows),
@@ -527,7 +662,9 @@ class YouTubeStockOpinionService:
         }
 
     @staticmethod
-    def _build_video_groups(rows: List[Dict[str, Any]], distinct_creators: bool = False) -> List[Dict[str, Any]]:
+    def _build_video_groups(
+        rows: List[Dict[str, Any]], distinct_creators: bool = False
+    ) -> List[Dict[str, Any]]:
         """Group the complete result before paging so a video is never split."""
         groups: Dict[str, Dict[str, Any]] = {}
         for row in rows:
@@ -535,25 +672,38 @@ class YouTubeStockOpinionService:
             if key not in groups:
                 groups[key] = {
                     "videoId": key,
-                    "video": {field: row.get(field) for field in (
-                        "video_id", "video_title", "video_url", "thumbnail_url",
-                        "video_published_at", "opinion_date",
-                    )},
+                    "video": {
+                        field: row.get(field)
+                        for field in (
+                            "video_id",
+                            "video_title",
+                            "video_url",
+                            "thumbnail_url",
+                            "video_published_at",
+                            "opinion_date",
+                        )
+                    },
                     "opinions": [],
                     "creator": {field: row.get(field) for field in PROFILE_FIELDS},
                     "video_summary": _video_summary(row.get("raw_payload") or {}),
                 }
             if row.get("ticker"):
-                groups[key]["opinions"].append({
-                    **_public_opinion(row),
-                    **{field: row.get(field) for field in PROFILE_FIELDS},
-                })
+                groups[key]["opinions"].append(
+                    {
+                        **_public_opinion(row),
+                        **{field: row.get(field) for field in PROFILE_FIELDS},
+                    }
+                )
 
         def publication(group):
             video = group["video"]
-            return parse_youtube_time(video.get("video_published_at") or video.get("opinion_date")) or datetime.min.replace(tzinfo=timezone.utc)
+            return parse_youtube_time(
+                video.get("video_published_at") or video.get("opinion_date")
+            ) or datetime.min.replace(tzinfo=timezone.utc)
 
-        ordered = sorted(groups.values(), key=lambda group: (publication(group), group["videoId"]), reverse=True)
+        ordered = sorted(
+            groups.values(), key=lambda group: (publication(group), group["videoId"]), reverse=True
+        )
         if not distinct_creators:
             return ordered
         seen = set()
@@ -568,13 +718,20 @@ class YouTubeStockOpinionService:
     async def get_video_feed(self, limit: int = 20, offset: int = 0) -> Dict[str, Any]:
         rows = await asyncio.to_thread(self._fetch_rows)
         groups = self._build_video_groups(rows)
-        page = groups[offset:offset + limit]
+        page = groups[offset : offset + limit]
         # Enrich only the visible videos, rather than every historical channel.
-        visible = [identity for group in page for identity in [group["creator"], *group["opinions"]]]
+        visible = [
+            identity for group in page for identity in [group["creator"], *group["opinions"]]
+        ]
         await self._fill_missing_avatars(visible)
         return {
             "videos": page,
-            "pagination": {"offset": offset, "limit": limit, "total": len(groups), "has_more": offset + limit < len(groups)},
+            "pagination": {
+                "offset": offset,
+                "limit": limit,
+                "total": len(groups),
+                "has_more": offset + limit < len(groups),
+            },
         }
 
     async def get_creator_profile(self, channel_id: str) -> Dict[str, Any]:
@@ -586,10 +743,18 @@ class YouTubeStockOpinionService:
         remote = await channel_profiles.get_profile(
             channel_id, creator.get("channel_handle"), creator.get("channel_url")
         )
-        remote = {key: value for key, value in remote.items() if value is not None or key not in {"channel_title", "channel_handle", "channel_avatar_url", "description"}}
+        remote = {
+            key: value
+            for key, value in remote.items()
+            if value is not None
+            or key not in {"channel_title", "channel_handle", "channel_avatar_url", "description"}
+        }
         # The stored identity is editable by administrators. Remote lookups only
         # enrich it with statistics and descriptions, not replace saved fields.
-        identity = {key: creator.get(key) for key in ("channel_title", "channel_handle", "channel_url", "channel_avatar_url")}
+        identity = {
+            key: creator.get(key)
+            for key in ("channel_title", "channel_handle", "channel_url", "channel_avatar_url")
+        }
         return {**creator, **remote, **identity}
 
     async def get_upload_coverage(self) -> Dict[str, Any]:
@@ -613,7 +778,9 @@ class YouTubeStockOpinionService:
             return {
                 "channel_id": channel_id,
                 "status": status,
-                **compare_upload_coverage([], tracked[channel_id], tracked_at.get(channel_id), False),
+                **compare_upload_coverage(
+                    [], tracked[channel_id], tracked_at.get(channel_id), False
+                ),
             }
 
         if not channel_profiles.api_key:
@@ -636,12 +803,16 @@ class YouTubeStockOpinionService:
 
         async def resolve(channel_id: str):
             try:
-                return channel_id, await channel_profiles.channel_id_for_video(sample_video[channel_id])
+                return channel_id, await channel_profiles.channel_id_for_video(
+                    sample_video[channel_id]
+                )
             except Exception:
                 logger.warning("YouTube channel lookup failed for %s", channel_id, exc_info=True)
                 return channel_id, None
 
-        for channel_id, youtube_id in await asyncio.gather(*(resolve(channel_id) for channel_id in lookup_ids)):
+        for channel_id, youtube_id in await asyncio.gather(
+            *(resolve(channel_id) for channel_id in lookup_ids)
+        ):
             resolved[channel_id] = youtube_id
 
         cutoffs: Dict[str, str] = {}
@@ -661,17 +832,23 @@ class YouTubeStockOpinionService:
                 continue
             remote = uploads.get(youtube_id) if youtube_id else None
             if not remote:
-                remote = {"status": "invalid_identity" if not youtube_id else "unavailable", "videos": [], "reached_cutoff": False}
-            creators.append({
-                "channel_id": channel_id,
-                "status": remote.get("status") or "unavailable",
-                **compare_upload_coverage(
-                    remote.get("videos") or [],
-                    tracked[channel_id],
-                    tracked_at.get(channel_id),
-                    not remote.get("reached_cutoff"),
-                ),
-            })
+                remote = {
+                    "status": "invalid_identity" if not youtube_id else "unavailable",
+                    "videos": [],
+                    "reached_cutoff": False,
+                }
+            creators.append(
+                {
+                    "channel_id": channel_id,
+                    "status": remote.get("status") or "unavailable",
+                    **compare_upload_coverage(
+                        remote.get("videos") or [],
+                        tracked[channel_id],
+                        tracked_at.get(channel_id),
+                        not remote.get("reached_cutoff"),
+                    ),
+                }
+            )
         if any(item["status"] == "available" for item in creators):
             status = "available"
         elif not creators or all(item["status"] == "not_configured" for item in creators):
@@ -683,20 +860,8 @@ class YouTubeStockOpinionService:
         return {"status": status, "creators": creators}
 
     def _tracked_video_index(self) -> List[Dict[str, Any]]:
-        rows: List[Dict[str, Any]] = []
-        while True:
-            result = (
-                self.supabase.table(TABLE_NAME)
-                .select("channel_id,video_id,video_published_at,created_at")
-                .order("id")
-                .range(len(rows), len(rows) + 999)
-                .execute()
-            )
-            page = result.data or []
-            rows.extend(page)
-            if len(page) < 1000:
-                break
-        return rows
+        # Reuse the cached full read instead of paging the table again.
+        return self._fetch_rows()
 
     async def get_stock_detail(
         self,
@@ -704,7 +869,9 @@ class YouTubeStockOpinionService:
         date_from: Optional[str] = None,
         date_to: Optional[str] = None,
     ) -> Dict[str, Any]:
-        rows = await asyncio.to_thread(self._fetch_rows, ticker=ticker, date_from=date_from, date_to=date_to)
+        rows = await asyncio.to_thread(
+            self._fetch_rows, ticker=ticker, date_from=date_from, date_to=date_to
+        )
         await self._fill_missing_avatars(rows)
         return {
             "ticker": ticker.upper(),
@@ -712,7 +879,10 @@ class YouTubeStockOpinionService:
             "creators": self._build_creator_summaries(rows),
             "daily": self._build_daily_summaries(rows),
             "changes": self._build_daily_changes(rows),
-            "opinions": [{**_public_opinion(row), **{field: row.get(field) for field in PROFILE_FIELDS}} for row in rows],
+            "opinions": [
+                {**_public_opinion(row), **{field: row.get(field) for field in PROFILE_FIELDS}}
+                for row in rows
+            ],
         }
 
     async def _fill_missing_avatars(self, rows: List[Dict[str, Any]]) -> None:
@@ -724,7 +894,8 @@ class YouTubeStockOpinionService:
                 continue
             current = samples.get(channel_id)
             if current is None or (
-                not _youtube_video_id(current.get("video_id")) and _youtube_video_id(row.get("video_id"))
+                not _youtube_video_id(current.get("video_id"))
+                and _youtube_video_id(row.get("video_id"))
             ):
                 samples[channel_id] = row
         if not samples:
@@ -763,10 +934,14 @@ class YouTubeStockOpinionService:
             try:
                 await asyncio.to_thread(
                     lambda channel_id=channel_id, avatar=avatar: self.supabase.table(TABLE_NAME)
-                    .update({"channel_avatar_url": avatar}).eq("channel_id", channel_id).execute()
+                    .update({"channel_avatar_url": avatar})
+                    .eq("channel_id", channel_id)
+                    .execute()
                 )
             except Exception:
                 logger.warning("Failed to store YouTube avatar for %s", channel_id, exc_info=True)
+        if found:
+            invalidate_opinion_cache()
 
     def _rows_from_payload(
         self,
@@ -907,6 +1082,73 @@ class YouTubeStockOpinionService:
         date_from: Optional[str] = None,
         date_to: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
+        key = (ticker.upper() if ticker else None, channel_id, sentiment, date_from, date_to)
+        cache = _row_cache
+        with cache.lock:
+            if cache.client is not self.supabase:
+                cache.reset(self.supabase)
+            cached = cache.entries.get(key)
+            stale = time.monotonic() - cache.checked_at >= REVALIDATE_SECONDS
+        if cached is not None and stale:
+            version = self._table_version()
+            with cache.lock:
+                if version is None or version != cache.version:
+                    # Changed (or probe failed): every cached query is suspect.
+                    cache.entries.clear()
+                    cached = None
+                cache.version = version
+                cache.checked_at = time.monotonic()
+        if cached is not None:
+            with cache.lock:
+                if key in cache.entries:
+                    cache.entries.move_to_end(key)
+            # Callers enrich rows in place (avatars); keep the cached copy clean.
+            return [dict(row) for row in cached]
+
+        rows = self._query_rows(
+            ticker=ticker,
+            channel_id=channel_id,
+            sentiment=sentiment,
+            date_from=date_from,
+            date_to=date_to,
+        )
+        with cache.lock:
+            if cache.client is self.supabase:
+                if not any(key):
+                    # The unfiltered read is the whole table, so it is the version too.
+                    cache.version = _version_of(rows)
+                    cache.checked_at = time.monotonic()
+                elif not cache.entries:
+                    cache.checked_at = time.monotonic()
+                cache.entries[key] = rows
+                while len(cache.entries) > MAX_CACHED_QUERIES:
+                    cache.entries.popitem(last=False)
+        return [dict(row) for row in rows]
+
+    def _table_version(self) -> Optional[tuple]:
+        """Cheap change probe: total rows and the newest updated_at (~100 bytes)."""
+        try:
+            result = (
+                self.supabase.table(TABLE_NAME)
+                .select("updated_at", count="exact")
+                .order("updated_at", desc=True, nullsfirst=False)
+                .limit(1)
+                .execute()
+            )
+        except Exception:
+            logger.warning("YouTube opinion cache version probe failed", exc_info=True)
+            return None
+        newest = (result.data or [{}])[0].get("updated_at")
+        return (result.count, str(newest) if newest else None)
+
+    def _query_rows(
+        self,
+        ticker: Optional[str] = None,
+        channel_id: Optional[str] = None,
+        sentiment: Optional[str] = None,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
         normalized_sentiment = _normalize_sentiment(sentiment)
         # Read every page so older stocks and creators are not silently omitted.
         rows = []
@@ -923,7 +1165,9 @@ class YouTubeStockOpinionService:
             if channel_id:
                 query = query.eq("channel_id", channel_id)
             if sentiment and normalized_sentiment:
-                query = query.eq("sentiment", normalized_sentiment).neq("ticker", VIDEO_ANALYSIS_TICKER)
+                query = query.eq("sentiment", normalized_sentiment).neq(
+                    "ticker", VIDEO_ANALYSIS_TICKER
+                )
             if date_from:
                 query = query.gte("opinion_date", date_from)
             if date_to:
@@ -932,8 +1176,17 @@ class YouTubeStockOpinionService:
             page = result.data or []
             for row in page:
                 if "raw_channel" in row:
-                    row["raw_payload"] = {key: row.pop("raw_" + key, None) for key in
-                                          ("channel", "video", "summary", "overall_summary", "market_summary", "analysis")}
+                    row["raw_payload"] = {
+                        key: row.pop("raw_" + key, None)
+                        for key in (
+                            "channel",
+                            "video",
+                            "summary",
+                            "overall_summary",
+                            "market_summary",
+                            "analysis",
+                        )
+                    }
             rows.extend(page)
             if not page or (result.count is not None and len(rows) >= result.count):
                 break
@@ -942,8 +1195,13 @@ class YouTubeStockOpinionService:
         # Stable ties keep directories and latest-video groups consistent even
         # when PostgREST changes its query plan after a column projection.
         rows.sort(key=lambda row: str(row.get("id") or ""))
-        rows.sort(key=lambda row: (str(row.get("video_published_at") or ""),
-                                   str(row.get("created_at") or "")), reverse=True)
+        rows.sort(
+            key=lambda row: (
+                str(row.get("video_published_at") or ""),
+                str(row.get("created_at") or ""),
+            ),
+            reverse=True,
+        )
         return rows
 
     def _stock_creator_counts(self, tickers: List[str]) -> Dict[str, int]:
@@ -972,7 +1230,9 @@ class YouTubeStockOpinionService:
     def _build_summary(self, rows: List[Dict[str, Any]]) -> Dict[str, Any]:
         tickers = {row["ticker"] for row in rows if row.get("ticker")}
         creators = {row["channel_id"] for row in rows if row.get("channel_id")}
-        latest_at = _max_text(row.get("video_published_at") or row.get("created_at") for row in rows)
+        latest_at = _max_text(
+            row.get("video_published_at") or row.get("created_at") for row in rows
+        )
         rows = [row for row in rows if row.get("ticker")]
         scores = [_score(row) for row in rows]
         return {
@@ -1016,7 +1276,11 @@ class YouTubeStockOpinionService:
                 channel = row.get("channel_id")
                 if channel and 0 <= age < 30:
                     previous = recent_creators.get(channel)
-                    order = (str(row.get("opinion_date") or ""), str(row.get("video_published_at") or ""), str(row.get("id") or ""))
+                    order = (
+                        str(row.get("opinion_date") or ""),
+                        str(row.get("video_published_at") or ""),
+                        str(row.get("id") or ""),
+                    )
                     if previous is None or order > previous[0]:
                         recent_creators[channel] = (order, row)
             calls = [entry[1] for entry in recent_creators.values()]
@@ -1037,20 +1301,34 @@ class YouTubeStockOpinionService:
                     "creator_distribution": {
                         "bullish": _sentiment_count(calls, "bullish"),
                         "bearish": _sentiment_count(calls, "bearish"),
-                        "neutral": len(calls) - _sentiment_count(calls, "bullish") - _sentiment_count(calls, "bearish"),
+                        "neutral": len(calls)
+                        - _sentiment_count(calls, "bullish")
+                        - _sentiment_count(calls, "bearish"),
                         "total": len(calls),
                         "from": (today - timedelta(days=29)).isoformat(),
                         "to": today.isoformat(),
                     },
                     "discussion_heat": {
-                        "recent": recent_count, "previous": previous_count,
+                        "recent": recent_count,
+                        "previous": previous_count,
                         "from": (today - timedelta(days=6)).isoformat(),
                         "to": today.isoformat(),
                     },
-                    "latest_evidence": {key: latest.get(key) for key in (
-                        "id", "channel_id", "channel_title", "video_id", "video_url",
-                        "video_published_at", "opinion_date", "summary", "thesis", "sentiment",
-                    )},
+                    "latest_evidence": {
+                        key: latest.get(key)
+                        for key in (
+                            "id",
+                            "channel_id",
+                            "channel_title",
+                            "video_id",
+                            "video_url",
+                            "video_published_at",
+                            "opinion_date",
+                            "summary",
+                            "thesis",
+                            "sentiment",
+                        )
+                    },
                 }
             )
 
@@ -1111,14 +1389,22 @@ class YouTubeStockOpinionService:
             channel = {}
         hidden = channel.get("hidden_subscriber_count") is True
         return {
-            "description": channel.get("description") if isinstance(channel.get("description"), str) else None,
+            "description": channel.get("description")
+            if isinstance(channel.get("description"), str)
+            else None,
             "country": channel.get("country") if isinstance(channel.get("country"), str) else None,
-            "channel_published_at": channel.get("published_at") if isinstance(channel.get("published_at"), str) else None,
+            "channel_published_at": channel.get("published_at")
+            if isinstance(channel.get("published_at"), str)
+            else None,
             "subscriber_count": None if hidden else public_count(channel.get("subscriber_count")),
             "hidden_subscriber_count": hidden,
             "video_count": public_count(channel.get("video_count")),
             "view_count": public_count(channel.get("view_count")),
-            "channel_url": row.get("channel_url") if _https_url(row.get("channel_url")) else channel_link(row.get("channel_id"), row.get("channel_handle"), row.get("channel_url")),
+            "channel_url": row.get("channel_url")
+            if _https_url(row.get("channel_url"))
+            else channel_link(
+                row.get("channel_id"), row.get("channel_handle"), row.get("channel_url")
+            ),
             "profile_source": "imported",
             "profile_status": "imported",
             "profile_updated_at": None,
@@ -1165,9 +1451,7 @@ class YouTubeStockOpinionService:
             current_day = dates[-1]
             previous_day = dates[-2] if len(dates) > 1 else None
             current_score = round(mean(by_day[current_day]), 2)
-            previous_score = (
-                round(mean(by_day[previous_day]), 2) if previous_day else None
-            )
+            previous_score = round(mean(by_day[previous_day]), 2) if previous_day else None
             changes.append(
                 {
                     "ticker": ticker,
@@ -1208,6 +1492,10 @@ class YouTubeStockOpinionService:
         )
 
 
+def _version_of(rows: List[Dict[str, Any]]) -> tuple:
+    newest = max((str(row["updated_at"]) for row in rows if row.get("updated_at")), default=None)
+    return (len(rows), newest)
+
 
 def _as_payloads(body: Any) -> List[Dict[str, Any]]:
     """Accept a single video object or an array of them."""
@@ -1237,11 +1525,29 @@ def _youtube_video_id(value: Any) -> bool:
 
 
 OPINION_FIELDS = {
-    "ticker", "company_name", "sentiment", "direction_score", "confidence",
-    "time_horizon", "thesis", "summary", "key_points", "risks", "price_targets",
-    "opinion_date", "video_title", "video_url", "video_published_at",
+    "ticker",
+    "company_name",
+    "sentiment",
+    "direction_score",
+    "confidence",
+    "time_horizon",
+    "thesis",
+    "summary",
+    "key_points",
+    "risks",
+    "price_targets",
+    "opinion_date",
+    "video_title",
+    "video_url",
+    "video_published_at",
 }
-PROFILE_FIELDS = {"channel_id", "channel_title", "channel_handle", "channel_url", "channel_avatar_url"}
+PROFILE_FIELDS = {
+    "channel_id",
+    "channel_title",
+    "channel_handle",
+    "channel_url",
+    "channel_avatar_url",
+}
 
 
 def _public_opinion(row: Dict[str, Any]) -> Dict[str, Any]:
@@ -1292,7 +1598,9 @@ def _clean_text(value: Any, limit: int, label: str, required: bool = False) -> O
 def _clean_opinion_input(values: Dict[str, Any]) -> Dict[str, Any]:
     if not values or set(values) - OPINION_FIELDS or set(values) & PROFILE_FIELDS:
         raise ValueError("只能修改观点内容，不能修改博主资料。")
-    ticker = _normalize_ticker(values.get("ticker") if isinstance(values.get("ticker"), str) else None)
+    ticker = _normalize_ticker(
+        values.get("ticker") if isinstance(values.get("ticker"), str) else None
+    )
     if not ticker or not re.fullmatch(r"[A-Z0-9][A-Z0-9.\-]{0,19}", ticker):
         raise ValueError("股票代码格式不正确，例如 NVDA。")
     sentiment = values.get("sentiment")
@@ -1302,14 +1610,21 @@ def _clean_opinion_input(values: Dict[str, Any]) -> Dict[str, Any]:
     score = values.get("direction_score")
     if score is None:
         score = _normalize_score(None, sentiment)
-    elif isinstance(score, bool) or not isinstance(score, (int, float)) or not isfinite(float(score)) or not -100 <= float(score) <= 100:
+    elif (
+        isinstance(score, bool)
+        or not isinstance(score, (int, float))
+        or not isfinite(float(score))
+        or not -100 <= float(score) <= 100
+    ):
         raise ValueError("方向分数必须在 -100 到 100 之间。")
     else:
         score = round(float(score), 2)
     confidence = values.get("confidence")
     if confidence is not None and (
-        isinstance(confidence, bool) or not isinstance(confidence, (int, float))
-        or not isfinite(float(confidence)) or not 0 <= float(confidence) <= 1
+        isinstance(confidence, bool)
+        or not isinstance(confidence, (int, float))
+        or not isfinite(float(confidence))
+        or not 0 <= float(confidence) <= 1
     ):
         raise ValueError("置信度必须在 0 到 1 之间。")
     confidence = None if confidence is None else round(float(confidence), 3)
@@ -1332,7 +1647,9 @@ def _clean_opinion_input(values: Dict[str, Any]) -> Dict[str, Any]:
         raise ValueError("视频发布时间格式不正确。")
     else:
         if len(published) == 10:
-            published = datetime.fromisoformat(published).replace(tzinfo=OPINION_TIMEZONE).isoformat()
+            published = (
+                datetime.fromisoformat(published).replace(tzinfo=OPINION_TIMEZONE).isoformat()
+            )
         published = _to_iso_datetime(published)
         opinion_date = _date_from_values(published)
     return {
@@ -1387,7 +1704,12 @@ def _clean_targets(value: Any) -> List[Dict[str, Any]]:
         if not isinstance(item, dict):
             raise ValueError("目标价最多 10 条，且每条都要有正数价格。")
         price = item.get("value")
-        if isinstance(price, bool) or not isinstance(price, (int, float)) or not isfinite(float(price)) or float(price) <= 0:
+        if (
+            isinstance(price, bool)
+            or not isinstance(price, (int, float))
+            or not isfinite(float(price))
+            or float(price) <= 0
+        ):
             raise ValueError("目标价必须是大于 0 的数字。")
         label = _clean_text(item.get("label"), 40, "目标价名称")
         target = {"value": round(float(price), 4)}
@@ -1406,7 +1728,11 @@ def _resolve_video(cleaned: Dict[str, Any], current: Optional[Dict[str, Any]]):
         thumbnail = f"https://i.ytimg.com/vi/{video_id}/mqdefault.jpg"
     else:
         video_id = current_id or f"manual-{uuid4().hex[:16]}"
-        thumbnail = current.get("thumbnail_url") if current and current.get("video_id") == video_id else None
+        thumbnail = (
+            current.get("thumbnail_url")
+            if current and current.get("video_id") == video_id
+            else None
+        )
     return video_id, url, thumbnail
 
 
@@ -1437,11 +1763,15 @@ def compare_upload_coverage(
         if published_after and (published is None or published <= published_after):
             continue
         known.add(video_id)
-        seen.append({
-            "video_id": video_id,
-            "title": video.get("title") if isinstance(video.get("title"), str) else None,
-            "published_at": video.get("published_at") if isinstance(video.get("published_at"), str) else None,
-        })
+        seen.append(
+            {
+                "video_id": video_id,
+                "title": video.get("title") if isinstance(video.get("title"), str) else None,
+                "published_at": video.get("published_at")
+                if isinstance(video.get("published_at"), str)
+                else None,
+            }
+        )
     untracked = [video for video in seen if video["video_id"] not in tracked_ids]
     return {
         "since": published_after.astimezone(timezone.utc).isoformat() if published_after else None,
@@ -1454,7 +1784,9 @@ def compare_upload_coverage(
     }
 
 
-async def _avatar_from_profile(channel_id: str, handle: Optional[str] = None, channel_url: Optional[str] = None):
+async def _avatar_from_profile(
+    channel_id: str, handle: Optional[str] = None, channel_url: Optional[str] = None
+):
     profile = await channel_profiles.get_profile(channel_id, handle, channel_url)
     avatar = profile.get("channel_avatar_url") if isinstance(profile, dict) else None
     return avatar if _https_url(avatar) else None
@@ -1497,7 +1829,9 @@ def _extract_opinions(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
 
     if isinstance(raw, dict):
         return [
-            {"ticker": ticker, **value} if isinstance(value, dict) else {"ticker": ticker, "summary": value}
+            {"ticker": ticker, **value}
+            if isinstance(value, dict)
+            else {"ticker": ticker, "summary": value}
             for ticker, value in raw.items()
         ]
     if isinstance(raw, list):
@@ -1511,15 +1845,6 @@ def _first_text(*sources: Dict[str, Any], default: Optional[str] = None) -> Opti
     if not sources:
         return default
 
-    *dicts, keys = sources
-    key_names: Iterable[str]
-    if isinstance(keys, str):
-        dicts = list(sources[:-1])
-        key_names = [keys]
-    else:
-        key_names = []
-        dicts = list(sources)
-
     # The function is intentionally called as _first_text(dict1, dict2, "a", "b").
     dict_sources: List[Dict[str, Any]] = []
     names: List[str] = []
@@ -1529,7 +1854,7 @@ def _first_text(*sources: Dict[str, Any], default: Optional[str] = None) -> Opti
         elif isinstance(source, str):
             names.append(source)
 
-    for name in names or key_names:
+    for name in names:
         for source in dict_sources:
             value = source.get(name)
             if value is not None and value != "":
@@ -1683,4 +2008,6 @@ def _overall_summary(rows: List[Dict[str, Any]]) -> Optional[str]:
     summaries = [row.get("summary") for row in rows if row.get("summary")]
     if not summaries:
         return None
-    return "\n".join(f"{row['ticker']}: {row.get('summary')}" for row in rows if row.get("summary"))[:4000]
+    return "\n".join(
+        f"{row['ticker']}: {row.get('summary')}" for row in rows if row.get("summary")
+    )[:4000]
