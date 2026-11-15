@@ -1666,15 +1666,6 @@ html[data-chat-history-open] .app-workbench .app-sidebar {
   animation-delay: 180ms;
 }
 
-.scroll-reveal[data-reveal="pending"] {
-  opacity: 0;
-  transform: translateY(12px);
-}
-
-.scroll-reveal[data-reveal="visible"] {
-  animation: rh-enter 600ms var(--ease-out-quart) both;
-}
-
 .auth-motion {
   transition:
     transform 300ms var(--spring),
@@ -1705,10 +1696,6 @@ html[data-chat-history-open] .app-workbench .app-sidebar {
   }
 }
 
-.rh-product-preview {
-  animation: rh-enter 700ms 240ms var(--ease-out-quint) both;
-}
-
 .dashboard-content .recharts-line-curve {
   animation: rh-chart-reveal 700ms var(--ease-out-quart) both;
 }
@@ -1735,13 +1722,7 @@ html[data-chat-history-open] .app-workbench .app-sidebar {
 
 @media (prefers-reduced-motion: reduce) {
   .rh-enter,
-  .rh-product-preview,
   .dashboard-content .recharts-line-curve {
-    animation: none;
-  }
-  .scroll-reveal[data-reveal] {
-    opacity: 1;
-    transform: none;
     animation: none;
   }
   .auth-motion:hover {

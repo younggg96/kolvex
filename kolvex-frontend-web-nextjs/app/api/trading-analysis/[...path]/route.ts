@@ -8,11 +8,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { PUBLIC_CONTENT_TAG } from "@/lib/publicContent";
+import { BACKEND_API_URL } from "@/lib/config/backend";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300; // 5 min max for SSE proxy
-
-const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
 
 function buildUrl(path: string[], searchParams: string): string {
   const pathString = path.join("/");

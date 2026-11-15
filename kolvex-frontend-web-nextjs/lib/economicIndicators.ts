@@ -1,4 +1,5 @@
 import type { ScrubPoint } from "@/components/decision/ScrubChart";
+import { signFor } from "@/lib/format";
 
 export interface EconomicIndicator {
   id: string;
@@ -37,9 +38,13 @@ export const MACRO_RANGES = [
   { value: "5Y", zh: "5年", en: "5 years" },
 ] as const;
 
-export type MacroRange = typeof MACRO_RANGES[number]["value"];
+export type MacroRange = (typeof MACRO_RANGES)[number]["value"];
 
-export function macroHistory(history: ScrubPoint[], frequency: EconomicIndicator["frequency"], range: MacroRange) {
+export function macroHistory(
+  history: ScrubPoint[],
+  frequency: EconomicIndicator["frequency"],
+  range: MacroRange,
+) {
   const latest = history.at(-1);
   if (!latest) return [];
   // Daily sources have no intraday observations. Compare the latest two
@@ -51,8 +56,10 @@ export function macroHistory(history: ScrubPoint[], frequency: EconomicIndicator
   } else {
     const day = cutoff.getUTCDate();
     cutoff.setUTCDate(1);
-    cutoff.setUTCMonth(cutoff.getUTCMonth() - ({ "1M": 1, "1Y": 12, "3Y": 36, "5Y": 60 }[range]));
-    const lastDay = new Date(Date.UTC(cutoff.getUTCFullYear(), cutoff.getUTCMonth() + 1, 0)).getUTCDate();
+    cutoff.setUTCMonth(cutoff.getUTCMonth() - { "1M": 1, "1Y": 12, "3Y": 36, "5Y": 60 }[range]);
+    const lastDay = new Date(
+      Date.UTC(cutoff.getUTCFullYear(), cutoff.getUTCMonth() + 1, 0),
+    ).getUTCDate();
     cutoff.setUTCDate(Math.min(day, lastDay));
   }
   const start = cutoff.toISOString().slice(0, 10);
@@ -60,7 +67,9 @@ export function macroHistory(history: ScrubPoint[], frequency: EconomicIndicator
 }
 
 export class EconomicRequestError extends Error {
-  constructor(public readonly status: number) { super("Economic indicators unavailable"); }
+  constructor(public readonly status: number) {
+    super("Economic indicators unavailable");
+  }
 }
 
 export async function getEconomicIndicators(signal: AbortSignal): Promise<EconomicSnapshot> {
@@ -71,14 +80,29 @@ export async function getEconomicIndicators(signal: AbortSignal): Promise<Econom
   return data;
 }
 
-export function indicatorPeriod(indicator: Pick<EconomicIndicator, "frequency">, period: string | null, locale: string): string {
+export function indicatorPeriod(
+  indicator: Pick<EconomicIndicator, "frequency">,
+  period: string | null,
+  locale: string,
+): string {
   if (!period) return "—";
-  if (indicator.frequency === "quarterly") return `${period.slice(0, 4)} Q${Math.ceil(Number(period.slice(5, 7)) / 3)}`;
-  if (indicator.frequency === "monthly") return new Intl.DateTimeFormat(locale, { year: "numeric", month: "short", timeZone: "UTC" }).format(new Date(`${period}T00:00:00Z`));
+  if (indicator.frequency === "quarterly")
+    return `${period.slice(0, 4)} Q${Math.ceil(Number(period.slice(5, 7)) / 3)}`;
+  if (indicator.frequency === "monthly")
+    return new Intl.DateTimeFormat(locale, {
+      year: "numeric",
+      month: "short",
+      timeZone: "UTC",
+    }).format(new Date(`${period}T00:00:00Z`));
   return period;
 }
 
-export function indicatorValue(value: number | null, unit: EconomicIndicator["unit"] | EconomicIndicator["change_unit"], locale: string, signed = false): string {
+export function indicatorValue(
+  value: number | null,
+  unit: EconomicIndicator["unit"] | EconomicIndicator["change_unit"],
+  locale: string,
+  signed = false,
+): string {
   if (value === null || !Number.isFinite(value)) return "—";
   const zh = locale.startsWith("zh");
   const amount = unit === "thousands" && zh ? value / 10 : value;
@@ -86,7 +110,19 @@ export function indicatorValue(value: number | null, unit: EconomicIndicator["un
     minimumFractionDigits: unit === "thousands" ? (zh ? 1 : 0) : 2,
     maximumFractionDigits: unit === "thousands" ? 1 : 2,
   }).format(Math.abs(amount));
-  const prefix = amount < 0 ? "−" : signed && amount > 0 ? "+" : "";
-  const suffix = unit === "thousands" ? zh ? " 万人" : "K" : unit === "percent" ? "%" : unit === "bp" ? " bp" : zh ? " 个百分点" : " pp";
-  return `${prefix}${text}${suffix}`;
+  const prefix = signFor(amount, unit === "thousands" ? 1 : 2);
+  const shownPrefix = prefix === "+" && !signed ? "" : prefix;
+  const suffix =
+    unit === "thousands"
+      ? zh
+        ? " 万人"
+        : "K"
+      : unit === "percent"
+        ? "%"
+        : unit === "bp"
+          ? " bp"
+          : zh
+            ? " 个百分点"
+            : " pp";
+  return `${shownPrefix}${text}${suffix}`;
 }

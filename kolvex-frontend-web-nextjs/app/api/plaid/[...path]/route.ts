@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
+import { BACKEND_API_URL } from "@/lib/config/backend";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -39,7 +37,7 @@ async function proxyRequest(
       fetchOptions.body = await request.text();
     }
 
-    const upstreamUrl = new URL(`${API_BASE_URL}/api/v1/plaid${path}`);
+    const upstreamUrl = new URL(`${BACKEND_API_URL}/api/v1/plaid${path}`);
     request.nextUrl.searchParams.forEach((value, key) => {
       upstreamUrl.searchParams.append(key, value);
     });
@@ -56,8 +54,7 @@ async function proxyRequest(
 
     return NextResponse.json(data);
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Internal server error";
+    const message = error instanceof Error ? error.message : "Internal server error";
     console.error(`Plaid API error [${path}]:`, error);
     return NextResponse.json({ error: message }, { status: 500 });
   }

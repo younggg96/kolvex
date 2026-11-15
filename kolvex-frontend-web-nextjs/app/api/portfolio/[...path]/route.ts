@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
+import { BACKEND_API_URL } from "@/lib/config/backend";
 
 type RouteParams = { params: Promise<{ path: string[] }> };
 
@@ -16,7 +14,7 @@ async function proxyRequest(
     method: "GET" | "POST" | "PUT" | "DELETE";
     requireAuth?: boolean;
     hasBody?: boolean;
-  }
+  },
 ) {
   const { method, requireAuth = true, hasBody = false } = options;
 
@@ -44,24 +42,20 @@ async function proxyRequest(
       fetchOptions.body = await request.text();
     }
 
-    const response = await fetch(
-      `${API_BASE_URL}/api/v1/portfolio${path}`,
-      fetchOptions
-    );
+    const response = await fetch(`${BACKEND_API_URL}/api/v1/portfolio${path}`, fetchOptions);
 
     const data = await response.json();
 
     if (!response.ok) {
       return NextResponse.json(
         { error: data.detail || "Request failed" },
-        { status: response.status }
+        { status: response.status },
       );
     }
 
     return NextResponse.json(data);
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Internal server error";
+    const message = error instanceof Error ? error.message : "Internal server error";
     console.error(`Portfolio API error [${path}]:`, error);
     return NextResponse.json({ error: message }, { status: 500 });
   }
@@ -96,8 +90,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           requireAuth: false,
         });
       }
-
-
 
     case "privacy-settings":
       // /api/portfolio/privacy-settings - get privacy settings

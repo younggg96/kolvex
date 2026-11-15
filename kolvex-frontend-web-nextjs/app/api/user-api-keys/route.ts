@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-
-const BACKEND_API_URL =
-  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
+import { BACKEND_API_URL } from "@/lib/config/backend";
 
 async function getSessionToken(): Promise<string | null> {
   const supabase = await createServerSupabaseClient();
@@ -35,18 +33,15 @@ async function handleAvailableProviders() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const response = await fetch(
-      `${BACKEND_API_URL}/api/v1/user-api-keys/available-providers`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
+    const response = await fetch(`${BACKEND_API_URL}/api/v1/user-api-keys/available-providers`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       return NextResponse.json(
         { error: errorData.detail || "Failed to fetch available providers" },
-        { status: response.status }
+        { status: response.status },
       );
     }
 
@@ -54,10 +49,7 @@ async function handleAvailableProviders() {
     return NextResponse.json(data);
   } catch (error) {
     console.error("Available Providers Error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch available providers" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch available providers" }, { status: 500 });
   }
 }
 
@@ -83,7 +75,7 @@ async function handleGetKeys() {
       const errorData = await response.json().catch(() => ({}));
       return NextResponse.json(
         { error: errorData.detail || "Failed to fetch API keys" },
-        { status: response.status }
+        { status: response.status },
       );
     }
 
@@ -91,10 +83,7 @@ async function handleGetKeys() {
     return NextResponse.json(data);
   } catch (error) {
     console.error("Get API Keys Error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch API keys" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch API keys" }, { status: 500 });
   }
 }
 
@@ -129,7 +118,7 @@ export async function PUT(request: NextRequest) {
       const errorData = await response.json().catch(() => ({}));
       return NextResponse.json(
         { error: errorData.detail || "Failed to save API key" },
-        { status: response.status }
+        { status: response.status },
       );
     }
 
@@ -137,9 +126,6 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json(data);
   } catch (error) {
     console.error("Upsert API Key Error:", error);
-    return NextResponse.json(
-      { error: "Failed to save API key" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to save API key" }, { status: 500 });
   }
 }

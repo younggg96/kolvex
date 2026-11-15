@@ -4,11 +4,9 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { BACKEND_API_URL } from "@/lib/config/backend";
 
 export const maxDuration = 30;
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://127.0.0.1:8080";
 
 const SYMBOL_PATTERN = /^[A-Z0-9.\-^=]{1,20}$/;
 const MAX_SYMBOLS = 80;
@@ -25,10 +23,7 @@ export async function GET(request: NextRequest) {
   const seen = new Set<string>();
   for (const symbol of rawSymbols) {
     if (!SYMBOL_PATTERN.test(symbol)) {
-      return NextResponse.json(
-        { error: `Invalid symbol: ${symbol}` },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: `Invalid symbol: ${symbol}` }, { status: 400 });
     }
     if (seen.has(symbol)) continue;
     seen.add(symbol);
@@ -36,17 +31,11 @@ export async function GET(request: NextRequest) {
   }
 
   if (!symbols.length) {
-    return NextResponse.json(
-      { error: "No symbols provided" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "No symbols provided" }, { status: 400 });
   }
 
   if (symbols.length > MAX_SYMBOLS) {
-    return NextResponse.json(
-      { error: `Too many symbols (max ${MAX_SYMBOLS})` },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: `Too many symbols (max ${MAX_SYMBOLS})` }, { status: 400 });
   }
 
   const searchParams = new URLSearchParams();
@@ -54,12 +43,12 @@ export async function GET(request: NextRequest) {
 
   try {
     const response = await fetch(
-      `${API_BASE_URL}/api/v1/market/performance?${searchParams.toString()}`,
+      `${BACKEND_API_URL}/api/v1/market/performance?${searchParams.toString()}`,
       {
         headers: { "Content-Type": "application/json" },
         next: { revalidate: 60 },
         signal: AbortSignal.any([request.signal, AbortSignal.timeout(28000)]),
-      }
+      },
     );
 
     if (!response.ok) {
@@ -78,27 +67,18 @@ export async function GET(request: NextRequest) {
       } catch {
         if (errorBody) detail = errorBody;
       }
-      return NextResponse.json(
-        { error: detail },
-        { status: 503 }
-      );
+      return NextResponse.json({ error: detail }, { status: 503 });
     }
 
     const data: unknown = await response.json();
     const stocks = (data as { stocks?: unknown } | null)?.stocks;
     if (!stocks || typeof stocks !== "object" || Array.isArray(stocks)) {
-      return NextResponse.json(
-        { error: "Invalid market performance response" },
-        { status: 503 }
-      );
+      return NextResponse.json({ error: "Invalid market performance response" }, { status: 503 });
     }
 
     return NextResponse.json({ stocks });
   } catch (error) {
     console.error("Market performance API error:", error);
-    return NextResponse.json(
-      { error: "Market performance unavailable" },
-      { status: 503 }
-    );
+    return NextResponse.json({ error: "Market performance unavailable" }, { status: 503 });
   }
 }

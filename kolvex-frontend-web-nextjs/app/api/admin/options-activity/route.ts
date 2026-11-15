@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { BACKEND_API_URL } from "@/lib/config/backend";
 
 export const dynamic = "force-dynamic";
-const API = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
 const headers = { "Cache-Control": "private, no-store" };
 const SESSIONS = new Set(["pre", "intraday", "post"]);
 const ERRORS: Record<string, string> = {
-  options_data_not_configured: "后端还没有配置 Alpaca API Key。",
+  options_data_not_configured: "后端还没有配置 Alpaca BACKEND_API_URL Key。",
   run_in_progress: "已有一次运行正在进行，请等它结束。",
   invalid_symbols: "股票代码无效或超过 20 个。只支持 1–5 位字母的美股代码。",
   no_runs: "还没有可分析的报告。",
@@ -20,15 +20,19 @@ async function proxy(request: NextRequest) {
     return NextResponse.json({ error: "无效的运行时点。" }, { status: 400, headers });
   try {
     const supabase = await createServerSupabaseClient();
-    const { data: { session: auth } } = await supabase.auth.getSession();
-    if (!auth?.access_token) return NextResponse.json({ error: "请先登录。" }, { status: 401, headers });
+    const {
+      data: { session: auth },
+    } = await supabase.auth.getSession();
+    if (!auth?.access_token)
+      return NextResponse.json({ error: "请先登录。" }, { status: 401, headers });
     const symbols = request.nextUrl.searchParams.get("symbols")?.slice(0, 300);
-    const path = request.method !== "POST"
-      ? "status"
-      : analyze
-        ? "analyze"
-        : `run?${new URLSearchParams({ session: session!, ...(symbols ? { symbols } : {}) })}`;
-    const response = await fetch(`${API}/api/v1/admin/options-activity/${path}`, {
+    const path =
+      request.method !== "POST"
+        ? "status"
+        : analyze
+          ? "analyze"
+          : `run?${new URLSearchParams({ session: session!, ...(symbols ? { symbols } : {}) })}`;
+    const response = await fetch(`${BACKEND_API_URL}/api/v1/admin/options-activity/${path}`, {
       method: request.method,
       headers: { Authorization: `Bearer ${auth.access_token}` },
       cache: "no-store",
@@ -37,7 +41,13 @@ async function proxy(request: NextRequest) {
     const data = await response.json().catch(() => ({}));
     if (response.ok) return NextResponse.json(data, { headers });
     const detail = typeof data?.detail === "string" ? data.detail : "";
-    const error = ERRORS[detail] ?? (response.status === 403 ? "需要管理员权限。" : response.status === 404 ? "后端还没有这个接口，请重启后端。" : "期权异动服务暂不可用，请重试。");
+    const error =
+      ERRORS[detail] ??
+      (response.status === 403
+        ? "需要管理员权限。"
+        : response.status === 404
+          ? "后端还没有这个接口，请重启后端。"
+          : "期权异动服务暂不可用，请重试。");
     return NextResponse.json({ error }, { status: response.status, headers });
   } catch {
     return NextResponse.json({ error: "期权异动服务暂不可用，请重试。" }, { status: 503, headers });

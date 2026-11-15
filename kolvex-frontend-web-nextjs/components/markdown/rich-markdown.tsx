@@ -9,6 +9,7 @@ import { marketStockUrl } from "@/lib/stockLinks";
 import { symbolFromStockLink } from "@/lib/markdown/stockMentions";
 import { parseChartSpec, type ChartSpec } from "@/lib/markdown/prose";
 import { cn } from "@/lib/utils";
+import { withSign } from "@/lib/format";
 
 /**
  * Assistant output is read like a report, not a message: emoji are stripped (a model
@@ -60,12 +61,24 @@ function isNumericCell(text: string) {
 
 type Align = "left" | "center" | "right";
 
-const ALIGN_CLASS: Record<Align, string> = { left: "text-left", center: "text-center", right: "text-right" };
+const ALIGN_CLASS: Record<Align, string> = {
+  left: "text-left",
+  center: "text-center",
+  right: "text-right",
+};
 
 /** How a whole column behaves, decided once from everything it holds. */
 type ColumnLayout = { numeric: boolean; wraps: boolean; minWidth?: string };
 
-function Th({ children, align, column }: { children?: ReactNode; align?: Align; column?: ColumnLayout }) {
+function Th({
+  children,
+  align,
+  column,
+}: {
+  children?: ReactNode;
+  align?: Align;
+  column?: ColumnLayout;
+}) {
   return (
     <th
       scope="col"
@@ -81,7 +94,15 @@ function Th({ children, align, column }: { children?: ReactNode; align?: Align; 
   );
 }
 
-function Td({ children, align, column }: { children?: ReactNode; align?: Align; column?: ColumnLayout }) {
+function Td({
+  children,
+  align,
+  column,
+}: {
+  children?: ReactNode;
+  align?: Align;
+  column?: ColumnLayout;
+}) {
   const tone = toneOf(textOf(children));
   const resolved: Align = align || "left";
   return (
@@ -96,7 +117,10 @@ function Td({ children, align, column }: { children?: ReactNode; align?: Align; 
     >
       {tone ? (
         <span className="inline-flex items-start gap-1.5">
-          <span className={cn("mt-[0.5625rem] h-1.5 w-1.5 shrink-0 rounded-full", TONE_CLASS[tone])} aria-hidden="true" />
+          <span
+            className={cn("mt-[0.5625rem] h-1.5 w-1.5 shrink-0 rounded-full", TONE_CLASS[tone])}
+            aria-hidden="true"
+          />
           <span className="min-w-0">{children}</span>
         </span>
       ) : (
@@ -106,7 +130,11 @@ function Td({ children, align, column }: { children?: ReactNode; align?: Align; 
   );
 }
 
-type CellElement = ReactElement<{ children?: ReactNode; align?: Align | null; column?: ColumnLayout }>;
+type CellElement = ReactElement<{
+  children?: ReactNode;
+  align?: Align | null;
+  column?: ColumnLayout;
+}>;
 
 /** Rows split by section, so the header row never decides which columns hold numbers. */
 function tableRows(node: ReactNode): { header: CellElement[][]; body: CellElement[][] } {
@@ -118,7 +146,9 @@ function tableRows(node: ReactNode): { header: CellElement[][]; body: CellElemen
     const element = child as CellElement;
     const type = element.type;
     if (type === "tr") {
-      (inHead ? header : body).push(Children.toArray(element.props.children).filter(isValidElement) as CellElement[]);
+      (inHead ? header : body).push(
+        Children.toArray(element.props.children).filter(isValidElement) as CellElement[],
+      );
       return;
     }
     if (type === "thead") return visit(element.props.children, true);
@@ -150,7 +180,10 @@ const CELL_PADDING_REM = 1.75;
  */
 function columnLayouts(header: CellElement[][], body: CellElement[][]): ColumnLayout[] {
   const longest = (rows: CellElement[][], column: number) =>
-    rows.reduce((peak, cells) => Math.max(peak, textUnits(textOf(cells[column]?.props.children))), 0);
+    rows.reduce(
+      (peak, cells) => Math.max(peak, textUnits(textOf(cells[column]?.props.children))),
+      0,
+    );
   const count = Math.max(0, ...[...header, ...body].map((cells) => cells.length));
 
   return Array.from({ length: count }, (_, column) => {
@@ -161,8 +194,15 @@ function columnLayouts(header: CellElement[][], body: CellElement[][]): ColumnLa
     const headerUnits = longest(header, column);
     const bodyUnits = longest(body, column);
     if (Math.max(headerUnits, bodyUnits) <= ONE_LINE_UNITS) return { numeric, wraps: false };
-    const units = Math.min(WRAPPED_UNITS.max, Math.max(WRAPPED_UNITS.min, headerUnits / LINES.header, bodyUnits / LINES.body));
-    return { numeric, wraps: true, minWidth: `${(units * BODY_EM_REM + CELL_PADDING_REM).toFixed(2)}rem` };
+    const units = Math.min(
+      WRAPPED_UNITS.max,
+      Math.max(WRAPPED_UNITS.min, headerUnits / LINES.header, bodyUnits / LINES.body),
+    );
+    return {
+      numeric,
+      wraps: true,
+      minWidth: `${(units * BODY_EM_REM + CELL_PADDING_REM).toFixed(2)}rem`,
+    };
   });
 }
 
@@ -177,7 +217,10 @@ function applyColumns(node: ReactNode, columns: ColumnLayout[]): ReactNode {
     const cells = Children.toArray(children).map((cell, index) => {
       if (!isValidElement(cell)) return cell;
       const column = columns[index];
-      return cloneElement(cell as CellElement, column?.numeric ? { column, align: "right" } : { column });
+      return cloneElement(
+        cell as CellElement,
+        column?.numeric ? { column, align: "right" } : { column },
+      );
     });
     return cloneElement(element, undefined, cells);
   }
@@ -185,7 +228,15 @@ function applyColumns(node: ReactNode, columns: ColumnLayout[]): ReactNode {
 }
 
 /** A markdown table: hairline rules, one layout per column, scrolls only when the columns need it. */
-export function DataTable({ children, label, className }: { children?: ReactNode; label?: string; className?: string }) {
+export function DataTable({
+  children,
+  label,
+  className,
+}: {
+  children?: ReactNode;
+  label?: string;
+  className?: string;
+}) {
   const c = useCopy();
   // React Markdown hands us the cells before they render, so a column can be sized and
   // aligned as a whole rather than cell by cell.
@@ -214,9 +265,15 @@ export function DataTable({ children, label, className }: { children?: ReactNode
 }
 
 function formatValue(value: number, unit?: string) {
-  const magnitude = Math.abs(value);
-  const text = magnitude >= 1000 ? value.toFixed(0) : Number.isInteger(value) ? String(value) : value.toFixed(1);
-  return `${value > 0 ? "+" : ""}${text}${unit || ""}`;
+  return withSign(value, (magnitude) => {
+    const text =
+      magnitude >= 1000
+        ? magnitude.toFixed(0)
+        : Number.isInteger(magnitude)
+          ? String(magnitude)
+          : magnitude.toFixed(1);
+    return `${text}${unit || ""}`;
+  });
 }
 
 /** Ranked values as horizontal bars; negative values hang left of the zero line. */
@@ -233,7 +290,9 @@ function BarChart({ spec }: { spec: ChartSpec }) {
     >
       {(spec.title || spec.unit) && (
         <figcaption className="mb-2.5 flex items-baseline justify-between gap-3">
-          {spec.title && <span className="text-sm font-semibold text-foreground">{spec.title}</span>}
+          {spec.title && (
+            <span className="text-sm font-semibold text-foreground">{spec.title}</span>
+          )}
           {spec.unit && <span className="text-xs text-muted-foreground">{spec.unit}</span>}
         </figcaption>
       )}
@@ -242,12 +301,28 @@ function BarChart({ spec }: { spec: ChartSpec }) {
           const share = (Math.abs(item.value) / peak) * 100;
           const positive = item.value >= 0;
           return (
-            <li key={`${item.label}-${index}`} className="grid grid-cols-[minmax(3.5rem,5.5rem)_1fr_auto] items-center gap-2.5">
+            <li
+              key={`${item.label}-${index}`}
+              className="grid grid-cols-[minmax(3.5rem,5.5rem)_1fr_auto] items-center gap-2.5"
+            >
               <span className="truncate text-xs text-muted-foreground">{item.label}</span>
-              <span className={cn("relative h-2 rounded-full bg-foreground/[0.07]", diverging && "overflow-visible")}>
-                {diverging && <span className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-foreground/20" aria-hidden="true" />}
+              <span
+                className={cn(
+                  "relative h-2 rounded-full bg-foreground/[0.07]",
+                  diverging && "overflow-visible",
+                )}
+              >
+                {diverging && (
+                  <span
+                    className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-foreground/20"
+                    aria-hidden="true"
+                  />
+                )}
                 <span
-                  className={cn("absolute inset-y-0 rounded-full transition-[width] duration-500 ease-spring motion-reduce:transition-none", positive ? "bg-positive/80" : "bg-negative/80")}
+                  className={cn(
+                    "absolute inset-y-0 rounded-full transition-[width] duration-500 ease-spring motion-reduce:transition-none",
+                    positive ? "bg-positive/80" : "bg-negative/80",
+                  )}
                   style={
                     diverging
                       ? positive
@@ -257,7 +332,12 @@ function BarChart({ spec }: { spec: ChartSpec }) {
                   }
                 />
               </span>
-              <span className={cn("figure w-14 text-right text-xs", positive ? "text-foreground" : "text-negative")}>
+              <span
+                className={cn(
+                  "figure w-14 text-right text-xs",
+                  positive ? "text-foreground" : "text-negative",
+                )}
+              >
                 {formatValue(item.value, spec.unit)}
               </span>
             </li>
@@ -275,19 +355,37 @@ function LineChart({ spec }: { spec: ChartSpec }) {
   const max = Math.max(...values);
   const range = max - min || 1;
   const points = values
-    .map((value, index) => `${(index / Math.max(values.length - 1, 1)) * 100},${28 - ((value - min) / range) * 26}`)
+    .map(
+      (value, index) =>
+        `${(index / Math.max(values.length - 1, 1)) * 100},${28 - ((value - min) / range) * 26}`,
+    )
     .join(" ");
 
   return (
     <figure className="not-prose my-4 rounded-2xl border border-foreground/10 bg-foreground/[0.03] p-3.5">
       {(spec.title || spec.unit) && (
         <figcaption className="mb-2 flex items-baseline justify-between gap-3">
-          {spec.title && <span className="text-sm font-semibold text-foreground">{spec.title}</span>}
+          {spec.title && (
+            <span className="text-sm font-semibold text-foreground">{spec.title}</span>
+          )}
           {spec.unit && <span className="text-xs text-muted-foreground">{spec.unit}</span>}
         </figcaption>
       )}
-      <svg viewBox="0 0 100 32" preserveAspectRatio="none" className="h-16 w-full text-positive" role="img" aria-label={spec.title || "Line chart"}>
-        <polyline points={points} fill="none" stroke="currentColor" strokeWidth="1.25" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
+      <svg
+        viewBox="0 0 100 32"
+        preserveAspectRatio="none"
+        className="h-16 w-full text-positive"
+        role="img"
+        aria-label={spec.title || "Line chart"}
+      >
+        <polyline
+          points={points}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.25"
+          vectorEffect="non-scaling-stroke"
+          strokeLinejoin="round"
+        />
       </svg>
       <div className="mt-1 flex justify-between text-[0.6875rem] text-muted-foreground">
         <span>{spec.items[0]?.label}</span>
@@ -303,7 +401,8 @@ function LineChart({ spec }: { spec: ChartSpec }) {
 /** `chart` fenced blocks render as charts; other code keeps the default treatment. */
 function Pre({ children }: { children?: ReactNode }) {
   const first = Array.isArray(children) ? children[0] : children;
-  const props = (first as { props?: { className?: string; children?: ReactNode } } | undefined)?.props;
+  const props = (first as { props?: { className?: string; children?: ReactNode } } | undefined)
+    ?.props;
   const language = /language-([\w-]+)/.exec(props?.className || "")?.[1];
   if (language === "chart") {
     const spec = parseChartSpec(textOf(props?.children).trim());
@@ -321,7 +420,9 @@ export function StockMention({ symbol }: { symbol: string }) {
   const target = marketStockUrl(symbol);
   const content = (
     <>
-      <span aria-hidden="true"><CompanyLogo symbol={symbol} size="xs" /></span>
+      <span aria-hidden="true">
+        <CompanyLogo symbol={symbol} size="xs" />
+      </span>
       <span className="figure text-[0.9375rem] font-semibold">{symbol}</span>
     </>
   );
@@ -349,11 +450,19 @@ export const RICH_MARKDOWN_COMPONENTS: Components = {
   // `align` arrives from the markdown column rule (`| ---: |`); keep it, the cell needs it.
   th: ({ children, ...rest }) => {
     const { align, column } = rest as { align?: Align; column?: ColumnLayout };
-    return <Th align={align} column={column}>{children}</Th>;
+    return (
+      <Th align={align} column={column}>
+        {children}
+      </Th>
+    );
   },
   td: ({ children, ...rest }) => {
     const { align, column } = rest as { align?: Align; column?: ColumnLayout };
-    return <Td align={align} column={column}>{children}</Td>;
+    return (
+      <Td align={align} column={column}>
+        {children}
+      </Td>
+    );
   },
   pre: ({ children }) => <Pre>{children}</Pre>,
   a: ({ href, children }) => <Anchor href={href}>{children}</Anchor>,

@@ -8,9 +8,7 @@ import {
   getCacheKey,
 } from "@/lib/cache";
 import { loadQuote, transformQuote, type BackendQuote } from "@/lib/server/stockQuote";
-
-const NEXT_PUBLIC_BACKEND_API_URL =
-  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://127.0.0.1:8080";
+import { BACKEND_API_URL } from "@/lib/config/backend";
 
 // Chart data interface
 interface ChartDataPoint {
@@ -36,10 +34,7 @@ export async function GET(request: NextRequest) {
     switch (action) {
       case "quote":
         if (!symbol) {
-          return NextResponse.json(
-            { error: "Symbol is required" },
-            { status: 400 }
-          );
+          return NextResponse.json({ error: "Symbol is required" }, { status: 400 });
         }
 
         try {
@@ -51,18 +46,22 @@ export async function GET(request: NextRequest) {
           console.error("Failed to fetch quote from backend:", error);
           return NextResponse.json(
             { error: "Quote unavailable" },
-            { status: 503, headers: { "Cache-Control": "no-store" } }
+            { status: 503, headers: { "Cache-Control": "no-store" } },
           );
         }
 
       case "multiple":
         if (!symbols) {
-          return NextResponse.json(
-            { error: "Symbols are required" },
-            { status: 400 }
-          );
+          return NextResponse.json({ error: "Symbols are required" }, { status: 400 });
         }
-        const symbolArray = [...new Set(symbols.split(",").map(symbol => symbol.trim().toUpperCase()).filter(Boolean))];
+        const symbolArray = [
+          ...new Set(
+            symbols
+              .split(",")
+              .map((symbol) => symbol.trim().toUpperCase())
+              .filter(Boolean),
+          ),
+        ];
         if (symbolArray.length === 0) {
           return NextResponse.json([], { status: 200 });
         }
@@ -73,8 +72,7 @@ export async function GET(request: NextRequest) {
 
         for (const sym of symbolArray) {
           const cacheKey = getCacheKey("quote", sym);
-          const cached =
-            quoteCache.get<ReturnType<typeof transformQuote>>(cacheKey);
+          const cached = quoteCache.get<ReturnType<typeof transformQuote>>(cacheKey);
           if (cached && Number.isFinite(cached.price) && cached.price > 0) {
             cachedQuotes.push(cached);
           } else {
@@ -98,23 +96,30 @@ export async function GET(request: NextRequest) {
             .map((s) => `symbols=${encodeURIComponent(s)}`)
             .join("&");
           const quotesResponse = await fetch(
-            `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/market/quotes?${queryParams}`,
+            `${BACKEND_API_URL}/api/v1/market/quotes?${queryParams}`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               // Next's Data Cache also stores POST requests in route handlers.
               cache: "no-store",
               signal: AbortSignal.timeout(20000),
-            }
+            },
           );
           if (!quotesResponse.ok) {
             throw new Error(`Backend returned ${quotesResponse.status}`);
           }
           // Backend returns { "AAPL": {...}, "TSLA": {...} } - convert to array
-          const quotesData: Record<string, BackendQuote> =
-            await quotesResponse.json();
+          const quotesData: Record<string, BackendQuote> = await quotesResponse.json();
           const transformedQuotes = Object.values(quotesData)
-            .filter((q) => q && !("error" in q) && symbolsToFetch.includes(q.symbol) && typeof q.current_price === "number" && Number.isFinite(q.current_price) && q.current_price > 0)
+            .filter(
+              (q) =>
+                q &&
+                !("error" in q) &&
+                symbolsToFetch.includes(q.symbol) &&
+                typeof q.current_price === "number" &&
+                Number.isFinite(q.current_price) &&
+                q.current_price > 0,
+            )
             .map((q) => {
               const transformed = transformQuote(q);
               // 存入缓存
@@ -137,16 +142,18 @@ export async function GET(request: NextRequest) {
           console.error("Failed to fetch multiple quotes from backend:", error);
           // Preserve successful cached prices; never fabricate zero-price quotes.
           return cachedQuotes.length
-            ? NextResponse.json(cachedQuotes, { headers: { "Cache-Control": "no-store", "X-Cache": "PARTIAL" } })
-            : NextResponse.json({ error: "Quotes unavailable" }, { status: 503, headers: { "Cache-Control": "no-store" } });
+            ? NextResponse.json(cachedQuotes, {
+                headers: { "Cache-Control": "no-store", "X-Cache": "PARTIAL" },
+              })
+            : NextResponse.json(
+                { error: "Quotes unavailable" },
+                { status: 503, headers: { "Cache-Control": "no-store" } },
+              );
         }
 
       case "chart":
         if (!symbol) {
-          return NextResponse.json(
-            { error: "Symbol is required" },
-            { status: 400 }
-          );
+          return NextResponse.json({ error: "Symbol is required" }, { status: 400 });
         }
 
         const interval = searchParams.get("interval") || "5m";
@@ -157,8 +164,7 @@ export async function GET(request: NextRequest) {
         if (cachedChart) {
           return NextResponse.json(cachedChart, {
             headers: {
-              "Cache-Control":
-                "public, s-maxage=300, stale-while-revalidate=600",
+              "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
               "X-Cache": "HIT",
             },
           });
@@ -166,9 +172,9 @@ export async function GET(request: NextRequest) {
 
         try {
           const historyResponse = await fetch(
-            `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/market/intraday/${symbol}?interval=${interval}`,
+            `${BACKEND_API_URL}/api/v1/market/intraday/${symbol}?interval=${interval}`,
             // Next's Data Cache has no expiry here; freshness comes from chartCache.
-            { cache: "no-store" }
+            { cache: "no-store" },
           );
           if (!historyResponse.ok) {
             throw new Error(`Backend returned ${historyResponse.status}`);
@@ -180,7 +186,7 @@ export async function GET(request: NextRequest) {
               time: d.date,
               value: d.close,
               volume: d.volume,
-            })
+            }),
           );
 
           // 存入缓存（5 分钟）
@@ -188,8 +194,7 @@ export async function GET(request: NextRequest) {
 
           return NextResponse.json(chartData, {
             headers: {
-              "Cache-Control":
-                "public, s-maxage=300, stale-while-revalidate=600",
+              "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
               "X-Cache": "MISS",
             },
           });
@@ -200,10 +205,7 @@ export async function GET(request: NextRequest) {
 
       case "overview":
         if (!symbol) {
-          return NextResponse.json(
-            { error: "Symbol is required" },
-            { status: 400 }
-          );
+          return NextResponse.json({ error: "Symbol is required" }, { status: 400 });
         }
 
         const overviewCacheKey = getCacheKey("overview", symbol);
@@ -213,8 +215,7 @@ export async function GET(request: NextRequest) {
         if (cachedOverview) {
           return NextResponse.json(cachedOverview, {
             headers: {
-              "Cache-Control":
-                "public, s-maxage=600, stale-while-revalidate=1200",
+              "Cache-Control": "public, s-maxage=600, stale-while-revalidate=1200",
               "X-Cache": "HIT",
             },
           });
@@ -222,9 +223,9 @@ export async function GET(request: NextRequest) {
 
         try {
           const overviewResponse = await fetch(
-            `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/market/overview/${symbol}`,
+            `${BACKEND_API_URL}/api/v1/market/overview/${symbol}`,
             // Next's Data Cache has no expiry here; freshness comes from overviewCache.
-            { cache: "no-store" }
+            { cache: "no-store" },
           );
 
           if (!overviewResponse.ok) {
@@ -238,17 +239,13 @@ export async function GET(request: NextRequest) {
 
           return NextResponse.json(overviewData, {
             headers: {
-              "Cache-Control":
-                "public, s-maxage=600, stale-while-revalidate=1200",
+              "Cache-Control": "public, s-maxage=600, stale-while-revalidate=1200",
               "X-Cache": "MISS",
             },
           });
         } catch (error) {
           console.error("Failed to fetch stock overview from backend:", error);
-          return NextResponse.json(
-            { error: "Failed to fetch stock overview" },
-            { status: 500 }
-          );
+          return NextResponse.json({ error: "Failed to fetch stock overview" }, { status: 500 });
         }
 
       default:
@@ -261,7 +258,7 @@ export async function GET(request: NextRequest) {
         error: "Failed to fetch stock data",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

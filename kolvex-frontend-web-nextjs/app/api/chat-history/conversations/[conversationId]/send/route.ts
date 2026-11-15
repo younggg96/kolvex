@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-
-const BACKEND_API_URL =
-  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
+import { BACKEND_API_URL } from "@/lib/config/backend";
 
 interface RouteParams {
   params: Promise<{ conversationId: string }>;
@@ -38,14 +36,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify(body),
-      }
+      },
     );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       return NextResponse.json(
         { error: errorData.detail || "Failed to send message" },
-        { status: response.status }
+        { status: response.status },
       );
     }
 
@@ -53,9 +51,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json(data);
   } catch (error) {
     console.error("Send API Error:", error);
-    return NextResponse.json(
-      { error: "Failed to send message" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to send message" }, { status: 500 });
   }
 }

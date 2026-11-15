@@ -3,21 +3,26 @@
 import { ArrowUpRight } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import type { RevenueEvidence } from "@/lib/chatApi";
+import { withSign } from "@/lib/format";
 
 export function RevenueEvidenceCard({ revenue }: { revenue: RevenueEvidence }) {
   const { locale, t } = useTranslation();
-  const format = new Intl.NumberFormat(locale === "zh" ? "zh-CN" : "en-US", { maximumFractionDigits: 20 });
+  const format = new Intl.NumberFormat(locale === "zh" ? "zh-CN" : "en-US", {
+    maximumFractionDigits: 20,
+  });
   const value = format.format(revenue.value);
 
   return (
     <figure className="rounded-2xl border border-border bg-card px-3.5 py-3">
       <figcaption className="text-xs font-medium text-muted-foreground">
-        {t("chat.revenueEvidence.title")} · {revenue.fiscal_label ?? t(`chat.revenueEvidence.${revenue.period_kind}`)}
+        {t("chat.revenueEvidence.title")} ·{" "}
+        {revenue.fiscal_label ?? t(`chat.revenueEvidence.${revenue.period_kind}`)}
       </figcaption>
       <div className="mt-1 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
         <span className="break-all text-sm font-semibold text-foreground">{revenue.symbol}</span>
         <span className="text-sm font-semibold tabular-nums text-foreground">
-          {value} <span className="text-xs font-medium text-muted-foreground">{revenue.currency}</span>
+          {value}{" "}
+          <span className="text-xs font-medium text-muted-foreground">{revenue.currency}</span>
         </span>
       </div>
       <div className="mt-2 flex flex-wrap items-end justify-between gap-x-4 gap-y-1 border-t border-border pt-2 text-xs text-muted-foreground">
@@ -34,8 +39,7 @@ export function RevenueEvidenceCard({ revenue }: { revenue: RevenueEvidence }) {
             <div className="flex flex-wrap gap-x-2">
               <dt>{t("chat.revenueEvidence.yoy")}</dt>
               <dd className="tabular-nums font-medium text-foreground">
-                {revenue.year_over_year_pct > 0 ? "+" : ""}
-                {revenue.year_over_year_pct}%
+                {withSign(revenue.year_over_year_pct, (magnitude) => `${magnitude}%`)}
                 {revenue.compared_period_end && (
                   <span className="font-normal text-muted-foreground">
                     {" "}
@@ -55,20 +59,27 @@ export function RevenueEvidenceCard({ revenue }: { revenue: RevenueEvidence }) {
               <dt>{t("chat.revenueEvidence.usd")}</dt>
               <dd className="tabular-nums">
                 {format.format(revenue.usd_value)} USD
-                <span className="text-muted-foreground"> {t("chat.revenueEvidence.fxAt", { date: revenue.fx_date })}</span>
+                <span className="text-muted-foreground">
+                  {" "}
+                  {t("chat.revenueEvidence.fxAt", { date: revenue.fx_date })}
+                </span>
               </dd>
             </div>
           )}
           {revenue.newer_derived_period_end && (
             <div className="flex flex-wrap gap-x-2">
               <dt>{t("chat.revenueEvidence.newerPeriod")}</dt>
-              <dd>{t("chat.revenueEvidence.newerDerived", { date: revenue.newer_derived_period_end })}</dd>
+              <dd>
+                {t("chat.revenueEvidence.newerDerived", { date: revenue.newer_derived_period_end })}
+              </dd>
             </div>
           )}
           {revenue.filed_on && (
             <div className="flex flex-wrap gap-x-2">
               <dt>{t("chat.revenueEvidence.filed")}</dt>
-              <dd className="tabular-nums"><time dateTime={revenue.filed_on}>{revenue.filed_on}</time></dd>
+              <dd className="tabular-nums">
+                <time dateTime={revenue.filed_on}>{revenue.filed_on}</time>
+              </dd>
             </div>
           )}
         </dl>

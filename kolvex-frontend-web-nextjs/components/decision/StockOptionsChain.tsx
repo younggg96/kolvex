@@ -3,9 +3,21 @@
 import { Fragment, useState, type ReactNode } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { SegmentedControl } from "@/components/ui/segmented-control";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCachedResource } from "@/hooks/useCachedResource";
 import { useTranslation } from "@/lib/i18n";
@@ -22,28 +34,83 @@ import {
 import { cn } from "@/lib/utils";
 import { FactList, SourceNote } from "./SecData";
 import { useCopy } from "./shared";
+import { withSign } from "@/lib/format";
 
 type Columns = "quote" | "greeks" | "trading" | "all";
 type Layout = "both" | OptionSide;
 type Range = "near" | "all";
 type ColumnKey =
-  | "bid" | "ask" | "mid" | "last" | "change" | "change_pct" | "volume" | "open_interest" | "iv"
-  | "delta" | "gamma" | "theta" | "vega" | "rho"
-  | "open" | "high" | "low" | "vwap" | "trade_count" | "prev_close" | "bid_size" | "ask_size" | "spread";
+  | "bid"
+  | "ask"
+  | "mid"
+  | "last"
+  | "change"
+  | "change_pct"
+  | "volume"
+  | "open_interest"
+  | "iv"
+  | "delta"
+  | "gamma"
+  | "theta"
+  | "vega"
+  | "rho"
+  | "open"
+  | "high"
+  | "low"
+  | "vwap"
+  | "trade_count"
+  | "prev_close"
+  | "bid_size"
+  | "ask_size"
+  | "spread";
 
 const COLUMN_SETS: Record<Exclude<Columns, "all">, ColumnKey[]> = {
   quote: ["bid", "ask", "mid", "last", "change_pct", "volume", "open_interest", "iv"],
   greeks: ["iv", "delta", "gamma", "theta", "vega", "rho"],
-  trading: ["open", "high", "low", "vwap", "trade_count", "prev_close", "bid_size", "ask_size", "spread"],
+  trading: [
+    "open",
+    "high",
+    "low",
+    "vwap",
+    "trade_count",
+    "prev_close",
+    "bid_size",
+    "ask_size",
+    "spread",
+  ],
 };
 const ALL_COLUMNS: ColumnKey[] = [
-  "bid", "ask", "mid", "spread", "bid_size", "ask_size", "last", "change", "change_pct", "volume", "open_interest",
-  "iv", "delta", "gamma", "theta", "vega", "rho", "open", "high", "low", "vwap", "trade_count", "prev_close",
+  "bid",
+  "ask",
+  "mid",
+  "spread",
+  "bid_size",
+  "ask_size",
+  "last",
+  "change",
+  "change_pct",
+  "volume",
+  "open_interest",
+  "iv",
+  "delta",
+  "gamma",
+  "theta",
+  "vega",
+  "rho",
+  "open",
+  "high",
+  "low",
+  "vwap",
+  "trade_count",
+  "prev_close",
 ];
 const NEAR = 12;
 
 class OptionsError extends Error {
-  constructor(public code: string, public status: number) {
+  constructor(
+    public code: string,
+    public status: number,
+  ) {
     super(code);
   }
 }
@@ -51,7 +118,11 @@ class OptionsError extends Error {
 async function loadChain(key: string, signal: AbortSignal): Promise<OptionsChain> {
   const response = await fetch(key, { signal, cache: "no-store" });
   const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new OptionsError(typeof body?.error === "string" ? body.error : "unavailable", response.status);
+  if (!response.ok)
+    throw new OptionsError(
+      typeof body?.error === "string" ? body.error : "unavailable",
+      response.status,
+    );
   return body;
 }
 
@@ -61,18 +132,25 @@ function useFormat() {
   const fixed = (digits: number) => (value: number | null | undefined) =>
     value === null || value === undefined || !Number.isFinite(value)
       ? "—"
-      : new Intl.NumberFormat(intl, { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value);
+      : new Intl.NumberFormat(intl, {
+          minimumFractionDigits: digits,
+          maximumFractionDigits: digits,
+        }).format(value);
   const money = fixed(2);
   return {
     money,
     greek: fixed(4),
     price: (value: number | null | undefined) => (money(value) === "—" ? "—" : `$${money(value)}`),
     int: (value: number | null | undefined) =>
-      value === null || value === undefined || !Number.isFinite(value) ? "—" : new Intl.NumberFormat(intl).format(value),
+      value === null || value === undefined || !Number.isFinite(value)
+        ? "—"
+        : new Intl.NumberFormat(intl).format(value),
     compact: (value: number | null | undefined) =>
       value === null || value === undefined || !Number.isFinite(value)
         ? "—"
-        : new Intl.NumberFormat(intl, { notation: "compact", maximumFractionDigits: 2 }).format(value),
+        : new Intl.NumberFormat(intl, { notation: "compact", maximumFractionDigits: 2 }).format(
+            value,
+          ),
     percent: (value: number | null | undefined, signed = false) =>
       value === null || value === undefined || !Number.isFinite(value)
         ? "—"
@@ -84,14 +162,25 @@ function useFormat() {
     signed: (value: number | null | undefined) =>
       value === null || value === undefined || !Number.isFinite(value)
         ? "—"
-        : `${value > 0 ? "+" : value < 0 ? "−" : ""}${money(Math.abs(value))}`,
+        : withSign(value, money),
     date: (value: string) =>
       Number.isFinite(Date.parse(value))
-        ? new Date(`${value.slice(0, 10)}T12:00:00Z`).toLocaleDateString(intl, { timeZone: "UTC", month: "short", day: "numeric", year: "numeric" })
+        ? new Date(`${value.slice(0, 10)}T12:00:00Z`).toLocaleDateString(intl, {
+            timeZone: "UTC",
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })
         : "—",
     time: (value: string | null | undefined) =>
       value && Number.isFinite(Date.parse(value))
-        ? new Date(value).toLocaleString(intl, { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" })
+        ? new Date(value).toLocaleString(intl, {
+            month: "numeric",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+          })
         : "—",
   };
 }
@@ -105,10 +194,14 @@ export default function StockOptionsChain({ symbol }: { symbol: string }) {
   const [range, setRange] = useState<Range>("near");
   const [selected, setSelected] = useState<OptionContract | null>(null);
   const key = optionsChainKey(symbol, expiration);
-  const { data, loading, refreshing, error, refresh } = useCachedResource(key, (signal) => loadChain(key, signal), {
-    ttl: 60_000,
-    timeout: 50_000,
-  });
+  const { data, loading, refreshing, error, refresh } = useCachedResource(
+    key,
+    (signal) => loadChain(key, signal),
+    {
+      ttl: 60_000,
+      timeout: 50_000,
+    },
+  );
   const chain = data?.symbol === symbol.toUpperCase() ? data : undefined;
   const spot = chain?.underlying_price ?? null;
   const allRows = chain ? strikeRows(chain.contracts) : [];
@@ -144,15 +237,29 @@ export default function StockOptionsChain({ symbol }: { symbol: string }) {
   const value = (contract: OptionContract | undefined, column: ColumnKey): ReactNode => {
     if (!contract) return "—";
     switch (column) {
-      case "bid": case "ask": case "mid": case "last": case "open": case "high": case "low": case "vwap": case "prev_close":
+      case "bid":
+      case "ask":
+      case "mid":
+      case "last":
+      case "open":
+      case "high":
+      case "low":
+      case "vwap":
+      case "prev_close":
         return f.money(contract[column]);
       case "spread":
         return f.money(bidAskSpread(contract));
       case "change":
         return <span className={tone(contract.change)}>{f.signed(contract.change)}</span>;
       case "change_pct":
-        return <span className={tone(contract.change_pct)}>{f.percent(contract.change_pct, true)}</span>;
-      case "volume": case "open_interest": case "trade_count": case "bid_size": case "ask_size":
+        return (
+          <span className={tone(contract.change_pct)}>{f.percent(contract.change_pct, true)}</span>
+        );
+      case "volume":
+      case "open_interest":
+      case "trade_count":
+      case "bid_size":
+      case "ask_size":
         return f.int(contract[column]);
       case "iv":
         return f.percent(contract.iv);
@@ -168,7 +275,10 @@ export default function StockOptionsChain({ symbol }: { symbol: string }) {
       "期权数据源尚未配置。需要在后端设置 Alpaca API Key 后才能显示。",
     ),
     no_options: c(`${symbol} has no listed options.`, `${symbol} 没有上市期权。`),
-    rate_limited: c("The options data source is busy. Try again in a minute.", "期权数据源请求过于频繁，请稍后再试。"),
+    rate_limited: c(
+      "The options data source is busy. Try again in a minute.",
+      "期权数据源请求过于频繁，请稍后再试。",
+    ),
     unauthorized: c("Sign in to view options data.", "登录后可查看期权数据。"),
     unavailable: c("Options data could not be loaded. Try again.", "期权数据加载失败，请重试。"),
   };
@@ -229,7 +339,8 @@ export default function StockOptionsChain({ symbol }: { symbol: string }) {
           </h2>
           {chain && (
             <p className="mt-1 text-sm text-muted-foreground">
-              {c("Underlying", "标的价")} <span className="figure text-foreground">{f.price(spot)}</span>
+              {c("Underlying", "标的价")}{" "}
+              <span className="figure text-foreground">{f.price(spot)}</span>
               {" · "}
               {c("As of", "数据时间")} {f.time(chain.as_of)}
               {chain.source.delayed && ` · ${c("Delayed", "延迟")} (${chain.source.feed})`}
@@ -265,7 +376,10 @@ export default function StockOptionsChain({ symbol }: { symbol: string }) {
             title={c("Refresh options", "刷新期权数据")}
           >
             {loading || refreshing ? (
-              <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+              <Loader2
+                className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                aria-hidden="true"
+              />
             ) : (
               <RefreshCw className="h-4 w-4" aria-hidden="true" />
             )}
@@ -277,17 +391,43 @@ export default function StockOptionsChain({ symbol }: { symbol: string }) {
         <div role="status">
           <span className="sr-only">{c("Loading options…", "正在加载期权…")}</span>
           <div aria-hidden="true" className="space-y-6">
-            {[0, 1].map((group) => <div key={group} className="grid grid-cols-2 gap-6 border-b border-border pb-6 lg:grid-cols-4">
-              {[0, 1, 2, 3].map((i) => <div key={i}><Skeleton className="h-3 w-24 rounded-md" /><Skeleton className="mt-2 h-6 w-20 rounded-md" /></div>)}
-            </div>)}
-            <div className="flex flex-wrap items-center gap-2"><Skeleton className="h-9 w-48 rounded-full" /><Skeleton className="h-9 w-40 rounded-full" /></div>
+            {[0, 1].map((group) => (
+              <div
+                key={group}
+                className="grid grid-cols-2 gap-6 border-b border-border pb-6 lg:grid-cols-4"
+              >
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i}>
+                    <Skeleton className="h-3 w-24 rounded-md" />
+                    <Skeleton className="mt-2 h-6 w-20 rounded-md" />
+                  </div>
+                ))}
+              </div>
+            ))}
+            <div className="flex flex-wrap items-center gap-2">
+              <Skeleton className="h-9 w-48 rounded-full" />
+              <Skeleton className="h-9 w-40 rounded-full" />
+            </div>
             <div className="glass-card overflow-hidden rounded-3xl border border-foreground/10 bg-card-glass">
-              <div className="flex justify-around bg-muted px-3 py-3"><Skeleton className="h-4 w-16 rounded-md" /><Skeleton className="h-4 w-12 rounded-md" /><Skeleton className="h-4 w-16 rounded-md" /></div>
-              {Array.from({ length: 10 }, (_, i) => <div key={i} className="grid grid-cols-[1fr_1fr_1fr_5rem_1fr_1fr_1fr] items-center gap-3 border-t border-border px-3 py-3">
-                {[0, 1, 2].map((j) => <Skeleton key={j} className="ml-auto h-4 w-12 rounded-md" />)}
-                <Skeleton className="mx-auto h-4 w-14 rounded-md" />
-                {[0, 1, 2].map((j) => <Skeleton key={j} className="ml-auto h-4 w-12 rounded-md" />)}
-              </div>)}
+              <div className="flex justify-around bg-muted px-3 py-3">
+                <Skeleton className="h-4 w-16 rounded-md" />
+                <Skeleton className="h-4 w-12 rounded-md" />
+                <Skeleton className="h-4 w-16 rounded-md" />
+              </div>
+              {Array.from({ length: 10 }, (_, i) => (
+                <div
+                  key={i}
+                  className="grid grid-cols-[1fr_1fr_1fr_5rem_1fr_1fr_1fr] items-center gap-3 border-t border-border px-3 py-3"
+                >
+                  {[0, 1, 2].map((j) => (
+                    <Skeleton key={j} className="ml-auto h-4 w-12 rounded-md" />
+                  ))}
+                  <Skeleton className="mx-auto h-4 w-14 rounded-md" />
+                  {[0, 1, 2].map((j) => (
+                    <Skeleton key={j} className="ml-auto h-4 w-12 rounded-md" />
+                  ))}
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -296,7 +436,9 @@ export default function StockOptionsChain({ symbol }: { symbol: string }) {
           role={failure === "no_options" ? "status" : "alert"}
           className="glass-card rounded-3xl border border-foreground/10 bg-card-glass px-6 py-12 text-center"
         >
-          <p className="text-sm text-muted-foreground">{errorText[failure] ?? errorText.unavailable}</p>
+          <p className="text-sm text-muted-foreground">
+            {errorText[failure] ?? errorText.unavailable}
+          </p>
           {failure !== "no_options" && failure !== "not_configured" && (
             <Button variant="outline" size="sm" className="mt-4" onClick={refresh}>
               {c("Retry", "重试")}
@@ -353,11 +495,19 @@ export default function StockOptionsChain({ symbol }: { symbol: string }) {
               <thead className="sticky top-0 z-[2] bg-muted text-muted-foreground">
                 {layout === "both" && (
                   <tr className="text-xs">
-                    <th colSpan={keys.length} scope="colgroup" className="px-3 pt-3 text-center font-semibold text-foreground">
+                    <th
+                      colSpan={keys.length}
+                      scope="colgroup"
+                      className="px-3 pt-3 text-center font-semibold text-foreground"
+                    >
                       {c("Calls", "看涨 Call")}
                     </th>
                     <th className="sticky left-0 bg-muted md:static" />
-                    <th colSpan={keys.length} scope="colgroup" className="px-3 pt-3 text-center font-semibold text-foreground">
+                    <th
+                      colSpan={keys.length}
+                      scope="colgroup"
+                      className="px-3 pt-3 text-center font-semibold text-foreground"
+                    >
                       {c("Puts", "看跌 Put")}
                     </th>
                   </tr>
@@ -365,16 +515,27 @@ export default function StockOptionsChain({ symbol }: { symbol: string }) {
                 <tr>
                   {layout === "both" &&
                     [...keys].reverse().map((column) => (
-                      <th key={`call-${column}`} scope="col" className="px-3 py-3 text-right font-medium">
+                      <th
+                        key={`call-${column}`}
+                        scope="col"
+                        className="px-3 py-3 text-right font-medium"
+                      >
                         {label[column]}
                       </th>
                     ))}
-                  <th scope="col" className="sticky left-0 bg-muted px-4 py-3 text-center font-medium md:static">
+                  <th
+                    scope="col"
+                    className="sticky left-0 bg-muted px-4 py-3 text-center font-medium md:static"
+                  >
                     {c("Strike", "行权价")}
                   </th>
                   {(layout === "both" ? ["put" as const] : sides).flatMap((side) =>
                     keys.map((column) => (
-                      <th key={`${side}-${column}`} scope="col" className="px-3 py-3 text-right font-medium">
+                      <th
+                        key={`${side}-${column}`}
+                        scope="col"
+                        className="px-3 py-3 text-right font-medium"
+                      >
                         {label[column]}
                       </th>
                     )),
@@ -386,7 +547,10 @@ export default function StockOptionsChain({ symbol }: { symbol: string }) {
                   <Fragment key={row.strike}>
                     {index === spotIndex && (
                       <tr aria-hidden="true">
-                        <td colSpan={width} className="border-y border-primary/60 bg-primary/[0.08] px-4 py-1 text-center text-xs font-medium">
+                        <td
+                          colSpan={width}
+                          className="border-y border-primary/60 bg-primary/[0.08] px-4 py-1 text-center text-xs font-medium"
+                        >
                           {c("Underlying", "标的价")} {f.price(spot)}
                         </td>
                       </tr>
@@ -416,10 +580,7 @@ export default function StockOptionsChain({ symbol }: { symbol: string }) {
             )}
           </div>
           <p className="text-xs text-muted-foreground">
-            {c(
-              "Shaded cells are in the money.",
-              "灰底为价内合约。",
-            )}
+            {c("Shaded cells are in the money.", "灰底为价内合约。")}
           </p>
         </>
       ) : null}
@@ -454,14 +615,25 @@ function ChainMetrics({ chain }: { chain: OptionsChain }) {
     <div className="space-y-6">
       <FactList
         items={[
-          [c("Days to expiration", "距到期"), c(`${m.days_to_expiration} days`, `${m.days_to_expiration} 天`)],
+          [
+            c("Days to expiration", "距到期"),
+            c(`${m.days_to_expiration} days`, `${m.days_to_expiration} 天`),
+          ],
           [c("ATM implied volatility", "平值隐含波动率"), f.percent(m.atm_iv)],
           [
             c("Expected move", "预期波动"),
             move ? (
-              <span title={move.method === "atm_straddle" ? c(`ATM straddle at $${move.strike}`, `$${move.strike} 平值跨式价格`) : c("From ATM IV", "由平值 IV 推算")}>
+              <span
+                title={
+                  move.method === "atm_straddle"
+                    ? c(`ATM straddle at $${move.strike}`, `$${move.strike} 平值跨式价格`)
+                    : c("From ATM IV", "由平值 IV 推算")
+                }
+              >
                 ±{f.price(move.value)}{" "}
-                <span className="text-sm font-normal text-muted-foreground">±{f.money(move.pct)}%</span>
+                <span className="text-sm font-normal text-muted-foreground">
+                  ±{f.money(move.pct)}%
+                </span>
               </span>
             ) : (
               "—"
@@ -473,7 +645,11 @@ function ChainMetrics({ chain }: { chain: OptionsChain }) {
               <span>
                 {f.price(m.max_pain.strike)}{" "}
                 <span className="text-sm font-normal text-muted-foreground">
-                  {m.max_pain_vs_spot_pct === null ? "" : `${m.max_pain_vs_spot_pct > 0 ? "+" : ""}${f.money(m.max_pain_vs_spot_pct)}%`}
+                  {m.max_pain_vs_spot_pct === null
+                    ? ""
+                    : withSign(m.max_pain_vs_spot_pct, (magnitude) => `${f.money(magnitude)}%`, {
+                        digits: 2,
+                      })}
                 </span>
               </span>
             ) : (
@@ -531,7 +707,8 @@ function ContractDialog({
   const f = useFormat();
   const x = contract;
   const text = (value: string | null | undefined) => value || "—";
-  const yesNo = (value: boolean | null) => (value === null ? "—" : value ? c("Yes", "是") : c("No", "否"));
+  const yesNo = (value: boolean | null) =>
+    value === null ? "—" : value ? c("Yes", "是") : c("No", "否");
   const at = (price: string, size: number | null, exchange: string | null) =>
     `${price}${size !== null ? ` × ${f.int(size)}` : ""}${exchange ? ` @ ${exchange}` : ""}`;
   const groups: [string, [string, ReactNode][]][] = x
@@ -551,7 +728,12 @@ function ContractDialog({
           c("Last trade", "最新成交"),
           [
             [c("Price", "价格"), at(f.money(x.last), x.last_size, x.last_exchange)],
-            [c("Change", "涨跌"), <span key="chg" className={tone(x.change)}>{f.signed(x.change)} ({f.percent(x.change_pct, true)})</span>],
+            [
+              c("Change", "涨跌"),
+              <span key="chg" className={tone(x.change)}>
+                {f.signed(x.change)} ({f.percent(x.change_pct, true)})
+              </span>,
+            ],
             [c("Trade condition", "成交条件"), text(x.trade_condition)],
             [c("Trade time", "成交时间"), f.time(x.trade_time)],
           ],
@@ -601,9 +783,26 @@ function ContractDialog({
           c("Contract", "合约"),
           [
             [c("Open interest", "持仓量"), f.int(x.open_interest)],
-            [c("Open interest date", "持仓量日期"), x.open_interest_date ? f.date(x.open_interest_date) : "—"],
-            [c("Moneyness", "价内/价外"), spot === null ? "—" : inTheMoney(x.type, x.strike, spot) ? c("In the money", "价内") : c("Out of the money", "价外")],
-            [c("Style", "行权方式"), x.style === "american" ? c("American", "美式") : x.style === "european" ? c("European", "欧式") : text(x.style)],
+            [
+              c("Open interest date", "持仓量日期"),
+              x.open_interest_date ? f.date(x.open_interest_date) : "—",
+            ],
+            [
+              c("Moneyness", "价内/价外"),
+              spot === null
+                ? "—"
+                : inTheMoney(x.type, x.strike, spot)
+                  ? c("In the money", "价内")
+                  : c("Out of the money", "价外"),
+            ],
+            [
+              c("Style", "行权方式"),
+              x.style === "american"
+                ? c("American", "美式")
+                : x.style === "european"
+                  ? c("European", "欧式")
+                  : text(x.style),
+            ],
             [c("Multiplier", "合约乘数"), f.int(x.multiplier)],
             [c("Underlying", "标的"), text(x.root)],
             [c("Tradable", "可交易"), yesNo(x.tradable)],
@@ -619,7 +818,8 @@ function ContractDialog({
           <>
             <DialogHeader>
               <DialogTitle>
-                {x.root ?? ""} {f.price(x.strike)} {x.type === "call" ? c("Call", "看涨") : c("Put", "看跌")} · {f.date(x.expiration)}
+                {x.root ?? ""} {f.price(x.strike)}{" "}
+                {x.type === "call" ? c("Call", "看涨") : c("Put", "看跌")} · {f.date(x.expiration)}
               </DialogTitle>
               <DialogDescription className="figure break-all">
                 {x.symbol}

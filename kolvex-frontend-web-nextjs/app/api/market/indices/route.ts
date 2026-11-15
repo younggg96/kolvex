@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { quoteCache, CACHE_TTL, QUOTE_CACHE_CONTROL, getCacheKey } from "@/lib/cache";
-
-const BACKEND_API_URL =
-  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://127.0.0.1:8080";
+import { BACKEND_API_URL } from "@/lib/config/backend";
 
 // Major market indices with their Yahoo Finance symbols and display names
 const MAJOR_INDICES = [
@@ -36,11 +34,13 @@ async function fetchHistoryData(symbol: string): Promise<number[]> {
     const response = await fetch(
       `${BACKEND_API_URL}/api/v1/market/history/${encodeURIComponent(symbol)}?period=5d&interval=1d`,
       // Next's Data Cache has no expiry here; freshness comes from quoteCache.
-      { cache: "no-store" }
+      { cache: "no-store" },
     );
     if (!response.ok) return [];
     const data = await response.json();
-    return (data.data || []).map((d: { close?: number }) => d.close || 0).filter((v: number) => v > 0);
+    return (data.data || [])
+      .map((d: { close?: number }) => d.close || 0)
+      .filter((v: number) => v > 0);
   } catch {
     return [];
   }
@@ -65,7 +65,7 @@ export async function GET() {
           fetch(
             `${BACKEND_API_URL}/api/v1/market/quote/${encodeURIComponent(index.symbol)}`,
             // force-dynamic does not stop Next's Data Cache, which never expires here.
-            { cache: "no-store" }
+            { cache: "no-store" },
           ),
           fetchHistoryData(index.symbol),
         ]);
@@ -75,7 +75,12 @@ export async function GET() {
         }
 
         const quoteData: BackendQuote = await quoteResponse.json();
-        if (typeof quoteData.current_price !== "number" || !Number.isFinite(quoteData.current_price) || quoteData.current_price <= 0) throw new Error("Index quote unavailable");
+        if (
+          typeof quoteData.current_price !== "number" ||
+          !Number.isFinite(quoteData.current_price) ||
+          quoteData.current_price <= 0
+        )
+          throw new Error("Index quote unavailable");
 
         const indexData: IndexData = {
           symbol: index.symbol,
@@ -97,7 +102,11 @@ export async function GET() {
 
     const results = await Promise.all(fetchPromises);
     indicesData.push(...results.filter((index): index is IndexData => index !== null));
-    if (!indicesData.length) return NextResponse.json({ error: "Index quotes unavailable" }, { status: 503, headers: { "Cache-Control": "no-store" } });
+    if (!indicesData.length)
+      return NextResponse.json(
+        { error: "Index quotes unavailable" },
+        { status: 503, headers: { "Cache-Control": "no-store" } },
+      );
 
     return NextResponse.json(indicesData, {
       headers: {
@@ -106,9 +115,6 @@ export async function GET() {
     });
   } catch (error) {
     console.error("Error fetching market indices:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch market indices" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch market indices" }, { status: 500 });
   }
 }

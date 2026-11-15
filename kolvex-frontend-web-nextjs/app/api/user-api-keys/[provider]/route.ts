@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-
-const BACKEND_API_URL =
-  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
+import { BACKEND_API_URL } from "@/lib/config/backend";
 
 interface RouteParams {
   params: Promise<{ provider: string }>;
@@ -26,21 +24,18 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const response = await fetch(
-      `${BACKEND_API_URL}/api/v1/user-api-keys/${provider}`,
-      {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      }
-    );
+    const response = await fetch(`${BACKEND_API_URL}/api/v1/user-api-keys/${provider}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       return NextResponse.json(
         { error: errorData.detail || "Failed to delete API key" },
-        { status: response.status }
+        { status: response.status },
       );
     }
 
@@ -48,9 +43,6 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json(data);
   } catch (error) {
     console.error("Delete API Key Error:", error);
-    return NextResponse.json(
-      { error: "Failed to delete API key" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to delete API key" }, { status: 500 });
   }
 }

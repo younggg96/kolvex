@@ -43,6 +43,7 @@ import {
   type RedditSort,
   type RedditStock,
 } from "@/lib/redditOpinions";
+import { withSign } from "@/lib/format";
 
 // Mobile-only rows use the same compact rhythm as listRowTargetClass on mobile
 // (no min height, py-2), matching the YouTube opinions stock list.
@@ -88,7 +89,7 @@ export default function RedditOpinionsPage() {
     const rounded = change === null ? null : Math.round(change);
     return rounded === null
       ? "—"
-      : `${rounded > 0 ? "+" : ""}${number.format(rounded === 0 ? 0 : rounded)}%`;
+      : withSign(rounded, (magnitude) => `${number.format(magnitude)}%`);
   };
   const rankLabel = (row: RedditStock) => {
     if (row.previousRank === null) return t("redditOpinions.new");

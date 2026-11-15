@@ -160,6 +160,6 @@ their vendor/assumption origins, source links, forecast and sensitivity tables.
   flow. Browser layout/interaction QA remains unverified because local browser
   control is disabled in Work settings.
 - Additional regression evidence: `market-quote-sync`, `quote-snapshots`,
-  `landing-quotes`, `stock-discovery`, `stock-news`, Watchlist and virtual-trading
+  `stock-discovery`, `stock-news`, Watchlist and virtual-trading
   tests. Five live local symbols (NVDA/AAPL/MSFT/TSLA/AMD) returned identical full
   batch and single-quote responses with no-store headers and server cache hits.

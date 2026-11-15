@@ -1,109 +1,224 @@
-const { test } = require('node:test');
-const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const vm = require('node:vm');
-const ts = require('typescript');
+const { test } = require("node:test");
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const vm = require("node:vm");
+const ts = require("typescript");
+const { BACKEND_CONFIG, backendConfig } = require("./helpers/backend-config.cjs");
 function fixture(fetch = () => {}) {
   const module = { exports: {} };
-  vm.runInNewContext(ts.transpileModule(fs.readFileSync(require('node:path').join(__dirname, '../lib/stockFundamentals.ts'), 'utf8'), {
-    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
-  }).outputText, { module, exports: module.exports, fetch, Date, URLSearchParams });
+  vm.runInNewContext(
+    ts.transpileModule(
+      fs.readFileSync(require("node:path").join(__dirname, "../lib/stockFundamentals.ts"), "utf8"),
+      {
+        compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+      },
+    ).outputText,
+    { module, exports: module.exports, fetch, Date, URLSearchParams },
+  );
   return module.exports;
 }
-test('financial periods sort by ending date, discard invalid dates, and preserve real zero values', () => {
+test("financial periods sort by ending date, discard invalid dates, and preserve real zero values", () => {
   const { sortPeriods, metricValue } = fixture();
-  const rows = [{period:'2024-01-31', Revenue:0}, {period:'invalid', Revenue:3}, {period:'2026-01-31', Revenue:NaN, 'Total Revenue':9}];
-  assert.equal(sortPeriods(rows)[0].period, '2026-01-31');
+  const rows = [
+    { period: "2024-01-31", Revenue: 0 },
+    { period: "invalid", Revenue: 3 },
+    { period: "2026-01-31", Revenue: NaN, "Total Revenue": 9 },
+  ];
+  assert.equal(sortPeriods(rows)[0].period, "2026-01-31");
   assert.equal(sortPeriods(rows).length, 2);
-  assert.equal(rows[0].period, '2024-01-31');
-  assert.equal(metricValue(rows[0], ['Revenue']), 0);
-  assert.equal(metricValue(rows[2], ['Revenue', 'Total Revenue']), 9);
-  assert.equal(metricValue(rows[2], ['missing']), null);
+  assert.equal(rows[0].period, "2024-01-31");
+  assert.equal(metricValue(rows[0], ["Revenue"]), 0);
+  assert.equal(metricValue(rows[2], ["Revenue", "Total Revenue"]), 9);
+  assert.equal(metricValue(rows[2], ["missing"]), null);
 });
-test('dated EPS surprise is already percent; history surprise is fractional and future estimates survive fallback', () => {
+test("dated EPS surprise is already percent; history surprise is fractional and future estimates survive fallback", () => {
   const { earningsRows } = fixture();
-  const row = {date:'2026-08-20',reported_eps:0,eps_estimate:0,surprise_percent:6.2};
-  assert.equal(earningsRows({earnings_history:[],earnings_dates:[row]})[0].surprise, 6.2);
-  const rows = earningsRows({earnings_history:[{quarter:'2026-04-30',eps_actual:2,eps_estimate:1.9,surprise_percent:.062}],earnings_dates:[{date:'2099-11-20',reported_eps:null,eps_estimate:2.5,surprise_percent:NaN}]});
+  const row = { date: "2026-08-20", reported_eps: 0, eps_estimate: 0, surprise_percent: 6.2 };
+  assert.equal(earningsRows({ earnings_history: [], earnings_dates: [row] })[0].surprise, 6.2);
+  const rows = earningsRows({
+    earnings_history: [
+      { quarter: "2026-04-30", eps_actual: 2, eps_estimate: 1.9, surprise_percent: 0.062 },
+    ],
+    earnings_dates: [
+      { date: "2099-11-20", reported_eps: null, eps_estimate: 2.5, surprise_percent: NaN },
+    ],
+  });
   assert.equal(rows[0].surprise, 6.2);
-  assert.equal(rows.length,2);
-  assert.equal(rows[1].estimate,2.5);
-  assert.equal(rows[1].surprise,null);
+  assert.equal(rows.length, 2);
+  assert.equal(rows[1].estimate, 2.5);
+  assert.equal(rows[1].surprise, null);
 });
-test('CSV protects source strings from formula injection without changing negative numeric values', () => {
+test("CSV protects source strings from formula injection without changing negative numeric values", () => {
   const { csvCell } = fixture();
-  assert.equal(csvCell('=cmd()'), '"\'=cmd()"');
+  assert.equal(csvCell("=cmd()"), '"\'=cmd()"');
   assert.equal(csvCell(-12), '"-12"');
   assert.equal(csvCell('a"b,c'), '"a""b,c"');
 });
-test('failed upstream data rejects and cancellation reaches fetch', async () => {
+test("failed upstream data rejects and cancellation reaches fetch", async () => {
   const signal = new AbortController().signal;
   let seen;
-  const { loadFundamentals } = fixture(async (_key, options) => {seen = options.signal; return {ok:false,status:502};});
-  await assert.rejects(loadFundamentals('/test',signal), {status:502});
+  const { loadFundamentals } = fixture(async (_key, options) => {
+    seen = options.signal;
+    return { ok: false, status: 502 };
+  });
+  await assert.rejects(loadFundamentals("/test", signal), { status: 502 });
   assert.equal(seen, signal);
 });
 function proxyFixture(fetch) {
   const module = { exports: {} };
-  vm.runInNewContext(ts.transpileModule(fs.readFileSync(require('node:path').join(__dirname, '../app/api/market/fundamentals/[symbol]/[kind]/route.ts'), 'utf8'), {
-    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
-  }).outputText, { module, exports:module.exports, fetch, URL, AbortSignal, process:{env:{}}, require:() => ({NextResponse:{json:(body, options={})=>({body,status:options.status??200,headers:options.headers})}}) });
+  vm.runInNewContext(
+    ts.transpileModule(
+      fs.readFileSync(
+        require("node:path").join(
+          __dirname,
+          "../app/api/market/fundamentals/[symbol]/[kind]/route.ts",
+        ),
+        "utf8",
+      ),
+      {
+        compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+      },
+    ).outputText,
+    {
+      module,
+      exports: module.exports,
+      fetch,
+      URL,
+      AbortSignal,
+      process: { env: {} },
+      require: (name) =>
+        name === BACKEND_CONFIG
+          ? backendConfig({})
+          : {
+              NextResponse: {
+                json: (body, options = {}) => ({
+                  body,
+                  status: options.status ?? 200,
+                  headers: options.headers,
+                }),
+              },
+            },
+    },
+  );
   return module.exports.GET;
 }
-test('fundamentals proxy rejects unrecognized data kinds and symbols before fetching', async () => {
-  const GET = proxyFixture(() => {throw new Error('must not fetch');});
-  assert.equal((await GET({url:'http://localhost/test'}, {params:{symbol:'NVDA',kind:'arbitrary'}})).status,400);
-  assert.equal((await GET({url:'http://localhost/test'}, {params:{symbol:'../secret',kind:'earnings'}})).status,400);
+test("fundamentals proxy rejects unrecognized data kinds and symbols before fetching", async () => {
+  const GET = proxyFixture(() => {
+    throw new Error("must not fetch");
+  });
+  assert.equal(
+    (await GET({ url: "http://localhost/test" }, { params: { symbol: "NVDA", kind: "arbitrary" } }))
+      .status,
+    400,
+  );
+  assert.equal(
+    (
+      await GET(
+        { url: "http://localhost/test" },
+        { params: { symbol: "../secret", kind: "earnings" } },
+      )
+    ).status,
+    400,
+  );
 });
-test('fundamentals proxy forwards the reporting frequency and rejects malformed upstream data', async () => {
+test("fundamentals proxy forwards the reporting frequency and rejects malformed upstream data", async () => {
   let requested;
-  const GET = proxyFixture(async (url) => {requested=url;return {ok:true,json:async()=>({data:[]})};});
-  assert.equal((await GET({url:'http://localhost/test?quarterly=true'}, {params:{symbol:'nvda',kind:'cash-flow'}})).status,200);
-  assert.equal(requested,'http://localhost:8080/api/v1/market/cash-flow/NVDA?quarterly=true');
-  const malformed = proxyFixture(async () => ({ok:true,json:async()=>({earnings_history:[]})}));
-  assert.equal((await malformed({url:'http://localhost/test'}, {params:{symbol:'NVDA',kind:'earnings'}})).status,502);
+  const GET = proxyFixture(async (url) => {
+    requested = url;
+    return { ok: true, json: async () => ({ data: [] }) };
+  });
+  assert.equal(
+    (
+      await GET(
+        { url: "http://localhost/test?quarterly=true" },
+        { params: { symbol: "nvda", kind: "cash-flow" } },
+      )
+    ).status,
+    200,
+  );
+  assert.equal(requested, "http://127.0.0.1:8080/api/v1/market/cash-flow/NVDA?quarterly=true");
+  const malformed = proxyFixture(async () => ({
+    ok: true,
+    json: async () => ({ earnings_history: [] }),
+  }));
+  assert.equal(
+    (
+      await malformed(
+        { url: "http://localhost/test" },
+        { params: { symbol: "NVDA", kind: "earnings" } },
+      )
+    ).status,
+    502,
+  );
 });
-test('statement charts read oldest to newest and preserve negative, zero and missing values', () => {
+test("statement charts read oldest to newest and preserve negative, zero and missing values", () => {
   const { statementTrend } = fixture();
-  const input = [{period:'2026-06-30',Income:12}, {period:'2025-12-31',Income:0}, {period:'2026-03-31',Income:null}, {period:'2025-09-30',Income:-4}];
-  const result = statementTrend(input,'Income');
-  assert.equal(result.map(row=>row.value).join(','),'-4,0,,12');
-  assert.equal(result[0].period,'2025-09-30');
-  assert.equal(input[0].period,'2026-06-30');
+  const input = [
+    { period: "2026-06-30", Income: 12 },
+    { period: "2025-12-31", Income: 0 },
+    { period: "2026-03-31", Income: null },
+    { period: "2025-09-30", Income: -4 },
+  ];
+  const result = statementTrend(input, "Income");
+  assert.equal(result.map((row) => row.value).join(","), "-4,0,,12");
+  assert.equal(result[0].period, "2025-09-30");
+  assert.equal(input[0].period, "2026-06-30");
 });
-test('report changes never divide by zero or assign misleading percentages to a negative baseline', () => {
+test("report changes never divide by zero or assign misleading percentages to a negative baseline", () => {
   const { financialChange } = fixture();
-  assert.equal(financialChange(12,8).relative,.5);
-  assert.equal(financialChange(-2,-4).absolute,2);
-  assert.equal(financialChange(-2,-4).relative,null);
-  assert.equal(financialChange(12,0).relative,null);
-  assert.equal(financialChange(0,8).relative,-1);
-  assert.equal(financialChange(null,8),null);
-  assert.equal(financialChange(Infinity,8),null);
+  assert.equal(financialChange(12, 8).relative, 0.5);
+  assert.equal(financialChange(-2, -4).absolute, 2);
+  assert.equal(financialChange(-2, -4).relative, null);
+  assert.equal(financialChange(12, 0).relative, null);
+  assert.equal(financialChange(0, 8).relative, -1);
+  assert.equal(financialChange(null, 8), null);
+  assert.equal(financialChange(Infinity, 8), null);
 });
-test('EPS beat and miss use actual vs estimate, preserve losses and zero, and require both values', () => {
+test("EPS beat and miss use actual vs estimate, preserve losses and zero, and require both values", () => {
   const { epsOutcome } = fixture();
-  assert.equal(epsOutcome(2.22,2.09).kind,'beat');
-  assert.equal(epsOutcome(2.22,2.09).delta,.13);
-  assert.equal(epsOutcome(1.8,2.09).kind,'miss');
-  assert.equal(epsOutcome(-.1,-.2).kind,'beat');
-  assert.equal(epsOutcome(0,0).kind,'met');
-  assert.equal(epsOutcome(.1+.2,.3).kind,'met');
-  assert.equal(epsOutcome(null,2.09),null);
-  assert.equal(epsOutcome(2.22,null),null);
+  assert.equal(epsOutcome(2.22, 2.09).kind, "beat");
+  assert.equal(epsOutcome(2.22, 2.09).delta, 0.13);
+  assert.equal(epsOutcome(1.8, 2.09).kind, "miss");
+  assert.equal(epsOutcome(-0.1, -0.2).kind, "beat");
+  assert.equal(epsOutcome(0, 0).kind, "met");
+  assert.equal(epsOutcome(0.1 + 0.2, 0.3).kind, "met");
+  assert.equal(epsOutcome(null, 2.09), null);
+  assert.equal(epsOutcome(2.22, null), null);
 });
-test('overview ratios require finite inputs and positive denominators without losing zero', () => {
+test("overview ratios require finite inputs and positive denominators without losing zero", () => {
   const { overviewRatio } = fixture();
   assert.equal(overviewRatio(0, 5), 0);
   assert.equal(overviewRatio(20, 5), 4);
-  for (const [a, b] of [[null, 5], [20, 0], [20, -5], [Infinity, 5], [20, NaN]]) assert.equal(overviewRatio(a, b), null);
+  for (const [a, b] of [
+    [null, 5],
+    [20, 0],
+    [20, -5],
+    [Infinity, 5],
+    [20, NaN],
+  ])
+    assert.equal(overviewRatio(a, b), null);
 });
-test('overview proxy validates identity and avoids caching partial source failures', async () => {
-  const data = {symbol:'GOOGL', analyzed_at:'2026-10-31T12:00:00Z', unavailable_sources:['income']};
-  const GET = proxyFixture(async () => ({ok:true,json:async()=>data}));
-  const result = await GET({url:'http://localhost/test'}, {params:{symbol:'googl',kind:'overview-metrics'}});
+test("overview proxy validates identity and avoids caching partial source failures", async () => {
+  const data = {
+    symbol: "GOOGL",
+    analyzed_at: "2026-10-31T12:00:00Z",
+    unavailable_sources: ["income"],
+  };
+  const GET = proxyFixture(async () => ({ ok: true, json: async () => data }));
+  const result = await GET(
+    { url: "http://localhost/test" },
+    { params: { symbol: "googl", kind: "overview-metrics" } },
+  );
   assert.equal(result.status, 200);
-  assert.equal(result.headers['Cache-Control'], 'no-store');
-  data.symbol = 'AAPL';
-  assert.equal((await GET({url:'http://localhost/test'}, {params:{symbol:'googl',kind:'overview-metrics'}})).status, 502);
+  assert.equal(result.headers["Cache-Control"], "no-store");
+  data.symbol = "AAPL";
+  assert.equal(
+    (
+      await GET(
+        { url: "http://localhost/test" },
+        { params: { symbol: "googl", kind: "overview-metrics" } },
+      )
+    ).status,
+    502,
+  );
 });

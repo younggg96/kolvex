@@ -4,19 +4,17 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 const ts = require("typescript");
+const { BACKEND_CONFIG, backendConfig } = require("./helpers/backend-config.cjs");
 
 function load(relativePath, globals = {}) {
   const module = { exports: {} };
   vm.runInNewContext(
-    ts.transpileModule(
-      fs.readFileSync(path.join(__dirname, relativePath), "utf8"),
-      {
-        compilerOptions: {
-          module: ts.ModuleKind.CommonJS,
-          target: ts.ScriptTarget.ES2020,
-        },
+    ts.transpileModule(fs.readFileSync(path.join(__dirname, relativePath), "utf8"), {
+      compilerOptions: {
+        module: ts.ModuleKind.CommonJS,
+        target: ts.ScriptTarget.ES2020,
       },
-    ).outputText,
+    }).outputText,
     {
       module,
       exports: module.exports,
@@ -38,6 +36,8 @@ function proxy(fetch, session = { access_token: "fixture-token" }) {
       env: { NEXT_PUBLIC_BACKEND_API_URL: "https://backend.example" },
     },
     require(name) {
+      if (name === BACKEND_CONFIG)
+        return backendConfig({ NEXT_PUBLIC_BACKEND_API_URL: "https://backend.example" });
       if (name === "next/server") return { NextResponse: Response };
       if (name === "@/lib/supabase/server")
         return {
@@ -99,10 +99,7 @@ test("retry sends the same request ID and forbids cached balances", async () => 
   };
   await api.sendCommand(body);
   await api.sendCommand(body);
-  assert.equal(
-    JSON.parse(sent[0].body).request_id,
-    JSON.parse(sent[1].body).request_id,
-  );
+  assert.equal(JSON.parse(sent[0].body).request_id, JSON.parse(sent[1].body).request_id);
   assert.equal(sent[0].cache, "no-store");
 });
 
@@ -119,10 +116,7 @@ test("proxy attaches only the authenticated session and preserves the command", 
   };
   const response = await call("POST", ["commands"], body);
   assert.equal(response.status, 200);
-  assert.equal(
-    sent.url,
-    "https://backend.example/api/v1/paper-trading/commands",
-  );
+  assert.equal(sent.url, "https://backend.example/api/v1/paper-trading/commands");
   assert.equal(sent.headers.Authorization, "Bearer fixture-token");
   assert.deepEqual(JSON.parse(sent.body), body);
   assert.equal(response.headers.get("Cache-Control"), "private, no-store");
@@ -145,9 +139,7 @@ test("proxy preserves account conflict, validation and unavailable failures", as
     [422, "insufficient_funds"],
     [503, "paper_storage_unavailable"],
   ]) {
-    const response = await proxy(async () =>
-      Response.json({ detail }, { status }),
-    )();
+    const response = await proxy(async () => Response.json({ detail }, { status }))();
     assert.equal(response.status, status);
     assert.equal((await response.json()).error, detail);
   }
@@ -177,8 +169,7 @@ test("upstream session expiry normalizes to the localized unauthorized code", as
 
 test("client retains the server error code and status for recovery", async () => {
   const api = load("../lib/paperTrading.ts", {
-    fetch: async () =>
-      Response.json({ error: "account_conflict" }, { status: 409 }),
+    fetch: async () => Response.json({ error: "account_conflict" }, { status: 409 }),
   });
   await assert.rejects(
     api.sendCommand({ request_id: "id", action: "sync" }),
@@ -246,9 +237,7 @@ test("missing marks use entry and short price rises show a loss", () => {
   const { stockPaperTrading } = load("../lib/stockPaperTrading.ts");
   const account = {
     state: {
-      positions: [
-        { symbol: "AMD", side: "short", quantity: 3, entry_price: "100" },
-      ],
+      positions: [{ symbol: "AMD", side: "short", quantity: 3, entry_price: "100" }],
       orders: [],
       fills: [],
       marks: {},

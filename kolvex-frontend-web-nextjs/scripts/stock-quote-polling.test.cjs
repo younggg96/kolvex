@@ -4,6 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 const ts = require("typescript");
+const { FORMAT, format } = require("./helpers/format.cjs");
 const createCache = require("./helpers/client-cache.cjs");
 
 function fixture({ marketsClosed = false } = {}) {
@@ -54,6 +55,7 @@ function fixture({ marketsClosed = false } = {}) {
         timers.delete(fn);
       },
       require(key) {
+        if (key === FORMAT) return format;
         if (key === "react") return { useEffect: (fn) => cleanup.push(fn()) };
         if (key === "./clientCache") return cache;
         if (key === "./quoteSnapshots") return compile("lib/quoteSnapshots.ts");

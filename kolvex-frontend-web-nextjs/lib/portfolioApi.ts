@@ -14,16 +14,14 @@ import type {
   PublicUsersResponse,
   PrivacySettings,
 } from "@/lib/supabase/database.types";
+import { signedPercent } from "@/lib/format";
 
 const API_PREFIX = "/api/portfolio";
 
 /**
  * API request wrapper
  */
-async function apiRequest<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
+async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_PREFIX}${endpoint}`, {
     ...options,
     headers: {
@@ -34,7 +32,9 @@ async function apiRequest<T>(
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw Object.assign(new Error(error.error || `Request failed: ${response.status}`), { status: response.status });
+    throw Object.assign(new Error(error.error || `Request failed: ${response.status}`), {
+      status: response.status,
+    });
   }
 
   if (options.method && options.method.toUpperCase() !== "GET") invalidateClientCache(API_PREFIX);
@@ -60,9 +60,7 @@ export async function getMyHoldings(signal?: AbortSignal): Promise<PortfolioHold
  * Get user's public holdings data
  * @param userId User ID to fetch public holdings for
  */
-export async function getPublicHoldings(
-  userId: string
-): Promise<PortfolioPublicHoldings | null> {
+export async function getPublicHoldings(userId: string): Promise<PortfolioPublicHoldings | null> {
   try {
     return await apiRequest<PortfolioPublicHoldings>(`/holdings/${userId}`);
   } catch (error) {
@@ -82,8 +80,6 @@ export async function getPublicHoldings(
 export type PublicUsersSortBy = "updated" | "pnl_percent";
 export type SortOrder = "asc" | "desc";
 
-
-
 // ========== Settings ==========
 
 /**
@@ -91,7 +87,7 @@ export type SortOrder = "asc" | "desc";
  * @param isPublic Whether to make portfolio public
  */
 export async function togglePublicSharing(
-  isPublic: boolean
+  isPublic: boolean,
 ): Promise<{ message: string; success: boolean }> {
   return apiRequest<{ message: string; success: boolean }>("/toggle-public", {
     method: "POST",
@@ -108,15 +104,12 @@ export async function togglePublicSharing(
  */
 export async function togglePositionVisibility(
   positionId: string,
-  isHidden: boolean
+  isHidden: boolean,
 ): Promise<{ message: string; success: boolean }> {
-  return apiRequest<{ message: string; success: boolean }>(
-    `/positions/${positionId}/visibility`,
-    {
-      method: "POST",
-      body: JSON.stringify({ is_hidden: isHidden }),
-    }
-  );
+  return apiRequest<{ message: string; success: boolean }>(`/positions/${positionId}/visibility`, {
+    method: "POST",
+    body: JSON.stringify({ is_hidden: isHidden }),
+  });
 }
 
 /**
@@ -126,15 +119,12 @@ export async function togglePositionVisibility(
  */
 export async function batchTogglePositionVisibility(
   positionIds: string[],
-  isHidden: boolean
+  isHidden: boolean,
 ): Promise<{ message: string; success: boolean }> {
-  return apiRequest<{ message: string; success: boolean }>(
-    "/positions/visibility/batch",
-    {
-      method: "POST",
-      body: JSON.stringify({ position_ids: positionIds, is_hidden: isHidden }),
-    }
-  );
+  return apiRequest<{ message: string; success: boolean }>("/positions/visibility/batch", {
+    method: "POST",
+    body: JSON.stringify({ position_ids: positionIds, is_hidden: isHidden }),
+  });
 }
 
 // ========== Privacy Settings ==========
@@ -143,9 +133,7 @@ export async function batchTogglePositionVisibility(
  * Get current privacy settings
  */
 export async function getPrivacySettings(): Promise<PrivacySettings> {
-  const result = await apiRequest<{ settings: PrivacySettings }>(
-    "/privacy-settings"
-  );
+  const result = await apiRequest<{ settings: PrivacySettings }>("/privacy-settings");
   return result.settings;
 }
 
@@ -154,15 +142,12 @@ export async function getPrivacySettings(): Promise<PrivacySettings> {
  * @param settings Partial settings to update
  */
 export async function updatePrivacySettings(
-  settings: Partial<PrivacySettings>
+  settings: Partial<PrivacySettings>,
 ): Promise<PrivacySettings> {
-  const result = await apiRequest<{ settings: PrivacySettings }>(
-    "/privacy-settings",
-    {
-      method: "PUT",
-      body: JSON.stringify(settings),
-    }
-  );
+  const result = await apiRequest<{ settings: PrivacySettings }>("/privacy-settings", {
+    method: "PUT",
+    body: JSON.stringify(settings),
+  });
   return result.settings;
 }
 
@@ -197,7 +182,7 @@ export interface PortfolioHistoryStatus {
  * @param period Time period: 1D, 1W, 1M, 3M, YTD, ALL
  */
 export async function getPortfolioHistory(
-  period: string = "1M"
+  period: string = "1M",
 ): Promise<PortfolioHistoryResponse> {
   return apiRequest<PortfolioHistoryResponse>(`/history?period=${period}`);
 }
@@ -281,9 +266,7 @@ export interface AnalysisHealthResponse {
  * Analyze portfolio using AI
  * @param userContext Optional user-provided context (investment goals, risk tolerance, etc.)
  */
-export async function analyzePortfolio(
-  userContext?: string
-): Promise<PortfolioAnalysisResponse> {
+export async function analyzePortfolio(userContext?: string): Promise<PortfolioAnalysisResponse> {
   return apiRequest<PortfolioAnalysisResponse>("/analysis", {
     method: "POST",
     body: JSON.stringify({ user_context: userContext }),
@@ -299,7 +282,7 @@ export async function analyzePortfolio(
 export async function analyzeStock(
   symbol: string,
   positionData: Record<string, unknown>,
-  includePortfolioContext = true
+  includePortfolioContext = true,
 ): Promise<SingleStockAnalysisResponse> {
   return apiRequest<SingleStockAnalysisResponse>("/analysis/stock", {
     method: "POST",
@@ -328,8 +311,7 @@ function normalizeOptionCost(rawAveragePrice: number, currentPremium: number) {
   }
 
   const looksLikeContractCost =
-    rawAveragePrice > 50 ||
-    (currentPremium > 0 && rawAveragePrice > currentPremium * 10);
+    rawAveragePrice > 50 || (currentPremium > 0 && rawAveragePrice > currentPremium * 10);
   const premiumPerShare = looksLikeContractCost
     ? rawAveragePrice / OPTION_CONTRACT_MULTIPLIER
     : rawAveragePrice;
@@ -391,11 +373,10 @@ export function calculateTotalPnL(holdings: PortfolioHoldings): number {
         if (position.price && position.average_purchase_price) {
           const contracts = Math.abs(position.units || 0);
           const currentPremium = Math.abs(position.price || 0);
-          const currentValue =
-            currentPremium * contracts * OPTION_CONTRACT_MULTIPLIER;
+          const currentValue = currentPremium * contracts * OPTION_CONTRACT_MULTIPLIER;
           const { costPerContract } = normalizeOptionCost(
             Math.abs(position.average_purchase_price || 0),
-            currentPremium
+            currentPremium,
           );
           const costBasis = costPerContract * contracts;
           const isShort = (position.units || 0) < 0;
@@ -416,7 +397,7 @@ export function formatCurrency(
   value: number,
   currency = "USD",
   minimumFractionDigits = 2,
-  maximumFractionDigits = 2
+  maximumFractionDigits = 2,
 ): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -430,8 +411,7 @@ export function formatCurrency(
  * Format percentage
  */
 export function formatPercent(value: number): string {
-  const sign = value >= 0 ? "+" : "";
-  return `${sign}${value.toFixed(2)}%`;
+  return signedPercent(value);
 }
 
 /**

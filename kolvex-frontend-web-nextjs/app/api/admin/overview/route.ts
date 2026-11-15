@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { BACKEND_API_URL } from "@/lib/config/backend";
 
 export const dynamic = "force-dynamic";
-
-const BACKEND_API_URL =
-  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
 
 /**
  * GET /api/admin/overview - Get admin dashboard overview
@@ -33,7 +31,7 @@ export async function GET(request: NextRequest) {
       const errorData = await response.json().catch(() => ({}));
       return NextResponse.json(
         { error: errorData.detail || "Failed to fetch admin overview" },
-        { status: response.status }
+        { status: response.status },
       );
     }
 
@@ -41,9 +39,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(data);
   } catch (error) {
     console.error("Admin API Error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch admin overview" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch admin overview" }, { status: 500 });
   }
 }

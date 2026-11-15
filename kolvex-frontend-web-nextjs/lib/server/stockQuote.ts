@@ -1,6 +1,5 @@
 import { CACHE_TTL, getCacheKey, quoteCache } from "@/lib/cache";
-
-const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://127.0.0.1:8080";
+import { BACKEND_API_URL } from "@/lib/config/backend";
 
 export interface BackendQuote {
   symbol: string;
@@ -44,8 +43,12 @@ export function transformQuote(quote: BackendQuote) {
     week52High: quote.fifty_two_week_high,
     week52Low: quote.fifty_two_week_low,
     marketTime: quote.market_time,
-    updatedAt: typeof quote.market_time === "number" && Number.isFinite(quote.market_time) && quote.market_time > 0
-      ? new Date(quote.market_time * 1000).toISOString() : undefined,
+    updatedAt:
+      typeof quote.market_time === "number" &&
+      Number.isFinite(quote.market_time) &&
+      quote.market_time > 0
+        ? new Date(quote.market_time * 1000).toISOString()
+        : undefined,
     marketState: quote.market_state,
     source: quote.quote_source,
     exchangeTimezone: quote.exchange_timezone_name,
@@ -63,14 +66,21 @@ export async function loadQuote(symbol: string, timeoutMs = 20_000): Promise<Ser
   const key = getCacheKey("quote", symbol);
   const cached = quoteCache.get<ServerQuote>(key);
   if (cached) return cached;
-  const response = await fetch(`${BACKEND_API_URL}/api/v1/market/quote/${encodeURIComponent(symbol)}`, {
-    // force-dynamic does not stop Next's Data Cache, which never expires here.
-    cache: "no-store",
-    signal: AbortSignal.timeout(timeoutMs),
-  });
+  const response = await fetch(
+    `${BACKEND_API_URL}/api/v1/market/quote/${encodeURIComponent(symbol)}`,
+    {
+      // force-dynamic does not stop Next's Data Cache, which never expires here.
+      cache: "no-store",
+      signal: AbortSignal.timeout(timeoutMs),
+    },
+  );
   if (!response.ok) throw new Error(`Backend returned ${response.status}`);
   const data: BackendQuote = await response.json();
-  if (typeof data.current_price !== "number" || !Number.isFinite(data.current_price) || data.current_price <= 0) {
+  if (
+    typeof data.current_price !== "number" ||
+    !Number.isFinite(data.current_price) ||
+    data.current_price <= 0
+  ) {
     throw new Error("Market price unavailable");
   }
   const quote = transformQuote(data);

@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-
-const BACKEND_API_URL =
-  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
+import { BACKEND_API_URL } from "@/lib/config/backend";
 
 interface RouteParams {
   params: Promise<{ conversationId: string }>;
@@ -14,7 +12,7 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { conversationId } = await params;
-    
+
     const supabase = await createServerSupabaseClient();
     const {
       data: { session },
@@ -34,14 +32,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           Authorization: `Bearer ${session.access_token}`,
         },
         cache: "no-store",
-      }
+      },
     );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       return NextResponse.json(
         { error: errorData.detail || "Failed to get messages" },
-        { status: response.status }
+        { status: response.status },
       );
     }
 
@@ -49,10 +47,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json(data);
   } catch (error) {
     console.error("API Error:", error);
-    return NextResponse.json(
-      { error: "Failed to get messages" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to get messages" }, { status: 500 });
   }
 }
 
@@ -62,7 +57,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const { conversationId } = await params;
-    
+
     const supabase = await createServerSupabaseClient();
     const {
       data: { session },
@@ -84,14 +79,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify(body),
-      }
+      },
     );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       return NextResponse.json(
         { error: errorData.detail || "Failed to add message" },
-        { status: response.status }
+        { status: response.status },
       );
     }
 
@@ -99,9 +94,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json(data);
   } catch (error) {
     console.error("API Error:", error);
-    return NextResponse.json(
-      { error: "Failed to add message" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to add message" }, { status: 500 });
   }
 }

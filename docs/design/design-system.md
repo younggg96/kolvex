@@ -30,6 +30,7 @@
 规则：
 - **组件里不写死 hex**，只用语义 token。
 - **涨跌不能只靠颜色**：必须同时有正负号、文字或图标。
+- **正负号统一**：Web 端正数前加「+」，负数前用排版减号「−」（U+2212），不用连字符「-」；0 和四舍五入后为 0 的值不带符号。统一用 `lib/format.ts` 的 `withSign` / `signedPercent`。
 - **选中态用中性填充，不用绿色铺底**（绿色留给品牌操作）。
 - 浅色和深色两套都必须支持，改了颜色两种模式都要看。
 
@@ -62,7 +63,7 @@
 | 加载 | `content-loading`（`ContentLoading`、`PendingValue`） | `LoadingStatus`、`PendingValue` |
 | 说明气泡 | `info-tip` | 信息按钮 |
 | 股票标识 | `stock-badge`、`company-logo` | `StockBadge`、`CompanyLogo` |
-| 情绪 / 强度 | `sentiment-badge`、`weight-indicator` | `OpinionStrength` |
+| 情绪 / 方向 | `components/decision/shared.tsx` 的 `DirectionBadge`；强度用 `weight-indicator` | `OpinionStrength` |
 | 搜索 | `search-input` | `UI.Search`、原生搜索栏 |
 | 玻璃材质 | `--card-glass` | `Glass`（iOS 26+ 用 SwiftUI Liquid Glass，只用于外框） |
 

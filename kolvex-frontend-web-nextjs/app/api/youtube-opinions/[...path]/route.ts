@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { BACKEND_API_URL } from "@/lib/config/backend";
 
 export const dynamic = "force-dynamic";
-
-const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
 
 type RouteParams = { params: Promise<{ path: string[] }> };
 

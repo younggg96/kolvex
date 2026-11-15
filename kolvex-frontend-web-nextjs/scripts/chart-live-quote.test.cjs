@@ -89,7 +89,7 @@ test("default price comes from the quote; 1D compares with the previous close, o
     assert.match(markup, /Quotes may be delayed/);
     assert.doesNotMatch(markup, /\+1\.03%/);
     if (range === "1D") {
-      assert.match(markup, /-1\.61%/);
+      assert.match(markup, /−1\.61%/);
       assert.match(markup, /Regular · vs previous close/);
     } else {
       // Other ranges compare the latest quote with the window's first bar (201.06).
@@ -143,7 +143,7 @@ test("extended prices require matching timestamps newer than the regular quote a
   const markup = render({ quote: extended });
   assert.match(markup, /\$204\.36/);
   assert.match(markup, /After hours · vs close/);
-  assert.match(markup, /\$203\.36.*-1\.61%.*Regular · vs previous close/);
+  assert.match(markup, /\$203\.36.*−1\.61%.*Regular · vs previous close/);
   assert.ok(
     markup.indexOf("$203.36") < markup.indexOf("$204.36"),
     "regular quote stays primary across lists and chart headers",

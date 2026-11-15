@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
-const API_PREFIX = "/api/v1";
+import { BACKEND_API_V1 } from "@/lib/config/backend";
 
 export async function POST(request: NextRequest) {
   let body;
@@ -11,7 +8,7 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json(
       { success: false, error: "Invalid JSON request", error_code: "INVALID_REQUEST" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -19,12 +16,12 @@ export async function POST(request: NextRequest) {
   if (typeof email !== "string" || typeof password !== "string" || !email.trim() || !password) {
     return NextResponse.json(
       { success: false, error: "Email and password are required" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}${API_PREFIX}/auth/signin`, {
+    const response = await fetch(`${BACKEND_API_V1}/auth/signin`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -48,13 +45,17 @@ export async function POST(request: NextRequest) {
           error: "The authentication backend failed. Please check the backend logs.",
           error_code: "BACKEND_INVALID_RESPONSE",
         },
-        { status: 502 }
+        { status: 502 },
       );
     }
     if (!data || typeof data !== "object" || typeof data.success !== "boolean") {
       return NextResponse.json(
-        { success: false, error: "Invalid authentication response", error_code: "BACKEND_INVALID_RESPONSE" },
-        { status: 502 }
+        {
+          success: false,
+          error: "Invalid authentication response",
+          error_code: "BACKEND_INVALID_RESPONSE",
+        },
+        { status: 502 },
       );
     }
     return NextResponse.json(data, { status: response.status });
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
         error: "Cannot reach the authentication backend. Please ensure it is running.",
         error_code: "BACKEND_UNAVAILABLE",
       },
-      { status: 503 }
+      { status: 503 },
     );
   }
 }

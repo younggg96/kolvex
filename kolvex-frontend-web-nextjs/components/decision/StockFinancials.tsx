@@ -1,6 +1,9 @@
 "use client";
 
-import { MetricChartCardSkeleton, StatementSkeleton } from "@/components/decision/StockTabSkeletons";
+import {
+  MetricChartCardSkeleton,
+  StatementSkeleton,
+} from "@/components/decision/StockTabSkeletons";
 import { useState, type ReactNode } from "react";
 import { Download, Plus, X, BarChart3, List } from "lucide-react";
 import {
@@ -40,6 +43,7 @@ import {
 } from "@/lib/stockFundamentals";
 import { cn } from "@/lib/utils";
 import { useCopy } from "./shared";
+import { withSign } from "@/lib/format";
 
 const labels = {
   "Total Revenue": ["Revenue", "营业收入"],
@@ -47,10 +51,7 @@ const labels = {
   "Gross Profit": ["Gross profit", "毛利润"],
   "Operating Expense": ["Operating expenses", "营业费用"],
   "Research And Development": ["Research & development", "研发费用"],
-  "Selling General And Administration": [
-    "Selling & administration",
-    "销售及管理费用",
-  ],
+  "Selling General And Administration": ["Selling & administration", "销售及管理费用"],
   "Operating Income": ["Operating income", "营业利润"],
   "Pretax Income": ["Pretax income", "税前利润"],
   "Tax Provision": ["Income tax", "所得税"],
@@ -149,9 +150,7 @@ export default function StockFinancials({
   const resource = useStatement(symbol, kind, quarterly);
   const periods = sortPeriods(resource.data?.data ?? []);
   const available = new Set(
-    periods.flatMap((period) =>
-      Object.keys(period).filter((key) => finite(period[key])),
-    ),
+    periods.flatMap((period) => Object.keys(period).filter((key) => finite(period[key]))),
   );
   const rows = [
     ...keyRows[kind].filter((key) => available.has(key)),
@@ -159,14 +158,7 @@ export default function StockFinancials({
   ];
   const preferredMetrics =
     kind === "income-statement"
-      ? [
-          "Total Revenue",
-          "Gross Profit",
-          "Operating Income",
-          "Net Income",
-          "Diluted EPS",
-          "EBITDA",
-        ]
+      ? ["Total Revenue", "Gross Profit", "Operating Income", "Net Income", "Diluted EPS", "EBITDA"]
       : keyRows[kind];
   const chartRows = [
     ...preferredMetrics.filter((key) => available.has(key)),
@@ -179,18 +171,11 @@ export default function StockFinancials({
   const exportCsv = () => {
     const csv = [
       [c("Metric", "指标"), ...periods.map((p) => p.period.slice(0, 10))],
-      ...rows.map((key) => [
-        label(key),
-        ...periods.map((p) => (finite(p[key]) ? p[key] : null)),
-      ]),
+      ...rows.map((key) => [label(key), ...periods.map((p) => (finite(p[key]) ? p[key] : null))]),
     ]
-      .map((row) =>
-        row.map((value) => csvCell(value as string | number | null)).join(","),
-      )
+      .map((row) => row.map((value) => csvCell(value as string | number | null)).join(","))
       .join("\r\n");
-    const url = URL.createObjectURL(
-      new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" }),
-    );
+    const url = URL.createObjectURL(new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" }));
     const link = document.createElement("a");
     link.href = url;
     link.download = `${symbol}-${kind}-${quarterly ? "quarterly" : "annual"}.csv`;
@@ -242,12 +227,7 @@ export default function StockFinancials({
             ]}
           />
           <PeriodToggle quarterly={quarterly} onChange={setQuarterly} />
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={!periods.length}
-            onClick={exportCsv}
-          >
+          <Button size="sm" variant="outline" disabled={!periods.length} onClick={exportCsv}>
             <Download aria-hidden="true" className="h-4 w-4" />
             CSV
           </Button>
@@ -267,18 +247,15 @@ export default function StockFinancials({
         retry={resource.refresh}
       />
       {!!periods.length && view === "chart" && (
-        <section
-          aria-label={c("Metric trends", "指标趋势")}
-          className="space-y-4"
-        >
+        <section aria-label={c("Metric trends", "指标趋势")} className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-xs text-muted-foreground">
               {c(
                 "Oldest → newest · Change vs previous report, not year over year",
                 "时间从左到右 · 变化对比上一报告期，非同比",
               )}{" "}
-              · {Math.min(visibleMetrics, chartRows.length)} /{" "}
-              {chartRows.length} {c("metrics", "项指标")}
+              · {Math.min(visibleMetrics, chartRows.length)} / {chartRows.length}{" "}
+              {c("metrics", "项指标")}
             </p>
             <ChartStyleToggle line={line} onChange={setLine} />
           </div>
@@ -294,12 +271,8 @@ export default function StockFinancials({
             ))}
           </div>
           {visibleMetrics < chartRows.length && (
-            <Button
-              variant="outline"
-              onClick={() => setVisibleMetrics((count) => count + 6)}
-            >
-              {c("Show more metrics", "显示更多指标")} (
-              {chartRows.length - visibleMetrics})
+            <Button variant="outline" onClick={() => setVisibleMetrics((count) => count + 6)}>
+              {c("Show more metrics", "显示更多指标")} ({chartRows.length - visibleMetrics})
             </Button>
           )}
           {visibleMetrics > 6 && (
@@ -361,10 +334,7 @@ export default function StockFinancials({
                     >
                       {f.number(p[key])}
                       {index === 0 && (
-                        <LatestReportChange
-                          latest={p[key]}
-                          previous={periods[1]?.[key]}
-                        />
+                        <LatestReportChange latest={p[key]} previous={periods[1]?.[key]} />
                       )}
                     </td>
                   ))}
@@ -403,41 +373,23 @@ const chartTooltip = {
   borderRadius: 12,
   color: "rgb(var(--foreground))",
 };
-export function StockMulticharts({
-  symbol,
-  currency,
-}: {
-  symbol: string;
-  currency: string;
-}) {
+export function StockMulticharts({ symbol, currency }: { symbol: string; currency: string }) {
   const c = useCopy();
   const [quarterly, setQuarterly] = useState(false);
   const [line, setLine] = useState(false);
-  const [selected, setSelected] = useState([
-    "revenue",
-    "income",
-    "margin",
-    "eps",
-  ]);
+  const [selected, setSelected] = useState(["revenue", "income", "margin", "eps"]);
   const resource = useStatement(symbol, "income-statement", quarterly);
   const periods = sortPeriods(resource.data?.data ?? []).reverse();
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h2 className="text-xl font-semibold">
-          {c("Metric trends", "指标趋势")}
-        </h2>
+        <h2 className="text-xl font-semibold">{c("Metric trends", "指标趋势")}</h2>
         <div className="flex flex-wrap items-center gap-3">
           <PeriodToggle quarterly={quarterly} onChange={setQuarterly} />
           <ChartStyleToggle line={line} onChange={setLine} />
           {selected.length < chartMetrics.length && (
             <div className="w-40">
-              <Select
-                value=""
-                onValueChange={(value) =>
-                  setSelected((items) => [...items, value])
-                }
-              >
+              <Select value="" onValueChange={(value) => setSelected((items) => [...items, value])}>
                 <SelectTrigger aria-label={c("Add metric", "添加指标")}>
                   <Plus className="mr-2 h-4 w-4" />
                   <SelectValue placeholder={c("Add metric", "添加指标")} />
@@ -457,7 +409,12 @@ export function StockMulticharts({
         </div>
       </div>
       <FinancialState
-        skeleton={<div className="grid gap-4 lg:grid-cols-2"><MetricChartCardSkeleton /><MetricChartCardSkeleton /></div>}
+        skeleton={
+          <div className="grid gap-4 lg:grid-cols-2">
+            <MetricChartCardSkeleton />
+            <MetricChartCardSkeleton />
+          </div>
+        }
         loading={resource.loading}
         error={Boolean(resource.error)}
         empty={!periods.length}
@@ -465,10 +422,7 @@ export function StockMulticharts({
       />
       {!!periods.length && !selected.length && (
         <p className="py-8 text-sm text-muted-foreground">
-          {c(
-            "Add a metric to start comparing financial trends.",
-            "添加指标，开始对比财务趋势。",
-          )}
+          {c("Add a metric to start comparing financial trends.", "添加指标，开始对比财务趋势。")}
         </p>
       )}
       {!!periods.length && (
@@ -501,11 +455,7 @@ export function StockMulticharts({
                     variant="ghost"
                     size="sm"
                     aria-label={c(`Remove ${metric.en}`, `移除${metric.zh}`)}
-                    onClick={() =>
-                      setSelected((items) =>
-                        items.filter((item) => item !== id),
-                      )
-                    }
+                    onClick={() => setSelected((items) => items.filter((item) => item !== id))}
                   >
                     <X className="h-4 w-4" />
                   </Button>
@@ -546,13 +496,7 @@ function ChartStyleToggle({
   );
 }
 
-function LatestReportChange({
-  latest,
-  previous,
-}: {
-  latest: unknown;
-  previous: unknown;
-}) {
+function LatestReportChange({ latest, previous }: { latest: unknown; previous: unknown }) {
   const c = useCopy();
   const f = useFinancialFormat();
   const change = financialChange(latest, previous);
@@ -560,9 +504,10 @@ function LatestReportChange({
   const value = change.relative === null ? change.absolute : change.relative;
   return (
     <span className="mt-1 block text-xs text-muted-foreground">
-      {value >= 0 ? "+" : ""}
-      {change.relative === null ? f.number(value) : f.percent(value)} ·{" "}
-      {c("vs prior report", "较上期")}
+      {withSign(value, (magnitude) =>
+        change.relative === null ? f.number(magnitude) : f.percent(magnitude),
+      )}{" "}
+      · {c("vs prior report", "较上期")}
     </span>
   );
 }
@@ -586,14 +531,11 @@ export function FinancialMetricChart({
   const f = useFinancialFormat();
   const latest = data[data.length - 1];
   const previous = data[data.length - 2];
-  const format = (value: unknown) =>
-    ratio ? f.percent(value) : f.number(value);
+  const format = (value: unknown) => (ratio ? f.percent(value) : f.number(value));
   const change = financialChange(latest?.value, previous?.value);
   const chartData = data.map((point) => ({
     ...point,
-    label: Number.isFinite(Date.parse(point.period))
-      ? f.date(point.period)
-      : point.period,
+    label: Number.isFinite(Date.parse(point.period)) ? f.date(point.period) : point.period,
   }));
   const axes = (
     <>
@@ -626,11 +568,7 @@ export function FinancialMetricChart({
         itemStyle={{ color: "rgb(var(--foreground))" }}
         formatter={(value) => [format(value), title]}
       />
-      <ReferenceLine
-        y={0}
-        stroke="rgb(var(--muted-foreground))"
-        strokeOpacity={0.5}
-      />
+      <ReferenceLine y={0} stroke="rgb(var(--muted-foreground))" strokeOpacity={0.5} />
     </>
   );
   return (
@@ -642,20 +580,19 @@ export function FinancialMetricChart({
         </h3>
         {action}
       </div>
-      <p className="figure mt-2 text-2xl font-semibold">
-        {format(latest?.value)}
-      </p>
+      <p className="figure mt-2 text-2xl font-semibold">{format(latest?.value)}</p>
       <p className="mt-2 min-h-5 text-xs text-muted-foreground">
         {change ? (
           <>
             <span className="figure">
-              {change.absolute >= 0 ? "+" : ""}
-              {ratio
-                ? `${f.number(change.absolute * 100, false)} ${c("pp", "个百分点")}`
-                : format(change.absolute)}
+              {withSign(change.absolute, (magnitude) =>
+                ratio
+                  ? `${f.number(magnitude * 100, false)} ${c("pp", "个百分点")}`
+                  : format(magnitude),
+              )}
               {!ratio &&
                 change.relative !== null &&
-                ` (${change.relative >= 0 ? "+" : ""}${f.percent(change.relative)})`}
+                ` (${withSign(change.relative, f.percent, { digits: 4 })})`}
             </span>{" "}
             · {c("vs previous report", "较上一报告期")}
           </>
@@ -663,9 +600,7 @@ export function FinancialMetricChart({
           c("No comparable previous report", "暂无可比上一期")
         )}
       </p>
-      <p className="mt-1 text-xs text-muted-foreground">
-        {chartData[chartData.length - 1]?.label}
-      </p>
+      <p className="mt-1 text-xs text-muted-foreground">{chartData[chartData.length - 1]?.label}</p>
       <div
         className="mt-6 h-60"
         role="img"
@@ -707,9 +642,7 @@ export function FinancialMetricChart({
           {chartData.map((point) => (
             <div key={point.period} className="flex justify-between gap-4 py-2">
               <dt>{point.label}</dt>
-              <dd className="figure font-medium text-foreground">
-                {format(point.value)}
-              </dd>
+              <dd className="figure font-medium text-foreground">{format(point.value)}</dd>
             </div>
           ))}
         </dl>

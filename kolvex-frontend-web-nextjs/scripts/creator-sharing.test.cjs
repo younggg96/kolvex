@@ -4,6 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 const ts = require("typescript");
+const { BACKEND_CONFIG, backendConfig } = require("./helpers/backend-config.cjs");
 
 function load(filename, mocks = {}, globals = {}) {
   const module = { exports: {} };
@@ -19,7 +20,11 @@ function load(filename, mocks = {}, globals = {}) {
       URLSearchParams,
       ...globals,
       require: (name) =>
-        name in mocks ? mocks[name] : load(path.resolve(path.dirname(filename), name + ".ts")),
+        name === BACKEND_CONFIG
+          ? backendConfig({ NEXT_PUBLIC_BACKEND_API_URL: "https://backend.example" })
+          : name in mocks
+            ? mocks[name]
+            : load(path.resolve(path.dirname(filename), name + ".ts")),
     },
   );
   return module.exports;

@@ -4,19 +4,26 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 const ts = require("typescript");
+const { FORMAT, format } = require("./helpers/format.cjs");
 const moduleFixture = { exports: {} };
 vm.runInNewContext(
   ts.transpileModule(fs.readFileSync(path.join(__dirname, "../lib/opinionOutcome.ts"), "utf8"), {
     compilerOptions: { module: ts.ModuleKind.CommonJS },
   }).outputText,
-  { exports: moduleFixture.exports, Math, Number, String },
+  {
+    exports: moduleFixture.exports,
+    Math,
+    Number,
+    String,
+    require: (name) => (name === FORMAT ? format : undefined),
+  },
 );
 const { signedPercent, outcomeTone, outcomeRows } = moduleFixture.exports;
 const plain = (value) => JSON.parse(JSON.stringify(value));
 
 test("percentages always carry a sign and never show a signed zero", () => {
   assert.equal(signedPercent(3.24), "+3.2%");
-  assert.equal(signedPercent(-12.96), "-13.0%");
+  assert.equal(signedPercent(-12.96), "−13.0%");
   assert.equal(signedPercent(0.04), "0.0%");
   assert.equal(signedPercent(-0.04), "0.0%");
   assert.equal(outcomeTone(0.04), "flat");
@@ -50,7 +57,7 @@ const rowsOf = (value, horizons = [5, 20]) => plain(outcomeRows(value, horizons)
 test("a young opinion shows only the move so far, never a zero for unfinished periods", () => {
   const young = outcome({ 5: pending, 20: pending }, { sessions: 3, ...scored(-2.14, 0.4) });
   assert.deepEqual(rowsOf(young), [
-    { kind: "toDate", days: 3, stock: "-2.1%", tone: "negative", benchmark: "+0.4%" },
+    { kind: "toDate", days: 3, stock: "−2.1%", tone: "negative", benchmark: "+0.4%" },
   ]);
 });
 
@@ -74,7 +81,7 @@ test("once every period is finished there is no so-far row", () => {
     rowsOf(old).map((item) => [item.kind, item.days, item.stock, item.benchmark]),
     [
       ["horizon", 5, "+10.0%", "+2.0%"],
-      ["horizon", 20, "-4.5%", null],
+      ["horizon", 20, "−4.5%", null],
     ],
   );
 });

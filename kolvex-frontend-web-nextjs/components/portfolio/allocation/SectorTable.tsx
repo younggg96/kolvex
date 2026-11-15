@@ -16,7 +16,7 @@ import {
 import { SortableHeader } from "@/components/ui/sortable-header";
 import { cn } from "@/lib/utils";
 import type { SectorTableProps, SortKey } from "./types";
-import { formatCurrency } from "./utils";
+import { formatCurrency } from "@/lib/portfolioApi";
 import { marketStockHref } from "@/lib/stockLinks";
 
 // ================== SECTOR TABLE COMPONENT ==================
@@ -74,8 +74,7 @@ export function SectorTable({
       <TableBody>
         {sectorData.map((sector) => {
           const isPositive = sector.gain >= 0;
-          const allocation =
-            totalValue > 0 ? (sector.value / totalValue) * 100 : 0;
+          const allocation = totalValue > 0 ? (sector.value / totalValue) * 100 : 0;
           const isHovered = hoveredSector === sector.name;
           const isExpanded = expandedSectors.has(sector.name);
 
@@ -88,9 +87,7 @@ export function SectorTable({
                   // Mirrors the donut/legend highlight, so it uses the neutral
                   // selected surface rather than a green tint that would read
                   // as a performance signal.
-                  isHovered || isExpanded
-                    ? "bg-secondary hover:bg-secondary"
-                    : ""
+                  isHovered || isExpanded ? "bg-secondary hover:bg-secondary" : "",
                 )}
                 onClick={() => toggleSector(sector.name)}
                 onMouseEnter={() => setHoveredSector(sector.name)}
@@ -101,22 +98,17 @@ export function SectorTable({
                     <ChevronRight
                       className={cn(
                         "w-4 h-4 text-muted-foreground transition-transform flex-shrink-0",
-                        isExpanded && "rotate-90"
+                        isExpanded && "rotate-90",
                       )}
                     />
                     <div
                       className="w-8 h-8 rounded-2xl flex items-center justify-center flex-shrink-0"
                       style={{ backgroundColor: sector.color + "30" }}
                     >
-                      <div
-                        className="w-4 h-4 rounded"
-                        style={{ backgroundColor: sector.color }}
-                      />
+                      <div className="w-4 h-4 rounded" style={{ backgroundColor: sector.color }} />
                     </div>
                     <div>
-                      <div className="font-medium text-foreground">
-                        {sector.name}
-                      </div>
+                      <div className="font-medium text-foreground">{sector.name}</div>
                       <div className="text-xs text-muted-foreground">
                         {sector.count} item
                         {sector.count !== 1 ? "s" : ""}
@@ -173,8 +165,7 @@ export function SectorTable({
               {isExpanded &&
                 sector.positions.map((aggPos, posIndex) => {
                   const posIsPositive = aggPos.gain >= 0;
-                  const posAllocation =
-                    totalValue > 0 ? (aggPos.value / totalValue) * 100 : 0;
+                  const posAllocation = totalValue > 0 ? (aggPos.value / totalValue) * 100 : 0;
                   const hasMultiple = aggPos.subPositions.length > 1;
 
                   return (
@@ -190,11 +181,7 @@ export function SectorTable({
                             onClick={(event) => event.stopPropagation()}
                             className="rounded-2xl underline-offset-4 hover:opacity-90 focus-visible:outline-none "
                           >
-                            <CompanyLogo
-                              symbol={aggPos.displaySymbol}
-                              size="sm"
-                              border="light"
-                            />
+                            <CompanyLogo symbol={aggPos.displaySymbol} size="sm" border="light" />
                           </Link>
                           <div className="flex flex-col">
                             <div className="flex items-center gap-1.5">

@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
-const API_PREFIX = "/api/v1";
+import { BACKEND_API_V1 } from "@/lib/config/backend";
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,17 +7,14 @@ export async function POST(request: NextRequest) {
     const { provider, redirectTo } = body;
 
     if (!provider) {
-      return NextResponse.json(
-        { success: false, error: "Provider is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "Provider is required" }, { status: 400 });
     }
 
     // 获取重定向 URL
     const origin = request.headers.get("origin") || request.nextUrl.origin;
     const callbackUrl = `${origin}/auth/callback`;
 
-    const response = await fetch(`${API_BASE_URL}${API_PREFIX}/auth/oauth/url`, {
+    const response = await fetch(`${BACKEND_API_V1}/auth/oauth/url`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -31,10 +26,10 @@ export async function POST(request: NextRequest) {
     });
 
     const data = await response.json();
-    
+
     // Create response with cookie to store redirectTo
     const jsonResponse = NextResponse.json(data, { status: response.status });
-    
+
     // Store the redirectTo URL in a cookie for the callback to use
     if (redirectTo) {
       jsonResponse.cookies.set("auth_redirect_to", redirectTo, {
@@ -45,7 +40,7 @@ export async function POST(request: NextRequest) {
         path: "/",
       });
     }
-    
+
     return jsonResponse;
   } catch (error) {
     console.error("OAuth API error:", error);
@@ -54,8 +49,7 @@ export async function POST(request: NextRequest) {
         success: false,
         error: "Internal server error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-

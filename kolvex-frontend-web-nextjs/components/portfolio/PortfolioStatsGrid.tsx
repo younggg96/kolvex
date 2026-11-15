@@ -2,6 +2,7 @@ import { EyeOff } from "lucide-react";
 import { formatCurrency, formatPercent } from "@/lib/portfolioApi";
 import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { withSign } from "@/lib/format";
 
 interface PortfolioStatsGridProps {
   totalValue: number | string; // "***" if hidden
@@ -82,15 +83,13 @@ export function PortfolioStatsGrid({
       <Stat
         label={t("portfolio.stats.unrealizedPnl")}
         tone={pnlTone}
-        value={
-          isHidden(totalPnL)
-            ? totalPnL
-            : `${totalPnL >= 0 ? "+" : "−"}${formatCurrency(Math.abs(totalPnL))}`
-        }
+        value={isHidden(totalPnL) ? totalPnL : withSign(totalPnL, formatCurrency)}
         note={
           !isHidden(pnlPercent) && (
             <>
-              <span className={cn("font-semibold", pnlPercent >= 0 ? "text-positive" : "text-negative")}>
+              <span
+                className={cn("font-semibold", pnlPercent >= 0 ? "text-positive" : "text-negative")}
+              >
                 {formatPercent(pnlPercent)}
               </span>{" "}
               {t("portfolio.stats.allTime")}

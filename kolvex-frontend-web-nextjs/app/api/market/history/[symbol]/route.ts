@@ -4,15 +4,13 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { BACKEND_API_URL } from "@/lib/config/backend";
 
 export const maxDuration = 30;
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
-
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ symbol: string }> }
+  { params }: { params: Promise<{ symbol: string }> },
 ) {
   try {
     const { symbol: rawSymbol } = await params;
@@ -26,7 +24,7 @@ export async function GET(
       return NextResponse.json({ error: "Invalid symbol" }, { status: 400 });
     }
     const searchParams = request.nextUrl.searchParams.toString();
-    const url = `${API_BASE_URL}/api/v1/market/history/${encodeURIComponent(symbol)}${
+    const url = `${BACKEND_API_URL}/api/v1/market/history/${encodeURIComponent(symbol)}${
       searchParams ? `?${searchParams}` : ""
     }`;
 
@@ -49,8 +47,17 @@ export async function GET(
     }
 
     const data = await response.json();
-    if (!Array.isArray(data.data) || !data.data.some((bar: { close?: number }) => typeof bar?.close === "number" && Number.isFinite(bar.close) && bar.close > 0)) {
-      return NextResponse.json({ error: "History unavailable" }, { status: 503, headers: { "Cache-Control": "no-store" } });
+    if (
+      !Array.isArray(data.data) ||
+      !data.data.some(
+        (bar: { close?: number }) =>
+          typeof bar?.close === "number" && Number.isFinite(bar.close) && bar.close > 0,
+      )
+    ) {
+      return NextResponse.json(
+        { error: "History unavailable" },
+        { status: 503, headers: { "Cache-Control": "no-store" } },
+      );
     }
     // Current sessions must not trail another five minutes behind the quote.
     // The bounded browser history cache deduplicates readers and owns freshness.
@@ -59,7 +66,7 @@ export async function GET(
     console.error("Market history API error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

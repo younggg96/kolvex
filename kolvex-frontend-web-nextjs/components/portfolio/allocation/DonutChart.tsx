@@ -3,7 +3,8 @@
 import React from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import type { DonutChartProps, SectorData } from "./types";
-import { formatCurrency } from "./utils";
+import { formatCurrency } from "@/lib/portfolioApi";
+import { withSign } from "@/lib/format";
 
 // ================== CUSTOM TOOLTIP ==================
 
@@ -24,18 +25,13 @@ function DonutTooltip({ active, payload }: CustomTooltipProps) {
   return (
     <div className="bg-card-dark border border-border-dark rounded-2xl p-3 shadow-xl min-w-[11.25rem]">
       <div className="flex items-center gap-2 mb-2">
-        <div
-          className="w-3 h-3 rounded-sm"
-          style={{ backgroundColor: data.color }}
-        />
+        <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: data.color }} />
         <span className="font-semibold text-white">{data.name}</span>
       </div>
       <div className="space-y-1 text-sm">
         <div className="flex justify-between gap-4">
           <span className="text-muted-foreground">Value:</span>
-          <span className="font-medium text-white">
-            {formatCurrency(totalValue)}
-          </span>
+          <span className="font-medium text-white">{formatCurrency(totalValue)}</span>
         </div>
         <div className="flex justify-between gap-4">
           <span className="text-muted-foreground">Items:</span>
@@ -43,13 +39,8 @@ function DonutTooltip({ active, payload }: CustomTooltipProps) {
         </div>
         <div className="flex justify-between gap-4">
           <span className="text-muted-foreground">P&L:</span>
-          <span
-            className={`font-medium ${
-              isPositive ? "text-[#00C805]" : "text-[#ff4444]"
-            }`}
-          >
-            {isPositive ? "+" : ""}
-            {formatCurrency(data.gain)}
+          <span className={`font-medium ${isPositive ? "text-[#00C805]" : "text-[#ff4444]"}`}>
+            {withSign(data.gain, formatCurrency)}
           </span>
         </div>
       </div>
@@ -125,9 +116,7 @@ export function DonutChart({
             labelLine={false}
             label={renderCustomLabel}
             onClick={(_, index) => toggleSector(sectorData[index].name)}
-            onMouseEnter={(_, index) =>
-              setHoveredSector(sectorData[index].name)
-            }
+            onMouseEnter={(_, index) => setHoveredSector(sectorData[index].name)}
             onMouseLeave={() => setHoveredSector(null)}
           >
             {sectorData.map((entry, index) => (
@@ -137,10 +126,7 @@ export function DonutChart({
                 stroke="transparent"
                 strokeWidth={0}
                 style={{
-                  opacity:
-                    hoveredSector === null || hoveredSector === entry.name
-                      ? 1
-                      : 0.4,
+                  opacity: hoveredSector === null || hoveredSector === entry.name ? 1 : 0.4,
                   transition: "opacity 0.2s ease",
                   cursor: "pointer",
                 }}
@@ -157,13 +143,10 @@ export function DonutChart({
       {/* Center Text */}
       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
         <span className="text-xs text-muted-foreground">Total Value</span>
-        <span className="text-xl font-bold text-foreground">
-          {formatCurrency(totalValue)}
-        </span>
+        <span className="text-xl font-bold text-foreground">{formatCurrency(totalValue)}</span>
       </div>
     </div>
   );
 }
 
 export default DonutChart;
-

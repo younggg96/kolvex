@@ -26,27 +26,18 @@ import { cn } from "@/lib/utils";
 import { FinancialState, useFinancialFormat } from "./StockFinancialData";
 import StockEarningsMaterials from "./StockEarningsMaterials";
 import { useCopy } from "./shared";
+import { withSign } from "@/lib/format";
 
-export default function StockEarnings({
-  symbol,
-  currency,
-}: {
-  symbol: string;
-  currency: string;
-}) {
+export default function StockEarnings({ symbol, currency }: { symbol: string; currency: string }) {
   const c = useCopy();
   const f = useFinancialFormat();
   const key = fundamentalsKey(symbol, "earnings");
-  const resource = useCachedResource(
-    key,
-    (signal) => loadFundamentals<EarningsData>(key, signal),
-    { ttl: 300_000 },
-  );
+  const resource = useCachedResource(key, (signal) => loadFundamentals<EarningsData>(key, signal), {
+    ttl: 300_000,
+  });
   const rows = resource.data ? earningsRows(resource.data) : [];
   // Upcoming rows have no reported EPS. The source's date is kept, never guessed.
-  const upcoming = rows.find(
-    (row) => Date.parse(row.period) > Date.now() && !finite(row.actual),
-  );
+  const upcoming = rows.find((row) => Date.parse(row.period) > Date.now() && !finite(row.actual));
   const actual = rows.filter((row) => finite(row.actual));
   const latest = actual[actual.length - 1];
   const data = rows.map((row) => ({
@@ -57,20 +48,14 @@ export default function StockEarnings({
   const outcomeLabel = (kind: "beat" | "miss" | "met") =>
     kind === "beat" ? "Beat" : kind === "miss" ? "Miss" : c("Met", "符合预期");
   const outcomeClass = (kind: "beat" | "miss" | "met") =>
-    kind === "beat"
-      ? "text-positive"
-      : kind === "miss"
-        ? "text-negative"
-        : "text-muted-foreground";
+    kind === "beat" ? "text-positive" : kind === "miss" ? "text-negative" : "text-muted-foreground";
   const deltaLabel = (value: number) =>
-    `${value > 0 ? "+" : value < 0 ? "−" : ""}${Math.abs(value) > 0 && Math.abs(value) < 0.01 ? `<0.01` : f.number(Math.abs(value), false)} ${currency}`;
+    `${withSign(value, (magnitude) => (magnitude > 0 && magnitude < 0.01 ? "<0.01" : f.number(magnitude, false)))} ${currency}`;
   const renderOutcome = (props: LabelProps, series: "estimate" | "actual") => {
     const row = data[props.index ?? -1];
     if (
       !row?.outcome ||
-      (row.outcome.kind === "miss"
-        ? series !== "estimate"
-        : series !== "actual")
+      (row.outcome.kind === "miss" ? series !== "estimate" : series !== "actual")
     )
       return null;
     const x = Number(props.x) + Number(props.width) / 2;
@@ -84,18 +69,10 @@ export default function StockEarnings({
           : "rgb(var(--muted-foreground))";
     return (
       <g aria-hidden="true" fill={color} pointerEvents="none">
-        <text
-          x={x}
-          y={y - 20}
-          textAnchor="middle"
-          fontSize={11}
-          fontWeight={500}
-        >
+        <text x={x} y={y - 20} textAnchor="middle" fontSize={11} fontWeight={500}>
           {outcomeLabel(row.outcome.kind)}
         </text>
-        <path
-          d={`M ${x - 4} ${y - 14} L ${x + 4} ${y - 14} L ${x} ${y - 9} Z`}
-        />
+        <path d={`M ${x - 4} ${y - 14} L ${x + 4} ${y - 14} L ${x} ${y - 9} Z`} />
       </g>
     );
   };
@@ -107,18 +84,14 @@ export default function StockEarnings({
             c("Next earnings", "下次财报"),
             upcoming ? f.date(upcoming.period) : c("Not announced", "暂未公布"),
           ],
-          [
-            c("Next EPS estimate", "下期 EPS 预期"),
-            f.number(upcoming?.estimate, false),
-          ],
-          [
-            c("Latest reported EPS", "最新实际 EPS"),
-            f.number(latest?.actual, false),
-          ],
+          [c("Next EPS estimate", "下期 EPS 预期"), f.number(upcoming?.estimate, false)],
+          [c("Latest reported EPS", "最新实际 EPS"), f.number(latest?.actual, false)],
           [
             c("EPS surprise", "EPS 超预期幅度"),
             finite(latest?.surprise)
-              ? `${latest.surprise >= 0 ? "+" : ""}${f.number(latest.surprise, false)}%`
+              ? withSign(latest.surprise, (magnitude) => `${f.number(magnitude, false)}%`, {
+                  digits: 2,
+                })
               : "—",
           ],
         ].map(([label, value]) => (
@@ -155,10 +128,7 @@ export default function StockEarnings({
                 "实际 EPS 与预期对比，具体数值见下方表格。",
               )}
             >
-              <div
-                className="h-80"
-                style={{ minWidth: Math.max(360, data.length * 76) }}
-              >
+              <div className="h-80" style={{ minWidth: Math.max(360, data.length * 76) }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     barSize={14}
@@ -166,10 +136,7 @@ export default function StockEarnings({
                     data={data}
                     margin={{ top: 36, right: 16, left: 4, bottom: 4 }}
                   >
-                    <CartesianGrid
-                      vertical={false}
-                      stroke="rgb(var(--border))"
-                    />
+                    <CartesianGrid vertical={false} stroke="rgb(var(--border))" />
                     <XAxis
                       dataKey="label"
                       minTickGap={24}
@@ -195,9 +162,7 @@ export default function StockEarnings({
                         fillOpacity: 0.035,
                       }}
                       content={({ active, payload }) => {
-                        const row = payload?.[0]?.payload as
-                          | (typeof data)[number]
-                          | undefined;
+                        const row = payload?.[0]?.payload as (typeof data)[number] | undefined;
                         if (!active || !row) return null;
                         return (
                           <div className="min-w-40 rounded-3xl border border-border bg-card p-3 text-xs text-foreground">
@@ -227,8 +192,7 @@ export default function StockEarnings({
                                   outcomeClass(row.outcome.kind),
                                 )}
                               >
-                                {outcomeLabel(row.outcome.kind)} (
-                                {deltaLabel(row.outcome.delta)})
+                                {outcomeLabel(row.outcome.kind)} ({deltaLabel(row.outcome.delta)})
                               </p>
                             )}
                           </div>
@@ -244,9 +208,7 @@ export default function StockEarnings({
                       radius={[3, 3, 0, 0]}
                       isAnimationActive={false}
                     >
-                      <LabelList
-                        content={(props) => renderOutcome(props, "estimate")}
-                      />
+                      <LabelList content={(props) => renderOutcome(props, "estimate")} />
                     </Bar>
                     <Bar
                       dataKey="actual"
@@ -256,9 +218,7 @@ export default function StockEarnings({
                       radius={[3, 3, 0, 0]}
                       isAnimationActive={false}
                     >
-                      <LabelList
-                        content={(props) => renderOutcome(props, "actual")}
-                      />
+                      <LabelList content={(props) => renderOutcome(props, "actual")} />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
@@ -278,16 +238,11 @@ export default function StockEarnings({
             <div
               role="region"
               tabIndex={0}
-              aria-label={c(
-                "Earnings history, horizontally scrollable",
-                "盈利历史表，可横向滚动",
-              )}
+              aria-label={c("Earnings history, horizontally scrollable", "盈利历史表，可横向滚动")}
               className="glass-card bg-card-glass overflow-auto rounded-3xl border border-foreground/10 focus-visible:outline-none "
             >
               <table className="w-full whitespace-nowrap text-sm">
-                <caption className="sr-only">
-                  {c("Earnings history", "盈利历史")}
-                </caption>
+                <caption className="sr-only">{c("Earnings history", "盈利历史")}</caption>
                 <thead className="bg-muted text-muted-foreground">
                   <tr>
                     {[
@@ -300,10 +255,7 @@ export default function StockEarnings({
                       <th
                         key={label}
                         scope="col"
-                        className={cn(
-                          "px-4 py-4 font-medium",
-                          index ? "text-right" : "text-left",
-                        )}
+                        className={cn("px-4 py-4 font-medium", index ? "text-right" : "text-left")}
                       >
                         {label}
                       </th>
@@ -316,18 +268,13 @@ export default function StockEarnings({
                       key={row.period}
                       className="border-t border-border transition-colors hover:bg-foreground/[0.06]"
                     >
-                      <th
-                        scope="row"
-                        className="px-4 py-4 text-left font-medium"
-                      >
+                      <th scope="row" className="px-4 py-4 text-left font-medium">
                         {f.date(row.period)}
                       </th>
                       <td className="figure px-4 py-4 text-right">
                         {f.number(row.estimate, false)}
                       </td>
-                      <td className="figure px-4 py-4 text-right">
-                        {f.number(row.actual, false)}
-                      </td>
+                      <td className="figure px-4 py-4 text-right">{f.number(row.actual, false)}</td>
                       <td className="figure px-4 py-4 text-right">
                         <EarningsOutcome
                           actual={row.actual}
@@ -339,13 +286,15 @@ export default function StockEarnings({
                         className={cn(
                           "figure px-4 py-4 text-right",
                           finite(row.surprise) &&
-                            (row.surprise >= 0
-                              ? "text-positive"
-                              : "text-negative"),
+                            (row.surprise >= 0 ? "text-positive" : "text-negative"),
                         )}
                       >
                         {finite(row.surprise)
-                          ? `${row.surprise >= 0 ? "+" : ""}${f.number(row.surprise, false)}%`
+                          ? withSign(
+                              row.surprise,
+                              (magnitude) => `${f.number(magnitude, false)}%`,
+                              { digits: 2 },
+                            )
                           : "—"}
                       </td>
                     </tr>
@@ -381,11 +330,7 @@ function EarningsOutcome({
   const outcome = epsOutcome(actual, estimate);
   if (!outcome) return <>—</>;
   const label =
-    outcome.kind === "beat"
-      ? "Beat"
-      : outcome.kind === "miss"
-        ? "Miss"
-        : c("Met", "符合预期");
+    outcome.kind === "beat" ? "Beat" : outcome.kind === "miss" ? "Miss" : c("Met", "符合预期");
   return (
     <span
       className={
@@ -399,10 +344,10 @@ function EarningsOutcome({
       {label}
       {outcome.delta !== 0 && (
         <span className="ml-2 text-xs">
-          ({outcome.delta > 0 ? "+" : "−"}
-          {Math.abs(outcome.delta) < 0.01
-            ? "<0.01"
-            : f.number(Math.abs(outcome.delta), false)}{" "}
+          (
+          {withSign(outcome.delta, (magnitude) =>
+            magnitude < 0.01 ? "<0.01" : f.number(magnitude, false),
+          )}{" "}
           {currency})
         </span>
       )}

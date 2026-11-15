@@ -12,11 +12,9 @@ import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { getMyHoldings } from "@/lib/portfolioApi";
 import { marketStockHref } from "@/lib/stockLinks";
-import {
-  getYouTubeOpinionDashboard,
-  clearYouTubeDashboardCache,
-} from "@/lib/youtubeOpinionsApi";
+import { getYouTubeOpinionDashboard, clearYouTubeDashboardCache } from "@/lib/youtubeOpinionsApi";
 import type { Direction } from "@/lib/decision";
+import { signedPercent, withSign } from "@/lib/format";
 
 export function useCopy() {
   const { locale } = useTranslation();
@@ -87,12 +85,27 @@ export function Panel({
   surface?: "plain" | "card";
 }) {
   return (
-    <section id={id} aria-labelledby={id ? `${id}-title` : undefined} className={cn("min-w-0", className)}>
-      <header className={cn("flex flex-wrap items-end justify-between gap-x-4 gap-y-2", title && (surface === "card" ? "mb-3 min-h-14 items-center max-md:min-h-0" : "border-b border-border pb-3"))}>
+    <section
+      id={id}
+      aria-labelledby={id ? `${id}-title` : undefined}
+      className={cn("min-w-0", className)}
+    >
+      <header
+        className={cn(
+          "flex flex-wrap items-end justify-between gap-x-4 gap-y-2",
+          title &&
+            (surface === "card"
+              ? "mb-3 min-h-14 items-center max-md:min-h-0"
+              : "border-b border-border pb-3"),
+        )}
+      >
         <div className="min-w-0">
           {title && (
             <div className="flex items-center gap-2">
-              <h2 id={id ? `${id}-title` : undefined} className="text-xl font-semibold tracking-[-0.01em]">
+              <h2
+                id={id ? `${id}-title` : undefined}
+                className="text-xl font-semibold tracking-[-0.01em]"
+              >
                 {title}
               </h2>
               {description && <InfoTip label={title}>{description}</InfoTip>}
@@ -115,7 +128,15 @@ export function Empty({ children, action }: { children: ReactNode; action?: Reac
   );
 }
 
-export function TextLink({ href, children, className }: { href: string; children: ReactNode; className?: string }) {
+export function TextLink({
+  href,
+  children,
+  className,
+}: {
+  href: string;
+  children: ReactNode;
+  className?: string;
+}) {
   return (
     <Link
       href={href}
@@ -180,8 +201,7 @@ export function Change({
         className,
       )}
     >
-      {value > 0 ? "+" : value < 0 ? "−" : ""}
-      {Math.abs(value).toFixed(2)}%
+      {signedPercent(value)}
     </span>
   );
 }
@@ -194,23 +214,47 @@ export const money = (value: number | null | undefined) =>
         currency: "USD",
       }).format(value);
 
-export const signedMoney = (value: number) =>
-  `${value >= 0 ? "+" : "−"}${money(Math.abs(value))}`;
+export const signedMoney = (value: number) => withSign(value, money);
 
 /** Shared resources paint cached data immediately and only block on a cold visit. */
 export function useHeldTickers(attempt = 0) {
   const enabled = isProductFeatureEnabled("portfolio");
-  const resource = useCachedResource("/api/portfolio/holdings", signal => enabled ? getMyHoldings(signal) : Promise.resolve({ accounts: [], is_connected: false, is_public: false }), { ttl: 30_000, maxAge: 60_000 });
-  const tickers = [...new Set((resource.data?.accounts ?? []).flatMap(account => account.portfolio_positions || []).filter(position => position.position_type !== "option").map(position => position.symbol.trim().toUpperCase()))];
+  const resource = useCachedResource(
+    "/api/portfolio/holdings",
+    (signal) =>
+      enabled
+        ? getMyHoldings(signal)
+        : Promise.resolve({ accounts: [], is_connected: false, is_public: false }),
+    { ttl: 30_000, maxAge: 60_000 },
+  );
+  const tickers = [
+    ...new Set(
+      (resource.data?.accounts ?? [])
+        .flatMap((account) => account.portfolio_positions || [])
+        .filter((position) => position.position_type !== "option")
+        .map((position) => position.symbol.trim().toUpperCase()),
+    ),
+  ];
   const refresh = resource.refresh;
-  useEffect(() => { if (attempt > 0) refresh(); }, [attempt, refresh]);
+  useEffect(() => {
+    if (attempt > 0) refresh();
+  }, [attempt, refresh]);
   return { tickers, loading: enabled && resource.loading, error: Boolean(resource.error) };
 }
 
 export function useCreatorCatalogue(attempt = 0) {
-  const resource = useCachedResource("/api/youtube-opinions/dashboard?limit=12", () => getYouTubeOpinionDashboard({ limit: 12 }), { ttl: 60_000 });
+  const resource = useCachedResource(
+    "/api/youtube-opinions/dashboard?limit=12",
+    () => getYouTubeOpinionDashboard({ limit: 12 }),
+    { ttl: 60_000 },
+  );
   const refresh = resource.refresh;
-  useEffect(() => { if (attempt > 0) { clearYouTubeDashboardCache(); refresh(); } }, [attempt, refresh]);
+  useEffect(() => {
+    if (attempt > 0) {
+      clearYouTubeDashboardCache();
+      refresh();
+    }
+  }, [attempt, refresh]);
   return { data: resource.data ?? null, loading: resource.loading, error: Boolean(resource.error) };
 }
 
@@ -267,7 +311,12 @@ export function PriceLadder({
   };
   const entryMid = low !== null && high !== null ? (low + high) / 2 : null;
   const marks: Array<{ key: string; value: number; label: string; tone: string }> = [
-    { key: "invalidation", value: invalidation, label: c("Invalidation", "失效"), tone: "text-negative" },
+    {
+      key: "invalidation",
+      value: invalidation,
+      label: c("Invalidation", "失效"),
+      tone: "text-negative",
+    },
     ...(entryMid !== null
       ? [{ key: "entry", value: entryMid, label: c("Entry", "入场"), tone: "text-foreground" }]
       : []),
@@ -279,8 +328,7 @@ export function PriceLadder({
     return { left: `${Math.min(pa, pb)}%`, width: `${Math.abs(pb - pa)}%` };
   };
   const anchor = entryMid ?? invalidation;
-  const priceInRange =
-    typeof price === "number" && Number.isFinite(price) && price > 0;
+  const priceInRange = typeof price === "number" && Number.isFinite(price) && price > 0;
   return (
     <div className={cn("min-w-0", compact ? "pt-1" : "pt-3")}>
       <div className="relative mx-2 h-6">
@@ -316,12 +364,21 @@ export function PriceLadder({
         )}
       </div>
       {!compact && (
-        <dl className={cn("mt-1 grid gap-2 text-xs", marks.length === 3 ? "grid-cols-3" : "grid-cols-2")}>
+        <dl
+          className={cn(
+            "mt-1 grid gap-2 text-xs",
+            marks.length === 3 ? "grid-cols-3" : "grid-cols-2",
+          )}
+        >
           {(mirror ? [...marks].reverse() : marks).map((mark, index, list) => (
             <div
               key={mark.key}
               className={cn(
-                index === 0 ? "text-left" : index === list.length - 1 ? "text-right" : "text-center",
+                index === 0
+                  ? "text-left"
+                  : index === list.length - 1
+                    ? "text-right"
+                    : "text-center",
               )}
             >
               <dt className="text-muted-foreground">{mark.label}</dt>

@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
-const API_PREFIX = "/api/v1";
+import { BACKEND_API_V1 } from "@/lib/config/backend";
 
 // POST - 上传头像（支持 multipart/form-data 或 base64）
 export async function POST(request: NextRequest) {
@@ -14,10 +11,7 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getSession();
 
     if (!session?.access_token) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
     const contentType = request.headers.get("content-type") || "";
@@ -28,26 +22,20 @@ export async function POST(request: NextRequest) {
       const file = formData.get("file") as File | null;
 
       if (!file) {
-        return NextResponse.json(
-          { success: false, error: "No file provided" },
-          { status: 400 }
-        );
+        return NextResponse.json({ success: false, error: "No file provided" }, { status: 400 });
       }
 
       // 创建新的 FormData 发送到后端
       const backendFormData = new FormData();
       backendFormData.append("file", file);
 
-      const response = await fetch(
-        `${API_BASE_URL}${API_PREFIX}/upload/avatar`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: backendFormData,
-        }
-      );
+      const response = await fetch(`${BACKEND_API_V1}/upload/avatar`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: backendFormData,
+      });
 
       const data = await response.json();
       return NextResponse.json(data, { status: response.status });
@@ -61,7 +49,7 @@ export async function POST(request: NextRequest) {
       if (!image_data) {
         return NextResponse.json(
           { success: false, error: "No image data provided" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -70,16 +58,13 @@ export async function POST(request: NextRequest) {
       formData.append("image_data", image_data);
       formData.append("content_type", content_type);
 
-      const response = await fetch(
-        `${API_BASE_URL}${API_PREFIX}/upload/avatar/base64`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: formData,
-        }
-      );
+      const response = await fetch(`${BACKEND_API_V1}/upload/avatar/base64`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: formData,
+      });
 
       const data = await response.json();
       return NextResponse.json(data, { status: response.status });
@@ -87,7 +72,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       { success: false, error: "Unsupported content type" },
-      { status: 400 }
+      { status: 400 },
     );
   } catch (error) {
     console.error("Upload avatar API error:", error);
@@ -96,7 +81,7 @@ export async function POST(request: NextRequest) {
         success: false,
         error: error instanceof Error ? error.message : "Upload failed",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -110,32 +95,24 @@ export async function DELETE(request: NextRequest) {
     } = await supabase.auth.getSession();
 
     if (!session?.access_token) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
     const filePath = searchParams.get("file_path");
 
     if (!filePath) {
-      return NextResponse.json(
-        { success: false, error: "No file path provided" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "No file path provided" }, { status: 400 });
     }
 
     const response = await fetch(
-      `${API_BASE_URL}${API_PREFIX}/upload/avatar?file_path=${encodeURIComponent(
-        filePath
-      )}`,
+      `${BACKEND_API_V1}/upload/avatar?file_path=${encodeURIComponent(filePath)}`,
       {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
-      }
+      },
     );
 
     const data = await response.json();
@@ -147,7 +124,7 @@ export async function DELETE(request: NextRequest) {
         success: false,
         error: error instanceof Error ? error.message : "Delete failed",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

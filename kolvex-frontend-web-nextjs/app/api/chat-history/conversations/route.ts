@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-
-const BACKEND_API_URL =
-  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
+import { BACKEND_API_URL } from "@/lib/config/backend";
 
 /**
  * GET /api/chat-history/conversations - Get conversations list
@@ -32,14 +30,14 @@ export async function GET(request: NextRequest) {
           Authorization: `Bearer ${session.access_token}`,
         },
         cache: "no-store",
-      }
+      },
     );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       return NextResponse.json(
         { error: errorData.detail || "Failed to get conversations" },
-        { status: response.status }
+        { status: response.status },
       );
     }
 
@@ -47,10 +45,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(data);
   } catch (error) {
     console.error("API Error:", error);
-    return NextResponse.json(
-      { error: "Failed to get conversations" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to get conversations" }, { status: 500 });
   }
 }
 
@@ -71,23 +66,20 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
-    const response = await fetch(
-      `${BACKEND_API_URL}/api/v1/chat/conversations`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify(body),
-      }
-    );
+    const response = await fetch(`${BACKEND_API_URL}/api/v1/chat/conversations`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify(body),
+    });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       return NextResponse.json(
         { error: errorData.detail || "Failed to create conversation" },
-        { status: response.status }
+        { status: response.status },
       );
     }
 
@@ -95,10 +87,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(data);
   } catch (error) {
     console.error("API Error:", error);
-    return NextResponse.json(
-      { error: "Failed to create conversation" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to create conversation" }, { status: 500 });
   }
 }
 
@@ -117,22 +106,19 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const response = await fetch(
-      `${BACKEND_API_URL}/api/v1/chat/conversations`,
-      {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      }
-    );
+    const response = await fetch(`${BACKEND_API_URL}/api/v1/chat/conversations`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       return NextResponse.json(
         { error: errorData.detail || "Failed to delete conversations" },
-        { status: response.status }
+        { status: response.status },
       );
     }
 
@@ -140,9 +126,6 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json(data);
   } catch (error) {
     console.error("API Error:", error);
-    return NextResponse.json(
-      { error: "Failed to delete conversations" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to delete conversations" }, { status: 500 });
   }
 }

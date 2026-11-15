@@ -21,12 +21,7 @@ import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PendingValue } from "@/components/ui/content-loading";
 import { validTicker } from "@/lib/decision";
-import {
-  MAX_PEERS,
-  mixesCurrencies,
-  parsePeers,
-  rebasedReturns,
-} from "@/lib/freeResearch";
+import { MAX_PEERS, mixesCurrencies, parsePeers, rebasedReturns } from "@/lib/freeResearch";
 import { getStockHistory, type StockOverview } from "@/lib/stockApi";
 import { finite, getStockOverview } from "@/lib/stockFundamentals";
 import { marketStockHref } from "@/lib/stockLinks";
@@ -34,6 +29,7 @@ import { cn } from "@/lib/utils";
 import { SourceNote } from "./SecData";
 import { useFinancialFormat } from "./StockFinancialData";
 import { useCopy } from "./shared";
+import { withSign } from "@/lib/format";
 
 const BENCHMARK = "^GSPC";
 const RANGES = {
@@ -53,17 +49,13 @@ export default function StockPeers({ symbol }: { symbol: string }) {
   const f = useFinancialFormat();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [peers, setPeers] = useState(() =>
-    parsePeers(searchParams.get("peers"), symbol),
-  );
+  const [peers, setPeers] = useState(() => parsePeers(searchParams.get("peers"), symbol));
   const [draft, setDraft] = useState("");
   const [inputError, setInputError] = useState<string | null>(null);
   const [range, setRange] = useState<Range>("1Y");
   const [attempt, setAttempt] = useState(0);
   const [overviews, setOverviews] = useState<Record<string, Loaded>>({});
-  const [history, setHistory] = useState<
-    Record<string, { date: string; value: number }[]>
-  >({});
+  const [history, setHistory] = useState<Record<string, { date: string; value: number }[]>>({});
   const [historyLoading, setHistoryLoading] = useState(false);
   const symbols = useMemo(() => [symbol, ...peers], [symbol, peers]);
   const symbolsKey = symbols.join(",");
@@ -93,8 +85,7 @@ export default function StockPeers({ symbol }: { symbol: string }) {
     event.preventDefault();
     const peer = draft.trim().toUpperCase();
     if (!peer) return;
-    if (!validTicker(peer))
-      return setInputError(c("Enter a valid ticker", "请输入有效的股票代码"));
+    if (!validTicker(peer)) return setInputError(c("Enter a valid ticker", "请输入有效的股票代码"));
     if (peer === symbol || peers.includes(peer))
       return setInputError(c("Already in the comparison", "已在比较列表中"));
     setInputError(null);
@@ -150,10 +141,12 @@ export default function StockPeers({ symbol }: { symbol: string }) {
 
   const chart = useMemo(() => rebasedReturns(history), [history]);
   const signed = (value: unknown) =>
-    finite(value) ? `${value > 0 ? "+" : ""}${f.percent(value)}` : "—";
-  const name = (item: string) =>
-    item === BENCHMARK ? c("S&P 500", "标普 500") : item;
-  const lines = [...symbols.filter((item) => chart.totals[item] !== undefined), ...(chart.totals[BENCHMARK] !== undefined ? [BENCHMARK] : [])];
+    finite(value) ? withSign(value, f.percent, { digits: 4 }) : "—";
+  const name = (item: string) => (item === BENCHMARK ? c("S&P 500", "标普 500") : item);
+  const lines = [
+    ...symbols.filter((item) => chart.totals[item] !== undefined),
+    ...(chart.totals[BENCHMARK] !== undefined ? [BENCHMARK] : []),
+  ];
   const missingHistory = symbols.filter(
     (item) => !historyLoading && chart.totals[item] === undefined,
   );
@@ -164,28 +157,65 @@ export default function StockPeers({ symbol }: { symbol: string }) {
       title: c("Size & valuation", "规模与估值"),
       rows: [
         { label: c("Market cap", "市值"), read: (o) => f.number(o.quote.market_cap) },
-        { label: c("Trailing P/E", "滚动市盈率"), read: (o) => f.number(o.financials.pe_ratio, false) },
-        { label: c("Forward P/E", "预期市盈率"), read: (o) => f.number(o.financials.forward_pe, false) },
-        { label: c("Price / sales", "市销率"), read: (o) => (mixesCurrencies(o.quote.currency, o.financials.financial_currency) ? "—" : f.number(o.financials.price_to_sales, false)) },
-        { label: "EV / EBITDA", read: (o) => (mixesCurrencies(o.quote.currency, o.financials.financial_currency) ? "—" : f.number(o.financials.ev_to_ebitda, false)) },
+        {
+          label: c("Trailing P/E", "滚动市盈率"),
+          read: (o) => f.number(o.financials.pe_ratio, false),
+        },
+        {
+          label: c("Forward P/E", "预期市盈率"),
+          read: (o) => f.number(o.financials.forward_pe, false),
+        },
+        {
+          label: c("Price / sales", "市销率"),
+          read: (o) =>
+            mixesCurrencies(o.quote.currency, o.financials.financial_currency)
+              ? "—"
+              : f.number(o.financials.price_to_sales, false),
+        },
+        {
+          label: "EV / EBITDA",
+          read: (o) =>
+            mixesCurrencies(o.quote.currency, o.financials.financial_currency)
+              ? "—"
+              : f.number(o.financials.ev_to_ebitda, false),
+        },
       ],
     },
     {
       title: c("Growth", "增长"),
       rows: [
-        { label: c("Revenue", "营业收入"), read: (o) => `${f.number(o.financials.total_revenue)}${o.financials.financial_currency ? ` ${o.financials.financial_currency}` : ""}` },
-        { label: c("Revenue growth", "营收增长"), read: (o) => signed(o.financials.revenue_growth) },
-        { label: c("Earnings growth", "盈利增长"), read: (o) => signed(o.financials.earnings_growth) },
-        { label: c("Trailing EPS", "滚动每股收益"), read: (o) => f.number(o.financials.eps_trailing, false) },
+        {
+          label: c("Revenue", "营业收入"),
+          read: (o) =>
+            `${f.number(o.financials.total_revenue)}${o.financials.financial_currency ? ` ${o.financials.financial_currency}` : ""}`,
+        },
+        {
+          label: c("Revenue growth", "营收增长"),
+          read: (o) => signed(o.financials.revenue_growth),
+        },
+        {
+          label: c("Earnings growth", "盈利增长"),
+          read: (o) => signed(o.financials.earnings_growth),
+        },
+        {
+          label: c("Trailing EPS", "滚动每股收益"),
+          read: (o) => f.number(o.financials.eps_trailing, false),
+        },
       ],
     },
     {
       title: c("Profitability", "盈利能力"),
       rows: [
         { label: c("Gross margin", "毛利率"), read: (o) => f.percent(o.financials.gross_margins) },
-        { label: c("Operating margin", "营业利润率"), read: (o) => f.percent(o.financials.operating_margins) },
+        {
+          label: c("Operating margin", "营业利润率"),
+          read: (o) => f.percent(o.financials.operating_margins),
+        },
         { label: c("Net margin", "净利率"), read: (o) => f.percent(o.financials.profit_margins) },
-        { label: c("Return on equity", "净资产收益率"), read: (o) => f.percent(o.financials.return_on_equity) },
+        {
+          label: c("Return on equity", "净资产收益率"),
+          read: (o) => f.percent(o.financials.return_on_equity),
+        },
       ],
     },
   ];
@@ -194,10 +224,15 @@ export default function StockPeers({ symbol }: { symbol: string }) {
     <div className={cn("space-y-6", SERIES_VARS)}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
-          <h2 className="flex items-center gap-2 text-xl font-semibold">{c("Peer comparison", "同行比较")}<InfoTip label={c("About peers", "关于同行")}>{c(
-              `You choose the peers, up to ${MAX_PEERS}. The link keeps your selection.`,
-              `同行由你选择，最多 ${MAX_PEERS} 家，链接会保留所选公司。`,
-            )}</InfoTip></h2>
+          <h2 className="flex items-center gap-2 text-xl font-semibold">
+            {c("Peer comparison", "同行比较")}
+            <InfoTip label={c("About peers", "关于同行")}>
+              {c(
+                `You choose the peers, up to ${MAX_PEERS}. The link keeps your selection.`,
+                `同行由你选择，最多 ${MAX_PEERS} 家，链接会保留所选公司。`,
+              )}
+            </InfoTip>
+          </h2>
         </div>
         <form onSubmit={add} className="flex w-full flex-wrap items-start gap-2 sm:w-auto">
           <div className="min-w-0 flex-1 sm:w-48 sm:flex-none">
@@ -239,7 +274,10 @@ export default function StockPeers({ symbol }: { symbol: string }) {
         </p>
       )}
       {!!unavailable.length && (
-        <div role="alert" className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+        <div
+          role="alert"
+          className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground"
+        >
           {c(
             `No data for ${unavailable.join(", ")}. Check the ticker or try again.`,
             `没有 ${unavailable.join("、")} 的数据，请检查代码或重试。`,
@@ -250,7 +288,10 @@ export default function StockPeers({ symbol }: { symbol: string }) {
         </div>
       )}
 
-      <section aria-labelledby="peer-returns-title" className="rounded-3xl border border-foreground/10 glass-card bg-card-glass p-4 sm:p-6">
+      <section
+        aria-labelledby="peer-returns-title"
+        className="rounded-3xl border border-foreground/10 glass-card bg-card-glass p-4 sm:p-6"
+      >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h3 id="peer-returns-title" className="text-sm font-medium text-muted-foreground">
             {c("Price return", "价格收益")}
@@ -261,17 +302,23 @@ export default function StockPeers({ symbol }: { symbol: string }) {
             onChange={setRange}
             options={(Object.keys(RANGES) as Range[]).map((value) => ({
               value,
-              label: value === "6M" ? c("6M", "6月") : value === "1Y" ? c("1Y", "1年") : c("5Y", "5年"),
+              label:
+                value === "6M" ? c("6M", "6月") : value === "1Y" ? c("1Y", "1年") : c("5Y", "5年"),
             }))}
           />
         </div>
-        <ul className="mt-4 flex flex-wrap gap-x-6 gap-y-2" aria-label={c("Return over the range", "区间收益")}>
+        <ul
+          className="mt-4 flex flex-wrap gap-x-6 gap-y-2"
+          aria-label={c("Return over the range", "区间收益")}
+        >
           {lines.map((item) => (
             <li key={item} className="flex items-center gap-2 text-sm">
               <span
                 aria-hidden="true"
                 className={cn("h-0.5 w-4 rounded-full", item === BENCHMARK && "opacity-70")}
-                style={{ background: item === BENCHMARK ? "rgb(var(--muted-foreground))" : color(item) }}
+                style={{
+                  background: item === BENCHMARK ? "rgb(var(--muted-foreground))" : color(item),
+                }}
               />
               <span className="text-muted-foreground">{name(item)}</span>
               <span className="figure font-semibold">{signed(chart.totals[item])}</span>
@@ -302,16 +349,27 @@ export default function StockPeers({ symbol }: { symbol: string }) {
                 />
                 <ReferenceLine y={0} stroke="rgb(var(--muted-foreground))" strokeOpacity={0.5} />
                 <Tooltip
-                  cursor={{ stroke: "rgb(var(--muted-foreground))", strokeWidth: 1, strokeDasharray: "4 4" }}
+                  cursor={{
+                    stroke: "rgb(var(--muted-foreground))",
+                    strokeWidth: 1,
+                    strokeDasharray: "4 4",
+                  }}
                   content={({ active, payload, label }) =>
                     active && payload?.length ? (
                       <div className="min-w-40 rounded-3xl border border-border bg-card p-3 text-xs text-foreground">
                         <p className="mb-2 font-semibold">{f.date(String(label))}</p>
                         <dl className="space-y-1">
                           {payload.map((entry) => (
-                            <div key={String(entry.dataKey)} className="flex items-center justify-between gap-4">
+                            <div
+                              key={String(entry.dataKey)}
+                              className="flex items-center justify-between gap-4"
+                            >
                               <dt className="flex items-center gap-2 text-muted-foreground">
-                                <span aria-hidden="true" className="h-2 w-2 rounded-full" style={{ background: entry.color }} />
+                                <span
+                                  aria-hidden="true"
+                                  className="h-2 w-2 rounded-full"
+                                  style={{ background: entry.color }}
+                                />
                                 {name(String(entry.dataKey))}
                               </dt>
                               <dd className="figure">{signed(entry.value)}</dd>
@@ -375,10 +433,21 @@ export default function StockPeers({ symbol }: { symbol: string }) {
                 {c("Metric", "指标")}
               </th>
               {symbols.map((item) => (
-                <th key={item} scope="col" className="min-w-32 border-b border-border bg-muted px-4 py-3 text-right font-medium">
+                <th
+                  key={item}
+                  scope="col"
+                  className="min-w-32 border-b border-border bg-muted px-4 py-3 text-right font-medium"
+                >
                   <span className="inline-flex items-center justify-end gap-1">
-                    <span aria-hidden="true" className="h-2 w-2 rounded-full" style={{ background: color(item) }} />
-                    <Link href={marketStockHref(item)} className="transition-colors hover:text-muted-foreground">
+                    <span
+                      aria-hidden="true"
+                      className="h-2 w-2 rounded-full"
+                      style={{ background: color(item) }}
+                    />
+                    <Link
+                      href={marketStockHref(item)}
+                      className="transition-colors hover:text-muted-foreground"
+                    >
                       {item}
                     </Link>
                     {item !== symbol && (
@@ -393,7 +462,10 @@ export default function StockPeers({ symbol }: { symbol: string }) {
                       </Button>
                     )}
                   </span>
-                  <span className="block max-w-40 truncate text-xs font-normal text-muted-foreground" title={overviews[item]?.overview?.company.name}>
+                  <span
+                    className="block max-w-40 truncate text-xs font-normal text-muted-foreground"
+                    title={overviews[item]?.overview?.company.name}
+                  >
                     {overviews[item]?.overview?.company.name ?? ""}
                   </span>
                 </th>
@@ -408,12 +480,17 @@ export default function StockPeers({ symbol }: { symbol: string }) {
                   colSpan={symbols.length + 1}
                   className="border-b border-border bg-muted/60 p-0 text-left"
                 >
-                  <span className="sticky left-0 inline-block px-4 py-2 text-xs font-semibold">{group.title}</span>
+                  <span className="sticky left-0 inline-block px-4 py-2 text-xs font-semibold">
+                    {group.title}
+                  </span>
                 </th>
               </tr>
               {group.rows.map((row) => (
                 <tr key={row.label} className="transition-colors hover:bg-foreground/[0.06]">
-                  <th scope="row" className="sticky left-0 z-10 border-b border-r border-border bg-card px-4 py-3 text-left font-normal">
+                  <th
+                    scope="row"
+                    className="sticky left-0 z-10 border-b border-r border-border bg-card px-4 py-3 text-left font-normal"
+                  >
                     {row.label}
                   </th>
                   {symbols.map((item) => {

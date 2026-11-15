@@ -75,7 +75,7 @@ import OpinionDistribution from "./OpinionDistribution";
 import OpinionStrength from "./OpinionStrength";
 import StockDirectoryInsight from "./StockDirectoryRow";
 import PriceChart, { type PriceRange } from "./PriceChart";
-import { priceRangeToLegacyRange } from "@/lib/chart/range";
+import { legacyRangeToPriceRange, priceRangeToLegacyRange, rangeStartDay } from "@/lib/chart/range";
 import StrengthChart, { type StrengthPoint } from "./StrengthChart";
 import VideoOpinionCard from "./VideoOpinionCard";
 import { videoHistory } from "@/lib/youtubeVideoHistory";
@@ -84,6 +84,7 @@ import { useStockPerformance } from "@/hooks/useStockPerformance";
 import CreatorShare from "./CreatorShare";
 import { describeStrength, toneText, type StrengthTone } from "./strength";
 import { HeldMark, useHeldTickers, useCopy } from "@/components/decision/shared";
+import { signedPercent } from "@/lib/format";
 
 type DirectoryTone = "all" | StrengthTone;
 type HistoryView = "videos" | "opinions";
@@ -108,18 +109,9 @@ const emptyFilters: Filters = { sentiment: "all", from: "", to: "", range: "all"
 /** The price graph opens on one day; the opinion filters stay on "all" until a range maps onto them. */
 const DEFAULT_CHART_RANGE: PriceRange = "1D";
 const pageSize = 40;
-const rangeMonths: Record<Exclude<Range, "all">, number> = {
-  "1m": 1,
-  "3m": 3,
-  "6m": 6,
-  "1y": 12,
-};
-
+/** "yyyy-MM-dd" the filter window starts at; "" means no lower bound. */
 function rangeStart(range: Range) {
-  if (range === "all") return "";
-  const date = new Date();
-  date.setMonth(date.getMonth() - rangeMonths[range]);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  return rangeStartDay(legacyRangeToPriceRange(range)) ?? "";
 }
 
 function readRoute(): Route {
@@ -652,9 +644,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     listRowTargetClass,
   );
   const formatPercent = (value?: number | null) =>
-    typeof value === "number" && Number.isFinite(value)
-      ? `${value > 0 ? "+" : ""}${value.toFixed(2)}%`
-      : "—";
+    typeof value === "number" && Number.isFinite(value) ? signedPercent(value) : "—";
   const percentTone = (value?: number | null) =>
     typeof value === "number" && value > 0
       ? "text-positive"

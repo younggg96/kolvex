@@ -2,14 +2,11 @@
 import { AnalystSkeleton } from "@/components/decision/StockTabSkeletons";
 import { useCachedResource } from "@/hooks/useCachedResource";
 import { useStockQuote } from "@/hooks/useStockData";
-import {
-  finite,
-  fundamentalsKey,
-  loadFundamentals,
-} from "@/lib/stockFundamentals";
+import { finite, fundamentalsKey, loadFundamentals } from "@/lib/stockFundamentals";
 import { FinancialState, useFinancialFormat } from "./StockFinancialData";
 import { useCopy } from "./shared";
 import { cn } from "@/lib/utils";
+import { withSign } from "@/lib/format";
 
 type AnalystData = {
   current_price: number | null;
@@ -27,31 +24,19 @@ type AnalystData = {
   }[];
 };
 
-export default function StockAnalyst({
-  symbol,
-  currency,
-}: {
-  symbol: string;
-  currency: string;
-}) {
+export default function StockAnalyst({ symbol, currency }: { symbol: string; currency: string }) {
   const c = useCopy();
   const f = useFinancialFormat();
   const key = fundamentalsKey(symbol, "analyst");
-  const resource = useCachedResource(
-    key,
-    (signal) => loadFundamentals<AnalystData>(key, signal),
-    { ttl: 300_000 },
-  );
+  const resource = useCachedResource(key, (signal) => loadFundamentals<AnalystData>(key, signal), {
+    ttl: 300_000,
+  });
   const data = resource.data;
   const quoteResource = useStockQuote(symbol);
   const currentPrice = quoteResource.data?.price;
-  const consensus = data?.recommendations_summary.find(
-    (row) => row.period === "0m",
-  );
+  const consensus = data?.recommendations_summary.find((row) => row.period === "0m");
   const difference =
-    finite(data?.target_mean_price) &&
-    finite(currentPrice) &&
-    currentPrice > 0
+    finite(data?.target_mean_price) && finite(currentPrice) && currentPrice > 0
       ? data.target_mean_price / currentPrice - 1
       : null;
   const empty = !finite(data?.target_mean_price) && !consensus;
@@ -74,29 +59,19 @@ export default function StockAnalyst({
       color: "bg-negative",
     },
   ];
-  const completeRatings = ratings.every(
-    (row) => finite(row.count) && row.count >= 0,
-  );
-  const ratingTotal = completeRatings
-    ? ratings.reduce((sum, row) => sum + row.count!, 0)
-    : null;
+  const completeRatings = ratings.every((row) => finite(row.count) && row.count >= 0);
+  const ratingTotal = completeRatings ? ratings.reduce((sum, row) => sum + row.count!, 0) : null;
   const low = data?.target_low_price;
   const high = data?.target_high_price;
   const hasRange = finite(low) && finite(high) && low > 0 && high > low;
   const position = (value: number) =>
-    hasRange
-      ? Math.max(0, Math.min(100, ((value - low!) / (high! - low!)) * 100))
-      : 0;
+    hasRange ? Math.max(0, Math.min(100, ((value - low!) / (high! - low!)) * 100)) : 0;
   const outsideRange =
-    hasRange &&
-    finite(currentPrice) &&
-    (currentPrice < low! || currentPrice > high!);
+    hasRange && finite(currentPrice) && (currentPrice < low! || currentPrice > high!);
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold">
-        {c("Analyst price targets", "分析师目标价")}
-      </h2>
+      <h2 className="text-xl font-semibold">{c("Analyst price targets", "分析师目标价")}</h2>
       <FinancialState
         loading={resource.loading}
         error={Boolean(resource.error)}
@@ -112,17 +87,12 @@ export default function StockAnalyst({
           >
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <h3
-                  id="analyst-price-heading"
-                  className="text-sm text-muted-foreground"
-                >
+                <h3 id="analyst-price-heading" className="text-sm text-muted-foreground">
                   {c("Mean analyst target", "分析师平均目标价")}
                 </h3>
                 <p className="figure mt-3 text-3xl font-semibold sm:text-4xl">
                   {f.number(data.target_mean_price, false)}{" "}
-                  <span className="text-sm font-normal text-muted-foreground">
-                    {currency}
-                  </span>
+                  <span className="text-sm font-normal text-muted-foreground">{currency}</span>
                 </p>
               </div>
               <div className="text-right">
@@ -132,13 +102,10 @@ export default function StockAnalyst({
                 <p
                   className={cn(
                     "figure mt-3 text-xl font-semibold",
-                    finite(difference) &&
-                      (difference >= 0 ? "text-positive" : "text-negative"),
+                    finite(difference) && (difference >= 0 ? "text-positive" : "text-negative"),
                   )}
                 >
-                  {finite(difference)
-                    ? `${difference >= 0 ? "+" : ""}${f.percent(difference)}`
-                    : "—"}
+                  {finite(difference) ? withSign(difference, f.percent, { digits: 4 }) : "—"}
                 </p>
               </div>
             </div>
@@ -149,9 +116,7 @@ export default function StockAnalyst({
                 </dt>
                 <dd className="figure mt-2 text-base font-medium">
                   {f.number(currentPrice, false)}{" "}
-                  <span className="text-xs text-muted-foreground">
-                    {currency}
-                  </span>
+                  <span className="text-xs text-muted-foreground">{currency}</span>
                 </dd>
               </div>
               <div>
@@ -166,25 +131,16 @@ export default function StockAnalyst({
             <div className="mt-6">
               <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
                 <span className="inline-flex items-center gap-2">
-                  <span
-                    className="h-2 w-2 rounded-full bg-foreground"
-                    aria-hidden="true"
-                  />
+                  <span className="h-2 w-2 rounded-full bg-foreground" aria-hidden="true" />
                   {c("Reference price", "参考股价")}
                 </span>
                 <span className="inline-flex items-center gap-2">
-                  <span
-                    className="h-2 w-2 rounded-full bg-positive"
-                    aria-hidden="true"
-                  />
+                  <span className="h-2 w-2 rounded-full bg-positive" aria-hidden="true" />
                   {c("Mean target", "平均目标价")}
                 </span>
               </div>
               {hasRange && (
-                <div
-                  className="relative mx-2 my-5 h-2 rounded-full bg-muted"
-                  aria-hidden="true"
-                >
+                <div className="relative mx-2 my-5 h-2 rounded-full bg-muted" aria-hidden="true">
                   {finite(currentPrice) && (
                     <span
                       className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-card bg-foreground"
@@ -206,9 +162,7 @@ export default function StockAnalyst({
                   </dt>
                   <dd className="figure mt-2 font-medium">
                     {f.number(low, false)}{" "}
-                    <span className="text-xs text-muted-foreground">
-                      {currency}
-                    </span>
+                    <span className="text-xs text-muted-foreground">{currency}</span>
                   </dd>
                 </div>
                 <div className="text-right">
@@ -217,9 +171,7 @@ export default function StockAnalyst({
                   </dt>
                   <dd className="figure mt-2 font-medium">
                     {f.number(high, false)}{" "}
-                    <span className="text-xs text-muted-foreground">
-                      {currency}
-                    </span>
+                    <span className="text-xs text-muted-foreground">{currency}</span>
                   </dd>
                 </div>
               </dl>
@@ -239,10 +191,7 @@ export default function StockAnalyst({
               aria-labelledby="analyst-ratings-heading"
             >
               <div className="mb-6 flex flex-wrap items-baseline justify-between gap-3">
-                <h3
-                  id="analyst-ratings-heading"
-                  className="text-base font-semibold"
-                >
+                <h3 id="analyst-ratings-heading" className="text-base font-semibold">
                   {c("Current rating distribution", "当前评级分布")}
                 </h3>
                 {ratingTotal !== null && (
@@ -253,10 +202,7 @@ export default function StockAnalyst({
               </div>
               <ul className="space-y-5">
                 {ratings.map((row) => {
-                  const share =
-                    ratingTotal && finite(row.count)
-                      ? row.count / ratingTotal
-                      : null;
+                  const share = ratingTotal && finite(row.count) ? row.count / ratingTotal : null;
                   return (
                     <li
                       key={row.label}
@@ -269,10 +215,7 @@ export default function StockAnalyst({
                       >
                         {share !== null && (
                           <span
-                            className={cn(
-                              "block h-full rounded-full",
-                              row.color,
-                            )}
+                            className={cn("block h-full rounded-full", row.color)}
                             style={{ width: `${share * 100}%` }}
                           />
                         )}

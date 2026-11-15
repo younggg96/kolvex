@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
-const API_PREFIX = "/api/v1";
+import { BACKEND_API_V1 } from "@/lib/config/backend";
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,29 +7,23 @@ export async function POST(request: NextRequest) {
     const { email } = body;
 
     if (!email) {
-      return NextResponse.json(
-        { success: false, error: "Email is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "Email is required" }, { status: 400 });
     }
 
     // 获取重定向 URL - 必须指向 callback 来处理 PKCE code
     const origin = request.headers.get("origin") || request.nextUrl.origin;
     const redirectUrl = `${origin}/auth/callback?type=recovery`;
 
-    const response = await fetch(
-      `${API_BASE_URL}${API_PREFIX}/auth/reset-password`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email,
-          redirect_url: redirectUrl,
-        }),
-      }
-    );
+    const response = await fetch(`${BACKEND_API_V1}/auth/reset-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        redirect_url: redirectUrl,
+      }),
+    });
 
     const data = await response.json();
     return NextResponse.json(data, { status: response.status });
@@ -44,7 +35,7 @@ export async function POST(request: NextRequest) {
         error: "Internal server error",
         error_code: "INTERNAL_ERROR",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -4,6 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 const ts = require("typescript");
+const { FORMAT, format } = require("./helpers/format.cjs");
 
 function load(file, requires = {}) {
   const fixture = { exports: {} };
@@ -13,7 +14,7 @@ function load(file, requires = {}) {
     }).outputText,
     {
       exports: fixture.exports,
-      require: (name) => requires[name],
+      require: (name) => (name === FORMAT ? format : requires[name]),
       Math,
       Number,
       String,
@@ -39,7 +40,7 @@ const translator =
 const t = translator(zh);
 
 test("figures carry a sign and a tone, so direction never depends on color", () => {
-  assert.deepEqual({ ...review.reviewFigure(-6.92) }, { text: "-6.9%", tone: "negative" });
+  assert.deepEqual({ ...review.reviewFigure(-6.92) }, { text: "−6.9%", tone: "negative" });
   assert.deepEqual({ ...review.reviewFigure(4.95) }, { text: "+5.0%", tone: "positive" });
   assert.deepEqual({ ...review.reviewFigure(0.02) }, { text: "0.0%", tone: "flat" });
 });

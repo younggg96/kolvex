@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { BACKEND_API_URL } from "@/lib/config/backend";
 
 export const dynamic = "force-dynamic";
 
 // Backend API base URL
-const NEXT_PUBLIC_BACKEND_API_URL =
-  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
 
 /**
  * GET /api/users/me - Get current user profile
@@ -21,29 +20,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const response = await fetch(
-      `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/users/me`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          "Content-Type": "application/json",
-        },
-        cache: "no-store",
-      }
-    );
+    const response = await fetch(`${BACKEND_API_URL}/api/v1/users/me`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
 
     if (!response.ok) {
       if (response.status === 404) {
-        return NextResponse.json(
-          { error: "Profile not found" },
-          { status: 404 }
-        );
+        return NextResponse.json({ error: "Profile not found" }, { status: 404 });
       }
       const errorData = await response.json().catch(() => ({}));
       return NextResponse.json(
         { error: errorData.detail || "Failed to fetch profile" },
-        { status: response.status }
+        { status: response.status },
       );
     }
 
@@ -51,10 +44,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(data);
   } catch (error) {
     console.error("API Error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch user profile" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch user profile" }, { status: 500 });
   }
 }
 
@@ -74,23 +64,20 @@ export async function PUT(request: NextRequest) {
 
     const body = await request.json();
 
-    const response = await fetch(
-      `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/users/me`,
-      {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-      }
-    );
+    const response = await fetch(`${BACKEND_API_URL}/api/v1/users/me`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       return NextResponse.json(
         { error: errorData.detail || "Failed to update profile" },
-        { status: response.status }
+        { status: response.status },
       );
     }
 
@@ -98,9 +85,6 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json(data);
   } catch (error) {
     console.error("API Error:", error);
-    return NextResponse.json(
-      { error: "Failed to update user profile" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to update user profile" }, { status: 500 });
   }
 }

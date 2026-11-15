@@ -4,7 +4,6 @@ export { ChatInput } from "./ChatInput";
 export { ChatSidebarContent } from "./ChatSidebarContent";
 export { ChatWelcome } from "./ChatWelcome";
 export { ChatMessageList } from "./ChatMessageList";
-export { ChatContainer } from "./ChatContainer";
 export { ChatWelcomeContainer } from "./ChatWelcomeContainer";
 export { ChatDetailContainer } from "./ChatDetailContainer";
 
@@ -28,6 +27,3 @@ export type {
 } from "./types";
 
 export { TOOL_LABELS } from "./types";
-
-// Legacy export for backward compatibility
-export { ChatBubble as ChatMessage } from "./ChatBubble";

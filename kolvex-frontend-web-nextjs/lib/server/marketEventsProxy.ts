@@ -1,36 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-const API =
-  process.env.BACKEND_API_URL ||
-  process.env.NEXT_PUBLIC_BACKEND_API_URL ||
-  "http://localhost:8080";
+import { BACKEND_API_URL } from "@/lib/config/backend";
 export async function marketEventsProxy(request: NextRequest, admin = false) {
   try {
     const supabase = await createServerSupabaseClient();
     const {
       data: { session },
     } = await supabase.auth.getSession();
-    if (!session?.access_token)
-      return NextResponse.json({ error: "请先登录。" }, { status: 401 });
+    if (!session?.access_token) return NextResponse.json({ error: "请先登录。" }, { status: 401 });
     const url = new URL(
-      `${API}/api/v1/${admin ? "admin/market-events" : "market/events"}`,
+      `${BACKEND_API_URL}/api/v1/${admin ? "admin/market-events" : "market/events"}`,
     );
     if (admin && request.method === "GET")
-      url.searchParams.set(
-        "page",
-        request.nextUrl.searchParams.get("page") || "1",
-      );
-    if (
-      admin &&
-      request.method === "POST" &&
-      request.nextUrl.searchParams.get("validate") === "1"
-    )
+      url.searchParams.set("page", request.nextUrl.searchParams.get("page") || "1");
+    if (admin && request.method === "POST" && request.nextUrl.searchParams.get("validate") === "1")
       url.pathname += "/validate";
     let body: string | undefined;
     if (request.method === "POST") {
       const reader = request.body?.getReader();
-      if (!reader)
-        return NextResponse.json({ error: "JSON 不能为空。" }, { status: 400 });
+      if (!reader) return NextResponse.json({ error: "JSON 不能为空。" }, { status: 400 });
       const chunks: Uint8Array[] = [];
       let size = 0;
       while (true) {
@@ -39,10 +27,7 @@ export async function marketEventsProxy(request: NextRequest, admin = false) {
         size += chunk.value.byteLength;
         if (size > 1024 * 1024) {
           await reader.cancel();
-          return NextResponse.json(
-            { error: "JSON 超过 1 MB。" },
-            { status: 413 },
-          );
+          return NextResponse.json({ error: "JSON 超过 1 MB。" }, { status: 413 });
         }
         chunks.push(chunk.value);
       }
@@ -63,10 +48,7 @@ export async function marketEventsProxy(request: NextRequest, admin = false) {
       response.ok
         ? data
         : {
-            error:
-              typeof data.detail === "string"
-                ? data.detail
-                : "事件请求失败，请重试。",
+            error: typeof data.detail === "string" ? data.detail : "事件请求失败，请重试。",
           },
       {
         status: response.status,
@@ -74,9 +56,6 @@ export async function marketEventsProxy(request: NextRequest, admin = false) {
       },
     );
   } catch {
-    return NextResponse.json(
-      { error: "事件服务暂不可用，请重试。" },
-      { status: 503 },
-    );
+    return NextResponse.json({ error: "事件服务暂不可用，请重试。" }, { status: 503 });
   }
 }

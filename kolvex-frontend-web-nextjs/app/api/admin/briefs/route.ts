@@ -1,22 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { BACKEND_API_URL } from "@/lib/config/backend";
 
 export const dynamic = "force-dynamic";
-const API = process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
 
 async function forward(request: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) return NextResponse.json({ error: "请先登录管理员账户。" }, { status: 401 });
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session?.access_token)
+      return NextResponse.json({ error: "请先登录管理员账户。" }, { status: 401 });
     const params = request.nextUrl.searchParams;
     const method = request.method;
     let path = "/api/v1/admin/briefs";
     if (method === "POST" && params.get("validate") === "1") path += "/validate";
     if (method === "GET") {
-      path += params.has("id") ? `/${encodeURIComponent(params.get("id")!)}` : `?page=${encodeURIComponent(params.get("page") || "1")}`;
+      path += params.has("id")
+        ? `/${encodeURIComponent(params.get("id")!)}`
+        : `?page=${encodeURIComponent(params.get("page") || "1")}`;
     }
-    if (method === "GET" && !params.has("id") && params.has("type")) path += `&type=${encodeURIComponent(params.get("type")!)}`;
+    if (method === "GET" && !params.has("id") && params.has("type"))
+      path += `&type=${encodeURIComponent(params.get("type")!)}`;
     if (method === "PUT" || method === "DELETE") {
       if (!params.get("id")) return NextResponse.json({ error: "缺少简报 ID。" }, { status: 400 });
       path += `/${encodeURIComponent(params.get("id")!)}`;
@@ -39,12 +45,30 @@ async function forward(request: NextRequest) {
       }
       body = Buffer.concat(chunks).toString("utf8");
     }
-    const response = await fetch(`${API}${path}`, {
-      method, headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json", ...(request.headers.has("If-Match") ? { "If-Match": request.headers.get("If-Match")! } : {}) },
-      body, cache: "no-store", signal: AbortSignal.timeout(25000),
+    const response = await fetch(`${BACKEND_API_URL}${path}`, {
+      method,
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+        ...(request.headers.has("If-Match")
+          ? { "If-Match": request.headers.get("If-Match")! }
+          : {}),
+      },
+      body,
+      cache: "no-store",
+      signal: AbortSignal.timeout(25000),
     });
     const data = await response.json();
-    if (!response.ok) return NextResponse.json({ error: typeof data.detail === "string" ? data.detail : "请求失败，请检查 JSON 或重新登录后重试。" }, { status: response.status });
+    if (!response.ok)
+      return NextResponse.json(
+        {
+          error:
+            typeof data.detail === "string"
+              ? data.detail
+              : "请求失败，请检查 JSON 或重新登录后重试。",
+        },
+        { status: response.status },
+      );
     return NextResponse.json(data);
   } catch {
     return NextResponse.json({ error: "暂时无法连接简报服务，请重试。" }, { status: 503 });

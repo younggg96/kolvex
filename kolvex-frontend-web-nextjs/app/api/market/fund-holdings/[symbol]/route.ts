@@ -1,11 +1,7 @@
 import { NextResponse } from "next/server";
+import { BACKEND_API_URL } from "@/lib/config/backend";
 
-const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
-
-export async function GET(
-  _request: Request,
-  { params }: { params: { symbol: string } },
-) {
+export async function GET(_request: Request, { params }: { params: { symbol: string } }) {
   const symbol = params.symbol.toUpperCase();
   if (!/^[A-Z0-9.-]{1,12}$/.test(symbol)) {
     return NextResponse.json({ error: "Invalid symbol" }, { status: 400 });

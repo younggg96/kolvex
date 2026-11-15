@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { BACKEND_API_URL } from "@/lib/config/backend";
 
 export const dynamic = "force-dynamic";
-
-const BACKEND_API_URL =
-  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
 
 type RouteParams = { params: Promise<{ ticker: string }> };
 
@@ -29,13 +27,13 @@ async function proxy(request: NextRequest, { params }: RouteParams, method: "GET
         },
         body: method === "PUT" ? await request.text() : undefined,
         cache: "no-store",
-      }
+      },
     );
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
       return NextResponse.json(
         { error: data.detail || data.error || "Backend request failed" },
-        { status: response.status }
+        { status: response.status },
       );
     }
     return NextResponse.json(data);

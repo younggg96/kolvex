@@ -1,18 +1,3 @@
-// ================== UTILITY FUNCTIONS ==================
-
-export function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
-}
-
-export function formatPercent(value: number): string {
-  return `${value >= 0 ? "" : ""}${value.toFixed(2)}%`;
-}
-
 // ================== OPTION PARSING ==================
 
 /**
@@ -36,11 +21,10 @@ export function parseOptionSymbol(symbol: string): { type: "call" | "put" } | nu
 export function getUnderlyingSymbol(
   symbol: string,
   underlyingSymbol?: string,
-  isOption?: boolean
+  isOption?: boolean,
 ): string {
   if (!isOption) return symbol;
   if (underlyingSymbol) return underlyingSymbol;
   // Fallback: extract from option symbol (everything before the space)
   return symbol.split(" ")[0];
 }
-

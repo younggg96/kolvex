@@ -4,6 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 const ts = require("typescript");
+const { BACKEND_CONFIG, backendConfig } = require("./helpers/backend-config.cjs");
 
 // Run the real route with controlled upstream responses and a virtual deadline.
 // No account, backend, or paid model calls are made.
@@ -15,34 +16,52 @@ function fixture(fetch, session = { access_token: "test-token" }) {
     path.join(__dirname, "../app/api/market/ai-technical/[symbol]/route.ts"),
     "utf8",
   );
-  vm.runInNewContext(ts.transpileModule(source, {
-    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
-  }).outputText, {
-    module, exports: module.exports, fetch,
-    process: { env: { NEXT_PUBLIC_BACKEND_API_URL: "https://backend.example" } },
-    console: { error() {}, warn() {} },
-    AbortSignal: {
-      any: (signals) => AbortSignal.any(signals),
-      timeout(ms) { timeoutMs = ms; return deadline.signal; },
+  vm.runInNewContext(
+    ts.transpileModule(source, {
+      compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
+    }).outputText,
+    {
+      module,
+      exports: module.exports,
+      fetch,
+      process: { env: { NEXT_PUBLIC_BACKEND_API_URL: "https://backend.example" } },
+      console: { error() {}, warn() {} },
+      AbortSignal: {
+        any: (signals) => AbortSignal.any(signals),
+        timeout(ms) {
+          timeoutMs = ms;
+          return deadline.signal;
+        },
+      },
+      require(name) {
+        if (name === BACKEND_CONFIG)
+          return backendConfig({ NEXT_PUBLIC_BACKEND_API_URL: "https://backend.example" });
+        if (name === "next/server") return { NextResponse: Response };
+        if (name === "@/lib/supabase/server")
+          return {
+            createServerSupabaseClient: async () => ({
+              auth: { getSession: async () => ({ data: { session } }) },
+            }),
+          };
+        throw new Error(`Unexpected import: ${name}`);
+      },
     },
-    require(name) {
-      if (name === "next/server") return { NextResponse: Response };
-      if (name === "@/lib/supabase/server") return {
-        createServerSupabaseClient: async () => ({
-          auth: { getSession: async () => ({ data: { session } }) },
-        }),
-      };
-      throw new Error(`Unexpected import: ${name}`);
-    },
-  });
+  );
   return {
     maxDuration: module.exports.maxDuration,
-    get timeoutMs() { return timeoutMs; },
-    expire() { deadline.abort(new DOMException("Deadline exceeded", "TimeoutError")); },
+    get timeoutMs() {
+      return timeoutMs;
+    },
+    expire() {
+      deadline.abort(new DOMException("Deadline exceeded", "TimeoutError"));
+    },
     call(body = {}, signal = new AbortController().signal, symbol = "MSFT") {
-      return module.exports.POST({ text: async () => JSON.stringify(body), signal }, {
-        params: Promise.resolve({ symbol }),
-      });
+      return module.exports.POST(
+        { text: async () => JSON.stringify(body), signal },
+        {
+          params: Promise.resolve({ symbol }),
+        },
+      );
     },
   };
 }
@@ -60,14 +79,20 @@ test("a slow MSFT drawings response keeps the selected model, focus and saved ve
   let forwarded;
   const h = fixture((url, options) => {
     forwarded = { url, options };
-    return new Promise((resolve) => { finish = resolve; });
+    return new Promise((resolve) => {
+      finish = resolve;
+    });
   });
   const body = {
-    period: "3mo", interval: "1d",
+    period: "3mo",
+    interval: "1d",
     categories: ["levels", "trendlines", "fibonacci", "trade_plan"],
-    custom_scenarios: [], operation: "drawings", model: "deepseek-v4-pro",
+    custom_scenarios: [],
+    operation: "drawings",
+    model: "deepseek-v4-pro",
     view_start: "2026-07-09T00:00:00-04:00",
-    view_end: "2026-10-08T00:00:00-04:00", locale: "zh",
+    view_end: "2026-10-08T00:00:00-04:00",
+    locale: "zh",
   };
   const pending = h.call(body);
   await tick();
@@ -102,7 +127,9 @@ test("an upstream that never returns is aborted and gets a JSON 504 before the p
 
 test("a stalled response body cannot swallow a timeout or return empty success", async () => {
   const h = fixture(async (_, { signal }) => ({
-    ok: true, status: 200, json: () => untilAborted(signal),
+    ok: true,
+    status: 200,
+    json: () => untilAborted(signal),
   }));
   const pending = h.call();
   await tick();
@@ -139,8 +166,13 @@ test("backend configuration and validation errors keep their status", async () =
 });
 
 test("invalid successful JSON is a backend failure, while non-JSON errors retain their status", async () => {
-  for (const [upstreamStatus, expectedStatus] of [[200, 502], [504, 504]]) {
-    const h = fixture(async () => new Response("upstream gateway error", { status: upstreamStatus }));
+  for (const [upstreamStatus, expectedStatus] of [
+    [200, 502],
+    [504, 504],
+  ]) {
+    const h = fixture(
+      async () => new Response("upstream gateway error", { status: upstreamStatus }),
+    );
     const response = await h.call();
     assert.equal(response.status, expectedStatus);
     assert.ok((await response.json()).error);
@@ -149,7 +181,9 @@ test("invalid successful JSON is a backend failure, while non-JSON errors retain
 
 test("unauthenticated requests do not invoke the backend", async () => {
   let calls = 0;
-  const h = fixture(async () => { calls++; }, null);
+  const h = fixture(async () => {
+    calls++;
+  }, null);
   assert.equal((await h.call()).status, 401);
   assert.equal(calls, 0);
 });

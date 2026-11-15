@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { BACKEND_API_URL } from "@/lib/config/backend";
 
 // Backend API base URL
-const NEXT_PUBLIC_BACKEND_API_URL =
-  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
 
 type RouteParams = { params: Promise<{ userId: string }> };
 
@@ -13,16 +12,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { userId } = await params;
 
-    const response = await fetch(
-      `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/users/${userId}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        cache: "no-store",
-      }
-    );
+    const response = await fetch(`${BACKEND_API_URL}/api/v1/users/${userId}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -31,7 +27,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       const errorData = await response.json().catch(() => ({}));
       return NextResponse.json(
         { error: errorData.detail || "Failed to fetch user profile" },
-        { status: response.status }
+        { status: response.status },
       );
     }
 
@@ -39,9 +35,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json(data);
   } catch (error) {
     console.error("API Error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch user profile" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch user profile" }, { status: 500 });
   }
 }

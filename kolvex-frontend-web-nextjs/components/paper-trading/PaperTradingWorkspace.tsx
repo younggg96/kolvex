@@ -39,6 +39,7 @@ import {
 import OrderTicket from "./OrderTicket";
 import { paperErrorCopy } from "@/lib/paperTradingErrors";
 import TradingReviews from "./TradingReviews";
+import { signedPercent } from "@/lib/format";
 
 export default function PaperTradingWorkspace() {
   const c = useCopy();
@@ -62,9 +63,7 @@ export default function PaperTradingWorkspace() {
   const positionsRef = useRef<HTMLElement>(null);
   const accept = useCallback(
     (next: Account) =>
-      setAccount((current) =>
-        !current || next.version >= current.version ? next : current,
-      ),
+      setAccount((current) => (!current || next.version >= current.version ? next : current)),
     [],
   );
   const errorText = (value: unknown, context: "read" | "order" = "read") =>
@@ -93,17 +92,13 @@ export default function PaperTradingWorkspace() {
         setAutoSyncFailed(false);
         setMessage(
           command.action === "sync"
-            ? c(
-                "Account synced with available quotes.",
-                "已按可用报价同步账户。",
-              )
+            ? c("Account synced with available quotes.", "已按可用报价同步账户。")
             : c("Virtual account updated.", "虚拟账户已更新。"),
         );
       }
       return true;
     } catch (e) {
-      if (alive.current)
-        setError(errorText(e, command.action === "order" ? "order" : "read"));
+      if (alive.current) setError(errorText(e, command.action === "order" ? "order" : "read"));
       return false;
     } finally {
       locked.current = false;
@@ -150,13 +145,11 @@ export default function PaperTradingWorkspace() {
     return () => clearInterval(timer);
   }, [!!account, accept]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const sideLabel = (side: string) =>
-    side === "long" ? c("Long", "多单") : c("Short", "空单");
+  const sideLabel = (side: string) => (side === "long" ? c("Long", "多单") : c("Short", "空单"));
   const s = account?.summary;
   const fills = account ? [...account.state.fills].reverse() : [];
   const orders = account ? [...account.state.orders].reverse() : [];
-  const th =
-    "whitespace-nowrap px-3 py-3 text-left text-xs font-medium text-muted-foreground";
+  const th = "whitespace-nowrap px-3 py-3 text-left text-xs font-medium text-muted-foreground";
   const td = "whitespace-nowrap px-3 py-4 text-sm tabular-nums";
 
   return (
@@ -168,7 +161,10 @@ export default function PaperTradingWorkspace() {
               <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight sm:text-3xl">
                 {c("Your virtual trading desk", "你的虚拟交易工作台")}
                 <InfoTip label={c("About paper trading", "关于模拟交易")}>
-                  {c("Every account starts with $100,000 in virtual funds.", "每个账户初始有 10 万美元虚拟资金。")}
+                  {c(
+                    "Every account starts with $100,000 in virtual funds.",
+                    "每个账户初始有 10 万美元虚拟资金。",
+                  )}
                 </InfoTip>
               </h1>
             </div>
@@ -210,17 +206,40 @@ export default function PaperTradingWorkspace() {
             </div>
           </header>
           {loading && !account ? (
-            <div role="status" aria-label={c("Loading virtual account", "正在加载虚拟账户")} className="space-y-6">
+            <div
+              role="status"
+              aria-label={c("Loading virtual account", "正在加载虚拟账户")}
+              className="space-y-6"
+            >
               <div aria-hidden="true" className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
                 {[0, 1, 2, 3].map((i) => (
-                  <Card key={i} className="p-4 sm:p-6"><Skeleton className="h-3 w-24 rounded-md" /><Skeleton className="mt-2 h-7 w-28 rounded-lg sm:mt-3 sm:h-8" /><Skeleton className="mt-2 h-3 w-32 rounded-md" /></Card>
+                  <Card key={i} className="p-4 sm:p-6">
+                    <Skeleton className="h-3 w-24 rounded-md" />
+                    <Skeleton className="mt-2 h-7 w-28 rounded-lg sm:mt-3 sm:h-8" />
+                    <Skeleton className="mt-2 h-3 w-32 rounded-md" />
+                  </Card>
                 ))}
               </div>
               <div aria-hidden="true">
-                <div className="mb-6 flex gap-1"><Skeleton className="h-10 w-28 rounded-full" /><Skeleton className="h-10 w-28 rounded-full" /></div>
+                <div className="mb-6 flex gap-1">
+                  <Skeleton className="h-10 w-28 rounded-full" />
+                  <Skeleton className="h-10 w-28 rounded-full" />
+                </div>
                 <div className="grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_24rem]">
-                  <Card className="p-4 sm:p-6"><Skeleton className="h-5 w-32 rounded-md" /><Skeleton className="mt-4 h-64 w-full rounded-2xl" /></Card>
-                  <Card className="space-y-4 p-4 sm:p-6"><Skeleton className="h-5 w-28 rounded-md" /><Skeleton className="h-11 w-full rounded-full" />{[0, 1, 2].map((i) => <div key={i} className="space-y-2"><Skeleton className="h-3.5 w-20 rounded-md" /><Skeleton className="h-11 w-full rounded-xl" /></div>)}</Card>
+                  <Card className="p-4 sm:p-6">
+                    <Skeleton className="h-5 w-32 rounded-md" />
+                    <Skeleton className="mt-4 h-64 w-full rounded-2xl" />
+                  </Card>
+                  <Card className="space-y-4 p-4 sm:p-6">
+                    <Skeleton className="h-5 w-28 rounded-md" />
+                    <Skeleton className="h-11 w-full rounded-full" />
+                    {[0, 1, 2].map((i) => (
+                      <div key={i} className="space-y-2">
+                        <Skeleton className="h-3.5 w-20 rounded-md" />
+                        <Skeleton className="h-11 w-full rounded-xl" />
+                      </div>
+                    ))}
+                  </Card>
                 </div>
               </div>
             </div>
@@ -257,7 +276,7 @@ export default function PaperTradingWorkspace() {
                   [
                     c("Account equity", "账户净值"),
                     money(Number(s!.equity)),
-                    `${Number(s!.return_pct) >= 0 ? "+" : ""}${Number(s!.return_pct).toFixed(2)}%`,
+                    signedPercent(Number(s!.return_pct)),
                     Number(s!.total_pnl),
                   ],
                   [
@@ -267,10 +286,7 @@ export default function PaperTradingWorkspace() {
                     null,
                   ],
                   [
-                    c(
-                      "Unrealized P&L · before fees",
-                      "持仓浮动盈亏 · 未计费用",
-                    ),
+                    c("Unrealized P&L · before fees", "持仓浮动盈亏 · 未计费用"),
                     signedMoney(Number(s!.unrealized_pnl)),
                     `${account.state.positions.length} ${c("open positions", "笔持仓")}`,
                     Number(s!.unrealized_pnl),
@@ -288,44 +304,27 @@ export default function PaperTradingWorkspace() {
                       className={cn(
                         "mt-2 text-xl font-semibold tracking-tight tabular-nums sm:mt-3 sm:text-2xl",
                         typeof tone === "number" &&
-                          (tone > 0
-                            ? "text-positive"
-                            : tone < 0
-                              ? "text-negative"
-                              : ""),
+                          (tone > 0 ? "text-positive" : tone < 0 ? "text-negative" : ""),
                       )}
                     >
                       {value}
                     </p>
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      {detail}
-                    </p>
+                    <p className="mt-2 text-xs text-muted-foreground">{detail}</p>
                   </Card>
                 ))}
               </section>
               <Tabs value={tab} onValueChange={setTab}>
                 <TabsList className="mb-6">
-                  <TabsTrigger value="trade">
-                    {c("Trading desk", "交易工作台")}
-                  </TabsTrigger>
-                  <TabsTrigger value="reviews">
-                    {c("Learning reviews", "学习复盘")}
-                  </TabsTrigger>
+                  <TabsTrigger value="trade">{c("Trading desk", "交易工作台")}</TabsTrigger>
+                  <TabsTrigger value="reviews">{c("Learning reviews", "学习复盘")}</TabsTrigger>
                 </TabsList>
                 <TabsContent value="trade" className="space-y-8">
                   <div className="grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_24rem]">
                     <div className="min-w-0 space-y-8">
-                      <Panel
-                        title={c("Equity over time", "净值变化")}
-                        surface="card"
-                      >
+                      <Panel title={c("Equity over time", "净值变化")} surface="card">
                         <EquityChart snapshots={account.state.snapshots} />
                       </Panel>
-                      <section
-                        ref={positionsRef}
-                        tabIndex={-1}
-                        className="scroll-mt-4"
-                      >
+                      <section ref={positionsRef} tabIndex={-1} className="scroll-mt-4">
                         <h2 className="mb-3 text-xl font-semibold">
                           {c("Open positions", "当前持仓")}{" "}
                           <span className="text-sm text-muted-foreground">
@@ -354,18 +353,11 @@ export default function PaperTradingWorkspace() {
                                       c("Stock / side", "股票 / 方向"),
                                       c("Shares / entry", "股数 / 成本"),
                                       c("Mark / quote time", "估值 / 报价时间"),
-                                      c(
-                                        "P&L · before fees",
-                                        "浮盈亏 · 未计费用",
-                                      ),
+                                      c("P&L · before fees", "浮盈亏 · 未计费用"),
                                       c("Stop / target", "止损 / 止盈"),
                                       c("Actions", "操作"),
                                     ].map((label) => (
-                                      <th
-                                        scope="col"
-                                        key={label}
-                                        className={th}
-                                      >
+                                      <th scope="col" key={label} className={th}>
                                         {label}
                                       </th>
                                     ))}
@@ -380,21 +372,13 @@ export default function PaperTradingWorkspace() {
                                       p.quantity *
                                       (p.side === "long" ? 1 : -1);
                                     return (
-                                      <tr
-                                        key={p.id}
-                                        className="hover:bg-muted/60"
-                                      >
+                                      <tr key={p.id} className="hover:bg-muted/60">
                                         <td className={td}>
-                                          <WorkspaceLink
-                                            ticker={p.symbol}
-                                            showLogo={false}
-                                          />
+                                          <WorkspaceLink ticker={p.symbol} showLogo={false} />
                                           <p
                                             className={cn(
                                               "mt-1 text-xs",
-                                              p.side === "long"
-                                                ? "text-positive"
-                                                : "text-negative",
+                                              p.side === "long" ? "text-positive" : "text-negative",
                                             )}
                                           >
                                             {sideLabel(p.side)}
@@ -407,17 +391,15 @@ export default function PaperTradingWorkspace() {
                                           </p>
                                         </td>
                                         <td className={td}>
-                                          {money(
-                                            Number(
-                                              mark?.price || p.entry_price,
-                                            ),
+                                          {money(Number(mark?.price || p.entry_price))}
+                                          {mark?.session === "post" && (
+                                            <p className="mt-1 text-xs text-muted-foreground">
+                                              {c("After-hours mark", "盘后估值")}
+                                            </p>
                                           )}
-                                          {mark?.session === "post" && <p className="mt-1 text-xs text-muted-foreground">{c("After-hours mark", "盘后估值")}</p>}
                                           <p className="mt-1 text-xs text-muted-foreground">
                                             {mark
-                                              ? new Date(
-                                                  mark.at,
-                                                ).toLocaleString(
+                                              ? new Date(mark.at).toLocaleString(
                                                   c("en-US", "zh-CN"),
                                                 )
                                               : "—"}
@@ -426,21 +408,15 @@ export default function PaperTradingWorkspace() {
                                         <td
                                           className={cn(
                                             td,
-                                            pnl >= 0
-                                              ? "text-positive"
-                                              : "text-negative",
+                                            pnl >= 0 ? "text-positive" : "text-negative",
                                           )}
                                         >
                                           {signedMoney(pnl)}
                                         </td>
                                         <td className={td}>
-                                          {p.stop_loss
-                                            ? money(Number(p.stop_loss))
-                                            : "—"}
+                                          {p.stop_loss ? money(Number(p.stop_loss)) : "—"}
                                           <p className="mt-1 text-xs text-muted-foreground">
-                                            {p.take_profit
-                                              ? money(Number(p.take_profit))
-                                              : "—"}
+                                            {p.take_profit ? money(Number(p.take_profit)) : "—"}
                                           </p>
                                         </td>
                                         <td className={td}>
@@ -451,12 +427,10 @@ export default function PaperTradingWorkspace() {
                                               disabled={busy}
                                               onClick={() => {
                                                 setClosePosition(p);
-                                                ticketRef.current?.scrollIntoView(
-                                                  {
-                                                    block: "start",
-                                                    behavior: "auto",
-                                                  },
-                                                );
+                                                ticketRef.current?.scrollIntoView({
+                                                  block: "start",
+                                                  behavior: "auto",
+                                                });
                                               }}
                                             >
                                               {c("Close", "平仓")}
@@ -489,11 +463,7 @@ export default function PaperTradingWorkspace() {
                         <h2 className="mb-3 text-xl font-semibold">
                           {c("Orders", "委托订单")}{" "}
                           <span className="text-sm text-muted-foreground">
-                            {
-                              account.state.orders.filter(
-                                (o) => o.status === "pending",
-                              ).length
-                            }{" "}
+                            {account.state.orders.filter((o) => o.status === "pending").length}{" "}
                             {c("pending", "笔待成交")}
                           </span>
                         </h2>
@@ -523,11 +493,7 @@ export default function PaperTradingWorkspace() {
                                         c("Status", "状态"),
                                         c("Actions", "操作"),
                                       ].map((label) => (
-                                        <th
-                                          scope="col"
-                                          key={label}
-                                          className={th}
-                                        >
+                                        <th scope="col" key={label} className={th}>
                                           {label}
                                         </th>
                                       ))}
@@ -535,16 +501,11 @@ export default function PaperTradingWorkspace() {
                                   </thead>
                                   <tbody>
                                     {orders.slice(0, orderLimit).map((o) => (
-                                      <tr
-                                        key={o.id}
-                                        className="hover:bg-muted/60"
-                                      >
+                                      <tr key={o.id} className="hover:bg-muted/60">
                                         <td className={td}>
                                           {o.symbol}
                                           <p className="mt-1 text-xs text-muted-foreground">
-                                            {new Date(
-                                              o.created_at,
-                                            ).toLocaleString(
+                                            {new Date(o.created_at).toLocaleString(
                                               c("en-US", "zh-CN"),
                                             )}
                                           </p>
@@ -564,9 +525,7 @@ export default function PaperTradingWorkspace() {
                                         </td>
                                         <td className={td}>
                                           {o.fill_price || o.price
-                                            ? money(
-                                                Number(o.fill_price || o.price),
-                                              )
+                                            ? money(Number(o.fill_price || o.price))
                                             : "—"}{" "}
                                           / {o.quantity}
                                         </td>
@@ -575,21 +534,13 @@ export default function PaperTradingWorkspace() {
                                             {
                                               pending: c("Pending", "待成交"),
                                               filled: c("Filled", "已成交"),
-                                              cancelled: c(
-                                                "Cancelled",
-                                                "已撤销",
-                                              ),
+                                              cancelled: c("Cancelled", "已撤销"),
                                               rejected: c("Rejected", "已拒绝"),
                                             }[o.status]
                                           }
                                           {o.rejection && (
                                             <p className="mt-1 max-w-48 whitespace-normal text-xs text-negative">
-                                              {errorText(
-                                                new PaperApiError(
-                                                  o.rejection,
-                                                  422,
-                                                ),
-                                              )}
+                                              {errorText(new PaperApiError(o.rejection, 422))}
                                             </p>
                                           )}
                                         </td>
@@ -602,8 +553,7 @@ export default function PaperTradingWorkspace() {
                                               onClick={() =>
                                                 void execute({
                                                   action: "cancel",
-                                                  request_id:
-                                                    crypto.randomUUID(),
+                                                  request_id: crypto.randomUUID(),
                                                   order_id: o.id,
                                                 })
                                               }
@@ -640,9 +590,7 @@ export default function PaperTradingWorkspace() {
                           account={account}
                           closePosition={
                             (closePosition &&
-                              account.state.positions.find(
-                                (p) => p.id === closePosition.id,
-                              )) ||
+                              account.state.positions.find((p) => p.id === closePosition.id)) ||
                             null
                           }
                           clearClose={() => setClosePosition(null)}
@@ -697,29 +645,21 @@ export default function PaperTradingWorkspace() {
                                     <td className={td}>
                                       {f.symbol}
                                       <p className="mt-1 text-xs text-muted-foreground">
-                                        {new Date(f.at).toLocaleString(
-                                          c("en-US", "zh-CN"),
-                                        )}
+                                        {new Date(f.at).toLocaleString(c("en-US", "zh-CN"))}
                                       </p>
                                       <p className="mt-1 text-xs text-muted-foreground">
                                         {c("Quote", "报价")}{" "}
-                                        {new Date(f.quote_at).toLocaleString(
-                                          c("en-US", "zh-CN"),
-                                        )}
+                                        {new Date(f.quote_at).toLocaleString(c("en-US", "zh-CN"))}
                                       </p>
                                     </td>
                                     <td className={td}>
-                                      {f.effect === "open"
-                                        ? c("Open", "开仓")
-                                        : c("Close", "平仓")}{" "}
+                                      {f.effect === "open" ? c("Open", "开仓") : c("Close", "平仓")}{" "}
                                       · {sideLabel(f.side)}
                                     </td>
                                     <td className={td}>
                                       {money(Number(f.price))} / {f.quantity}
                                     </td>
-                                    <td className={td}>
-                                      {money(Number(f.fee))}
-                                    </td>
+                                    <td className={td}>{money(Number(f.fee))}</td>
                                     <td
                                       className={cn(
                                         td,
@@ -739,10 +679,7 @@ export default function PaperTradingWorkspace() {
                                           order: c("User order", "用户委托"),
                                           stop_loss: c("Stop loss", "止损"),
                                           take_profit: c("Take profit", "止盈"),
-                                          margin: c(
-                                            "Collateral exhausted",
-                                            "抵押耗尽强平",
-                                          ),
+                                          margin: c("Collateral exhausted", "抵押耗尽强平"),
                                         } as Record<string, string>
                                       )[f.reason] || f.reason}
                                       {f.note && (
@@ -789,8 +726,7 @@ export default function PaperTradingWorkspace() {
                           block: "start",
                           behavior: "auto",
                         });
-                        if (account.state.positions.length)
-                          target?.focus({ preventScroll: true });
+                        if (account.state.positions.length) target?.focus({ preventScroll: true });
                         else
                           target
                             ?.querySelector<HTMLInputElement>("input")
@@ -848,11 +784,7 @@ export default function PaperTradingWorkspace() {
             {bracketError}
           </p>
           <DialogFooter>
-            <Button
-              variant="outline"
-              disabled={busy}
-              onClick={() => setBracket(null)}
-            >
+            <Button variant="outline" disabled={busy} onClick={() => setBracket(null)}>
               {c("Cancel", "取消")}
             </Button>
             <Button
@@ -860,15 +792,10 @@ export default function PaperTradingWorkspace() {
               onClick={async () => {
                 if (!bracket) return;
                 if (
-                  [stop, target].some(
-                    (v) => v && (!Number.isFinite(Number(v)) || Number(v) <= 0),
-                  )
+                  [stop, target].some((v) => v && (!Number.isFinite(Number(v)) || Number(v) <= 0))
                 ) {
                   setBracketError(
-                    c(
-                      "Enter positive prices, or leave fields empty.",
-                      "请输入正数价格，或留空。",
-                    ),
+                    c("Enter positive prices, or leave fields empty.", "请输入正数价格，或留空。"),
                   );
                   return;
                 }
@@ -900,11 +827,7 @@ export default function PaperTradingWorkspace() {
   );
 }
 
-function EquityChart({
-  snapshots,
-}: {
-  snapshots: { at: string; equity: string }[];
-}) {
+function EquityChart({ snapshots }: { snapshots: { at: string; equity: string }[] }) {
   const c = useCopy();
   if (snapshots.length < 2)
     return (
@@ -940,14 +863,7 @@ function EquityChart({
         className="h-40 w-full text-foreground sm:h-48"
         preserveAspectRatio="none"
       >
-        <line
-          x1="16"
-          x2="784"
-          y1="176"
-          y2="176"
-          stroke="currentColor"
-          opacity=".15"
-        />
+        <line x1="16" x2="784" y1="176" y2="176" stroke="currentColor" opacity=".15" />
         <polyline
           points={points}
           fill="none"
@@ -957,24 +873,17 @@ function EquityChart({
         />
       </svg>
       <figcaption className="flex justify-between text-xs text-muted-foreground">
+        <span>{new Date(snapshots[0].at).toLocaleString(c("en-US", "zh-CN"))}</span>
         <span>
-          {new Date(snapshots[0].at).toLocaleString(c("en-US", "zh-CN"))}
-        </span>
-        <span>
-          {new Date(snapshots[snapshots.length - 1].at).toLocaleString(
-            c("en-US", "zh-CN"),
-          )}
+          {new Date(snapshots[snapshots.length - 1].at).toLocaleString(c("en-US", "zh-CN"))}
         </span>
       </figcaption>
       <details className="mt-3 text-xs text-muted-foreground">
-        <summary className="cursor-pointer">
-          {c("Recent equity samples", "最近净值采样")}
-        </summary>
+        <summary className="cursor-pointer">{c("Recent equity samples", "最近净值采样")}</summary>
         <ol className="mt-2 space-y-1">
           {snapshots.slice(-10).map((s) => (
             <li key={s.at}>
-              {new Date(s.at).toLocaleString(c("en-US", "zh-CN"))} ·{" "}
-              {money(Number(s.equity))}
+              {new Date(s.at).toLocaleString(c("en-US", "zh-CN"))} · {money(Number(s.equity))}
             </li>
           ))}
         </ol>

@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
-const API_PREFIX = "/api/v1";
+import { BACKEND_API_V1 } from "@/lib/config/backend";
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,13 +9,11 @@ export async function POST(request: NextRequest) {
       data: { session },
     } = await supabase.auth.getSession();
 
-    const response = await fetch(`${API_BASE_URL}${API_PREFIX}/auth/signout`, {
+    const response = await fetch(`${BACKEND_API_V1}/auth/signout`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(session?.access_token
-          ? { Authorization: `Bearer ${session.access_token}` }
-          : {}),
+        ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
       },
     });
 
@@ -31,7 +26,7 @@ export async function POST(request: NextRequest) {
         success: true,
         message: "Signed out successfully",
       },
-      { status: 200 }
+      { status: 200 },
     );
   }
 }

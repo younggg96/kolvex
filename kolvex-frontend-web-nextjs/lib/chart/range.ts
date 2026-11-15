@@ -6,9 +6,10 @@
  * showed the same three months of bars. Everything here is pure and unit-tested from
  * `scripts/chart-range.test.cjs`.
  *
- * The keys deliberately match `PriceRangeKey` in `lib/chart/graph.ts` and `AdvancedRange`
- * in `components/youtube/chart/timeframes.ts` (plus "CUSTOM"), so the same value can be
- * handed to the graph's range bar, to `rangeStart` in timeframes.ts and to the fetcher.
+ * The keys deliberately match `PriceRangeKey` in `lib/chart/graph.ts`, so the same value can
+ * be handed to the graph's range bar, to `windowStartFor` and to the fetcher. The advanced
+ * chart's interval choices (`rangeIntervals`, `advancedHistoryParams`) live here too, so
+ * there is one range module for both the compact and the advanced chart.
  */
 import {
   addDays,
@@ -31,8 +32,26 @@ import type { PriceRangeKey } from "./graph";
  */
 export type PriceRange = PriceRangeKey;
 
+/** Every preset range; only a custom window is not one. */
+export type AdvancedRange = Exclude<PriceRange, "CUSTOM">;
+
 /** Ranges offered by the graph, in bar order. */
-export const priceRanges: PriceRange[] = ["1D", "1W", "1M", "3M", "6M", "YTD", "1Y", "5Y", "ALL"];
+export const priceRanges: AdvancedRange[] = [
+  "1D",
+  "1W",
+  "1M",
+  "3M",
+  "6M",
+  "YTD",
+  "1Y",
+  "5Y",
+  "ALL",
+];
+
+/** True for a preset range (anything but a custom window or an unknown value). */
+export function isPresetRange(value: string | null | undefined): value is AdvancedRange {
+  return (priceRanges as string[]).includes(value ?? "");
+}
 
 /** Longest span (days) still fetched at daily resolution for a custom window. */
 const CUSTOM_DAILY_LIMIT = 400;
@@ -69,7 +88,10 @@ function parseDay(value: string | undefined): Date | null {
  * for 1D/1W (yfinance keeps 5m only for 60 days and 15m for 60 days), daily up to 1Y, weekly
  * for 5Y, monthly for everything.
  */
-export function historyParamsFor(range: PriceRange, options: HistoryParamsOptions = {}): PriceHistoryParams {
+export function historyParamsFor(
+  range: PriceRange,
+  options: HistoryParamsOptions = {},
+): PriceHistoryParams {
   const today = options.today ?? new Date();
   switch (range) {
     case "1D":
@@ -110,7 +132,10 @@ export function historyParamsFor(range: PriceRange, options: HistoryParamsOption
  * Sensible range when a page only knows the opinion window it is showing (or nothing at all):
  * the graph should open on a window comparable to the opinions, not always three months.
  */
-export function defaultRangeForWindow(earliest: string | undefined, today: Date = new Date()): PriceRange {
+export function defaultRangeForWindow(
+  earliest: string | undefined,
+  today: Date = new Date(),
+): PriceRange {
   const start = parseDay(earliest);
   if (!start) return "3M";
   const span = differenceInCalendarDays(today, start);
@@ -124,12 +149,13 @@ export function defaultRangeForWindow(earliest: string | undefined, today: Date 
 
 /**
  * Earliest bar time (ms) that belongs to the selected range; null shows every loaded bar.
- *
- * Mirrors `rangeStart` in `components/youtube/chart/timeframes.ts` (which owns the advanced
- * chart's ranges and gains the same 6M case there) so compact and advanced agree, and adds
- * the two windows timeframes.ts does not model: 6M and CUSTOM.
+ * Used by both the compact and the advanced chart.
  */
-export function windowStartFor(range: PriceRange, lastBarTime: number, customFrom?: string): number | null {
+export function windowStartFor(
+  range: PriceRange,
+  lastBarTime: number,
+  customFrom?: string,
+): number | null {
   const last = new Date(lastBarTime);
   switch (range) {
     case "1D":
@@ -219,7 +245,10 @@ const LEGACY_TO_RANGE: Record<string, PriceRange> = {
  * links and drive the opinion query; only the boundary where they reach the graph is mapped.
  * Unknown or missing values fall back to `fallback` (3M by default).
  */
-export function legacyRangeToPriceRange(value: string | undefined | null, fallback: PriceRange = "3M"): PriceRange {
+export function legacyRangeToPriceRange(
+  value: string | undefined | null,
+  fallback: PriceRange = "3M",
+): PriceRange {
   if (!value) return fallback;
   return LEGACY_TO_RANGE[value] ?? LEGACY_TO_RANGE[value.toLowerCase()] ?? fallback;
 }
@@ -243,9 +272,68 @@ export function priceRangeToLegacyRange(range: PriceRange): LegacyRange | null {
 }
 
 /** Human label for a range: the localized range name, or the custom window's dates. */
-export function rangeLabelFor(range: PriceRange, options: { customFrom?: Date; customTo?: Date; fallback: string }): string {
+export function rangeLabelFor(
+  range: PriceRange,
+  options: { customFrom?: Date; customTo?: Date; fallback: string },
+): string {
   if (range !== "CUSTOM") return options.fallback;
   const { customFrom, customTo } = options;
   if (!customFrom) return options.fallback;
   return `${format(customFrom, "MMM d")} – ${format(customTo ?? new Date(), "MMM d")}`;
+}
+
+/* ---------------------------------------------------------------------------------------
+ * Advanced chart: the user picks a bar interval inside the selected range.
+ * ------------------------------------------------------------------------------------- */
+
+export type ChartInterval = "5m" | "15m" | "1h" | "4h" | "1d" | "1wk" | "1mo";
+
+/** Intervals that give a readable number of bars for each range, within yfinance's intraday limits. */
+export const rangeIntervals: Record<AdvancedRange, ChartInterval[]> = {
+  "1D": ["5m", "15m", "1h"],
+  "1W": ["5m", "15m", "1h", "4h"],
+  "1M": ["15m", "1h", "4h", "1d"],
+  "3M": ["1h", "4h", "1d"],
+  "6M": ["1h", "4h", "1d", "1wk"],
+  YTD: ["1h", "4h", "1d", "1wk"],
+  "1Y": ["1h", "4h", "1d", "1wk"],
+  "5Y": ["1d", "1wk", "1mo"],
+  ALL: ["1d", "1wk", "1mo"],
+};
+
+export const defaultInterval: Record<AdvancedRange, ChartInterval> = {
+  "1D": "5m",
+  "1W": "15m",
+  "1M": "1h",
+  "3M": "1d",
+  "6M": "1d",
+  YTD: "1d",
+  "1Y": "1d",
+  "5Y": "1wk",
+  ALL: "1mo",
+};
+
+export const isIntraday = (interval: string) => /m$|h$/.test(interval) && interval !== "1mo";
+
+/**
+ * More history than the range is loaded so long EMAs are warmed up and the user can pan
+ * back; yfinance caps 5m/15m at 60 days and hourly at 730 days.
+ */
+export function advancedHistoryParams(
+  range: AdvancedRange,
+  interval: ChartInterval,
+): PriceHistoryParams {
+  const tomorrow = iso(addDays(new Date(), 1));
+  switch (interval) {
+    case "5m":
+    case "15m":
+      return { interval, period: "1mo" };
+    case "1h":
+    case "4h":
+      return { interval, start: iso(subDays(new Date(), 725)), end: tomorrow };
+    case "1d":
+      return { interval, period: range === "5Y" || range === "ALL" ? "max" : "5y" };
+    default:
+      return { interval, period: "max" };
+  }
 }

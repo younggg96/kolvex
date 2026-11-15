@@ -26,9 +26,28 @@ export interface ProductFeature {
 }
 
 export const PRODUCT_FEATURES = [
-  { id: "paperTrading", label: "Paper trading", enabled: true, routePrefixes: ["/dashboard/paper-trading"], apiPrefixes: ["/api/paper-trading"] },
-  { id: "superinvestors", label: "Superinvestors", enabled: true, routePrefixes: ["/dashboard/superinvestors"], componentDirs: ["components/superinvestors"] },
-  { id: "congressTrades", label: "Congress trades", enabled: true, routePrefixes: ["/dashboard/congress-trades"], apiPrefixes: ["/api/congress/trades"], componentDirs: ["components/congress"] },
+  {
+    id: "paperTrading",
+    label: "Paper trading",
+    enabled: true,
+    routePrefixes: ["/dashboard/paper-trading"],
+    apiPrefixes: ["/api/paper-trading"],
+  },
+  {
+    id: "superinvestors",
+    label: "Superinvestors",
+    enabled: true,
+    routePrefixes: ["/dashboard/superinvestors"],
+    componentDirs: ["components/superinvestors"],
+  },
+  {
+    id: "congressTrades",
+    label: "Congress trades",
+    enabled: true,
+    routePrefixes: ["/dashboard/congress-trades"],
+    apiPrefixes: ["/api/congress/trades"],
+    componentDirs: ["components/congress"],
+  },
   {
     id: "optionsActivity",
     label: "Options activity",
@@ -39,9 +58,28 @@ export const PRODUCT_FEATURES = [
     libFiles: ["lib/optionsActivity.ts"],
   },
   { id: "watchlist", label: "Watchlist", enabled: true, routePrefixes: ["/dashboard/watchlist"] },
-  { id: "news", label: "News", enabled: true, routePrefixes: ["/dashboard/news"], apiPrefixes: ["/api/news"], componentDirs: ["components/news"], libFiles: ["lib/newsFeed.ts"] },
-  { id: "home", label: "Markets", enabled: true, routePrefixes: ["/dashboard", "/dashboard/market"] },
-  { id: "journal", label: "Updates", enabled: true, routePrefixes: ["/dashboard/journal"], apiPrefixes: ["/api/theses"] },
+  {
+    id: "news",
+    label: "News",
+    enabled: true,
+    routePrefixes: ["/dashboard/news"],
+    apiPrefixes: ["/api/news"],
+    componentDirs: ["components/news"],
+    libFiles: ["lib/newsFeed.ts"],
+  },
+  {
+    id: "home",
+    label: "Markets",
+    enabled: true,
+    routePrefixes: ["/dashboard", "/dashboard/market"],
+  },
+  {
+    id: "journal",
+    label: "Updates",
+    enabled: true,
+    routePrefixes: ["/dashboard/journal"],
+    apiPrefixes: ["/api/theses"],
+  },
   {
     id: "chat",
     label: "AI Chat",
@@ -55,7 +93,11 @@ export const PRODUCT_FEATURES = [
     id: "tradingAnalysis",
     label: "AI Research",
     enabled: true,
-    routePrefixes: ["/dashboard/ai-research", "/dashboard/research/deep-research", "/dashboard/trading-analysis"],
+    routePrefixes: [
+      "/dashboard/ai-research",
+      "/dashboard/research/deep-research",
+      "/dashboard/trading-analysis",
+    ],
     apiPrefixes: ["/api/trading-analysis"],
     componentDirs: ["components/trading-analysis"],
     libFiles: ["lib/tradingAnalysisApi.ts"],
@@ -64,7 +106,11 @@ export const PRODUCT_FEATURES = [
     id: "youtubeOpinions",
     label: "Creator Opinions",
     enabled: true,
-    routePrefixes: ["/dashboard/youtube-opinions", "/dashboard/reddit-opinions", "/dashboard/x-opinions"],
+    routePrefixes: [
+      "/dashboard/youtube-opinions",
+      "/dashboard/reddit-opinions",
+      "/dashboard/x-opinions",
+    ],
     apiPrefixes: ["/api/youtube-opinions", "/api/reddit-opinions", "/api/x-content"],
     libFiles: ["lib/youtubeOpinionsApi.ts", "lib/xContentApi.ts"],
   },
@@ -82,18 +128,9 @@ export const PRODUCT_FEATURES = [
     label: "Portfolio",
     enabled: true,
     routePrefixes: ["/dashboard/portfolio", "/portfolio"],
-    apiPrefixes: [
-      "/api/portfolio",
-      "/api/plaid",
-      "/api/stocks",
-    ],
+    apiPrefixes: ["/api/portfolio", "/api/plaid", "/api/stocks"],
     componentDirs: ["components/portfolio"],
-    libFiles: [
-      "lib/portfolioApi.ts",
-      "lib/plaidApi.ts",
-      "lib/stockApi.ts",
-      "lib/stockApi.server.ts",
-    ],
+    libFiles: ["lib/portfolioApi.ts", "lib/plaidApi.ts", "lib/stockApi.ts"],
   },
   {
     id: "settings",
@@ -128,9 +165,9 @@ export const RETIRED_PRODUCT_ROUTE_PREFIXES = [
 
 export const DISABLED_PRODUCT_ROUTE_PREFIXES: readonly string[] = [
   ...RETIRED_PRODUCT_ROUTE_PREFIXES,
-  ...PRODUCT_FEATURES.filter((feature) => !feature.enabled).flatMap(
-    (feature) => [...feature.routePrefixes],
-  ),
+  ...PRODUCT_FEATURES.filter((feature) => !feature.enabled).flatMap((feature) => [
+    ...feature.routePrefixes,
+  ]),
 ];
 
 export const DISABLED_PRODUCT_REDIRECT = "/dashboard";

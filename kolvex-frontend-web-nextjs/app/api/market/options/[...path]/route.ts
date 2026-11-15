@@ -4,19 +4,17 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
+import { BACKEND_API_URL } from "@/lib/config/backend";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
+  { params }: { params: Promise<{ path: string[] }> },
 ) {
   try {
     const { path } = await params;
     const pathString = path.join("/");
     const searchParams = request.nextUrl.searchParams.toString();
-    const url = `${API_BASE_URL}/api/v1/market/options/${pathString}${
+    const url = `${BACKEND_API_URL}/api/v1/market/options/${pathString}${
       searchParams ? `?${searchParams}` : ""
     }`;
 
@@ -42,7 +40,7 @@ export async function GET(
     console.error("Market Options API error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

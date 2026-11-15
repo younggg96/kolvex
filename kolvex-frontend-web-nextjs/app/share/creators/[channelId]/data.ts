@@ -1,6 +1,7 @@
 import { cache } from "react";
 import type { CreatorLatestVideo } from "@/lib/youtubeOpinionsApi";
 import { PUBLIC_CONTENT_REVALIDATE_SECONDS, PUBLIC_CONTENT_TAG } from "@/lib/publicContent";
+import { BACKEND_API_URL } from "@/lib/config/backend";
 
 /** The existing public opinion API returns only source/creator fields for this view. */
 export const getPublicCreatorOpinions = cache(
@@ -8,9 +9,8 @@ export const getPublicCreatorOpinions = cache(
     if (!channelId || channelId.length > 128 || /[\x00-\x1f/\\?#]/.test(channelId)) {
       return { creator: null, video: null, opinions: [] };
     }
-    const backend = process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
     const response = await fetch(
-      `${backend}/api/v1/youtube-opinions/creators/${encodeURIComponent(channelId)}/latest-video`,
+      `${BACKEND_API_URL}/api/v1/youtube-opinions/creators/${encodeURIComponent(channelId)}/latest-video`,
       {
         next: { revalidate: PUBLIC_CONTENT_REVALIDATE_SECONDS, tags: [PUBLIC_CONTENT_TAG] },
       },

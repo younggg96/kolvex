@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
-const API_PREFIX = "/api/v1";
+import { BACKEND_API_V1 } from "@/lib/config/backend";
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,7 +16,7 @@ export async function POST(request: NextRequest) {
           error: "Unauthorized",
           error_code: "UNAUTHORIZED",
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -27,23 +24,17 @@ export async function POST(request: NextRequest) {
     const { password } = body;
 
     if (!password) {
-      return NextResponse.json(
-        { success: false, error: "Password is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "Password is required" }, { status: 400 });
     }
 
-    const response = await fetch(
-      `${API_BASE_URL}${API_PREFIX}/auth/update-password`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({ password }),
-      }
-    );
+    const response = await fetch(`${BACKEND_API_V1}/auth/update-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ password }),
+    });
 
     const data = await response.json();
     return NextResponse.json(data, { status: response.status });
@@ -55,7 +46,7 @@ export async function POST(request: NextRequest) {
         error: "Internal server error",
         error_code: "INTERNAL_ERROR",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

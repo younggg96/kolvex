@@ -2,6 +2,7 @@ import { loadClientCache } from "./clientCache";
 import { publishQuote } from "./quoteSnapshots";
 import type { TechnicalFocus, TechnicalCategory } from "./technicalFocus";
 import type { KlineForecast } from "./klineForecast";
+import { signedPercent } from "@/lib/format";
 // Stock API types and utilities
 
 export interface StockQuote {
@@ -35,9 +36,13 @@ export interface StockQuote {
 }
 
 export async function getStockQuote(symbol: string, signal?: AbortSignal): Promise<StockQuote> {
-  const response = await fetch(`/api/stocks?action=quote&symbol=${encodeURIComponent(symbol)}`, { signal, cache: "no-store" });
+  const response = await fetch(`/api/stocks?action=quote&symbol=${encodeURIComponent(symbol)}`, {
+    signal,
+    cache: "no-store",
+  });
   const data = await response.json();
-  if (!response.ok || !Number.isFinite(data.price) || data.price <= 0) throw new Error("Market price unavailable");
+  if (!response.ok || !Number.isFinite(data.price) || data.price <= 0)
+    throw new Error("Market price unavailable");
   return publishQuote(data as StockQuote);
 }
 
@@ -51,18 +56,34 @@ export interface StockNewsItem {
 }
 
 export async function getStockNews(symbol: string, signal?: AbortSignal): Promise<StockNewsItem[]> {
-  const response = await fetch(`/api/market/news/${encodeURIComponent(symbol)}`, { signal, cache: "no-store" });
+  const response = await fetch(`/api/market/news/${encodeURIComponent(symbol)}`, {
+    signal,
+    cache: "no-store",
+  });
   if (!response.ok) throw new Error("Stock news unavailable");
   const data = await response.json();
   if (!Array.isArray(data.news)) throw new Error("Invalid stock news response");
   const seen = new Set<string>();
-  return (data.news as StockNewsItem[]).filter(item => {
-    if (!item || typeof item.title !== "string" || !item.title.trim() || typeof item.link !== "string") return false;
-    try { if (!["http:", "https:"].includes(new URL(item.link).protocol)) return false; } catch { return false; }
-    if (seen.has(item.link)) return false;
-    seen.add(item.link);
-    return true;
-  }).sort((a, b) => (b.publish_time ?? 0) - (a.publish_time ?? 0)).slice(0, 30);
+  return (data.news as StockNewsItem[])
+    .filter((item) => {
+      if (
+        !item ||
+        typeof item.title !== "string" ||
+        !item.title.trim() ||
+        typeof item.link !== "string"
+      )
+        return false;
+      try {
+        if (!["http:", "https:"].includes(new URL(item.link).protocol)) return false;
+      } catch {
+        return false;
+      }
+      if (seen.has(item.link)) return false;
+      seen.add(item.link);
+      return true;
+    })
+    .sort((a, b) => (b.publish_time ?? 0) - (a.publish_time ?? 0))
+    .slice(0, 30);
 }
 
 export interface MarketIndex {
@@ -212,30 +233,37 @@ export async function getStockHistory(
   force = false,
 ): Promise<PriceBar[]> {
   const key = stockHistoryKey(symbol, params);
-  return loadClientCache(key, async requestSignal => {
-    for (let attempt = 0; ; attempt++) {
-      try {
-        const response = await fetch(key, { signal: requestSignal, cache: "no-store" });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          throw Object.assign(new Error(data.error || `API error: ${response.status}`), { status: response.status });
+  return loadClientCache(
+    key,
+    async (requestSignal) => {
+      for (let attempt = 0; ; attempt++) {
+        try {
+          const response = await fetch(key, { signal: requestSignal, cache: "no-store" });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw Object.assign(new Error(data.error || `API error: ${response.status}`), {
+              status: response.status,
+            });
+          }
+          const bars = (Array.isArray(data.data) ? data.data : []).filter(
+            (bar: Partial<PriceBar>): bar is PriceBar =>
+              typeof bar.date === "string" &&
+              [bar.open, bar.high, bar.low, bar.close].every(
+                (value) => typeof value === "number" && Number.isFinite(value),
+              ),
+          );
+          // An empty upstream response is unavailable data, not a successful cache entry.
+          if (!bars.length) throw new Error("History unavailable");
+          return bars;
+        } catch (error) {
+          const status = (error as { status?: number }).status;
+          if (requestSignal.aborted || attempt > 0 || (status && status < 500 && status !== 429))
+            throw error;
         }
-        const bars = (Array.isArray(data.data) ? data.data : []).filter(
-          (bar: Partial<PriceBar>): bar is PriceBar =>
-            typeof bar.date === "string" &&
-            [bar.open, bar.high, bar.low, bar.close].every(
-              value => typeof value === "number" && Number.isFinite(value)
-            )
-        );
-        // An empty upstream response is unavailable data, not a successful cache entry.
-        if (!bars.length) throw new Error("History unavailable");
-        return bars;
-      } catch (error) {
-        const status = (error as { status?: number }).status;
-        if (requestSignal.aborted || attempt > 0 || (status && status < 500 && status !== 429)) throw error;
       }
-    }
-  }, { ttl: 60_000, maxAge: 5 * 60_000, signal, force });
+    },
+    { ttl: 60_000, maxAge: 5 * 60_000, signal, force },
+  );
 }
 
 export interface AiChartPoint {
@@ -272,8 +300,18 @@ export interface AiTechnicalAnalysis {
   trend: "uptrend" | "downtrend" | "sideways";
   bias: "bullish" | "bearish" | "neutral";
   summary: string;
-  levels: Array<{ kind: "support" | "resistance"; price: number; strength: "weak" | "medium" | "strong"; reason: string }>;
-  trendlines: Array<{ kind: "support" | "resistance"; start: AiChartPoint; end: AiChartPoint; reason: string }>;
+  levels: Array<{
+    kind: "support" | "resistance";
+    price: number;
+    strength: "weak" | "medium" | "strong";
+    reason: string;
+  }>;
+  trendlines: Array<{
+    kind: "support" | "resistance";
+    start: AiChartPoint;
+    end: AiChartPoint;
+    reason: string;
+  }>;
   fib: { from: AiChartPoint; to: AiChartPoint } | null;
   signals: string[];
   invalidation: string | null;
@@ -292,15 +330,22 @@ export interface AiTechnicalAnalysis {
 }
 
 export class AiAnalysisError extends Error {
-  constructor(message: string, public status: number) {
+  constructor(
+    message: string,
+    public status: number,
+  ) {
     super(message);
   }
 }
 
-export type AiChartRequest = PriceHistoryParams & Partial<TechnicalFocus> & {
-  view_start?: string; view_end?: string; locale?: string;
-  model: string; operation: "analysis" | "drawings";
-};
+export type AiChartRequest = PriceHistoryParams &
+  Partial<TechnicalFocus> & {
+    view_start?: string;
+    view_end?: string;
+    locale?: string;
+    model: string;
+    operation: "analysis" | "drawings";
+  };
 export interface AiChartJob {
   id: string;
   ticker: string;
@@ -313,18 +358,28 @@ export interface AiChartJob {
 
 async function chartJobRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`/api/market/chart-jobs/${path}`, {
-    ...options, cache: "no-store",
+    ...options,
+    cache: "no-store",
     headers: { "Content-Type": "application/json" },
-    signal: options.signal ? AbortSignal.any([options.signal, AbortSignal.timeout(25_000)]) : AbortSignal.timeout(25_000),
+    signal: options.signal
+      ? AbortSignal.any([options.signal, AbortSignal.timeout(25_000)])
+      : AbortSignal.timeout(25_000),
   });
   const data = await response.json();
   if (!response.ok) throw new AiAnalysisError(data.error || "ai_jobs_unavailable", response.status);
   return data as T;
 }
 
-export function submitAiChartJob(symbol: string, body: AiChartRequest, requestId: string, signal?: AbortSignal) {
+export function submitAiChartJob(
+  symbol: string,
+  body: AiChartRequest,
+  requestId: string,
+  signal?: AbortSignal,
+) {
   return chartJobRequest<AiChartJob>(encodeURIComponent(symbol), {
-    method: "POST", body: JSON.stringify({ ...body, request_id: requestId }), signal,
+    method: "POST",
+    body: JSON.stringify({ ...body, request_id: requestId }),
+    signal,
   });
 }
 
@@ -334,8 +389,15 @@ export function getAiChartJobs(symbol: string, signal?: AbortSignal) {
 
 export async function getAiTechnicalAnalysis(
   symbol: string,
-  body: PriceHistoryParams & Partial<TechnicalFocus> & { view_start?: string; view_end?: string; locale?: string; model: string; operation?: "analysis" | "drawings" },
-  signal?: AbortSignal
+  body: PriceHistoryParams &
+    Partial<TechnicalFocus> & {
+      view_start?: string;
+      view_end?: string;
+      locale?: string;
+      model: string;
+      operation?: "analysis" | "drawings";
+    },
+  signal?: AbortSignal,
 ): Promise<AiTechnicalAnalysis> {
   const response = await fetch(`/api/market/ai-technical/${encodeURIComponent(symbol)}`, {
     method: "POST",
@@ -366,8 +428,7 @@ export function formatPrice(price: number): string {
  * Format change percent for display
  */
 export function formatChangePercent(percent: number): string {
-  const sign = percent >= 0 ? "+" : "";
-  return `${sign}${percent.toFixed(2)}%`;
+  return signedPercent(percent);
 }
 
 /**

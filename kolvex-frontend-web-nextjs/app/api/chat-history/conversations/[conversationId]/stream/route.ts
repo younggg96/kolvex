@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-
-const BACKEND_API_URL =
-  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
+import { BACKEND_API_URL } from "@/lib/config/backend";
 
 interface RouteParams {
   params: Promise<{ conversationId: string }>;
@@ -46,23 +44,20 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         },
         body: JSON.stringify(body),
         signal: request.signal,
-      }
+      },
     );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       return NextResponse.json(
         { error: errorData.detail || "Failed to stream message" },
-        { status: response.status }
+        { status: response.status },
       );
     }
 
     // Pipe the SSE stream directly from backend to client
     if (!response.body) {
-      return NextResponse.json(
-        { error: "No response body" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "No response body" }, { status: 500 });
     }
 
     return new Response(response.body, {
@@ -75,10 +70,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     });
   } catch (error) {
     console.error("Stream API Error:", error);
-    return NextResponse.json(
-      { error: "Failed to stream message" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to stream message" }, { status: 500 });
   }
 }
 
@@ -86,7 +78,10 @@ async function requestStreamState(method: "GET" | "DELETE", params: RouteParams[
   try {
     const { conversationId } = await params;
     const supabase = await createServerSupabaseClient();
-    const { data: { session }, error } = await supabase.auth.getSession();
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.getSession();
     if (error || !session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -97,10 +92,13 @@ async function requestStreamState(method: "GET" | "DELETE", params: RouteParams[
         method,
         headers: { Authorization: `Bearer ${session.access_token}` },
         cache: "no-store",
-      }
+      },
     );
     if (!response.ok) {
-      return NextResponse.json({ error: "Could not check chat generation" }, { status: response.status });
+      return NextResponse.json(
+        { error: "Could not check chat generation" },
+        { status: response.status },
+      );
     }
     return NextResponse.json(await response.json(), {
       headers: { "Cache-Control": "no-store" },

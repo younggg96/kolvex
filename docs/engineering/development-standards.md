@@ -39,6 +39,8 @@ App ─────────────────────────�
 | 数据 hooks | `hooks/`（`useCachedResource`、`useVisiblePolling`、`useMarketQuotes`…） |
 | 功能开关 | `lib/productFeatures.ts` |
 | 文案 | `useCopy()`（`components/decision/shared.tsx`，就地写中英两份）或 `useTranslation()` + `lib/i18n/locales/{zh,en}.json` |
+| 后端地址 | `lib/config/backend.ts` 的 `BACKEND_API_URL` / `BACKEND_API_V1`。路由和服务端代码不要自己读 `process.env.*BACKEND_API_URL` 或写 `http://localhost:8080`，由 `scripts/backend-config.test.cjs` 检查 |
+| 带正负号的数字 | `lib/format.ts`（`withSign`、`signedPercent`）。不要在组件里写 `value > 0 ? "+" : ""`，由 `scripts/format.test.cjs` 检查 |
 | 颜色、圆角等 token | `app/globals.css` → `tailwind.config.ts`。组件里用语义类名，不写死 hex |
 | 样式 | **只用 Tailwind**。不新建 `.css` / `.scss` / CSS Modules，也不在组件里 import CSS；唯一的 CSS 文件是 `app/globals.css`（token、Tailwind 指令、跨组件的全局基础样式）。`@keyframes` 放 `tailwind.config.ts` 的 `keyframes`/`animation`；后代、伪元素、`@supports` 这类写法用任意变体（`[&_a]:`、`before:`、`supports-[…]:`）。由 `scripts/tailwind-only.test.cjs` 检查 |
 

@@ -90,7 +90,6 @@ test("a stock identity never links to a broken quotes path", () => {
 const KNOWN_HAND_ROLLED = new Set([
   "components/decision/Journal.tsx",
   "components/decision/MarketComparison.tsx",
-  "components/decision/StockLookup.tsx",
   "components/decision/StockObservationList.tsx",
   "components/decision/Watchlist.tsx",
   "components/youtube/YouTubeOpinionExplorer.tsx",
@@ -226,25 +225,6 @@ test("every CompanyLogo surface in app/ and components/ is routable or explicitl
     }
   }
   assert.deepEqual(offenders, []);
-});
-
-test("the landing marquee pills (MU / PLTR / TSLA) are links to the quotes page", () => {
-  const text = read(path.join(ROOT, "components/landing/LandingStockTicker.tsx"));
-  // Must derive the pill target from the helper, not interpolate a bare string.
-  assert.match(
-    text,
-    /marketStockUrl\(stock\.symbol\)/,
-    "landing ticker must resolve pills via marketStockUrl",
-  );
-  // Non-routable symbols (e.g. an index) degrade to a plain, non-interactive pill.
-  assert.match(text, /<Link[\s\S]*?href=\{href\}/, "routable pill must render a <Link>");
-  // The marquee animation must survive the change.
-  assert.match(text, /animate-ticker/, "ticker marquee animation class was dropped");
-  assert.match(
-    text,
-    /hover:\[animation-play-state:paused\]/,
-    "marquee pause-on-hover behaviour was dropped",
-  );
 });
 
 test("stock identity links keep an accessible name and never open a new tab", () => {

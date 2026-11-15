@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { BACKEND_API_URL } from "@/lib/config/backend";
 
 export const dynamic = "force-dynamic";
 type Context = { params: { path: string[] } };
@@ -9,18 +10,15 @@ async function proxy(request: NextRequest, { params }: Context) {
   const {
     data: { session },
   } = await supabase.auth.getSession();
-  if (!session?.access_token)
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!session?.access_token) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const path = params.path;
   const allowed =
-    (path.length === 1 &&
-      ["account", "commands", "reviews"].includes(path[0])) ||
+    (path.length === 1 && ["account", "commands", "reviews"].includes(path[0])) ||
     (path.length === 2 && ["quote", "reviews"].includes(path[0]));
-  if (!allowed)
-    return NextResponse.json({ error: "not_found" }, { status: 404 });
+  if (!allowed) return NextResponse.json({ error: "not_found" }, { status: 404 });
   try {
     const upstream = await fetch(
-      `${process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080"}/api/v1/paper-trading/${path.map(encodeURIComponent).join("/")}${request.nextUrl.search}`,
+      `${BACKEND_API_URL}/api/v1/paper-trading/${path.map(encodeURIComponent).join("/")}${request.nextUrl.search}`,
       {
         method: request.method,
         cache: "no-store",

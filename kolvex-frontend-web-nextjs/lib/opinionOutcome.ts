@@ -1,3 +1,4 @@
+import { signedPercent as formatSignedPercent } from "@/lib/format";
 /** What a stock did after a creator opinion. Facts only: the UI never says a call was right. */
 
 export interface OpinionOutcomeHorizon {
@@ -45,9 +46,7 @@ function finite(value: unknown): value is number {
 
 /** One decimal with an explicit sign, so direction never depends on color alone. */
 export function signedPercent(value: number): string {
-  const rounded = Math.round(value * 10) / 10;
-  if (rounded === 0) return "0.0%";
-  return `${rounded > 0 ? "+" : "-"}${Math.abs(rounded).toFixed(1)}%`;
+  return formatSignedPercent(value, 1);
 }
 
 export function outcomeTone(value: number): OutcomeTone {

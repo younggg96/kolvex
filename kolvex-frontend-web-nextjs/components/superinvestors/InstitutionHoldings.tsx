@@ -9,7 +9,12 @@ import { ContentLoading } from "@/components/ui/content-loading";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SearchInput } from "@/components/ui/search-input";
 import { ListCard, ListLoadMore } from "@/components/ui/list-card";
-import { institutionKey, secSourceUrl, type HoldingActivity, type Institution } from "@/lib/freeResearch";
+import {
+  institutionKey,
+  secSourceUrl,
+  type HoldingActivity,
+  type Institution,
+} from "@/lib/freeResearch";
 import { cn } from "@/lib/utils";
 import { SecLink, SecState, SourceNote, useFreeResearch } from "@/components/decision/SecData";
 import { useFinancialFormat } from "@/components/decision/StockFinancialData";
@@ -24,6 +29,7 @@ import {
   useActivityLabel,
   useQuarterLabel,
 } from "./shared";
+import { withSign } from "@/lib/format";
 
 export { activityTone, useActivityLabel } from "./shared";
 
@@ -52,7 +58,14 @@ export default function InstitutionHoldings({ manager }: { manager: string }) {
   const totalValue = held.reduce((sum, row) => sum + (row.value ?? 0), 0);
 
   if (resource.loading && !data)
-    return <ContentLoading className="min-h-0" label={c("Reading this 13F filing from the SEC…", "正在从 SEC 读取这份 13F 申报…")}><InstitutionSkeleton /></ContentLoading>;
+    return (
+      <ContentLoading
+        className="min-h-0"
+        label={c("Reading this 13F filing from the SEC…", "正在从 SEC 读取这份 13F 申报…")}
+      >
+        <InstitutionSkeleton />
+      </ContentLoading>
+    );
 
   return (
     <div className="space-y-8 md:space-y-10">
@@ -62,7 +75,10 @@ export default function InstitutionHoldings({ manager }: { manager: string }) {
         error={resource.error}
         empty={!holdings.length}
         retry={resource.refresh}
-        emptyText={c("This investor has no 13F holdings available.", "这家机构暂无可用的 13F 持仓。")}
+        emptyText={c(
+          "This investor has no 13F holdings available.",
+          "这家机构暂无可用的 13F 持仓。",
+        )}
         errorText={c("13F holdings could not be loaded. Try again.", "13F 持仓加载失败，请重试。")}
       />
       {!!holdings.length && data?.filing && (
@@ -85,7 +101,15 @@ export default function InstitutionHoldings({ manager }: { manager: string }) {
   );
 }
 
-function Overview({ data, held, totalValue }: { data: Institution; held: Holding[]; totalValue: number }) {
+function Overview({
+  data,
+  held,
+  totalValue,
+}: {
+  data: Institution;
+  held: Holding[];
+  totalValue: number;
+}) {
   const c = useCopy();
   const f = useFinancialFormat();
   const quarterLabel = useQuarterLabel();
@@ -146,7 +170,10 @@ function Allocation({ held }: { held: Holding[] }) {
       <ol className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
         {top.map((row, index) => (
           <li key={rowKey(row)} className="flex min-h-9 min-w-0 items-center gap-2 text-xs">
-            <span aria-hidden="true" className={cn("h-2 w-2 shrink-0 rounded-full", ALLOCATION_SHADES[index])} />
+            <span
+              aria-hidden="true"
+              className={cn("h-2 w-2 shrink-0 rounded-full", ALLOCATION_SHADES[index])}
+            />
             <span className="figure w-4 shrink-0 text-muted-foreground">{index + 1}</span>
             <HoldingName row={row} size="xs" className="flex-1" />
             <span className="figure shrink-0">{f.percent(row.weight)}</span>
@@ -172,11 +199,19 @@ function QuarterActivity({ data }: { data: Institution }) {
   const count = (kind: HoldingActivity) => holdings.filter((row) => row.activity === kind).length;
   const compared = holdings.some((row) => row.activity !== "unknown");
   const changes = compared
-    ? { new: count("new"), increased: count("increased"), reduced: count("reduced"), exited: count("exited") }
+    ? {
+        new: count("new"),
+        increased: count("increased"),
+        reduced: count("reduced"),
+        exited: count("exited"),
+      }
     : null;
   // Exited rows hold nothing now; they fall back to last quarter's share count.
   const rank = (row: Holding) => row.value ?? 0;
-  const buys = holdings.filter((row) => BUYS.includes(row.activity)).sort((a, b) => rank(b) - rank(a)).slice(0, 4);
+  const buys = holdings
+    .filter((row) => BUYS.includes(row.activity))
+    .sort((a, b) => rank(b) - rank(a))
+    .slice(0, 4);
   const sells = holdings
     .filter((row) => SELLS.includes(row.activity))
     .sort((a, b) => rank(b) - rank(a) || (b.previous_shares ?? 0) - (a.previous_shares ?? 0))
@@ -196,8 +231,16 @@ function QuarterActivity({ data }: { data: Institution }) {
       <ChangeBreakdown changes={changes} className="text-sm" />
       {changes ? (
         <div className="grid flex-1 grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
-          <MoveList title={c("Largest buys", "主要买入")} rows={buys} empty={c("No buys this quarter", "本季无买入")} />
-          <MoveList title={c("Largest sells", "主要卖出")} rows={sells} empty={c("No sells this quarter", "本季无卖出")} />
+          <MoveList
+            title={c("Largest buys", "主要买入")}
+            rows={buys}
+            empty={c("No buys this quarter", "本季无买入")}
+          />
+          <MoveList
+            title={c("Largest sells", "主要卖出")}
+            rows={sells}
+            empty={c("No sells this quarter", "本季无卖出")}
+          />
         </div>
       ) : (
         <p className="text-xs leading-5 text-muted-foreground">
@@ -219,11 +262,16 @@ function MoveList({ title, rows, empty }: { title: string; rows: Holding[]; empt
       {rows.length ? (
         <ul>
           {rows.map((row) => (
-            <li key={rowKey(row)} className="flex min-h-11 min-w-0 items-center gap-2 border-b border-border py-1.5 text-xs last:border-0">
+            <li
+              key={rowKey(row)}
+              className="flex min-h-11 min-w-0 items-center gap-2 border-b border-border py-1.5 text-xs last:border-0"
+            >
               <HoldingName row={row} size="xs" className="flex-1" />
               <ActivityBadge kind={row.activity} />
               <span className="figure w-14 shrink-0 text-right text-muted-foreground">
-                {row.activity === "new" || row.activity === "exited" ? `$${f.number(row.value ?? 0)}` : f.percent(row.change_percent)}
+                {row.activity === "new" || row.activity === "exited"
+                  ? `$${f.number(row.value ?? 0)}`
+                  : f.percent(row.change_percent)}
               </span>
             </li>
           ))}
@@ -248,13 +296,22 @@ function HoldingsTable({ data }: { data: Institution }) {
 
   const filters: Filter[] = ["all", "new", "increased", "reduced", "exited", "unchanged"];
   const counts = Object.fromEntries(
-    filters.map((kind) => [kind, kind === "all" ? holdings.length : holdings.filter((row) => row.activity === kind).length]),
+    filters.map((kind) => [
+      kind,
+      kind === "all" ? holdings.length : holdings.filter((row) => row.activity === kind).length,
+    ]),
   ) as Record<Filter, number>;
 
   const needle = query.trim().toUpperCase();
   const filtered = holdings
     .filter((row) => filter === "all" || row.activity === filter)
-    .filter((row) => !needle || row.ticker?.toUpperCase().startsWith(needle) || row.issuer.toUpperCase().includes(needle) || row.cusip?.includes(needle))
+    .filter(
+      (row) =>
+        !needle ||
+        row.ticker?.toUpperCase().startsWith(needle) ||
+        row.issuer.toUpperCase().includes(needle) ||
+        row.cusip?.includes(needle),
+    )
     .sort((a, b) => {
       const x = sortValue(a, sort.key);
       const y = sortValue(b, sort.key);
@@ -273,14 +330,22 @@ function HoldingsTable({ data }: { data: Institution }) {
   );
 
   const toggle = (key: SortKey) => {
-    setSort((current) => ({ key, dir: current.key === key && current.dir === "desc" ? "asc" : "desc" }));
+    setSort((current) => ({
+      key,
+      dir: current.key === key && current.dir === "desc" ? "asc" : "desc",
+    }));
     reset();
   };
   const sortHead = (label: string, sortKey: SortKey) => {
     const active = sort.key === sortKey;
     const Icon = !active ? ChevronsUpDown : sort.dir === "desc" ? ArrowDown : ArrowUp;
     return (
-      <th key={sortKey} scope="col" aria-sort={active ? (sort.dir === "desc" ? "descending" : "ascending") : "none"} className="px-3 py-3 text-right font-normal">
+      <th
+        key={sortKey}
+        scope="col"
+        aria-sort={active ? (sort.dir === "desc" ? "descending" : "ascending") : "none"}
+        className="px-3 py-3 text-right font-normal"
+      >
         <button
           type="button"
           onClick={() => toggle(sortKey)}
@@ -305,7 +370,10 @@ function HoldingsTable({ data }: { data: Institution }) {
           </h2>
           <p role="status" className="figure mt-1 text-xs text-muted-foreground">
             {filtered.length === holdings.length
-              ? c(`${f.number(holdings.length, false)} rows`, `共 ${f.number(holdings.length, false)} 行`)
+              ? c(
+                  `${f.number(holdings.length, false)} rows`,
+                  `共 ${f.number(holdings.length, false)} 行`,
+                )
               : c(
                   `${f.number(filtered.length, false)} of ${f.number(holdings.length, false)} rows`,
                   `${f.number(filtered.length, false)} / ${f.number(holdings.length, false)} 行`,
@@ -346,7 +414,9 @@ function HoldingsTable({ data }: { data: Institution }) {
                   }}
                 >
                   {kind === "all" ? c("All", "全部") : activity(kind)}
-                  <span className="figure text-muted-foreground">{f.number(counts[kind], false)}</span>
+                  <span className="figure text-muted-foreground">
+                    {f.number(counts[kind], false)}
+                  </span>
                 </ChipButton>
               ),
             )}
@@ -396,14 +466,21 @@ function HoldingsTable({ data }: { data: Institution }) {
                   key={rowKey(row)}
                   className="border-b border-border transition-colors last:border-0 hover:bg-foreground/[0.04] motion-reduce:transition-none"
                 >
-                  <td className="figure py-3 pl-4 pr-1 text-xs text-muted-foreground">{ranks.get(rowKey(row)) ?? "—"}</td>
+                  <td className="figure py-3 pl-4 pr-1 text-xs text-muted-foreground">
+                    {ranks.get(rowKey(row)) ?? "—"}
+                  </td>
                   <th scope="row" className="max-w-[18rem] px-3 py-3 text-left font-normal">
                     <HoldingName row={row} detail />
                   </th>
-                  <td className="figure px-3 py-3 text-right font-medium">{row.value === null ? "—" : `$${f.number(row.value)}`}</td>
+                  <td className="figure px-3 py-3 text-right font-medium">
+                    {row.value === null ? "—" : `$${f.number(row.value)}`}
+                  </td>
                   <td className="px-3 py-3 text-right">
                     <span className="figure block">{f.percent(row.weight)}</span>
-                    <span aria-hidden="true" className="ml-auto mt-1.5 block h-1 w-16 overflow-hidden rounded-full bg-foreground/[0.07]">
+                    <span
+                      aria-hidden="true"
+                      className="ml-auto mt-1.5 block h-1 w-16 overflow-hidden rounded-full bg-foreground/[0.07]"
+                    >
                       <span
                         className="block h-full rounded-full bg-foreground/50"
                         style={{ width: `${((row.weight ?? 0) / maxWeight) * 100}%` }}
@@ -428,14 +505,17 @@ function HoldingsTable({ data }: { data: Institution }) {
                       <span className="text-muted-foreground">0</span>
                     ) : (
                       <>
-                        <span className={cn("block font-medium", row.change > 0 ? "text-positive" : "text-negative")}>
-                          {row.change > 0 ? "+" : "−"}
-                          {f.number(Math.abs(row.change))}
+                        <span
+                          className={cn(
+                            "block font-medium",
+                            row.change > 0 ? "text-positive" : "text-negative",
+                          )}
+                        >
+                          {withSign(row.change, f.number)}
                         </span>
                         {row.change_percent !== null && (
                           <span className="block text-xs text-muted-foreground">
-                            {row.change_percent > 0 ? "+" : ""}
-                            {f.percent(row.change_percent)}
+                            {withSign(row.change_percent, f.percent)}
                           </span>
                         )}
                       </>
@@ -473,7 +553,10 @@ function HoldingsTable({ data }: { data: Institution }) {
       </ListCard>
 
       {(data.partial || data.amendments.length > 0) && (
-        <div role="status" className="space-y-1 rounded-2xl bg-muted px-4 py-3 text-xs leading-5 text-muted-foreground">
+        <div
+          role="status"
+          className="space-y-1 rounded-2xl bg-muted px-4 py-3 text-xs leading-5 text-muted-foreground"
+        >
           {data.partial && (
             <p>
               {c(
@@ -503,32 +586,88 @@ function HoldingsTable({ data }: { data: Institution }) {
 
 /** Mirrors the loaded page: overview stats, concentration + quarter-change cards, then the holdings table. */
 function InstitutionSkeleton() {
-  return <div className="space-y-8 md:space-y-10">
-    <div className="grid grid-cols-2 gap-x-6 gap-y-5 border-b border-border pb-6 sm:grid-cols-3 lg:grid-cols-5">
-      {[0, 1, 2, 3, 4].map(i => <div key={i} className="flex flex-col gap-2"><Skeleton className="h-3 w-20 rounded-md" /><Skeleton className="h-6 w-24 rounded-md" /><Skeleton className="h-3 w-16 rounded-md" /></div>)}
+  return (
+    <div className="space-y-8 md:space-y-10">
+      <div className="grid grid-cols-2 gap-x-6 gap-y-5 border-b border-border pb-6 sm:grid-cols-3 lg:grid-cols-5">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <div key={i} className="flex flex-col gap-2">
+            <Skeleton className="h-3 w-20 rounded-md" />
+            <Skeleton className="h-6 w-24 rounded-md" />
+            <Skeleton className="h-3 w-16 rounded-md" />
+          </div>
+        ))}
+      </div>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="flex min-w-0 flex-col gap-4 p-5">
+          <div className="flex justify-between">
+            <Skeleton className="h-4 w-32 rounded-md" />
+            <Skeleton className="h-4 w-20 rounded-md" />
+          </div>
+          <Skeleton className="h-2.5 w-full rounded-full" />
+          <div className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
+            {[0, 1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="flex min-h-9 items-center gap-2">
+                <Skeleton className="h-2 w-2 rounded-full" />
+                <Skeleton className="h-3 flex-1 rounded-md" />
+                <Skeleton className="h-3 w-10 rounded-md" />
+              </div>
+            ))}
+          </div>
+        </Card>
+        <Card className="flex min-w-0 flex-col gap-4 p-5">
+          <div className="flex justify-between">
+            <Skeleton className="h-4 w-28 rounded-md" />
+            <Skeleton className="h-3 w-24 rounded-md" />
+          </div>
+          <Skeleton className="h-4 w-64 max-w-full rounded-md" />
+          <div className="grid flex-1 grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+            {[0, 1].map((i) => (
+              <div key={i} className="space-y-2">
+                <Skeleton className="h-3 w-20 rounded-md" />
+                {[0, 1, 2].map((j) => (
+                  <Skeleton key={j} className="h-4 w-full rounded-md" />
+                ))}
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+      <div className="space-y-4">
+        <div className="flex items-end justify-between">
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-6 w-28 rounded-md" />
+            <Skeleton className="h-3 w-16 rounded-md" />
+          </div>
+          <Skeleton className="h-4 w-36 rounded-md" />
+        </div>
+        <ListCard className="!p-0">
+          <div className="flex flex-col gap-3 p-3 sm:p-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex gap-1.5">
+              {[0, 1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-9 w-16 rounded-full" />
+              ))}
+            </div>
+            <Skeleton className="h-11 w-full rounded-full md:w-64" />
+          </div>
+          <div className="border-t border-border px-3 py-3 sm:px-4">
+            <Skeleton className="h-3.5 w-full rounded-md" />
+          </div>
+          {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+            <div
+              key={i}
+              className="flex items-center gap-4 border-t border-border px-3 py-3 sm:px-4"
+            >
+              <Skeleton className="h-4 w-14 rounded-md" />
+              <Skeleton className={cn("h-3.5 rounded-md", i % 2 ? "w-28" : "w-40")} />
+              <span className="ml-auto flex gap-6">
+                <Skeleton className="h-4 w-16 rounded-md" />
+                <Skeleton className="hidden h-4 w-14 rounded-md sm:block" />
+                <Skeleton className="hidden h-4 w-12 rounded-md sm:block" />
+              </span>
+            </div>
+          ))}
+        </ListCard>
+      </div>
     </div>
-    <div className="grid gap-4 lg:grid-cols-2">
-      <Card className="flex min-w-0 flex-col gap-4 p-5">
-        <div className="flex justify-between"><Skeleton className="h-4 w-32 rounded-md" /><Skeleton className="h-4 w-20 rounded-md" /></div>
-        <Skeleton className="h-2.5 w-full rounded-full" />
-        <div className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">{[0, 1, 2, 3, 4, 5].map(i => <div key={i} className="flex min-h-9 items-center gap-2"><Skeleton className="h-2 w-2 rounded-full" /><Skeleton className="h-3 flex-1 rounded-md" /><Skeleton className="h-3 w-10 rounded-md" /></div>)}</div>
-      </Card>
-      <Card className="flex min-w-0 flex-col gap-4 p-5">
-        <div className="flex justify-between"><Skeleton className="h-4 w-28 rounded-md" /><Skeleton className="h-3 w-24 rounded-md" /></div>
-        <Skeleton className="h-4 w-64 max-w-full rounded-md" />
-        <div className="grid flex-1 grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">{[0, 1].map(i => <div key={i} className="space-y-2"><Skeleton className="h-3 w-20 rounded-md" />{[0, 1, 2].map(j => <Skeleton key={j} className="h-4 w-full rounded-md" />)}</div>)}</div>
-      </Card>
-    </div>
-    <div className="space-y-4">
-      <div className="flex items-end justify-between"><div className="flex flex-col gap-2"><Skeleton className="h-6 w-28 rounded-md" /><Skeleton className="h-3 w-16 rounded-md" /></div><Skeleton className="h-4 w-36 rounded-md" /></div>
-      <ListCard className="!p-0">
-        <div className="flex flex-col gap-3 p-3 sm:p-4 md:flex-row md:items-center md:justify-between"><div className="flex gap-1.5">{[0, 1, 2, 3].map(i => <Skeleton key={i} className="h-9 w-16 rounded-full" />)}</div><Skeleton className="h-11 w-full rounded-full md:w-64" /></div>
-        <div className="border-t border-border px-3 py-3 sm:px-4"><Skeleton className="h-3.5 w-full rounded-md" /></div>
-        {[0, 1, 2, 3, 4, 5, 6].map(i => <div key={i} className="flex items-center gap-4 border-t border-border px-3 py-3 sm:px-4">
-          <Skeleton className="h-4 w-14 rounded-md" /><Skeleton className={cn("h-3.5 rounded-md", i % 2 ? "w-28" : "w-40")} />
-          <span className="ml-auto flex gap-6"><Skeleton className="h-4 w-16 rounded-md" /><Skeleton className="hidden h-4 w-14 rounded-md sm:block" /><Skeleton className="hidden h-4 w-12 rounded-md sm:block" /></span>
-        </div>)}
-      </ListCard>
-    </div>
-  </div>;
+  );
 }

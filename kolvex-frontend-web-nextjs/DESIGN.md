@@ -162,9 +162,7 @@ large breakpoint, `DashboardLayout` owns the shared `OpinionSourceNav` beneath
 the header on either source and its nested routes: flat text links, a green
 active underline, `aria-current` and visible keyboard focus. Source switching
 uses route links rather than in-page tabs.
-The stock detail route belongs to Markets. `StockLookup` at the top of Markets
-uses the shared Input and Button to open any valid ticker, independently of
-creator coverage. Its inline validation and clear action follow the active locale.
+The stock detail route belongs to Markets.
 AI generation remains an explicit action on the stock detail page. The stock
 workspace is capped at 1800px, uses the existing page gutters and presents company
 identity, exchange/currency and regular/available after-hours quotes before a single
@@ -742,62 +740,6 @@ theme tokens and Chinese/English messages remain authoritative.
 | Overlay | `components/ui/dialog.tsx` | DESIGN.md; `PriceChart` and focus draft behavior | Default dialog; fullscreen chart; mobile sheet/desktop dialog for AI settings | Browser nested Escape, close, focus restoration and narrow layout |
 | Disclosure | Native details | Saved analysis payload | Technical evidence and plan rationale | Browser expand/collapse and long content |
 
-## Marketing landing page
-
-The homepage uses the same visual system as the dashboard, with a larger
-marketing composition and its existing animation layer. Its Tailwind classes
-(`landingPageClass` in `components/pages/HomePageClient.tsx` and the landing components)
-only alias the runtime `background`, `card`, `foreground`, `muted-foreground`,
-`border`, `muted`, `primary` and `positive` tokens from `app/globals.css`.
-It has no independent palette or dark-mode color overrides. Theme changes follow
-the dashboard automatically. Header, footer and the subtle background grid use
-the same neutral surfaces as the application. Inter/Chinese typography remains
-shared; homepage display headings retain their larger scale with 600 weight
-and restrained tracking.
-
-The asymmetric hero pairs a two-line headline with an interactive illustrative
-price chart and opinion/research/holding nodes. The single ambient composition
-communicates that these sources connect to the same stock. Stock buttons change
-the example chart; its values are explicitly illustrative. A pause button stops
-ambient movement and pointer tilt. Source-based evidence, no fabricated creators,
-customer counts or performance claims, remains the marketing content rule.
-
-`LandingMotion` owns shared reveal timing. Motion is isolated in client components:
-chart entry and a traveling signal, pointer tilt and scroll parallax using motion
-values, section reveals, and feature/tab
-transitions. Native scrolling remains in control. Reduced motion removes movement
-and preserves content; narrow screens use a single column.
-
-The stock research dossier replaces the repeated price chart in the preview.
-A vertical shared Radix Tabs list switches between creator opinions, technical
-analysis and AI research. Each reading panel groups illustrative reasoning, a
-counterpoint or invalidation condition, and a follow-up question; it makes no
-live-data or source-attribution claim. The bordered sidebar and reading column
-stack on phones. Shared Radix Tabs own preview keyboard navigation.
-Feature disclosures use buttons with expanded state
-and corresponding regions. Existing route targets, section anchors, navigation
-labels, logo, footer/legal content and global application tokens are preserved.
-Buttons use the shared pill variants, including their colors and hover/pressed
-feedback. Example panels and content nodes use the dashboard’s 12px corners and
-quiet borders without static shadows. Marketing layers are base 0, content 1,
-diagram notes 2, header 20.
-
-### Landing motion coverage
-
-`LandingMotionProvider` is the homepage-only motion owner. It coordinates the
-existing scene pause control, system reduced-motion preference and finite
-IntersectionObserver/Web Animations entrances for header, source notes, feature
-links, dossier sidebar, workflow rows, closing actions and footer. HTML remains
-visible before hydration and without animation support. Each entrance plays once;
-small sibling delays are capped at 195ms. `LandingReveal` uses a bounded crop for
-large example frames and short arrivals for headings. The illustrative chart is
-the focal sequence; its ambient signal stops offscreen and in hidden tabs.
-Dossier evidence follows reading order when its tab changes; workflow nodes and
-connectors arrive in source-to-context order. Hover, focus and pressed feedback
-use the same short easing and preserve native semantics. Pausing removes spatial
-feedback and settles the composition; reduced motion retains visible state and
-content. No additional dependencies or animation of document scroll ownership.
-
 ## Stock research reading
 
 Stock detail research reuses `ReportCard` for the investment thesis, evidence and
@@ -1116,7 +1058,7 @@ selected chart range is shared across overview and trends while switching tabs.
 Each tab loads only its own quotes/context; visiting overview does not request
 all market instrument quotes.
 `/dashboard?tab=macro` restores the selected tab on refresh; other query parameters
-are preserved. StockLookup remains above both tabs. Each panel mounts its own data
+are preserved. Each panel mounts its own data
 requests and Ask Kolvex context, so macro figures do not mix with intraday quotes.
 
 Macro indicators uses native cards with the existing card/border tokens, 12px

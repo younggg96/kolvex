@@ -4,6 +4,7 @@ import type { TradingAnalysis, TradingAnalysisListResponse } from "@/lib/trading
 import type { YouTubeOpinionDashboard } from "@/lib/youtubeOpinionsApi";
 import { validReportId, validTicker } from "@/lib/publicRoutes";
 import { applyResearchTranslation, storedTranslation } from "@/lib/researchTranslation";
+import { BACKEND_API_URL } from "@/lib/config/backend";
 
 /** Cache tag on every public read; publishing changes call `revalidateTag` with it. */
 export const PUBLIC_CONTENT_TAG = "public-content";
@@ -12,11 +13,7 @@ export const PUBLIC_CONTENT_REVALIDATE_SECONDS = 600;
 
 /** Public endpoints only. Never attach a session, cookie or service credential. */
 async function readPublic<T>(path: string): Promise<T | null> {
-  const backend = (process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080").replace(
-    /\/$/,
-    "",
-  );
-  const response = await fetch(`${backend}/api/v1/${path}`, {
+  const response = await fetch(`${BACKEND_API_URL}/api/v1/${path}`, {
     next: { revalidate: PUBLIC_CONTENT_REVALIDATE_SECONDS, tags: [PUBLIC_CONTENT_TAG] },
     credentials: "omit",
     signal: AbortSignal.timeout(15_000),

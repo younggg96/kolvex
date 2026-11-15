@@ -1,10 +1,8 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { NextResponse, type NextRequest } from "next/server";
+import { BACKEND_API_URL } from "@/lib/config/backend";
 
 export const dynamic = "force-dynamic";
-
-const API_BASE =
-  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
 
 const ALLOWED_PREFIXES = ["/api/v1/admin/users/"];
 
@@ -27,7 +25,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unsupported proxy path" }, { status: 400 });
     }
 
-    const response = await fetch(`${API_BASE}${path}`, {
+    const response = await fetch(`${BACKEND_API_URL}${path}`, {
       method,
       headers: {
         Authorization: `Bearer ${session.access_token}`,
@@ -42,7 +40,7 @@ export async function POST(request: NextRequest) {
     if (!response.ok) {
       return NextResponse.json(
         { error: data.detail || data.error || "Backend request failed" },
-        { status: response.status }
+        { status: response.status },
       );
     }
 
