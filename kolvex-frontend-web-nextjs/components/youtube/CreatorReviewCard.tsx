@@ -97,7 +97,14 @@ function SentimentBlock({
 }
 
 /** A creator's own price-after-opinion card. Only on their page; never compared with others. */
-export default function CreatorReviewCard({ channelId }: { channelId: string }) {
+export default function CreatorReviewCard({
+  channelId,
+  showSeeAll = true,
+}: {
+  channelId: string;
+  /** Off on the review page itself, where the link would point back to the same page. */
+  showSeeAll?: boolean;
+}) {
   const { t, locale } = useTranslation();
   const [days, setDays] = useState("20");
   const resource = useCachedResource(
@@ -190,9 +197,11 @@ export default function CreatorReviewCard({ channelId }: { channelId: string }) 
                 minDays: String(card.min_span_days),
               })}
             </p>
-            <Button asChild size="sm" variant="outline" className="mt-3">
-              <Link href={REVIEW_PAGE}>{t("youtubeOpinions.review.seeAll")}</Link>
-            </Button>
+            {showSeeAll && (
+              <Button asChild size="sm" variant="outline" className="mt-3">
+                <Link href={REVIEW_PAGE}>{t("youtubeOpinions.review.seeAll")}</Link>
+              </Button>
+            )}
           </>
         ) : (
           <>

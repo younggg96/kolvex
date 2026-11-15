@@ -1,6 +1,12 @@
 import { invalidateClientCache, subscribeClientCache } from "./clientCache";
 import type { OpinionOutcomes } from "./opinionOutcome";
-import type { CreatorReview, OpinionReview, ReviewBinOpinions } from "@/lib/opinionReview";
+import type {
+  CreatorOpinions,
+  CreatorReview,
+  OpinionReview,
+  ReviewBinOpinions,
+  ReviewCreators,
+} from "@/lib/opinionReview";
 import type { VideoOpinionGroup } from "./youtubeVideoHistory";
 
 export type OpinionSentiment = "bullish" | "bearish" | "neutral" | "mixed";
@@ -383,6 +389,21 @@ export async function getYouTubeCreatorReview(
   signal?: AbortSignal,
 ): Promise<CreatorReview> {
   return apiRequest<CreatorReview>(`/creators/${encodeURIComponent(channelId)}/review`, { signal });
+}
+
+/** Creators with scored opinions, for the review page's picker. */
+export async function getYouTubeReviewCreators(signal?: AbortSignal): Promise<ReviewCreators> {
+  return apiRequest<ReviewCreators>("/review/creators", { signal });
+}
+
+/** One creator's opinions, each with the stock and benchmark move after 5 and 20 sessions. */
+export async function getYouTubeReviewCreatorOpinions(
+  channelId: string,
+  signal?: AbortSignal,
+): Promise<CreatorOpinions> {
+  return apiRequest<CreatorOpinions>(`/review/creators/${encodeURIComponent(channelId)}`, {
+    signal,
+  });
 }
 
 export type YouTubeImportBody = Record<string, unknown> | Record<string, unknown>[];

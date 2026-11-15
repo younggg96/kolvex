@@ -212,6 +212,29 @@ async def get_youtube_opinion_review_opinions(
         raise _review_unavailable(e)
 
 
+@router.get("/review/creators")
+async def get_youtube_review_creators(service: YouTubeStockOpinionService = Depends(get_service)):
+    """Creators with scored opinions, for picking one on the review page. No figures."""
+    try:
+        return await asyncio.to_thread(opinion_review.review_creators, service.all_rows)
+    except opinion_review.ReviewUnavailable as e:
+        raise _review_unavailable(e)
+
+
+@router.get("/review/creators/{channel_id}")
+async def get_youtube_review_creator_opinions(
+    channel_id: str,
+    service: YouTubeStockOpinionService = Depends(get_service),
+):
+    """One creator's opinions, each with the stock and SPY move after 5 and 20 sessions."""
+    try:
+        return await asyncio.to_thread(
+            opinion_review.creator_opinions, service.all_rows, channel_id
+        )
+    except opinion_review.ReviewUnavailable as e:
+        raise _review_unavailable(e)
+
+
 @router.get("/creators/{channel_id}/review")
 async def get_youtube_creator_review(
     channel_id: str,

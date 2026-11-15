@@ -41,7 +41,7 @@ MAX_LISTED_OPINIONS = 200
 # Snapshot keys that never leave the server through /review (per-creator data lives here).
 PRIVATE_KEYS = ("creators", "events")
 # Bumped when the snapshot shape changes, so an older file is rebuilt instead of served.
-SNAPSHOT_VERSION = 4
+SNAPSHOT_VERSION = 5
 RETRY_AFTER_FAILURE_SECONDS = 600.0
 SNAPSHOT_PATH = Path(
     os.getenv(
@@ -160,6 +160,7 @@ def _event_record(event: dict, opinion: dict) -> dict[str, Any]:
         "id": str(opinion.get("id")),
         "channel_id": opinion.get("channel_id"),
         "channel_title": opinion.get("channel_title"),
+        "channel_avatar_url": opinion.get("channel_avatar_url"),
         "ticker": event["ticker"],
         "sentiment": event["sentiment"],
         "video_id": opinion.get("video_id"),
@@ -265,7 +266,11 @@ def build_snapshot(
     for event in events:
         statuses[event["status"]] = statuses.get(event["status"], 0) + 1
     scored = [e for e in events if e["status"] == "scored"]
-    by_sentiment = {s: [e for e in scored if e["sentiment"] == s] for s in SENTIMENTS}
+    # A call on the benchmark itself has zero excess return by construction: it stays in the
+    # per-opinion lists (shown by direction instead) but out of every excess-return statistic.
+    on_benchmark = [e for e in scored if e["ticker"] == bt.BENCHMARK]
+    measured = [e for e in scored if e["ticker"] != bt.BENCHMARK]
+    by_sentiment = {s: [e for e in measured if e["sentiment"] == s] for s in SENTIMENTS}
 
     groups = {}
     for horizon in HORIZONS:
@@ -280,7 +285,7 @@ def build_snapshot(
 
     first_entry = min((e["entry_date"] for e in scored), default=None)
     weekly: dict[str, dict[str, int]] = {}
-    for event in scored:
+    for event in measured:
         if event["sentiment"] in SENTIMENTS:
             week = weekly.setdefault(_week(event["entry_date"]), {"bullish": 0, "bearish": 0})
             week[event["sentiment"]] += 1
@@ -298,13 +303,14 @@ def build_snapshot(
             "scored": len(scored),
             "bullish": len(by_sentiment["bullish"]),
             "bearish": len(by_sentiment["bearish"]),
-            "neutral_or_mixed": len(scored) - sum(len(v) for v in by_sentiment.values()),
+            "neutral_or_mixed": sum(1 for e in scored if e["sentiment"] not in SENTIMENTS),
+            "on_benchmark": sum(1 for e in on_benchmark if e["sentiment"] in SENTIMENTS),
             "no_price_data": statuses.get("no_price_data", 0),
             "no_publish_time": statuses.get("no_publish_time", 0),
             "not_started": statuses.get("pending", 0),
         },
         "groups": groups,
-        "creators": _creator_records(scored),
+        "creators": _creator_records(measured),
         "events": [
             _event_record(event, opinion)
             for event, opinion in zip(events, kept)
@@ -461,7 +467,7 @@ def opinions_in_bin(
     matches = []
     for record in snapshot.get("events", []):
         result = record["horizons"].get(str(horizon))
-        if record["sentiment"] != sentiment or not result:
+        if record["sentiment"] != sentiment or not result or record["ticker"] == bt.BENCHMARK:
             continue
         value = result["excess_return_pct"]
         if (low is None or value >= low) and (high is None or value < high):
@@ -476,6 +482,65 @@ def opinions_in_bin(
         "opinions": matches[:MAX_LISTED_OPINIONS],
         "as_of": snapshot["as_of"],
         "benchmark": snapshot["benchmark"],
+    }
+
+
+def review_creators(
+    load_rows: Callable[[], list[dict[str, Any]]], **options: Any
+) -> dict[str, Any]:
+    """Creators with directional opinions in the snapshot, for the review page's picker.
+
+    Ordered by how many opinions they have, then name: activity only, never performance.
+    """
+    snapshot, building = _snapshot(load_rows, **options)
+    by_creator: dict[str, dict[str, Any]] = {}
+    for record in snapshot.get("events", []):
+        channel_id = record.get("channel_id")
+        if not channel_id:
+            continue
+        entry = by_creator.setdefault(
+            channel_id,
+            {"channel_id": channel_id, "channel_title": record.get("channel_title"),
+             "channel_avatar_url": record.get("channel_avatar_url"), "opinions": 0,
+             "tickers": set()},
+        )  # fmt: skip
+        entry["opinions"] += 1
+        entry["tickers"].add(record["ticker"])
+    creators = [
+        {**{k: v for k, v in entry.items() if k != "tickers"}, "stocks": len(entry["tickers"])}
+        for entry in by_creator.values()
+    ]
+    creators.sort(key=lambda c: (-c["opinions"], str(c["channel_title"] or c["channel_id"])))
+    return {"creators": creators, "as_of": snapshot["as_of"], "refreshing": building}
+
+
+def creator_opinions(
+    load_rows: Callable[[], list[dict[str, Any]]], channel_id: str, **options: Any
+) -> dict[str, Any]:
+    """Every directional opinion of one creator with what the stock and SPY did, newest first.
+
+    Per-opinion facts only: no average, share or verdict (those stay behind the creator gates).
+    An opinion younger than a horizon simply has no entry for it.
+    """
+    snapshot, building = _snapshot(load_rows, **options)
+    opinions = [r for r in snapshot.get("events", []) if r.get("channel_id") == channel_id]
+    opinions.sort(key=lambda item: (item.get("published_at") or "", item["id"]), reverse=True)
+    counts: dict[str, int] = {}
+    for record in opinions:
+        counts[record["ticker"]] = counts.get(record["ticker"], 0) + 1
+    stocks = [{"ticker": k, "count": v} for k, v in counts.items()]
+    stocks.sort(key=lambda s: (-s["count"], s["ticker"]))
+    return {
+        "channel_id": channel_id,
+        "channel_title": opinions[0].get("channel_title") if opinions else None,
+        "channel_avatar_url": opinions[0].get("channel_avatar_url") if opinions else None,
+        "total": len(opinions),
+        "stocks": stocks,
+        "opinions": opinions,
+        "benchmark": snapshot["benchmark"],
+        "horizons": snapshot["horizons"],
+        "as_of": snapshot["as_of"],
+        "refreshing": building,
     }
 
 
