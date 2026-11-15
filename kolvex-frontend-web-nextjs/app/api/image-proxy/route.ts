@@ -41,9 +41,7 @@ export async function GET(request: NextRequest) {
 
     // 3. 检查域名白名单
     const isAllowed = ALLOWED_DOMAINS.some(
-      (domain) =>
-        parsedUrl.hostname === domain ||
-        parsedUrl.hostname.endsWith(`.${domain}`)
+      (domain) => parsedUrl.hostname === domain || parsedUrl.hostname.endsWith(`.${domain}`),
     );
 
     if (!isAllowed) {
@@ -61,8 +59,7 @@ export async function GET(request: NextRequest) {
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
 
       // 接受各种图片格式
-      Accept:
-        "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+      Accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
 
       // 语言偏好
       "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
@@ -90,13 +87,13 @@ export async function GET(request: NextRequest) {
 
     if (!response.ok) {
       console.error(
-        `Proxy Fetch Error: ${response.status} ${response.statusText} for ${decodedUrl}`
+        `Proxy Fetch Error: ${response.status} ${response.statusText} for ${decodedUrl}`,
       );
       // 如果源站返回 403，通常意味着签名过期或防盗链拦截
       if (response.status === 403 || response.status === 401) {
         return new NextResponse(
           "Source image access denied (Token expired or Hotlink protection)",
-          { status: 403 }
+          { status: 403 },
         );
       }
       return new NextResponse("Failed to fetch image", {
@@ -104,16 +101,18 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // 7. 处理返回的图片
+    // 7. 处理返回的图片：直接流式转发，不在函数里整张缓冲
     const contentType = response.headers.get("content-type") || "image/jpeg";
-    const buffer = await response.arrayBuffer();
 
-    return new NextResponse(buffer, {
+    return new NextResponse(response.body, {
       status: 200,
       headers: {
         "Content-Type": contentType,
-        // 设置浏览器端缓存，减少重复请求
+        // 浏览器缓存
         "Cache-Control": "public, max-age=31536000, immutable",
+        // Vercel CDN 只认 s-maxage / CDN-Cache-Control：同一张图全站只回源一次，
+        // 之后的访问不再启动函数。
+        "CDN-Cache-Control": "public, max-age=31536000, immutable",
         // 允许跨域，这样你的前端 Canvas 或其他组件可以操作此图片
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, OPTIONS",

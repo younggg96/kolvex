@@ -40,8 +40,17 @@ App ─────────────────────────�
 | 功能开关 | `lib/productFeatures.ts` |
 | 文案 | `useCopy()`（`components/decision/shared.tsx`，就地写中英两份）或 `useTranslation()` + `lib/i18n/locales/{zh,en}.json` |
 | 颜色、圆角等 token | `app/globals.css` → `tailwind.config.ts`。组件里用语义类名，不写死 hex |
+| 样式 | **只用 Tailwind**。不新建 `.css` / `.scss` / CSS Modules，也不在组件里 import CSS；唯一的 CSS 文件是 `app/globals.css`（token、Tailwind 指令、跨组件的全局基础样式）。`@keyframes` 放 `tailwind.config.ts` 的 `keyframes`/`animation`；后代、伪元素、`@supports` 这类写法用任意变体（`[&_a]:`、`before:`、`supports-[…]:`）。由 `scripts/tailwind-only.test.cjs` 检查 |
 
-数据加载：读请求用 `useCachedResource` / `clientCache`（见 [frontend-data-cache.md](../frontend-data-cache.md)），需要轮询时用 `useVisiblePolling`（页面不可见时暂停），首次加载用 `ContentLoading`（见 [loading-states.md](../loading-states.md)）。
+数据加载：读请求用 `useCachedResource` / `clientCache`（见 [frontend-data-cache.md](../frontend-data-cache.md)），需要轮询时用 `useVisiblePolling`（页面不可见时暂停；美股盘前、盘中、盘后都休市时——美东 20:00–次日 04:00 和周末——定时刷新最多 5 分钟一次），首次加载用 `ContentLoading`（见 [loading-states.md](../loading-states.md)）。
+
+Vercel 计算成本（Hobby 额度超了会直接暂停部署，2026-11-14 发生过）：
+
+- 公开阅读页、sitemap、`llms.txt` 必须是 ISR，不得出现 `force-dynamic`、`no-store`、`revalidate = 0` 或读取 `searchParams`。
+- middleware 不处理 `/api/*`。新的 API 路由要自己用 `createServerSupabaseClient()` 读 session，不能指望 middleware 刷新或拦截。
+- 返回不变内容的 API（如 `/api/image-proxy`）要带 `CDN-Cache-Control`，并排除在 `next.config.js` 的 `/api` no-store 规则之外。
+- `CompanyLogo` 默认直接加载 FMP 原图（`unoptimized`），不消耗 Vercel 图片优化额度。
+- 以上由 `scripts/render-cost-guards.test.cjs` 检查。
 
 ### App（`kolvex-mobile/`）
 

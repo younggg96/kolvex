@@ -514,7 +514,7 @@ has 12px corners and no static shadow. Its heading is 30px semibold; supporting
 copy is 14px with 24px line height. The page scrolls with the document, and the
 localized heading also supplies the browser title. Authentication retains
 BaseLayout's animated grid background and its reduced-motion fallback.
-`auth.css` disables only the form's entry animation; runtime tokens remain the
+`AuthLayout`'s Tailwind classes disable only the form's entry animation; runtime tokens remain the
 color authority.
 
 **The Shared Auth Controls Rule.** Auth forms use the shared Input's `auth`
@@ -745,8 +745,9 @@ theme tokens and Chinese/English messages remain authoritative.
 ## Marketing landing page
 
 The homepage uses the same visual system as the dashboard, with a larger
-marketing composition and its existing animation layer. `components/landing/landing.css`
-only aliases the runtime `background`, `card`, `foreground`, `muted-foreground`,
+marketing composition and its existing animation layer. Its Tailwind classes
+(`landingPageClass` in `components/pages/HomePageClient.tsx` and the landing components)
+only alias the runtime `background`, `card`, `foreground`, `muted-foreground`,
 `border`, `muted`, `primary` and `positive` tokens from `app/globals.css`.
 It has no independent palette or dark-mode color overrides. Theme changes follow
 the dashboard automatically. Header, footer and the subtle background grid use
@@ -912,7 +913,7 @@ its data source fails. Full access and testing details live in
 
 ### Public directory motion
 
-`ReadingMotion` and `components/public/reading-motion.css` add progressive
+`ReadingMotion` and `readingMotionClass` in `components/public/ReadingLayout.tsx` add progressive
 animation to `/research`, `/creators` and `/stocks`. The existing reading layout,
 font stack, colors and card recipes remain authoritative. Headings and list items
 enter once per route or URL page with a 500ms opacity and 12px upward reveal;
@@ -986,8 +987,8 @@ rows are translated. The source remains documented in `../docs/news-feed.md`.
 
 ## Public landing page
 
-The public `/` surface uses `components/pages/HomePageClient.tsx` and
-`components/landing/landing.css`. Existing semantic theme tokens, Inter/Chinese
+The public `/` surface uses `components/pages/HomePageClient.tsx` and the
+`components/landing/` components, styled with Tailwind only. Existing semantic theme tokens, Inter/Chinese
 fonts, shared pill Buttons, navigation labels and public URLs remain canonical.
 The landing page is a marketing surface with stronger motion than the workspace.
 

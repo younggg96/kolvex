@@ -68,6 +68,7 @@ import {
 import CreatorAvatar from "./CreatorAvatar";
 import CreatorProfileDialog from "./CreatorProfileDialog";
 import OpinionCard from "./OpinionCard";
+import { useStockOutcomes } from "@/hooks/useStockOutcomes";
 import OtherCreatorOpinions from "./OtherCreatorOpinions";
 import OpinionDistribution from "./OpinionDistribution";
 import OpinionStrength from "./OpinionStrength";
@@ -1092,6 +1093,8 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     />
   );
   const focused = Boolean(route.creator && route.ticker);
+  // One stock per list here, so every card can show how the price moved after its video.
+  const outcomes = useStockOutcomes(route.ticker);
   /**
    * The price graph's range is the single time-range control on this card. Mirror it onto the
    * opinion filters when it names one of their windows, so switching to 观点走势 keeps the
@@ -2016,6 +2019,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                                         t={t}
                                         showCreator={!route.creator}
                                         showTicker={!route.ticker}
+                                        {...outcomes.cardProps(opinion.id)}
                                         onCreator={(channelId) =>
                                           navigate({ tab: "creators", creator: channelId })
                                         }
@@ -2043,16 +2047,6 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                         </>
                       )}
                     </ListCard>
-                    {route.ticker && route.creator && (
-                      <OtherCreatorOpinions
-                        key={`${route.ticker}:${route.creator}`}
-                        ticker={route.ticker}
-                        currentCreator={route.creator}
-                        onCreator={(channelId) =>
-                          navigate({ tab: "creators", creator: channelId, ticker: route.ticker })
-                        }
-                      />
-                    )}
                   </section>
                   <aside
                     className={cn(
@@ -2167,6 +2161,18 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                     {route.creator && !route.ticker && changeList()}
                   </aside>
                 </div>
+                {/* Outside the grid: the sticky sidebar describes this creator only, so it must
+                    stop before other creators instead of floating beside them. */}
+                {route.ticker && route.creator && (
+                  <OtherCreatorOpinions
+                    key={`${route.ticker}:${route.creator}`}
+                    ticker={route.ticker}
+                    currentCreator={route.creator}
+                    onCreator={(channelId) =>
+                      navigate({ tab: "creators", creator: channelId, ticker: route.ticker })
+                    }
+                  />
+                )}
               </TabsContent>
             )}
           </Tabs>

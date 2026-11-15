@@ -234,8 +234,9 @@ const nextConfig = {
           },
         ],
       },
+      // The image proxy returns immutable images that the CDN must cache; keep it out of no-store.
       {
-        source: "/api/:path*",
+        source: "/api/:path((?!image-proxy$).*)",
         headers: [
           {
             key: "Cache-Control",

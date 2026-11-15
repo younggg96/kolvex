@@ -37,6 +37,8 @@ not reintroduce `force-dynamic` or `no-store`: that turns every crawler hit into
 a Vercel Function render. On 2026-11-14 that pattern exhausted the Hobby Fluid
 Active CPU allowance and paused deployments. Middleware skips the Supabase
 session refresh for these paths; it only redirects legacy `?page=` links.
+Middleware also never runs on `/api/*`. `scripts/render-cost-guards.test.cjs`
+fails if any of this regresses.
 
 ## Discovery
 

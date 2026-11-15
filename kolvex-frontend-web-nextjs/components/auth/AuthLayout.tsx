@@ -6,7 +6,6 @@ import BaseLayout from "@/components/layout/BaseLayout";
 import WaylumeBackground from "@/components/auth/WaylumeBackground";
 import { ContentLoading } from "@/components/ui/content-loading";
 import { Skeleton } from "@/components/ui/skeleton";
-import "./auth.css";
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -14,47 +13,64 @@ interface AuthLayoutProps {
   subtitle?: string;
 }
 
-export default function AuthLayout({
-  children,
-  title,
-  subtitle,
-}: AuthLayoutProps) {
+export default function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
   useEffect(() => {
     document.title = `${title} | Kolvex`;
   }, [title]);
-  return <AuthFrame heading={<>
-    <h1
-      id="auth-title"
-      className="text-3xl font-semibold leading-tight tracking-tight text-foreground"
+  return (
+    <AuthFrame
+      heading={
+        <>
+          <h1
+            id="auth-title"
+            className="text-3xl font-semibold leading-tight tracking-tight text-foreground"
+          >
+            {title}
+          </h1>
+          {subtitle && <p className="mt-3 text-sm leading-6 text-muted-foreground">{subtitle}</p>}
+        </>
+      }
     >
-      {title}
-    </h1>
-    {subtitle && (
-      <p className="mt-3 text-sm leading-6 text-muted-foreground">
-        {subtitle}
-      </p>
-    )}
-  </>}>{children}</AuthFrame>;
+      {children}
+    </AuthFrame>
+  );
 }
 
 /** The sign-in card while the page or an OAuth return is still loading: same frame, form-shaped placeholders. */
 export function AuthLayoutSkeleton({ label }: { label?: string }) {
-  return <AuthFrame heading={<div aria-hidden="true"><Skeleton className="h-9 w-40 rounded-lg" /><Skeleton className="mt-4 h-4 w-56 rounded-md" /></div>}>
-    <ContentLoading label={label} className="min-h-0 animate-none">
-      <Skeleton className="mb-6 h-12 w-full rounded-full" />
-      <div className="flex flex-col gap-5">
-        {[0, 1].map((i) => <div key={i} className="flex flex-col gap-2"><Skeleton className="h-4 w-14 rounded-md" /><Skeleton className="h-12 w-full rounded-full" /></div>)}
-        <Skeleton className="-mt-2 h-4 w-20 self-end rounded-md" />
+  return (
+    <AuthFrame
+      heading={
+        <div aria-hidden="true">
+          <Skeleton className="h-9 w-40 rounded-lg" />
+          <Skeleton className="mt-4 h-4 w-56 rounded-md" />
+        </div>
+      }
+    >
+      <ContentLoading label={label} className="min-h-0 animate-none">
+        <Skeleton className="mb-6 h-12 w-full rounded-full" />
+        <div className="flex flex-col gap-5">
+          {[0, 1].map((i) => (
+            <div key={i} className="flex flex-col gap-2">
+              <Skeleton className="h-4 w-14 rounded-md" />
+              <Skeleton className="h-12 w-full rounded-full" />
+            </div>
+          ))}
+          <Skeleton className="-mt-2 h-4 w-20 self-end rounded-md" />
+          <Skeleton className="h-12 w-full rounded-full" />
+        </div>
+        <div className="my-6 flex items-center gap-4">
+          <div className="h-px flex-1 bg-border" />
+          <Skeleton className="h-3 w-4 rounded" />
+          <div className="h-px flex-1 bg-border" />
+        </div>
         <Skeleton className="h-12 w-full rounded-full" />
-      </div>
-      <div className="my-6 flex items-center gap-4"><div className="h-px flex-1 bg-border" /><Skeleton className="h-3 w-4 rounded" /><div className="h-px flex-1 bg-border" /></div>
-      <Skeleton className="h-12 w-full rounded-full" />
-    </ContentLoading>
-  </AuthFrame>;
+      </ContentLoading>
+    </AuthFrame>
+  );
 }
 
 function AuthFrame({ heading, children }: { heading: ReactNode; children: ReactNode }) {
-
   // Phones get one still frame: the per-pixel shader at 60fps heats them up.
   const [freezeBackground, setFreezeBackground] = useState<boolean | null>(null);
   useEffect(() => {
@@ -71,9 +87,18 @@ function AuthFrame({ heading, children }: { heading: ReactNode; children: ReactN
   const useArtworkBackdrop = freezeBackground === null || resolvedTheme !== "light";
 
   return (
-    <div className="auth-page relative isolate min-h-screen text-foreground" data-artwork={useArtworkBackdrop || undefined}>
+    // The form's entry stays still over the animated background. In the dark theme
+    // WaylumeBackground replaces BaseLayout's page fill and grid; the light theme keeps them.
+    <div
+      className="auth-page relative isolate min-h-screen text-foreground [&_main]:animate-none dark:[&[data-artwork]>.bg-background]:bg-transparent dark:[&[data-artwork]>.bg-background>.bg-grid]:hidden"
+      data-artwork={useArtworkBackdrop || undefined}
+    >
       {useArtworkBackdrop && freezeBackground !== null && (
-        <WaylumeBackground paused={freezeBackground} style={{ position: "fixed" }} />
+        <WaylumeBackground
+          paused={freezeBackground}
+          className="hidden dark:block"
+          style={{ position: "fixed" }}
+        />
       )}
       <BaseLayout hasFooter={false}>
         <div className="relative flex flex-1 items-start justify-center px-4 py-10 sm:py-12">

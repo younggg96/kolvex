@@ -32,12 +32,28 @@
  * Colors come from `rgb(var(--chart-up))` (green) and `rgb(var(--chart-down))` (red/orange).
  */
 
-import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode, type RefObject } from "react";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type PointerEvent,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { LocateFixed, Maximize2, MoveHorizontal, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InfoTip } from "@/components/ui/info-tip";
 import { cn } from "@/lib/utils";
-import { formatChangePercent, formatPrice, formatVolume, type PriceBar, type StockQuote } from "@/lib/stockApi";
+import {
+  formatChangePercent,
+  formatPrice,
+  formatVolume,
+  type PriceBar,
+  type StockQuote,
+} from "@/lib/stockApi";
 import { latestChartQuote } from "@/lib/chart/quote";
 import {
   GRAPH_AXIS_WIDTH,
@@ -88,7 +104,10 @@ type PriceDomain = ReturnType<typeof priceDomain>;
 type ScaleAxis = "time" | "price";
 
 function scaleAxisAt(target: EventTarget | null): ScaleAxis | null {
-  const axis = target instanceof Element ? target.closest<HTMLElement>("[data-scale-axis]")?.dataset.scaleAxis : undefined;
+  const axis =
+    target instanceof Element
+      ? target.closest<HTMLElement>("[data-scale-axis]")?.dataset.scaleAxis
+      : undefined;
   return axis === "time" || axis === "price" ? axis : null;
 }
 
@@ -180,7 +199,8 @@ export function graphGeometry({
   const closeOnly = interval === "1d" || interval === "1wk" || interval === "1mo";
   const firstIndex = Math.max(Math.floor(view.start), 0);
   const lastIndex = Math.min(Math.ceil(view.end) - 1, count - 1);
-  const domain = priceDomainOverride ?? priceDomain(list, count ? view : { start: 0, end: 1 }, priceExtent);
+  const domain =
+    priceDomainOverride ?? priceDomain(list, count ? view : { start: 0, end: 1 }, priceExtent);
   let priceHigh = -Infinity;
   let priceLow = Infinity;
   for (let index = firstIndex; index <= lastIndex; index++) {
@@ -195,8 +215,10 @@ export function graphGeometry({
   }
   const priceTop = topPad;
   const priceBottom = Math.max(plotHeight - Math.max(topPad * 0.5, 8), priceTop + 1);
-  const yOf = (price: number) => priceTop + ((domain.hi - price) / (domain.hi - domain.lo)) * (priceBottom - priceTop);
-  const priceAt = (y: number) => domain.hi - ((y - priceTop) / (priceBottom - priceTop)) * (domain.hi - domain.lo);
+  const yOf = (price: number) =>
+    priceTop + ((domain.hi - price) / (domain.hi - domain.lo)) * (priceBottom - priceTop);
+  const priceAt = (y: number) =>
+    domain.hi - ((y - priceTop) / (priceBottom - priceTop)) * (domain.hi - domain.lo);
   const xOf = (index: number) => (index - view.start + 0.5) * slot;
 
   const msPerBar = count > 1 ? (stamps[count - 1] - stamps[0]) / (count - 1) : 86_400_000;
@@ -319,9 +341,12 @@ export function rangeWindowStart(range: PriceRangeKey, lastBarTime: number): num
 /* ------------------------------------------------------------------ helpers */
 
 const reducedMotion = () =>
-  typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  typeof window !== "undefined" &&
+  typeof window.matchMedia === "function" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-const axisNumber = (value: number) => value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const axisNumber = (value: number) =>
+  value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 /** Never hand `Intl` a placeholder: a missing i18n key resolves to itself and would throw. */
 function safeLocale(locale: string | undefined) {
@@ -345,7 +370,11 @@ function tickLabel(bar: PriceBar, intraday: boolean, interval: string, locale: s
   const [year, month, day] = date.split("-").map(Number);
   const local = new Date(year, (month || 1) - 1, day || 1);
   if (intraday) {
-    return new Intl.DateTimeFormat(locale, { hour: "numeric", minute: "2-digit", hour12: false }).format(new Date(bar.date));
+    return new Intl.DateTimeFormat(locale, {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: false,
+    }).format(new Date(bar.date));
   }
   if (interval === "1wk" || interval === "1mo") {
     return new Intl.DateTimeFormat(locale, { year: "2-digit", month: "short" }).format(local);
@@ -508,7 +537,11 @@ export default function PriceGraph({
   } | null>(null);
   const [panMode, setPanMode] = useState(false);
   const [fading, setFading] = useState<{ bars: PriceBar[]; view: GraphView } | null>(null);
-  const gesture = useRef<{ kind: "pan"; x: number; moved: boolean; view: GraphView; last: number } | { kind: "pinch"; distance: number; mid: number; view: GraphView } | null>(null);
+  const gesture = useRef<
+    | { kind: "pan"; x: number; moved: boolean; view: GraphView; last: number }
+    | { kind: "pinch"; distance: number; mid: number; view: GraphView }
+    | null
+  >(null);
   /** Release velocity of a pan, in bars per second. */
   const tracker = useRef(new VelocityTracker());
   /** The spring that carries a released pan to rest (or back inside the data). */
@@ -531,7 +564,9 @@ export default function PriceGraph({
     const observer = new ResizeObserver(([entry]) => {
       const width = entry.contentRect.width;
       const height = entry.contentRect.height;
-      setSize((previous) => (previous.width === width && previous.height === height ? previous : { width, height }));
+      setSize((previous) =>
+        previous.width === width && previous.height === height ? previous : { width, height },
+      );
     });
     observer.observe(box);
     return () => observer.disconnect();
@@ -553,14 +588,46 @@ export default function PriceGraph({
     [view, defaultView, count],
   );
   /** The "Reset zoom" affordance; ±0.5 bars of slack absorbs float drift. */
-  const modified = Boolean(priceDomainOverride || (defaultView && view && (Math.abs(view.start - defaultView.start) > 0.5 || Math.abs(view.end - defaultView.end) > 0.5)));
+  const modified = Boolean(
+    priceDomainOverride ||
+    (defaultView &&
+      view &&
+      (Math.abs(view.start - defaultView.start) > 0.5 ||
+        Math.abs(view.end - defaultView.end) > 0.5)),
+  );
 
-  const automaticDomain = useMemo(() => priceDomain(bars ?? [], current, priceExtent), [bars, current, priceExtent]);
+  const automaticDomain = useMemo(
+    () => priceDomain(bars ?? [], current, priceExtent),
+    [bars, current, priceExtent],
+  );
   const activeDomain = priceDomainOverride ?? automaticDomain;
   const referencePriceSpan = automaticDomain.hi - automaticDomain.lo;
   const geometry = useMemo(
-    () => graphGeometry({ bars, times, view: current, width: size.width, height: size.height, intraday, interval, topPad: advanced ? GRAPH_TOP_PAD : GRAPH_TOP_PAD - 6, priceExtent, priceDomainOverride }),
-    [bars, times, current, size.width, size.height, intraday, interval, advanced, priceExtent, priceDomainOverride],
+    () =>
+      graphGeometry({
+        bars,
+        times,
+        view: current,
+        width: size.width,
+        height: size.height,
+        intraday,
+        interval,
+        topPad: advanced ? GRAPH_TOP_PAD : GRAPH_TOP_PAD - 6,
+        priceExtent,
+        priceDomainOverride,
+      }),
+    [
+      bars,
+      times,
+      current,
+      size.width,
+      size.height,
+      intraday,
+      interval,
+      advanced,
+      priceExtent,
+      priceDomainOverride,
+    ],
   );
   const loaded = Boolean(count && size.width >= 40 && size.height >= 40);
   /**
@@ -667,7 +734,14 @@ export default function PriceGraph({
         const factor = Math.exp(Math.min(Math.max(delta * units * ZOOM_PER_PX, -2), 2));
         if (axis === "time") zoomBy(factor, ratio);
         else {
-          const priceRatio = Math.min(Math.max((event.clientY - rect.top - geometry.priceTop) / (geometry.priceBottom - geometry.priceTop), 0), 1);
+          const priceRatio = Math.min(
+            Math.max(
+              (event.clientY - rect.top - geometry.priceTop) /
+                (geometry.priceBottom - geometry.priceTop),
+              0,
+            ),
+            1,
+          );
           zoomPriceBy(factor, priceRatio);
         }
         return;
@@ -730,8 +804,13 @@ export default function PriceGraph({
       onActiveChange(null);
       event.target.setPointerCapture(event.pointerId);
       axisGesture.current = {
-        axis, pointer: event.pointerId, origin: axis === "time" ? event.clientX : event.clientY,
-        view: current, domain: activeDomain, referenceSpan: referencePriceSpan, moved: false,
+        axis,
+        pointer: event.pointerId,
+        origin: axis === "time" ? event.clientX : event.clientY,
+        view: current,
+        domain: activeDomain,
+        referenceSpan: referencePriceSpan,
+        moved: false,
       };
       setDraggingAxis(axis);
       return;
@@ -739,7 +818,11 @@ export default function PriceGraph({
     // Catch the view where it is: a touch stops a settling spring, as a finger stops a scroll.
     stopSettling();
     tracker.current.reset();
-    if (!pointers.current.size && event.button === 0 && drawingInteraction?.onPointerDown(event, geometry)) {
+    if (
+      !pointers.current.size &&
+      event.button === 0 &&
+      drawingInteraction?.onPointerDown(event, geometry)
+    ) {
       drawingPointer.current = event.pointerId;
       event.currentTarget.setPointerCapture(event.pointerId);
       return;
@@ -748,12 +831,23 @@ export default function PriceGraph({
     if (pointers.current.size === 2) {
       const [a, b] = Array.from(pointers.current.values());
       const rect = plotRef.current!.getBoundingClientRect();
-      gesture.current = { kind: "pinch", distance: Math.abs(a.x - b.x) || 1, mid: Math.min(Math.max(((a.x + b.x) / 2 - rect.left) / geometry.plotWidth, 0), 1), view: current };
+      gesture.current = {
+        kind: "pinch",
+        distance: Math.abs(a.x - b.x) || 1,
+        mid: Math.min(Math.max(((a.x + b.x) / 2 - rect.left) / geometry.plotWidth, 0), 1),
+        view: current,
+      };
       return;
     }
     if (event.button !== 0) return;
     if (advanced) event.currentTarget.setPointerCapture(event.pointerId);
-    gesture.current = { kind: "pan", x: event.clientX, moved: false, view: current, last: current.start };
+    gesture.current = {
+      kind: "pan",
+      x: event.clientX,
+      moved: false,
+      view: current,
+      last: current.start,
+    };
     scrub(event.clientX, event.clientY);
   };
 
@@ -775,18 +869,23 @@ export default function PriceGraph({
       return;
     }
     if (drawingPointer.current !== null) {
-      if (drawingPointer.current === event.pointerId) drawingInteraction?.onPointerMove(event, geometry);
+      if (drawingPointer.current === event.pointerId)
+        drawingInteraction?.onPointerMove(event, geometry);
       return;
     }
     if (!gesture.current) drawingInteraction?.onPointerMove(event, geometry);
-    if (pointers.current.has(event.pointerId)) pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pointers.current.has(event.pointerId))
+      pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
     const now = gesture.current;
     if (now?.kind === "pinch" && pointers.current.size === 2) {
       const [a, b] = Array.from(pointers.current.values());
       const ratio = now.distance / (Math.abs(a.x - b.x) || 1);
       const base = now.view.end - now.view.start;
       const anchor = now.view.start + base * now.mid;
-      commit({ start: anchor - base * ratio * now.mid, end: anchor + base * ratio * (1 - now.mid) });
+      commit({
+        start: anchor - base * ratio * now.mid,
+        end: anchor + base * ratio * (1 - now.mid),
+      });
       return;
     }
     scrub(event.clientX, event.clientY);
@@ -830,7 +929,8 @@ export default function PriceGraph({
     setDragging(false);
     if (now?.kind === "pan" && now.moved) {
       // A cancelled pointer has no meaningful speed; it only springs back inside the data.
-      const velocity = event.type === "pointercancel" ? 0 : tracker.current.velocity(event.timeStamp);
+      const velocity =
+        event.type === "pointercancel" ? 0 : tracker.current.velocity(event.timeStamp);
       settle(now.last, now.view.end - now.view.start, velocity);
     }
   };
@@ -850,7 +950,8 @@ export default function PriceGraph({
     if (axis) {
       if (event.key === "0") resetAxis(axis);
       else {
-        const factor = event.key === "+" || event.key === "=" ? 0.8 : event.key === "-" ? 1.25 : null;
+        const factor =
+          event.key === "+" || event.key === "=" ? 0.8 : event.key === "-" ? 1.25 : null;
         if (factor === null) return;
         stopSettling();
         if (axis === "time") zoomBy(factor, 0.5);
@@ -880,8 +981,10 @@ export default function PriceGraph({
   const lastBar = count ? bars![Math.min(geometry.lastIndex, count - 1)] || bars![count - 1] : null;
   const firstBar = count ? bars![Math.min(Math.max(geometry.firstIndex, 0), count - 1)] : null;
   const headerBar = activeBar || lastBar;
-  const baseline = range === "1D" && quote && Number.isFinite(quote.previousClose) && quote.previousClose! > 0
-    ? quote.previousClose! : firstBar?.close;
+  const baseline =
+    range === "1D" && quote && Number.isFinite(quote.previousClose) && quote.previousClose! > 0
+      ? quote.previousClose!
+      : firstBar?.close;
   const headerChange = headerBar && baseline ? ((headerBar.close - baseline) / baseline) * 100 : 0;
   const latest = quoteEnabled ? latestChartQuote(quote, false) : null;
   const extended = quoteEnabled ? latestChartQuote(quote) : null;
@@ -890,25 +993,41 @@ export default function PriceGraph({
   // Change follows the selected range: 1D compares with the previous close (the quote's own
   // change), every other range compares the latest price with the first bar of the window.
   const quoteVsPreviousClose = range === "1D" && baseline === quote?.previousClose;
-  const quoteRangeChange = showQuote && baseline
-    ? quoteVsPreviousClose && latest.changePercent !== null ? latest.changePercent : ((latest.price - baseline) / baseline) * 100
-    : null;
+  const quoteRangeChange =
+    showQuote && baseline
+      ? quoteVsPreviousClose && latest.changePercent !== null
+        ? latest.changePercent
+        : ((latest.price - baseline) / baseline) * 100
+      : null;
   const displayedChange = showQuote ? quoteRangeChange : headerChange;
-  const quoteTime = latest?.time ? new Date(latest.time * 1000).toLocaleString(t("common.intlLocale"), {
-    timeZone: quote?.exchangeTimezone || "America/New_York", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit", second: "2-digit", timeZoneName: "short",
-  }) : t("youtubeOpinions.quoteTimeUnknown");
+  const quoteTime = latest?.time
+    ? new Date(latest.time * 1000).toLocaleString(t("common.intlLocale"), {
+        timeZone: quote?.exchangeTimezone || "America/New_York",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        timeZoneName: "short",
+      })
+    : t("youtubeOpinions.quoteTimeUnknown");
   const toneChange = displayedChange ?? headerChange;
   const tone: StrengthTone = toneChange > 0 ? "positive" : toneChange < 0 ? "negative" : "neutral";
   const color = toneColor[tone];
-  const barLabel = (bar: PriceBar) => `${formatDate(bar.date.slice(0, 10))}${intraday ? ` ${bar.date.slice(11, 16)}` : ""}`;
+  const barLabel = (bar: PriceBar) =>
+    `${formatDate(bar.date.slice(0, 10))}${intraday ? ` ${bar.date.slice(11, 16)}` : ""}`;
 
   const line = useMemo(() => {
-    if (!bars?.length) return { d: "", area: "", points: [] as Array<{ x: number; y: number; index: number }> };
+    if (!bars?.length)
+      return { d: "", area: "", points: [] as Array<{ x: number; y: number; index: number }> };
     const points: Array<{ x: number; y: number; index: number }> = [];
     let d = "";
     let pen = false;
-    for (let index = Math.max(geometry.firstIndex - 1, 0); index <= Math.min(geometry.lastIndex + 1, count - 1); index++) {
+    for (
+      let index = Math.max(geometry.firstIndex - 1, 0);
+      index <= Math.min(geometry.lastIndex + 1, count - 1);
+      index++
+    ) {
       const close = bars[index]?.close;
       if (!Number.isFinite(close)) {
         pen = false;
@@ -930,14 +1049,21 @@ export default function PriceGraph({
     // `geometry` is memoized on the box/data/view triple, so depending on it is stable.
   }, [bars, count, geometry]);
 
-  const axisRules = useMemo(() => priceTickValues(geometry.priceLow, geometry.priceHigh, 4), [geometry.priceLow, geometry.priceHigh]);
+  const axisRules = useMemo(
+    () => priceTickValues(geometry.priceLow, geometry.priceHigh, 4),
+    [geometry.priceLow, geometry.priceHigh],
+  );
 
   const timeTicks = useMemo(() => {
     if (!loaded || !bars?.length || geometry.plotWidth < 140) return [];
     const slots = Math.max(Math.min(Math.floor(geometry.plotWidth / BARS_PER_LABEL), 4), 2);
     return dateTickIndices(current, count, slots)
       .filter((index) => Boolean(bars[index]))
-      .map((index) => ({ index, x: geometry.xOf(index), label: tickLabel(bars[index], intraday, interval, locale) }))
+      .map((index) => ({
+        index,
+        x: geometry.xOf(index),
+        label: tickLabel(bars[index], intraday, interval, locale),
+      }))
       .filter((tick) => tick.x > 20 && tick.x < geometry.plotWidth - 14);
   }, [loaded, bars, current, count, geometry, intraday, interval, locale]);
 
@@ -954,7 +1080,8 @@ export default function PriceGraph({
 
   /* ------------------------------------------------------------- controls */
 
-  const selectedRangeLabel = rangeLabel || rangeOptions.find((option) => option.value === range)?.label || "";
+  const selectedRangeLabel =
+    rangeLabel || rangeOptions.find((option) => option.value === range)?.label || "";
   const customOption = rangeOptions.find((option) => option.value === "CUSTOM");
   const rangeButtons = rangeOptions.filter((option) => option.value !== "CUSTOM");
 
@@ -964,7 +1091,10 @@ export default function PriceGraph({
       <div
         role="radiogroup"
         aria-label={rangeAriaLabel || t("youtubeOpinions.graph.rangeLabel")}
-        className={cn("flex min-w-0 basis-full items-center gap-0.5 overflow-x-auto rounded-full p-0.5 glass-track scrollbar-hide sm:basis-auto", !advanced && "justify-between sm:justify-start")}
+        className={cn(
+          "flex min-w-0 basis-full items-center gap-0.5 overflow-x-auto rounded-full p-0.5 glass-track scrollbar-hide sm:basis-auto",
+          !advanced && "justify-between sm:justify-start",
+        )}
       >
         {rangeButtons.map((option) => {
           const selected = option.value === range;
@@ -984,7 +1114,9 @@ export default function PriceGraph({
                 "inline-flex h-8 shrink-0 select-none items-center justify-center rounded-full px-3 text-[0.8125rem] font-semibold transition-colors duration-150",
                 "focus-visible:outline-none",
                 "disabled:pointer-events-none disabled:opacity-40",
-                selected ? "glass-thumb text-foreground" :"text-muted-foreground hover:bg-muted/70 hover:text-foreground focus-visible:bg-muted/60",
+                selected
+                  ? "glass-thumb text-foreground"
+                  : "text-muted-foreground hover:bg-muted/70 hover:text-foreground focus-visible:bg-muted/60",
               )}
             >
               {option.label}
@@ -1006,11 +1138,15 @@ export default function PriceGraph({
             className={cn(
               "inline-flex h-8 max-w-[min(15rem,52vw)] shrink-0 items-center justify-center rounded-full px-3 text-[0.8125rem] font-semibold transition-colors duration-150",
               "focus-visible:outline-none",
-              range === "CUSTOM" ? "glass-thumb text-foreground" :"text-muted-foreground hover:bg-muted/70 hover:text-foreground focus-visible:bg-muted/60",
+              range === "CUSTOM"
+                ? "glass-thumb text-foreground"
+                : "text-muted-foreground hover:bg-muted/70 hover:text-foreground focus-visible:bg-muted/60",
             )}
             title={customOption.label}
           >
-            <span className="truncate">{range === "CUSTOM" && selectedRangeLabel ? selectedRangeLabel : customOption.label}</span>
+            <span className="truncate">
+              {range === "CUSTOM" && selectedRangeLabel ? selectedRangeLabel : customOption.label}
+            </span>
           </button>
         )}
       </div>
@@ -1027,14 +1163,23 @@ export default function PriceGraph({
     </>
   );
 
-
   const plotTone = toneColor[tone];
 
   const body = error ? (
-    <div className={cn("flex flex-wrap items-center justify-center gap-3 text-sm text-muted-foreground", heightClass)} role="alert">
+    <div
+      className={cn(
+        "flex flex-wrap items-center justify-center gap-3 text-sm text-muted-foreground",
+        heightClass,
+      )}
+      role="alert"
+    >
       <span>{t("youtubeOpinions.priceUnavailable")}</span>
       {onRetry && (
-        <button type="button" onClick={onRetry} className="glass-button glass-button-neutral inline-flex h-11 items-center rounded-full border border-foreground/[0.12] bg-foreground/[0.05] px-4 text-sm font-semibold text-foreground hover:bg-foreground/[0.1] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 sm:h-8">
+        <button
+          type="button"
+          onClick={onRetry}
+          className="glass-button glass-button-neutral inline-flex h-11 items-center rounded-full border border-foreground/[0.12] bg-foreground/[0.05] px-4 text-sm font-semibold text-foreground hover:bg-foreground/[0.1] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 sm:h-8"
+        >
           {t("common.retry")}
         </button>
       )}
@@ -1091,24 +1236,39 @@ export default function PriceGraph({
       dragging={dragging}
       draggingAxis={draggingAxis}
       timeScaleLabel={advanced ? t("youtubeOpinions.timeAxisZoom") : undefined}
-      priceScaleLabel={advanced && onPriceDomainChange ? t("youtubeOpinions.priceAxisZoom") : undefined}
+      priceScaleLabel={
+        advanced && onPriceDomainChange ? t("youtubeOpinions.priceAxisZoom") : undefined
+      }
     />
   );
 
   const showExtended = Boolean(extended && extended.session !== "regular");
   const quoteProblem = Boolean(quoteError || (!latest && !quoteLoading));
   /** Source, timestamps and the delay notice stay one tap away instead of two lines over the chart. */
-  const quoteDetails = quoteEnabled && latest ? (
+  // Only next to the live quote: while scrubbing, the header shows a candle, not this quote.
+  const quoteDetails = showQuote ? (
     <InfoTip label={t("youtubeOpinions.quoteMayBeDelayed")} className="self-center">
-      <span className="block">{quote?.source || "Yahoo Finance"} · {quoteTime}</span>
+      <span className="block">
+        {quote?.source || "Yahoo Finance"} · {quoteTime}
+      </span>
       {extended && showExtended && extended.time ? (
         <span className="block">
-          {t(`youtubeOpinions.quoteSession.${extended.session}`)} · {new Date(extended.time * 1000).toLocaleString(t("common.intlLocale"), {
-            timeZone: quote?.exchangeTimezone || "America/New_York", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", timeZoneName: "short",
+          {t(`youtubeOpinions.quoteSession.${extended.session}`)} ·{" "}
+          {new Date(extended.time * 1000).toLocaleString(t("common.intlLocale"), {
+            timeZone: quote?.exchangeTimezone || "America/New_York",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            timeZoneName: "short",
           })}
         </span>
       ) : null}
-      <span className="block">{t("youtubeOpinions.quoteMayBeDelayed")}{showExtended ? ` · ${t("youtubeOpinions.regularSessionChart")}` : ""}</span>
+      <span className="block">
+        {t("youtubeOpinions.quoteMayBeDelayed")}
+        {showExtended ? ` · ${t("youtubeOpinions.regularSessionChart")}` : ""}
+      </span>
     </InfoTip>
   ) : null;
 
@@ -1119,22 +1279,43 @@ export default function PriceGraph({
         <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 gap-y-0.5">
           {headerLabel}
           {displayedPrice !== undefined ? (
-            <span className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1" aria-live="polite">
-              <span className="text-base font-semibold tabular-nums text-foreground">{formatPrice(displayedPrice)}</span>
-              {displayedChange !== null && <span className={cn("text-sm font-semibold tabular-nums", displayedChange > 0 ? "text-positive" : displayedChange < 0 ? "text-negative" : "text-muted-foreground")}>
-                {formatChangePercent(displayedChange)}
-              </span>}
-              <span className="text-xs text-muted-foreground">{showQuote && quoteVsPreviousClose
-                ? t(`youtubeOpinions.quoteSession.${latest.session}`)
-                : quoteVsPreviousClose ? t("youtubeOpinions.quoteSession.regular")
-                  : rangeChangeLabel || t("youtubeOpinions.priceRangeChange")}</span>
+            <span
+              className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1"
+              aria-live="polite"
+            >
+              <span className="text-base font-semibold tabular-nums text-foreground">
+                {formatPrice(displayedPrice)}
+              </span>
+              {displayedChange !== null && (
+                <span
+                  className={cn(
+                    "text-sm font-semibold tabular-nums",
+                    displayedChange > 0
+                      ? "text-positive"
+                      : displayedChange < 0
+                        ? "text-negative"
+                        : "text-muted-foreground",
+                  )}
+                >
+                  {formatChangePercent(displayedChange)}
+                </span>
+              )}
+              <span className="text-xs text-muted-foreground">
+                {showQuote && quoteVsPreviousClose
+                  ? t(`youtubeOpinions.quoteSession.${latest.session}`)
+                  : quoteVsPreviousClose
+                    ? t("youtubeOpinions.quoteSession.regular")
+                    : rangeChangeLabel || t("youtubeOpinions.priceRangeChange")}
+              </span>
               {quoteDetails}
             </span>
-          ) : (
-            loading || !bars ? <Skeleton className="h-5 w-32" aria-hidden="true" /> : null
-          )}
+          ) : loading || !bars ? (
+            <Skeleton className="h-5 w-32" aria-hidden="true" />
+          ) : null}
           {activeBar && activeIndex !== null && (
-            <span className="text-[0.6875rem] tabular-nums text-muted-foreground">{barLabel(activeBar)}</span>
+            <span className="text-[0.6875rem] tabular-nums text-muted-foreground">
+              {barLabel(activeBar)}
+            </span>
           )}
         </div>
         {/* Sits on the price line, not under the range bar; the negative margin keeps the phone hit area without growing the row. */}
@@ -1151,18 +1332,37 @@ export default function PriceGraph({
       </div>
       {quoteEnabled && (showExtended || quoteProblem || (!latest && quoteLoading)) && (
         <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-xs text-muted-foreground">
-          {showExtended && extended && <span className="tabular-nums">
-            {t(`youtubeOpinions.quoteSession.${extended.session}`)} {formatPrice(extended.price)}
-            {extended.changePercent !== null && ` (${formatChangePercent(extended.changePercent)})`}
-          </span>}
+          {showExtended && extended && (
+            <span className="tabular-nums">
+              {t(`youtubeOpinions.quoteSession.${extended.session}`)} {formatPrice(extended.price)}
+              {extended.changePercent !== null &&
+                ` (${formatChangePercent(extended.changePercent)})`}
+            </span>
+          )}
           {!latest && quoteLoading && <span>{t("youtubeOpinions.quoteLoading")}</span>}
-          {quoteProblem && <span role="status">{t(latest ? "youtubeOpinions.quoteRefreshFailed" : "youtubeOpinions.quoteUnavailable")}</span>}
+          {quoteProblem && (
+            <span role="status">
+              {t(
+                latest ? "youtubeOpinions.quoteRefreshFailed" : "youtubeOpinions.quoteUnavailable",
+              )}
+            </span>
+          )}
           {quoteProblem && onQuoteRetry && (
-            <button type="button" onClick={onQuoteRetry} className="rounded px-1 font-semibold text-foreground underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">{t("common.retry")}</button>
+            <button
+              type="button"
+              onClick={onQuoteRetry}
+              className="rounded px-1 font-semibold text-foreground underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+            >
+              {t("common.retry")}
+            </button>
           )}
         </div>
       )}
-      {historyStale && <div role="status" className="mt-1 text-xs text-muted-foreground">{t("youtubeOpinions.historyRefreshFailed")}</div>}
+      {historyStale && (
+        <div role="status" className="mt-1 text-xs text-muted-foreground">
+          {t("youtubeOpinions.historyRefreshFailed")}
+        </div>
+      )}
 
       {/* Phones give the plot every spare pixel (no gap above the controls); panes stack right under it. */}
       <div className={cn("mt-1.5", advanced && "flex flex-1 flex-col sm:min-h-0")}>{body}</div>
@@ -1178,10 +1378,28 @@ export default function PriceGraph({
           <div className="-mx-1 flex min-w-0 items-center gap-1 overflow-x-auto overscroll-x-contain px-1 scrollbar-hide sm:mx-0 sm:shrink-0 sm:overflow-visible sm:px-0">
             {trailingControls}
             <span className="ml-auto" aria-hidden="true" />
-            <Button type="button" aria-label={t("youtubeOpinions.zoomIn")} title={t("youtubeOpinions.zoomIn")} onClick={() => zoomBy(0.8, 0.5)} variant="toolbar" size="toolbar" selected={false} className={"max-sm:hidden"}>
+            <Button
+              type="button"
+              aria-label={t("youtubeOpinions.zoomIn")}
+              title={t("youtubeOpinions.zoomIn")}
+              onClick={() => zoomBy(0.8, 0.5)}
+              variant="toolbar"
+              size="toolbar"
+              selected={false}
+              className={"max-sm:hidden"}
+            >
               <ZoomIn className="h-4 w-4" aria-hidden="true" />
             </Button>
-            <Button type="button" aria-label={t("youtubeOpinions.zoomOut")} title={t("youtubeOpinions.zoomOut")} onClick={() => zoomBy(1.25, 0.5)} variant="toolbar" size="toolbar" selected={false} className={"max-sm:hidden"}>
+            <Button
+              type="button"
+              aria-label={t("youtubeOpinions.zoomOut")}
+              title={t("youtubeOpinions.zoomOut")}
+              onClick={() => zoomBy(1.25, 0.5)}
+              variant="toolbar"
+              size="toolbar"
+              selected={false}
+              className={"max-sm:hidden"}
+            >
               <ZoomOut className="h-4 w-4" aria-hidden="true" />
             </Button>
             <Button
@@ -1190,7 +1408,9 @@ export default function PriceGraph({
               aria-label={t("youtubeOpinions.graph.panMode")}
               title={t("youtubeOpinions.graph.panMode")}
               onClick={() => setPanMode((value) => !value)}
-              variant="toolbar" size="toolbar" selected={panMode}
+              variant="toolbar"
+              size="toolbar"
+              selected={panMode}
             >
               <MoveHorizontal className="h-4 w-4" aria-hidden="true" />
             </Button>
@@ -1200,9 +1420,16 @@ export default function PriceGraph({
               title={t("youtubeOpinions.resetZoom")}
               onClick={resetView}
               disabled={!modified}
-              variant="toolbar" size="toolbar" selected={false} className={"disabled:pointer-events-none disabled:opacity-40"}
+              variant="toolbar"
+              size="toolbar"
+              selected={false}
+              className={"disabled:pointer-events-none disabled:opacity-40"}
             >
-              {modified ? <LocateFixed className="h-4 w-4" aria-hidden="true" /> : <RotateCcw className="h-4 w-4" aria-hidden="true" />}
+              {modified ? (
+                <LocateFixed className="h-4 w-4" aria-hidden="true" />
+              ) : (
+                <RotateCcw className="h-4 w-4" aria-hidden="true" />
+              )}
             </Button>
           </div>
         )}
@@ -1314,8 +1541,12 @@ export function PriceGraphPlot({
       aria-label={ariaLabel}
       aria-valuemin={advanced ? 0 : undefined}
       aria-valuemax={advanced ? Math.max(count - 1, 0) : undefined}
-      aria-valuenow={advanced ? activeIndex ?? Math.max(Math.min(geometry.lastIndex, count - 1), 0) : undefined}
-      aria-valuetext={advanced && activeBar ? `${activeLabel} ${formatPrice(activeBar.close)}` : undefined}
+      aria-valuenow={
+        advanced ? (activeIndex ?? Math.max(Math.min(geometry.lastIndex, count - 1), 0)) : undefined
+      }
+      aria-valuetext={
+        advanced && activeBar ? `${activeLabel} ${formatPrice(activeBar.close)}` : undefined
+      }
       data-price-graph={advanced ? "advanced" : "compact"}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
@@ -1338,7 +1569,12 @@ export function PriceGraphPlot({
         <Skeleton className="absolute inset-0 rounded-none" aria-hidden="true" />
       ) : (
         <>
-          <svg width={size.width} height={size.height} className="pointer-events-none absolute inset-0" aria-hidden="true">
+          <svg
+            width={size.width}
+            height={size.height}
+            className="pointer-events-none absolute inset-0"
+            aria-hidden="true"
+          >
             <defs>
               <clipPath id={clipId}>
                 <rect x={0} y={0} width={geometry.plotWidth} height={geometry.plotHeight} />
@@ -1352,7 +1588,16 @@ export function PriceGraphPlot({
             <g clipPath={`url(#${clipId})`}>
               {axisRules.map((value) => {
                 const y = geometry.yOf(value);
-                return <line key={`rule-${value}`} x1={0} x2={geometry.plotWidth} y1={y} y2={y} stroke="rgb(var(--foreground) / 0.055)" />;
+                return (
+                  <line
+                    key={`rule-${value}`}
+                    x1={0}
+                    x2={geometry.plotWidth}
+                    y1={y}
+                    y2={y}
+                    stroke="rgb(var(--foreground) / 0.055)"
+                  />
+                );
               })}
               {baselinePrice !== undefined && (
                 <line
@@ -1378,16 +1623,34 @@ export function PriceGraphPlot({
                   opacity={activeBar ? 0.35 : 1}
                 >
                   {/* A range change fades the new line in under the old one (see FadingLine). */}
-                  {fading && <animate attributeName="opacity" from="0" to={activeBar ? "0.35" : "1"} dur={`${FADE_MS}ms`} fill="freeze" calcMode="spline" keySplines="0.25 1 0.5 1" keyTimes="0;1" />}
+                  {fading && (
+                    <animate
+                      attributeName="opacity"
+                      from="0"
+                      to={activeBar ? "0.35" : "1"}
+                      dur={`${FADE_MS}ms`}
+                      fill="freeze"
+                      calcMode="spline"
+                      keySplines="0.25 1 0.5 1"
+                      keyTimes="0;1"
+                    />
+                  )}
                 </path>
               )}
               {!renderPlot && line.d && activeBar && activeIndex !== null && (
-                <path d={lineUntil(line.points, activeIndex)} fill="none" stroke={plotTone} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                <path
+                  d={lineUntil(line.points, activeIndex)}
+                  fill="none"
+                  stroke={plotTone}
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               )}
               {fading && <FadingLine geometry={geometry} bars={fading.bars} view={fading.view} />}
             </g>
           </svg>
-  
+
           {/* creator calls */}
           {showCalls &&
             calls &&
@@ -1400,20 +1663,37 @@ export function PriceGraphPlot({
               const highAnchor = advanced ? geometry.yOf(bar.high) : closeY;
               return (
                 <span key={index}>
-                  {entry.bearish > 0 && <CallMarker direction="down" count={entry.bearish} x={x} y={Math.max(highAnchor - 5, 10)} />}
-                  {entry.bullish > 0 && <CallMarker direction="up" count={entry.bullish} x={x} y={Math.min(Math.max(lowAnchor + 5, 12), geometry.plotHeight - 8)} />}
+                  {entry.bearish > 0 && (
+                    <CallMarker
+                      direction="down"
+                      count={entry.bearish}
+                      x={x}
+                      y={Math.max(highAnchor - 5, 10)}
+                    />
+                  )}
+                  {entry.bullish > 0 && (
+                    <CallMarker
+                      direction="up"
+                      count={entry.bullish}
+                      x={x}
+                      y={Math.min(Math.max(lowAnchor + 5, 12), geometry.plotHeight - 8)}
+                    />
+                  )}
                   {entry.other > 0 && (
                     <CallMarker
                       direction="dot"
                       count={entry.other}
                       x={x}
-                      y={Math.min(lowAnchor + 8 + (entry.bullish > 0 ? (entry.bullish > 1 ? 20 : 10) : 0), geometry.plotHeight - 6)}
+                      y={Math.min(
+                        lowAnchor + 8 + (entry.bullish > 0 ? (entry.bullish > 1 ? 20 : 10) : 0),
+                        geometry.plotHeight - 6,
+                      )}
                     />
                   )}
                 </span>
               );
             })}
-  
+
           {/* the window's peak: one quiet floating tag, Finsepa-style */}
           {extremes && bars && (
             <ExtremeTag
@@ -1424,12 +1704,13 @@ export function PriceGraphPlot({
               clamp={geometry.plotWidth}
             />
           )}
-  
+
           {/* right axis: 2–3 interior numerals, the current price as a filled tag */}
           {axisRules.map((value) => {
             const y = geometry.yOf(value);
             const currentValue = lastBar?.close;
-            if (currentValue !== undefined && Math.abs(geometry.yOf(currentValue) - y) < 12) return null;
+            if (currentValue !== undefined && Math.abs(geometry.yOf(currentValue) - y) < 12)
+              return null;
             if (y < geometry.priceTop || y > geometry.priceBottom) return null;
             return (
               <span
@@ -1451,8 +1732,16 @@ export function PriceGraphPlot({
               decimals={2}
             />
           )}
-          {tooltipPill(activeBar, activeIndex, activeBar ? { x: geometry.xOf(activeIndex!), y: geometry.yOf(activeBar.close) } : null, geometry, plotTone, activeLabel, advanced)}
-  
+          {tooltipPill(
+            activeBar,
+            activeIndex,
+            activeBar ? { x: geometry.xOf(activeIndex!), y: geometry.yOf(activeBar.close) } : null,
+            geometry,
+            plotTone,
+            activeLabel,
+            advanced,
+          )}
+
           {/* date labels: three or four, never dense */}
           {timeTicks.map((tick) => (
             <span
@@ -1464,13 +1753,21 @@ export function PriceGraphPlot({
               {tick.label}
             </span>
           ))}
-  
+
           {/* host popover for the active bar (creator calls) */}
-          {activeBar && activeIndex !== null && (renderEventPopover ? renderEventPopover(activeIndex) : eventsAt?.(activeIndex))}
-  
+          {activeBar &&
+            activeIndex !== null &&
+            (renderEventPopover ? renderEventPopover(activeIndex) : eventsAt?.(activeIndex))}
+
           {drawingLayer && (
             // Spans the price axis too, so drawings can post their levels there; the layer clips its own lines.
-            <div className="absolute left-0 top-0 overflow-hidden" style={{ width: geometry.plotWidth + geometry.axisWidth, height: geometry.axisBlock.h }}>
+            <div
+              className="absolute left-0 top-0 overflow-hidden"
+              style={{
+                width: geometry.plotWidth + geometry.axisWidth,
+                height: geometry.axisBlock.h,
+              }}
+            >
               {typeof drawingLayer === "function" ? drawingLayer(geometry) : drawingLayer}
             </div>
           )}
@@ -1500,7 +1797,6 @@ export function PriceGraphPlot({
         </>
       )}
     </div>
-  
   );
 }
 
@@ -1536,7 +1832,9 @@ function mergeNearbyCalls(calls: Map<number, CallCounts>, geometry: GraphGeometr
 function lineUntil(points: Array<{ x: number; y: number; index: number }>, active: number) {
   const upTo = points.filter((point) => point.index <= active);
   if (upTo.length < 2) return "";
-  return upTo.map((point, offset) => `${offset ? "L" : "M"}${point.x.toFixed(1)},${point.y.toFixed(1)}`).join("");
+  return upTo
+    .map((point, offset) => `${offset ? "L" : "M"}${point.x.toFixed(1)},${point.y.toFixed(1)}`)
+    .join("");
 }
 
 function tooltipPill(
@@ -1567,11 +1865,15 @@ function tooltipPill(
       <span
         aria-hidden="true"
         className="pointer-events-none absolute z-20 inline-flex items-baseline gap-1.5 whitespace-nowrap rounded-full bg-foreground px-2 py-1 text-[0.6875rem] font-medium leading-none tabular-nums text-background shadow-sm"
-        style={right ? { right: geometry.plotWidth - point.x + 12, top } : { left: point.x + 12, top }}
+        style={
+          right ? { right: geometry.plotWidth - point.x + 12, top } : { left: point.x + 12, top }
+        }
       >
         <span className="opacity-75">{label}</span>
         <span className="font-semibold">{formatPrice(bar.close)}</span>
-        {advanced && bar.volume != null && bar.volume > 0 && <span className="opacity-70">{formatVolume(bar.volume)}</span>}
+        {advanced && bar.volume != null && bar.volume > 0 && (
+          <span className="opacity-70">{formatVolume(bar.volume)}</span>
+        )}
       </span>
     </>
   );
@@ -1583,7 +1885,15 @@ function tooltipPill(
  * animation needs no injected stylesheet, and `prefers-reduced-motion` skips the whole crossfade
  * (the component never sets `fading` then, so nothing renders here).
  */
-function FadingLine({ geometry, bars, view }: { geometry: GraphGeometry; bars: PriceBar[]; view: GraphView }) {
+function FadingLine({
+  geometry,
+  bars,
+  view,
+}: {
+  geometry: GraphGeometry;
+  bars: PriceBar[];
+  view: GraphView;
+}) {
   const span = Math.max(view.end - view.start, 1e-6);
   const slot = geometry.plotWidth / span;
   const domain = priceDomain(bars, view);
@@ -1598,15 +1908,39 @@ function FadingLine({ geometry, bars, view }: { geometry: GraphGeometry; bars: P
       continue;
     }
     const x = (index - view.start + 0.5) * slot;
-    const y = geometry.priceTop + ((domain.hi - close) / (domain.hi - domain.lo)) * (geometry.priceBottom - geometry.priceTop);
+    const y =
+      geometry.priceTop +
+      ((domain.hi - close) / (domain.hi - domain.lo)) * (geometry.priceBottom - geometry.priceTop);
     d += `${pen ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`;
     pen = true;
   }
   if (!d) return null;
   return (
-    <path d={d} fill="none" stroke="rgb(var(--muted-foreground))" strokeWidth={1.5} strokeLinejoin="round" opacity={0.5}>
-      <animate attributeName="opacity" from="0.5" to="0" dur={`${FADE_MS}ms`} fill="freeze" calcMode="spline" keySplines="0.4 0 0.2 1" keyTimes="0;1" />
-      <animate attributeName="display" from="inline" to="none" begin={`${FADE_MS}ms`} fill="freeze" />
+    <path
+      d={d}
+      fill="none"
+      stroke="rgb(var(--muted-foreground))"
+      strokeWidth={1.5}
+      strokeLinejoin="round"
+      opacity={0.5}
+    >
+      <animate
+        attributeName="opacity"
+        from="0.5"
+        to="0"
+        dur={`${FADE_MS}ms`}
+        fill="freeze"
+        calcMode="spline"
+        keySplines="0.4 0 0.2 1"
+        keyTimes="0;1"
+      />
+      <animate
+        attributeName="display"
+        from="inline"
+        to="none"
+        begin={`${FADE_MS}ms`}
+        fill="freeze"
+      />
     </path>
   );
 }

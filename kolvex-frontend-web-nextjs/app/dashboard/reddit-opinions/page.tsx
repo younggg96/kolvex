@@ -10,23 +10,47 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SearchFieldIcon } from "@/components/ui/search-input";
 import { InfoTip } from "@/components/ui/info-tip";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { FilterSheet, FilterSheetGroup, FilterSheetToggle } from "@/components/ui/filter-sheet";
 import WatchlistButton from "@/components/decision/WatchlistButton";
 import CompanyLogo from "@/components/ui/company-logo";
 import { ListCard, ListColumnHeader, ListRow } from "@/components/ui/list-card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { useCachedResource } from "@/hooks/useCachedResource";
 import { useRedditWatchlist } from "@/hooks/useRedditWatchlist";
 import { marketStockHref } from "@/lib/stockLinks";
-import { REDDIT_COMMUNITIES, mentionChange, selectRedditStocks, type RedditCommunity, type RedditRanking, type RedditSort, type RedditStock } from "@/lib/redditOpinions";
+import {
+  REDDIT_COMMUNITIES,
+  mentionChange,
+  selectRedditStocks,
+  type RedditCommunity,
+  type RedditRanking,
+  type RedditSort,
+  type RedditStock,
+} from "@/lib/redditOpinions";
 
-const MOBILE_GRID = "grid min-h-20 grid-cols-[minmax(0,1fr)_5.5rem_1rem] items-center gap-2 px-2 py-3";
+// Mobile-only rows use the same compact rhythm as listRowTargetClass on mobile
+// (no min height, py-2), matching the YouTube opinions stock list.
+const MOBILE_GRID = "grid grid-cols-[minmax(0,1fr)_5.5rem_1rem] items-center gap-2 px-2 py-2";
 /** Cells carry the hover band so the table row keeps rounded ends inside the card. The
  *  wash is neutral so green keeps signalling direction rather than interaction. */
-const HOVER_CELL = "transition-colors group-hover:bg-foreground/[0.06] first:rounded-l-2xl last:rounded-r-2xl";
+const HOVER_CELL =
+  "transition-colors group-hover:bg-foreground/[0.06] first:rounded-l-2xl last:rounded-r-2xl";
 
 export default function RedditOpinionsPage() {
   const { t, locale } = useTranslation();
@@ -38,8 +62,11 @@ export default function RedditOpinionsPage() {
   const { watchlist, ready } = useRedditWatchlist();
   const { data, loading, refreshing, error, refresh } = useCachedResource<RedditRanking>(
     `reddit:ranking:${community}`,
-    async signal => {
-      const response = await fetch(`/api/reddit-opinions?community=${community}`, { signal, cache: "no-store" });
+    async (signal) => {
+      const response = await fetch(`/api/reddit-opinions?community=${community}`, {
+        signal,
+        cache: "no-store",
+      });
       if (!response.ok) throw new Error("Ranking unavailable");
       const ranking: RedditRanking = await response.json();
       if (ranking.community !== community) throw new Error("Ranking community mismatch");
@@ -50,31 +77,53 @@ export default function RedditOpinionsPage() {
   const busy = loading || refreshing;
 
   const number = new Intl.NumberFormat(locale === "zh" ? "zh-CN" : "en-US");
-  const rows = useMemo(() => selectRedditStocks(data?.results ?? [], query, sort, onlyWatchlist ? watchlist : undefined),
-    [data, query, sort, onlyWatchlist, watchlist]);
+  const rows = useMemo(
+    () =>
+      selectRedditStocks(data?.results ?? [], query, sort, onlyWatchlist ? watchlist : undefined),
+    [data, query, sort, onlyWatchlist, watchlist],
+  );
 
   const changeLabel = (row: RedditStock) => {
     const change = mentionChange(row);
     const rounded = change === null ? null : Math.round(change);
-    return rounded === null ? "—" : `${rounded > 0 ? "+" : ""}${number.format(rounded === 0 ? 0 : rounded)}%`;
+    return rounded === null
+      ? "—"
+      : `${rounded > 0 ? "+" : ""}${number.format(rounded === 0 ? 0 : rounded)}%`;
   };
   const rankLabel = (row: RedditStock) => {
     if (row.previousRank === null) return t("redditOpinions.new");
     const change = row.previousRank - row.rank;
-    return change > 0 ? t("redditOpinions.rankUp", { count: String(change) })
-      : change < 0 ? t("redditOpinions.rankDown", { count: String(-change) })
-      : t("redditOpinions.unchanged");
+    return change > 0
+      ? t("redditOpinions.rankUp", { count: String(change) })
+      : change < 0
+        ? t("redditOpinions.rankDown", { count: String(-change) })
+        : t("redditOpinions.unchanged");
   };
-  const fullFetchTime = data ? new Intl.DateTimeFormat(locale === "zh" ? "zh-CN" : "en-US", {
-    dateStyle: "medium", timeStyle: "short",
-  }).format(new Date(data.fetchedAt)) : "";
-  const communityLabel = (value: RedditCommunity) => value === "all-stocks" ? t("redditOpinions.allCommunities") : `r/${value}`;
-  const sortOptions = (["mentions", "mentionChange", "rankChange", "upvotes"] as const).map(value => ({ value, label: t(`redditOpinions.sortOptions.${value}`) }));
+  const fullFetchTime = data
+    ? new Intl.DateTimeFormat(locale === "zh" ? "zh-CN" : "en-US", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      }).format(new Date(data.fetchedAt))
+    : "";
+  const communityLabel = (value: RedditCommunity) =>
+    value === "all-stocks" ? t("redditOpinions.allCommunities") : `r/${value}`;
+  const sortOptions = (["mentions", "mentionChange", "rankChange", "upvotes"] as const).map(
+    (value) => ({ value, label: t(`redditOpinions.sortOptions.${value}`) }),
+  );
   const filtered = community !== "all-stocks" || sort !== "mentions" || onlyWatchlist;
-  const resetFilters = () => { setCommunity("all-stocks"); setSort("mentions"); setOnlyWatchlist(false); };
-  const watchButton = (row: RedditStock, compact = false) => <WatchlistButton ticker={row.ticker} showLabel={!compact} />;
+  const resetFilters = () => {
+    setCommunity("all-stocks");
+    setSort("mentions");
+    setOnlyWatchlist(false);
+  };
+  const watchButton = (row: RedditStock, compact = false) => (
+    <WatchlistButton ticker={row.ticker} showLabel={!compact} />
+  );
 
-  const resultCount = t("redditOpinions.resultCount", { count: number.format(rows.length), total: number.format(data?.results.length ?? 0) });
+  const resultCount = t("redditOpinions.resultCount", {
+    count: number.format(rows.length),
+    total: number.format(data?.results.length ?? 0),
+  });
 
   return (
     <DashboardLayout title={t("redditOpinions.header")}>
@@ -90,20 +139,65 @@ export default function RedditOpinionsPage() {
               </InfoTip>
             </h1>
             <div className="flex shrink-0 items-center gap-1">
-            <FilterSheet title={t("common.filter")} active={filtered} onReset={resetFilters}
-              summary={[communityLabel(community), sortOptions.find(option => option.value === sort)?.label, onlyWatchlist && t("redditOpinions.onlyWatchlist")].filter(Boolean).join(" · ")}>
-              <FilterSheetGroup label={t("redditOpinions.community")} value={community} onChange={setCommunity}
-                options={REDDIT_COMMUNITIES.map(value => ({ value, label: communityLabel(value) }))} />
-              <FilterSheetGroup label={t("redditOpinions.sort")} value={sort} onChange={setSort} options={sortOptions} />
-              <FilterSheetToggle label={t("redditOpinions.scope")} pressed={onlyWatchlist} onChange={setOnlyWatchlist} disabled={!ready}>
-                <Star className={cn("h-4 w-4", onlyWatchlist && "fill-current")} aria-hidden="true" />
-                {t("redditOpinions.onlyWatchlist")} <span className="tabular-nums">{watchlist.length}</span>
-              </FilterSheetToggle>
-            </FilterSheet>
-            <Button variant="ghost" size="icon" className="h-10 w-10" onClick={refresh} disabled={busy}
-              aria-label={t("redditOpinions.refresh")} title={t("redditOpinions.refresh")}>
-              {busy ? <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <RefreshCw className="h-4 w-4" aria-hidden="true" />}
-            </Button>
+              <FilterSheet
+                title={t("common.filter")}
+                active={filtered}
+                onReset={resetFilters}
+                summary={[
+                  communityLabel(community),
+                  sortOptions.find((option) => option.value === sort)?.label,
+                  onlyWatchlist && t("redditOpinions.onlyWatchlist"),
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              >
+                <FilterSheetGroup
+                  label={t("redditOpinions.community")}
+                  value={community}
+                  onChange={setCommunity}
+                  options={REDDIT_COMMUNITIES.map((value) => ({
+                    value,
+                    label: communityLabel(value),
+                  }))}
+                />
+                <FilterSheetGroup
+                  label={t("redditOpinions.sort")}
+                  value={sort}
+                  onChange={setSort}
+                  options={sortOptions}
+                />
+                <FilterSheetToggle
+                  label={t("redditOpinions.scope")}
+                  pressed={onlyWatchlist}
+                  onChange={setOnlyWatchlist}
+                  disabled={!ready}
+                >
+                  <Star
+                    className={cn("h-4 w-4", onlyWatchlist && "fill-current")}
+                    aria-hidden="true"
+                  />
+                  {t("redditOpinions.onlyWatchlist")}{" "}
+                  <span className="tabular-nums">{watchlist.length}</span>
+                </FilterSheetToggle>
+              </FilterSheet>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10"
+                onClick={refresh}
+                disabled={busy}
+                aria-label={t("redditOpinions.refresh")}
+                title={t("redditOpinions.refresh")}
+              >
+                {busy ? (
+                  <Loader2
+                    className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <RefreshCw className="h-4 w-4" aria-hidden="true" />
+                )}
+              </Button>
             </div>
           </div>
 
@@ -112,55 +206,157 @@ export default function RedditOpinionsPage() {
               <div className="hidden items-center gap-3 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] xl:grid-cols-[minmax(0,1fr)_11rem_11rem_auto]">
                 <div className="relative lg:col-span-3 xl:col-span-1">
                   <SearchFieldIcon />
-                  <Input ref={searchInput} type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("redditOpinions.search")} aria-label={t("redditOpinions.search")} className="h-11 pl-9 pr-10 [&::-webkit-search-cancel-button]:hidden" />
-                  {query && <Button variant="ghost" size="icon" className="absolute right-0 top-0 h-11 w-11" aria-label={t("redditOpinions.clearSearch")} title={t("redditOpinions.clearSearch")}
-                    onClick={() => { setQuery(""); searchInput.current?.focus(); }}><X className="h-4 w-4" aria-hidden="true" /></Button>}
+                  <Input
+                    ref={searchInput}
+                    type="search"
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder={t("redditOpinions.search")}
+                    aria-label={t("redditOpinions.search")}
+                    className="h-11 pl-9 pr-10 [&::-webkit-search-cancel-button]:hidden"
+                  />
+                  {query && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-0 top-0 h-11 w-11"
+                      aria-label={t("redditOpinions.clearSearch")}
+                      title={t("redditOpinions.clearSearch")}
+                      onClick={() => {
+                        setQuery("");
+                        searchInput.current?.focus();
+                      }}
+                    >
+                      <X className="h-4 w-4" aria-hidden="true" />
+                    </Button>
+                  )}
                 </div>
                 <div className="min-w-0">
-                  <Select value={community} onValueChange={value => setCommunity(value as RedditCommunity)}>
-                    <SelectTrigger aria-label={t("redditOpinions.community")} className="h-11"><SelectValue /></SelectTrigger>
-                    <SelectContent>{REDDIT_COMMUNITIES.map(value => <SelectItem key={value} value={value}>{communityLabel(value)}</SelectItem>)}</SelectContent>
+                  <Select
+                    value={community}
+                    onValueChange={(value) => setCommunity(value as RedditCommunity)}
+                  >
+                    <SelectTrigger aria-label={t("redditOpinions.community")} className="h-11">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {REDDIT_COMMUNITIES.map((value) => (
+                        <SelectItem key={value} value={value}>
+                          {communityLabel(value)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
                   </Select>
                 </div>
                 <div className="min-w-0">
-                  <Select value={sort} onValueChange={value => setSort(value as RedditSort)}>
-                    <SelectTrigger aria-label={t("redditOpinions.sort")} className="h-11"><SelectValue /></SelectTrigger>
-                    <SelectContent>{sortOptions.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
+                  <Select value={sort} onValueChange={(value) => setSort(value as RedditSort)}>
+                    <SelectTrigger aria-label={t("redditOpinions.sort")} className="h-11">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sortOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
                   </Select>
                 </div>
-                <Button variant="secondary" className={`justify-self-start !px-3.5 !font-normal ${onlyWatchlist ? "" : "!bg-muted hover:!bg-foreground/[0.04]"}`} aria-pressed={onlyWatchlist} disabled={!ready} onClick={() => setOnlyWatchlist(value => !value)}>
-                  <Star className={`h-4 w-4 ${onlyWatchlist ? "fill-current" : ""}`} aria-hidden="true" />
-                  {t("redditOpinions.onlyWatchlist")} <span className="tabular-nums">{watchlist.length}</span>
+                <Button
+                  variant="secondary"
+                  className={`justify-self-start !px-3.5 !font-normal ${onlyWatchlist ? "" : "!bg-muted hover:!bg-foreground/[0.04]"}`}
+                  aria-pressed={onlyWatchlist}
+                  disabled={!ready}
+                  onClick={() => setOnlyWatchlist((value) => !value)}
+                >
+                  <Star
+                    className={`h-4 w-4 ${onlyWatchlist ? "fill-current" : ""}`}
+                    aria-hidden="true"
+                  />
+                  {t("redditOpinions.onlyWatchlist")}{" "}
+                  <span className="tabular-nums">{watchlist.length}</span>
                 </Button>
               </div>
-              {data && <p role="status" aria-live="polite" className="sr-only">{resultCount}</p>}
+              {data && (
+                <p role="status" aria-live="polite" className="sr-only">
+                  {resultCount}
+                </p>
+              )}
 
-              {Boolean(error) && <div role="alert" className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3 text-sm">
-                <p>{t(data ? "redditOpinions.staleError" : "redditOpinions.error")}</p>
-                <Button variant="outline" size="sm" onClick={refresh} disabled={busy}>{t("redditOpinions.retry")}</Button>
-              </div>}
+              {Boolean(error) && (
+                <div
+                  role="alert"
+                  className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3 text-sm"
+                >
+                  <p>{t(data ? "redditOpinions.staleError" : "redditOpinions.error")}</p>
+                  <Button variant="outline" size="sm" onClick={refresh} disabled={busy}>
+                    {t("redditOpinions.retry")}
+                  </Button>
+                </div>
+              )}
 
-              <div key={`${community}:${sort}:${query}:${onlyWatchlist}:${data?.fetchedAt ?? "loading"}`} aria-busy={busy} className="opinion-results mt-3">
-                {loading && !data ? <ContentLoading label={t("redditOpinions.loading")} className="min-h-0">
+              <div
+                key={`${community}:${sort}:${query}:${onlyWatchlist}:${data?.fetchedAt ?? "loading"}`}
+                aria-busy={busy}
+                className="opinion-results mt-3"
+              >
+                {loading && !data ? (
+                  <ContentLoading label={t("redditOpinions.loading")} className="min-h-0">
                     <div className="md:hidden">
-                      <div className="border-b border-border px-2 py-3"><Skeleton className="h-3.5 w-1/2 rounded-md" /></div>
-                      <SkeletonRepeat count={8}>{i => <div className={MOBILE_GRID}>
-                        <span className="flex min-w-0 items-center gap-2.5"><Skeleton className="h-3 w-5 shrink-0 rounded" /><Skeleton className="h-8 w-8 shrink-0 rounded-full" /><span className="flex min-w-0 flex-1 flex-col gap-2"><Skeleton className="h-4 w-12 rounded-md" /><Skeleton className={cn("h-3 rounded-md", i % 2 ? "w-20" : "w-28")} /></span></span>
-                        <span className="flex flex-col items-end gap-2"><Skeleton className="h-4 w-10 rounded-md" /><Skeleton className="h-3 w-12 rounded-md" /></span>
-                        <Skeleton className="h-3.5 w-3.5 rounded" />
-                      </div>}</SkeletonRepeat>
+                      <div className="border-b border-border px-2 py-3">
+                        <Skeleton className="h-3.5 w-1/2 rounded-md" />
+                      </div>
+                      <SkeletonRepeat count={8}>
+                        {(i) => (
+                          <div className={MOBILE_GRID}>
+                            <span className="flex min-w-0 items-center gap-2.5">
+                              <Skeleton className="h-3 w-5 shrink-0 rounded" />
+                              <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
+                              <span className="flex min-w-0 flex-1 flex-col gap-2">
+                                <Skeleton className="h-4 w-12 rounded-md" />
+                                <Skeleton
+                                  className={cn("h-3 rounded-md", i % 2 ? "w-20" : "w-28")}
+                                />
+                              </span>
+                            </span>
+                            <span className="flex flex-col items-end gap-2">
+                              <Skeleton className="h-4 w-10 rounded-md" />
+                              <Skeleton className="h-3 w-12 rounded-md" />
+                            </span>
+                            <Skeleton className="h-3.5 w-3.5 rounded" />
+                          </div>
+                        )}
+                      </SkeletonRepeat>
                     </div>
                     <div className="hidden md:block">
-                      <div className="flex h-10 items-center gap-4 border-b border-border px-2"><Skeleton className="h-3.5 w-full rounded-md" /></div>
-                      <SkeletonRepeat count={8}>{i => <div className="grid grid-cols-[3.5rem_minmax(12rem,1fr)_repeat(4,5rem)_3.5rem] items-center gap-4 border-b border-border px-2 py-2">
-                        <Skeleton className="h-3.5 w-5 rounded" />
-                        <span className="flex min-h-11 items-center gap-3"><Skeleton className="h-8 w-8 shrink-0 rounded-full" /><span className="flex flex-1 flex-col gap-2"><Skeleton className="h-4 w-14 rounded-md" /><Skeleton className={cn("h-3 rounded-md", i % 2 ? "w-28" : "w-40")} /></span></span>
-                        <Skeleton className="ml-auto h-4 w-10 rounded-md" /><Skeleton className="ml-auto h-4 w-12 rounded-md" /><Skeleton className="ml-auto h-4 w-8 rounded-md" /><Skeleton className="ml-auto h-4 w-12 rounded-md" />
-                        <Skeleton className="mx-auto h-5 w-5 rounded-full" />
-                      </div>}</SkeletonRepeat>
+                      <div className="flex h-10 items-center gap-4 border-b border-border px-2">
+                        <Skeleton className="h-3.5 w-full rounded-md" />
+                      </div>
+                      <SkeletonRepeat count={8}>
+                        {(i) => (
+                          <div className="grid grid-cols-[3.5rem_minmax(12rem,1fr)_repeat(4,5rem)_3.5rem] items-center gap-4 border-b border-border px-2 py-2">
+                            <Skeleton className="h-3.5 w-5 rounded" />
+                            <span className="flex min-h-11 items-center gap-3">
+                              <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
+                              <span className="flex flex-1 flex-col gap-2">
+                                <Skeleton className="h-4 w-14 rounded-md" />
+                                <Skeleton
+                                  className={cn("h-3 rounded-md", i % 2 ? "w-28" : "w-40")}
+                                />
+                              </span>
+                            </span>
+                            <Skeleton className="ml-auto h-4 w-10 rounded-md" />
+                            <Skeleton className="ml-auto h-4 w-12 rounded-md" />
+                            <Skeleton className="ml-auto h-4 w-8 rounded-md" />
+                            <Skeleton className="ml-auto h-4 w-12 rounded-md" />
+                            <Skeleton className="mx-auto h-5 w-5 rounded-full" />
+                          </div>
+                        )}
+                      </SkeletonRepeat>
                     </div>
                   </ContentLoading>
-                  : data && rows.length > 0 ? <>
+                ) : data && rows.length > 0 ? (
+                  <>
                     <div className="md:hidden">
                       <ListColumnHeader>
                         <div className="grid w-full grid-cols-[minmax(0,1fr)_5.5rem_1rem] items-center gap-2 px-2 py-3">
@@ -172,91 +368,257 @@ export default function RedditOpinionsPage() {
                       {/* Ordered list: ranks are meaningful, so the mobile disclosure
                           rows stay an <ol> rather than the default <ul> ListRows. */}
                       <ol aria-label={t("redditOpinions.title")} className="min-w-0">
-                        {rows.map((row, index) => <ListRow key={row.ticker} className="opinion-result-row" style={{ animationDelay: `${Math.min(index, 6) * 20}ms` }}>
-                          <details className="group min-w-0 flex-1 rounded-2xl">
-                            <summary className={cn(MOBILE_GRID, "cursor-pointer list-none outline-none [&::-webkit-details-marker]:hidden")}>
-                              <span className="flex min-w-0 items-center gap-2.5">
-                                <span className="w-5 shrink-0 text-center text-xs tabular-nums text-muted-foreground"><span className="sr-only">{t("redditOpinions.rank")} </span>{row.rank}</span>
-                                <span aria-hidden="true"><CompanyLogo symbol={row.ticker} name={row.name} size="sm" /></span>
-                                <Link href={marketStockHref(row.ticker)} className="-m-1 min-w-0 rounded-xl p-1 transition-colors duration-150 hover:text-foreground focus-visible:outline-none" aria-label={t("redditOpinions.openStock", { ticker: row.ticker })}>
-                                  <span className="block text-sm font-semibold">{row.ticker}</span>
-                                  <span className="mt-1 block truncate text-xs text-muted-foreground" title={row.name}>{row.name}</span>
+                        {rows.map((row, index) => (
+                          <ListRow
+                            key={row.ticker}
+                            className="opinion-result-row"
+                            style={{ animationDelay: `${Math.min(index, 6) * 20}ms` }}
+                          >
+                            <details className="group min-w-0 flex-1 rounded-2xl">
+                              <summary
+                                className={cn(
+                                  MOBILE_GRID,
+                                  "cursor-pointer list-none outline-none [&::-webkit-details-marker]:hidden",
+                                )}
+                              >
+                                <span className="flex min-w-0 items-center gap-2.5">
+                                  <span className="w-5 shrink-0 text-center text-xs tabular-nums text-muted-foreground">
+                                    <span className="sr-only">{t("redditOpinions.rank")} </span>
+                                    {row.rank}
+                                  </span>
+                                  <span aria-hidden="true">
+                                    <CompanyLogo symbol={row.ticker} name={row.name} size="sm" />
+                                  </span>
+                                  <Link
+                                    href={marketStockHref(row.ticker)}
+                                    className="-m-1 min-w-0 rounded-xl p-1 transition-colors duration-150 hover:text-foreground focus-visible:outline-none"
+                                    aria-label={t("redditOpinions.openStock", {
+                                      ticker: row.ticker,
+                                    })}
+                                  >
+                                    <span className="block text-sm font-semibold">
+                                      {row.ticker}
+                                    </span>
+                                    <span
+                                      className="mt-1 block truncate text-xs text-muted-foreground"
+                                      title={row.name}
+                                    >
+                                      {row.name}
+                                    </span>
+                                  </Link>
+                                </span>
+                                <span className="text-right tabular-nums">
+                                  <span className="block text-sm font-semibold">
+                                    <span className="sr-only">{t("redditOpinions.mentions")} </span>
+                                    {number.format(row.mentions)}
+                                  </span>
+                                  <span className="mt-1 block text-xs text-muted-foreground">
+                                    <span className="sr-only">{t("redditOpinions.change")} </span>
+                                    {changeLabel(row)}
+                                  </span>
+                                </span>
+                                <ChevronDown
+                                  className="h-3.5 w-3.5 text-muted-foreground transition-transform group-open:rotate-180 motion-reduce:transition-none"
+                                  aria-hidden="true"
+                                />
+                                <span className="sr-only">{t("redditOpinions.details")}</span>
+                              </summary>
+                              <div className="pb-4 pl-8 pr-2 text-xs">
+                                <Link
+                                  href={marketStockHref(row.ticker)}
+                                  aria-label={t("redditOpinions.openStock", { ticker: row.ticker })}
+                                  className="mb-3 inline-flex min-h-11 items-center gap-2 rounded-xl text-xs font-medium underline-offset-4 hover:underline focus-visible:outline-none "
+                                >
+                                  <CompanyLogo symbol={row.ticker} name={row.name} size="sm" />
+                                  <span>
+                                    {t("redditOpinions.openStock", { ticker: row.ticker })}
+                                  </span>
                                 </Link>
-                              </span>
-                              <span className="text-right tabular-nums">
-                                <span className="block text-sm font-semibold"><span className="sr-only">{t("redditOpinions.mentions")} </span>{number.format(row.mentions)}</span>
-                                <span className="mt-1 block text-xs text-muted-foreground"><span className="sr-only">{t("redditOpinions.change")} </span>{changeLabel(row)}</span>
-                              </span>
-                              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
-                              <span className="sr-only">{t("redditOpinions.details")}</span>
-                            </summary>
-                            <div className="pb-4 pl-8 pr-2 text-xs">
-                              <Link href={marketStockHref(row.ticker)} aria-label={t("redditOpinions.openStock", { ticker: row.ticker })} className="mb-3 inline-flex min-h-11 items-center gap-2 rounded-xl text-xs font-medium underline-offset-4 hover:underline focus-visible:outline-none ">
-                                <CompanyLogo symbol={row.ticker} name={row.name} size="sm" />
-                                <span>{t("redditOpinions.openStock", { ticker: row.ticker })}</span>
-                              </Link>
-                              <p className="mb-3 break-words text-muted-foreground">{row.name}</p>
-                              <dl className="flex flex-wrap gap-x-6 gap-y-2">
-                                <div><dt className="text-muted-foreground">{t("redditOpinions.change")}</dt><dd className="mt-1 tabular-nums">{mentionChange(row) === null ? t("redditOpinions.noBaseline") : changeLabel(row)}</dd></div>
-                                <div><dt className="text-muted-foreground">{t("redditOpinions.rankChange")}</dt><dd className="mt-1 tabular-nums">{rankLabel(row)}</dd></div>
-                                <div><dt className="text-muted-foreground">{t("redditOpinions.upvotes")}</dt><dd className="mt-1 tabular-nums">{number.format(row.upvotes)}</dd></div>
-                              </dl>
-                              {watchButton(row)}
-                            </div>
-                          </details>
-                        </ListRow>)}
+                                <p className="mb-3 break-words text-muted-foreground">{row.name}</p>
+                                <dl className="flex flex-wrap gap-x-6 gap-y-2">
+                                  <div>
+                                    <dt className="text-muted-foreground">
+                                      {t("redditOpinions.change")}
+                                    </dt>
+                                    <dd className="mt-1 tabular-nums">
+                                      {mentionChange(row) === null
+                                        ? t("redditOpinions.noBaseline")
+                                        : changeLabel(row)}
+                                    </dd>
+                                  </div>
+                                  <div>
+                                    <dt className="text-muted-foreground">
+                                      {t("redditOpinions.rankChange")}
+                                    </dt>
+                                    <dd className="mt-1 tabular-nums">{rankLabel(row)}</dd>
+                                  </div>
+                                  <div>
+                                    <dt className="text-muted-foreground">
+                                      {t("redditOpinions.upvotes")}
+                                    </dt>
+                                    <dd className="mt-1 tabular-nums">
+                                      {number.format(row.upvotes)}
+                                    </dd>
+                                  </div>
+                                </dl>
+                                {watchButton(row)}
+                              </div>
+                            </details>
+                          </ListRow>
+                        ))}
                       </ol>
                     </div>
-                    <div role="region" aria-label={t("redditOpinions.title")} tabIndex={0} className="hidden overflow-x-auto rounded-2xl focus-visible:outline-none md:block">
+                    <div
+                      role="region"
+                      aria-label={t("redditOpinions.title")}
+                      tabIndex={0}
+                      className="hidden overflow-x-auto rounded-2xl focus-visible:outline-none md:block"
+                    >
                       <Table>
-                        <caption className="sr-only">{t("redditOpinions.title")} · {t("redditOpinions.mobileMentions")}</caption>
-                        <TableHeader className="!bg-transparent"><TableRow>
-                          <TableHead scope="col" className="w-14">{t("redditOpinions.rank")}</TableHead>
-                          <TableHead scope="col">{t("redditOpinions.stock")}</TableHead>
-                          <TableHead scope="col" className="whitespace-nowrap text-right">{t("redditOpinions.mobileMentions")}</TableHead>
-                          <TableHead scope="col" className="whitespace-nowrap text-right">{t("redditOpinions.change")}</TableHead>
-                          <TableHead scope="col" className="whitespace-nowrap text-right">{t("redditOpinions.rankChange")}</TableHead>
-                          <TableHead scope="col" className="text-right">{t("redditOpinions.upvotes")}</TableHead>
-                          <TableHead scope="col" className="w-14"><span className="sr-only">{t("redditOpinions.followAction")}</span></TableHead>
-                        </TableRow></TableHeader>
-                        <TableBody>{rows.map((row, index) => <TableRow key={row.ticker} className="opinion-result-row group hover:!bg-transparent" style={{ animationDelay: `${Math.min(index, 6) * 20}ms` }}>
-                          <TableCell className={cn(HOVER_CELL, "text-muted-foreground")}>{row.rank}</TableCell>
-                          <TableCell className={cn(HOVER_CELL, "min-w-48 max-w-72")}>
-                            <Link href={marketStockHref(row.ticker)} className="-m-1 flex min-h-11 items-center gap-3 p-1 transition-colors duration-150 hover:text-foreground focus-visible:outline-none" aria-label={t("redditOpinions.openStock", { ticker: row.ticker })}>
-                              <span aria-hidden="true"><CompanyLogo symbol={row.ticker} name={row.name} size="sm" /></span>
-                              <div className="min-w-0 flex-1">
-                                <span className="font-semibold">{row.ticker}</span>
-                                <span className="mt-1 block break-words text-xs leading-5 text-muted-foreground">{row.name}</span>
-                              </div>
-                            </Link>
-                          </TableCell>
-                          <TableCell className={cn(HOVER_CELL, "text-right font-medium")}>{number.format(row.mentions)}</TableCell>
-                          <TableCell className={cn(HOVER_CELL, "text-right")} title={mentionChange(row) === null ? t("redditOpinions.noBaseline") : undefined}>{changeLabel(row)}</TableCell>
-                          <TableCell className={cn(HOVER_CELL, "text-right")}>{rankLabel(row)}</TableCell>
-                          <TableCell className={cn(HOVER_CELL, "text-right")}>{number.format(row.upvotes)}</TableCell>
-                          <TableCell className={cn(HOVER_CELL, "px-1")}>{watchButton(row, true)}</TableCell>
-                        </TableRow>)}</TableBody>
+                        <caption className="sr-only">
+                          {t("redditOpinions.title")} · {t("redditOpinions.mobileMentions")}
+                        </caption>
+                        <TableHeader className="!bg-transparent">
+                          <TableRow>
+                            <TableHead scope="col" className="w-14">
+                              {t("redditOpinions.rank")}
+                            </TableHead>
+                            <TableHead scope="col">{t("redditOpinions.stock")}</TableHead>
+                            <TableHead scope="col" className="whitespace-nowrap text-right">
+                              {t("redditOpinions.mobileMentions")}
+                            </TableHead>
+                            <TableHead scope="col" className="whitespace-nowrap text-right">
+                              {t("redditOpinions.change")}
+                            </TableHead>
+                            <TableHead scope="col" className="whitespace-nowrap text-right">
+                              {t("redditOpinions.rankChange")}
+                            </TableHead>
+                            <TableHead scope="col" className="text-right">
+                              {t("redditOpinions.upvotes")}
+                            </TableHead>
+                            <TableHead scope="col" className="w-14">
+                              <span className="sr-only">{t("redditOpinions.followAction")}</span>
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {rows.map((row, index) => (
+                            <TableRow
+                              key={row.ticker}
+                              className="opinion-result-row group hover:!bg-transparent"
+                              style={{ animationDelay: `${Math.min(index, 6) * 20}ms` }}
+                            >
+                              <TableCell className={cn(HOVER_CELL, "text-muted-foreground")}>
+                                {row.rank}
+                              </TableCell>
+                              <TableCell className={cn(HOVER_CELL, "min-w-48 max-w-72")}>
+                                <Link
+                                  href={marketStockHref(row.ticker)}
+                                  className="-m-1 flex min-h-11 items-center gap-3 p-1 transition-colors duration-150 hover:text-foreground focus-visible:outline-none"
+                                  aria-label={t("redditOpinions.openStock", { ticker: row.ticker })}
+                                >
+                                  <span aria-hidden="true">
+                                    <CompanyLogo symbol={row.ticker} name={row.name} size="sm" />
+                                  </span>
+                                  <div className="min-w-0 flex-1">
+                                    <span className="font-semibold">{row.ticker}</span>
+                                    <span className="mt-1 block break-words text-xs leading-5 text-muted-foreground">
+                                      {row.name}
+                                    </span>
+                                  </div>
+                                </Link>
+                              </TableCell>
+                              <TableCell className={cn(HOVER_CELL, "text-right font-medium")}>
+                                {number.format(row.mentions)}
+                              </TableCell>
+                              <TableCell
+                                className={cn(HOVER_CELL, "text-right")}
+                                title={
+                                  mentionChange(row) === null
+                                    ? t("redditOpinions.noBaseline")
+                                    : undefined
+                                }
+                              >
+                                {changeLabel(row)}
+                              </TableCell>
+                              <TableCell className={cn(HOVER_CELL, "text-right")}>
+                                {rankLabel(row)}
+                              </TableCell>
+                              <TableCell className={cn(HOVER_CELL, "text-right")}>
+                                {number.format(row.upvotes)}
+                              </TableCell>
+                              <TableCell className={cn(HOVER_CELL, "px-1")}>
+                                {watchButton(row, true)}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
                       </Table>
                     </div>
-                  </> : data && <div role="status" className="py-12 text-center text-sm text-muted-foreground">
-                    <p>{t(data.results.length === 0 ? "redditOpinions.empty" : onlyWatchlist ? (watchlist.length === 0 ? "redditOpinions.watchlistEmpty" : "redditOpinions.watchlistNoResults") : "redditOpinions.noResults")}</p>
-                    {(query || onlyWatchlist) && <Button variant="outline" size="sm" className="mt-4" onClick={() => { setQuery(""); setOnlyWatchlist(false); }}>{t("redditOpinions.clearFilters")}</Button>}
-                  </div>}
+                  </>
+                ) : (
+                  data && (
+                    <div role="status" className="py-12 text-center text-sm text-muted-foreground">
+                      <p>
+                        {t(
+                          data.results.length === 0
+                            ? "redditOpinions.empty"
+                            : onlyWatchlist
+                              ? watchlist.length === 0
+                                ? "redditOpinions.watchlistEmpty"
+                                : "redditOpinions.watchlistNoResults"
+                              : "redditOpinions.noResults",
+                        )}
+                      </p>
+                      {(query || onlyWatchlist) && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-4"
+                          onClick={() => {
+                            setQuery("");
+                            setOnlyWatchlist(false);
+                          }}
+                        >
+                          {t("redditOpinions.clearFilters")}
+                        </Button>
+                      )}
+                    </div>
+                  )
+                )}
               </div>
             </ListCard>
           </section>
 
           <footer className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs leading-5 text-muted-foreground">
-            <a href="https://apewisdom.io/methodology/" target="_blank" rel="noopener noreferrer" aria-label={t("redditOpinions.source")}
-              className="inline-flex min-h-9 items-center gap-1 underline-offset-4 hover:underline focus-visible:outline-none ">
+            <a
+              href="https://apewisdom.io/methodology/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={t("redditOpinions.source")}
+              className="inline-flex min-h-9 items-center gap-1 underline-offset-4 hover:underline focus-visible:outline-none "
+            >
               ApeWisdom <ExternalLink className="h-3 w-3" aria-hidden="true" />
             </a>
-            {data && <time dateTime={data.fetchedAt} title={`${t("redditOpinions.fetchedAt")} ${fullFetchTime}`} aria-label={`${t("redditOpinions.fetchedAt")} ${fullFetchTime}`}>
-              {new Intl.DateTimeFormat(locale === "zh" ? "zh-CN" : "en-US", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(data.fetchedAt))}
-            </time>}
+            {data && (
+              <time
+                dateTime={data.fetchedAt}
+                title={`${t("redditOpinions.fetchedAt")} ${fullFetchTime}`}
+                aria-label={`${t("redditOpinions.fetchedAt")} ${fullFetchTime}`}
+              >
+                {new Intl.DateTimeFormat(locale === "zh" ? "zh-CN" : "en-US", {
+                  month: "numeric",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }).format(new Date(data.fetchedAt))}
+              </time>
+            )}
           </footer>
           <details className="mt-2 text-xs leading-5 text-muted-foreground">
-            <summary className="w-fit cursor-pointer rounded-sm py-1 underline-offset-4 hover:underline focus-visible:outline-none ">{t("redditOpinions.dataNotes")}</summary>
+            <summary className="w-fit cursor-pointer rounded-sm py-1 underline-offset-4 hover:underline focus-visible:outline-none ">
+              {t("redditOpinions.dataNotes")}
+            </summary>
             <p className="mt-2 max-w-prose">{t("redditOpinions.note")}</p>
           </details>
         </div>

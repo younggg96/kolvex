@@ -1,12 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import {
-  motion,
-  useReducedMotion,
-  useScroll,
-  useTransform,
-} from "motion/react";
+import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { waapiSpringEasing } from "@/lib/motion/spring";
 
 /** Scroll values stay outside React state; layout remains in normal flow. */
@@ -36,15 +31,11 @@ export function LandingParallax({
     offset: hero ? ["start start", "end start"] : ["start end", "end start"],
   });
   const amplitude = distance * (mobile ? 0.3 : 1);
-  const y = useTransform(
-    scrollYProgress,
-    [0, 1],
-    hero ? [0, -amplitude] : [amplitude, -amplitude],
-  );
+  const y = useTransform(scrollYProgress, [0, 1], hero ? [0, -amplitude] : [amplitude, -amplitude]);
   return (
     <motion.div
       ref={target}
-      className={`landing-parallax ${className}`}
+      className={`landing-parallax min-w-0 motion-reduce:![transform:none] ${className}`}
       style={reduce ? undefined : { y }}
     >
       {children}
@@ -98,12 +89,9 @@ export default function LandingScrollEffects() {
       { threshold: 0.16 },
     );
     page
-      .querySelectorAll(
-        ".simple-features > a, .landing-closing-panel",
-      )
+      .querySelectorAll(".simple-features > a, .landing-closing-panel")
       .forEach((element) => observer.observe(element));
-    const finishOnFocus = () =>
-      animations.forEach((animation) => animation.finish());
+    const finishOnFocus = () => animations.forEach((animation) => animation.finish());
     const visibility = () =>
       animations.forEach((animation) => {
         if (document.hidden) animation.pause();

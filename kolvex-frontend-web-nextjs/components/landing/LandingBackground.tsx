@@ -18,7 +18,7 @@ function LandingVideo({ reduce }: { reduce: boolean }) {
   return (
     <video
       ref={video}
-      className="landing-video"
+      className="absolute inset-0 h-full w-full bg-[rgb(3_8_5)] object-cover"
       autoPlay={!reduce}
       muted
       loop
@@ -29,7 +29,11 @@ function LandingVideo({ reduce }: { reduce: boolean }) {
       tabIndex={-1}
     >
       {/* Portrait screens only show the centre strip, so they get a full-resolution crop of it. */}
-      <source src="/media/landing-hero-portrait.mp4" type="video/mp4" media="(max-aspect-ratio: 2/3)" />
+      <source
+        src="/media/landing-hero-portrait.mp4"
+        type="video/mp4"
+        media="(max-aspect-ratio: 2/3)"
+      />
       <source src="/media/landing-hero.mp4" type="video/mp4" />
     </video>
   );
@@ -56,7 +60,10 @@ export default function LandingBackground() {
   if (touchDevice === null || resolvedTheme !== "dark") return null;
 
   return (
-    <div className="landing-background landing-artwork" aria-hidden="true">
+    <div
+      className="pointer-events-none fixed inset-0 z-0 hidden dark:block dark:bg-[rgb(3_8_5)]"
+      aria-hidden="true"
+    >
       {touchDevice ? <LandingVideo reduce={reduce} /> : <LandingWaylumeBackground />}
     </div>
   );

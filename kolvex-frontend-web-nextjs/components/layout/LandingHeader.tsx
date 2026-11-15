@@ -10,7 +10,12 @@ import { useAuth, useUserProfile } from "@/hooks";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { ArrowUpRight, Menu } from "lucide-react";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import { useTranslation } from "@/lib/i18n";
 import { useCopy } from "@/components/decision/shared";
 import { landingNavigation } from "@/components/landing/landingNavigation";
@@ -32,9 +37,7 @@ export default function LandingHeader() {
   }, []);
 
   const textColorClass =
-    mounted && theme === "dark"
-      ? "text-white"
-      : "text-gray-900 dark:text-white";
+    mounted && theme === "dark" ? "text-white" : "text-gray-900 dark:text-white";
 
   // Get initials for avatar fallback
   const getInitials = () => {
@@ -54,22 +57,22 @@ export default function LandingHeader() {
   return (
     <header className="glass-header sticky top-0 z-40 border-b">
       <div className="landing-width flex min-h-[4.5rem] items-center justify-between gap-4 py-3">
-        <Link
-          href="/"
-          className="flex items-center gap-1.5 sm:gap-2 group transition-all"
-        >
+        <Link href="/" className="flex items-center gap-1.5 sm:gap-2 group transition-all">
           <LogoIcon
             size={24}
             className="h-7 w-7 text-primary transition-transform duration-200 group-hover:scale-110 motion-reduce:transform-none"
           />
-          <span className={`${textColorClass} text-xl font-extrabold`}>
-            Kolvex
-          </span>
+          <span className={`${textColorClass} text-xl font-extrabold`}>Kolvex</span>
         </Link>
         <div className="flex items-center gap-1 sm:gap-4">
           <DropdownMenu open={navigationOpen} onOpenChange={setNavigationOpen}>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" className="gap-2 sm:w-auto sm:px-3.5" aria-label={c("Navigation", "导航")}>
+              <Button
+                variant="outline"
+                size="icon"
+                className="gap-2 sm:w-auto sm:px-3.5"
+                aria-label={c("Navigation", "导航")}
+              >
                 <Menu size="1.125rem" aria-hidden="true" />
                 <span className="hidden sm:inline">{c("Navigation", "导航")}</span>
               </Button>
@@ -77,10 +80,13 @@ export default function LandingHeader() {
             <DropdownMenuContent align="end" sideOffset={12}>
               {landingNavigation.map((item) => (
                 <DropdownMenuItem key={item.href} asChild>
-                  <Link href={item.href} className="min-h-11 justify-between gap-8"
+                  <Link
+                    href={item.href}
+                    className="min-h-11 justify-between gap-8"
                     onClick={() => setNavigationOpen(false)}
                   >
-                    {c(item.label[0], item.label[1])}<ArrowUpRight size="0.9375rem" aria-hidden="true" />
+                    {c(item.label[0], item.label[1])}
+                    <ArrowUpRight size="0.9375rem" aria-hidden="true" />
                   </Link>
                 </DropdownMenuItem>
               ))}
@@ -130,7 +136,7 @@ export default function LandingHeader() {
                 !isAuthRoute && (
                   <Link
                     href="/auth"
-                    className="landing-sign-in rounded-full px-3 py-2 text-sm font-medium transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+                    className="max-[641px]:[.landing-page_&]:hidden rounded-full px-3 py-2 text-sm font-medium transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
                   >
                     {t("landing.nav.signIn")}
                   </Link>
@@ -139,11 +145,12 @@ export default function LandingHeader() {
             </>
           )}
           {!isAuthRoute && (
-            <Button asChild className="landing-nav-cta">
+            <Button
+              asChild
+              className="[.landing-page_&]:px-5 [.landing-page_&]:text-[0.8125rem] max-[641px]:[.landing-page_&]:hidden"
+            >
               <Link href={isAuthenticated ? "/dashboard" : "/auth"}>
-                {isAuthenticated
-                  ? c("Open workspace", "打开工作台")
-                  : c("Get started", "开始使用")}
+                {isAuthenticated ? c("Open workspace", "打开工作台") : c("Get started", "开始使用")}
               </Link>
             </Button>
           )}
