@@ -69,7 +69,8 @@ class OutcomeTests(unittest.TestCase):
         self.assertNotIn("signed_excess_pct", five)  # facts only, no verdict
         self.assertEqual(outcome["horizons"]["20"]["status"], "pending")
         self.assertIsNone(outcome["horizons"]["20"]["return_pct"])
-        self.assertEqual(outcome["latest"], {"sessions": 5, "exit_date": "2026-11-09", "return_pct": 10.0,
+        # status is what the client checks before showing the figure
+        self.assertEqual(outcome["latest"], {"sessions": 5, "status": "scored", "exit_date": "2026-11-09", "return_pct": 10.0,
                                              "benchmark_return_pct": 2.0, "excess_return_pct": 8.0})  # fmt: skip
 
     def test_young_opinion_has_a_to_date_move_before_any_horizon(self):

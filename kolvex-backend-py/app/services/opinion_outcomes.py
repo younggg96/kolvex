@@ -66,7 +66,7 @@ def _public(event: dict[str, Any]) -> dict[str, Any]:
         horizons[str(days)] = {key: result.get(key) for key in _RESULT_KEYS}
     latest = event.get("latest")
     if latest:
-        latest = {key: latest.get(key) for key in ("sessions", *_RESULT_KEYS[1:])}
+        latest = {key: latest.get(key) for key in ("sessions", *_RESULT_KEYS)}
     return {
         "status": event["status"],
         "entry_date": event["entry_date"],
