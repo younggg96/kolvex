@@ -18,6 +18,15 @@
         "cd kolvex-frontend-web-nextjs && exec npx next dev -p 3210"
       ],
       "port": 3210
+    },
+    {
+      "name": "web-dev-3220",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "cd kolvex-frontend-web-nextjs && exec npx next dev -p 3220"
+      ],
+      "port": 3220
     }
   ]
 }

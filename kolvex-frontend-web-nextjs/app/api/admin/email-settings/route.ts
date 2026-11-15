@@ -19,8 +19,8 @@ async function forward(request: NextRequest) {
     const action = params.get("action") ?? (request.method === "POST" ? "test" : "");
     const draftId = params.get("draft") ?? "";
     let path = "/api/v1/admin/email-settings";
-    if (action === "creators") {
-      path += "/creators";
+    if (action === "creators" || action === "briefs") {
+      path += `/${action}`;
     } else if (action === "approve" || action === "reject") {
       if (!/^[0-9a-f-]{36}$/.test(draftId))
         return NextResponse.json({ error: "草稿无效。" }, { status: 400 });
