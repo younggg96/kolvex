@@ -12,13 +12,14 @@ import argparse
 import csv
 import json
 import sys
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 BACKEND = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND))
 
 from app.services import opinion_backtest as bt  # noqa: E402
+from app.services.opinion_outcomes import download_adjusted_bars  # noqa: E402
 
 TABLE = "youtube_stock_opinions"
 COLUMNS = (
@@ -43,29 +44,17 @@ def fetch_opinions(since: str | None) -> list[dict]:
             return rows
 
 
-def download_bars(symbol: str, start: str, end: str) -> list[dict]:
-    import yfinance as yf
-
-    frame = yf.Ticker(symbol).history(start=start, end=end, interval="1d", auto_adjust=True)
-    bars = []
-    for timestamp, row in frame.iterrows():
-        open_, close = float(row["Open"]), float(row["Close"])
-        if open_ > 0 and close > 0:  # NaN fails both comparisons
-            bars.append({"date": timestamp.date().isoformat(), "open": open_, "close": close})
-    return bars
-
-
 def cached_bars(cache: Path, symbol: str, start: str, today: date) -> list[dict]:
     """Bars from today's cache file, else a fresh download. Raises when the download fails."""
     path = cache / f"{symbol}.json"
     if path.exists():
         saved = json.loads(path.read_text())
         if saved.get("fetched_on") == today.isoformat() and saved.get("start", "9") <= start:
-            return saved["bars"]
-    bars = download_bars(symbol, start, (today + timedelta(days=1)).isoformat())
+            return bt.completed_bars(saved["bars"], datetime.now(timezone.utc))
+    bars = download_adjusted_bars(symbol, start, (today + timedelta(days=1)).isoformat())
     cache.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps({"fetched_on": today.isoformat(), "start": start, "bars": bars}))
-    return bars
+    return bt.completed_bars(bars, datetime.now(timezone.utc))
 
 
 def run(

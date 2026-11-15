@@ -12,7 +12,11 @@ import {
   listFeedStaticRowClass,
 } from "@/components/ui/list-card";
 import { useTranslation } from "@/lib/i18n";
-import { getYouTubeStockDetail, type YouTubeOpinion } from "@/lib/youtubeOpinionsApi";
+import {
+  getYouTubeStockDetail,
+  getYouTubeStockOutcomes,
+  type YouTubeOpinion,
+} from "@/lib/youtubeOpinionsApi";
 import OpinionCard from "./OpinionCard";
 
 export default function OtherCreatorOpinions({
@@ -31,6 +35,13 @@ export default function OtherCreatorOpinions({
     (signal) => getYouTubeStockDetail(ticker, {}, signal),
     { ttl: 60_000 },
   );
+  // Separate request: slow or failed prices must not hold back the opinions themselves.
+  const outcomes = useCachedResource(
+    `/api/youtube-opinions/stocks/${encodeURIComponent(ticker)}/outcomes`,
+    (signal) => getYouTubeStockOutcomes(ticker, signal),
+    { ttl: 10 * 60_000 },
+  );
+  const outcomesFailed = Boolean(outcomes.error) && !outcomes.data;
   const loading = resource.loading;
   const failed = Boolean(resource.error) && !resource.data;
   // The complete archive is shared with the stock workspace. Changing the
@@ -91,7 +102,15 @@ export default function OtherCreatorOpinions({
             >
               {opinions.slice(0, visibleCount).map((opinion) => (
                 <li key={opinion.id} className={listFeedStaticRowClass}>
-                  <OpinionCard opinion={opinion} t={t} showTicker={false} onCreator={onCreator} />
+                  <OpinionCard
+                    opinion={opinion}
+                    t={t}
+                    showTicker={false}
+                    onCreator={onCreator}
+                    outcome={outcomesFailed ? "unavailable" : outcomes.data?.outcomes[opinion.id]}
+                    outcomeHorizons={outcomes.data?.horizons}
+                    outcomeBenchmark={outcomes.data?.benchmark}
+                  />
                 </li>
               ))}
             </ListRows>

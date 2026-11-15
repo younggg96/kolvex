@@ -1,4 +1,5 @@
 import { invalidateClientCache, subscribeClientCache } from "./clientCache";
+import type { OpinionOutcomes } from "./opinionOutcome";
 import type { VideoOpinionGroup } from "./youtubeVideoHistory";
 
 export type OpinionSentiment = "bullish" | "bearish" | "neutral" | "mixed";
@@ -25,12 +26,25 @@ export interface YouTubeStockSummary {
   avg_score: number;
   avg_confidence?: number | null;
   latest_opinion_at?: string | null;
-  creator_distribution?: { bullish: number; neutral: number; bearish: number; total: number; from: string; to: string };
+  creator_distribution?: {
+    bullish: number;
+    neutral: number;
+    bearish: number;
+    total: number;
+    from: string;
+    to: string;
+  };
   discussion_heat?: { recent: number; previous: number; from: string; to: string };
   latest_evidence?: {
-    id: string; channel_id?: string | null; channel_title?: string | null;
-    video_id?: string | null; video_url?: string | null; video_published_at?: string | null;
-    opinion_date?: string | null; summary?: string | null; thesis?: string | null;
+    id: string;
+    channel_id?: string | null;
+    channel_title?: string | null;
+    video_id?: string | null;
+    video_url?: string | null;
+    video_published_at?: string | null;
+    opinion_date?: string | null;
+    summary?: string | null;
+    thesis?: string | null;
     sentiment?: OpinionSentiment | null;
   };
 }
@@ -49,7 +63,8 @@ export interface YouTubeCreatorSummary {
   video_count?: number | null;
   view_count?: number | null;
   profile_source?: "youtube" | "imported";
-  profile_status?: "available" | "imported" | "not_configured" | "unavailable" | "not_found" | "invalid_identity";
+  profile_status?:
+    "available" | "imported" | "not_configured" | "unavailable" | "not_found" | "invalid_identity";
   profile_updated_at?: string | null;
   total_opinions: number;
   bullish_count: number;
@@ -154,10 +169,17 @@ export function getYouTubeVideoFeed(limit = 20, offset = 0, signal?: AbortSignal
   if (signal?.aborted) abort();
   signal?.addEventListener("abort", abort, { once: true });
   const timeout = setTimeout(abort, 20_000);
-  return apiRequest<YouTubeVideoFeed>(`/videos?limit=${limit}&offset=${offset}`, { signal: controller.signal })
-    .finally(() => { clearTimeout(timeout); signal?.removeEventListener("abort", abort); });
+  return apiRequest<YouTubeVideoFeed>(`/videos?limit=${limit}&offset=${offset}`, {
+    signal: controller.signal,
+  }).finally(() => {
+    clearTimeout(timeout);
+    signal?.removeEventListener("abort", abort);
+  });
 }
-const dashboardCache = new Map<string, { expires: number; data?: YouTubeOpinionDashboard; request: Promise<YouTubeOpinionDashboard> }>();
+const dashboardCache = new Map<
+  string,
+  { expires: number; data?: YouTubeOpinionDashboard; request: Promise<YouTubeOpinionDashboard> }
+>();
 const dashboardCacheMs = 60_000;
 const dashboardSnapshotMs = 15 * 60_000;
 const dashboardStorageKey = "kolvex:public-youtube-dashboard:v1";
@@ -170,13 +192,22 @@ function readDashboardSnapshots(): Record<string, DashboardSnapshot> {
   try {
     const stored = JSON.parse(window.sessionStorage.getItem(dashboardStorageKey) || "{}");
     if (!stored || typeof stored !== "object" || Array.isArray(stored)) return {};
-    return Object.fromEntries(Object.entries(stored).filter(([key, value]) => {
-      const entry = value as DashboardSnapshot | null;
-      return key.startsWith("/dashboard") && entry && Number.isFinite(entry.expires)
-        && entry.expires + dashboardSnapshotMs - dashboardCacheMs > Date.now()
-        && entry.data && typeof entry.data === "object";
-    })) as Record<string, DashboardSnapshot>;
-  } catch { return {}; }
+    return Object.fromEntries(
+      Object.entries(stored).filter(([key, value]) => {
+        const entry = value as DashboardSnapshot | null;
+        return (
+          key.startsWith("/dashboard") &&
+          entry &&
+          Number.isFinite(entry.expires) &&
+          entry.expires + dashboardSnapshotMs - dashboardCacheMs > Date.now() &&
+          entry.data &&
+          typeof entry.data === "object"
+        );
+      }),
+    ) as Record<string, DashboardSnapshot>;
+  } catch {
+    return {};
+  }
 }
 
 function saveDashboardSnapshot(key: string, snapshot?: DashboardSnapshot) {
@@ -185,23 +216,31 @@ function saveDashboardSnapshot(key: string, snapshot?: DashboardSnapshot) {
     const snapshots = readDashboardSnapshots();
     delete snapshots[key];
     if (snapshot) snapshots[key] = snapshot;
-    window.sessionStorage.setItem(dashboardStorageKey, JSON.stringify(Object.fromEntries(Object.entries(snapshots).slice(-40))));
-  } catch { /* Disabled storage or quota exceeded: retain the in-memory cache. */ }
+    window.sessionStorage.setItem(
+      dashboardStorageKey,
+      JSON.stringify(Object.fromEntries(Object.entries(snapshots).slice(-40))),
+    );
+  } catch {
+    /* Disabled storage or quota exceeded: retain the in-memory cache. */
+  }
 }
-subscribeClientCache(prefix => { if (!prefix) dashboardCache.clear(); });
+subscribeClientCache((prefix) => {
+  if (!prefix) dashboardCache.clear();
+});
 
 export function clearYouTubeDashboardCache() {
   dashboardCache.clear();
   if (typeof window !== "undefined") {
-    try { window.sessionStorage.removeItem(dashboardStorageKey); } catch { /* Storage may be disabled. */ }
+    try {
+      window.sessionStorage.removeItem(dashboardStorageKey);
+    } catch {
+      /* Storage may be disabled. */
+    }
   }
   invalidateClientCache(API_PREFIX);
 }
 
-async function apiRequest<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
+async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_PREFIX}${endpoint}`, {
     ...options,
     headers: {
@@ -213,7 +252,9 @@ async function apiRequest<T>(
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw Object.assign(new Error(data.error || data.detail || `API error: ${response.status}`), { status: response.status });
+    throw Object.assign(new Error(data.error || data.detail || `API error: ${response.status}`), {
+      status: response.status,
+    });
   }
 
   if (options.method && options.method.toUpperCase() !== "GET") clearYouTubeDashboardCache();
@@ -238,12 +279,13 @@ export function getCachedYouTubeOpinionDashboard(params: YouTubeOpinionDashboard
   if (typeof window === "undefined") return undefined;
   const key = dashboardEndpoint(params);
   const entry = dashboardCache.get(key);
-  if (entry?.data && entry.expires + dashboardSnapshotMs - dashboardCacheMs > Date.now()) return entry.data;
+  if (entry?.data && entry.expires + dashboardSnapshotMs - dashboardCacheMs > Date.now())
+    return entry.data;
   return readDashboardSnapshots()[key]?.data;
 }
 
 export function getYouTubeOpinionDashboard(
-  params: YouTubeOpinionDashboardParams = {}
+  params: YouTubeOpinionDashboardParams = {},
 ): Promise<YouTubeOpinionDashboard> {
   const key = dashboardEndpoint(params);
   const inBrowser = typeof window !== "undefined";
@@ -253,29 +295,41 @@ export function getYouTubeOpinionDashboard(
   if (snapshot && snapshot.expires > Date.now()) return Promise.resolve(snapshot.data);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 20_000);
-  const request = apiRequest<YouTubeOpinionDashboard>(key, { signal: controller.signal }).then((data) => {
-    const entry = dashboardCache.get(key);
-    if (entry?.request === request) {
-      entry.data = data;
-      entry.expires = Date.now() + dashboardCacheMs;
-      saveDashboardSnapshot(key, { expires: entry.expires, data });
-    }
-    return data;
-  }).catch((error) => {
-    if (dashboardCache.get(key)?.request === request) {
-      if ([401, 403, 404].includes(error?.status)) {
-        dashboardCache.delete(key);
-        saveDashboardSnapshot(key);
-      } else if (cached?.data || snapshot?.data) {
-        // Keep a readable stale snapshot, but allow the next attempt to retry.
-        dashboardCache.set(key, { expires: cached?.expires ?? snapshot!.expires, data: cached?.data ?? snapshot?.data, request });
-      } else dashboardCache.delete(key);
-    }
-    throw error;
-  }).finally(() => clearTimeout(timeout));
+  const request = apiRequest<YouTubeOpinionDashboard>(key, { signal: controller.signal })
+    .then((data) => {
+      const entry = dashboardCache.get(key);
+      if (entry?.request === request) {
+        entry.data = data;
+        entry.expires = Date.now() + dashboardCacheMs;
+        saveDashboardSnapshot(key, { expires: entry.expires, data });
+      }
+      return data;
+    })
+    .catch((error) => {
+      if (dashboardCache.get(key)?.request === request) {
+        if ([401, 403, 404].includes(error?.status)) {
+          dashboardCache.delete(key);
+          saveDashboardSnapshot(key);
+        } else if (cached?.data || snapshot?.data) {
+          // Keep a readable stale snapshot, but allow the next attempt to retry.
+          dashboardCache.set(key, {
+            expires: cached?.expires ?? snapshot!.expires,
+            data: cached?.data ?? snapshot?.data,
+            request,
+          });
+        } else dashboardCache.delete(key);
+      }
+      throw error;
+    })
+    .finally(() => clearTimeout(timeout));
   if (inBrowser) {
-    if (dashboardCache.size >= 40 && !dashboardCache.has(key)) dashboardCache.delete(dashboardCache.keys().next().value!);
-    dashboardCache.set(key, { expires: Date.now() + dashboardCacheMs, data: cached?.data ?? snapshot?.data, request });
+    if (dashboardCache.size >= 40 && !dashboardCache.has(key))
+      dashboardCache.delete(dashboardCache.keys().next().value!);
+    dashboardCache.set(key, {
+      expires: Date.now() + dashboardCacheMs,
+      data: cached?.data ?? snapshot?.data,
+      request,
+    });
   }
   return request;
 }
@@ -289,7 +343,7 @@ export interface YouTubeStockDetail {
 export async function getYouTubeStockDetail(
   ticker: string,
   params: Pick<YouTubeOpinionDashboardParams, "date_from" | "date_to"> = {},
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ): Promise<YouTubeStockDetail> {
   const searchParams = new URLSearchParams();
   if (params.date_from) searchParams.set("date_from", params.date_from);
@@ -297,8 +351,16 @@ export async function getYouTubeStockDetail(
   const qs = searchParams.toString();
   return apiRequest<YouTubeStockDetail>(
     `/stocks/${encodeURIComponent(ticker)}${qs ? `?${qs}` : ""}`,
-    { signal }
+    { signal },
   );
+}
+
+/** How the stock moved after each stored opinion on it; 503 when prices are unavailable. */
+export async function getYouTubeStockOutcomes(
+  ticker: string,
+  signal?: AbortSignal,
+): Promise<OpinionOutcomes> {
+  return apiRequest<OpinionOutcomes>(`/stocks/${encodeURIComponent(ticker)}/outcomes`, { signal });
 }
 
 export type YouTubeImportBody = Record<string, unknown> | Record<string, unknown>[];
@@ -317,7 +379,7 @@ export interface YouTubeImportResult {
 }
 
 export async function uploadYouTubeOpinionPayload(
-  payload: YouTubeImportBody
+  payload: YouTubeImportBody,
 ): Promise<YouTubeImportResult> {
   return apiRequest("/upload", {
     method: "POST",
@@ -330,25 +392,40 @@ export function getYouTubeCreatorProfile(channelId: string) {
 }
 
 export interface CreatorLatestVideo {
-  creator: Pick<YouTubeCreatorSummary, "channel_id" | "channel_title" | "channel_handle" | "channel_avatar_url" | "channel_url"> | null;
-  video: Pick<YouTubeOpinion, "video_id" | "video_title" | "video_url" | "video_published_at" | "opinion_date"> | null;
+  creator: Pick<
+    YouTubeCreatorSummary,
+    "channel_id" | "channel_title" | "channel_handle" | "channel_avatar_url" | "channel_url"
+  > | null;
+  video: Pick<
+    YouTubeOpinion,
+    "video_id" | "video_title" | "video_url" | "video_published_at" | "opinion_date"
+  > | null;
   opinions: YouTubeOpinion[];
 }
 
 export function getCreatorLatestVideo(channelId: string, signal?: AbortSignal) {
-  return apiRequest<CreatorLatestVideo>(`/creators/${encodeURIComponent(channelId)}/latest-video`, { signal });
+  return apiRequest<CreatorLatestVideo>(`/creators/${encodeURIComponent(channelId)}/latest-video`, {
+    signal,
+  });
 }
 
-export type YouTubeCreatorUpdate = Pick<YouTubeCreatorSummary, "channel_title" | "channel_handle" | "channel_url" | "channel_avatar_url">;
+export type YouTubeCreatorUpdate = Pick<
+  YouTubeCreatorSummary,
+  "channel_title" | "channel_handle" | "channel_url" | "channel_avatar_url"
+>;
 
 export function getAdminYouTubeCreators() {
   return apiRequest<{ creators: YouTubeCreatorSummary[] }>("/creators");
 }
 
 export function updateYouTubeCreator(channelId: string, values: YouTubeCreatorUpdate) {
-  return apiRequest<{ success: boolean; creator: YouTubeCreatorSummary }>(`/creators/${encodeURIComponent(channelId)}`, {
-    method: "PATCH", body: JSON.stringify(values),
-  });
+  return apiRequest<{ success: boolean; creator: YouTubeCreatorSummary }>(
+    `/creators/${encodeURIComponent(channelId)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(values),
+    },
+  );
 }
 
 export interface YouTubeOpinionWrite {
@@ -370,25 +447,38 @@ export interface YouTubeOpinionWrite {
 }
 
 export function getCreatorOpinions(channelId: string) {
-  return apiRequest<{ opinions: YouTubeOpinion[] }>(`/creators/${encodeURIComponent(channelId)}/opinions`);
+  return apiRequest<{ opinions: YouTubeOpinion[] }>(
+    `/creators/${encodeURIComponent(channelId)}/opinions`,
+  );
 }
 
 export function createCreatorOpinion(channelId: string, values: YouTubeOpinionWrite) {
-  return apiRequest<{ success: boolean; opinion: YouTubeOpinion }>(`/creators/${encodeURIComponent(channelId)}/opinions`, {
-    method: "POST", body: JSON.stringify(values),
-  });
+  return apiRequest<{ success: boolean; opinion: YouTubeOpinion }>(
+    `/creators/${encodeURIComponent(channelId)}/opinions`,
+    {
+      method: "POST",
+      body: JSON.stringify(values),
+    },
+  );
 }
 
 export function updateYouTubeOpinion(opinionId: string, values: YouTubeOpinionWrite) {
-  return apiRequest<{ success: boolean; opinion: YouTubeOpinion }>(`/opinions/${encodeURIComponent(opinionId)}`, {
-    method: "PATCH", body: JSON.stringify(values),
-  });
+  return apiRequest<{ success: boolean; opinion: YouTubeOpinion }>(
+    `/opinions/${encodeURIComponent(opinionId)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(values),
+    },
+  );
 }
 
 export function deleteYouTubeOpinion(opinionId: string) {
-  return apiRequest<{ success: boolean; id: string }>(`/opinions/${encodeURIComponent(opinionId)}`, {
-    method: "DELETE",
-  });
+  return apiRequest<{ success: boolean; id: string }>(
+    `/opinions/${encodeURIComponent(opinionId)}`,
+    {
+      method: "DELETE",
+    },
+  );
 }
 
 export interface YouTubeUntrackedUpload {
@@ -425,7 +515,10 @@ export interface YouTubeImportVideoPreview {
   video_summary?: string | null;
   channel_title: string;
   count: number;
-  opinions: Pick<YouTubeOpinion, "ticker" | "sentiment" | "direction_score" | "confidence" | "summary" | "opinion_date">[];
+  opinions: Pick<
+    YouTubeOpinion,
+    "ticker" | "sentiment" | "direction_score" | "confidence" | "summary" | "opinion_date"
+  >[];
 }
 
 export interface YouTubeImportPreview {

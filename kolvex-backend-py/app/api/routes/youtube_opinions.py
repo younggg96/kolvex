@@ -2,15 +2,20 @@
 YouTube creator stock opinion API routes.
 """
 
+import asyncio
+import logging
 from typing import Any, Dict, List, Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from supabase import Client
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 
 from app.api.dependencies.auth import verify_admin
 from app.core.supabase import get_supabase_service
+from app.services import opinion_outcomes
 from app.services.youtube_stock_opinions import YouTubeStockOpinionService
+from supabase import Client
+
+logger = logging.getLogger(__name__)
 
 
 router = APIRouter(prefix="/youtube-opinions", tags=["YouTube Opinions"])
@@ -154,6 +159,29 @@ async def get_youtube_stock_detail(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to load stock opinion detail: {str(e)}",
+        )
+
+
+@router.get("/stocks/{ticker}/outcomes")
+async def get_youtube_stock_outcomes(
+    ticker: str,
+    service: YouTubeStockOpinionService = Depends(get_service),
+):
+    """What the stock did after each opinion on it (5 and 20 sessions, versus SPY)."""
+    try:
+        rows = await asyncio.to_thread(service.ticker_rows, ticker)
+        return await asyncio.to_thread(opinion_outcomes.stock_outcomes, ticker, rows)
+    except opinion_outcomes.PricesUnavailable as e:
+        logger.warning("Opinion outcomes unavailable for %s: %s", ticker, e)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Price data is temporarily unavailable",
+        )
+    except Exception:
+        logger.exception("Failed to load opinion outcomes for %s", ticker)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to load opinion outcomes",
         )
 
 

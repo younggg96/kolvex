@@ -155,6 +155,10 @@ class YouTubeStockOpinionService:
         rows = self._fetch_rows(channel_id=channel_id)
         return {"success": True, "creator": self._build_creator_summaries(rows)[0]}
 
+    def ticker_rows(self, ticker: str) -> List[Dict[str, Any]]:
+        """Every stored opinion on one ticker (cached)."""
+        return self._fetch_rows(ticker=ticker)
+
     def list_creator_opinions(self, channel_id: str) -> Dict[str, Any]:
         rows = self._fetch_rows(channel_id=channel_id)
         if not rows:

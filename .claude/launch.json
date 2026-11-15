@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web-preview-3100",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "cd '/private/tmp/claude-501/-Users-guanggengyang-Documents-GitHub-kolvex/de6c0dcb-e98d-4e28-98c3-9415618c17eb/scratchpad/web-preview' && exec npx next dev -p 3100"],
+      "port": 3100
+    }
+  ]
+}
