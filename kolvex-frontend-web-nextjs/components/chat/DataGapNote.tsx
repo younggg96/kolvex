@@ -8,12 +8,14 @@ const SOURCES: Record<string, string> = {
   get_reported_revenue: "revenue",
   get_stock_quote: "quote",
   get_stock_history: "quote",
+  get_technical_indicators: "quote",
   get_stock_financials: "financials",
   get_company_info: "financials",
   get_analyst_recommendations: "analysts",
   get_options_chain_summary: "options",
   web_search: "web",
   get_creator_opinions: "creators",
+  get_creator_record: "creators",
 };
 
 /** Why a figure is missing: the source failed (retry may help) or has no data (it won't). */

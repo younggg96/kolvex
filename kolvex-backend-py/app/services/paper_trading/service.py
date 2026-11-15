@@ -1,10 +1,11 @@
 """Authenticated persistence, authoritative quotes and the periodic matcher."""
+
 import asyncio
 import logging
 import os
 from datetime import datetime, timezone
-from zoneinfo import ZoneInfo
 from uuid import uuid4
+from zoneinfo import ZoneInfo
 
 from .engine import TradingError, command, d, money, new_account, pending, summary
 
@@ -27,9 +28,13 @@ def tradable_at(at, now):
     age = (now - at).total_seconds()
     ny = now.astimezone(ZoneInfo("America/New_York"))
     quote_ny = at.astimezone(ZoneInfo("America/New_York"))
-    return (0 <= age <= 1200 and ny.weekday() < 5 and
-            570 <= ny.hour * 60 + ny.minute < 960 and
-            quote_ny.date() == ny.date() and 570 <= quote_ny.hour * 60 + quote_ny.minute < 960)
+    return (
+        0 <= age <= 1200
+        and ny.weekday() < 5
+        and 570 <= ny.hour * 60 + ny.minute < 960
+        and quote_ny.date() == ny.date()
+        and 570 <= quote_ny.hour * 60 + quote_ny.minute < 960
+    )
 
 
 def normalize_quote(raw, now=None):
@@ -51,34 +56,91 @@ def normalize_quote(raw, now=None):
         post_price = d(raw.get("post_market_price"))
         post_at = datetime.fromtimestamp(float(raw.get("post_market_time")), timezone.utc)
         post_ny = post_at.astimezone(ZoneInfo("America/New_York"))
-        if (post_price > 0 and at < post_at <= now and post_ny.weekday() < 5
-                and 960 <= post_ny.hour * 60 + post_ny.minute <= 1200):
+        if (
+            post_price > 0
+            and at < post_at <= now
+            and post_ny.weekday() < 5
+            and 960 <= post_ny.hour * 60 + post_ny.minute <= 1200
+        ):
             price, at, session = post_price, post_at, "post"
     except (TradingError, ValueError, TypeError, OverflowError, OSError):
         pass  # Keep the valid regular-session observation on incomplete data.
-    return {"price": money(price), "at": at.isoformat(),
-            "tradable": session == "regular" and tradable_at(at, now), "session": session,
-            "currency": "USD", "source": "Yahoo Finance (may be delayed)"}
+    return {
+        "price": money(price),
+        "at": at.isoformat(),
+        "tradable": session == "regular" and tradable_at(at, now),
+        "session": session,
+        "currency": "USD",
+        "source": "Yahoo Finance (may be delayed)",
+    }
+
+
+def _returning(query, columns):
+    """PostgREST returns the whole updated row by default; ask only for `columns`.
+
+    The account state is ~100 KB, so echoing it back on every matcher write was
+    a large share of the project's Supabase egress.
+    """
+    query.params = query.params.add("select", columns)
+    return query
 
 
 class PaperTradingService:
-    def __init__(self, db, quote_provider=None):
+    def __init__(self, db, quote_provider=None, reuse_known_state=False):
         self.db = db
+        # The matcher keeps the state it last wrote. It then reads only the
+        # tiny `version` column and re-reads the full state only when another
+        # writer (a user's order) has bumped the version since.
+        self.reuse_known_state = reuse_known_state
+        self._known = {}
         if quote_provider is None:
             from app.services.yfinance.client import get_yfinance_service
+
             quote_provider = get_yfinance_service().get_quote
         self.quote_provider = quote_provider
 
     def load(self, user_id):
+        known = self._known.get(user_id) if self.reuse_known_state else None
+        if known is not None:
+            try:
+                rows = (
+                    self.db.table("paper_accounts")
+                    .select("version")
+                    .eq("user_id", user_id)
+                    .execute()
+                    .data
+                )
+            except Exception as exc:
+                logger.warning("Paper account storage unavailable: %s", type(exc).__name__)
+                raise StorageUnavailable() from exc
+            if rows and rows[0]["version"] == known["version"]:
+                return known
+            self._known.pop(user_id, None)
         try:
-            rows = self.db.table("paper_accounts").select("state,version").eq("user_id", user_id).execute().data
+            rows = (
+                self.db.table("paper_accounts")
+                .select("state,version")
+                .eq("user_id", user_id)
+                .execute()
+                .data
+            )
             if not rows:
                 self.db.table("paper_accounts").upsert(
                     {"user_id": user_id, "state": new_account(utcnow()), "version": 0},
-                    on_conflict="user_id", ignore_duplicates=True).execute()
-                rows = self.db.table("paper_accounts").select("state,version").eq("user_id", user_id).execute().data
+                    on_conflict="user_id",
+                    ignore_duplicates=True,
+                ).execute()
+                rows = (
+                    self.db.table("paper_accounts")
+                    .select("state,version")
+                    .eq("user_id", user_id)
+                    .execute()
+                    .data
+                )
             if not rows:
                 raise RuntimeError("account creation failed")
+            if self.reuse_known_state:
+                self._known[user_id] = rows[0]
             return rows[0]
         except Exception as exc:
             logger.warning("Paper account storage unavailable: %s", type(exc).__name__)
@@ -109,7 +171,9 @@ class PaperTradingService:
             state = row["state"]
             if body["request_id"] in state["commands"]:
                 return self.view(row)
-            symbols = {p["symbol"] for p in state["positions"]} | {o["symbol"] for o in pending(state)}
+            symbols = {p["symbol"] for p in state["positions"]} | {
+                o["symbol"] for o in pending(state)
+            }
             if body.get("symbol"):
                 symbols.add(body["symbol"])
             for symbol in sorted(symbols):
@@ -123,19 +187,41 @@ class PaperTradingService:
             # A long-running worker cycle must not keep trading after market close
             # or after a cached observation has aged past the freshness threshold.
             observed_now = datetime.fromisoformat(now)
-            current_quotes = {symbol: {**quote, "tradable": quote["tradable"] and tradable_at(
-                datetime.fromisoformat(quote["at"]), observed_now)} for symbol, quote in quotes.items() if symbol in symbols}
+            current_quotes = {
+                symbol: {
+                    **quote,
+                    "tradable": quote["tradable"]
+                    and tradable_at(datetime.fromisoformat(quote["at"]), observed_now),
+                }
+                for symbol, quote in quotes.items()
+                if symbol in symbols
+            }
             updated = command(state, body, current_quotes, now)
             updated["quote_errors"] = sorted(symbols - current_quotes.keys())
             try:
-                result = self.db.table("paper_accounts").update(
-                    {"state": updated, "version": row["version"] + 1, "updated_at": now,
-                     "active": bool(updated["positions"] or pending(updated))}
-                ).eq("user_id", user_id).eq("version", row["version"]).execute()
+                result = _returning(
+                    self.db.table("paper_accounts")
+                    .update(
+                        {
+                            "state": updated,
+                            "version": row["version"] + 1,
+                            "updated_at": now,
+                            "active": bool(updated["positions"] or pending(updated)),
+                        }
+                    )
+                    .eq("user_id", user_id)
+                    .eq("version", row["version"]),
+                    "version",
+                ).execute()
             except Exception as exc:
+                self._known.pop(user_id, None)
                 raise StorageUnavailable() from exc
             if result.data:
-                return self.view({"state": updated, "version": row["version"] + 1})
+                saved = {"state": updated, "version": row["version"] + 1}
+                if self.reuse_known_state:
+                    self._known[user_id] = saved
+                return self.view(saved)
+            self._known.pop(user_id, None)
         raise Conflict()
 
     def publish(self, user_id, position_id, note):
@@ -145,54 +231,109 @@ class PaperTradingService:
         fills = [f for f in state["fills"] if f["position_id"] == position_id]
         if not fills or not any(f["effect"] == "close" for f in fills):
             raise TradingError("position_unavailable")
-        snapshot = {"symbol": fills[0]["symbol"], "side": fills[0]["side"], "fills": fills,
-                    "realized_pnl": money(sum((d(f["realized_pnl"]) for f in fills), d(0))),
-                    "fees": money(sum((d(f["fee"]) for f in fills), d(0)))}
+        snapshot = {
+            "symbol": fills[0]["symbol"],
+            "side": fills[0]["side"],
+            "fills": fills,
+            "realized_pnl": money(sum((d(f["realized_pnl"]) for f in fills), d(0))),
+            "fees": money(sum((d(f["fee"]) for f in fills), d(0))),
+        }
         try:
-            result = self.db.table("paper_reviews").upsert(
-                {"user_id": user_id, "position_id": position_id, "note": note, "snapshot": snapshot,
-                 "published_at": utcnow()}, on_conflict="user_id,position_id").execute()
+            result = (
+                self.db.table("paper_reviews")
+                .upsert(
+                    {
+                        "user_id": user_id,
+                        "position_id": position_id,
+                        "note": note,
+                        "snapshot": snapshot,
+                        "published_at": utcnow(),
+                    },
+                    on_conflict="user_id,position_id",
+                )
+                .execute()
+            )
             return result.data[0]
         except Exception as exc:
             raise StorageUnavailable() from exc
 
     def reviews(self, user_id, offset):
         try:
-            rows = self.db.table("paper_reviews").select("id,user_id,note,snapshot,published_at").order(
-                "published_at", desc=True).order("id").range(offset, offset + 20).execute().data
-            return {"items": [{"id": r["id"], "is_mine": r["user_id"] == user_id,
-                               "author": "Learner " + r["user_id"].replace("-", "")[:8],
-                               "note": r["note"], "snapshot": r["snapshot"], "published_at": r["published_at"]}
-                              for r in rows[:20]], "has_more": len(rows) > 20}
+            rows = (
+                self.db.table("paper_reviews")
+                .select("id,user_id,note,snapshot,published_at")
+                .order("published_at", desc=True)
+                .order("id")
+                .range(offset, offset + 20)
+                .execute()
+                .data
+            )
+            return {
+                "items": [
+                    {
+                        "id": r["id"],
+                        "is_mine": r["user_id"] == user_id,
+                        "author": "Learner " + r["user_id"].replace("-", "")[:8],
+                        "note": r["note"],
+                        "snapshot": r["snapshot"],
+                        "published_at": r["published_at"],
+                    }
+                    for r in rows[:20]
+                ],
+                "has_more": len(rows) > 20,
+            }
         except Exception as exc:
             raise StorageUnavailable() from exc
 
     def unpublish(self, user_id, review_id):
         try:
-            self.db.table("paper_reviews").delete().eq("user_id", user_id).eq("id", review_id).execute()
+            self.db.table("paper_reviews").delete().eq("user_id", user_id).eq(
+                "id", review_id
+            ).execute()
             return {"ok": True}
         except Exception as exc:
             raise StorageUnavailable() from exc
 
 
+_matcher = None
+
+
 def match_cycle():
+    global _matcher
     from app.core.supabase import get_supabase_service
-    service = PaperTradingService(get_supabase_service())
+
+    db = get_supabase_service()
+    if _matcher is None or _matcher.db is not db:
+        _matcher = PaperTradingService(db, reuse_known_state=True)
+    service = _matcher
     cursor = None
     quote_cache = {}
+    seen = set()
     while True:
-        query = service.db.table("paper_accounts").select("user_id").eq("active", True).order("user_id").limit(50)
+        query = (
+            service.db.table("paper_accounts")
+            .select("user_id")
+            .eq("active", True)
+            .order("user_id")
+            .limit(50)
+        )
         if cursor:
             query = query.gt("user_id", cursor)
         rows = query.execute().data
         for row in rows:
+            seen.add(row["user_id"])
             try:
-                service.mutate(row["user_id"], {"action": "sync", "request_id": str(uuid4())}, quote_cache)
+                service.mutate(
+                    row["user_id"], {"action": "sync", "request_id": str(uuid4())}, quote_cache
+                )
             except Exception:
                 logger.exception("Paper trading account match failed")
         if len(rows) < 50:
             break
         cursor = rows[-1]["user_id"]
+    # Forget accounts that are no longer active so the in-memory copy stays small.
+    for user_id in set(service._known) - seen:
+        service._known.pop(user_id, None)
 
 
 async def run_worker():

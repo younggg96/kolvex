@@ -95,5 +95,6 @@ Added 2026-11-09: the seven rows from Superinvestors to Kronos forecast. Added 2
 6. Portfolio parity after its re-enablement (2026-11-12): the 我的持仓 scope of 股票观察, and a decision on which Web portfolio views (allocation, performance, transactions, AI analysis) native should show.
 
 7. Opinion outcomes (added on the Web 2026-11-14): the 发布后股价 line on every opinion card in a single-stock list (stock page, creator × stock page, other creators' views) (`GET /youtube-opinions/stocks/{ticker}/outcomes`, Web `components/youtube/OpinionOutcome.tsx` and `lib/opinionOutcome.ts`). Not ported; `CreatorExtras.tsx` is where it belongs. See `docs/opinion-backtest.md`.
+8. Opinion review (added on the Web 2026-11-15): the 回看 page, `/dashboard/youtube-opinions/review` (`GET /youtube-opinions/review`, Web `components/youtube/OpinionReview.tsx` and `lib/opinionReview.ts`). Not ported. See `docs/opinion-backtest.md`.
 
 No RLS, administrator grants or OAuth settings were changed.

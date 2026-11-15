@@ -3,8 +3,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-const BACKEND_API_URL =
-  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
+const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
 
 type RouteParams = { params: Promise<{ path: string[] }> };
 
@@ -35,13 +34,15 @@ async function proxyJson(
   request: NextRequest,
   path: string[],
   method: "GET" | "POST" | "PATCH" | "DELETE",
-  requireAuth: boolean
+  requireAuth: boolean,
 ) {
-  const publicRead = method === "GET" && (
-    (path.length === 1 && ["dashboard", "videos", "coverage"].includes(path[0])) ||
-    (path.length === 2 && path[0] === "stocks") ||
-    (path.length === 3 && path[0] === "creators" && ["profile", "latest-video"].includes(path[2]))
-  );
+  const publicRead =
+    method === "GET" &&
+    ((path.length === 1 && ["dashboard", "videos", "coverage", "review"].includes(path[0])) ||
+      (path.length === 2 && path[0] === "stocks") ||
+      (path.length === 3 &&
+        path[0] === "creators" &&
+        ["profile", "latest-video"].includes(path[2])));
   const token = publicRead ? null : await getAccessToken();
   if (requireAuth && !token) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -54,21 +55,18 @@ async function proxyJson(
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(
-    buildBackendUrl(path, request.nextUrl.searchParams.toString()),
-    {
-      method,
-      headers,
-      body: method !== "GET" && method !== "DELETE" ? await request.text() : undefined,
-      cache: "no-store",
-    }
-  );
+  const response = await fetch(buildBackendUrl(path, request.nextUrl.searchParams.toString()), {
+    method,
+    headers,
+    body: method !== "GET" && method !== "DELETE" ? await request.text() : undefined,
+    cache: "no-store",
+  });
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     return NextResponse.json(
       { error: data.detail || data.error || "Backend request failed" },
-      { status: response.status }
+      { status: response.status },
     );
   }
 

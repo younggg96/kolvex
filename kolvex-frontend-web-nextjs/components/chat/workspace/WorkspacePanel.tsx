@@ -17,11 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ChipButton } from "@/components/ui/chip-button";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -63,7 +59,9 @@ type Copy = (en: string, zh: string) => string;
 /** Research-only tools that the chat locale files do not label. */
 const TOOL_COPY: Record<string, [string, string]> = {
   get_options_chain_summary: ["Options chain", "期权链"],
+  get_technical_indicators: ["Technical indicators", "技术指标"],
   get_creator_opinions: ["Creator opinions", "博主观点库"],
+  get_creator_record: ["Price moves after a creator's opinions", "博主观点后股价"],
   web_search: ["Web search", "网页搜索"],
   get_user_portfolio: ["Portfolio", "投资组合"],
 };
@@ -100,12 +98,7 @@ export function WorkspacePanel({
   const running = run?.status === "running";
 
   return (
-    <div
-      className={cn(
-        "w-full min-w-0 space-y-8 px-4 pb-10 pt-5 md:px-5",
-        className,
-      )}
-    >
+    <div className={cn("w-full min-w-0 space-y-8 px-4 pb-10 pt-5 md:px-5", className)}>
       <header className="space-y-3">
         <div className="flex items-start gap-2">
           <h2 className="min-w-0 flex-1 text-lg font-semibold leading-7 text-foreground [overflow-wrap:anywhere]">
@@ -157,11 +150,7 @@ export function WorkspacePanel({
               )}
             </p>
             <div className="flex gap-1">
-              <Button
-                variant="ghost"
-                size="xs"
-                onClick={() => setConfirmDelete(false)}
-              >
+              <Button variant="ghost" size="xs" onClick={() => setConfirmDelete(false)}>
                 {c("Cancel", "取消")}
               </Button>
               <Button
@@ -179,11 +168,7 @@ export function WorkspacePanel({
         )}
 
         {editing ? (
-          <EditWorkspace
-            workspace={workspace}
-            onDone={() => setEditing(false)}
-            c={c}
-          />
+          <EditWorkspace workspace={workspace} onDone={() => setEditing(false)} c={c} />
         ) : (
           <>
             {detail.tickers.length > 0 && (
@@ -194,27 +179,18 @@ export function WorkspacePanel({
               </div>
             )}
             {detail.brief && (
-              <p className="text-sm leading-6 text-muted-foreground">
-                {detail.brief}
-              </p>
+              <p className="text-sm leading-6 text-muted-foreground">{detail.brief}</p>
             )}
           </>
         )}
       </header>
 
-      <ResearchLauncher
-        workspace={workspace}
-        model={model}
-        running={running}
-        c={c}
-      />
+      <ResearchLauncher workspace={workspace} model={model} running={running} c={c} />
 
       <section>
         <Card className="space-y-2 p-4">
           <div className="flex items-center justify-between gap-2">
-            <h3 className="text-sm font-semibold text-foreground">
-              {c("Chats", "对话")}
-            </h3>
+            <h3 className="text-sm font-semibold text-foreground">{c("Chats", "对话")}</h3>
             <Button
               variant="ghost"
               size="xs"
@@ -250,15 +226,11 @@ export function WorkspacePanel({
               {detail.chats.map((chat) => (
                 <ListRow
                   key={chat.id}
-                  className={cn(
-                    chat.id === conversationId && "bg-foreground/[0.06]",
-                  )}
+                  className={cn(chat.id === conversationId && "bg-foreground/[0.06]")}
                 >
                   <Link
                     href={`/dashboard/chat/${chat.id}`}
-                    aria-current={
-                      chat.id === conversationId ? "page" : undefined
-                    }
+                    aria-current={chat.id === conversationId ? "page" : undefined}
                     className="flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-2xl px-2 py-2 focus-visible:outline-none"
                   >
                     <MessageSquare
@@ -276,9 +248,7 @@ export function WorkspacePanel({
         </Card>
       </section>
 
-      {run && (
-        <RunView run={run} c={c} locale={locale} symbols={detail.tickers} />
-      )}
+      {run && <RunView run={run} c={c} locale={locale} symbols={detail.tickers} />}
 
       {detail.runs.length > 1 && (
         <section className="space-y-2">
@@ -289,10 +259,7 @@ export function WorkspacePanel({
             {detail.runs.map((item) => {
               const viewing = item.id === run?.id;
               return (
-                <ListRow
-                  key={item.id}
-                  className={cn(viewing && "bg-foreground/[0.06]")}
-                >
+                <ListRow key={item.id} className={cn(viewing && "bg-foreground/[0.06]")}>
                   <button
                     type="button"
                     onClick={() => void workspace.viewRun(item.id)}
@@ -317,7 +284,6 @@ export function WorkspacePanel({
           </ListRows>
         </section>
       )}
-
     </div>
   );
 }
@@ -378,10 +344,7 @@ function EditWorkspace({
         value={brief}
         maxLength={4000}
         rows={3}
-        placeholder={c(
-          "What this workspace is tracking",
-          "这个工作区要跟踪什么",
-        )}
+        placeholder={c("What this workspace is tracking", "这个工作区要跟踪什么")}
         onChange={(e) => setBrief(e.target.value)}
       />
       {error && (
@@ -412,21 +375,14 @@ function ResearchLauncher({
   running: boolean;
   c: Copy;
 }) {
-  const [agents, setAgents] = useState<ResearchAgent[]>(
-    DEFAULT_RESEARCH_AGENTS,
-  );
+  const [agents, setAgents] = useState<ResearchAgent[]>(DEFAULT_RESEARCH_AGENTS);
   const [question, setQuestion] = useState("");
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   /** A textarea in a narrow side panel takes every Enter for a new line; ⌘/Ctrl+Enter starts. */
   const startOnModEnter = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (
-      (event.metaKey || event.ctrlKey) &&
-      event.key === "Enter" &&
-      !running &&
-      !starting
-    ) {
+    if ((event.metaKey || event.ctrlKey) && event.key === "Enter" && !running && !starting) {
       event.preventDefault();
       void start();
     }
@@ -478,11 +434,7 @@ function ResearchLauncher({
         </span>
       </div>
 
-      <div
-        className="flex flex-wrap gap-1.5"
-        role="group"
-        aria-label={c("Researchers", "研究员")}
-      >
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label={c("Researchers", "研究员")}>
         {RESEARCH_AGENTS.map((agent) => {
           const on = agents.includes(agent);
           const Icon = AGENT_META[agent].icon;
@@ -518,10 +470,7 @@ function ResearchLauncher({
           maxLength={2000}
           rows={2}
           className="min-h-[3.5rem] resize-none rounded-xl border-transparent bg-transparent px-2 py-1.5 hover:bg-transparent focus-visible:border-transparent focus-visible:bg-transparent"
-          placeholder={c(
-            "Question for this round (optional)",
-            "本轮要研究的问题（可选）",
-          )}
+          placeholder={c("Question for this round (optional)", "本轮要研究的问题（可选）")}
           aria-label={c("Research question", "研究问题")}
         />
         <div className="mt-1.5 flex items-center justify-between gap-3">
@@ -529,10 +478,7 @@ function ResearchLauncher({
             {c("⌘Enter to start", "⌘Enter 开始")}
           </span>
           {error ? (
-            <p
-              role="alert"
-              className="text-xs text-negative [overflow-wrap:anywhere]"
-            >
+            <p role="alert" className="text-xs text-negative [overflow-wrap:anywhere]">
               {workspaceErrorText(error, c)}
             </p>
           ) : (
@@ -554,9 +500,7 @@ function ResearchLauncher({
             ) : (
               <Play className="h-3.5 w-3.5" aria-hidden="true" />
             )}
-            {running
-              ? c("Researching", "研究进行中")
-              : c("Start research", "开始研究")}
+            {running ? c("Researching", "研究进行中") : c("Start research", "开始研究")}
           </Button>
         </div>
       </div>
@@ -576,25 +520,19 @@ function RunView({
   symbols: string[];
 }) {
   const results = run.results ?? [];
-  const done = results.filter(
-    (r) => r.status === "completed" || r.status === "failed",
-  ).length;
+  const done = results.filter((r) => r.status === "completed" || r.status === "failed").length;
 
   return (
     <section className="space-y-3" aria-live="polite">
       <Card className="space-y-3 p-4">
         <div className="flex items-center gap-3">
-          <h3 className="text-sm font-semibold text-foreground">
-            {c("Conclusion", "综合结论")}
-          </h3>
+          <h3 className="text-sm font-semibold text-foreground">{c("Conclusion", "综合结论")}</h3>
           <StanceText stance={run.stance} c={c} />
           <span className="figure ml-auto text-xs text-muted-foreground">
             {formatRunTime(run.started_at, locale)}
           </span>
         </div>
-        {run.question && (
-          <p className="text-sm text-muted-foreground">{run.question}</p>
-        )}
+        {run.question && <p className="text-sm text-muted-foreground">{run.question}</p>}
         {run.status === "running" && (
           <div className="space-y-2">
             <RelayBar
@@ -617,10 +555,7 @@ function RunView({
           </p>
         ) : run.status !== "running" ? (
           <p className="text-sm text-muted-foreground">
-            {c(
-              "No combined conclusion for this run.",
-              "这轮没有生成综合结论。",
-            )}
+            {c("No combined conclusion for this run.", "这轮没有生成综合结论。")}
           </p>
         ) : null}
         {run.status === "partial" && run.synthesis && (
@@ -636,12 +571,7 @@ function RunView({
       <ListCard className="p-1.5 sm:p-2">
         <ListRows>
           {results.map((result) => (
-            <ResultRow
-              key={result.agent}
-              result={result}
-              c={c}
-              symbols={symbols}
-            />
+            <ResultRow key={result.agent} result={result} c={c} symbols={symbols} />
           ))}
         </ListRows>
       </ListCard>
@@ -649,15 +579,7 @@ function RunView({
   );
 }
 
-function ResultRow({
-  result,
-  c,
-  symbols,
-}: {
-  result: AgentResult;
-  c: Copy;
-  symbols: string[];
-}) {
+function ResultRow({ result, c, symbols }: { result: AgentResult; c: Copy; symbols: string[] }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const toolLabel = (name: string) => {
@@ -668,8 +590,7 @@ function ResultRow({
     return label === key ? t("chat.tools.generic") : label;
   };
   const Icon = AGENT_META[result.agent].icon;
-  const expandable =
-    result.status === "completed" || result.status === "failed";
+  const expandable = result.status === "completed" || result.status === "failed";
 
   return (
     <Collapsible asChild open={open} onOpenChange={setOpen}>
@@ -721,24 +642,16 @@ function ResultRow({
         <CollapsibleContent className="px-2.5 mb-3">
           {result.status === "completed" ? (
             <div className="space-y-3">
-              <ResearchMarkdown symbols={symbols}>
-                {result.content}
-              </ResearchMarkdown>
+              <ResearchMarkdown symbols={symbols}>{result.content}</ResearchMarkdown>
               {result.tools_used.length > 0 && (
                 <p className="text-xs text-muted-foreground">
                   {c("Data used", "使用的数据")}:{" "}
-                  <span>
-                    {Array.from(new Set(result.tools_used))
-                      .map(toolLabel)
-                      .join(" · ")}
-                  </span>
+                  <span>{Array.from(new Set(result.tools_used)).map(toolLabel).join(" · ")}</span>
                 </p>
               )}
             </div>
           ) : (
-            <p className="text-xs text-muted-foreground [overflow-wrap:anywhere]">
-              {result.error}
-            </p>
+            <p className="text-xs text-muted-foreground [overflow-wrap:anywhere]">{result.error}</p>
           )}
         </CollapsibleContent>
       </li>

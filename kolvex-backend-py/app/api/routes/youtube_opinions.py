@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, StrictStr
 
 from app.api.dependencies.auth import verify_admin
 from app.core.supabase import get_supabase_service
-from app.services import opinion_outcomes
+from app.services import opinion_outcomes, opinion_review
 from app.services.youtube_stock_opinions import YouTubeStockOpinionService
 from supabase import Client
 
@@ -159,6 +159,27 @@ async def get_youtube_stock_detail(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to load stock opinion detail: {str(e)}",
+        )
+
+
+@router.get("/review")
+async def get_youtube_opinion_review(
+    service: YouTubeStockOpinionService = Depends(get_service),
+):
+    """How stocks moved after bullish and bearish opinions, across all opinions (versus SPY)."""
+    try:
+        return await asyncio.to_thread(opinion_review.get_review, service.all_rows)
+    except opinion_review.ReviewUnavailable as e:
+        logger.info("Opinion review not ready: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="building" if str(e) == "building" else "Review is temporarily unavailable",
+        )
+    except Exception:
+        logger.exception("Failed to load opinion review")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to load opinion review",
         )
 
 

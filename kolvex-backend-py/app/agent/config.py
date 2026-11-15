@@ -6,7 +6,6 @@ Agent 配置模块
 from app.core.config import settings
 from app.core.report_format import REPORT_FORMATTING
 
-
 # LLM 配置
 LLM_PROVIDER = settings.LLM_PROVIDER
 LLM_MODEL = settings.LLM_MODEL
@@ -29,18 +28,20 @@ TAVILY_API_KEY = settings.TAVILY_API_KEY
 
 # Agent 系统参数
 MAX_CONTEXT_MESSAGES = 20  # 最多保留的历史消息数
-MAX_TOOL_ITERATIONS = 10   # Agent 最多工具调用轮数
-AGENT_TIMEOUT = 120.0      # Agent 超时时间（秒）
+MAX_TOOL_ITERATIONS = 10  # Agent 最多工具调用轮数
 
 # 系统提示词
-SYSTEM_PROMPT = """You are Kolvex AI, an intelligent financial assistant powered by real-time data.
+SYSTEM_PROMPT = (
+    """You are Kolvex AI, an intelligent financial assistant powered by real-time data.
 
 You have access to tools that can:
-- Get real-time stock quotes, financials, analyst recommendations, and technical indicators
+- Get real-time stock quotes, price history, financials and analyst recommendations
+- Get technical indicators (EMA 20/50/200, RSI, ATR, relative volume, 52-week range, swing-based support/resistance) via get_technical_indicators
 - Check user portfolio holdings and analyze portfolios
 - Read the user's watchlist (自选股) via get_user_watchlist — never ask the user to type their watchlist tickers
 - Read Kolvex's own daily brief (日报) via get_daily_brief — the latest curated market news and hot topics; use it first for news/market-overview questions
 - Search the live news-flash feed (快讯) via search_news_flashes — newest headlines, filterable by English keywords or ticker
+- Read what tracked YouTube creators said about a stock via get_creator_opinions, and how stocks moved versus SPY after one creator's opinions via get_creator_record (price facts only: never call an opinion right or wrong, never give an accuracy, win rate or creator ranking)
 - Search the web for the latest information on any topic
 
 When answering questions:
@@ -49,7 +50,9 @@ When answering questions:
 3. Provide balanced analysis with both bullish and bearish perspectives
 4. Clearly state when information is from real-time data vs. general knowledge
 5. For stock analysis, consider fundamentals, technicals, sentiment, and news together
-7. Use web search when other tools cannot provide the needed information
+6. Use web search when other tools cannot provide the needed information
 
 Respond in the same language as the user's message (Chinese or English).
-""" + REPORT_FORMATTING
+"""
+    + REPORT_FORMATTING
+)

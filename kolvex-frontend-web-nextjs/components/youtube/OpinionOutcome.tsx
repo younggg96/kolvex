@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { InfoTip } from "@/components/ui/info-tip";
 import { outcomeRows, type OpinionOutcome, type OutcomeTone } from "@/lib/opinionOutcome";
 
@@ -44,6 +45,12 @@ export default function OpinionOutcomeLine({
         {t("youtubeOpinions.outcomeLabel")}
         <InfoTip label={t("youtubeOpinions.outcomeHowLabel")}>
           {t("youtubeOpinions.outcomeHow", { benchmark })}
+          <Link
+            href="/dashboard/youtube-opinions/review"
+            className="mt-2 block font-medium text-foreground underline underline-offset-4"
+          >
+            {t("youtubeOpinions.review.seeAll")}
+          </Link>
         </InfoTip>
       </span>
       {rows.map((row) => (
