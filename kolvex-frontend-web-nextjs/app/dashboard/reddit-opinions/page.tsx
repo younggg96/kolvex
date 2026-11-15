@@ -359,7 +359,7 @@ export default function RedditOpinionsPage() {
                   <>
                     <div className="md:hidden">
                       <ListColumnHeader>
-                        <div className="grid w-full grid-cols-[minmax(0,1fr)_5.5rem_1rem] items-center gap-2 px-2 py-3">
+                        <div className="grid w-full grid-cols-[minmax(0,1fr)_5.5rem_1rem] items-center gap-2 px-2 pb-3 md:py-3">
                           <span>{t("redditOpinions.stock")}</span>
                           <span className="text-right">{t("redditOpinions.mobileMentions")}</span>
                           <span />
