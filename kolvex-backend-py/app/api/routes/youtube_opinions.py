@@ -183,6 +183,47 @@ async def get_youtube_opinion_review(
         )
 
 
+def _review_unavailable(error: "opinion_review.ReviewUnavailable") -> HTTPException:
+    logger.info("Opinion review not ready: %s", error)
+    return HTTPException(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        detail="building" if str(error) == "building" else "Review is temporarily unavailable",
+    )
+
+
+@router.get("/review/opinions")
+async def get_youtube_opinion_review_opinions(
+    horizon: int = Query(..., description="Trading sessions held: 5 or 20"),
+    sentiment: str = Query(..., pattern="^(bullish|bearish)$"),
+    low: Optional[float] = Query(None, description="Inclusive lower bound, percent vs SPY"),
+    high: Optional[float] = Query(None, description="Exclusive upper bound, percent vs SPY"),
+    service: YouTubeStockOpinionService = Depends(get_service),
+):
+    """The opinions behind one bar of the review histogram, newest first."""
+    try:
+        return await asyncio.to_thread(
+            opinion_review.opinions_in_bin, service.all_rows, horizon, sentiment, low, high
+        )
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Unknown horizon"
+        )
+    except opinion_review.ReviewUnavailable as e:
+        raise _review_unavailable(e)
+
+
+@router.get("/creators/{channel_id}/review")
+async def get_youtube_creator_review(
+    channel_id: str,
+    service: YouTubeStockOpinionService = Depends(get_service),
+):
+    """One creator's price-after-opinion card, behind the sample and time-span gates."""
+    try:
+        return await asyncio.to_thread(opinion_review.creator_review, service.all_rows, channel_id)
+    except opinion_review.ReviewUnavailable as e:
+        raise _review_unavailable(e)
+
+
 @router.get("/stocks/{ticker}/outcomes")
 async def get_youtube_stock_outcomes(
     ticker: str,

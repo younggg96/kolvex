@@ -10,6 +10,7 @@ from evals.opinion_extraction import (
     load_cases,
     main,
     read_opinions,
+    report,
     score_case,
     score_runs,
 )
@@ -144,6 +145,23 @@ class ScoreCaseTests(unittest.TestCase):
         scored = score_runs([CASE["negation_bear"]], [{}])
         self.assertEqual(scored["metrics"]["missing_rate"], 1)
         self.assertEqual(scored["metrics"]["ticker_recall"], 0)
+
+    def test_no_answers_give_no_data_not_a_pass(self):
+        scored = score_runs(CASES, [{}])
+        self.assertIsNone(scored["metrics"]["invented_rate"])
+        self.assertIsNone(scored["metrics"]["misread_rate"])
+        lines = report(scored).splitlines()
+        self.assertIn("  negation_bear  no prediction", lines)
+        self.assertFalse(any("not_found" in line for line in lines))
+
+    def test_missing_runs_do_not_dilute_invented_rate(self):
+        bad = {"macro_no_stock": {"opinions": [op("SPY", "bullish")]}}
+        scored = score_runs([CASE["macro_no_stock"], CASE["negation_bear"]], [bad])
+        self.assertEqual(scored["metrics"]["invented_rate"], 1)
+
+    def test_clean_run_prints_no_problems_heading(self):
+        scored = score_runs(CASES, [{c["id"]: gold(c) for c in CASES}])
+        self.assertNotIn("Problems:", report(scored))
 
     def test_direction_changing_between_runs_is_reported(self):
         runs = [{"negation_bear": {"opinions": [op("TSLA", s)]}} for s in ("bearish", "neutral")]

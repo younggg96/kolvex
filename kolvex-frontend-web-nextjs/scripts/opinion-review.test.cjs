@@ -11,7 +11,14 @@ function load(file, requires = {}) {
     ts.transpileModule(fs.readFileSync(path.join(__dirname, "..", file), "utf8"), {
       compilerOptions: { module: ts.ModuleKind.CommonJS },
     }).outputText,
-    { exports: fixture.exports, require: (name) => requires[name], Math, Number, String },
+    {
+      exports: fixture.exports,
+      require: (name) => requires[name],
+      Math,
+      Number,
+      String,
+      URLSearchParams,
+    },
   );
   return fixture.exports;
 }
@@ -78,4 +85,19 @@ test("every review string exists in both languages with the same placeholders", 
 test("the copy states facts, never a verdict on creators", () => {
   const text = JSON.stringify([zh.youtubeOpinions.review, en.youtubeOpinions.review]);
   assert.doesNotMatch(text, /准确率|胜率|靠谱|说对|accuracy|win rate|right call/i);
+});
+
+test("a bar's opinion query keeps both edges and leaves open-ended ones out", () => {
+  assert.equal(
+    review.binQuery(20, "bullish", { low: -5, high: 0, count: 3 }),
+    "horizon=20&sentiment=bullish&low=-5&high=0",
+  );
+  assert.equal(
+    review.binQuery(5, "bearish", { low: null, high: -20, count: 1 }),
+    "horizon=5&sentiment=bearish&high=-20",
+  );
+  assert.equal(
+    review.binQuery(5, "bearish", { low: 20, high: null, count: 1 }),
+    "horizon=5&sentiment=bearish&low=20",
+  );
 });

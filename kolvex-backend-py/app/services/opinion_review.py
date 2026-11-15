@@ -32,6 +32,16 @@ HISTOGRAM_EDGES = (-20, -15, -10, -5, 0, 5, 10, 15, 20)
 CONFIDENCE_EDGES = (0.5, 0.7, 0.85)
 STRENGTH_EDGES = (30, 60, 80)
 LOOKBACK_PAD_DAYS = 7
+# A creator card needs this many 20-session calls spread over at least this many days, and
+# each half of their history needs MIN_HALF calls before its figure is shown.
+MIN_CREATOR_SPAN_DAYS = 90
+MIN_HALF = 10
+CREATOR_HORIZON = 20
+MAX_LISTED_OPINIONS = 200
+# Snapshot keys that never leave the server through /review (per-creator data lives here).
+PRIVATE_KEYS = ("creators", "events")
+# Bumped when the snapshot shape changes, so an older file is rebuilt instead of served.
+SNAPSHOT_VERSION = 3
 RETRY_AFTER_FAILURE_SECONDS = 600.0
 SNAPSHOT_PATH = Path(
     os.getenv(
@@ -135,6 +145,97 @@ def _week(day: str) -> str:
     return (parsed - timedelta(days=parsed.weekday())).isoformat()
 
 
+def _event_record(event: dict, opinion: dict) -> dict[str, Any]:
+    """One opinion in the drill-down list: where it came from and what the price did."""
+    horizons = {}
+    for days, result in event["horizons"].items():
+        if result.get("excess_return_pct") is not None:
+            horizons[str(days)] = {
+                "return_pct": result["return_pct"],
+                "benchmark_return_pct": result["benchmark_return_pct"],
+                "excess_return_pct": result["excess_return_pct"],
+            }
+    return {
+        "id": str(opinion.get("id")),
+        "channel_id": opinion.get("channel_id"),
+        "channel_title": opinion.get("channel_title"),
+        "ticker": event["ticker"],
+        "sentiment": event["sentiment"],
+        "video_id": opinion.get("video_id"),
+        "video_title": opinion.get("video_title"),
+        "video_url": opinion.get("video_url"),
+        "published_at": opinion.get("video_published_at"),
+        "entry_date": event["entry_date"],
+        "horizons": horizons,
+    }
+
+
+def _half(events: list[dict], horizon: int) -> dict[str, Any]:
+    values = [
+        e["horizons"][horizon]["excess_return_pct"]
+        for e in events
+        if e["horizons"].get(horizon, {}).get("excess_return_pct") is not None
+    ]
+    if len(values) < MIN_HALF:
+        return {"n": len(values), "enough": False}
+    summary = bt.summarize(values)
+    return {
+        "n": len(values),
+        "enough": True,
+        "mean_excess_pct": summary["mean_pct"],
+        "beat_share_pct": summary["hit_rate_pct"],
+    }
+
+
+def _creator_records(scored: list[dict]) -> dict[str, dict[str, Any]]:
+    """Per-creator figures, only behind the sample and time-span gates. Never compared."""
+    directional = [e for e in scored if e["sentiment"] in SENTIMENTS]
+    by_creator: dict[str, list[dict]] = {}
+    for event in directional:
+        if event.get("channel_id"):
+            by_creator.setdefault(event["channel_id"], []).append(event)
+    records = {}
+    for channel_id, events in by_creator.items():
+        counted = [
+            e for e in events
+            if e["horizons"].get(CREATOR_HORIZON, {}).get("excess_return_pct") is not None
+        ]  # fmt: skip
+        days = sorted(e["entry_date"] for e in counted)
+        span = (date.fromisoformat(days[-1]) - date.fromisoformat(days[0])).days if days else 0
+        record: dict[str, Any] = {
+            "channel_id": channel_id,
+            "channel_title": events[0].get("channel_title"),
+            "counted": len(counted),
+            "first_entry": days[0] if days else None,
+            "last_entry": days[-1] if days else None,
+            "span_days": span,
+            "enough": len(counted) >= MIN_GROUP and span >= MIN_CREATOR_SPAN_DAYS,
+        }
+        if record["enough"]:
+            groups, splits = {}, {}
+            for horizon in HORIZONS:
+                # Median entry date of the calls this horizon counts, so each half holds about
+                # the same number of them (shorter horizons include more recent calls).
+                dates = sorted(
+                    e["entry_date"] for e in events
+                    if e["horizons"].get(horizon, {}).get("excess_return_pct") is not None
+                )  # fmt: skip
+                split = dates[len(dates) // 2]
+                splits[str(horizon)] = split
+                groups[str(horizon)] = {}
+                for sentiment in SENTIMENTS:
+                    members = [e for e in events if e["sentiment"] == sentiment]
+                    groups[str(horizon)][sentiment] = {
+                        **_stats(members, horizon),
+                        "early": _half([e for e in members if e["entry_date"] < split], horizon),
+                        "late": _half([e for e in members if e["entry_date"] >= split], horizon),
+                    }
+            record["groups"] = groups
+            record["split_dates"] = splits
+        records[channel_id] = record
+    return records
+
+
 def build_snapshot(
     rows: list[dict[str, Any]],
     download: BatchDownloader,
@@ -184,6 +285,7 @@ def build_snapshot(
             week[event["sentiment"]] += 1
     return {
         "method_version": bt.METHOD_VERSION,
+        "snapshot_version": SNAPSHOT_VERSION,
         "benchmark": bt.BENCHMARK,
         "horizons": list(HORIZONS),
         "min_group": MIN_GROUP,
@@ -201,6 +303,12 @@ def build_snapshot(
             "not_started": statuses.get("pending", 0),
         },
         "groups": groups,
+        "creators": _creator_records(scored),
+        "events": [
+            _event_record(event, opinion)
+            for event, opinion in zip(events, kept)
+            if event["status"] == "scored" and event["sentiment"] in SENTIMENTS
+        ],
         "market": {
             "benchmark": [
                 {"date": b["date"], "close": round(float(b["close"]), 2)}
@@ -247,7 +355,8 @@ def _read_file(path: Path) -> Optional[dict[str, Any]]:
         data = json.loads(path.read_text())
     except (OSError, ValueError):
         return None
-    return data if data.get("method_version") == bt.METHOD_VERSION else None
+    current = data.get("method_version") == bt.METHOD_VERSION
+    return data if current and data.get("snapshot_version") == SNAPSHOT_VERSION else None
 
 
 def _write_file(path: Path, snapshot: dict[str, Any]) -> None:
@@ -285,22 +394,23 @@ def _build(load_rows, download, path: Path, now: datetime) -> None:
             state.building = False
 
 
-def get_review(
+def _snapshot(
     load_rows: Callable[[], list[dict[str, Any]]],
     download: BatchDownloader = download_many,
     now: Optional[datetime] = None,
-    spawn: Callable[[Callable[[], None]], Any] = lambda fn: threading.Thread(
-        target=fn, name="opinion-review", daemon=True
-    ).start(),
+    spawn: Optional[Callable[[Callable[[], None]], Any]] = None,
     path: Optional[Path] = None,
-) -> dict[str, Any]:
-    """The latest snapshot, starting a rebuild when it is out of date. Never blocks on a build.
+) -> tuple[dict[str, Any], bool]:
+    """The latest full snapshot and whether a rebuild is running. Never blocks on a build.
 
-    `refreshing` is true while a newer snapshot is being built. Raises ReviewUnavailable when
-    there is no snapshot at all yet.
+    Starts a rebuild when the snapshot is out of date. Raises ReviewUnavailable when there is
+    no snapshot at all yet.
     """
     now = now or datetime.now(timezone.utc)
     path = path or SNAPSHOT_PATH
+    spawn = spawn or (
+        lambda fn: threading.Thread(target=fn, name="opinion-review", daemon=True).start()
+    )
     state = _state
     with state.lock:
         if not state.loaded_file:
@@ -321,4 +431,73 @@ def get_review(
             snapshot, building = state.snapshot, state.building
     if snapshot is None:
         raise ReviewUnavailable("building" if building else "unavailable")
-    return {**snapshot, "refreshing": building}
+    return snapshot, building
+
+
+def get_review(
+    load_rows: Callable[[], list[dict[str, Any]]],
+    download: BatchDownloader = download_many,
+    **options: Any,
+) -> dict[str, Any]:
+    """The aggregate page: every group, no creator. `refreshing` while a rebuild runs."""
+    snapshot, building = _snapshot(load_rows, download, **options)
+    public = {k: v for k, v in snapshot.items() if k not in PRIVATE_KEYS}
+    return {**public, "refreshing": building}
+
+
+def opinions_in_bin(
+    load_rows: Callable[[], list[dict[str, Any]]],
+    horizon: int,
+    sentiment: str,
+    low: Optional[float],
+    high: Optional[float],
+    **options: Any,
+) -> dict[str, Any]:
+    """The opinions behind one histogram bar (low inclusive, high exclusive), newest first."""
+    if horizon not in HORIZONS or sentiment not in SENTIMENTS:
+        raise ValueError("unknown horizon or sentiment")
+    snapshot, _ = _snapshot(load_rows, **options)
+    matches = []
+    for record in snapshot.get("events", []):
+        result = record["horizons"].get(str(horizon))
+        if record["sentiment"] != sentiment or not result:
+            continue
+        value = result["excess_return_pct"]
+        if (low is None or value >= low) and (high is None or value < high):
+            matches.append({**{k: v for k, v in record.items() if k != "horizons"}, **result})
+    matches.sort(key=lambda item: (item.get("published_at") or "", item["id"]), reverse=True)
+    return {
+        "horizon": horizon,
+        "sentiment": sentiment,
+        "low": low,
+        "high": high,
+        "total": len(matches),
+        "opinions": matches[:MAX_LISTED_OPINIONS],
+        "as_of": snapshot["as_of"],
+        "benchmark": snapshot["benchmark"],
+    }
+
+
+def creator_review(
+    load_rows: Callable[[], list[dict[str, Any]]], channel_id: str, **options: Any
+) -> dict[str, Any]:
+    """One creator's own card. Below the gates it only says how much history there is."""
+    snapshot, building = _snapshot(load_rows, **options)
+    record = snapshot.get("creators", {}).get(channel_id) or {
+        "channel_id": channel_id,
+        "counted": 0,
+        "first_entry": None,
+        "last_entry": None,
+        "span_days": 0,
+        "enough": False,
+    }
+    return {
+        **record,
+        "benchmark": snapshot["benchmark"],
+        "horizons": snapshot["horizons"],
+        "min_group": MIN_GROUP,
+        "min_span_days": MIN_CREATOR_SPAN_DAYS,
+        "min_half": MIN_HALF,
+        "as_of": snapshot["as_of"],
+        "refreshing": building,
+    }

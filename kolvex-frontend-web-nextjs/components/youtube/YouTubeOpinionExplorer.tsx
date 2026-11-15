@@ -70,6 +70,7 @@ import CreatorProfileDialog from "./CreatorProfileDialog";
 import OpinionCard from "./OpinionCard";
 import { useStockOutcomes } from "@/hooks/useStockOutcomes";
 import OtherCreatorOpinions from "./OtherCreatorOpinions";
+import CreatorReviewCard from "./CreatorReviewCard";
 import OpinionDistribution from "./OpinionDistribution";
 import OpinionStrength from "./OpinionStrength";
 import StockDirectoryInsight from "./StockDirectoryRow";
@@ -2088,6 +2089,9 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                           <OpinionDistribution summary={overview} compact />
                         )}
                       </>
+                    )}
+                    {route.creator && !route.ticker && (
+                      <CreatorReviewCard key={route.creator} channelId={route.creator} />
                     )}
                     {route.creator && !route.ticker && (
                       <section className="min-w-0">
