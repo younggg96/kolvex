@@ -181,12 +181,7 @@
       "badge": "Plaid 投资数据与交易复盘",
       "headline": "Kolvex 投资组合工作台",
       "headlineHighlight": "让每一笔交易都有上下文",
-      "phrases": [
-        "社交智能",
-        "AI 驱动分析",
-        "实时信号",
-        "聪明资金追踪"
-      ],
+      "phrases": ["社交智能", "AI 驱动分析", "实时信号", "聪明资金追踪"],
       "subheadline": "通过 Plaid 连接投资账户，统一管理持仓、交易、盈亏和组合风险，再用您选择的 AI 模型完成复盘。",
       "startFreeTrial": "使用 Plaid 连接",
       "trustBadges": {
@@ -268,38 +263,22 @@
         {
           "title": "使用 Plaid 连接",
           "description": "通过 Plaid 只读连接支持的券商和投资账户。",
-          "details": [
-            "Plaid Investments",
-            "持仓和交易记录",
-            "安全账户授权"
-          ]
+          "details": ["Plaid Investments", "持仓和交易记录", "安全账户授权"]
         },
         {
           "title": "同步投资组合",
           "description": "把持仓、股票交易和期权活动整理到同一个视图。",
-          "details": [
-            "每日自动同步",
-            "股票与期权数据",
-            "历史筛选和 CSV 导出"
-          ]
+          "details": ["每日自动同步", "股票与期权数据", "历史筛选和 CSV 导出"]
         },
         {
           "title": "检查风险与表现",
           "description": "查看真实盈亏、卖出时机和当前 wash sale 风险。",
-          "details": [
-            "已实现与未实现盈亏",
-            "Wash sale 风险清单",
-            "卖出后走势复盘"
-          ]
+          "details": ["已实现与未实现盈亏", "Wash sale 风险清单", "卖出后走势复盘"]
         },
         {
           "title": "改进交易流程",
           "description": "使用您选择的 AI 模型和量化风控计划复盘交易。",
-          "details": [
-            "AI Markdown 交易复盘",
-            "止损止盈计划",
-            "策略回测"
-          ]
+          "details": ["AI Markdown 交易复盘", "止损止盈计划", "策略回测"]
         }
       ]
     },
@@ -1320,10 +1299,10 @@
       "notEnough": "样本还少，满 {min} 条后显示统计。",
       "meanVs": "股价相对 {benchmark}，平均",
       "beatShare": "股价跑赢 {benchmark} 的比例",
-      "distribution": "每条观点比大盘多涨 / 少涨多少（柱上数字是条数）",
+      "distribution": "每根柱子是一组观点：股价比大盘跑输或跑赢多少（柱上数字是条数）",
       "marketTitle": "同期 {benchmark} 走势",
       "marketSummary": "{from} 至 {to}，{benchmark}",
-      "marketLegend": "灰色柱是每周发布的看涨、看跌观点条数。大盘整体下跌的时段，看涨观点之后的股价通常也会下跌。",
+      "marketLegend": "底部柱子是每周发布的观点条数：绿色是看涨，红色是看跌。大盘整体下跌的时段，看涨观点之后的股价通常也会下跌。",
       "weekCount": "{week} 这周：看涨 {bullish} 条，看跌 {bearish} 条",
       "segmentsTitle": "按条件拆分（{days}）",
       "sentimentLabel": "观点方向",
@@ -1334,7 +1313,7 @@
       "group": "分组",
       "count": "条数",
       "meanShort": "平均比大盘",
-      "beatShort": "比大盘涨得多",
+      "beatShort": "跑赢大盘",
       "tooFew": "样本不足",
       "segmentUnknown": "未标注",
       "segmentBelow": "低于 {value}",
@@ -1366,30 +1345,33 @@
       "horizonNote": "1 周 = 5 个交易日，1 个月 = 20 个交易日，都从视频发出后的第一个开盘价算起。",
       "bullishCard": "博主看涨的观点 · {count} 条",
       "bearishCard": "博主看跌的观点 · {count} 条",
-      "headlineLess": "这些股票平均比大盘少涨 {value}",
-      "headlineMore": "这些股票平均比大盘多涨 {value}",
-      "headlineSame": "这些股票平均和大盘涨跌差不多",
+      "headlineLess": "这些股票平均跑输大盘 {value}",
+      "headlineMore": "这些股票平均跑赢大盘 {value}",
+      "headlineSame": "这些股票平均和大盘差不多",
       "stockAverage": "股价平均",
       "marketAverage": "同期大盘（{benchmark}）",
-      "beatLine": "{n} 条里有 {beat} 条比大盘涨得多（{share}%）",
+      "beatLine": "{n} 条里有 {beat} 条跑赢大盘（{share}%）",
       "detailLabel": "更多统计",
       "detailTip": "中位数：一半观点比大盘的差距低于 {median}，一半高于它，不容易被个别极端的股票带偏。比大盘涨得多的比例受样本量影响，按 95% 区间估计在 {low}% 到 {high}% 之间。",
-      "axisWorse": "比大盘差",
-      "axisSame": "和大盘一样",
-      "axisBetter": "比大盘好",
-      "binHint": "点柱子，看是哪些观点",
-      "relBelow": "少涨 {value} 以上",
-      "relAbove": "多涨 {value} 以上",
-      "relLessRange": "少涨 {low}–{high}",
-      "relMoreRange": "多涨 {low}–{high}",
-      "binTitle": "博主{sentiment}后 {horizon}，股价比大盘{range} · {count} 条",
+      "axisWorse": "跑输大盘",
+      "axisSame": "和大盘持平",
+      "axisBetter": "跑赢大盘",
+      "binHint": "点一根柱子，在下方列出这组观点",
+      "binCount": "{count} 条观点",
+      "binClickToList": "点击查看",
+      "binListed": "已在下方列出",
+      "relBelow": "跑输大盘 {value} 以上",
+      "relAbove": "跑赢大盘 {value} 以上",
+      "relLessRange": "跑输大盘 {low}–{high}",
+      "relMoreRange": "跑赢大盘 {low}–{high}",
+      "binTitle": "博主{sentiment}后 {horizon}，股价{range} · {count} 条",
       "closeList": "收起",
       "saidOn": "{date} 说{sentiment}",
       "cellStock": "{ticker} 股价",
       "cellMarket": "同期大盘",
       "cellDiff": "差距",
-      "diffLess": "少涨 {value}",
-      "diffMore": "多涨 {value}",
+      "diffLess": "跑输 {value}",
+      "diffMore": "跑赢 {value}",
       "diffSame": "持平"
     },
     "noOtherCreatorOpinions": "暂未收录其他博主对 {ticker} 的观点。",
