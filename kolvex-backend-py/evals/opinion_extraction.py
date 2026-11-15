@@ -215,12 +215,17 @@ def _ratio(numerator: int, denominator: int) -> Optional[float]:
 def summarize(results: List[Dict[str, Any]]) -> Dict[str, Optional[float]]:
     total = lambda key: sum(len(r[key]) if isinstance(r[key], list) else r[key] for r in results)  # noqa: E731
     found = total("found")
+    # A run with no answer cannot invent or misread anything; counting it would be a false pass.
+    # Missing answers still count against recall and missing_rate.
+    answered = [r for r in results if not r["missing"]]
     return {
         "ticker_recall": _ratio(found, total("expected")),
         "sentiment_accuracy": _ratio(found - total("wrong_sentiment"), found),
         "flip_rate": _ratio(total("flips"), found),
-        "invented_rate": _ratio(sum(bool(r["invented"]) for r in results), len(results)),
-        "misread_rate": _ratio(total("misread"), total("mention_only")),
+        "invented_rate": _ratio(sum(bool(r["invented"]) for r in answered), len(answered)),
+        "misread_rate": _ratio(
+            sum(len(r["misread"]) for r in answered), sum(r["mention_only"] for r in answered)
+        ),
         "target_recall": _ratio(total("targets_found"), total("targets_expected")),
         "target_precision": _ratio(total("targets_correct"), total("targets_predicted")),
         "ungrounded_target_rate": _ratio(total("ungrounded_targets"), total("targets_predicted")),
@@ -293,9 +298,12 @@ def report(scored: Dict[str, Any], baseline: Optional[Dict[str, Any]] = None) ->
     problems = defaultdict(list)
     for r in scored["results"]:
         if r["missing"]:
+            # not_found would only repeat every expected stock of a case with no answer.
             problems[r["case"]].append("no prediction")
+            continue
         for key in _PROBLEM_KEYS:
-            problems[r["case"]] += [f"{key}: {item}" for item in r[key]]
+            problems[r["case"]].extend(f"{key}: {item}" for item in r[key])
+    problems = {case: items for case, items in problems.items() if items}
     if problems:
         lines.append("Problems:")
         for case, items in problems.items():
