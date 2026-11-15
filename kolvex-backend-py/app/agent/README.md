@@ -1,759 +1,172 @@
-# Kolvex AI Agent System
+# Kolvex AI 聊天 Agent
 
-基于 **LangGraph** 构建的多 Agent 金融智能助手系统。
+> 2026-11-15 按代码重写。文档和代码冲突时以代码为准，并更新本文件。
+> 本文件只覆盖 AI 聊天（`/api/v1/chat`）和研究工作区借用的工具。AI 研究报告库是另一套系统，见文末「和 AI 研究报告的关系」。
 
----
+## 1. 它做什么
 
-## 目录
+用户在 Web / App 的 AI 聊天里提问，后端用 LangGraph 的 ReAct Agent 回答：模型自己决定调用哪些工具取实时数据，再组织成回答。
 
-- [系统概述](#系统概述)
-- [架构设计](#架构设计)
-- [目录结构](#目录结构)
-- [核心模块详解](#核心模块详解)
-  - [1. LLM Factory (llm.py)](#1-llm-factory-llmpy)
-  - [2. Agent State (state.py)](#2-agent-state-statepy)
-  - [3. Tools 工具层](#3-tools-工具层)
-  - [4. Graphs 图定义层](#4-graphs-图定义层)
-  - [5. Memory 记忆层](#5-memory-记忆层)
-- [请求处理流程](#请求处理流程)
-- [API 接口说明](#api-接口说明)
-- [配置与部署](#配置与部署)
-- [使用示例](#使用示例)
-- [扩展指南](#扩展指南)
+- **路由**：每轮先判断意图，分给两个子 Agent 之一。两者工具相同，区别只在提示词。
+  - `financial`：问答、查数字。提示词要求第一句给答案，查一两个数字时不超过约 150 词。
+  - `research`：深度分析、多空、「该不该买」，提示词要求多步取数、写结构化报告。
+- **数字核对**：报价、营收、财务指标都从工具结果里抽成 evidence，答案里的数字逐个对照（见第 5 节）。
+- **多模型**：用户可选模型，也可以填自己的 API key（见第 6 节）。
 
----
+## 2. 一轮请求怎么走
 
-## 系统概述
+入口：`app/api/routes/chat/routes.py` → `graphs/supervisor.py`。
 
-Kolvex AI Agent 不是一个简单的 LLM 聊天机器人，而是一个**能够自主调用工具获取实时数据**的智能系统。
+1. 保存用户消息（重试同一问题时复用上一条未回答的消息，`memory.save_user_message_once`）。
+2. 加载本对话最近 20 条消息（`memory.load_conversation_history`，见第 7 节）。
+3. 读用户自己的 API key。
+4. `_classify_intent`：先用关键词正则（`route_by_keywords`），明确的「研报 / 深度 / 该不该买」→ research，80 字以内的查数问题 → financial；判断不出来才调一次快模型。快模型回答里没有 `research` 一律按 financial。
+5. `_create_agent_for_request`：按用户选的模型、数据源、技能拼出工具集和提示词，`create_react_agent` 每轮新建。最多 `MAX_TOOL_ITERATIONS`（10）轮工具调用。
+6. 跑 Agent，收集 evidence，修单位错误，核对数字，保存助手消息。
 
-传统方式（改造前）：
+### 接口
 
-```
-用户消息 → LLM → 纯文本回答（基于训练数据，无法获取实时信息）
-```
+| 接口 | 说明 |
+| --- | --- |
+| `POST /api/v1/chat/conversations/{id}/send` | 同步，返回完整回复 |
+| `POST /api/v1/chat/conversations/{id}/stream` | SSE 流式；`continue_on_disconnect=true` 时断开连接也继续生成 |
+| `GET` / `DELETE /api/v1/chat/conversations/{id}/stream` | 查询 / 停止正在进行的一轮 |
+| 其余 `/conversations` 接口 | 对话的增删改查，不涉及 Agent |
 
-Agent 方式（改造后）：
+### 流式事件（`stream_agent`）
 
-```
-用户: "NVDA 现在多少钱？"
-  → Supervisor 分类意图 → Financial Agent
-  → Agent 思考：需要查股价 → 调用 get_stock_quote("NVDA")
-  → 获取到实时数据：$875.28, +2.3%
-  → Agent 组织回答：NVDA 当前价格 $875.28，今日上涨 2.3%...
-```
+| `type` | 含义 |
+| --- | --- |
+| `status` | 阶段：`routing` → `planning` → `writing` |
+| `token` | 回答文字片段 |
+| `token_reset` | 撤回刚才的片段：模型写了几个字后决定去调工具 |
+| `tool_start` / `tool_end` | 工具开始 / 结束，带工具名；前端按工具名显示中英文进度文案 |
+| `done` | 结束，带 `quote_evidence`、`revenue_evidence`、`financial_evidence`、`data_gaps`、`scaled_figures` |
+| `error` | 失败。异常原文只写日志，不发给用户 |
 
-**核心能力：**
+## 3. 工具
 
-| 能力 | 说明 |
-|------|------|
-| 实时股票查询 | 价格、财务指标、分析师评级、历史数据 |
-| 新闻搜索分析 | 多源新闻聚合（Yahoo Finance、Benzinga） |
-| KOL 情感分析 | 推特 KOL 观点汇总、看多/看空比例 |
-| 投资组合分析 | 查看用户持仓、权重、盈亏 |
-| 知识库搜索 | KOL 推文、新闻、小红书帖子全文检索 |
-| 超级投资者持仓 | Dataroma 对冲基金持仓数据 |
-| 深度研究报告 | 自动多步骤调研，生成结构化分析报告 |
-| 多语言支持 | 自动识别中文/英文，用对应语言回复 |
+以 `tools/__init__.py` 的 `AGENT_TOOLS` 为准。financial 和 research 用同一套。
 
----
+| 工具名 | 文件 | 数据来源 | 技能开关 | 功能 |
+|--------|------|---------|---------|------|
+| `get_stock_quote` | stock_tools.py | Finnhub / yfinance | market | 实时股价、涨跌幅、报价时间 |
+| `get_stock_history` | stock_tools.py | yfinance | market | 历史 K 线（最多 60 根） |
+| `get_technical_indicators` | technical_tools.py | yfinance 日线（2 年） | market | EMA 20/50/200、RSI14、ATR14、相对成交量、一年高低点、支撑 / 阻力，见下 |
+| `get_stock_financials` | stock_tools.py | yfinance | fundamentals | PE、利润率、增长等指标 |
+| `get_reported_revenue` | stock_tools.py | SEC XBRL，退回 Yahoo | fundamentals | 直接申报的季度 / 年度营收、同比 |
+| `get_analyst_recommendations` | stock_tools.py | yfinance | fundamentals | 分析师评级、目标价 |
+| `get_company_info` | stock_tools.py | yfinance | fundamentals | 公司概况、行业 |
+| `get_options_chain_summary` | options_tools.py | 期权链服务 | options | 期权链摘要 |
+| `get_creator_opinions` | creator_tools.py | `youtube_stock_opinions` | creators | 某只股票最近的博主观点（带视频链接） |
+| `get_creator_record` | creator_tools.py | `youtube_stock_opinions` + yfinance 复权日线 | creators | 某位博主观点发布后股价相对 SPY 的表现，见下 |
+| `get_daily_brief` | brief_tools.py | Kolvex 日报 | news | 最新日报 |
+| `search_news_flashes` | news_flash_tools.py | 快讯 | news | 按关键词 / 股票搜快讯 |
+| `web_search` | web_tools.py | Tavily | news（且开启 Web 数据源） | 网页搜索 |
+| `get_user_portfolio` | portfolio_tools.py | 用户持仓 | portfolio（且开启 Portfolio 数据源） | 持仓、权重、盈亏（按当前用户绑定） |
+| `get_user_watchlist` | watchlist_tools.py | 用户自选股 | market（仅登录用户） | 自选股列表（按当前用户绑定） |
 
-## 架构设计
+### 数据源和技能开关（`get_tools_for_sources`）
 
-### 整体架构
+- `sources`：前端的数据源开关。`None` 表示全开；`web` 打开 `web_search`，`portfolio` / `plaid` 打开 `get_user_portfolio`。用户关掉的数据源不会被重新打开。
+- `skills`：前端的技能开关（market / fundamentals / options / news / creators / portfolio）。`None` 不过滤；空列表表示一个工具都不给，提示词会要求模型说明没有查实时数据。
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        客户端                                │
-│              Mobile App (RN)  /  Web (Next.js)              │
-└──────────────────────┬──────────────────────────────────────┘
-                       │  POST /api/v1/chat/conversations/{id}/send
-                       │  POST /api/v1/chat/conversations/{id}/stream (SSE)
-                       ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    FastAPI Backend                           │
-│  ┌─────────────┐  ┌──────────────────────────────────────┐ │
-│  │  Chat CRUD   │  │       LangGraph Agent System         │ │
-│  │  (原有接口)   │  │                                      │ │
-│  └─────────────┘  │  ┌──────────────────────────────┐    │ │
-│                    │  │     Supervisor (意图分类)      │    │ │
-│                    │  │  使用 fast LLM 路由到子 Agent  │    │ │
-│                    │  └──────┬───────┬────────┬───────┘    │ │
-│                    │         │       │        │             │ │
-│                    │    ┌────▼──┐ ┌──▼───┐ ┌─▼────┐       │ │
-│                    │    │金融助手│ │研究Agent│ │预警Agent│   │ │
-│                    │    │11 tools│ │10 tools│ │3 tools│     │ │
-│                    │    └───┬───┘ └───┬───┘ └──┬───┘       │ │
-│                    │        └────┬────┘        │            │ │
-│                    │             ▼             ▼            │ │
-│                    │     ┌─────────────────────────┐       │ │
-│                    │     │       Tools 工具层        │       │ │
-│                    │     │  股票 / 新闻 / KOL /     │       │ │
-│                    │     │  组合 / 知识库 / 投资者    │       │ │
-│                    │     └─────────┬───────────────┘       │ │
-│                    └───────────────┼──────────────────────┘ │
-│                                    ▼                        │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │              现有服务层 (Services)                     │   │
-│  │  YFinance / Finnhub / Benzinga / Portfolio /        │   │
-│  │  NewsAggregator / Supabase / Dataroma               │   │
-│  └─────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
-                       │
-                       ▼
-          ┌────────────────────────┐
-          │    LLM Providers       │
-          │  OpenAI / Anthropic    │
-          │  / Ollama (本地)       │
-          └────────────────────────┘
-```
+### `get_technical_indicators`（技术指标）
 
-### Supervisor 路由逻辑
+- 计算全在代码里，复用图表 AI 技术分析的函数（`app/services/technical_analysis.py` 的 `ema` / `rsi` / `atr` / `swing_points` / `candidate_levels`），**不调用模型**。
+- 拉 2 年日线，EMA 用全部数据预热；摆动点、支撑阻力、高低点用最近 252 根。支撑 / 阻力各给离现价最近的 3 个，带触及次数和最后触及日期。
+- 少于 30 根有效 K 线时返回 `no ...` 错误（记为「没有数据」）；数据不够算 EMA200 时该项为 `null`，不用 0。
+- 用的是未复权日线，最后一根可能是当天未收盘的 K 线，返回里有说明。提示词要求只描述指标，不变成目标价或买卖建议。
+- 测试：`tests/test_technical_tools.py`。
 
-```
-用户消息
-   │
-   ▼
-┌──────────────┐    fast LLM    ┌───────────────────┐
-│ classify_    │───────────────▶│  判断意图:          │
-│ intent       │                │  "financial"       │
-│              │                │  "research"        │
-│              │                │  "alert"           │
-└──────────────┘                └────────┬──────────┘
-                                         │
-                    ┌────────────────────┼────────────────────┐
-                    ▼                    ▼                    ▼
-          ┌─────────────┐     ┌──────────────┐     ┌─────────────┐
-          │  Financial   │     │   Research    │     │    Alert     │
-          │  Assistant   │     │    Agent      │     │    Agent     │
-          │              │     │              │     │              │
-          │ 日常问答:     │     │ 深度研究:     │     │ 预警相关:     │
-          │ "AAPL多少钱"  │     │ "分析NVDA"   │     │ "设置提醒"    │
-          │ "最近有啥新闻" │     │ "研究报告"    │     │ "监控股价"    │
-          │ "我的持仓"    │     │ "深度分析"    │     │              │
-          └──────┬───────┘     └──────┬───────┘     └──────┬───────┘
-                 │                    │                     │
-                 └────────────────────┼─────────────────────┘
-                                      ▼
-                               ┌──────────┐
-                               │   END    │
-                               │ 返回回复  │
-                               └──────────┘
-```
+### `get_creator_record`（博主观点后股价）
 
-### 子 Agent 内部 ReAct 循环
+- 输入：博主名称 / `@handle` / channel id，可选股票代码，回看天数（30–1095，默认 365；`null` 为全部）。名称先精确匹配、再模糊匹配；匹配到多位博主时返回 `status: "ambiguous"` 和候选名单，让模型追问，不算数据缺口。
+- 计算：`app/services/creator_record.py`，方法和「回看」页相同（[docs/opinion-backtest.md](../../../docs/opinion-backtest.md)）：首个开盘价入场，5 / 20 个交易日，减去同期 SPY，7 天去重，看涨看跌分开。
+- **只陈述事实**：不返回、提示词也禁止「说对 / 说错」、准确率、胜率、博主排名或博主之间比较。
+- 样本门槛：一组至少 30 条、入场日期跨度至少 90 天才给平均数，并给前后两半各自的平均；不够时只给条数。
+- 行情失败：单只股票失败计入 `price_unavailable`；全部失败返回错误，不用 0 代替。
+- 测试：`tests/test_creator_record.py`。
 
-每个子 Agent 内部使用 LangGraph 的 `create_react_agent`，遵循 **ReAct** 模式：
+### 研究工作区
 
-```
-┌─────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐
-│  用户    │────▶│  思考     │────▶│  行动     │────▶│  观察     │
-│  消息    │     │ (Reason) │     │  (Act)   │     │(Observe) │
-└─────────┘     └──────────┘     └──────────┘     └────┬─────┘
-                     ▲                                   │
-                     │           还需要更多数据？           │
-                     └───────────── Yes ────────────────┘
-                                    │
-                                   No
-                                    │
-                                    ▼
-                              ┌──────────┐
-                              │  最终回复  │
-                              └──────────┘
-```
+`app/services/research_workspace.py` 的 `tools_for` 给每个研究员一小组工具（market：报价、K 线、技术指标、期权；creators：两个博主工具；等等），复用这里的工具函数，但有自己的提示词和流程。
 
-**示例：Research Agent 处理 "帮我分析 NVDA"**
+### 加一个新工具要改的地方
 
-```
-思考: 用户要分析 NVDA，我需要收集多维度数据
-行动: 调用 get_stock_quote("NVDA")        → 获取实时价格
-观察: NVDA $875.28, +2.3%, 市值 2.15T
+1. `tools/<name>_tools.py` 里写 `@tool`，docstring 写清楚何时用、返回什么、回答规则。失败时返回 `{"error": ...}`：以 `no ` / `not found` 开头会被记为「没有数据」，其他记为「暂时不可用」（`data_gaps.py`）。
+2. `tools/__init__.py`：加进 `AGENT_TOOLS` 和 `_CHAT_TOOL_SKILLS`（决定归哪个技能开关）。
+3. `config.py` 的 `SYSTEM_PROMPT` 工具列表里写一行。
+4. 前端进度文案（中英文都要）：Web `components/chat/types.ts` 的 `TOOL_LABELS`、`lib/i18n/locales/{en,zh}.json` 的 `chat.tools`、`components/chat/DataGapNote.tsx`。如果研究工作区也用：Web `WorkspacePanel.tsx` 的 `TOOL_COPY`，App `src/components/Workspace.tsx` 的 `TOOL_NAMES` + `translations/native-en.json`（再跑 `npm run i18n:generate`）。
+5. 测试 + 本文件。
 
-思考: 需要看基本面
-行动: 调用 get_stock_financials("NVDA")   → 获取财务数据
-观察: PE 65.2, 收入增长 122%, 利润率 55.6%
+## 4. 提示词
 
-思考: 看看分析师怎么说
-行动: 调用 get_analyst_recommendations("NVDA") → 获取评级
-观察: 买入 35, 持有 8, 卖出 2, 目标价 $950
+| 位置 | 内容 |
+| --- | --- |
+| `config.py` `SYSTEM_PROMPT` | 两个子 Agent 共用：可用工具、回答原则、跟随用户语言，加上 `app/core/report_format.py` 的排版规则 |
+| `graphs/financial.py` | financial 的角色说明 |
+| `graphs/research.py` | research 的研究步骤；明确说聊天里不能启动 TradingAgents |
+| `graphs/supervisor.py` | 路由提示词；按本轮可用工具追加的规则（报价时间、亿 / billion 换算、营收期间、技能被关时的说明）；financial 的 `ANSWER_SHAPE` |
 
-思考: 看看 KOL 的看法
-行动: 调用 analyze_kol_sentiment("NVDA")  → 聚合 KOL 情感
-观察: 正面 68%, 负面 12%, 中性 20%
+## 5. 数字核对
 
-思考: 检查最近新闻
-行动: 调用 search_stock_news("NVDA")      → 搜索新闻
-观察: 3 条新闻关于 AI 芯片需求增长
+模型抄错数字是聊天里最常见的错误，所以每轮都做：
 
-思考: 看看大佬持仓
-行动: 调用 get_superinvestor_holdings(ticker="NVDA")
-观察: 15 家对冲基金持有
+- `quote_evidence.py` / `revenue_evidence.py` / `financial_evidence.py`：从本轮工具结果里抽出报价、营收、财务指标。报价和营收会作为卡片显示给用户。
+- `unit_fix.py`：修「1,270.38 billion」被写成「1,270.38 亿」这类单位错误。
+- `answer_check.py`：答案里的每个数字对照本轮 evidence，标为 matched / mismatch / unverified，只有 mismatch 会提示给用户。结果存在 `chat_messages.answer_check`。
+- `data_gaps.py`：哪个工具没拿到数据、是暂时失败还是本来就没有，前端 `DataGapNote` 显示。
 
-思考: 数据齐全了，生成报告
-最终回复: [结构化研究报告，包含以上所有维度分析]
-```
+只认**本轮**工具结果：历史消息里的数字不算 evidence。这也是追问时会重新调工具的原因（见第 7 节）。
 
----
+## 6. 模型（`llm.py`）
 
-## 目录结构
+- 可选模型在 `MODEL_TO_PROVIDER`，前端选择见 [docs/model-catalog.md](../../../docs/model-catalog.md)。不在表里的模型 ID 按服务端默认（`LLM_PROVIDER` / `LLM_MODEL`）处理。
+- 支持 OpenAI、Anthropic、Ollama，以及 OpenAI 兼容接口的 DeepSeek、Qwen、Gemini、Kimi、Grok（`OPENAI_COMPATIBLE_PROVIDERS`）。
+- 用户自己的 key 优先于服务端 key。主模型创建失败时用 `LLM_FALLBACK_PROVIDER` / `LLM_FALLBACK_MODEL`。
+- 路由用 `get_fast_llm`（各家的快模型）。
+- DeepSeek / Kimi 要求工具调用轮次回传 `reasoning_content`，由 `thinking_chat.py` 的 `ThinkingChatOpenAI` 处理。
+
+环境变量：`LLM_PROVIDER`、`LLM_MODEL`、`LLM_TEMPERATURE`、`LLM_FALLBACK_PROVIDER`、`LLM_FALLBACK_MODEL`、各家 `*_API_KEY`、`OLLAMA_BASE_URL`、`TAVILY_API_KEY`（不配则 `web_search` 返回错误）。密钥只在后端。
+
+## 7. 记忆（`memory.py`）
+
+现状：
+
+- 每轮从 `chat_messages` 读本对话最近 `MAX_CONTEXT_MESSAGES`（20）条，只取 `role` 和 `content` 文本。
+- 工具结果不进历史，追问时模型会重新调工具。这样做是有意的：报价要求是最新的，第 5 节的核对也只认本轮工具结果。
+- 超过 20 条后更早的消息直接丢掉，没有摘要。
+- 没有跨对话的记忆。用户的自选股和持仓可以通过工具读到，但不会记住常问哪些股票、偏好的回答方式。
+
+## 8. 目录
 
 ```
 app/agent/
-├── __init__.py              # 模块入口，暴露 run_agent, stream_agent
-├── config.py                # 配置参数（系统提示词、超时、上下文窗口）
-├── llm.py                   # 多 Provider LLM 工厂（OpenAI/Anthropic/Ollama）
-├── state.py                 # LangGraph AgentState 类型定义
-├── memory.py                # 对话记忆（Supabase 加载/保存 + LangChain 格式转换）
-├── README.md                # 本文档
-├── tools/                   # 工具层 - 封装现有服务
-│   ├── __init__.py          # 工具注册表 + 各 Agent 工具子集
-│   ├── stock_tools.py       # 股票数据工具 (5 个)
-│   ├── news_tools.py        # 新闻搜索工具 (2 个)
-│   ├── kol_tools.py         # KOL 分析工具 (2 个)
-│   ├── portfolio_tools.py   # 投资组合工具 (1 个)
-│   └── search_tools.py      # 知识库/投资者搜索工具 (2 个)
-└── graphs/                  # 图定义层 - LangGraph 图
-    ├── __init__.py
-    ├── supervisor.py         # Supervisor 总控图 + run_agent / stream_agent
-    ├── financial.py          # 金融助手子图
-    ├── research.py           # 研究 Agent 子图
-    └── alert.py              # 预警 Agent 子图
+├── config.py            # 参数和共用系统提示词
+├── llm.py               # 模型工厂、可选模型表
+├── thinking_chat.py     # DeepSeek / Kimi 的 reasoning_content 兼容
+├── memory.py            # 对话历史读写
+├── graphs/
+│   ├── supervisor.py    # 路由、按请求建 Agent、run_agent / stream_agent
+│   ├── financial.py     # financial 提示词
+│   └── research.py      # research 提示词
+├── tools/               # 见第 3 节；trading_analysis_tools.py 未接入，见下
+├── quote_evidence.py / revenue_evidence.py / financial_evidence.py
+├── answer_check.py / unit_fix.py / data_gaps.py
 ```
 
----
+## 9. 和 AI 研究报告的关系
 
-## 核心模块详解
+AI 研究报告库（`/dashboard/ai-research`，功能开关 `tradingAnalysis`）**不走这个 Agent**。报告由开源多 Agent 框架 TradingAgents 生成：`app/services/trading_analysis_service.py` 在后台线程里跑，Redis 记录进度，结果存 Supabase，只有管理员能发起，生成后所有登录用户可读。
 
-### 1. LLM Factory (`llm.py`)
+`tools/trading_analysis_tools.py` 里有一个把 TradingAgents 包成聊天工具的版本，但没有接入，因为：一次要跑好几分钟，会卡住聊天；绕过了 `TradingAnalysisService`，结果不保存、不进报告库；模型写死；而且等于让任何用户在聊天里触发一次很贵的多模型调用。research 提示词因此明确说聊天里不能启动它。
 
-**作用：** 统一管理多个 LLM Provider，一行代码切换模型。
-
-**支持的 Provider：**
-
-| Provider | 模型示例 | 用途 |
-|----------|---------|------|
-| OpenAI | `gpt-4o`, `gpt-4o-mini` | 主力模型，工具调用能力强 |
-| Anthropic | `claude-3-5-sonnet`, `claude-3-haiku` | 分析能力强，性价比高 |
-| Ollama | `gemma2:2b`, `llama3` | 本地部署，隐私/离线场景 |
-
-**关键函数：**
-
-```python
-# 获取主 LLM（根据 .env 配置）
-llm = get_llm()
-
-# 获取快速 LLM（意图分类用，成本低）
-fast_llm = get_fast_llm()
-
-# 自定义指定 provider 和模型
-llm = get_llm(provider="anthropic", model="claude-3-5-sonnet-20241022")
-```
-
-**Fallback 机制：** 如果主 Provider 失败（如 API Key 过期），自动切换到配置的备用 Provider：
-
-```
-主: OpenAI/gpt-4o-mini → 失败 → 备用: Ollama/gemma2:2b → 成功
-```
-
-### 2. Agent State (`state.py`)
-
-**作用：** 定义在整个 LangGraph 图中流转的状态数据。
-
-```python
-class AgentState(TypedDict):
-    messages: Annotated[list, add_messages]  # 消息历史（LangGraph 自动合并）
-    user_id: str                              # 当前用户 ID
-    conversation_id: str                      # 当前对话 ID
-    current_agent: str                        # 当前活跃的子 Agent
-    metadata: Dict[str, Any]                  # 额外元数据
-```
-
-- `messages` 使用 LangGraph 的 `add_messages` 注解，新消息会自动追加而非覆盖
-- `current_agent` 由 Supervisor 的 classify 节点设置，决定路由方向
-
-### 3. Tools 工具层
-
-**核心思想：** 不重写任何业务逻辑，只是把现有服务封装成 LangGraph 工具。
-
-每个工具使用 `@tool` 装饰器定义，LLM 通过函数名和 docstring 决定何时调用。
-
-#### 工具清单
-
-| 工具名 | 文件 | 封装的服务 | 功能 |
-|--------|------|-----------|------|
-| `get_stock_quote` | stock_tools.py | YFinanceService.get_quote() | 实时股价、涨跌幅、成交量、市值 |
-| `get_stock_financials` | stock_tools.py | YFinanceService.get_financials() | PE、利润率、收入增长、资产负债 |
-| `get_analyst_recommendations` | stock_tools.py | YFinanceService.get_analyst_recommendations() | 分析师评级、目标价 |
-| `get_stock_history` | stock_tools.py | YFinanceService.get_history() | 历史价格数据 |
-| `get_company_info` | stock_tools.py | YFinanceService.get_company_info() | 公司概况、行业、简介 |
-| `search_stock_news` | news_tools.py | NewsAggregator.aggregate_news() | 搜索某只股票的最新新闻 |
-| `get_trending_news` | news_tools.py | NewsAggregator.get_trending_news() | 获取热门金融新闻 |
-| `get_kol_latest_tweets` | kol_tools.py | Supabase kol_tweets 表 | 查询 KOL 最新推文 |
-| `analyze_kol_sentiment` | kol_tools.py | Supabase kol_tweets 表 | 聚合某股票的 KOL 情感 |
-| `get_user_portfolio` | portfolio_tools.py | Supabase portfolio_positions 表 | 用户持仓、权重、盈亏 |
-| `search_knowledge_base` | search_tools.py | Supabase 多表全文搜索 | KOL推文/新闻/小红书 搜索 |
-| `get_superinvestor_holdings` | search_tools.py | Supabase dataroma 表 | 对冲基金持仓查询 |
-
-#### 工具分配
-
-不同的子 Agent 拥有不同的工具子集，避免无关工具干扰决策：
-
-| Agent | 工具数 | 说明 |
-|-------|-------|------|
-| Financial Assistant | 11 | 全面工具集（不含 history） |
-| Research Agent | 10 | 侧重数据采集（含 history，不含 portfolio） |
-| Alert Agent | 3 | 轻量级（quote + news + kol） |
-
-### 4. Graphs 图定义层
-
-#### Supervisor (`supervisor.py`)
-
-**入口图**，负责：
-
-1. **意图分类** — 用 fast LLM（gpt-4o-mini / claude-3-haiku）快速判断用户意图
-2. **条件路由** — 根据分类结果分发到对应子 Agent
-3. **提供公共 API** — `run_agent()` 和 `stream_agent()`
-
-**路由规则：**
-
-| 用户意图 | 路由到 | 示例 |
-|---------|-------|------|
-| 日常金融问答 | Financial | "AAPL 多少钱"、"最近有什么新闻"、"我的持仓" |
-| 深度研究分析 | Research | "帮我分析 NVDA"、"出个 TSLA 研究报告"、"深入分析苹果" |
-| 监控预警 | Alert | "AAPL 跌到 200 提醒我"、"监控这只股票" |
-
-#### Financial Assistant (`financial.py`)
-
-通用金融助手，使用 ReAct 模式处理大部分日常查询。特点：
-- 有 11 个工具，覆盖所有数据源
-- 最多 20 轮工具调用
-- 回答平衡，会同时给出看多和看空观点
-
-#### Research Agent (`research.py`)
-
-深度研究 Agent，适合需要多维度分析的场景。特点：
-- 有 10 个研究型工具
-- 最多 30 轮工具调用（研究需要更多步骤）
-- 会按步骤收集数据：基本面 → 分析师 → KOL → 新闻 → 大佬持仓
-- 输出结构化报告
-
-#### Alert Agent (`alert.py`)
-
-预警相关 Agent。特点：
-- 只有 3 个轻量工具
-- 帮助用户分析是否需要设置预警
-- 可检查当前价格水平，推荐预警阈值
-
-### 5. Memory 记忆层 (`memory.py`)
-
-**作用：** 实现对话持久化记忆，Agent 能"记住"之前说过什么。
-
-**工作流程：**
-
-```
-1. 用户发送消息
-2. save_message() → 写入 Supabase chat_messages 表
-3. load_conversation_history() → 从数据库读取最近 20 条消息
-4. db_messages_to_langchain() → 转换为 LangChain 消息格式
-5. 传给 Agent 作为上下文
-6. Agent 生成回复
-7. save_message() → 保存 AI 回复到数据库
-```
-
-**上下文窗口管理：** 默认加载最近 **20 条消息**（`MAX_CONTEXT_MESSAGES`），避免超出 LLM 上下文限制。
-
----
-
-## 请求处理流程
-
-### 同步模式 (`/send`)
-
-```
-客户端                FastAPI               Agent System              Supabase
-  │                     │                       │                       │
-  │  POST /send         │                       │                       │
-  │  {content: "..."}   │                       │                       │
-  │────────────────────▶│                       │                       │
-  │                     │  save_message(user)   │                       │
-  │                     │──────────────────────────────────────────────▶│
-  │                     │                       │                       │
-  │                     │  load_history()        │                       │
-  │                     │──────────────────────────────────────────────▶│
-  │                     │◀──────────────────────────────────────────────│
-  │                     │                       │                       │
-  │                     │  run_agent(messages)   │                       │
-  │                     │──────────────────────▶│                       │
-  │                     │                       │  classify intent      │
-  │                     │                       │  route to sub-agent   │
-  │                     │                       │  ReAct loop:          │
-  │                     │                       │    think → tool → obs │
-  │                     │                       │    think → tool → obs │
-  │                     │                       │    ...                │
-  │                     │                       │  final response       │
-  │                     │◀──────────────────────│                       │
-  │                     │                       │                       │
-  │                     │  save_message(assistant)                      │
-  │                     │──────────────────────────────────────────────▶│
-  │                     │                       │                       │
-  │  {message, response}│                       │                       │
-  │◀────────────────────│                       │                       │
-```
-
-### 流式模式 (`/stream`, SSE)
-
-```
-客户端                FastAPI               Agent System
-  │                     │                       │
-  │  POST /stream       │                       │
-  │────────────────────▶│                       │
-  │                     │  stream_agent()       │
-  │                     │──────────────────────▶│
-  │                     │                       │
-  │  data: {type:"tool_start", tool:"get_stock_quote"}
-  │◀────────────────────│◀──────────────────────│
-  │                     │                       │
-  │  data: {type:"tool_end", tool:"get_stock_quote"}
-  │◀────────────────────│◀──────────────────────│
-  │                     │                       │
-  │  data: {type:"token", content:"NVDA"}       │
-  │◀────────────────────│◀──────────────────────│
-  │  data: {type:"token", content:" 当前"}       │
-  │◀────────────────────│◀──────────────────────│
-  │  data: {type:"token", content:"价格"}        │
-  │◀────────────────────│◀──────────────────────│
-  │  ...逐 token 返回...  │                       │
-  │                     │                       │
-  │  data: {type:"done", message_id:"uuid"}     │
-  │◀────────────────────│                       │
-```
-
-**SSE 事件类型：**
-
-| type | 说明 | 数据 |
-|------|------|------|
-| `token` | AI 回复的文本片段 | `{content: "文本"}` |
-| `tool_start` | Agent 开始调用工具 | `{tool: "get_stock_quote"}` |
-| `tool_end` | 工具调用完成 | `{tool: "get_stock_quote"}` |
-| `done` | 流式完成 | `{message_id: "uuid"}` |
-| `error` | 发生错误 | `{content: "错误信息"}` |
-
----
-
-## API 接口说明
-
-所有接口需要 `Authorization: Bearer <token>` 认证头。
-
-### 新增的 Agent 接口
-
-#### `POST /api/v1/chat/conversations/{conversation_id}/send`
-
-**同步发送消息并获取 AI 回复**
-
-请求体：
-```json
-{
-  "content": "NVDA 现在多少钱？最近有什么新闻？"
-}
-```
-
-响应体：
-```json
-{
-  "message": {
-    "id": "msg-uuid-1",
-    "conversation_id": "conv-uuid",
-    "role": "user",
-    "content": "NVDA 现在多少钱？最近有什么新闻？",
-    "created_at": "2026-02-08T12:00:00Z"
-  },
-  "response": {
-    "id": "msg-uuid-2",
-    "conversation_id": "conv-uuid",
-    "role": "assistant",
-    "content": "NVDA (英伟达) 当前价格 $875.28，今日上涨 +2.3%...\n\n最近新闻：\n1. ...",
-    "created_at": "2026-02-08T12:00:05Z"
-  }
-}
-```
-
-#### `POST /api/v1/chat/conversations/{conversation_id}/stream`
-
-**流式发送消息（SSE）**
-
-请求体（同上）：
-```json
-{
-  "content": "帮我深入分析一下 TSLA"
-}
-```
-
-响应（SSE 事件流）：
-```
-data: {"type":"tool_start","tool":"get_stock_quote"}
-data: {"type":"tool_end","tool":"get_stock_quote"}
-data: {"type":"tool_start","tool":"get_stock_financials"}
-data: {"type":"tool_end","tool":"get_stock_financials"}
-data: {"type":"token","content":"# TSLA "}
-data: {"type":"token","content":"研究报告"}
-data: {"type":"token","content":"\n\n## "}
-data: {"type":"token","content":"价格概况"}
-...
-data: {"type":"done","message_id":"msg-uuid-2"}
-```
-
-### 保留的原有接口
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/conversations` | 获取对话列表 |
-| POST | `/conversations` | 创建新对话 |
-| GET | `/conversations/{id}` | 获取对话详情 |
-| PATCH | `/conversations/{id}` | 更新对话标题 |
-| DELETE | `/conversations/{id}` | 删除对话 |
-| DELETE | `/conversations` | 删除所有对话 |
-| POST | `/conversations/{id}/messages` | 添加原始消息（不触发 AI） |
-| GET | `/conversations/{id}/messages` | 获取所有消息 |
-
----
-
-## 配置与部署
-
-### 环境变量
-
-在 `.env` 文件中添加：
-
-```bash
-# ========== LLM Provider 配置 ==========
-
-# 主 LLM Provider（三选一：openai / anthropic / ollama）
-LLM_PROVIDER=openai
-LLM_MODEL=gpt-4o-mini
-LLM_TEMPERATURE=0.7
-
-# 备用 LLM（可选，主 Provider 失败时自动切换）
-LLM_FALLBACK_PROVIDER=ollama
-LLM_FALLBACK_MODEL=gemma2:2b
-
-# ========== API Keys ==========
-
-# OpenAI（如果 LLM_PROVIDER=openai）
-OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxx
-
-# Anthropic（如果 LLM_PROVIDER=anthropic）
-ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxxxxxx
-
-# Ollama（如果 LLM_PROVIDER=ollama，默认本地）
-OLLAMA_BASE_URL=http://localhost:11434
-```
-
-### 依赖安装
+## 10. 测试
 
 ```bash
 cd kolvex-backend-py
-source venv/bin/activate
-pip install -r requirements.txt
-```
-
-新增的依赖（已添加到 requirements.txt）：
-
-```
-langgraph>=0.2.0
-langchain-core>=0.3.0
-langchain-openai>=0.2.0
-langchain-anthropic>=0.2.0
-langchain-ollama>=0.2.0
-langchain-community>=0.3.0
-```
-
-### 推荐配置组合
-
-| 场景 | Provider | Model | 说明 |
-|------|----------|-------|------|
-| 生产环境（推荐） | openai | gpt-4o-mini | 性价比最高，工具调用稳定 |
-| 高质量分析 | openai | gpt-4o | 更好的推理能力 |
-| 成本敏感 | anthropic | claude-3-haiku | 便宜且快速 |
-| 深度分析 | anthropic | claude-3-5-sonnet | 分析能力最强 |
-| 本地/隐私 | ollama | gemma2:2b | 无需 API Key，完全本地 |
-| 本地高质量 | ollama | llama3:8b | 本地最佳质量 |
-
----
-
-## 使用示例
-
-### 典型对话场景
-
-**场景 1：查股价（→ Financial Agent）**
-```
-用户: AAPL 现在多少钱
-Agent: [调用 get_stock_quote("AAPL")]
-      苹果 (AAPL) 当前价格 $187.52，今日下跌 -0.8%...
-```
-
-**场景 2：看新闻（→ Financial Agent）**
-```
-用户: 最近有什么重要的科技股新闻
-Agent: [调用 get_trending_news()]
-      以下是今日热门科技股新闻：
-      1. NVDA: AI 芯片需求持续强劲...
-      2. MSFT: Azure 收入增长 29%...
-```
-
-**场景 3：KOL 观点（→ Financial Agent）**
-```
-用户: KOL 们怎么看 TSLA
-Agent: [调用 analyze_kol_sentiment("TSLA")]
-       [调用 get_kol_latest_tweets(ticker="TSLA")]
-      TSLA 的 KOL 情感分析：
-      - 看多: 45% | 看空: 30% | 中性: 25%
-      - @analyst_A: "自动驾驶进展超预期..."
-      - @trader_B: "估值偏高，建议观望..."
-```
-
-**场景 4：深度研究（→ Research Agent）**
-```
-用户: 帮我出一份 NVDA 的研究报告
-Agent: [调用 get_stock_quote("NVDA")]
-       [调用 get_stock_financials("NVDA")]
-       [调用 get_analyst_recommendations("NVDA")]
-       [调用 analyze_kol_sentiment("NVDA")]
-       [调用 search_stock_news("NVDA")]
-       [调用 get_superinvestor_holdings(ticker="NVDA")]
-
-      # NVDA 研究报告
-
-      ## 执行摘要
-      NVDA 当前价格 $875，分析师目标价 $950...
-
-      ## 基本面分析
-      PE 65.2，收入 YoY +122%，利润率 55.6%...
-
-      ## 市场情感
-      KOL 看多比例 68%，近期新闻正面...
-
-      ## 机构持仓
-      15 家对冲基金持有，最大持仓...
-
-      ## 风险因素
-      1. 估值偏高...
-      2. AI 支出周期性...
-
-      ## 结论
-      看多: ... | 看空: ...
-```
-
-**场景 5：查持仓（→ Financial Agent）**
-```
-用户: 我的持仓怎么样
-Agent: [调用 get_user_portfolio(user_id)]
-      您的投资组合总价值 $52,380：
-      - NVDA: 30 股, $26,258 (50.1%)  +15.2%
-      - AAPL: 50 股, $9,376 (17.9%)   +3.8%
-      - ...
-```
-
-**场景 6：超级投资者（→ Financial Agent）**
-```
-用户: 巴菲特最近买了什么
-Agent: [调用 get_superinvestor_holdings(investor_name="Warren Buffett")]
-      Warren Buffett (Berkshire Hathaway) 最新持仓：
-      1. AAPL - 占比 49.2%
-      2. BAC - 占比 8.9%
-      ...
-```
-
----
-
-## 扩展指南
-
-### 添加新工具
-
-1. 在 `tools/` 下创建或编辑文件：
-
-```python
-# tools/my_new_tools.py
-from langchain_core.tools import tool
-
-@tool
-def my_new_tool(param1: str, param2: int = 10) -> str:
-    """工具描述 - LLM 根据这段文字决定何时调用。
-
-    Args:
-        param1: 参数1说明
-        param2: 参数2说明
-
-    Returns:
-        JSON string with results
-    """
-    # 调用现有服务
-    result = some_existing_service.do_something(param1)
-    return json.dumps(result)
-```
-
-2. 在 `tools/__init__.py` 中注册：
-
-```python
-from app.agent.tools.my_new_tools import my_new_tool
-
-ALL_TOOLS = [..., my_new_tool]
-FINANCIAL_TOOLS = [..., my_new_tool]  # 按需分配到子 Agent
-```
-
-### 添加新的子 Agent
-
-1. 在 `graphs/` 下创建新图：
-
-```python
-# graphs/portfolio_advisor.py
-from langgraph.prebuilt import create_react_agent
-from app.agent.llm import get_llm
-
-PORTFOLIO_SYSTEM_PROMPT = "..."
-
-def create_portfolio_advisor():
-    return create_react_agent(
-        model=get_llm(),
-        tools=[...],
-        prompt=PORTFOLIO_SYSTEM_PROMPT,
-    )
-```
-
-2. 在 `supervisor.py` 中注册节点和路由：
-
-```python
-# 添加节点
-workflow.add_node("portfolio", run_portfolio_agent)
-
-# 更新路由
-workflow.add_conditional_edges("classify", route_to_agent, {
-    "financial": "financial",
-    "research": "research",
-    "alert": "alert",
-    "portfolio": "portfolio",  # 新增
-})
-
-workflow.add_edge("portfolio", END)
-```
-
-3. 更新 `ROUTER_SYSTEM_PROMPT` 添加新的路由选项。
-
-### 切换 LLM Provider
-
-只需修改 `.env`，无需改代码：
-
-```bash
-# 从 OpenAI 切换到 Anthropic
-LLM_PROVIDER=anthropic
-LLM_MODEL=claude-3-5-sonnet-20241022
-ANTHROPIC_API_KEY=sk-ant-xxx
-```
-
-### 调整 Agent 行为
-
-修改 `config.py` 中的参数：
-
-```python
-MAX_CONTEXT_MESSAGES = 20   # 增大 = 更多历史记忆，但更耗 token
-MAX_TOOL_ITERATIONS = 10    # 增大 = Agent 可以做更多步骤，但更慢
-AGENT_TIMEOUT = 120.0       # 超时秒数
-LLM_TEMPERATURE = 0.7       # 降低 = 更确定性的回答
+venv/bin/python -m pytest tests/test_chat_agent.py tests/test_technical_tools.py tests/test_creator_record.py \
+  tests/test_answer_check.py tests/test_unit_fix.py tests/test_financial_evidence.py tests/test_chat_numbers_eval.py \
+  tests/test_research_workspace.py
 ```

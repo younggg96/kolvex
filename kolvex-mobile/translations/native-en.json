@@ -1510,6 +1510,8 @@
   "行情与技术": "Market",
   "新闻与事件": "News",
   "博主观点库": "Creator opinions",
+  "博主观点后股价": "Price moves after creator opinions",
+  "技术指标": "Technical indicators",
   "网页搜索": "Web search",
   "已有一轮研究正在进行。": "A research run is already in progress.",
   "请先添加股票或研究问题。": "Add a ticker or a question first.",

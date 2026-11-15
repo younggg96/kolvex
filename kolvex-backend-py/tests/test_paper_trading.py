@@ -2,11 +2,21 @@ import unittest
 from copy import deepcopy
 from datetime import datetime, timezone
 from decimal import Decimal
+from types import SimpleNamespace
 from unittest.mock import Mock
 from uuid import uuid4
 
-from app.services.paper_trading.engine import command, d, new_account, pending, summary, TradingError
-from app.services.paper_trading.service import normalize_quote, PaperTradingService, Conflict
+import httpx
+
+from app.services.paper_trading.engine import (
+    TradingError,
+    command,
+    d,
+    new_account,
+    pending,
+    summary,
+)
+from app.services.paper_trading.service import Conflict, PaperTradingService, normalize_quote
 
 NOW = "2026-11-02T15:00:00+00:00"
 LATER = "2026-11-02T15:01:00+00:00"
@@ -17,12 +27,25 @@ def quote(price=100, at=NOW, tradable=True):
 
 
 def order(**overrides):
-    return {"action": "order", "request_id": str(uuid4()), "symbol": "AAPL", "side": "long",
-            "effect": "open", "quantity": 10, "kind": "market", **overrides}
+    return {
+        "action": "order",
+        "request_id": str(uuid4()),
+        "symbol": "AAPL",
+        "side": "long",
+        "effect": "open",
+        "quantity": 10,
+        "kind": "market",
+        **overrides,
+    }
 
 
 def run(state, body=None, price=100, at=NOW, tradable=True):
-    return command(state, body or {"action": "sync", "request_id": str(uuid4())}, {"AAPL": quote(price, at, tradable)}, at)
+    return command(
+        state,
+        body or {"action": "sync", "request_id": str(uuid4())},
+        {"AAPL": quote(price, at, tradable)},
+        at,
+    )
 
 
 class LedgerTests(unittest.TestCase):
@@ -61,7 +84,12 @@ class LedgerTests(unittest.TestCase):
         s = run(self.state, order(side="short", quantity=3))
         pid = s["positions"][0]["id"]
         for i in range(3):
-            s = run(s, order(side="short", effect="close", position_id=pid, quantity=1), price=95+i, at=LATER)
+            s = run(
+                s,
+                order(side="short", effect="close", position_id=pid, quantity=1),
+                price=95 + i,
+                at=LATER,
+            )
         self.assertEqual(d(s["cash"]) - 100000, d(s["realized_pnl"]))
         self.assertEqual(summary(s)["closed_count"], 1)
 
@@ -70,7 +98,9 @@ class LedgerTests(unittest.TestCase):
         self.assertEqual(len(pending(s)), 1)
         self.assertGreater(d(summary(s)["reserved"]), 900)
         self.assertEqual(d(s["cash"]), 100000)
-        s = run(s, {"action": "cancel", "request_id": str(uuid4()), "order_id": s["orders"][0]["id"]})
+        s = run(
+            s, {"action": "cancel", "request_id": str(uuid4()), "order_id": s["orders"][0]["id"]}
+        )
         self.assertEqual(d(summary(s)["available"]), 100000)
 
     def test_pending_reservations_prevent_double_spend(self):
@@ -88,7 +118,12 @@ class LedgerTests(unittest.TestCase):
         s = run(s, price=120, at=LATER)
         self.assertGreaterEqual(d(s["fills"][0]["price"]), 110)
         pid = s["positions"][0]["id"]
-        s = run(s, order(side="short", effect="close", position_id=pid, kind="limit", price=90), price=120, at=LATER)
+        s = run(
+            s,
+            order(side="short", effect="close", position_id=pid, kind="limit", price=90),
+            price=120,
+            at=LATER,
+        )
         self.assertEqual(len(pending(s)), 1)
         s = run(s, price=90, at="2026-11-02T15:02:00+00:00")
         self.assertLessEqual(d(s["fills"][-1]["price"]), 90)
@@ -183,7 +218,13 @@ class LedgerTests(unittest.TestCase):
 
     def test_edit_and_remove_brackets(self):
         s = run(self.state, order(stop_loss=95))
-        body = {"action": "bracket", "request_id": str(uuid4()), "position_id": s["positions"][0]["id"], "stop_loss": None, "take_profit": 120}
+        body = {
+            "action": "bracket",
+            "request_id": str(uuid4()),
+            "position_id": s["positions"][0]["id"],
+            "stop_loss": None,
+            "take_profit": 120,
+        }
         s = run(s, body)
         self.assertIsNone(s["positions"][0]["stop_loss"])
         self.assertEqual(d(s["positions"][0]["take_profit"]), 120)
@@ -203,30 +244,62 @@ class LedgerTests(unittest.TestCase):
 class QuoteTests(unittest.TestCase):
     def test_usd_equity_regular_session_and_staleness(self):
         now = datetime(2026, 11, 2, 15, 0, tzinfo=timezone.utc)
-        raw = {"currency": "USD", "quote_type": "EQUITY", "current_price": 100, "market_time": now.timestamp() - 900}
+        raw = {
+            "currency": "USD",
+            "quote_type": "EQUITY",
+            "current_price": 100,
+            "market_time": now.timestamp() - 900,
+        }
         self.assertTrue(normalize_quote(raw, now)["tradable"])
-        self.assertFalse(normalize_quote({**raw, "market_time": now.timestamp() - 1201}, now)["tradable"])
-        self.assertFalse(normalize_quote({**raw, "market_time": now.timestamp() + 1}, now)["tradable"])
-        self.assertFalse(normalize_quote(raw, datetime(2026, 11, 2, 22, 0, tzinfo=timezone.utc))["tradable"])
+        self.assertFalse(
+            normalize_quote({**raw, "market_time": now.timestamp() - 1201}, now)["tradable"]
+        )
+        self.assertFalse(
+            normalize_quote({**raw, "market_time": now.timestamp() + 1}, now)["tradable"]
+        )
+        self.assertFalse(
+            normalize_quote(raw, datetime(2026, 11, 2, 22, 0, tzinfo=timezone.utc))["tradable"]
+        )
 
     def test_after_hours_marks_long_and_short_without_executing_orders(self):
         now = datetime(2026, 11, 2, 22, 0, tzinfo=timezone.utc)
-        raw = {"currency": "USD", "quote_type": "EQUITY", "current_price": 100,
-               "market_time": datetime(2026, 11, 2, 21, 0, tzinfo=timezone.utc).timestamp(),
-               "post_market_price": 120, "post_market_time": now.timestamp() - 60}
+        raw = {
+            "currency": "USD",
+            "quote_type": "EQUITY",
+            "current_price": 100,
+            "market_time": datetime(2026, 11, 2, 21, 0, tzinfo=timezone.utc).timestamp(),
+            "post_market_price": 120,
+            "post_market_time": now.timestamp() - 60,
+        }
         q = normalize_quote(raw, now)
         self.assertEqual(d(q["price"]), d(120))
         self.assertEqual(q["session"], "post")
         self.assertFalse(q["tradable"])
         for side in ("long", "short"):
-            state = run(new_account(NOW), order(side=side, stop_loss=110 if side == "short" else 90,
-                                               take_profit=90 if side == "short" else 110))
-            state = run(state, order(side=side, kind="limit", price=130 if side == "long" else 110),
-                        price=100, at=LATER, tradable=False)
+            state = run(
+                new_account(NOW),
+                order(
+                    side=side,
+                    stop_loss=110 if side == "short" else 90,
+                    take_profit=90 if side == "short" else 110,
+                ),
+            )
+            state = run(
+                state,
+                order(side=side, kind="limit", price=130 if side == "long" else 110),
+                price=100,
+                at=LATER,
+                tradable=False,
+            )
             before = deepcopy(state)
-            updated = command(state, {"action": "sync", "request_id": str(uuid4())},
-                              {"AAPL": q}, now.isoformat())
-            pnl = (d(q["price"]) - d(state["positions"][0]["entry_price"])) * 10 * (1 if side == "long" else -1)
+            updated = command(
+                state, {"action": "sync", "request_id": str(uuid4())}, {"AAPL": q}, now.isoformat()
+            )
+            pnl = (
+                (d(q["price"]) - d(state["positions"][0]["entry_price"]))
+                * 10
+                * (1 if side == "long" else -1)
+            )
             self.assertEqual(d(summary(updated)["unrealized_pnl"]), pnl)
             self.assertEqual(updated["snapshots"][-1]["equity"], summary(updated)["equity"])
             self.assertEqual(updated["fills"], before["fills"])
@@ -236,34 +309,63 @@ class QuoteTests(unittest.TestCase):
 
     def test_incomplete_old_future_or_invalid_post_quote_keeps_regular_mark(self):
         now = datetime(2026, 11, 2, 22, 0, tzinfo=timezone.utc)
-        raw = {"currency": "USD", "quote_type": "ETF", "current_price": 100,
-               "market_time": now.timestamp() - 3600, "post_market_price": 120,
-               "post_market_time": now.timestamp() - 60}
-        for override in ({"post_market_time": None}, {"post_market_time": now.timestamp() + 1},
-                         {"post_market_time": raw["market_time"] - 60}, {"post_market_price": "NaN"},
-                         {"post_market_price": 0}, {"post_market_time": "invalid"}):
+        raw = {
+            "currency": "USD",
+            "quote_type": "ETF",
+            "current_price": 100,
+            "market_time": now.timestamp() - 3600,
+            "post_market_price": 120,
+            "post_market_time": now.timestamp() - 60,
+        }
+        for override in (
+            {"post_market_time": None},
+            {"post_market_time": now.timestamp() + 1},
+            {"post_market_time": raw["market_time"] - 60},
+            {"post_market_price": "NaN"},
+            {"post_market_price": 0},
+            {"post_market_time": "invalid"},
+        ):
             q = normalize_quote({**raw, **override}, now)
             self.assertEqual(d(q["price"]), d(100))
             self.assertEqual(q["session"], "regular")
         # The next regular session supersedes yesterday's post-market mark.
         next_day = datetime(2026, 11, 3, 15, 0, tzinfo=timezone.utc)
-        q = normalize_quote({**raw, "market_time": next_day.timestamp(), "current_price": 125}, next_day)
+        q = normalize_quote(
+            {**raw, "market_time": next_day.timestamp(), "current_price": 125}, next_day
+        )
         self.assertEqual(q["session"], "regular")
         self.assertTrue(q["tradable"])
         self.assertEqual(d(q["price"]), d(125))
 
     def test_post_session_uses_new_york_dst_and_retains_final_quote_when_closed(self):
-        for now in (datetime(2026, 7, 1, 21, 0, tzinfo=timezone.utc),
-                    datetime(2026, 11, 2, 22, 0, tzinfo=timezone.utc)):
-            raw = {"currency": "USD", "quote_type": "ETF", "current_price": 100,
-                   "market_time": now.timestamp() - 3600, "post_market_price": 105,
-                   "post_market_time": now.timestamp() - 60}
+        for now in (
+            datetime(2026, 7, 1, 21, 0, tzinfo=timezone.utc),
+            datetime(2026, 11, 2, 22, 0, tzinfo=timezone.utc),
+        ):
+            raw = {
+                "currency": "USD",
+                "quote_type": "ETF",
+                "current_price": 100,
+                "market_time": now.timestamp() - 3600,
+                "post_market_price": 105,
+                "post_market_time": now.timestamp() - 60,
+            }
             self.assertEqual(normalize_quote(raw, now)["session"], "post")
             self.assertEqual(d(normalize_quote(raw, now.replace(day=now.day + 1))["price"]), d(105))
 
     def test_reject_unknown_currency_instrument_and_timestamp(self):
-        raw = {"currency": "USD", "quote_type": "ETF", "current_price": 100, "market_time": 1793631600}
-        for override in ({"currency": "HKD"}, {"quote_type": "CRYPTOCURRENCY"}, {"market_time": None}, {"current_price": 0}):
+        raw = {
+            "currency": "USD",
+            "quote_type": "ETF",
+            "current_price": 100,
+            "market_time": 1793631600,
+        }
+        for override in (
+            {"currency": "HKD"},
+            {"quote_type": "CRYPTOCURRENCY"},
+            {"market_time": None},
+            {"current_price": 0},
+        ):
             with self.assertRaises(TradingError):
                 normalize_quote({**raw, **override})
 
@@ -308,12 +410,97 @@ class ServiceTests(unittest.TestCase):
             service.publish("user-a", pid, "A useful trading review")
         s = run(s, order(effect="close", position_id=pid), price=110, at=LATER)
         service.load.return_value = {"state": s, "version": 2}
-        service.db.table.return_value.upsert.return_value.execute.return_value.data = [{"id": "review"}]
+        service.db.table.return_value.upsert.return_value.execute.return_value.data = [
+            {"id": "review"}
+        ]
         service.publish("user-a", pid, "A useful trading review")
         row = service.db.table.return_value.upsert.call_args.args[0]
         self.assertEqual(row["user_id"], "user-a")
         self.assertEqual(d(row["snapshot"]["realized_pnl"]), d(s["realized_pnl"]))
         self.assertNotIn("cash", row["snapshot"])
+
+
+class FakeTable:
+    """Records each PostgREST call: select columns, filters and update payloads."""
+
+    def __init__(self, db):
+        self.db, self.columns, self.filters, self.payload, self.params = (
+            db,
+            None,
+            {},
+            None,
+            httpx.QueryParams(),
+        )
+
+    def select(self, columns):
+        self.columns = columns
+        return self
+
+    def update(self, payload):
+        self.payload = payload
+        return self
+
+    def eq(self, column, value):
+        self.filters[column] = value
+        return self
+
+    def execute(self):
+        row = self.db.row
+        if self.payload is not None:
+            self.db.calls.append(("update", self.params.get("select")))
+            if row["version"] != self.filters["version"]:
+                return SimpleNamespace(data=[])
+            row.update(state=self.payload["state"], version=self.payload["version"])
+            return SimpleNamespace(data=[{"version": row["version"]}])
+        self.db.calls.append(("select", self.columns))
+        return SimpleNamespace(data=[{key: row[key] for key in self.columns.split(",")}])
+
+
+class FakeDb:
+    def __init__(self):
+        self.row = {"state": new_account(NOW), "version": 1}
+        self.calls = []
+
+    def table(self, name):
+        return FakeTable(self)
+
+
+class MatcherEgressTests(unittest.TestCase):
+    def sync(self, service):
+        return service.mutate("user-a", {"action": "sync", "request_id": str(uuid4())})
+
+    def test_update_returns_only_the_version_column(self):
+        db = FakeDb()
+        self.sync(PaperTradingService(db, quote_provider=lambda symbol: {}))
+        self.assertIn(("update", "version"), db.calls)
+
+    def test_matcher_rereads_full_state_only_after_another_writer(self):
+        db = FakeDb()
+        service = PaperTradingService(db, quote_provider=lambda symbol: {}, reuse_known_state=True)
+        self.sync(service)
+        self.sync(service)
+        self.assertEqual(
+            [c for c in db.calls if c[0] == "select"],
+            [("select", "state,version"), ("select", "version")],
+        )
+        # A user's order elsewhere bumps the version: the next cycle must reload it.
+        db.row = {"state": run(db.row["state"], order()), "version": db.row["version"] + 1}
+        db.calls.clear()
+        result = self.sync(service)
+        self.assertEqual(
+            [c for c in db.calls if c[0] == "select"],
+            [("select", "version"), ("select", "state,version")],
+        )
+        self.assertEqual(len(result["state"]["positions"]), 1)
+
+    def test_request_services_always_read_full_state(self):
+        db = FakeDb()
+        service = PaperTradingService(db, quote_provider=lambda symbol: {})
+        self.sync(service)
+        self.sync(service)
+        self.assertEqual(
+            [c for c in db.calls if c[0] == "select"], [("select", "state,version")] * 2
+        )
 
 
 if __name__ == "__main__":

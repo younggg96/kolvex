@@ -3,27 +3,81 @@ YFinance 客户端服务
 封装 yfinance 库的各种功能
 """
 
-import math
+import copy
 import logging
+import math
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor, wait
+from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
+from functools import wraps
+from typing import Any, Dict, List, Optional
 from urllib.parse import urlsplit
 from xml.etree import ElementTree
 
 import httpx
-from concurrent.futures import ThreadPoolExecutor, wait
-
 import pandas as pd
 import yfinance as yf
-from typing import Optional, Dict, Any, List
-from datetime import datetime, timedelta
-from functools import lru_cache
-import json
+
+# Yahoo calls take 0.5-1.5 s each and the stock page used to repeat the same
+# `ticker.info` download in every endpoint, for every visitor. Successful
+# results are shared per symbol for a short, data-appropriate time.
+INFO_TTL = 60  # price-bearing metadata: quotes, valuation ratios
+SLOW_TTL = 60 * 60  # analyst ratings, earnings, dividends
+STATEMENT_TTL = 6 * 60 * 60  # company profile and financial statements
+_CACHE_MAX = 512
+_cache: Dict[tuple, tuple] = {}
+_cache_lock = threading.Lock()
+_key_locks: Dict[tuple, threading.Lock] = {}
+
+
+def clear_market_cache() -> None:
+    with _cache_lock:
+        _cache.clear()
+        _key_locks.clear()
+
+
+def _cached(ttl: int):
+    """Share a successful result per (method, args); one Yahoo call per miss."""
+
+    def decorate(method):
+        @wraps(method)
+        def wrapper(self, symbol, *args, **kwargs):
+            key = (method.__name__, str(symbol).upper(), args, tuple(sorted(kwargs.items())))
+            with _cache_lock:
+                hit = _cache.get(key)
+                if hit and hit[0] > time.monotonic():
+                    return copy.deepcopy(hit[1])
+                lock = _key_locks.setdefault(key, threading.Lock())
+            with lock:  # concurrent misses wait for the first download
+                with _cache_lock:
+                    hit = _cache.get(key)
+                    if hit and hit[0] > time.monotonic():
+                        return copy.deepcopy(hit[1])
+                value = method(self, symbol, *args, **kwargs)
+                if value:
+                    with _cache_lock:
+                        if len(_cache) >= _CACHE_MAX:
+                            now = time.monotonic()
+                            for stale in [k for k, v in _cache.items() if v[0] <= now] or [
+                                next(iter(_cache))
+                            ]:
+                                _cache.pop(stale, None)
+                                _key_locks.pop(stale, None)
+                        _cache[key] = (time.monotonic() + ttl, copy.deepcopy(value))
+                return value
+
+        return wrapper
+
+    return decorate
 
 
 _QUOTE_EXECUTOR = ThreadPoolExecutor(max_workers=6, thread_name_prefix="market-quotes")
 _QUOTE_BATCH_TIMEOUT = 12
 _FUND_HOLDINGS_TTL = timedelta(hours=6)
 _FUND_HOLDINGS_CACHE: Dict[str, tuple] = {}
+
 
 def _safe_float(value, default: float = 0.0) -> float:
     """Convert a value to float, handling NaN/Inf/None from pandas."""
@@ -112,15 +166,17 @@ def _group_session_bars(df, size: int):
     bucket = df.groupby(session).cumcount() // size
     keys = [session, bucket.values]
     grouped = df.groupby(keys, sort=True)
-    merged = grouped.agg({
-        "Open": "first",
-        "High": "max",
-        "Low": "min",
-        "Close": "last",
-        "Volume": "sum",
-        **({"Dividends": "sum"} if "Dividends" in df else {}),
-        **({"Stock Splits": "sum"} if "Stock Splits" in df else {}),
-    })
+    merged = grouped.agg(
+        {
+            "Open": "first",
+            "High": "max",
+            "Low": "min",
+            "Close": "last",
+            "Volume": "sum",
+            **({"Dividends": "sum"} if "Dividends" in df else {}),
+            **({"Stock Splits": "sum"} if "Stock Splits" in df else {}),
+        }
+    )
     merged.index = pd.DatetimeIndex([frame.index[0] for _, frame in grouped], name="Datetime")
     return merged
 
@@ -152,13 +208,21 @@ class YFinanceService:
         """获取股票 Ticker 对象"""
         return yf.Ticker(symbol.upper())
 
+    @_cached(INFO_TTL)
+    def get_info(self, symbol: str) -> Dict[str, Any]:
+        """Yahoo `info` metadata, shared by quote, financials, analyst and overview."""
+        return self.get_ticker(symbol).info or {}
+
     def get_news(self, symbol: str, limit: int = 8) -> List[Dict[str, Any]]:
         """Return source-linked stock news in a stable shape for the stock page."""
         symbol = symbol.upper()
         failures = []
         for source, fetch in (
             ("ticker", lambda: self.get_ticker(symbol).get_news(count=limit)),
-            ("search", lambda: yf.Search(symbol, news_count=limit, include_research=False, timeout=4).news),
+            (
+                "search",
+                lambda: yf.Search(symbol, news_count=limit, include_research=False, timeout=4).news,
+            ),
             ("rss", lambda: self._get_news_rss(symbol)),
         ):
             try:
@@ -168,9 +232,13 @@ class YFinanceService:
                 news = self._normalize_news(articles, symbol, limit)
             except Exception as error:
                 failures.append(error)
-                logging.getLogger(__name__).warning("Stock news %s failed for %s: %s", source, symbol, type(error).__name__)
+                logging.getLogger(__name__).warning(
+                    "Stock news %s failed for %s: %s", source, symbol, type(error).__name__
+                )
                 continue
-            logging.getLogger(__name__).info("Stock news %s for %s: %d raw, %d usable", source, symbol, len(articles), len(news))
+            logging.getLogger(__name__).info(
+                "Stock news %s for %s: %d raw, %d usable", source, symbol, len(articles), len(news)
+            )
             if news:
                 return news
         if failures:
@@ -187,7 +255,11 @@ class YFinanceService:
             )
             response.raise_for_status()
         payload = response.content
-        if len(payload) > 1_000_000 or b"<!DOCTYPE" in payload.upper() or b"<!ENTITY" in payload.upper():
+        if (
+            len(payload) > 1_000_000
+            or b"<!DOCTYPE" in payload.upper()
+            or b"<!ENTITY" in payload.upper()
+        ):
             raise ValueError("Invalid news feed")
         root = ElementTree.fromstring(payload.decode("utf-8-sig"))
         channel = root.find("channel")
@@ -200,11 +272,15 @@ class YFinanceService:
                 published = int(parsedate_to_datetime(item.findtext("pubDate") or "").timestamp())
             except (ValueError, TypeError, OverflowError):
                 pass
-            articles.append({
-                "uuid": item.findtext("guid"), "title": item.findtext("title"),
-                "link": item.findtext("link"), "providerPublishTime": published,
-                "publisher": item.findtext("source"),
-            })
+            articles.append(
+                {
+                    "uuid": item.findtext("guid"),
+                    "title": item.findtext("title"),
+                    "link": item.findtext("link"),
+                    "providerPublishTime": published,
+                    "publisher": item.findtext("source"),
+                }
+            )
         return articles
 
     @staticmethod
@@ -220,12 +296,28 @@ class YFinanceService:
             if not isinstance(content, dict):
                 continue
             related = content.get("relatedTickers") or article.get("relatedTickers") or []
-            related = {str(item.get("symbol", "") if isinstance(item, dict) else item).upper() for item in related}
+            related = {
+                str(item.get("symbol", "") if isinstance(item, dict) else item).upper()
+                for item in related
+            }
             if related and not aliases.intersection(related):
                 continue
-            links = (content.get("canonicalUrl"), content.get("clickThroughUrl"), content.get("link"))
-            candidates = [value.get("url", "") if isinstance(value, dict) else value for value in links]
-            link = next((value for value in candidates if isinstance(value, str) and value.startswith(("https://", "http://"))), None)
+            links = (
+                content.get("canonicalUrl"),
+                content.get("clickThroughUrl"),
+                content.get("link"),
+            )
+            candidates = [
+                value.get("url", "") if isinstance(value, dict) else value for value in links
+            ]
+            link = next(
+                (
+                    value
+                    for value in candidates
+                    if isinstance(value, str) and value.startswith(("https://", "http://"))
+                ),
+                None,
+            )
             if not link or link in seen:
                 continue
             try:
@@ -244,20 +336,26 @@ class YFinanceService:
                 publish_time = int(published)
             elif isinstance(published, str):
                 try:
-                    publish_time = int(datetime.fromisoformat(published.replace("Z", "+00:00")).timestamp())
+                    publish_time = int(
+                        datetime.fromisoformat(published.replace("Z", "+00:00")).timestamp()
+                    )
                 except ValueError:
                     pass
             seen.add(link)
-            news.append({
-                "uuid": str(article.get("id") or article.get("uuid") or link),
-                "title": title.strip(),
-                "summary": content.get("summary") if isinstance(content.get("summary"), str) else None,
-                "publisher": publisher if isinstance(publisher, str) else None,
-                "link": link,
-                "publish_time": publish_time,
-                "type": content.get("contentType") or article.get("type"),
-                "related_tickers": [symbol.upper()],
-            })
+            news.append(
+                {
+                    "uuid": str(article.get("id") or article.get("uuid") or link),
+                    "title": title.strip(),
+                    "summary": content.get("summary")
+                    if isinstance(content.get("summary"), str)
+                    else None,
+                    "publisher": publisher if isinstance(publisher, str) else None,
+                    "link": link,
+                    "publish_time": publish_time,
+                    "type": content.get("contentType") or article.get("type"),
+                    "related_tickers": [symbol.upper()],
+                }
+            )
         return sorted(news, key=lambda item: item["publish_time"] or 0, reverse=True)[:limit]
 
     # ============================================================
@@ -273,7 +371,7 @@ class YFinanceService:
         # Detail metadata can fail independently of price history (notably indices).
         # Keep the fast-info fallback reachable when Yahoo's info endpoint fails.
         try:
-            info = ticker.info or {}
+            info = self.get_info(symbol)
         except Exception:
             info = {}
 
@@ -284,8 +382,16 @@ class YFinanceService:
         if not current_price or not previous_close:
             try:
                 fi = ticker.fast_info
-                current_price = current_price or getattr(fi, "last_price", None) or getattr(fi, "lastPrice", None)
-                previous_close = previous_close or getattr(fi, "previous_close", None) or getattr(fi, "previousClose", None)
+                current_price = (
+                    current_price
+                    or getattr(fi, "last_price", None)
+                    or getattr(fi, "lastPrice", None)
+                )
+                previous_close = (
+                    previous_close
+                    or getattr(fi, "previous_close", None)
+                    or getattr(fi, "previousClose", None)
+                )
             except Exception:
                 pass
 
@@ -356,9 +462,13 @@ class YFinanceService:
         source_interval = "60m" if interval == "4h" else interval
 
         if start and end:
-            df = ticker.history(start=start, end=end, interval=source_interval, auto_adjust=False, prepost=False)
+            df = ticker.history(
+                start=start, end=end, interval=source_interval, auto_adjust=False, prepost=False
+            )
         else:
-            df = ticker.history(period=period, interval=source_interval, auto_adjust=False, prepost=False)
+            df = ticker.history(
+                period=period, interval=source_interval, auto_adjust=False, prepost=False
+            )
 
         if df.empty:
             return []
@@ -385,12 +495,12 @@ class YFinanceService:
     # 基本面数据
     # ============================================================
 
+    @_cached(STATEMENT_TTL)
     def get_company_info(self, symbol: str) -> Dict[str, Any]:
         """
         获取公司基本信息
         """
-        ticker = self.get_ticker(symbol)
-        info = ticker.info
+        info = self.get_info(symbol)
 
         return {
             "symbol": symbol.upper(),
@@ -421,15 +531,21 @@ class YFinanceService:
         if frame is not None and not frame.empty:
             for index, row in frame.iterrows():
                 weight = _optional_number(row.get("Holding Percent"), 6)
-                ticker = str(index).strip().upper() if index is not None and not pd.isna(index) else ""
+                ticker = (
+                    str(index).strip().upper() if index is not None and not pd.isna(index) else ""
+                )
                 name = row.get("Name")
                 if weight is None or weight <= 0 or not (ticker or name):
                     continue
-                holdings.append({
-                    "symbol": ticker or None,
-                    "name": str(name).strip() if isinstance(name, str) and name.strip() else None,
-                    "weight": weight,
-                })
+                holdings.append(
+                    {
+                        "symbol": ticker or None,
+                        "name": str(name).strip()
+                        if isinstance(name, str) and name.strip()
+                        else None,
+                        "weight": weight,
+                    }
+                )
         holdings.sort(key=lambda item: item["weight"], reverse=True)
         data = {"symbol": key, "holdings": holdings}
         if holdings:
@@ -441,8 +557,7 @@ class YFinanceService:
         获取财务数据概览
         包含: 收入、利润、资产负债等关键指标
         """
-        ticker = self.get_ticker(symbol)
-        info = ticker.info
+        info = self.get_info(symbol)
 
         return {
             "symbol": symbol.upper(),
@@ -489,6 +604,7 @@ class YFinanceService:
             "operating_cash_flow": info.get("operatingCashflow"),
         }
 
+    @_cached(STATEMENT_TTL)
     def get_income_statement(self, symbol: str, quarterly: bool = False) -> List[Dict[str, Any]]:
         """
         获取利润表
@@ -502,6 +618,7 @@ class YFinanceService:
 
         return _statement_rows(df)
 
+    @_cached(STATEMENT_TTL)
     def get_balance_sheet(self, symbol: str, quarterly: bool = False) -> List[Dict[str, Any]]:
         """
         获取资产负债表
@@ -515,6 +632,7 @@ class YFinanceService:
 
         return _statement_rows(df)
 
+    @_cached(STATEMENT_TTL)
     def get_cash_flow(self, symbol: str, quarterly: bool = False) -> List[Dict[str, Any]]:
         """
         获取现金流量表
@@ -528,22 +646,25 @@ class YFinanceService:
 
         return _statement_rows(df)
 
+    @_cached(SLOW_TTL)
     def get_dividends(self, symbol: str) -> Dict[str, Any]:
         """
         获取股息信息
         """
         ticker = self.get_ticker(symbol)
-        info = ticker.info
+        info = self.get_info(symbol)
 
         # 获取历史股息
         dividends = ticker.dividends
         dividend_history = []
         if not dividends.empty:
             for date, amount in dividends.items():
-                dividend_history.append({
-                    "date": date.isoformat() if hasattr(date, "isoformat") else str(date),
-                    "amount": round(float(amount), 4),
-                })
+                dividend_history.append(
+                    {
+                        "date": date.isoformat() if hasattr(date, "isoformat") else str(date),
+                        "amount": round(float(amount), 4),
+                    }
+                )
 
         return {
             "symbol": symbol.upper(),
@@ -577,7 +698,7 @@ class YFinanceService:
                 "symbol": symbol.upper(),
                 "expirations": [],
                 "options_chain": None,
-                "error": "No options data available"
+                "error": "No options data available",
             }
 
         if not expirations:
@@ -608,7 +729,7 @@ class YFinanceService:
                 "expiration": nearest_exp,
                 "calls": calls,
                 "puts": puts,
-            }
+            },
         }
 
     def get_options_chain(self, symbol: str, expiration: str) -> Dict[str, Any]:
@@ -643,18 +764,17 @@ class YFinanceService:
             "puts": puts,
         }
 
-
-
     # ============================================================
     # 分析师与新闻
     # ============================================================
 
+    @_cached(SLOW_TTL)
     def get_analyst_recommendations(self, symbol: str) -> Dict[str, Any]:
         """
         获取分析师评级和目标价格
         """
         ticker = self.get_ticker(symbol)
-        info = ticker.info
+        info = self.get_info(symbol)
 
         # 获取推荐历史
         recommendations = []
@@ -663,13 +783,15 @@ class YFinanceService:
             if rec_df is not None and not rec_df.empty:
                 rec_df = rec_df.tail(30)  # 最近30条
                 for idx, row in rec_df.iterrows():
-                    recommendations.append({
-                        "date": idx.isoformat() if hasattr(idx, "isoformat") else str(idx),
-                        "firm": row.get("Firm"),
-                        "to_grade": row.get("To Grade"),
-                        "from_grade": row.get("From Grade"),
-                        "action": row.get("Action"),
-                    })
+                    recommendations.append(
+                        {
+                            "date": idx.isoformat() if hasattr(idx, "isoformat") else str(idx),
+                            "firm": row.get("Firm"),
+                            "to_grade": row.get("To Grade"),
+                            "from_grade": row.get("From Grade"),
+                            "action": row.get("Action"),
+                        }
+                    )
         except Exception:
             pass
 
@@ -679,14 +801,16 @@ class YFinanceService:
             sum_df = ticker.recommendations_summary
             if sum_df is not None and not sum_df.empty:
                 for idx, row in sum_df.iterrows():
-                    recommendations_summary.append({
-                        "period": row.get("period") or str(idx),
-                        "strong_buy": row.get("strongBuy"),
-                        "buy": row.get("buy"),
-                        "hold": row.get("hold"),
-                        "sell": row.get("sell"),
-                        "strong_sell": row.get("strongSell"),
-                    })
+                    recommendations_summary.append(
+                        {
+                            "period": row.get("period") or str(idx),
+                            "strong_buy": row.get("strongBuy"),
+                            "buy": row.get("buy"),
+                            "hold": row.get("hold"),
+                            "sell": row.get("sell"),
+                            "strong_sell": row.get("strongSell"),
+                        }
+                    )
         except Exception:
             pass
 
@@ -704,12 +828,13 @@ class YFinanceService:
             "recommendations_summary": recommendations_summary,
         }
 
+    @_cached(SLOW_TTL)
     def get_earnings(self, symbol: str) -> Dict[str, Any]:
         """
         获取盈利信息和预期
         """
         ticker = self.get_ticker(symbol)
-        info = ticker.info
+        info = self.get_info(symbol)
 
         # 历史盈利
         earnings_history = []
@@ -720,12 +845,18 @@ class YFinanceService:
                     eps_actual = row.get("epsActual")
                     eps_estimate = row.get("epsEstimate")
                     quarter = row.get("quarter", idx)
-                    earnings_history.append({
-                        "quarter": None if pd.isna(quarter) else quarter.isoformat() if hasattr(quarter, "isoformat") else str(quarter),
-                        "eps_actual": _financial_number(eps_actual),
-                        "eps_estimate": _financial_number(eps_estimate),
-                        "surprise_percent": _financial_number(row.get("surprisePercent")),
-                    })
+                    earnings_history.append(
+                        {
+                            "quarter": None
+                            if pd.isna(quarter)
+                            else quarter.isoformat()
+                            if hasattr(quarter, "isoformat")
+                            else str(quarter),
+                            "eps_actual": _financial_number(eps_actual),
+                            "eps_estimate": _financial_number(eps_estimate),
+                            "surprise_percent": _financial_number(row.get("surprisePercent")),
+                        }
+                    )
         except Exception:
             pass
 
@@ -735,12 +866,14 @@ class YFinanceService:
             dates_df = ticker.earnings_dates
             if dates_df is not None and not dates_df.empty:
                 for idx, row in dates_df.head(8).iterrows():
-                    earnings_dates.append({
-                        "date": idx.isoformat() if hasattr(idx, "isoformat") else str(idx),
-                        "eps_estimate": _financial_number(row.get("EPS Estimate")),
-                        "reported_eps": _financial_number(row.get("Reported EPS")),
-                        "surprise_percent": _financial_number(row.get("Surprise(%)")),
-                    })
+                    earnings_dates.append(
+                        {
+                            "date": idx.isoformat() if hasattr(idx, "isoformat") else str(idx),
+                            "eps_estimate": _financial_number(row.get("EPS Estimate")),
+                            "reported_eps": _financial_number(row.get("Reported EPS")),
+                            "surprise_percent": _financial_number(row.get("Surprise(%)")),
+                        }
+                    )
         except Exception:
             pass
 
@@ -753,7 +886,6 @@ class YFinanceService:
             "earnings_dates": earnings_dates,
         }
 
-
     # ============================================================
     # 批量操作
     # ============================================================
@@ -762,7 +894,9 @@ class YFinanceService:
         """
         批量获取多个股票的报价
         """
-        symbols = list(dict.fromkeys(symbol.strip().upper() for symbol in symbols if symbol.strip()))
+        symbols = list(
+            dict.fromkeys(symbol.strip().upper() for symbol in symbols if symbol.strip())
+        )
         futures = {symbol: _QUOTE_EXECUTOR.submit(self.get_quote, symbol) for symbol in symbols}
         done, _ = wait(futures.values(), timeout=_QUOTE_BATCH_TIMEOUT)
         result = {}
@@ -790,7 +924,7 @@ class YFinanceService:
         for symbol in symbols:
             try:
                 result[symbol.upper()] = self.get_history(symbol, period=period, interval=interval)
-            except Exception as e:
+            except Exception:
                 result[symbol.upper()] = []
         return result
 

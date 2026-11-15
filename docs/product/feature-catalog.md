@@ -43,6 +43,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 | X 博主内容与翻译 | `youtubeOpinions` | `/dashboard/x-opinions` | `opinions` 的 X tab、`/creator/x/[id]` | `x_content.py` | [x-content.md](../x-content.md) | ◐ |
 | Reddit 热度榜 | `youtubeOpinions` | `/dashboard/reddit-opinions` | `opinions` 的 Reddit tab | `reddit_opinions.py` | `PRODUCT.md` | ✅ |
 | 观点事后表现（发布后 5 / 20 个交易日股价，对比 SPY；只陈述事实，不判对错） | `youtubeOpinions` | 股票页和博主 × 股票页的观点卡片（含「其他博主的看法」） | — | `youtube_opinions.py`（`/stocks/{ticker}/outcomes`） | [opinion-backtest.md](../opinion-backtest.md) | — |
+| 观点回看（全部看涨 / 看跌观点之后股价相对 SPY 的整体表现；样本不足不出数字，不按博主排名） | `youtubeOpinions` | 博主观点「回看」（`/dashboard/youtube-opinions/review`） | — | `youtube_opinions.py`（`/review`） | [opinion-backtest.md](../opinion-backtest.md) | — |
 | 博主分享（图片 / 社交平台） | `youtubeOpinions` | 博主页、`/share/creators/[channelId]` | 博主页 | — | — | ◐ |
 | 观点更新 | `journal` | `/dashboard/journal` | `/updates` | `youtube_opinions.py` | `PRODUCT.md`「Reader Experience」 | ✅ |
 | 早晚报 | `briefs` | `/dashboard/briefs`、`/dashboard/briefs/[id]` | `(more)/briefs`、`brief/[id]` | `briefs.py` | [daily-briefs.md](../daily-briefs.md)、[prompts/daily-brief-generator.md](../prompts/daily-brief-generator.md) | ✅ |
@@ -52,7 +53,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 
 | 功能 | ID | Web 入口 | App 入口 | 后端 | 文档 | App |
 | --- | --- | --- | --- | --- | --- | --- |
-| AI 聊天 | `chat` | `/dashboard/chat`、`⌘K` | `(tabs)/chat`、`/chat/[id]` | `chat/` | `kolvex-backend-py/app/agent/README.md`、[model-catalog.md](../model-catalog.md) | ✅ |
+| AI 聊天 | `chat` | `/dashboard/chat`、`⌘K` | `(tabs)/chat`、`/chat/[id]` | `chat/` | `kolvex-backend-py/app/agent/README.md`、[model-catalog.md](../model-catalog.md)、[opinion-backtest.md](../opinion-backtest.md)（博主观点后股价工具） | ✅ |
 | 研究工作区 | `chat` | `/dashboard/workspaces` | `(more)/workspaces` | `research_workspaces.py` | — | ✅ |
 | AI 研究报告库、阅读 | `tradingAnalysis` | `/dashboard/ai-research` | `(more)/research`、`/report/[id]` | `trading_analysis/` | — | ✅ |
 | 研究任务生成（仅管理员） | `tradingAnalysis` | `/dashboard/ai-research?view=authoring` | `/research-task/[id]` | `trading_analysis/` | — | ◐（轮询代替 SSE） |

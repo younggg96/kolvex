@@ -6,20 +6,23 @@ Supervisor Graph
 
 import logging
 import re
-from typing import Dict, Any, Optional, AsyncGenerator, List
+from typing import Any, AsyncGenerator, Dict, List, Optional
 
-from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, ToolMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langgraph.prebuilt import create_react_agent
 
-from app.agent.quote_evidence import QuoteEvidence, extract_quote_evidence
-from app.agent.revenue_evidence import RevenueEvidence, extract_revenue_evidence, merge_revenue_evidence
-from app.agent.state import AgentState
-from app.agent.unit_fix import figures_by_trust, fix_unit_slips
+from app.agent.config import MAX_TOOL_ITERATIONS
 from app.agent.data_gaps import data_gap, merge_gaps
 from app.agent.financial_evidence import extract_financial_evidence
-from app.agent.llm import get_llm, get_fast_llm, resolve_model_id
-from app.agent.config import SYSTEM_PROMPT, MAX_TOOL_ITERATIONS
+from app.agent.llm import get_fast_llm, get_llm, resolve_model_id
+from app.agent.quote_evidence import QuoteEvidence, extract_quote_evidence
+from app.agent.revenue_evidence import (
+    RevenueEvidence,
+    extract_revenue_evidence,
+    merge_revenue_evidence,
+)
 from app.agent.tools import get_tools_for_sources
+from app.agent.unit_fix import figures_by_trust, fix_unit_slips
 
 logger = logging.getLogger(__name__)
 
@@ -51,13 +54,13 @@ def _message_has_tool_calls(message: Any) -> bool:
     additional_kwargs = getattr(message, "additional_kwargs", None) or {}
     return bool(additional_kwargs.get("tool_calls"))
 
+
 # =====================================================================
 # Sub-Agent 系统提示词
 # =====================================================================
 
-from app.agent.graphs.financial import FINANCIAL_SYSTEM_PROMPT
-from app.agent.graphs.research import RESEARCH_SYSTEM_PROMPT
-from app.agent.graphs.alert import ALERT_SYSTEM_PROMPT
+from app.agent.graphs.financial import FINANCIAL_SYSTEM_PROMPT  # noqa: E402
+from app.agent.graphs.research import RESEARCH_SYSTEM_PROMPT  # noqa: E402
 
 # =====================================================================
 # Supervisor 路由逻辑
@@ -105,6 +108,7 @@ def _build_source_hint(sources: Optional[List[str]]) -> str:
 # 动态创建 Sub-Agent（per request）
 # =====================================================================
 
+
 def _create_agent_for_request(
     agent_type: str,
     provider: Optional[str] = None,
@@ -118,7 +122,7 @@ def _create_agent_for_request(
     为每个请求创建合适的 Agent（支持动态 model 和 source 过滤）
 
     Args:
-        agent_type: "financial" | "research" | "alert"
+        agent_type: "financial" | "research"
         provider: LLM provider (可选, None 表示使用默认)
         model: 模型名称 (可选, None 表示使用默认)
         sources: 激活的数据源
@@ -129,15 +133,18 @@ def _create_agent_for_request(
     llm = get_llm(provider=provider, model=model, user_api_keys=user_api_keys)
 
     # 获取过滤后的工具（传入 user_id 以绑定 portfolio 工具）
-    tools = get_tools_for_sources(sources, base_tools=agent_type, user_id=user_id, skills=skills)
+    tools = get_tools_for_sources(sources, user_id=user_id, skills=skills)
 
     # 选择系统提示词 + source hints
     available_tools = {tool.name for tool in tools}
-    source_hint = _build_source_hint([
-        source for source in sources or []
-        if (source == "web" and "web_search" in available_tools)
-        or (source == "portfolio" and "get_user_portfolio" in available_tools)
-    ])
+    source_hint = _build_source_hint(
+        [
+            source
+            for source in sources or []
+            if (source == "web" and "web_search" in available_tools)
+            or (source == "portfolio" and "get_user_portfolio" in available_tools)
+        ]
+    )
     source_hint += (
         "\n\nFor a current quote, use the price and currency returned by get_stock_quote. "
         "Only describe a quote as current when its returned market_time supports that claim. "
@@ -145,15 +152,15 @@ def _create_agent_for_request(
         "If the quote tool is unavailable or returns no price, say you could not verify the quote. "
         "If market_time is missing, state that the quote time is unknown."
         "\n\nWhen a source states an amount in billions, millions or thousands, either keep that unit "
-        "(\"NT$3,809.05 billion\") or convert the number with it: 1 billion = 10亿, 1 trillion = 1万亿, "
+        '("NT$3,809.05 billion") or convert the number with it: 1 billion = 10亿, 1 trillion = 1万亿, '
         "1 million = 100万 (NT$3,809.05 billion = 新台币 3.81 万亿 = 38,090.5 亿). "
-        "Never replace the unit word alone: \"3,809.05 billion\" is not \"3,809.05 亿\"."
+        'Never replace the unit word alone: "3,809.05 billion" is not "3,809.05 亿".'
     )
     if "get_reported_revenue" in available_tools:
         source_hint += (
             "\n\nUse get_reported_revenue for reported quarterly or annual revenue amounts. "
-            "Match the period and currency in the returned evidence. With source \"sec\", identify the date as the SEC filing date; "
-            "with source \"yahoo\", name Yahoo Finance as the source and give no filing date. "
+            'Match the period and currency in the returned evidence. With source "sec", identify the date as the SEC filing date; '
+            'with source "yahoo", name Yahoo Finance as the source and give no filing date. '
             "Name a period by its returned fiscal_label (for example FY2027 Q2) together with its end date. "
             "Without a fiscal_label, identify it by its end date only: never infer fiscal-year labels or quarter numbers "
             "from calendar dates, and do not explain that you did not. "
@@ -177,8 +184,6 @@ def _create_agent_for_request(
 
     if agent_type == "research":
         prompt = RESEARCH_SYSTEM_PROMPT + source_hint
-    elif agent_type == "alert":
-        prompt = ALERT_SYSTEM_PROMPT + source_hint
     else:
         prompt = FINANCIAL_SYSTEM_PROMPT + source_hint + ANSWER_SHAPE
 
@@ -192,6 +197,7 @@ def _create_agent_for_request(
 # =====================================================================
 # 公共 API
 # =====================================================================
+
 
 async def run_agent(
     messages: list,
@@ -230,7 +236,13 @@ async def run_agent(
 
     # 2. 创建对应 Agent (传入 user_id 以绑定用户数据工具)
     agent = _create_agent_for_request(
-        agent_type, provider, model, sources, user_id=user_id, user_api_keys=user_api_keys, skills=skills
+        agent_type,
+        provider,
+        model,
+        sources,
+        user_id=user_id,
+        user_api_keys=user_api_keys,
+        skills=skills,
     )
 
     # 3. 运行
@@ -246,27 +258,37 @@ async def run_agent(
             if isinstance(msg, AIMessage) and msg.content and not msg.tool_calls:
                 if quote_evidence is not None:
                     quotes = {}
-                    for item in final_messages[len(messages):]:
+                    for item in final_messages[len(messages) :]:
                         if quote := extract_quote_evidence(item):
                             quotes[quote.symbol] = quote
                     quote_evidence.extend(quotes.values())
                 if revenue_evidence is not None:
                     revenues = {}
-                    for item in final_messages[len(messages):]:
+                    for item in final_messages[len(messages) :]:
                         for revenue in extract_revenue_evidence(item):
                             merge_revenue_evidence(revenues, revenue)
                     revenue_evidence.extend(revenues.values())
-                produced = final_messages[len(messages):]
+                produced = final_messages[len(messages) :]
                 if financial_evidence is not None:
-                    found = {i["label"]: i for item in produced for i in extract_financial_evidence(item)}
+                    found = {
+                        i["label"]: i for item in produced for i in extract_financial_evidence(item)
+                    }
                     financial_evidence.extend(found.values())
                 if data_gaps is not None:
                     data_gaps.extend(merge_gaps([g for item in produced if (g := data_gap(item))]))
-                tool_texts = [(item.name or "", str(item.content)) for item in produced
-                              if isinstance(item, ToolMessage)]
-                values = [revenue.value for item in final_messages[len(messages):]
-                          for revenue in extract_revenue_evidence(item)]
-                content, _ = fix_unit_slips(_content_to_text(msg.content), figures_by_trust(tool_texts), values)
+                tool_texts = [
+                    (item.name or "", str(item.content))
+                    for item in produced
+                    if isinstance(item, ToolMessage)
+                ]
+                values = [
+                    revenue.value
+                    for item in final_messages[len(messages) :]
+                    for revenue in extract_revenue_evidence(item)
+                ]
+                content, _ = fix_unit_slips(
+                    _content_to_text(msg.content), figures_by_trust(tool_texts), values
+                )
                 return content
 
         return "I'm sorry, I wasn't able to generate a response. Please try again."
@@ -316,7 +338,13 @@ async def stream_agent(
 
     # 2. 创建对应 Agent (传入 user_id 以绑定用户数据工具)
     agent = _create_agent_for_request(
-        agent_type, provider, model, sources, user_id=user_id, user_api_keys=user_api_keys, skills=skills
+        agent_type,
+        provider,
+        model,
+        sources,
+        user_id=user_id,
+        user_api_keys=user_api_keys,
+        skills=skills,
     )
 
     yield {
@@ -476,7 +504,7 @@ _LOOKUP_WORDS = re.compile(
 
 
 def route_by_keywords(message: str) -> Optional[str]:
-    """"research" or "financial" when the wording leaves no doubt, else None (ask the model)."""
+    """ "research" or "financial" when the wording leaves no doubt, else None (ask the model)."""
     text = message.split("\n\nKolvex page evidence", 1)[0].strip()
     if _RESEARCH_WORDS.search(text):
         return "research"
@@ -503,25 +531,27 @@ async def _classify_intent(
         return "financial"
 
     # Clear cases skip the ~1s router call: it was a quarter of a quick answer's latency.
-    if quick := route_by_keywords(last_user_msg if isinstance(last_user_msg, str) else str(last_user_msg)):
+    if quick := route_by_keywords(
+        last_user_msg if isinstance(last_user_msg, str) else str(last_user_msg)
+    ):
         logger.info(f"Intent by keywords: '{str(last_user_msg)[:50]}...' -> {quick}")
         return quick
 
     # 使用快速模型进行意图分类
     try:
         fast_llm = get_fast_llm(user_api_keys=user_api_keys)
-        response = await fast_llm.ainvoke([
-            SystemMessage(content=ROUTER_SYSTEM_PROMPT),
-            HumanMessage(content=last_user_msg),
-        ])
+        response = await fast_llm.ainvoke(
+            [
+                SystemMessage(content=ROUTER_SYSTEM_PROMPT),
+                HumanMessage(content=last_user_msg),
+            ]
+        )
 
         intent = response.content.strip().lower()
 
         # 规范化
         if "research" in intent:
             agent_type = "research"
-        elif "alert" in intent:
-            agent_type = "alert"
         else:
             agent_type = "financial"
 

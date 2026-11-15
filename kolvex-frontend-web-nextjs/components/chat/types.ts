@@ -29,10 +29,7 @@ export interface ChatHistoryItem {
   messageCount: number;
 }
 
-export type SearchSource =
-  | "web"
-  | "portfolio"
-  | "plaid";
+export type SearchSource = "web" | "portfolio" | "plaid";
 
 export type AIModel =
   | "deepseek-flash"
@@ -159,9 +156,11 @@ export const TOOL_LABELS: Record<string, string> = {
   get_stock_financials: "Fetching financials",
   get_analyst_recommendations: "Checking analyst ratings",
   get_stock_history: "Loading price history",
+  get_technical_indicators: "Calculating technical indicators",
   get_company_info: "Looking up company info",
   get_user_portfolio: "Loading portfolio",
   get_creator_opinions: "Reading creator opinions",
+  get_creator_record: "Checking how stocks moved after a creator's opinions",
   web_search: "Searching the web",
 };
 

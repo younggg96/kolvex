@@ -1039,12 +1039,15 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
       itemClassName="md:min-h-9 md:px-4 md:text-sm"
       value={route.tab}
       onChange={(tab) => {
+        // The review is its own page; the other two are views of this explorer.
+        if (tab === "review") return router.push("/dashboard/youtube-opinions/review");
         // Re-picking the current tab returns from a detail view to the list.
         if (tab !== route.tab || inDetail) navigate({ tab });
       }}
       options={[
         { value: "stocks", label: t("youtubeOpinions.byStock") },
         { value: "creators", label: t("youtubeOpinions.byCreator") },
+        { value: "review", label: t("youtubeOpinions.review.tab") },
       ]}
     />
   );

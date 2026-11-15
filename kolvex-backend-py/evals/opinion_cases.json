@@ -1,0 +1,98 @@
+{
+  "about": "观点抽取评测的标注集。transcript 全部是为评测编写的合成文本，不是任何博主的真实发言，也不会导入网站。每条覆盖一种已知难点。真实标注样本按同样格式追加，source 写原视频链接。",
+  "fields": {
+    "expected": "博主本人表达了方向的股票；sentiment 取 bullish / bearish / neutral / mixed；price_targets 是博主给出的目标价（不含止损）。",
+    "accept": "可接受的其他代码写法，例如 GOOGL 与 GOOG。",
+    "mentioned_only": "提到但博主本人没有表态的股票：可以不抽，可以抽成 neutral，抽成看多或看空就算误读。",
+    "其他": "既不在 expected 也不在 mentioned_only 的代码一律算编造。"
+  },
+  "cases": [
+    {
+      "id": "clear_bull_target",
+      "tests": "明确看多并给出目标价",
+      "transcript": "今天重点说英伟达。数据中心订单还在加速，我继续看多 NVDA，未来一年目标价 200 美元。现在股价大概 178，我会在回调时加仓。",
+      "expected": [{"ticker": "NVDA", "sentiment": "bullish", "price_targets": [200]}],
+      "mentioned_only": []
+    },
+    {
+      "id": "negation_bear",
+      "tests": "否定句：不看好 = 看空，不能抽反",
+      "transcript": "很多人问我特斯拉还能不能上车。说实话我不看好特斯拉，交付量连续下滑，估值又太高，我已经清仓了，短期不会再碰。",
+      "expected": [{"ticker": "TSLA", "sentiment": "bearish", "price_targets": []}],
+      "mentioned_only": []
+    },
+    {
+      "id": "comparison_mention_only",
+      "tests": "对比时提到的股票没有本人观点",
+      "transcript": "AMD 这季度也发了新卡，但今天不展开。我的核心仓位还是英伟达，生态壁垒太深，我对 NVDA 很有信心，继续持有。",
+      "expected": [{"ticker": "NVDA", "sentiment": "bullish", "price_targets": []}],
+      "mentioned_only": ["AMD"]
+    },
+    {
+      "id": "short_long_mixed",
+      "tests": "短期看空、长期看多 = 分歧",
+      "transcript": "苹果这里我两个周期看法不一样。短期财报前可能回调到 220 左右，我不追；但三年维度我非常看好苹果的服务业务，长期继续拿。",
+      "expected": [{"ticker": "AAPL", "sentiment": "mixed", "price_targets": []}],
+      "mentioned_only": []
+    },
+    {
+      "id": "chinese_names_only",
+      "tests": "只说中文公司名，要映射到正确代码",
+      "transcript": "这期聊两家云厂商。微软的 Azure 增速超预期，我会继续加仓微软。谷歌的搜索份额在被 AI 侵蚀，我对谷歌保持中性，先观望。",
+      "expected": [
+        {"ticker": "MSFT", "sentiment": "bullish", "price_targets": []},
+        {"ticker": "GOOGL", "accept": ["GOOG"], "sentiment": "neutral", "price_targets": []}
+      ],
+      "mentioned_only": []
+    },
+    {
+      "id": "macro_no_stock",
+      "tests": "只谈宏观，没有个股：应当不抽任何股票",
+      "transcript": "这周的重点是美联储议息会议。我认为年内还会降息一次，但通胀数据有反复，大家仓位不要太满，现金留一些。",
+      "expected": [],
+      "mentioned_only": []
+    },
+    {
+      "id": "quoted_consensus",
+      "tests": "转述他人观点 ≠ 博主本人观点",
+      "transcript": "华尔街现在几乎一致喊买 Palantir，好几家投行目标价都上调到 200 以上。但我自己觉得 PLTR 太贵了，市销率离谱，我不会买，甚至考虑做空。",
+      "expected": [{"ticker": "PLTR", "sentiment": "bearish", "price_targets": []}],
+      "mentioned_only": []
+    },
+    {
+      "id": "target_vs_stop",
+      "tests": "目标价和止损价要分开，止损不是目标价",
+      "transcript": "Meta 我今天建了仓。目标价 850，止损设在 680，跌破就走。广告业务恢复得很好，我看多。",
+      "expected": [{"ticker": "META", "sentiment": "bullish", "price_targets": [850]}],
+      "mentioned_only": []
+    },
+    {
+      "id": "disclaimer_holding",
+      "tests": "免责声明不影响方向判断",
+      "transcript": "先声明以上不构成投资建议。我自己一直持有 Costco，会员续费率很稳，这个价位我还会继续买 COST。",
+      "expected": [{"ticker": "COST", "sentiment": "bullish", "price_targets": []}],
+      "mentioned_only": []
+    },
+    {
+      "id": "many_tickers",
+      "tests": "一条视频多只股票，方向各不相同，不能漏",
+      "transcript": "快速过一遍持仓：亚马逊继续看多，AWS 很强；英特尔我看空，代工业务还在烧钱；奈飞我中性，等财报再说；台积电看多，目标价 300。",
+      "expected": [
+        {"ticker": "AMZN", "sentiment": "bullish", "price_targets": []},
+        {"ticker": "INTC", "sentiment": "bearish", "price_targets": []},
+        {"ticker": "NFLX", "sentiment": "neutral", "price_targets": []},
+        {"ticker": "TSM", "sentiment": "bullish", "price_targets": [300]}
+      ],
+      "mentioned_only": []
+    },
+    {
+      "id": "etf_and_index",
+      "tests": "ETF 也是可抽的标的；指数名本身不是股票代码",
+      "transcript": "纳斯达克今年涨得太多了，估值已经透支。对 QQQ 我短期看空，准备减掉一半仓位。",
+      "expected": [
+        {"ticker": "QQQ", "sentiment": "bearish", "price_targets": []}
+      ],
+      "mentioned_only": []
+    }
+  ]
+}

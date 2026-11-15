@@ -1,5 +1,6 @@
 import { invalidateClientCache, subscribeClientCache } from "./clientCache";
 import type { OpinionOutcomes } from "./opinionOutcome";
+import type { OpinionReview } from "@/lib/opinionReview";
 import type { VideoOpinionGroup } from "./youtubeVideoHistory";
 
 export type OpinionSentiment = "bullish" | "bearish" | "neutral" | "mixed";
@@ -361,6 +362,11 @@ export async function getYouTubeStockOutcomes(
   signal?: AbortSignal,
 ): Promise<OpinionOutcomes> {
   return apiRequest<OpinionOutcomes>(`/stocks/${encodeURIComponent(ticker)}/outcomes`, { signal });
+}
+
+/** How stocks moved after bullish / bearish opinions across all opinions; 503 while first built. */
+export async function getYouTubeOpinionReview(signal?: AbortSignal): Promise<OpinionReview> {
+  return apiRequest<OpinionReview>("/review", { signal });
 }
 
 export type YouTubeImportBody = Record<string, unknown> | Record<string, unknown>[];

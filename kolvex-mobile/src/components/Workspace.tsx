@@ -26,7 +26,9 @@ export const AGENT_ICONS: Record<ResearchAgent, [string, string]> = {
 };
 export const TOOL_NAMES: Record<string, string> = {
   get_options_chain_summary: "期权链",
+  get_technical_indicators: "技术指标",
   get_creator_opinions: "博主观点库",
+  get_creator_record: "博主观点后股价",
   web_search: "网页搜索",
   get_user_portfolio: "投资组合",
 };
