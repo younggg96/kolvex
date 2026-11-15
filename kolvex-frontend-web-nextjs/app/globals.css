@@ -448,8 +448,24 @@ a {
     background-color: rgb(var(--secondary));
   }
 
-  /* Underline navigation/control labels, never the text being edited. */
-  :focus-visible:not(:where(input, textarea, select, [contenteditable])) {
+  /* Underline navigation/control labels, never the text being edited.
+     Focusable containers (tab panels, dialogs, menus, programmatic focus
+     targets) are excluded: text-decoration propagates to every descendant,
+     so focusing one would underline its whole contents. */
+  :focus-visible:not(
+    :where(
+      input,
+      textarea,
+      select,
+      [contenteditable],
+      [role="tabpanel"],
+      [role="dialog"],
+      [role="alertdialog"],
+      [role="menu"],
+      [role="listbox"],
+      [tabindex="-1"]
+    )
+  ) {
     text-decoration-line: underline;
     text-decoration-thickness: 2px;
     text-underline-offset: 4px;

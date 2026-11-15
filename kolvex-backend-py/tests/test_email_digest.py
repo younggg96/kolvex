@@ -92,3 +92,12 @@ def test_video_date_uses_eastern_time():
     assert email_digest.video_date("2026-11-13T01:30:00Z") == "2026-11-12"
     assert email_digest.video_date("2026-11-13T15:00:00+00:00") == "2026-11-13"
     assert email_digest.video_date(None) == ""
+
+
+def test_resend_key_strips_pasted_quotes(monkeypatch):
+    from app.services.email_service import resend_configured, resend_key
+
+    monkeypatch.setenv("RESEND_API_KEY", " ”re_abc123” \n")
+    assert resend_key() == "re_abc123"
+    monkeypatch.setenv("RESEND_API_KEY", "“”")
+    assert not resend_configured()

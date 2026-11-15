@@ -30,8 +30,13 @@ EDITABLE = {
 }
 
 
+def resend_key() -> str:
+    """RESEND_API_KEY without the whitespace or quotes (straight or curly) that pasting tends to add."""
+    return os.getenv("RESEND_API_KEY", "").strip().strip("\"'“”‘’ ")
+
+
 def resend_configured() -> bool:
-    return bool(os.getenv("RESEND_API_KEY"))
+    return bool(resend_key())
 
 
 def validate_settings(values: dict, kind: str = "daily_brief") -> dict:
@@ -117,7 +122,11 @@ def recipients(db, delivery: dict | None = None) -> list[str]:
 
 async def send_batch(client: httpx.AsyncClient, row: dict, subject: str, body: str, to: list[str]):
     sender = f"{row['from_name']} <{row['from_email']}>" if row["from_name"] else row["from_email"]
-    headers = {"Authorization": f"Bearer {os.environ['RESEND_API_KEY']}"}
+    key = resend_key()
+    if not key.isascii():
+        # httpx would otherwise fail with an opaque 'ascii' codec error on the header.
+        raise ValueError("RESEND_API_KEY 含有非 ASCII 字符，请在后端环境变量里重新粘贴密钥")
+    headers = {"Authorization": f"Bearer {key}"}
     for start in range(0, len(to), BATCH):
         # Resend batch API: one message per recipient so addresses are never shared.
         payload = [
