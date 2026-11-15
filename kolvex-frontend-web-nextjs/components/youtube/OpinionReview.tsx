@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowDown, MousePointerClick } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -48,6 +49,11 @@ function Figure({ value }: { value: number }) {
 
 type Selection = { sentiment: ReviewSentiment; index: number };
 
+/** Bins at or below 0% trailed the market; the rest beat it. Matches zeroPosition. */
+function isWorseBin(bin: ReviewHistogramBin) {
+  return bin.high !== null && bin.high <= 0;
+}
+
 /** "比大盘少涨 6.9%" style text; the sign lives in the words, so color stays neutral. */
 function diffText(value: number, t: T) {
   const direction = relativeDirection(value);
@@ -92,6 +98,9 @@ function Histogram({
   const bins = stats.histogram ?? [];
   const heights = histogramHeights(bins);
   const zero = zeroPosition(bins) * 100;
+  const [hovered, setHovered] = useState<number | null>(null);
+  const focus = hovered ?? selected;
+  const focusBin = focus !== null ? bins[focus] : undefined;
   return (
     <figure className="mt-6 min-w-0">
       <figcaption className="text-xs text-muted-foreground">
@@ -101,10 +110,13 @@ function Histogram({
         className="relative mt-2 flex h-28 items-end gap-1"
         role="group"
         aria-label={t("youtubeOpinions.review.distribution")}
+        onMouseLeave={() => setHovered(null)}
       >
         {bins.map((bin, index) => {
           const label = binLabel(bin, t);
           const active = selected === index;
+          const worse = isWorseBin(bin);
+          const dimmed = selected !== null && !active;
           return (
             <button
               key={`${bin.low}:${bin.high}`}
@@ -115,9 +127,11 @@ function Histogram({
                 range: label,
                 count: String(bin.count),
               })}
-              title={label}
+              onMouseEnter={() => setHovered(bin.count ? index : null)}
+              onFocus={() => setHovered(bin.count ? index : null)}
+              onBlur={() => setHovered(null)}
               onClick={() => onSelect(active ? null : { sentiment, index })}
-              className="group flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-0.5 rounded-t-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default"
+              className="group flex h-full min-w-0 flex-1 cursor-pointer flex-col items-center justify-end gap-0.5 rounded-t-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default"
             >
               <span
                 className={cn(
@@ -129,10 +143,13 @@ function Histogram({
               </span>
               <span
                 className={cn(
-                  "block w-full rounded-t-sm transition-colors",
+                  "block w-full rounded-t-sm transition-[background-color,box-shadow]",
+                  worse ? "bg-negative-fill" : "bg-positive-fill",
                   active
-                    ? "bg-foreground"
-                    : "bg-muted-foreground/35 group-hover:group-enabled:bg-muted-foreground/60",
+                    ? "ring-2 ring-foreground ring-offset-1 ring-offset-card"
+                    : dimmed
+                      ? "opacity-30 group-hover:group-enabled:opacity-70"
+                      : "opacity-60 group-hover:group-enabled:opacity-100",
                 )}
                 style={{ height: `${Math.max(heights[index] * 78, bin.count ? 3 : 0)}%` }}
               />
@@ -145,12 +162,47 @@ function Histogram({
           style={{ left: `${zero}%` }}
         />
       </div>
-      <div className="mt-1 flex justify-between gap-2 text-[0.6875rem] text-muted-foreground">
-        <span>{t("youtubeOpinions.review.axisWorse")}</span>
-        <span>{t("youtubeOpinions.review.axisSame")}</span>
-        <span className="text-right">{t("youtubeOpinions.review.axisBetter")}</span>
+      <div className="mt-1 flex justify-between gap-2 text-[0.6875rem]">
+        <span className="font-medium text-negative">← {t("youtubeOpinions.review.axisWorse")}</span>
+        <span className="text-muted-foreground">{t("youtubeOpinions.review.axisSame")}</span>
+        <span className="text-right font-medium text-positive">
+          {t("youtubeOpinions.review.axisBetter")} →
+        </span>
       </div>
-      <p className="mt-2 text-xs font-medium">{t("youtubeOpinions.review.binHint")}</p>
+      <div
+        className={cn(
+          "mt-3 flex min-h-9 items-center gap-2 rounded-lg px-3 py-2 text-xs",
+          focusBin
+            ? "bg-muted text-foreground"
+            : "border border-dashed border-border text-muted-foreground",
+        )}
+        aria-live="polite"
+      >
+        {focusBin ? (
+          <>
+            <span className="min-w-0 flex-1 tabular-nums">
+              <span className="font-semibold">{binLabel(focusBin, t)}</span>
+              {" · "}
+              {t("youtubeOpinions.review.binCount", { count: String(focusBin.count) })}
+            </span>
+            <span className="flex shrink-0 items-center gap-1 font-medium">
+              {focus === selected ? (
+                <>
+                  {t("youtubeOpinions.review.binListed")}
+                  <ArrowDown className="h-3.5 w-3.5" aria-hidden="true" />
+                </>
+              ) : (
+                t("youtubeOpinions.review.binClickToList")
+              )}
+            </span>
+          </>
+        ) : (
+          <>
+            <MousePointerClick className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            {t("youtubeOpinions.review.binHint")}
+          </>
+        )}
+      </div>
     </figure>
   );
 }
@@ -190,8 +242,14 @@ function BinOpinions({
   );
   const data = resource.data;
   const sentimentWord = t(`youtubeOpinions.review.${sentiment}`);
+  const cardRef = useRef<HTMLDivElement>(null);
+  // The list opens below both cards, out of view on most screens: bring it into view.
+  useEffect(() => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    cardRef.current?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+  }, []);
   return (
-    <ListCard className="mt-4 min-w-0 p-5" aria-live="polite">
+    <ListCard ref={cardRef} className="mt-4 min-w-0 scroll-mt-4 p-5" aria-live="polite">
       <div className="flex items-start justify-between gap-3">
         <h3 className="min-w-0 text-sm font-semibold tabular-nums">
           {t("youtubeOpinions.review.binTitle", {
@@ -433,16 +491,11 @@ function MarketContext({ review, t }: { review: Review; t: T }) {
         >
           {weeks.map((week) => {
             const x = ((Date.parse(week.week) - Date.parse(first)) / span) * 100;
-            const height = ((week.bullish + week.bearish) / maxWeek) * 12;
+            const bull = (week.bullish / maxWeek) * 12;
+            const bear = (week.bearish / maxWeek) * 12;
+            const left = Math.min(Math.max(x, 0), 98.5);
             return (
-              <rect
-                key={week.week}
-                x={Math.min(Math.max(x, 0), 98.5)}
-                y={40 - height}
-                width={1.5}
-                height={height}
-                className="fill-muted-foreground/30"
-              >
+              <g key={week.week}>
                 <title>
                   {t("youtubeOpinions.review.weekCount", {
                     week: day(week.week),
@@ -450,7 +503,21 @@ function MarketContext({ review, t }: { review: Review; t: T }) {
                     bearish: String(week.bearish),
                   })}
                 </title>
-              </rect>
+                <rect
+                  x={left}
+                  y={40 - bull}
+                  width={1.5}
+                  height={bull}
+                  className="fill-positive-fill/60"
+                />
+                <rect
+                  x={left}
+                  y={40 - bull - bear}
+                  width={1.5}
+                  height={bear}
+                  className="fill-negative-fill/60"
+                />
+              </g>
             );
           })}
           <polyline

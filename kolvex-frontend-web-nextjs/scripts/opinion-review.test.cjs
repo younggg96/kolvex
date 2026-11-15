@@ -46,12 +46,15 @@ test("figures carry a sign and a tone, so direction never depends on color", () 
 });
 
 test("histogram labels say worse or better than the market, and heights scale to the tallest bin", () => {
-  assert.equal(review.binLabel({ low: null, high: -20, count: 3 }, t), "少涨 20% 以上");
-  assert.equal(review.binLabel({ low: -20, high: -15, count: 3 }, t), "少涨 15%–20%");
-  assert.equal(review.binLabel({ low: -5, high: 0, count: 3 }, t), "少涨 0%–5%");
-  assert.equal(review.binLabel({ low: 0, high: 5, count: 3 }, t), "多涨 0%–5%");
-  assert.equal(review.binLabel({ low: 20, high: null, count: 3 }, t), "多涨 20% 以上");
-  assert.equal(review.binLabel({ low: -20, high: -15, count: 3 }, translator(en)), "15%–20% worse");
+  assert.equal(review.binLabel({ low: null, high: -20, count: 3 }, t), "跑输大盘 20% 以上");
+  assert.equal(review.binLabel({ low: -20, high: -15, count: 3 }, t), "跑输大盘 15%–20%");
+  assert.equal(review.binLabel({ low: -5, high: 0, count: 3 }, t), "跑输大盘 0%–5%");
+  assert.equal(review.binLabel({ low: 0, high: 5, count: 3 }, t), "跑赢大盘 0%–5%");
+  assert.equal(review.binLabel({ low: 20, high: null, count: 3 }, t), "跑赢大盘 20% 以上");
+  assert.equal(
+    review.binLabel({ low: -20, high: -15, count: 3 }, translator(en)),
+    "Trailed market by 15%–20%",
+  );
   assert.deepEqual(
     [...review.histogramHeights([{ count: 2 }, { count: 4 }, { count: 0 }])],
     [0.5, 1, 0],
@@ -75,7 +78,7 @@ test("plain-language helpers: holding period, direction, beat count and the zero
   assert.equal(review.zeroPosition(bins), 0.5);
   assert.equal(
     t("youtubeOpinions.review.headlineLess", { value: review.magnitude(-6.9) }),
-    "这些股票平均比大盘少涨 6.9%",
+    "这些股票平均跑输大盘 6.9%",
   );
 });
 
