@@ -23,9 +23,12 @@ function isBlankLogo(image: HTMLImageElement): boolean {
     for (let i = 0; i < data.length; i += 4) {
       // Composite against the white logo background, including transparent pixels.
       const alpha = data[i + 3] / 255;
-      if ([data[i], data[i + 1], data[i + 2]].some(
-        (channel) => channel * alpha + 255 * (1 - alpha) < 245
-      )) return false;
+      if (
+        [data[i], data[i + 1], data[i + 2]].some(
+          (channel) => channel * alpha + 255 * (1 - alpha) < 245,
+        )
+      )
+        return false;
     }
     return true;
   } catch {
@@ -63,7 +66,10 @@ interface CompanyLogoProps {
   bgColor?: string;
   /** Text color for fallback */
   textColor?: string;
-  /** Whether to use unoptimized image loading (默认false以启用缓存优化) */
+  /**
+   * Load the logo straight from FMP (default). The source PNGs are 1–11 KB and CORS-enabled,
+   * so running them through Vercel image optimization only spends the Hobby transform quota.
+   */
   unoptimized?: boolean;
   /** Additional container classes */
   className?: string;
@@ -124,7 +130,7 @@ export default function CompanyLogo({
   customBorderColor,
   bgColor = "bg-white",
   textColor = "text-muted-foreground",
-  unoptimized = false,
+  unoptimized = true,
   className = "",
   imageClassName = "",
 }: CompanyLogoProps) {
@@ -139,8 +145,7 @@ export default function CompanyLogo({
   const px = customSize || preset.px;
   const chars = customSize ? (px < 28 ? 1 : px < 36 ? 3 : 4) : preset.chars;
   const cleanSymbol = abbreviation.replace(/[^A-Z0-9]/g, "");
-  const fallbackText =
-    (cleanSymbol.length <= chars ? cleanSymbol : cleanSymbol.slice(0, 1)) || "?";
+  const fallbackText = (cleanSymbol.length <= chars ? cleanSymbol : cleanSymbol.slice(0, 1)) || "?";
 
   return (
     <div
@@ -156,7 +161,7 @@ export default function CompanyLogo({
         shapeMap[shape],
         borderMap[border],
         customBorderColor || borderColorMap[borderColor],
-        className
+        className,
       )}
     >
       {!hasError ? (
@@ -168,6 +173,8 @@ export default function CompanyLogo({
           height={px}
           className={cn("h-full w-full object-contain", imageClassName)}
           unoptimized={unoptimized}
+          // FMP sends `Access-Control-Allow-Origin: *`; anonymous CORS lets isBlankLogo read pixels.
+          crossOrigin={unoptimized ? "anonymous" : undefined}
           onError={() => setFailedLogoUrl(logoUrl)}
           onLoad={(event) => {
             if (isBlankLogo(event.currentTarget)) setFailedLogoUrl(logoUrl);
@@ -177,7 +184,9 @@ export default function CompanyLogo({
         />
       ) : (
         <span
-          style={{ fontSize: `${Math.max(9, Math.round(px / (fallbackText.length > 2 ? 3.6 : 2.6))) / 16}rem` }}
+          style={{
+            fontSize: `${Math.max(9, Math.round(px / (fallbackText.length > 2 ? 3.6 : 2.6))) / 16}rem`,
+          }}
           className={cn("font-semibold leading-none tracking-tight", textColor)}
         >
           {fallbackText}

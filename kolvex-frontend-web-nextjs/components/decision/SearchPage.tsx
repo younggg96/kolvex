@@ -39,7 +39,6 @@ import { xRequest, type XCreator } from "@/lib/xContentApi";
 import { getYouTubeOpinionDashboard } from "@/lib/youtubeOpinionsApi";
 import SearchDiscovery from "./SearchDiscovery";
 import { useCopy, useDayLabel } from "./shared";
-import styles from "./search-page.module.css";
 
 type Filter = "all" | "stocks" | "creators" | "research";
 type StockResult = { ticker: string; name: string };
@@ -89,11 +88,7 @@ function ResultRow({
       <Link
         href={href}
         onClick={onOpen}
-        className={cn(
-          listRowTargetClass,
-          styles.rowLink,
-          "flex gap-2 max-lg:min-h-[48px] lg:gap-3",
-        )}
+        className={cn(listRowTargetClass, "flex gap-2 max-lg:min-h-[48px] lg:gap-3")}
       >
         {leading}
         <span className="min-w-0 flex-1">
@@ -363,13 +358,16 @@ export default function SearchPage() {
   }
 
   const searchDock = (
-    <div className={styles.searchDock}>
+    <div className="mb-6 max-lg:m-0 max-lg:px-1 max-lg:pt-1">
       <div className="flex items-center gap-1 lg:gap-3">
         <form role="search" noValidate onSubmit={submit} className="min-w-0 flex-1">
           <div
             className={cn(
               "glass-field relative flex h-[44px] items-center rounded-3xl bg-foreground/[0.06] lg:h-14",
-              styles.searchField,
+              "[transition:background-color_180ms_var(--spring),border-color_180ms_var(--spring)] motion-reduce:transition-none",
+              "focus-within:border-foreground/40 focus-within:bg-foreground/10",
+              // Phone dock: `!` beats the global light-theme control radius and glass shadow on .glass-field.
+              "max-lg:!rounded-[1.25rem] max-lg:border-transparent max-lg:!shadow-none max-lg:focus-within:border-foreground/25 max-lg:focus-within:bg-foreground/[0.09]",
             )}
           >
             <SearchFieldIcon className="left-3.5 h-4 w-4 lg:left-5 lg:h-5 lg:w-5" />
@@ -441,14 +439,23 @@ export default function SearchPage() {
 
   return (
     <DashboardLayout title={c("Search", "探索")}>
-      <main ref={page} data-search-page className={styles.page}>
-        <header className={styles.pageHeader}>
+      {/* `[overflow-y:auto]`, not `overflow-y-auto`: globals.css pads `.overflow-y-auto` scrollers
+          for the phone dock, and this page reserves that space in its own scroll region. */}
+      <main
+        ref={page}
+        data-search-page
+        className="group/search mx-auto min-h-0 w-full max-w-[1280px] flex-1 [overflow-y:auto] px-8 pb-16 pt-8 max-lg:flex max-lg:flex-col max-lg:overflow-hidden max-lg:p-0 max-lg:pb-[var(--search-keyboard-inset,0px)]"
+      >
+        <header className="mb-5 max-lg:m-0 max-lg:shrink-0 max-lg:px-[16px] max-lg:pb-1 max-lg:pt-4">
           <h1 className="text-xl font-semibold tracking-tight lg:text-3xl">
             {c("Search", "探索")}
           </h1>
         </header>
         {dockSlot ? createPortal(searchDock, dockSlot) : searchDock}
-        <div ref={scrollRegion} className={styles.scrollRegion}>
+        <div
+          ref={scrollRegion}
+          className="max-lg:min-h-0 max-lg:flex-1 max-lg:overflow-y-auto max-lg:px-[16px] max-lg:pb-[calc(8.5rem+max(1rem,env(safe-area-inset-bottom,0px)))] max-lg:group-data-[search-keyboard]/search:pb-[calc(4.5rem+var(--search-keyboard-inset,0px))]"
+        >
           {watchlistError && (
             <p role="alert" className="mt-3 pl-5 text-sm text-negative">
               {c("Your watchlist couldn't be updated. Try again.", "自选更新失败，请重试。")}
@@ -475,7 +482,7 @@ export default function SearchPage() {
                 size="sm"
                 itemClassName="min-h-10 px-4"
               />
-              <div key={filter} className={styles.results}>
+              <div key={filter} className="animate-results-enter motion-reduce:animate-none">
                 {showStocks && (
                   <Section title={c("Stocks", "股票")}>
                     {stockResults.map((stock) => (

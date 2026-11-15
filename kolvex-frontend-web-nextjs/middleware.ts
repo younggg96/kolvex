@@ -35,7 +35,10 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder
+     * - api/ — route handlers read the session themselves (createServerSupabaseClient can
+     *   persist refreshed cookies there), so a per-call Auth round trip here only doubles
+     *   the CPU cost of every client fetch and poll.
      */
-    "/((?!_next/static|_next/image|favicon.ico|robots\\.txt$|llms\\.txt$|sitemap\\.xml$|opengraph-image$|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!api/|_next/static|_next/image|favicon.ico|robots\\.txt$|llms\\.txt$|sitemap\\.xml$|opengraph-image$|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

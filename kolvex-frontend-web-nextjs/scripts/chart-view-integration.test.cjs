@@ -1,11 +1,11 @@
-const { test } = require('node:test');
-const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
-const vm = require('node:vm');
-const ts = require('typescript');
-const React = require('react');
-const { renderToStaticMarkup } = require('react-dom/server');
+const { test } = require("node:test");
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+const vm = require("node:vm");
+const ts = require("typescript");
+const React = require("react");
+const { renderToStaticMarkup } = require("react-dom/server");
 
 // Same transpile-and-evaluate pattern as scripts/chart-advanced-indicators.test.cjs: the real
 // ChartView is rendered with PriceGraph stubbed by a recorder, so these assertions are about the
@@ -16,35 +16,51 @@ const graphRenders = [];
 
 function compile(file, mocks = {}) {
   const module = { exports: {} };
-  const source = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
+  const source = fs.readFileSync(path.join(__dirname, "..", file), "utf8");
   const output = ts.transpileModule(source, {
-    compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2020 },
+    compilerOptions: {
+      module: ts.ModuleKind.CommonJS,
+      jsx: ts.JsxEmit.ReactJSX,
+      target: ts.ScriptTarget.ES2020,
+    },
   }).outputText;
   const load = (key) => {
     if (key in mocks) return mocks[key];
-    if (key.startsWith('@/') || key.startsWith('./') || key.startsWith('../')) return compile(resolveModule(file, key));
+    if (key.startsWith("@/") || key.startsWith("./") || key.startsWith("../"))
+      return compile(resolveModule(file, key));
     return require(key);
   };
   // ChartView reads localStorage/setTimeout through `window`; a minimal shim keeps the module
   // evaluable in Node (formatChangePercent/formatPrice come from the stockApi stub below).
-  const window = { localStorage: { getItem: () => null, setItem() {} }, setTimeout, clearTimeout, addEventListener() {}, removeEventListener() {} };
+  const window = {
+    localStorage: { getItem: () => null, setItem() {} },
+    setTimeout,
+    clearTimeout,
+    addEventListener() {},
+    removeEventListener() {},
+  };
   vm.runInNewContext(output, { module, exports: module.exports, require: load, console, window });
   return module.exports;
 }
 
 /** Resolve a relative/aliased import of a file that may be .ts or .tsx. */
 function resolveModule(fromFile, spec) {
-  const base = spec.startsWith('@/')
-    ? path.join('', spec.slice(2))
+  const base = spec.startsWith("@/")
+    ? path.join("", spec.slice(2))
     : path.join(path.dirname(fromFile), spec);
-  for (const candidate of [`${base}.ts`, `${base}.tsx`, path.join(base, 'index.ts'), path.join(base, 'index.tsx')]) {
-    if (fs.existsSync(path.join(__dirname, '..', candidate))) return candidate;
+  for (const candidate of [
+    `${base}.ts`,
+    `${base}.tsx`,
+    path.join(base, "index.ts"),
+    path.join(base, "index.tsx"),
+  ]) {
+    if (fs.existsSync(path.join(__dirname, "..", candidate))) return candidate;
   }
   throw new Error(`cannot resolve ${spec} from ${fromFile}`);
 }
 
 const bars = Array.from({ length: 40 }, (_, index) => ({
-  date: `2026-08-${String(index + 1).padStart(2, '0')}`,
+  date: `2026-08-${String(index + 1).padStart(2, "0")}`,
   open: 100 + index,
   high: 102 + index,
   low: 99 + index,
@@ -54,23 +70,47 @@ const bars = Array.from({ length: 40 }, (_, index) => ({
 
 /** Everything ChartView needs, with the AI/drawing plumbing reduced to stable stubs. */
 const baseProps = {
-  symbol: 'NVDA',
-  params: { period: '3mo', interval: '1d' },
+  symbol: "NVDA",
+  params: { period: "3mo", interval: "1d" },
   events: [
-    { id: 'a', channel_id: 'c1', channel_title: 'Creator', opinion_date: '2026-08-10', sentiment: 'bullish' },
-    { id: 'b', channel_id: 'c2', channel_title: 'Creator 2', opinion_date: '2026-08-12', sentiment: 'bearish' },
-    { id: 'c', channel_id: 'c3', channel_title: 'Creator 3', opinion_date: '2026-08-12', sentiment: 'neutral' },
+    {
+      id: "a",
+      channel_id: "c1",
+      channel_title: "Creator",
+      opinion_date: "2026-08-10",
+      sentiment: "bullish",
+    },
+    {
+      id: "b",
+      channel_id: "c2",
+      channel_title: "Creator 2",
+      opinion_date: "2026-08-12",
+      sentiment: "bearish",
+    },
+    {
+      id: "c",
+      channel_id: "c3",
+      channel_title: "Creator 3",
+      opinion_date: "2026-08-12",
+      sentiment: "neutral",
+    },
   ],
   drawings: [],
   setDrawings() {},
   undo() {},
   canUndo: false,
-  syncStatus: 'synced',
+  syncStatus: "synced",
   formatDate: (date) => date,
   t: (key, params) => (params ? `${key}:${JSON.stringify(params)}` : key),
   snapshotBars: bars,
-  aiJobs: { analysis: { status: 'idle' }, drawings: { status: 'idle' }, monitorError: null, checking: false, refresh() {} },
-  selectedModel: '',
+  aiJobs: {
+    analysis: { status: "idle" },
+    drawings: { status: "idle" },
+    monitorError: null,
+    checking: false,
+    refresh() {},
+  },
+  selectedModel: "",
   onModelChange() {},
 };
 
@@ -89,27 +129,51 @@ function PriceGraphStub(props) {
   }, [box, props.onGeometry]);
   props = box ? props : { ...props, onGeometry: undefined };
   return React.createElement(
-    'div',
-    { 'data-graph-mode': props.mode, 'data-graph-range': props.range, 'data-graph-calls': props.calls ? props.calls.size : -1 },
-    props.renderPlot ? React.createElement('div', { 'data-plot': 'advanced' }, props.renderPlot({
-      width: 640, height: 360, plotWidth: 584, plotHeight: 334, priceTop: 28, priceBottom: 306,
-      axisWidth: 56, timeAxis: 26, axisBlock: { x: 0, y: 0, w: 584, h: 306 },
-      view: { start: 0, end: bars.length }, priceHigh: 142, priceLow: 99, count: bars.length,
-      firstIndex: 0, lastIndex: bars.length - 1,
-      xOf: (index) => ((index + 0.5) * 584) / bars.length,
-      yOf: (price) => 28 + ((142 - price) / 43) * 278,
-      indexAt: (time) => time, timeAt: (index) => index, priceAt: (y) => y,
-      toPx: (anchor) => ({ x: anchor.time, y: anchor.price }), barsBetween: (a, b) => Math.round(b.time - a.time),
-    })) : null,
-    props.subPane ? React.createElement('div', { 'data-subpane': 'yes' }) : null,
-    props.trailingControls ? React.createElement('div', { 'data-trailing': 'yes' }) : null,
-    props.onOpenAdvanced ? React.createElement('div', { 'data-open-advanced': 'yes' }) : null,
+    "div",
+    {
+      "data-graph-mode": props.mode,
+      "data-graph-range": props.range,
+      "data-graph-calls": props.calls ? props.calls.size : -1,
+    },
+    props.renderPlot
+      ? React.createElement(
+          "div",
+          { "data-plot": "advanced" },
+          props.renderPlot({
+            width: 640,
+            height: 360,
+            plotWidth: 584,
+            plotHeight: 334,
+            priceTop: 28,
+            priceBottom: 306,
+            axisWidth: 56,
+            timeAxis: 26,
+            axisBlock: { x: 0, y: 0, w: 584, h: 306 },
+            view: { start: 0, end: bars.length },
+            priceHigh: 142,
+            priceLow: 99,
+            count: bars.length,
+            firstIndex: 0,
+            lastIndex: bars.length - 1,
+            xOf: (index) => ((index + 0.5) * 584) / bars.length,
+            yOf: (price) => 28 + ((142 - price) / 43) * 278,
+            indexAt: (time) => time,
+            timeAt: (index) => index,
+            priceAt: (y) => y,
+            toPx: (anchor) => ({ x: anchor.time, y: anchor.price }),
+            barsBetween: (a, b) => Math.round(b.time - a.time),
+          }),
+        )
+      : null,
+    props.subPane ? React.createElement("div", { "data-subpane": "yes" }) : null,
+    props.trailingControls ? React.createElement("div", { "data-trailing": "yes" }) : null,
+    props.onOpenAdvanced ? React.createElement("div", { "data-open-advanced": "yes" }) : null,
   );
 }
 
 // The real geometry: ChartView is supposed to compute its advanced plot on the SAME shared
 // geometry PriceGraph uses, so this module is stubbed only in its default (component) export.
-const shared = compile('lib/chart/graph.ts');
+const shared = compile("lib/chart/graph.ts");
 
 function defaultGraphView({ count, times = [], rangeStart }) {
   if (count < 3) return null;
@@ -152,37 +216,69 @@ function graphGeometry(args) {
 }
 
 const stubs = {
-  './PriceGraph': { __esModule: true, default: PriceGraphStub, defaultGraphView, graphGeometry },
-  '@/hooks/useStockData': { useStockQuote: (symbol, interval, enabled) => ({
-    data: enabled ? { symbol, price: 203.36, changePercent: -1.6111 } : null,
-    loading: false, error: null, refresh() {},
-  }) },
+  "./PriceGraph": { __esModule: true, default: PriceGraphStub, defaultGraphView, graphGeometry },
+  "@/hooks/useStockData": {
+    useStockQuote: (symbol, interval, enabled) => ({
+      data: enabled ? { symbol, price: 203.36, changePercent: -1.6111 } : null,
+      loading: false,
+      error: null,
+      refresh() {},
+    }),
+  },
 };
 
-const ChartView = compile('components/youtube/chart/ChartView.tsx', {
+const ChartView = compile("components/youtube/chart/ChartView.tsx", {
   ...stubs,
-  'react-dom': { createPortal: (node) => node },
-  '@/lib/clientCache': { peekClientCache: () => null },
-  '@/lib/stockApi': {
-    stockHistoryKey: () => 'key',
+  "react-dom": { createPortal: (node) => node },
+  "@/lib/clientCache": { peekClientCache: () => null },
+  "@/lib/stockApi": {
+    stockHistoryKey: () => "key",
     getStockHistory: () => Promise.resolve(bars),
     formatPrice: (value) => `$${Number(value).toFixed(2)}`,
-    formatChangePercent: (value) => `${value >= 0 ? '+' : ''}${Number(value).toFixed(2)}%`,
+    formatChangePercent: (value) => `${value >= 0 ? "+" : ""}${Number(value).toFixed(2)}%`,
     formatVolume: (value) => String(value),
   },
-  '@/hooks/useAvailableProviders': { useAvailableProviders: () => ({ availableProviders: [], loading: false, refresh() {} }) },
-  '@/lib/aiModels': { MODEL_CONFIGS: [], PROVIDER_NAME_TO_ID: {} },
-  '../useChartAiJobs': {},
-  '@/hooks/useChartAiJobs': {},
-  '@/components/ui/dialog': Object.fromEntries(['Dialog', 'DialogContent', 'DialogDescription', 'DialogHeader', 'DialogTitle', 'DialogTrigger', 'DialogFooter', 'DialogClose'].map(key => [key, ({ children }) => React.createElement('div', null, children)])),
-  '@/components/ui/popover': Object.fromEntries(['Popover', 'PopoverContent', 'PopoverTrigger'].map(key => [key, ({ children }) => React.createElement('div', null, children)])),
-  '@/components/ui/select': Object.fromEntries(['Select', 'SelectContent', 'SelectItem', 'SelectTrigger', 'SelectValue'].map(key => [key, ({ children }) => React.createElement('div', null, children)])),
-  '@/components/ui/button': { Button: ({ children, ...props }) => React.createElement('button', props, children) },
-  '@/components/ui/skeleton': { Skeleton: () => React.createElement('div') },
-  '../CreatorAvatar': { __esModule: true, default: () => null },
-  '../ChartDrawingLayer': { __esModule: true, default: () => React.createElement('svg', { 'data-drawings': 'yes' }) },
-  './AiAnalysisPanel': { __esModule: true, default: () => null },
-  './AiAnalysisEmptyState': { __esModule: true, default: () => null },
+  "@/hooks/useAvailableProviders": {
+    useAvailableProviders: () => ({ availableProviders: [], loading: false, refresh() {} }),
+  },
+  "@/lib/aiModels": { MODEL_CONFIGS: [], PROVIDER_NAME_TO_ID: {} },
+  "../useChartAiJobs": {},
+  "@/hooks/useChartAiJobs": {},
+  "@/components/ui/dialog": Object.fromEntries(
+    [
+      "Dialog",
+      "DialogContent",
+      "DialogDescription",
+      "DialogHeader",
+      "DialogTitle",
+      "DialogTrigger",
+      "DialogFooter",
+      "DialogClose",
+    ].map((key) => [key, ({ children }) => React.createElement("div", null, children)]),
+  ),
+  "@/components/ui/popover": Object.fromEntries(
+    ["Popover", "PopoverContent", "PopoverTrigger"].map((key) => [
+      key,
+      ({ children }) => React.createElement("div", null, children),
+    ]),
+  ),
+  "@/components/ui/select": Object.fromEntries(
+    ["Select", "SelectContent", "SelectItem", "SelectTrigger", "SelectValue"].map((key) => [
+      key,
+      ({ children }) => React.createElement("div", null, children),
+    ]),
+  ),
+  "@/components/ui/button": {
+    Button: ({ children, ...props }) => React.createElement("button", props, children),
+  },
+  "@/components/ui/skeleton": { Skeleton: () => React.createElement("div") },
+  "../CreatorAvatar": { __esModule: true, default: () => null },
+  "../ChartDrawingLayer": {
+    __esModule: true,
+    default: () => React.createElement("svg", { "data-drawings": "yes" }),
+  },
+  "./AiAnalysisPanel": { __esModule: true, default: () => null },
+  "./AiAnalysisEmptyState": { __esModule: true, default: () => null },
 }).default;
 
 /**
@@ -192,34 +288,64 @@ const ChartView = compile('components/youtube/chart/ChartView.tsx', {
  */
 function compileChartView(initialBox, initialTool = "cursor") {
   const seededUseState = (initial) => {
-    const value = typeof initial === 'function' ? initial() : initial;
+    const value = typeof initial === "function" ? initial() : initial;
     if (value === "cursor") return React.useState(initialTool);
-    return React.useState(value?.width === 0 && initialBox > 0 ? { ...value, width: initialBox } : value);
+    return React.useState(
+      value?.width === 0 && initialBox > 0 ? { ...value, width: initialBox } : value,
+    );
   };
-  return compile('components/youtube/chart/ChartView.tsx', {
+  return compile("components/youtube/chart/ChartView.tsx", {
     ...stubs,
     react: { ...React, useState: seededUseState },
-    'react-dom': { createPortal: (node) => node },
-    '@/lib/clientCache': { peekClientCache: () => null },
-    '@/lib/stockApi': {
-      stockHistoryKey: () => 'key',
+    "react-dom": { createPortal: (node) => node },
+    "@/lib/clientCache": { peekClientCache: () => null },
+    "@/lib/stockApi": {
+      stockHistoryKey: () => "key",
       getStockHistory: () => Promise.resolve(bars),
       formatPrice: (value) => `$${Number(value).toFixed(2)}`,
-      formatChangePercent: (value) => `${value >= 0 ? '+' : ''}${Number(value).toFixed(2)}%`,
+      formatChangePercent: (value) => `${value >= 0 ? "+" : ""}${Number(value).toFixed(2)}%`,
       formatVolume: (value) => String(value),
     },
-    '@/hooks/useAvailableProviders': { useAvailableProviders: () => ({ availableProviders: [], loading: false, refresh() {} }) },
-    '@/lib/aiModels': { MODEL_CONFIGS: [], PROVIDER_NAME_TO_ID: {} },
-    '@/hooks/useChartAiJobs': {},
-    '@/components/ui/dialog': Object.fromEntries(['Dialog', 'DialogContent', 'DialogDescription', 'DialogHeader', 'DialogTitle', 'DialogTrigger', 'DialogFooter', 'DialogClose'].map(key => [key, ({ children }) => React.createElement('div', null, children)])),
-    '@/components/ui/popover': Object.fromEntries(['Popover', 'PopoverContent', 'PopoverTrigger'].map(key => [key, ({ children }) => React.createElement('div', null, children)])),
-    '@/components/ui/select': Object.fromEntries(['Select', 'SelectContent', 'SelectItem', 'SelectTrigger', 'SelectValue'].map(key => [key, ({ children }) => React.createElement('div', null, children)])),
-    '@/components/ui/button': { Button: ({ children, ...props }) => React.createElement('button', props, children) },
-    '@/components/ui/skeleton': { Skeleton: () => React.createElement('div') },
-    '../CreatorAvatar': { __esModule: true, default: () => null },
-    '../ChartDrawingLayer': { __esModule: true, default: () => React.createElement('svg', { 'data-drawings': 'yes' }) },
-    './AiAnalysisPanel': { __esModule: true, default: () => null },
-    './AiAnalysisEmptyState': { __esModule: true, default: () => null },
+    "@/hooks/useAvailableProviders": {
+      useAvailableProviders: () => ({ availableProviders: [], loading: false, refresh() {} }),
+    },
+    "@/lib/aiModels": { MODEL_CONFIGS: [], PROVIDER_NAME_TO_ID: {} },
+    "@/hooks/useChartAiJobs": {},
+    "@/components/ui/dialog": Object.fromEntries(
+      [
+        "Dialog",
+        "DialogContent",
+        "DialogDescription",
+        "DialogHeader",
+        "DialogTitle",
+        "DialogTrigger",
+        "DialogFooter",
+        "DialogClose",
+      ].map((key) => [key, ({ children }) => React.createElement("div", null, children)]),
+    ),
+    "@/components/ui/popover": Object.fromEntries(
+      ["Popover", "PopoverContent", "PopoverTrigger"].map((key) => [
+        key,
+        ({ children }) => React.createElement("div", null, children),
+      ]),
+    ),
+    "@/components/ui/select": Object.fromEntries(
+      ["Select", "SelectContent", "SelectItem", "SelectTrigger", "SelectValue"].map((key) => [
+        key,
+        ({ children }) => React.createElement("div", null, children),
+      ]),
+    ),
+    "@/components/ui/button": {
+      Button: ({ children, ...props }) => React.createElement("button", props, children),
+    },
+    "@/components/ui/skeleton": { Skeleton: () => React.createElement("div") },
+    "../CreatorAvatar": { __esModule: true, default: () => null },
+    "../ChartDrawingLayer": {
+      __esModule: true,
+      default: () => React.createElement("svg", { "data-drawings": "yes" }),
+    },
+    "./AiAnalysisPanel": { __esModule: true, default: () => null },
+    "./AiAnalysisEmptyState": { __esModule: true, default: () => null },
   }).default;
 }
 
@@ -238,10 +364,10 @@ function render(props) {
   return { markup, graph: settled, initialGraph: first };
 }
 
-test('compact mode renders through PriceGraph, not its own SVG preview', () => {
-  const { markup, graph } = render({ mode: 'compact' });
-  assert.ok(graph, 'ChartView must mount PriceGraph in compact mode');
-  assert.equal(graph.mode, 'compact');
+test("compact mode renders through PriceGraph, not its own SVG preview", () => {
+  const { markup, graph } = render({ mode: "compact" });
+  assert.ok(graph, "ChartView must mount PriceGraph in compact mode");
+  assert.equal(graph.mode, "compact");
   assert.equal(markup.includes('data-graph-mode="compact"'), true);
   // The old inline preview SVG (H:/L: labels + axis frame) must be gone.
   assert.doesNotMatch(markup, /H: /);
@@ -252,123 +378,151 @@ test('compact mode renders through PriceGraph, not its own SVG preview', () => {
   assert.equal(graph.overlay, null);
 });
 
-test('live views forward independent quotes; immutable analysis snapshots keep historical prices', () => {
-  for (const mode of ['compact', 'advanced']) {
+test("live views forward independent quotes; immutable analysis snapshots keep historical prices", () => {
+  for (const mode of ["compact", "advanced"]) {
     const { graph } = render({ mode, snapshotBars: undefined });
     assert.equal(graph.quoteEnabled, true);
     assert.equal(graph.quote.price, 203.36);
     assert.equal(graph.quote.changePercent, -1.6111);
-    assert.equal(typeof graph.onQuoteRetry, 'function');
+    assert.equal(typeof graph.onQuoteRetry, "function");
     const snapshot = render({ mode }).graph;
     assert.equal(snapshot.quoteEnabled, false);
     assert.equal(snapshot.quote, null);
   }
 });
 
-test('compact mode forwards the host-owned range contract straight to the graph', () => {
+test("compact mode forwards the host-owned range contract straight to the graph", () => {
   const rangeOptions = [
-    { value: '1M', label: '1月' },
-    { value: '3M', label: '3月' },
-    { value: '6M', label: '6月' },
+    { value: "1M", label: "1月" },
+    { value: "3M", label: "3月" },
+    { value: "6M", label: "6月" },
   ];
   const chosen = [];
   const { graph } = render({
-    mode: 'compact',
-    range: '1M',
+    mode: "compact",
+    range: "1M",
     onRangeChange: (next) => chosen.push(next),
     rangeOpen: false,
     onRangeOpenChange() {},
     rangeOptions,
-    rangeLabel: 'Sep 26 – Oct 30',
+    rangeLabel: "Sep 26 – Oct 30",
   });
-  assert.equal(graph.range, '1M', 'the host range must win over the internal default');
-  assert.equal(graph.rangeOptions, rangeOptions, 'host labels are passed through untouched');
-  assert.equal(graph.rangeLabel, 'Sep 26 – Oct 30');
-  assert.equal(typeof graph.onRangeOpenChange, 'function');
+  assert.equal(graph.range, "1M", "the host range must win over the internal default");
+  assert.equal(graph.rangeOptions, rangeOptions, "host labels are passed through untouched");
+  assert.equal(graph.rangeLabel, "Sep 26 – Oct 30");
+  assert.equal(typeof graph.onRangeOpenChange, "function");
   // Selecting a range asks the host to load that window (PriceChart owns the history).
-  graph.onRangeChange('6M');
-  assert.deepEqual(chosen, ['6M']);
+  graph.onRangeChange("6M");
+  assert.deepEqual(chosen, ["6M"]);
 });
 
-test('compact mode without a host falls back to its own range state and options', () => {
-  const { graph } = render({ mode: 'compact' });
-  assert.equal(graph.range, '3M');
-  assert.ok(Array.isArray(graph.rangeOptions) && graph.rangeOptions.length >= 9, 'advancedRanges minus CUSTOM');
-  assert.deepEqual(Array.from(graph.rangeOptions, option => option.value), ['1D', '1W', '1M', '3M', '6M', 'YTD', '1Y', '5Y', 'ALL']);
-  assert.equal(graph.rangeOptions.find(option => option.value === '6M').label, 'youtubeOpinions.advancedRange.6M');
+test("compact mode without a host falls back to its own range state and options", () => {
+  const { graph } = render({ mode: "compact" });
+  assert.equal(graph.range, "3M");
+  assert.ok(
+    Array.isArray(graph.rangeOptions) && graph.rangeOptions.length >= 9,
+    "advancedRanges minus CUSTOM",
+  );
+  assert.deepEqual(
+    Array.from(graph.rangeOptions, (option) => option.value),
+    ["1D", "1W", "1M", "3M", "6M", "YTD", "1Y", "5Y", "ALL"],
+  );
+  assert.equal(
+    graph.rangeOptions.find((option) => option.value === "6M").label,
+    "youtubeOpinions.advancedRange.6M",
+  );
   // A standalone chart still reacts locally: no host callback required.
-  graph.onRangeChange('1Y');
+  graph.onRangeChange("1Y");
   const after = graphRenders.at(-1);
-  assert.ok(after, 're-render expected');
+  assert.ok(after, "re-render expected");
 });
 
-test('creator calls reach the graph as per-bar counts', () => {
-  const { graph } = render({ mode: 'compact' });
+test("creator calls reach the graph as per-bar counts", () => {
+  const { graph } = render({ mode: "compact" });
   // vm runs in its own realm, so compare by shape rather than `instanceof Map`.
-  assert.equal(typeof graph.calls?.get, 'function');
-  assert.ok(graph.calls.size > 0, 'calls made on charted days must reach the graph');
+  assert.equal(typeof graph.calls?.get, "function");
+  assert.ok(graph.calls.size > 0, "calls made on charted days must reach the graph");
   const totals = Array.from(graph.calls.values()).reduce(
-    (sum, entry) => ({ bullish: sum.bullish + entry.bullish, bearish: sum.bearish + entry.bearish, other: sum.other + entry.other }),
+    (sum, entry) => ({
+      bullish: sum.bullish + entry.bullish,
+      bearish: sum.bearish + entry.bearish,
+      other: sum.other + entry.other,
+    }),
     { bullish: 0, bearish: 0, other: 0 },
   );
   assert.deepEqual({ ...totals }, { bullish: 1, bearish: 1, other: 1 });
   for (const entry of graph.calls.values()) {
-    assert.deepEqual(Object.keys(entry).sort(), ['bearish', 'bullish', 'other']);
+    assert.deepEqual(Object.keys(entry).sort(), ["bearish", "bullish", "other"]);
   }
 });
 
-test('advanced mode hands its candles to renderPlot on the graph geometry', () => {
-  const { markup, graph } = render({ mode: 'advanced' });
-  assert.equal(graph.mode, 'advanced');
-  assert.equal(typeof graph.renderPlot, 'function', 'advanced candles must render inside PriceGraph');
-  assert.equal(markup.includes('data-plot="advanced"'), true, 'the advanced plot must actually be invoked');
+test("advanced mode hands its candles to renderPlot on the graph geometry", () => {
+  const { markup, graph } = render({ mode: "advanced" });
+  assert.equal(graph.mode, "advanced");
+  assert.equal(
+    typeof graph.renderPlot,
+    "function",
+    "advanced candles must render inside PriceGraph",
+  );
+  assert.equal(
+    markup.includes('data-plot="advanced"'),
+    true,
+    "the advanced plot must actually be invoked",
+  );
   // The range bar / interval / auto-scale are hosted by the graph's control row.
-  assert.ok(graph.trailingControls, 'interval + auto-scale belong to the graph control row');
-  assert.equal(graph.onOpenAdvanced, undefined, 'advanced mode does not reopen itself');
+  assert.ok(graph.trailingControls, "interval + auto-scale belong to the graph control row");
+  assert.equal(graph.onOpenAdvanced, undefined, "advanced mode does not reopen itself");
 });
 
-test('advanced mode keeps its own range and interval state out of the host props', () => {
+test("advanced mode keeps its own range and interval state out of the host props", () => {
   const { graph } = render({
-    mode: 'advanced',
-    range: '1M',
-    rangeOptions: [{ value: '1M', label: 'host label' }],
+    mode: "advanced",
+    range: "1M",
+    rangeOptions: [{ value: "1M", label: "host label" }],
     onRangeChange() {
-      throw new Error('advanced mode must not call the host range callback');
+      throw new Error("advanced mode must not call the host range callback");
     },
   });
   // `render` also renders the sized bundle, which is what the settled `graph` props come from;
   // the pre-size pass is the one that proves the host window never leaks in.
-  assert.ok(graph, 'advanced mode must still mount the graph');
+  assert.ok(graph, "advanced mode must still mount the graph");
   // The settled props come from the sized bundle, which runs hooks directly, so this is exactly
   // what the graph receives with a measured box. The advanced chart keeps its own window.
-  assert.equal(graph.range, '3M', 'advanced never adopts the host window');
+  assert.equal(graph.range, "3M", "advanced never adopts the host window");
   // Its range bar is built from `advancedRanges`, never from the host's option list.
-  const unhosted = render({ mode: 'advanced' }).graph;
-  assert.equal(unhosted.rangeOptions.map(option => option.value).join(','), '1D,1W,1M,3M,6M,YTD,1Y,5Y,ALL');
-  assert.equal(unhosted.rangeOptions.find(option => option.value === '3M').label, 'youtubeOpinions.advancedRange.3M');
-  assert.equal(unhosted.range, '3M');
+  const unhosted = render({ mode: "advanced" }).graph;
+  assert.equal(
+    unhosted.rangeOptions.map((option) => option.value).join(","),
+    "1D,1W,1M,3M,6M,YTD,1Y,5Y,ALL",
+  );
+  assert.equal(
+    unhosted.rangeOptions.find((option) => option.value === "3M").label,
+    "youtubeOpinions.advancedRange.3M",
+  );
+  assert.equal(unhosted.range, "3M");
 });
 
-test('the oscillator pane and the drawing layer share the graph window', () => {
-  const { graph } = render({ mode: 'advanced' });
-  assert.ok(graph.subPane, 'advanced mounts the oscillator under the time axis');
-  assert.ok(graph.drawingLayer, 'drawings are mounted through the graph slot');
+test("the oscillator pane and the drawing layer share the graph window", () => {
+  const { graph } = render({ mode: "advanced" });
+  assert.ok(graph.subPane, "advanced mounts the oscillator under the time axis");
+  assert.ok(graph.drawingLayer, "drawings are mounted through the graph slot");
   // Compact still shows saved drawings (read-only) so AI levels appear in the preview.
-  const compact = render({ mode: 'compact' }).graph;
-  assert.ok(compact.drawingLayer, 'compact shows the drawing layer read-only');
+  const compact = render({ mode: "compact" }).graph;
+  assert.ok(compact.drawingLayer, "compact shows the drawing layer read-only");
   // Both hosts stay mounted through the shared graph, so the pane can never drift from the candles.
-  assert.equal(compact.mode, 'compact');
+  assert.equal(compact.mode, "compact");
 });
 
-
-test('advanced manual drawings use pointer coordinates from the live graph', () => {
-  const ChartViewWithTool = compileChartView(0, 'hline');
+test("advanced manual drawings use pointer coordinates from the live graph", () => {
+  const ChartViewWithTool = compileChartView(0, "hline");
   const committed = [];
-  renderToStaticMarkup(React.createElement(ChartViewWithTool, {
-    ...baseProps,
-    mode: 'advanced',
-    setDrawings: (drawings) => committed.push(...drawings),
-  }));
+  renderToStaticMarkup(
+    React.createElement(ChartViewWithTool, {
+      ...baseProps,
+      mode: "advanced",
+      setDrawings: (drawings) => committed.push(...drawings),
+    }),
+  );
   const interaction = graphRenders.at(-1).drawingInteraction;
   const plot = graphGeometry({ bars, view: { start: 10, end: 30 }, width: 640, height: 360 });
   const event = {
@@ -376,74 +530,164 @@ test('advanced manual drawings use pointer coordinates from the live graph', () 
     clientX: 90 + plot.xOf(18),
     clientY: 60 + 200,
   };
-  assert.equal(interaction.onPointerDown({ ...event, clientX: 90 + plot.plotWidth + 1 }, plot), false);
+  assert.equal(
+    interaction.onPointerDown({ ...event, clientX: 90 + plot.plotWidth + 1 }, plot),
+    false,
+  );
   assert.equal(interaction.onPointerDown(event, plot), true);
   assert.equal(committed.length, 1);
-  assert.equal(committed[0].type, 'hline');
-  assert.deepEqual({ ...committed[0].points[0] }, { time: plot.timeAt(18), price: plot.priceAt(200) });
-  assert.equal(render({ mode: 'compact' }).graph.drawingInteraction, undefined);
+  assert.equal(committed[0].type, "hline");
+  assert.deepEqual(
+    { ...committed[0].points[0] },
+    { time: plot.timeAt(18), price: plot.priceAt(200) },
+  );
+  assert.equal(render({ mode: "compact" }).graph.drawingInteraction, undefined);
 });
 
-test('AI drawings render before the host has measured a box and use the live graph coordinates', () => {
-  for (const mode of ['compact', 'advanced']) {
+test("AI drawings render before the host has measured a box and use the live graph coordinates", () => {
+  for (const mode of ["compact", "advanced"]) {
     const { initialGraph: initial } = render({ mode });
-    assert.equal(typeof initial.onGeometry, 'function', 'the live graph must report its dimensions to enable AI controls and subpanes');
-    assert.equal(typeof initial.drawingLayer, 'function', 'drawings must not wait for the removed host DOM ref');
+    assert.equal(
+      typeof initial.onGeometry,
+      "function",
+      "the live graph must report its dimensions to enable AI controls and subpanes",
+    );
+    assert.equal(
+      typeof initial.drawingLayer,
+      "function",
+      "drawings must not wait for the removed host DOM ref",
+    );
     const live = graphGeometry({ bars, view: { start: 10, end: 30 }, width: 1200, height: 700 });
     const layer = initial.drawingLayer(live);
     assert.equal(layer.props.width, live.plotWidth);
     assert.equal(layer.props.height, live.axisBlock.h);
-    assert.equal(layer.props.toPx, live.toPx, 'AI anchors must follow the same time and price scale as the candles');
+    assert.equal(
+      layer.props.toPx,
+      live.toPx,
+      "AI anchors must follow the same time and price scale as the candles",
+    );
     assert.equal(layer.props.barsBetween, live.barsBetween);
   }
 });
 
-test('creator-opinion charts can hide AI surfaces in compact and advanced modes', () => {
-  for (const mode of ['compact', 'advanced']) {
+test("creator-opinion charts can hide AI surfaces in compact and advanced modes", () => {
+  for (const mode of ["compact", "advanced"]) {
     const { markup, graph } = render({ mode, showAi: false });
-    assert.ok(graph, 'the price chart must remain available');
+    assert.ok(graph, "the price chart must remain available");
     assert.doesNotMatch(markup, /youtubeOpinions\.ai\.(actions|analysisButton|chartSettings)/);
     assert.doesNotMatch(markup, /<aside/);
-    assert.match(render({ mode, showAi: true }).markup, /youtubeOpinions\.ai\.actions/);
   }
+  // AI actions live in the advanced chart only; compact charts reach them through "open advanced".
+  assert.match(render({ mode: "advanced", showAi: true }).markup, /youtubeOpinions\.ai\.actions/);
 });
 
-test('computed zones, channels and pitchforks map to their own shapes and layers', () => {
-  const { analysisDrawings } = compile('components/youtube/aiDrawings.ts');
+test("computed zones, channels and pitchforks map to their own shapes and layers", () => {
+  const { analysisDrawings } = compile("components/youtube/aiDrawings.ts");
   const p = (date, price) => ({ date, price });
   const overlays = [
-    { category: 'supply_demand', label: 'Demand', shape: 'area', direction: 'bullish', points: [p('2026-08-01', 100), p('2026-08-09', 102)] },
-    { category: 'gaps', label: 'FVG', shape: 'area', direction: 'bearish', points: [p('2026-08-02', 104), p('2026-08-09', 106)] },
-    { category: 'volume_profile', label: 'POC', shape: 'line', direction: 'neutral', points: [p('2026-08-01', 101), p('2026-08-09', 101)] },
-    { category: 'anchored_vwap', label: 'AVWAP', shape: 'line', direction: 'bullish', points: [p('2026-08-01', 100), p('2026-08-02', 101), p('2026-08-03', 102)] },
-    { category: 'channels', label: 'Rising', shape: 'channel', direction: 'bullish', points: [p('2026-08-01', 100), p('2026-08-05', 104), p('2026-08-03', 108)] },
-    { category: 'pitchfork', label: 'Fork', shape: 'pitchfork', direction: 'bullish', points: [p('2026-08-01', 100), p('2026-08-03', 110), p('2026-08-05', 105)] },
-    { category: 'channels', label: 'Broken', shape: 'channel', direction: 'bullish', points: [p('2026-08-01', 100), p('2026-08-05', 104)] },
+    {
+      category: "supply_demand",
+      label: "Demand",
+      shape: "area",
+      direction: "bullish",
+      points: [p("2026-08-01", 100), p("2026-08-09", 102)],
+    },
+    {
+      category: "gaps",
+      label: "FVG",
+      shape: "area",
+      direction: "bearish",
+      points: [p("2026-08-02", 104), p("2026-08-09", 106)],
+    },
+    {
+      category: "volume_profile",
+      label: "POC",
+      shape: "line",
+      direction: "neutral",
+      points: [p("2026-08-01", 101), p("2026-08-09", 101)],
+    },
+    {
+      category: "anchored_vwap",
+      label: "AVWAP",
+      shape: "line",
+      direction: "bullish",
+      points: [p("2026-08-01", 100), p("2026-08-02", 101), p("2026-08-03", 102)],
+    },
+    {
+      category: "channels",
+      label: "Rising",
+      shape: "channel",
+      direction: "bullish",
+      points: [p("2026-08-01", 100), p("2026-08-05", 104), p("2026-08-03", 108)],
+    },
+    {
+      category: "pitchfork",
+      label: "Fork",
+      shape: "pitchfork",
+      direction: "bullish",
+      points: [p("2026-08-01", 100), p("2026-08-03", 110), p("2026-08-05", 105)],
+    },
+    {
+      category: "channels",
+      label: "Broken",
+      shape: "channel",
+      direction: "bullish",
+      points: [p("2026-08-01", 100), p("2026-08-05", 104)],
+    },
   ];
-  const result = analysisDrawings({ version_id: 'v', view: { end: '2026-08-09' }, levels: [], trendlines: [], overlays }, (key) => key);
-  assert.deepEqual(JSON.parse(JSON.stringify(result.map((item) => [item.label, item.type, item.group]))), [
-    ['Demand', 'rect', 'zones'],
-    ['FVG', 'rect', 'zones'],
-    ['POC', 'trend', 'levels'],
-    ['AVWAP', 'polyline', 'trend'],
-    ['Rising', 'channel', 'trend'],
-    ['Fork', 'pitchfork', 'trend'],
-  ]);
+  const result = analysisDrawings(
+    { version_id: "v", view: { end: "2026-08-09" }, levels: [], trendlines: [], overlays },
+    (key) => key,
+  );
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(result.map((item) => [item.label, item.type, item.group]))),
+    [
+      ["Demand", "rect", "zones"],
+      ["FVG", "rect", "zones"],
+      ["POC", "trend", "levels"],
+      ["AVWAP", "polyline", "trend"],
+      ["Rising", "channel", "trend"],
+      ["Fork", "pitchfork", "trend"],
+    ],
+  );
 });
 
-test('the drawing layer renders a filled channel and three pitchfork tines', () => {
-  const Layer = compile('components/youtube/ChartDrawingLayer.tsx', {
-    '@/lib/stockApi': { formatChangePercent: String, formatPrice: String },
+test("the drawing layer renders a filled channel and three pitchfork tines", () => {
+  const Layer = compile("components/youtube/ChartDrawingLayer.tsx", {
+    "@/lib/stockApi": { formatChangePercent: String, formatPrice: String },
   }).default;
-  const drawing = (type, points) => ({ id: type, type, color: 'red', source: 'ai', group: 'trend', points: points.map(([time, price]) => ({ time, price })) });
-  const markup = renderToStaticMarkup(React.createElement(Layer, {
-    width: 800, height: 400, drawings: [
-      drawing('channel', [[0, 100], [100, 120], [50, 130]]),
-      drawing('pitchfork', [[0, 100], [100, 140], [200, 120]]),
-    ],
-    draft: null, selectedId: null, interactive: true,
-    toPx: ({ time, price }) => ({ x: time, y: 400 - price }), barsBetween: () => 0, t: (key) => key,
-  }));
+  const drawing = (type, points) => ({
+    id: type,
+    type,
+    color: "red",
+    source: "ai",
+    group: "trend",
+    points: points.map(([time, price]) => ({ time, price })),
+  });
+  const markup = renderToStaticMarkup(
+    React.createElement(Layer, {
+      width: 800,
+      height: 400,
+      drawings: [
+        drawing("channel", [
+          [0, 100],
+          [100, 120],
+          [50, 130],
+        ]),
+        drawing("pitchfork", [
+          [0, 100],
+          [100, 140],
+          [200, 120],
+        ]),
+      ],
+      draft: null,
+      selectedId: null,
+      interactive: true,
+      toPx: ({ time, price }) => ({ x: time, y: 400 - price }),
+      barsBetween: () => 0,
+      t: (key) => key,
+    }),
+  );
   assert.equal((markup.match(/<polygon/g) || []).length, 1);
   assert.equal((markup.match(/data-drawing="pitchfork"/g) || []).length, 3);
   assert.equal((markup.match(/data-drawing="channel"/g) || []).length, 2);

@@ -39,7 +39,9 @@ function walk(dirs) {
   return out;
 }
 
-const SOURCES = walk(["app", "components", "lib"]).filter((file) => !file.includes(`${path.sep}__tests__${path.sep}`));
+const SOURCES = walk(["app", "components", "lib"]).filter(
+  (file) => !file.includes(`${path.sep}__tests__${path.sep}`),
+);
 const rel = (file) => path.relative(ROOT, file);
 const read = (file) => fs.readFileSync(file, "utf8");
 /** 1-based line number of a character offset. */
@@ -69,7 +71,8 @@ test("a stock identity never links to a broken quotes path", () => {
       '"`/dashboard/market/`"',
     ]) {
       if (bad.startsWith('"`')) {
-        if (text.includes("`/dashboard/market/`")) offenders.push(`${rel(file)} contains an empty quotes path`);
+        if (text.includes("`/dashboard/market/`"))
+          offenders.push(`${rel(file)} contains an empty quotes path`);
         continue;
       }
       if (text.includes(bad)) offenders.push(`${rel(file)} contains ${bad}`);
@@ -148,10 +151,7 @@ test("every CompanyLogo surface in app/ and components/ is routable or explicitl
       "components/youtube/OtherCreatorOpinions.tsx",
       "renders OpinionCard with showTicker={false} - no stock identity",
     ],
-    [
-      "components/decision/StockWorkspace.tsx",
-      "IS the quotes page - no further navigation needed",
-    ],
+    ["components/decision/StockWorkspace.tsx", "IS the quotes page - no further navigation needed"],
     [
       "components/decision/Watchlist.tsx",
       "logo sits inside the row <Link> that already targets the quotes page",
@@ -182,14 +182,36 @@ test("every CompanyLogo surface in app/ and components/ is routable or explicitl
     ],
   ]);
 
+  // The quotes link is built by the parent and passed in as `href`: the child must render it
+  // and the parent must build it for the quotes page.
+  const LINKED_BY_PARENT = new Map([
+    [
+      "components/decision/WatchlistStockSheet.tsx",
+      { parent: "components/decision/Watchlist.tsx", tag: "<WatchlistStockSheet" },
+    ],
+  ]);
+  for (const [file, { parent, tag }] of LINKED_BY_PARENT) {
+    assert.match(
+      read(path.join(ROOT, file)),
+      /<Link href=\{href\}>/,
+      `${file} must link to the href it receives`,
+    );
+    const parentText = read(path.join(ROOT, parent));
+    assert.ok(
+      parentText.includes(tag) && /\/dashboard\/market|marketStockHref/.test(parentText),
+      `${parent} must pass a quotes href`,
+    );
+  }
+
   const filesWithLogo = SOURCES.filter((file) => /<CompanyLogo[\s>]/.test(read(file))).map(rel);
   assert.ok(filesWithLogo.length > 20, "expected the audit to see the stock surfaces");
   const offenders = [];
   for (const file of filesWithLogo) {
-    if (IS_DESTINATION.has(file) || KNOWN_GAP.has(file)) continue;
+    if (IS_DESTINATION.has(file) || KNOWN_GAP.has(file) || LINKED_BY_PARENT.has(file)) continue;
     const text = read(file);
     const linked =
-      /marketStockHref|marketStockUrl|MARKET_STOCK_BASE/.test(text) || /\/dashboard\/market/.test(text);
+      /marketStockHref|marketStockUrl|MARKET_STOCK_BASE/.test(text) ||
+      /\/dashboard\/market/.test(text);
     if (!linked && !EXEMPT.has(file)) {
       offenders.push(`${file} renders <CompanyLogo> but offers no /dashboard/market route`);
       continue;
@@ -209,12 +231,20 @@ test("every CompanyLogo surface in app/ and components/ is routable or explicitl
 test("the landing marquee pills (MU / PLTR / TSLA) are links to the quotes page", () => {
   const text = read(path.join(ROOT, "components/landing/LandingStockTicker.tsx"));
   // Must derive the pill target from the helper, not interpolate a bare string.
-  assert.match(text, /marketStockUrl\(stock\.symbol\)/, "landing ticker must resolve pills via marketStockUrl");
+  assert.match(
+    text,
+    /marketStockUrl\(stock\.symbol\)/,
+    "landing ticker must resolve pills via marketStockUrl",
+  );
   // Non-routable symbols (e.g. an index) degrade to a plain, non-interactive pill.
   assert.match(text, /<Link[\s\S]*?href=\{href\}/, "routable pill must render a <Link>");
   // The marquee animation must survive the change.
   assert.match(text, /animate-ticker/, "ticker marquee animation class was dropped");
-  assert.match(text, /hover:\[animation-play-state:paused\]/, "marquee pause-on-hover behaviour was dropped");
+  assert.match(
+    text,
+    /hover:\[animation-play-state:paused\]/,
+    "marquee pause-on-hover behaviour was dropped",
+  );
 });
 
 test("stock identity links keep an accessible name and never open a new tab", () => {
@@ -224,9 +254,11 @@ test("stock identity links keep an accessible name and never open a new tab", ()
     // Icon/logo-only links need an aria-label or visible text; a target=_blank on a
     // quotes link would break the SPA return path.
     if (/<Link[^>]*\bhref=\{marketStockHref/.test(text)) {
-      const blocks = text.match(/<Link[^>]*href=\{marketStockHref[^}]*\}[\s\S]{0,400}?<\/Link>/g) || [];
+      const blocks =
+        text.match(/<Link[^>]*href=\{marketStockHref[^}]*\}[\s\S]{0,400}?<\/Link>/g) || [];
       for (const block of blocks) {
-        const hasName = /aria-label=/.test(block) || />[^<]*[A-Za-z\u4e00-\u9fff][\s\S]*</.test(block);
+        const hasName =
+          /aria-label=/.test(block) || />[^<]*[A-Za-z\u4e00-\u9fff][\s\S]*</.test(block);
         if (!hasName) offenders.push(`${rel(file)} quotes link without accessible name`);
         if (/target=/.test(block)) offenders.push(`${rel(file)} quotes link must not set target`);
       }

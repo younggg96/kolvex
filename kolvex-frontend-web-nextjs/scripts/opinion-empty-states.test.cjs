@@ -65,6 +65,7 @@ function renderExplorer(overrides = {}, locale = "zh") {
         `/dashboard/market/${encodeURIComponent(String(symbol).trim().toUpperCase())}${from ? `?from=${encodeURIComponent(from)}` : ""}`,
     },
     "@/lib/youtubeVideoHistory": { videoHistory: () => [] },
+    "@/hooks/useStockOutcomes": { useStockOutcomes: () => ({ cardProps: () => ({}) }) },
     "@/hooks/useStockPerformance": {
       useStockPerformance: () => ({ performance: {}, loading: false }),
     },

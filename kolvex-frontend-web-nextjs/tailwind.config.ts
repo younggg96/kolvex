@@ -130,6 +130,23 @@ const config: Config = {
           "0%": { transform: "translateX(0)" },
           "100%": { transform: "translateX(-33.33%)" },
         },
+        // Search page: discovery fades up, trending rows arrive in a stagger, results settle in.
+        "discovery-enter": {
+          from: { opacity: "0.65" },
+          to: { opacity: "1" },
+        },
+        "stock-arrive": {
+          from: { opacity: "0.55", transform: "translateY(8px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        "results-enter": {
+          from: { opacity: "0.6", transform: "translateY(4px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        "typewriter-blink": {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0" },
+        },
       },
       // Every easing utility is the critically damped spring from lib/motion/spring.ts, so
       // `ease-out`, `ease-in-out` and the default `transition` timing all move the same way.
@@ -156,6 +173,10 @@ const config: Config = {
         "fade-in": "fade-in 0.2s var(--spring)",
         "fade-out": "fade-out 0.15s var(--spring)",
         ticker: "ticker 40s linear infinite",
+        "discovery-enter": "discovery-enter 360ms var(--ease-out-quint) both",
+        "stock-arrive": "stock-arrive 400ms var(--ease-out-quint) both",
+        "results-enter": "results-enter 200ms var(--ease-out-quint) both",
+        "typewriter-blink": "typewriter-blink 900ms step-end infinite",
       },
     },
   },
