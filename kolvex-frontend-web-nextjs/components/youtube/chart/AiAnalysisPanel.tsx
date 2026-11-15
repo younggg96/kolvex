@@ -112,10 +112,7 @@ export default function AiAnalysisPanel({
 
       {loading && (
         <div className="mt-4">
-          <p className="text-sm leading-6 text-muted-foreground" aria-hidden="true">
-            {t("youtubeOpinions.ai.loading")}
-          </p>
-          <ContentLoading label={t("youtubeOpinions.ai.loading")} className="mt-1 min-h-0">
+          <ContentLoading label={t("youtubeOpinions.ai.loading")} className="min-h-0">
             <div className="mt-4 space-y-2.5">
               {[0, 1, 2].map((i) => (
                 <Skeleton key={i} className={cn("h-4 rounded-md", i === 2 ? "w-2/3" : "w-full")} />

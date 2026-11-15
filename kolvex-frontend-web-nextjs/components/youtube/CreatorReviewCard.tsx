@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { InfoTip } from "@/components/ui/info-tip";
 import { ListCard } from "@/components/ui/list-card";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import { ContentLoading } from "@/components/ui/content-loading";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCachedResource } from "@/hooks/useCachedResource";
 import { useTranslation } from "@/lib/i18n";
@@ -124,9 +125,36 @@ export default function CreatorReviewCard({ channelId }: { channelId: string }) 
   if (!card) {
     if (resource.loading) {
       return (
-        <section className="min-w-0" aria-busy="true">
+        <section className="min-w-0">
           {heading}
-          <Skeleton className="h-28 rounded-2xl" />
+          <ContentLoading className="min-h-0">
+            <ListCard className="p-4">
+              <Skeleton className="h-8 w-40 rounded-[var(--radius-control)]" />
+              <div className="mt-4 space-y-4">
+                {[0, 1].map((block) => (
+                  <div
+                    key={block}
+                    className="border-t border-border pt-4 first:border-t-0 first:pt-0"
+                  >
+                    <Skeleton className="h-4 w-28 rounded-md" />
+                    <Skeleton className="mt-1.5 h-3 w-16 rounded-full" />
+                    <Skeleton className="mt-3 h-3 w-32 rounded-full" />
+                    <Skeleton className="mt-1.5 h-7 w-20 rounded-md" />
+                    <Skeleton className="mt-1.5 h-3 w-36 rounded-full" />
+                    <Skeleton className="mt-3 h-3 w-40 rounded-full" />
+                    <div className="mt-2 grid grid-cols-2 gap-3">
+                      {[0, 1].map((half) => (
+                        <div key={half}>
+                          <Skeleton className="h-3 w-16 rounded-full" />
+                          <Skeleton className="mt-1.5 h-4 w-20 rounded-md" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ListCard>
+          </ContentLoading>
         </section>
       );
     }

@@ -596,12 +596,53 @@ function SegmentTable({
   );
 }
 
+const SKELETON_BARS = [0.15, 0.12, 0.25, 0.45, 0.8, 1, 0.35, 0.1, 0.06, 0.04];
+
+/** Mirrors the loaded page: horizon control, two sentiment cards, then the SPY chart. */
 function ReviewSkeleton({ label }: { label: string }) {
   return (
     <ContentLoading label={label} className="min-h-0">
-      <div className="grid gap-4 md:grid-cols-2">
-        <Skeleton className="h-80 rounded-2xl" />
-        <Skeleton className="h-80 rounded-2xl" />
+      <div className="flex flex-wrap items-center gap-3">
+        <Skeleton className="h-9 w-32 rounded-[var(--radius-control)]" />
+        <Skeleton className="h-3 w-72 max-w-full rounded-full" />
+      </div>
+      <div className="mt-4 grid min-w-0 gap-4 md:grid-cols-2">
+        {[0, 1].map((card) => (
+          <ListCard key={card} className="min-w-0 p-5">
+            <Skeleton className="h-3 w-32 rounded-full" />
+            <Skeleton className="mt-2 h-6 w-3/4 rounded-md" />
+            <div className="mt-4 space-y-3">
+              <Skeleton className="h-4 w-full rounded-full" />
+              <Skeleton className="h-4 w-full rounded-full" />
+            </div>
+            <Skeleton className="mt-4 h-4 w-1/2 rounded-full" />
+            <div className="mt-6">
+              <Skeleton className="h-3 w-2/3 rounded-full" />
+              <div className="mt-2 flex h-28 items-end gap-1">
+                {SKELETON_BARS.map((height, index) => (
+                  <Skeleton
+                    key={index}
+                    className="flex-1 rounded-b-none rounded-t-sm"
+                    style={{ height: `${Math.max(height * 78, 3)}%` }}
+                  />
+                ))}
+              </div>
+              <div className="mt-1 flex justify-between">
+                <Skeleton className="h-3 w-14 rounded-full" />
+                <Skeleton className="h-3 w-14 rounded-full" />
+                <Skeleton className="h-3 w-14 rounded-full" />
+              </div>
+              <Skeleton className="mt-3 h-9 w-full rounded-lg" />
+            </div>
+          </ListCard>
+        ))}
+      </div>
+      <div className="mt-10 min-w-0">
+        <Skeleton className="h-6 w-36 rounded-md" />
+        <ListCard className="mt-3 p-5">
+          <Skeleton className="h-4 w-64 max-w-full rounded-full" />
+          <Skeleton className="mt-4 h-40 w-full rounded-lg" />
+        </ListCard>
       </div>
     </ContentLoading>
   );
@@ -780,14 +821,9 @@ export default function OpinionReview() {
               </footer>
             </>
           ) : resource.loading || building ? (
-            <>
-              {building && (
-                <p className="mb-4 text-sm text-muted-foreground" role="status">
-                  {t("youtubeOpinions.review.building")}
-                </p>
-              )}
-              <ReviewSkeleton label={t("common.loadingStatus")} />
-            </>
+            <ReviewSkeleton
+              label={t(building ? "youtubeOpinions.review.building" : "common.loadingStatus")}
+            />
           ) : (
             <ListCard>
               <ListEmptyState
