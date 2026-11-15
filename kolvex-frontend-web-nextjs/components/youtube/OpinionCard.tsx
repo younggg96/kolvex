@@ -5,6 +5,8 @@ import CompanyLogo from "@/components/ui/company-logo";
 import CreatorAvatar from "./CreatorAvatar";
 import type { YouTubeOpinion } from "@/lib/youtubeOpinionsApi";
 import OpinionStrength from "./OpinionStrength";
+import OpinionOutcomeLine from "./OpinionOutcome";
+import type { OpinionOutcome } from "@/lib/opinionOutcome";
 import { formatOpinionDate } from "@/lib/opinionDates";
 
 function displayList(value?: unknown[]) {
@@ -21,11 +23,18 @@ export default function OpinionCard({
   onStock,
   showCreator = true,
   showTicker = true,
+  outcome,
+  outcomeHorizons = [],
+  outcomeBenchmark = "",
 }: {
   opinion: YouTubeOpinion;
+  /** Price move after the video; omitted where the list has no outcome data. */
+  outcome?: OpinionOutcome | "unavailable";
+  outcomeHorizons?: number[];
+  outcomeBenchmark?: string;
   onCreator?: (channelId: string) => void;
   onStock?: (ticker: string) => void;
-  t: (key: string) => string;
+  t: (key: string, params?: Record<string, string>) => string;
   showCreator?: boolean;
   showTicker?: boolean;
 }) {
@@ -40,7 +49,12 @@ export default function OpinionCard({
   return (
     <article className="min-w-0 [overflow-wrap:anywhere]">
       <header className="flex min-w-0 items-start gap-3">
-        {showCreator && <CreatorAvatar name={opinion.channel_title || opinion.channel_id} avatarUrl={opinion.channel_avatar_url} />}
+        {showCreator && (
+          <CreatorAvatar
+            name={opinion.channel_title || opinion.channel_id}
+            avatarUrl={opinion.channel_avatar_url}
+          />
+        )}
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
             {showCreator && (
@@ -58,7 +72,9 @@ export default function OpinionCard({
                 className="inline-flex items-center gap-2 text-[0.9375rem] font-semibold hover:underline focus-visible:outline-none "
                 onClick={() => onStock?.(opinion.ticker)}
               >
-                <span aria-hidden="true"><CompanyLogo symbol={opinion.ticker} size="sm" /></span>
+                <span aria-hidden="true">
+                  <CompanyLogo symbol={opinion.ticker} size="sm" />
+                </span>
                 <span>{opinion.ticker}</span>
               </button>
             )}
@@ -66,7 +82,10 @@ export default function OpinionCard({
               dateTime={opinion.opinion_date || opinion.video_published_at || undefined}
               className="text-xs text-muted-foreground tabular-nums"
             >
-              {formatOpinionDate(opinion.opinion_date || opinion.video_published_at, t("common.intlLocale"))}
+              {formatOpinionDate(
+                opinion.opinion_date || opinion.video_published_at,
+                t("common.intlLocale"),
+              )}
             </time>
           </div>
           <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1">
@@ -91,7 +110,9 @@ export default function OpinionCard({
       )}
 
       {(keyPoints.length > 0 || risks.length > 0) && (
-        <div className={`mt-4 grid gap-x-8 gap-y-4 ${keyPoints.length > 0 && risks.length > 0 ? "md:grid-cols-2" : ""}`}>
+        <div
+          className={`mt-4 grid gap-x-8 gap-y-4 ${keyPoints.length > 0 && risks.length > 0 ? "md:grid-cols-2" : ""}`}
+        >
           {keyPoints.length > 0 && (
             <div>
               <h3 className="text-xs font-semibold text-muted-foreground">
@@ -100,7 +121,10 @@ export default function OpinionCard({
               <ul className="mt-2 space-y-1.5 text-sm leading-6">
                 {keyPoints.map((point) => (
                   <li key={point} className="flex gap-2">
-                    <span aria-hidden="true" className="mt-[0.5625rem] h-1 w-1 shrink-0 rounded-full bg-positive-fill" />
+                    <span
+                      aria-hidden="true"
+                      className="mt-[0.5625rem] h-1 w-1 shrink-0 rounded-full bg-positive-fill"
+                    />
                     <span>{point}</span>
                   </li>
                 ))}
@@ -115,7 +139,10 @@ export default function OpinionCard({
               <ul className="mt-2 space-y-1.5 text-sm leading-6">
                 {risks.map((risk) => (
                   <li key={risk} className="flex gap-2">
-                    <span aria-hidden="true" className="mt-[0.5625rem] h-1 w-1 shrink-0 rounded-full bg-negative-fill" />
+                    <span
+                      aria-hidden="true"
+                      className="mt-[0.5625rem] h-1 w-1 shrink-0 rounded-full bg-negative-fill"
+                    />
                     <span>{risk}</span>
                   </li>
                 ))}
@@ -124,6 +151,13 @@ export default function OpinionCard({
           )}
         </div>
       )}
+
+      <OpinionOutcomeLine
+        outcome={outcome}
+        horizons={outcomeHorizons}
+        benchmark={outcomeBenchmark}
+        t={t}
+      />
 
       {(opinion.video_title || opinion.video_url) && (
         <footer className="mt-4">

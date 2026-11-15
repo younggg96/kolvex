@@ -13,7 +13,8 @@ Method (METHOD_VERSION 1):
   neutral/mixed have no direction and are only counted.
 - Dedupe: the same channel repeating the same direction on the same ticker within
   `dedupe_days` keeps only the first opinion (overlapping windows inflate significance).
-- A horizon that the price data does not cover yet is "pending", not zero.
+- A horizon that the price data does not cover yet is "pending", not zero. `latest` is the
+  move from entry to the most recent completed close, for opinions younger than a horizon.
 """
 
 import math
@@ -28,9 +29,19 @@ DEFAULT_HORIZONS = (1, 5, 20, 60)
 DEFAULT_DEDUPE_DAYS = 7
 NY = ZoneInfo("America/New_York")
 MARKET_OPEN = time(9, 30)
+SESSION_SETTLED = time(16, 30)
 DIRECTIONS = {"bullish": 1, "bearish": -1}
 
 Bars = list[dict[str, Any]]  # [{"date": "YYYY-MM-DD", "open": float, "close": float}], ascending
+
+
+def completed_bars(bars: Bars, now: datetime) -> Bars:
+    """Drop today's bar until the session has settled; its close is still moving."""
+    local = now.astimezone(NY)
+    cutoff = local.date().isoformat()
+    if local.time() >= SESSION_SETTLED:
+        return [b for b in bars if b["date"] <= cutoff]
+    return [b for b in bars if b["date"] < cutoff]
 
 
 def price_symbol(ticker: str) -> str:
@@ -107,6 +118,7 @@ def score_opinion(
         "entry_date": None,
         "entry_price": None,
         "horizons": {},
+        "latest": None,
     }
     published = published_ny(opinion.get("video_published_at"))
     if published is None:
@@ -122,12 +134,8 @@ def score_opinion(
     entry = float(entry_bar["open"])
     bench = {b["date"]: b for b in benchmark_bars if b.get("open") and b.get("close")}
     bench_entry = bench.get(entry_bar["date"])
-    results: dict[int, dict[str, Any]] = {}
-    for horizon in horizons:
-        exit_at = start + horizon - 1
-        if exit_at >= len(usable):
-            results[horizon] = {"status": "pending"}
-            continue
+
+    def measure(exit_at: int) -> dict[str, Any]:
         exit_bar = usable[exit_at]
         ret = _pct(float(exit_bar["close"]), entry)
         bench_exit = bench.get(exit_bar["date"])
@@ -136,7 +144,7 @@ def score_opinion(
             bench_ret = _pct(float(bench_exit["close"]), float(bench_entry["open"]))
             excess = round(ret - bench_ret, 4)
             signed = round(excess * event["direction"], 4) if event["direction"] else None
-        results[horizon] = {
+        return {
             "status": "scored",
             "exit_date": exit_bar["date"],
             "return_pct": ret,
@@ -144,12 +152,19 @@ def score_opinion(
             "excess_return_pct": excess,
             "signed_excess_pct": signed,
         }
+
+    results: dict[int, dict[str, Any]] = {}
+    for horizon in horizons:
+        exit_at = start + horizon - 1
+        results[horizon] = measure(exit_at) if exit_at < len(usable) else {"status": "pending"}
     return {
         **event,
         "status": "scored",
         "entry_date": entry_bar["date"],
         "entry_price": entry,
         "horizons": results,
+        # Entry open -> the latest completed close, however many sessions that is.
+        "latest": {"sessions": len(usable) - start, **measure(len(usable) - 1)},
     }
 
 

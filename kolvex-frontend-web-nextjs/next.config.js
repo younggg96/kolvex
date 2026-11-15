@@ -6,9 +6,7 @@ const withPWA = require("@ducanh2912/next-pwa").default({
   aggressiveFrontEndNavCaching: false,
   reloadOnOnline: false,
   swcMinify: true,
-  disable:
-    process.env.NODE_ENV === "development" ||
-    process.env.NEXT_PUBLIC_ENABLE_PWA !== "true",
+  disable: process.env.NODE_ENV === "development" || process.env.NEXT_PUBLIC_ENABLE_PWA !== "true",
   workboxOptions: {
     disableDevLogs: true,
   },
@@ -57,7 +55,6 @@ const nextConfig = {
         port: "",
         pathname: "/storage/v1/object/public/**",
       },
-
     ],
     dangerouslyAllowSVG: true,
     contentDispositionType: "attachment",
@@ -72,8 +69,7 @@ const nextConfig = {
   async headers() {
     // 开发环境：允许本地后端 API
     const isDevelopment = process.env.NODE_ENV === "development";
-    const localApiUrl =
-      process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
+    const localApiUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
 
     // 统一的 CSP（App/Pages Router 通用）
     // 如果不使用 Vercel Analytics，请把下面的 `va.vercel-scripts.com` 与 `*.vercel-insights.com` 从各指令删掉
@@ -248,12 +244,24 @@ const nextConfig = {
         ],
       },
       // Include redirects and API responses in indexing controls.
-      ...["/dashboard/:path*", "/auth/:path*", "/config", "/api/:path*"].map(
-        (source) => ({
-          source,
-          headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
-        }),
-      ),
+      ...["/dashboard/:path*", "/auth/:path*", "/config", "/api/:path*"].map((source) => ({
+        source,
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      })),
+      // Public reading pages are Chinese, but the shared root layout renders <html lang="en">;
+      // declare the language at the HTTP level for search and AI crawlers.
+      ...[
+        "/stocks",
+        "/stocks/:path*",
+        "/research",
+        "/research/:path*",
+        "/creators",
+        "/creators/:path*",
+        "/share/creators/:path*",
+      ].map((source) => ({
+        source,
+        headers: [{ key: "Content-Language", value: "zh-CN" }],
+      })),
       // 站点级 CSP
       {
         source: "/:path*",

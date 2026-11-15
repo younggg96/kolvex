@@ -9,7 +9,7 @@ video; existing shared links keep working.
 ## Source and access rules
 
 - The server calls existing public FastAPI routes under `/api/v1`: trading-analysis
-  `published/list` and `published/{id}`, plus youtube-opinions `dashboard` and
+  `public/list` and `public/{id}`, plus youtube-opinions `dashboard` and
   `creators/{channelId}/latest-video`.
 - No auth cookie, user access token, service key or private analysis endpoint is
   used. Publishing remains an explicit existing author action. The frontend
@@ -49,6 +49,29 @@ their uppercase canonical. The `/sitemap.xml` walks all 100-report API
 batches, includes creator and stock URLs and list pagination, and deduplicates
 entries. Backend failure causes sitemap failure, rather than a misleading empty
 successful sitemap. Split sitemaps before reaching 50,000 entries.
+
+### AI search (GEO)
+
+- `/llms.txt` (route handler, ISR 600s) lists the entry pages, the 30 stocks and
+  creators with the most recorded opinions (with their real counts) and the 30
+  latest published reports.
+- Stock pages open with a data-backed summary built by `stockOpinionSummary`
+  (`lib/publicSeo.ts`): recorded opinion and creator counts, bullish/bearish/
+  neutral counts, the latest opinion's creator and date (page 1 only) and the
+  published research count. It is also the meta description. With nothing
+  recorded it falls back to the generic sentence; it never shows estimates.
+- Stock and creator share pages emit a `CollectionPage` whose `ItemList` holds
+  one `Comment` per opinion (creator as author, opinion date, summary, source
+  video URL, ticker); missing fields are omitted. Research pages' `Article` also
+  carries `about` (ticker), `inLanguage` and `isAccessibleForFree`.
+- The shared root layout still renders `<html lang="en">`. `ReadingLayout` (used
+  by `(public)` pages and creator share pages) sets `lang="zh-CN"` on its wrapper,
+  and public reading paths also send `Content-Language: zh-CN` (`next.config.js`).
+  Do not switch `<html lang>` from request headers in the root layout: that makes
+  every page dynamic and undoes ISR.
+- Creator share pages reuse bilingual components (`useCopy`), so the page and its
+  error boundary wrap them in `FixedLocale locale="zh"` (`lib/i18n`); the server
+  HTML is Chinese and matches hydration whatever the visitor's language setting.
 
 The library's own copy is Chinese; supplied research stays in its original
 language. This is one canonical public version, not a claimed pair of translated
