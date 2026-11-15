@@ -3,22 +3,23 @@ Kolvex Backend API
 FastAPI 应用入口
 """
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
-import logging
 import asyncio
+import logging
 import os
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import asynccontextmanager
 
 import anyio.to_thread
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.gzip import GZipMiddleware
 
 # 导入路由和配置
 from app.api.routes import api_router
 from app.core.config import settings
-from app.core.redis import init_redis, close_redis, get_redis
 from app.core.egress_metrics import RequestMetricsMiddleware, run_traffic_reporter
 from app.core.public_read_cache import PublicReadCacheMiddleware
+from app.core.redis import close_redis, get_redis, init_redis
 
 # 配置日志
 logging.basicConfig(
@@ -26,11 +27,6 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
-
-
-
-
-
 
 
 @asynccontextmanager
@@ -54,32 +50,59 @@ async def lifespan(app: FastAPI):
 
     # 清理上次残留的 running 状态分析
     from app.services.trading_analysis_service import get_trading_analysis_service
+
     get_trading_analysis_service().cleanup_stale_analyses()
     try:
         from app.core.supabase import get_supabase_service
         from app.services.research_workspace import fail_stale_runs
+
         fail_stale_runs(get_supabase_service())
     except Exception as error:  # noqa: BLE001 — tables may not exist before the migration
         logger.warning("Research workspace cleanup skipped: %s", error)
     from app.services.stock_chart_jobs import run_worker
-    worker = asyncio.create_task(run_worker()) if os.getenv("CHART_WORKER_ENABLED", "true").lower() == "true" else None
+
+    worker = (
+        asyncio.create_task(run_worker())
+        if os.getenv("CHART_WORKER_ENABLED", "true").lower() == "true"
+        else None
+    )
     from app.services.economic_indicators import run_economic_indicators_worker
-    indicators_worker = asyncio.create_task(run_economic_indicators_worker()) if settings.ECONOMIC_INDICATORS_WORKER_ENABLED else None
+
+    indicators_worker = (
+        asyncio.create_task(run_economic_indicators_worker())
+        if settings.ECONOMIC_INDICATORS_WORKER_ENABLED
+        else None
+    )
     traffic_reporter = asyncio.create_task(run_traffic_reporter())
     from app.services.paper_trading.service import run_worker as run_paper_worker
+
     paper_worker = asyncio.create_task(run_paper_worker())
     from app.services.sec.holdings_store import institution_store
-    holdings_worker = asyncio.create_task(institution_store.run_worker()) if os.getenv("SEC_13F_SYNC_ENABLED", "true").lower() == "true" else None
+
+    holdings_worker = (
+        asyncio.create_task(institution_store.run_worker())
+        if os.getenv("SEC_13F_SYNC_ENABLED", "true").lower() == "true"
+        else None
+    )
     from app.services.options_activity.service import run_options_activity_worker
-    options_activity_worker = asyncio.create_task(run_options_activity_worker()) if settings.OPTIONS_ACTIVITY_WORKER_ENABLED else None
+
+    options_activity_worker = (
+        asyncio.create_task(run_options_activity_worker())
+        if settings.OPTIONS_ACTIVITY_WORKER_ENABLED
+        else None
+    )
     from app.services.agent_signal_evaluation import run_signal_evaluation_worker
+
     signal_eval_worker = asyncio.create_task(run_signal_evaluation_worker())
     from app.services.congress_trades import run_congress_trades_worker
+
     congress_worker = (
         asyncio.create_task(run_congress_trades_worker())
-        if os.getenv("CONGRESS_TRADES_SYNC_ENABLED", "").lower() == "true" else None
+        if os.getenv("CONGRESS_TRADES_SYNC_ENABLED", "").lower() == "true"
+        else None
     )
     from app.services.email_service import run_email_worker
+
     email_worker = asyncio.create_task(run_email_worker())
     try:
         yield
@@ -158,6 +181,27 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+class CompressResponses:
+    """Gzip JSON responses (often several hundred KB), never SSE streams.
+
+    Starlette's GZipMiddleware buffers its output, which would hold back
+    streamed chat and analysis tokens, so every `/stream` endpoint bypasses it.
+    """
+
+    def __init__(self, app):
+        self.app = app
+        self.gzip = GZipMiddleware(app, minimum_size=1024, compresslevel=5)
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http" and not scope["path"].endswith("/stream"):
+            return await self.gzip(scope, receive, send)
+        return await self.app(scope, receive, send)
+
+
+# Outermost, so cached and CORS responses are compressed too.
+app.add_middleware(CompressResponses)
 
 
 @app.get("/")

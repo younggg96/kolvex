@@ -1,4 +1,5 @@
 """Supplementary stock facts. Ratios use matching statements and explicit periods."""
+
 import logging
 import math
 import time
@@ -28,7 +29,9 @@ def ratio(numerator, denominator, positive=True):
 
 
 def ordered(rows):
-    return sorted((row for row in rows if row.get("period")), key=lambda row: row["period"], reverse=True)
+    return sorted(
+        (row for row in rows if row.get("period")), key=lambda row: row["period"], reverse=True
+    )
 
 
 def cagr(rows, key):
@@ -39,7 +42,7 @@ def cagr(rows, key):
     end = datetime.fromisoformat(latest["period"])
     for previous in rows[1:]:
         years = (end - datetime.fromisoformat(previous["period"])).days / 365.25
-        if abs(years - 3) > .17:
+        if abs(years - 3) > 0.17:
             continue
         a, b = number(latest.get(key)), number(previous.get(key))
         if a is not None and b is not None and a > 0 and b > 0:
@@ -52,14 +55,28 @@ def cagr(rows, key):
 
 def price_metrics(stock, benchmark, year):
     """YTD uses aligned split-adjusted closes; drawdown includes dividends."""
+
     def prices(rows):
-        return {row["date"][:10]: value for row in rows
-                if (value := number(row.get("close"))) is not None and value > 0}
-    adjusted = prices([{**row, "close": row.get("adjusted_close", row.get("close"))} for row in stock])
+        return {
+            row["date"][:10]: value
+            for row in rows
+            if (value := number(row.get("close"))) is not None and value > 0
+        }
+
+    adjusted = prices(
+        [{**row, "close": row.get("adjusted_close", row.get("close"))} for row in stock]
+    )
     stock, benchmark = prices(stock), prices(benchmark)
-    result = {"max_drawdown_5y": None, "history_start": None, "history_end": None,
-              "ytd_return": None, "benchmark_ytd_return": None, "ytd_vs_sp500": None,
-              "ytd_start": None, "ytd_end": None}
+    result = {
+        "max_drawdown_5y": None,
+        "history_start": None,
+        "history_end": None,
+        "ytd_return": None,
+        "benchmark_ytd_return": None,
+        "ytd_vs_sp500": None,
+        "ytd_start": None,
+        "ytd_end": None,
+    }
     if adjusted:
         dates = sorted(adjusted)
         peak, drawdown = 0, 0
@@ -76,8 +93,13 @@ def price_metrics(stock, benchmark, year):
         # Reject stale baselines and mismatched/newly listed histories.
         if (datetime.fromisoformat(f"{year}-01-01") - datetime.fromisoformat(start)).days <= 7:
             a, b = stock[end] / stock[start] - 1, benchmark[end] / benchmark[start] - 1
-            result.update(ytd_return=a, benchmark_ytd_return=b, ytd_vs_sp500=a-b,
-                          ytd_start=start, ytd_end=end)
+            result.update(
+                ytd_return=a,
+                benchmark_ytd_return=b,
+                ytd_vs_sp500=a - b,
+                ytd_start=start,
+                ytd_end=end,
+            )
     return result
 
 
@@ -91,54 +113,115 @@ def build_metrics(symbol, sources, now):
     # Annual return ratios require a balance sheet for the same fiscal ending date.
     ab = next((row for row in annual_balance if row["period"] == i.get("period")), {})
     same_cash = next((row for row in cash if row["period"] == i.get("period")), {})
-    n = lambda key: number(info.get(key))
-    same_currency = bool(info.get("currency") and info.get("currency") == info.get("financialCurrency"))
+
+    def n(key):
+        return number(info.get(key))
+
+    same_currency = bool(
+        info.get("currency") and info.get("currency") == info.get("financialCurrency")
+    )
     result = {
-        "symbol": symbol.upper(), "analyzed_at": now.isoformat(),
-        "financial_currency": info.get("financialCurrency"), "currency": info.get("currency"),
-        "income_period": i.get("period"), "balance_period": b.get("period"), "cash_period": cf.get("period"),
-        "shares_outstanding": n("sharesOutstanding"), "insider_ownership": n("heldPercentInsiders"),
-        "short_float": n("shortPercentOfFloat"), "target_mean_price": n("targetMeanPrice"),
-        "target_currency": info.get("currency"), "current_price": n("currentPrice"),
-        "analyst_consensus": info.get("recommendationKey"), "analyst_count": n("numberOfAnalystOpinions"),
-        "earnings_date": n("earningsTimestamp"), "beta_5y": n("beta"),
+        "symbol": symbol.upper(),
+        "analyzed_at": now.isoformat(),
+        "financial_currency": info.get("financialCurrency"),
+        "currency": info.get("currency"),
+        "income_period": i.get("period"),
+        "balance_period": b.get("period"),
+        "cash_period": cf.get("period"),
+        "shares_outstanding": n("sharesOutstanding"),
+        "insider_ownership": n("heldPercentInsiders"),
+        "short_float": n("shortPercentOfFloat"),
+        "target_mean_price": n("targetMeanPrice"),
+        "target_currency": info.get("currency"),
+        "current_price": n("currentPrice"),
+        "analyst_consensus": info.get("recommendationKey"),
+        "analyst_count": n("numberOfAnalystOpinions"),
+        "earnings_date": n("earningsTimestamp"),
+        "beta_5y": n("beta"),
         "dividend_yield": ratio(info.get("dividendRate"), info.get("currentPrice")),
         "payout_ratio": n("payoutRatio"),
-        "total_assets": number(b.get("Total Assets")), "long_term_debt": number(b.get("Long Term Debt")),
+        "total_assets": number(b.get("Total Assets")),
+        "long_term_debt": number(b.get("Long Term Debt")),
         "total_liabilities": number(b.get("Total Liabilities Net Minority Interest")),
         "shareholder_equity": number(b.get("Stockholders Equity")),
         "operating_income": number(i.get("Operating Income")),
-        "capital_expenditure": abs(cf["Capital Expenditure"]) if number(cf.get("Capital Expenditure")) is not None else None,
+        "capital_expenditure": abs(cf["Capital Expenditure"])
+        if number(cf.get("Capital Expenditure")) is not None
+        else None,
         "pretax_margin": ratio(i.get("Pretax Income"), i.get("Total Revenue")),
-        "fcf_margin_annual": ratio(cf.get("Free Cash Flow"), i.get("Total Revenue")) if cf.get("period") == i.get("period") else None,
+        "fcf_margin_annual": ratio(cf.get("Free Cash Flow"), i.get("Total Revenue"))
+        if cf.get("period") == i.get("period")
+        else None,
         "cash_conversion_annual": ratio(same_cash.get("Operating Cash Flow"), i.get("Net Income")),
-        "revenue_cagr_3y": cagr(income, "Total Revenue"), "eps_cagr_3y": cagr(income, "Diluted EPS"),
-        "roce_annual": None, "roic_annual": None,
-        "price_to_fcf": ratio(info.get("marketCap"), info.get("freeCashflow")) if same_currency else None,
+        "revenue_cagr_3y": cagr(income, "Total Revenue"),
+        "eps_cagr_3y": cagr(income, "Diluted EPS"),
+        "roce_annual": None,
+        "roic_annual": None,
+        "price_to_fcf": ratio(info.get("marketCap"), info.get("freeCashflow"))
+        if same_currency
+        else None,
         "buyback_yield_annual": None,
         "forecast_earnings_growth": number((sources.get("forecast") or {}).get("growth")),
     }
-    assets, current_liabilities = number(ab.get("Total Assets")), number(ab.get("Current Liabilities"))
+    assets, current_liabilities = (
+        number(ab.get("Total Assets")),
+        number(ab.get("Current Liabilities")),
+    )
     if assets is not None and current_liabilities is not None:
-        result["roce_annual"] = ratio(i.get("EBIT"), assets-current_liabilities)
+        result["roce_annual"] = ratio(i.get("EBIT"), assets - current_liabilities)
     # ROIC = NOPAT / average (debt + equity - cash); require consecutive annual balances.
-    previous = next((row for row in annual_balance if ab and 300 <= (
-        datetime.fromisoformat(ab["period"]) - datetime.fromisoformat(row["period"])).days <= 430), {})
+    previous = next(
+        (
+            row
+            for row in annual_balance
+            if ab
+            and 300
+            <= (datetime.fromisoformat(ab["period"]) - datetime.fromisoformat(row["period"])).days
+            <= 430
+        ),
+        {},
+    )
+
     def invested(row):
-        values = [number(row.get(key)) for key in ("Total Debt", "Stockholders Equity", "Cash And Cash Equivalents")]
-        return values[0] + values[1] - values[2] if all(value is not None for value in values) else None
+        values = [
+            number(row.get(key))
+            for key in ("Total Debt", "Stockholders Equity", "Cash And Cash Equivalents")
+        ]
+        return (
+            values[0] + values[1] - values[2]
+            if all(value is not None for value in values)
+            else None
+        )
+
     capital, prior = invested(ab), invested(previous)
     tax = ratio(i.get("Tax Provision"), i.get("Pretax Income"))
     ebit = number(i.get("EBIT"))
-    if capital is not None and prior is not None and tax is not None and 0 <= tax <= 1 and ebit is not None:
-        result["roic_annual"] = ratio(ebit*(1-tax), (capital+prior)/2)
-    repurchase, issuance = number(cf.get("Repurchase Of Capital Stock")), number(cf.get("Issuance Of Capital Stock"))
+    if (
+        capital is not None
+        and prior is not None
+        and tax is not None
+        and 0 <= tax <= 1
+        and ebit is not None
+    ):
+        result["roic_annual"] = ratio(ebit * (1 - tax), (capital + prior) / 2)
+    repurchase, issuance = (
+        number(cf.get("Repurchase Of Capital Stock")),
+        number(cf.get("Issuance Of Capital Stock")),
+    )
     net_issuance = number(cf.get("Net Common Stock Issuance"))
     if same_currency and net_issuance is not None:
         result["buyback_yield_annual"] = ratio(-net_issuance, info.get("marketCap"))
     elif same_currency and repurchase is not None and issuance is not None:
-        result["buyback_yield_annual"] = ratio(abs(repurchase)-abs(issuance), info.get("marketCap"))
-    result.update(price_metrics(sources.get("history") or [], sources.get("benchmark") or [], now.astimezone(ZoneInfo("America/New_York")).year))
+        result["buyback_yield_annual"] = ratio(
+            abs(repurchase) - abs(issuance), info.get("marketCap")
+        )
+    result.update(
+        price_metrics(
+            sources.get("history") or [],
+            sources.get("benchmark") or [],
+            now.astimezone(ZoneInfo("America/New_York")).year,
+        )
+    )
     return result
 
 
@@ -149,20 +232,37 @@ def get_overview_metrics(service, symbol):
         if cached and cached[0] > time.monotonic():
             return cached[1]
     now = datetime.now(timezone.utc)
+
     def history(ticker_symbol):
-        frame = service.get_ticker(ticker_symbol).history(period="5y", interval="1d", auto_adjust=False, timeout=8)
-        return [{"date": day.isoformat(), "close": number(row.get("Close")), "adjusted_close": number(row.get("Adj Close"))} for day, row in frame.iterrows()]
+        frame = service.get_ticker(ticker_symbol).history(
+            period="5y", interval="1d", auto_adjust=False, timeout=8
+        )
+        return [
+            {
+                "date": day.isoformat(),
+                "close": number(row.get("Close")),
+                "adjusted_close": number(row.get("Adj Close")),
+            }
+            for day, row in frame.iterrows()
+        ]
+
     def forecast():
         frame = service.get_ticker(symbol).earnings_estimate
-        return {"growth": number(frame.loc["+1y", "growth"])} if "+1y" in frame.index and "growth" in frame else {}
+        return (
+            {"growth": number(frame.loc["+1y", "growth"])}
+            if "+1y" in frame.index and "growth" in frame
+            else {}
+        )
+
     tasks = {
-        "info": lambda: service.get_ticker(symbol).info,
+        "info": lambda: service.get_info(symbol),
         "income": lambda: service.get_income_statement(symbol),
         "balance": lambda: service.get_balance_sheet(symbol, quarterly=True),
         "annual_balance": lambda: service.get_balance_sheet(symbol),
         "cash": lambda: service.get_cash_flow(symbol),
         "forecast": forecast,
-        "history": lambda: history(symbol), "benchmark": lambda: history("^GSPC"),
+        "history": lambda: history(symbol),
+        "benchmark": lambda: history("^GSPC"),
     }
     futures = {key: _EXECUTOR.submit(load) for key, load in tasks.items()}
     done, _ = wait(futures.values(), timeout=16)
@@ -175,7 +275,9 @@ def get_overview_metrics(service, symbol):
             sources[key] = future.result()
         except Exception as error:
             unavailable.append(key)
-            logging.getLogger(__name__).warning("Overview %s failed for %s: %s", key, symbol, type(error).__name__)
+            logging.getLogger(__name__).warning(
+                "Overview %s failed for %s: %s", key, symbol, type(error).__name__
+            )
     if len(unavailable) == len(tasks):
         raise RuntimeError("Overview sources unavailable")
     if not sources.get("balance"):
