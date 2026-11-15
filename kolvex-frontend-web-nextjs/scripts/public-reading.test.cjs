@@ -197,3 +197,65 @@ test("sitemap walks every report batch, adds opinion routes and pagination witho
     /offline/,
   );
 });
+
+test("stock summary states only recorded counts and omits itself when nothing is recorded", () => {
+  const seo = load("lib/publicSeo.ts");
+  const counts = {
+    total_opinions: 172,
+    total_creators: 13,
+    bullish_count: 64,
+    bearish_count: 33,
+    neutral_count: 75,
+  };
+  const latest = {
+    ticker: "NVDA",
+    channel_title: "博主A",
+    opinion_date: "2026-11-13",
+    sentiment: "bearish",
+  };
+  assert.equal(
+    seo.stockOpinionSummary("NVDA", counts, latest, 2),
+    "Kolvex 共收录 13 位博主对 NVDA 的 172 条观点：看多 64 条、看空 33 条、中性 75 条。最近一条来自「博主A」（2026-11-13，看空）。另有 2 篇已发布的 NVDA AI 研究报告。",
+  );
+  assert.equal(seo.stockOpinionSummary("NVDA", counts, null, 0).includes("最近一条"), false);
+  assert.equal(seo.stockOpinionSummary("NVDA", { ...counts, total_opinions: 0 }, latest, 0), null);
+  assert.equal(
+    seo.stockOpinionSummary("NVDA", null, null, 3),
+    "另有 3 篇已发布的 NVDA AI 研究报告。",
+  );
+});
+
+test("opinion structured data mirrors each recorded opinion and its source video", () => {
+  const seo = load("lib/publicSeo.ts");
+  const data = seo.opinionCollectionData(
+    "NVDA 股票研究与博主观点",
+    "/stocks/NVDA/page/2",
+    [
+      {
+        ticker: "NVDA",
+        company_name: "NVIDIA",
+        sentiment: "bullish",
+        channel_title: "博主A",
+        opinion_date: "2026-11-13",
+        video_url: "https://www.youtube.com/watch?v=abc",
+        summary: "看好数据中心",
+      },
+      { ticker: "NVDA", sentiment: null },
+    ],
+    { "@type": "Corporation", tickerSymbol: "NVDA" },
+  );
+  assert.equal(data["@type"], "CollectionPage");
+  assert.equal(data.url, "https://kolvex.app/stocks/NVDA/page/2");
+  assert.equal(data.mainEntity.numberOfItems, 2);
+  const [first, second] = data.mainEntity.itemListElement.map((entry) => entry.item);
+  assert.equal(first.author.name, "博主A");
+  assert.equal(first.dateCreated, "2026-11-13");
+  assert.equal(first.url, "https://www.youtube.com/watch?v=abc");
+  assert.equal(first.text, "看好数据中心");
+  assert.equal(first.keywords, "看多");
+  assert.equal(first.about.name, "NVIDIA");
+  // Missing fields are omitted, never filled with placeholders.
+  assert.equal(second.author, undefined);
+  assert.equal(second.text, undefined);
+  assert.equal(second.url, undefined);
+});

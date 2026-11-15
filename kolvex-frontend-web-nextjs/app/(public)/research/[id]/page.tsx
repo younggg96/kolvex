@@ -103,6 +103,10 @@ export default async function ResearchDetailPage({ params }: Props) {
           mainEntityOfPage: `${SITE_URL}${publicResearchPath(report.id)}`,
           ...(report.published_at ? { datePublished: report.published_at } : {}),
           author: { "@type": report.author ? "Person" : "Organization", name: author },
+          about: { "@type": "Corporation", tickerSymbol: report.ticker },
+          genre: "AI 生成的股票研究",
+          inLanguage: "zh-CN",
+          isAccessibleForFree: true,
           publisher: { "@type": "Organization", name: "Kolvex", url: SITE_URL },
         }}
       />

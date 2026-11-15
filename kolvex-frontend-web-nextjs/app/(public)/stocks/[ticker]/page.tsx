@@ -10,7 +10,12 @@ import {
   publicStockPath,
   validTicker,
 } from "@/lib/publicRoutes";
-import { breadcrumbData, readingMetadata } from "@/lib/publicSeo";
+import {
+  breadcrumbData,
+  opinionCollectionData,
+  readingMetadata,
+  stockOpinionSummary,
+} from "@/lib/publicSeo";
 import { marketStockHref } from "@/lib/stockLinks";
 import {
   OpinionList,
@@ -43,20 +48,30 @@ async function load({ params }: Props) {
   const total = opinions?.pagination?.total ?? opinions?.summary.total_opinions ?? 0;
   if (!total && !research.total) notFound();
   if (page > 1 && (page - 1) * PUBLIC_PAGE_SIZE >= total) notFound();
-  return { ticker, page, path, opinions, research, total };
+  const companyName =
+    opinions?.latest.find((opinion) => opinion.company_name)?.company_name ?? null;
+  // Data-backed answer paragraph for readers and AI search; latest is only meaningful on page 1.
+  const summary = stockOpinionSummary(
+    ticker,
+    opinions?.summary,
+    page === 1 ? opinions?.latest[0] : null,
+    research.total,
+  );
+  return { ticker, page, path, opinions, research, total, companyName, summary };
 }
 
 export async function generateMetadata(props: Props) {
-  const { ticker, page, path } = await load(props);
+  const { ticker, page, path, summary } = await load(props);
   return readingMetadata(
     `${ticker} 股票研究与博主观点${page > 1 ? ` — 第 ${page} 页` : ""} | Kolvex`,
-    `阅读 ${ticker} 的财经博主观点和已发布 AI 股票研究。查看原视频、观点日期和分析证据，无需登录。`,
+    summary ??
+      `阅读 ${ticker} 的财经博主观点和已发布 AI 股票研究。查看原视频、观点日期和分析证据，无需登录。`,
     publicPagePath(path, page),
   );
 }
 
 export default async function StockReadingPage(props: Props) {
-  const { ticker, page, path, opinions, research, total } = await load(props);
+  const { ticker, page, path, opinions, research, total, companyName, summary } = await load(props);
   return (
     <>
       <ReadingSchema
@@ -64,6 +79,18 @@ export default async function StockReadingPage(props: Props) {
           { name: "股票目录", path: "/stocks" },
           { name: ticker, path },
         ])}
+      />
+      <ReadingSchema
+        data={opinionCollectionData(
+          `${ticker} 股票研究与博主观点`,
+          publicPagePath(path, page),
+          opinions?.latest ?? [],
+          {
+            "@type": "Corporation",
+            tickerSymbol: ticker,
+            ...(companyName ? { name: companyName } : {}),
+          },
+        )}
       />
       <div className="mb-6">
         <HeaderBackButton href="/stocks" label="返回股票目录" />
@@ -81,7 +108,8 @@ export default async function StockReadingPage(props: Props) {
           </Link>
         }
       >
-        阅读不同来源对 {ticker} 的看法。每条观点保留日期和原视频，已发布研究保留其分析时点。
+        {summary ??
+          `阅读不同来源对 ${ticker} 的看法。每条观点保留日期和原视频，已发布研究保留其分析时点。`}
       </ReadingHeading>
       <div className="grid min-w-0 gap-x-12 gap-y-10 lg:grid-cols-[minmax(0,1fr)_300px]">
         <section className="min-w-0" aria-labelledby="stock-opinions">

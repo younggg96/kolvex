@@ -1,13 +1,6 @@
 "use client";
 
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  useEffect,
-  useMemo,
-} from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from "react";
 import en from "./locales/en.json";
 import zh from "./locales/zh.json";
 
@@ -44,9 +37,7 @@ export const SUPPORTED_LOCALES: { value: Locale; label: string; nativeLabel: str
 function detectBrowserLocale(): Locale {
   if (typeof navigator === "undefined") return DEFAULT_LOCALE;
 
-  const languages = navigator.languages?.length
-    ? navigator.languages
-    : [navigator.language];
+  const languages = navigator.languages?.length ? navigator.languages : [navigator.language];
 
   for (const lang of languages) {
     const code = lang.toLowerCase().split("-")[0];
@@ -85,6 +76,20 @@ function interpolate(template: string, params?: Record<string, string>): string 
     (result, [key, value]) => result.replace(new RegExp(`\\{${key}\\}`, "g"), value),
     template,
   );
+}
+
+function translate(locale: Locale, key: string, params?: Record<string, string>): string {
+  const value = getNestedValue(translations[locale], key);
+  if (value !== undefined) return interpolate(value, params);
+
+  // Fallback to English
+  if (locale !== DEFAULT_LOCALE) {
+    const fallback = getNestedValue(translations[DEFAULT_LOCALE], key);
+    if (fallback !== undefined) return interpolate(fallback, params);
+  }
+
+  // Return the key itself as last resort (helps spotting missing translations)
+  return key;
 }
 
 // ── Context ────────────────────────────────────────────────────
@@ -128,25 +133,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   // Translation function
   const t = useCallback(
-    (key: string, params?: Record<string, string>): string => {
-      const dict = translations[locale];
-      const value = getNestedValue(dict, key);
-
-      if (value !== undefined) {
-        return interpolate(value, params);
-      }
-
-      // Fallback to English
-      if (locale !== DEFAULT_LOCALE) {
-        const fallback = getNestedValue(translations[DEFAULT_LOCALE], key);
-        if (fallback !== undefined) {
-          return interpolate(fallback, params);
-        }
-      }
-
-      // Return the key itself as last resort (helps spotting missing translations)
-      return key;
-    },
+    (key: string, params?: Record<string, string>) => translate(locale, key, params),
     [locale],
   );
 
@@ -165,6 +152,23 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     );
   }
 
+  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
+}
+
+/**
+ * Render a subtree in one fixed locale regardless of the visitor's preference, so the
+ * server HTML and the hydrated page match (used by Chinese-only public reading pages).
+ */
+export function FixedLocale({ locale, children }: { locale: Locale; children: React.ReactNode }) {
+  const { setLocale } = useTranslation();
+  const value = useMemo<LanguageContextValue>(
+    () => ({
+      locale,
+      setLocale,
+      t: (key: string, params?: Record<string, string>) => translate(locale, key, params),
+    }),
+    [locale, setLocale],
+  );
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }
 

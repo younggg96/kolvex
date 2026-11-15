@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import PublicCreatorShareView from "@/components/youtube/PublicCreatorShareView";
+import { FixedLocale } from "@/lib/i18n";
 import { creatorShareContent } from "@/lib/creatorSharing";
 import { getPublicCreatorOpinions } from "./data";
 import { ReadingSchema } from "@/components/public/ReadingSchema";
-import { breadcrumbData, readingMetadata } from "@/lib/publicSeo";
+import { breadcrumbData, opinionCollectionData, readingMetadata } from "@/lib/publicSeo";
 import { creatorSharePath } from "@/lib/creatorSharing";
 
 type Props = { params: { channelId: string } };
@@ -42,7 +43,27 @@ export default async function CreatorSharePage({ params }: Props) {
           { name, path: creatorSharePath(params.channelId) },
         ])}
       />
-      <PublicCreatorShareView data={data} />
+      <ReadingSchema
+        data={opinionCollectionData(
+          `${name} 最新股票观点`,
+          creatorSharePath(params.channelId),
+          data.opinions.map((opinion) => ({
+            ...opinion,
+            channel_title: opinion.channel_title || data.creator?.channel_title,
+            channel_url: opinion.channel_url || data.creator?.channel_url,
+            video_url: opinion.video_url || data.video?.video_url,
+          })),
+          {
+            "@type": "Person",
+            name,
+            ...(data.creator.channel_url ? { url: data.creator.channel_url } : {}),
+          },
+        )}
+      />
+      {/* Public reading pages are Chinese-only; keep server HTML and hydration in one locale. */}
+      <FixedLocale locale="zh">
+        <PublicCreatorShareView data={data} />
+      </FixedLocale>
     </>
   );
 }
