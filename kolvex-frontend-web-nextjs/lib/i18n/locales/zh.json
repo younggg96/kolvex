@@ -1068,6 +1068,21 @@
       "themeDarkDesc": "深色主题",
       "themeSystemDesc": "跟随系统设置",
       "failedToUpdateTheme": "更新主题失败"
+    },
+    "chatMemory": {
+      "title": "AI 聊天记忆",
+      "description": "AI 聊天会跨对话记住你常用的语言和它帮你查过的股票，这样只发一个股票代码之类的简短问题也能看懂。它不会记住价格或其他数字，这些每次都会重新查。",
+      "language": "常用语言",
+      "languageZh": "中文",
+      "languageEn": "英文",
+      "tickers": "查得最多的股票",
+      "notYet": "暂无",
+      "clear": "清除记忆",
+      "confirmTitle": "清除 AI 聊天记忆？",
+      "confirmDescription": "AI 聊天会忘记你的常用语言和查过的股票。你的对话不会被删除。此操作无法撤销。",
+      "cleared": "已清除 AI 聊天记忆",
+      "clearFailed": "无法清除 AI 聊天记忆",
+      "loadFailed": "无法加载 AI 聊天记忆"
     }
   },
   "optionsFlow": {

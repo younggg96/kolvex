@@ -53,6 +53,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { SettingsGroup, SettingsRow } from "@/components/ui/settings-group";
+import { ChatMemorySettings } from "@/components/settings/ChatMemorySettings";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,11 +67,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  useCurrentUserProfile,
-  updateUserTheme,
-  type UserProfileUpdate,
-} from "@/lib/api/userApi";
+import { useCurrentUserProfile, updateUserTheme, type UserProfileUpdate } from "@/lib/api/userApi";
 import {
   getUserApiKeys,
   upsertUserApiKey,
@@ -82,30 +79,52 @@ import {
 /** Account tab placeholder: avatar row, then the email / name / phone field rows. */
 function AccountSkeleton() {
   const { t } = useTranslation();
-  return <ContentLoading label={t("common.loading")} className="min-h-0">
-    <div className="flex items-center gap-4 pb-5"><Skeleton className="h-[4.5rem] w-[4.5rem] rounded-full" /></div>
-    {[0, 1, 2].map((i) => <div key={i} className="grid gap-1.5 border-b border-border py-4 sm:grid-cols-[11.25rem_minmax(0,1fr)] sm:items-center sm:gap-6">
-      <Skeleton className="h-4 w-24 rounded-md" /><Skeleton className={i === 1 ? "h-4 w-32 rounded-md" : "h-4 w-48 rounded-md"} />
-    </div>)}
-  </ContentLoading>;
+  return (
+    <ContentLoading label={t("common.loading")} className="min-h-0">
+      <div className="flex items-center gap-4 pb-5">
+        <Skeleton className="h-[4.5rem] w-[4.5rem] rounded-full" />
+      </div>
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          className="grid gap-1.5 border-b border-border py-4 sm:grid-cols-[11.25rem_minmax(0,1fr)] sm:items-center sm:gap-6"
+        >
+          <Skeleton className="h-4 w-24 rounded-md" />
+          <Skeleton className={i === 1 ? "h-4 w-32 rounded-md" : "h-4 w-48 rounded-md"} />
+        </div>
+      ))}
+    </ContentLoading>
+  );
 }
 
 /** Route fallback in the settings frame: tab bar, section heading, then the account rows. */
 function SettingsFallback() {
   const { t } = useTranslation();
-  return <DashboardLayout title={t("settings.title")}>
-    <div className="flex-1 overflow-y-auto">
-      <div className="mx-auto w-full min-w-0 max-w-[47.5rem] px-[16px] pb-10 pt-6 md:px-8 md:pt-8">
-        <div className="flex flex-col gap-8">
-          <div className="flex gap-1">{settingsTabDefs.map((tab) => <Skeleton key={tab.value} className="h-10 w-20 rounded-full" />)}</div>
-          <section className="pt-2">
-            <div className="mb-4 flex items-start justify-between gap-4 px-1"><div className="flex flex-col gap-2"><Skeleton className="h-7 w-32 rounded-lg" /><Skeleton className="h-4 w-48 rounded-md" /></div><Skeleton className="h-9 w-16 rounded-full" /></div>
-            <AccountSkeleton />
-          </section>
+  return (
+    <DashboardLayout title={t("settings.title")}>
+      <div className="flex-1 overflow-y-auto">
+        <div className="mx-auto w-full min-w-0 max-w-[47.5rem] px-[16px] pb-10 pt-6 md:px-8 md:pt-8">
+          <div className="flex flex-col gap-8">
+            <div className="flex gap-1">
+              {settingsTabDefs.map((tab) => (
+                <Skeleton key={tab.value} className="h-10 w-20 rounded-full" />
+              ))}
+            </div>
+            <section className="pt-2">
+              <div className="mb-4 flex items-start justify-between gap-4 px-1">
+                <div className="flex flex-col gap-2">
+                  <Skeleton className="h-7 w-32 rounded-lg" />
+                  <Skeleton className="h-4 w-48 rounded-md" />
+                </div>
+                <Skeleton className="h-9 w-16 rounded-full" />
+              </div>
+              <AccountSkeleton />
+            </section>
+          </div>
         </div>
       </div>
-    </div>
-  </DashboardLayout>;
+    </DashboardLayout>
+  );
 }
 
 function SettingsSection({
@@ -146,7 +165,11 @@ function FieldRow({
   stacked?: boolean;
   children: React.ReactNode;
 }) {
-  return <SettingsRow icon={icon} label={label} stacked={stacked}>{children}</SettingsRow>;
+  return (
+    <SettingsRow icon={icon} label={label} stacked={stacked}>
+      {children}
+    </SettingsRow>
+  );
 }
 
 const settingsTabDefs = [
@@ -199,7 +222,6 @@ function SettingsContent() {
     phone: "",
   });
 
-
   // API Keys state
   const [apiKeys, setApiKeys] = useState<UserApiKey[]>([]);
   const [supportedProviders, setSupportedProviders] = useState<string[]>([]);
@@ -236,7 +258,9 @@ function SettingsContent() {
     setApiKeySaving(provider);
     try {
       await upsertUserApiKey(provider, key);
-      toast.success(t("settings.apiKeys.keySaved", { provider: PROVIDER_INFO[provider]?.name || provider }));
+      toast.success(
+        t("settings.apiKeys.keySaved", { provider: PROVIDER_INFO[provider]?.name || provider }),
+      );
       setApiKeyInputs((prev) => ({ ...prev, [provider]: "" }));
       await loadApiKeys();
     } catch (error: any) {
@@ -250,7 +274,9 @@ function SettingsContent() {
     setApiKeyDeleting(provider);
     try {
       await deleteUserApiKey(provider);
-      toast.success(t("settings.apiKeys.keyRemoved", { provider: PROVIDER_INFO[provider]?.name || provider }));
+      toast.success(
+        t("settings.apiKeys.keyRemoved", { provider: PROVIDER_INFO[provider]?.name || provider }),
+      );
       await loadApiKeys();
     } catch (error: any) {
       toast.error(error.message || t("settings.apiKeys.failedToDelete"));
@@ -349,17 +375,11 @@ function SettingsContent() {
     }
   };
 
-  const onCropComplete = useCallback(
-    (croppedArea: Area, croppedAreaPixels: Area) => {
-      setCroppedAreaPixels(croppedAreaPixels);
-    },
-    []
-  );
+  const onCropComplete = useCallback((croppedArea: Area, croppedAreaPixels: Area) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
 
-  const createCroppedImage = async (
-    imageSrc: string,
-    pixelCrop: Area
-  ): Promise<Blob | null> => {
+  const createCroppedImage = async (imageSrc: string, pixelCrop: Area): Promise<Blob | null> => {
     const image = document.createElement("img");
     image.src = imageSrc;
 
@@ -388,7 +408,7 @@ function SettingsContent() {
           0,
           0,
           size,
-          size
+          size,
         );
 
         canvas.toBlob(
@@ -396,7 +416,7 @@ function SettingsContent() {
             resolve(blob);
           },
           "image/jpeg",
-          0.95
+          0.95,
         );
       };
     });
@@ -429,10 +449,7 @@ function SettingsContent() {
       setUploadProgress(10);
 
       // Create cropped image
-      const croppedBlob = await createCroppedImage(
-        previewUrl,
-        croppedAreaPixels
-      );
+      const croppedBlob = await createCroppedImage(previewUrl, croppedAreaPixels);
       if (!croppedBlob) {
         throw new Error("Failed to crop image");
       }
@@ -505,10 +522,7 @@ function SettingsContent() {
     try {
       const updates: UserProfileUpdate = {
         full_name: formData.full_name || undefined,
-        phone_e164:
-          formData.phone && formData.phone.trim() !== ""
-            ? formData.phone
-            : undefined,
+        phone_e164: formData.phone && formData.phone.trim() !== "" ? formData.phone : undefined,
       };
 
       const result = await updateProfile(updates);
@@ -541,8 +555,6 @@ function SettingsContent() {
     }
     setIsEditing(false);
   };
-
-
 
   const handleLanguageChange = async (newLocale: string) => {
     setLocale(newLocale as Locale);
@@ -625,9 +637,7 @@ function SettingsContent() {
                               </button>
                             ) : (
                               <div className="flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-full bg-primary text-2xl font-bold text-primary-foreground">
-                                {profile?.email
-                                  ?.substring(0, 2)
-                                  .toUpperCase() || "US"}
+                                {profile?.email?.substring(0, 2).toUpperCase() || "US"}
                               </div>
                             )}
                             <button
@@ -642,10 +652,7 @@ function SettingsContent() {
                         </div>
 
                         {/* Avatar fullscreen preview dialog */}
-                        <Dialog
-                          open={avatarPreviewOpen}
-                          onOpenChange={setAvatarPreviewOpen}
-                        >
+                        <Dialog open={avatarPreviewOpen} onOpenChange={setAvatarPreviewOpen}>
                           <DialogContent className="w-[90vw] h-[90vh] max-w-[90vw] max-h-[90vh] !p-0 bg-black/95 border-none flex items-center justify-center">
                             {profile?.avatar_url && (
                               <div className="relative w-full h-full flex items-center justify-center">
@@ -663,10 +670,7 @@ function SettingsContent() {
                         </Dialog>
 
                         {/* Avatar upload dialog with cropper */}
-                        <Dialog
-                          open={avatarDialogOpen}
-                          onOpenChange={handleAvatarDialogClose}
-                        >
+                        <Dialog open={avatarDialogOpen} onOpenChange={handleAvatarDialogClose}>
                           <DialogContent className="w-[calc(100%-2rem)] max-w-lg mx-auto max-h-[90vh] overflow-y-auto">
                             <DialogHeader>
                               <DialogTitle className="text-base sm:text-lg">
@@ -706,9 +710,7 @@ function SettingsContent() {
                                       max={3}
                                       step={0.1}
                                       value={zoom}
-                                      onChange={(e) =>
-                                        setZoom(Number(e.target.value))
-                                      }
+                                      onChange={(e) => setZoom(Number(e.target.value))}
                                       aria-label="Zoom"
                                       className="h-2 flex-1 cursor-pointer appearance-none rounded-full bg-muted accent-primary"
                                     />
@@ -761,28 +763,30 @@ function SettingsContent() {
                                     onDragOver={handleDragOver}
                                     onDragLeave={handleDragLeave}
                                     onDrop={handleDrop}
-                                    className={`flex flex-col items-center justify-center w-full h-48 sm:h-64 border-2 border-dashed rounded-3xl cursor-pointer transition-all duration-200 ${isDragging
+                                    className={`flex flex-col items-center justify-center w-full h-48 sm:h-64 border-2 border-dashed rounded-3xl cursor-pointer transition-all duration-200 ${
+                                      isDragging
                                         ? "border-foreground bg-foreground/[0.08]"
                                         : "border-border bg-muted/60 hover:border-foreground/25 hover:bg-foreground/[0.06]"
-                                      }`}
+                                    }`}
                                   >
                                     <div className="flex flex-col items-center justify-center pt-4 pb-5 sm:pt-5 sm:pb-6 px-4">
                                       <div
-                                        className={`mb-3 sm:mb-4 transition-transform duration-200 ${isDragging ? "scale-110" : ""
-                                          }`}
+                                        className={`mb-3 sm:mb-4 transition-transform duration-200 ${
+                                          isDragging ? "scale-110" : ""
+                                        }`}
                                       >
                                         <ImageIcon
-                                          className={`w-10 h-10 sm:w-12 sm:h-12 ${isDragging
-                                              ? "text-foreground"
-                                              : "text-muted-foreground"
-                                            }`}
+                                          className={`w-10 h-10 sm:w-12 sm:h-12 ${
+                                            isDragging ? "text-foreground" : "text-muted-foreground"
+                                          }`}
                                         />
                                       </div>
                                       <p
-                                        className={`mb-2 text-xs sm:text-sm text-center ${isDragging
+                                        className={`mb-2 text-xs sm:text-sm text-center ${
+                                          isDragging
                                             ? "font-medium text-foreground"
                                             : "text-muted-foreground"
-                                          }`}
+                                        }`}
                                       >
                                         {isDragging ? (
                                           t("settings.account.dropImageHere")
@@ -852,68 +856,79 @@ function SettingsContent() {
                         </Dialog>
 
                         <div className="space-y-6">
-                        <SettingsGroup>
-                        <FieldRow icon={Mail} label={t("settings.account.emailAddress")}>
-                          <p className="truncate" title={formData.email}>{formData.email}</p>
-                        </FieldRow>
-                        <FieldRow icon={UserCircle} label={t("settings.account.fullName")} stacked={isEditing}>
-                          {isEditing ? (
-                            <Input
-                              id="full_name"
-                              type="text"
-                              value={formData.full_name}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  full_name: e.target.value,
-                                })
-                              }
-                              placeholder={t("settings.account.enterFullName")}
-                            />
-                          ) : (
-                            <p>{formData.full_name || "—"}</p>
-                          )}
-                        </FieldRow>
-
-                        <FieldRow icon={Phone} label={t("settings.account.phoneNumber")} stacked={isEditing}>
-                          {isEditing ? (
-                            <div className="space-y-1">
-                              <Input
-                                id="phone"
-                                type="tel"
-                                value={formData.phone}
-                                onChange={(e) =>
-                                  setFormData({
-                                    ...formData,
-                                    phone: e.target.value,
-                                  })
-                                }
-                                placeholder="+14155552671"
-                              />
-                              <p className="text-xs text-muted-foreground">
-                                {t("settings.account.phoneFormat")}
+                          <SettingsGroup>
+                            <FieldRow icon={Mail} label={t("settings.account.emailAddress")}>
+                              <p className="truncate" title={formData.email}>
+                                {formData.email}
                               </p>
-                            </div>
-                          ) : (
-                            <p className="figure">{formData.phone || "—"}</p>
-                          )}
-                        </FieldRow>
+                            </FieldRow>
+                            <FieldRow
+                              icon={UserCircle}
+                              label={t("settings.account.fullName")}
+                              stacked={isEditing}
+                            >
+                              {isEditing ? (
+                                <Input
+                                  id="full_name"
+                                  type="text"
+                                  value={formData.full_name}
+                                  onChange={(e) =>
+                                    setFormData({
+                                      ...formData,
+                                      full_name: e.target.value,
+                                    })
+                                  }
+                                  placeholder={t("settings.account.enterFullName")}
+                                />
+                              ) : (
+                                <p>{formData.full_name || "—"}</p>
+                              )}
+                            </FieldRow>
 
-                        </SettingsGroup>
+                            <FieldRow
+                              icon={Phone}
+                              label={t("settings.account.phoneNumber")}
+                              stacked={isEditing}
+                            >
+                              {isEditing ? (
+                                <div className="space-y-1">
+                                  <Input
+                                    id="phone"
+                                    type="tel"
+                                    value={formData.phone}
+                                    onChange={(e) =>
+                                      setFormData({
+                                        ...formData,
+                                        phone: e.target.value,
+                                      })
+                                    }
+                                    placeholder="+14155552671"
+                                  />
+                                  <p className="text-xs text-muted-foreground">
+                                    {t("settings.account.phoneFormat")}
+                                  </p>
+                                </div>
+                              ) : (
+                                <p className="figure">{formData.phone || "—"}</p>
+                              )}
+                            </FieldRow>
+                          </SettingsGroup>
 
-                        <SettingsGroup label={t("settings.tabs.notifications")}>
-                        <FieldRow icon={Mail} label={t("settings.account.briefEmail")}>
-                          <Switch
-                            checked={profile?.email_notifications_enabled ?? true}
-                            onCheckedChange={async (checked) => {
-                              const result = await updateBriefEmail(checked);
-                              if (!result.success) toast.error(result.error || t("settings.account.failedToUpdate"));
-                            }}
-                            aria-label={t("settings.account.briefEmail")}
-                          />
-                        </FieldRow>
-
-                        </SettingsGroup>
+                          <SettingsGroup label={t("settings.tabs.notifications")}>
+                            <FieldRow icon={Mail} label={t("settings.account.briefEmail")}>
+                              <Switch
+                                checked={profile?.email_notifications_enabled ?? true}
+                                onCheckedChange={async (checked) => {
+                                  const result = await updateBriefEmail(checked);
+                                  if (!result.success)
+                                    toast.error(
+                                      result.error || t("settings.account.failedToUpdate"),
+                                    );
+                                }}
+                                aria-label={t("settings.account.briefEmail")}
+                              />
+                            </FieldRow>
+                          </SettingsGroup>
                         </div>
 
                         {/* Action Buttons */}
@@ -952,11 +967,27 @@ function SettingsContent() {
                     <div>
                       {apiKeysLoading ? (
                         <ContentLoading label={t("common.loading")} className="min-h-0">
-                          <div className="mt-4 space-y-2 rounded-3xl border border-foreground/10 glass-card bg-card-glass px-4 py-3"><Skeleton className="h-3.5 w-full rounded-md" /><Skeleton className="h-3.5 w-2/3 rounded-md" /></div>
-                          <div className="divide-y divide-border">{[0, 1, 2, 3].map((i) => <div key={i} className="py-5">
-                            <div className="mb-3 flex items-start justify-between gap-4"><div className="flex flex-col gap-2"><Skeleton className="h-4 w-24 rounded-md" /><Skeleton className="h-3.5 w-48 rounded-md" /></div><Skeleton className="h-4 w-16 rounded-md" /></div>
-                            <div className="flex gap-2"><Skeleton className="h-11 flex-1 rounded-xl" /><Skeleton className="h-11 w-16 rounded-full" /></div>
-                          </div>)}</div>
+                          <div className="mt-4 space-y-2 rounded-3xl border border-foreground/10 glass-card bg-card-glass px-4 py-3">
+                            <Skeleton className="h-3.5 w-full rounded-md" />
+                            <Skeleton className="h-3.5 w-2/3 rounded-md" />
+                          </div>
+                          <div className="divide-y divide-border">
+                            {[0, 1, 2, 3].map((i) => (
+                              <div key={i} className="py-5">
+                                <div className="mb-3 flex items-start justify-between gap-4">
+                                  <div className="flex flex-col gap-2">
+                                    <Skeleton className="h-4 w-24 rounded-md" />
+                                    <Skeleton className="h-3.5 w-48 rounded-md" />
+                                  </div>
+                                  <Skeleton className="h-4 w-16 rounded-md" />
+                                </div>
+                                <div className="flex gap-2">
+                                  <Skeleton className="h-11 flex-1 rounded-xl" />
+                                  <Skeleton className="h-11 w-16 rounded-full" />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </ContentLoading>
                       ) : (
                         <>
@@ -974,9 +1005,7 @@ function SettingsContent() {
                               : Object.keys(PROVIDER_INFO)
                             ).map((provider) => {
                               const info = PROVIDER_INFO[provider];
-                              const existingKey = apiKeys.find(
-                                (k) => k.provider === provider
-                              );
+                              const existingKey = apiKeys.find((k) => k.provider === provider);
                               const isSaving = apiKeySaving === provider;
                               const isDeleting = apiKeyDeleting === provider;
                               const inputValue = apiKeyInputs[provider] || "";
@@ -985,10 +1014,7 @@ function SettingsContent() {
                               if (!info) return null;
 
                               return (
-                                <div
-                                  key={provider}
-                                  className="px-4 py-5"
-                                >
+                                <div key={provider} className="px-4 py-5">
                                   {/* Provider header */}
                                   <div className="mb-3 flex items-start justify-between gap-4">
                                     <div>
@@ -1045,7 +1071,11 @@ function SettingsContent() {
                                     <div className="relative flex-1">
                                       <Input
                                         type={isVisible ? "text" : "password"}
-                                        placeholder={existingKey ? t("settings.apiKeys.replaceKey") : info.placeholder}
+                                        placeholder={
+                                          existingKey
+                                            ? t("settings.apiKeys.replaceKey")
+                                            : info.placeholder
+                                        }
                                         value={inputValue}
                                         onChange={(e) =>
                                           setApiKeyInputs((prev) => ({
@@ -1103,17 +1133,15 @@ function SettingsContent() {
                 </TabsContent>
 
                 {/* Preferences Tab */}
-                <TabsContent
-                  value="preferences"
-                  className="mt-0"
-                >
-                  <SettingsSection
-                    title={t("settings.preferences.title")}
-                  >
+                <TabsContent value="preferences" className="mt-0">
+                  <SettingsSection title={t("settings.preferences.title")}>
                     <SettingsGroup>
                       <FieldRow icon={Globe} label={t("settings.preferences.language")}>
                         <Select value={locale} onValueChange={handleLanguageChange}>
-                          <SelectTrigger className="w-auto min-w-[8.5rem] max-w-[12.5rem]" aria-label={t("settings.preferences.language")}>
+                          <SelectTrigger
+                            className="w-auto min-w-[8.5rem] max-w-[12.5rem]"
+                            aria-label={t("settings.preferences.language")}
+                          >
                             <SelectValue placeholder={t("settings.preferences.selectLanguage")} />
                           </SelectTrigger>
                           <SelectContent>
@@ -1170,6 +1198,7 @@ function SettingsContent() {
                         )}
                       </FieldRow>
                     </SettingsGroup>
+                    <ChatMemorySettings className="mt-6" />
                   </SettingsSection>
                 </TabsContent>
               </div>

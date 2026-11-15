@@ -643,6 +643,128 @@ function Preferences() {
   );
 }
 
+/** The Web's ChatMemorySettings: what AI chat remembers across conversations, and clearing it. */
+function ChatMemory({ user }: { user: string }) {
+  const t = useTheme();
+  const r = useResource(`settings-chat-memory:${user}`, (signal) =>
+    apiRequest<{ language: "zh" | "en" | null; tickers: string[] }>(
+      "/chat/memory",
+      { signal, authenticated: true, expectedUser: user },
+    ),
+  );
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string>();
+  async function clear() {
+    setBusy(true);
+    setError(undefined);
+    try {
+      await apiRequest("/chat/memory", {
+        method: "DELETE",
+        authenticated: true,
+        expectedUser: user,
+      });
+      setConfirming(false);
+      r.refresh();
+    } catch {
+      setError("无法清除 AI 聊天记忆");
+    } finally {
+      setBusy(false);
+    }
+  }
+  const data = r.data;
+  const empty = !!data && !data.language && data.tickers.length === 0;
+  return (
+    <View style={{ marginTop: 28 }}>
+      <SettingsSection
+        title="AI 聊天记忆"
+        action={
+          data && !empty ? (
+            <Button
+              size="sm"
+              disabled={busy}
+              onPress={() => (confirming ? void clear() : setConfirming(true))}
+            >
+              {confirming ? "再点一次清除" : "清除记忆"}
+            </Button>
+          ) : undefined
+        }
+      >
+        <View
+          style={{
+            paddingVertical: 14,
+            borderBottomWidth: 1,
+            borderColor: t.border,
+          }}
+        >
+          <Copy size={13} muted>
+            AI
+            聊天会跨对话记住你常用的语言和它帮你查过的股票，这样只发一个股票代码之类的简短问题也能看懂。它不会记住价格或其他数字，这些每次都会重新查。
+          </Copy>
+        </View>
+        {r.loading && !data ? (
+          <View style={{ gap: 12, paddingVertical: 16 }}>
+            <Skeleton width="40%" />
+            <Skeleton width="70%" />
+          </View>
+        ) : r.error && !data ? (
+          <Failure message="无法加载 AI 聊天记忆" retry={r.refresh} />
+        ) : (
+          <>
+            <FieldRow
+              icon={{ ios: "character.bubble", android: "translate" }}
+              label="常用语言"
+            >
+              <Copy size={15}>
+                {data?.language === "zh"
+                  ? "中文"
+                  : data?.language === "en"
+                    ? "英文"
+                    : "暂无"}
+              </Copy>
+            </FieldRow>
+            <FieldRow
+              icon={{ ios: "chart.line.uptrend.xyaxis", android: "show_chart" }}
+              label="查得最多的股票"
+            >
+              {data?.tickers.length ? (
+                <View
+                  style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}
+                >
+                  {data.tickers.map((ticker) => (
+                    <View
+                      key={ticker}
+                      style={{
+                        paddingHorizontal: 8,
+                        paddingVertical: 3,
+                        borderRadius: 6,
+                        borderWidth: 1,
+                        borderColor: t.border,
+                      }}
+                    >
+                      <Copy size={13} localize={false}>
+                        {ticker}
+                      </Copy>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <Copy size={15}>暂无</Copy>
+              )}
+            </FieldRow>
+          </>
+        )}
+        {confirming && !busy && (
+          <Copy size={13} muted>
+            你的对话不会被删除。此操作无法撤销。
+          </Copy>
+        )}
+        {!!error && <Failure message={error} />}
+      </SettingsSection>
+    </View>
+  );
+}
+
 export default function Settings() {
   const params = useLocalSearchParams<{ tab?: string }>();
   const initial = TABS.some(([key]) => key === params.tab)
@@ -654,6 +776,7 @@ export default function Settings() {
 
 function SettingsTabs({ initial }: { initial: string }) {
   const [tab, setTab] = useState(initial);
+  const signedInUser = useAuth().session?.user.id;
   return (
     <Page
       title="设置"
@@ -661,7 +784,10 @@ function SettingsTabs({ initial }: { initial: string }) {
       floatingHeader={<Filters values={TABS} value={tab} onChange={setTab} />}
     >
       {tab === "preferences" ? (
-        <Preferences />
+        <>
+          <Preferences />
+          {!!signedInUser && <ChatMemory user={signedInUser} />}
+        </>
       ) : (
         <AuthGate inline title="设置" skeleton={<FormSkeleton fields={3} />}>
           {tab === "account" ? <Account /> : <ApiKeys />}
