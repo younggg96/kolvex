@@ -1816,5 +1816,17 @@
   "放量": "Volume",
   "热议": "Buzz",
   "手动": "Manual",
-  "按成交权利金从大到小排序：全部标的中最大的 20 个，加上每个扫描标的各自最大的 3 个。量/持仓 超过 3 倍加粗：当日成交量超过原有持仓量。": "Ranked by premium traded, largest first: the 20 largest overall plus the 3 largest of every scanned symbol. Volume/Open interest above 3× is bold: more contracts changed hands than were already open."
+  "按成交权利金从大到小排序：全部标的中最大的 20 个，加上每个扫描标的各自最大的 3 个。量/持仓 超过 3 倍加粗：当日成交量超过原有持仓量。": "Ranked by premium traded, largest first: the 20 largest overall plus the 3 largest of every scanned symbol. Volume/Open interest above 3× is bold: more contracts changed hands than were already open.",
+  "AI 聊天记忆": "AI chat memory",
+  "清除记忆": "Clear memory",
+  "再点一次清除": "Tap again to clear",
+  "常用语言": "Usual language",
+  "查得最多的股票": "Stocks looked up most",
+  "暂无": "Nothing yet",
+  "中文": "Chinese",
+  "英文": "English",
+  "无法加载 AI 聊天记忆": "Could not load AI chat memory",
+  "无法清除 AI 聊天记忆": "Could not clear AI chat memory",
+  "你的对话不会被删除。此操作无法撤销。": "Your conversations are not deleted. This cannot be undone.",
+  "AI 聊天会跨对话记住你常用的语言和它帮你查过的股票，这样只发一个股票代码之类的简短问题也能看懂。它不会记住价格或其他数字，这些每次都会重新查。": "Across conversations, the AI chat remembers the language you usually write in and the stocks it looked up for you, so short questions like just a ticker are easier to understand. It does not remember prices or other figures; those are fetched again each time."
 }

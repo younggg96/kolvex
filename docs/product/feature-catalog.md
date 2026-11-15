@@ -53,7 +53,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 
 | 功能 | ID | Web 入口 | App 入口 | 后端 | 文档 | App |
 | --- | --- | --- | --- | --- | --- | --- |
-| AI 聊天 | `chat` | `/dashboard/chat`、`⌘K` | `(tabs)/chat`、`/chat/[id]` | `chat/` | `kolvex-backend-py/app/agent/README.md`、[model-catalog.md](../model-catalog.md)、[opinion-backtest.md](../opinion-backtest.md)（博主观点后股价工具） | ✅ |
+| AI 聊天 | `chat` | `/dashboard/chat`、`⌘K` | `(tabs)/chat`、`/chat/[id]` | `chat/` | `kolvex-backend-py/app/agent/README.md`、[model-catalog.md](../model-catalog.md)、[opinion-backtest.md](../opinion-backtest.md)（博主观点后股价工具）；记忆见 README 第 7 节（需迁移 `20261115000000_chat_memory.sql`；查看 / 清除入口在两端设置的偏好设置页） | ✅ |
 | 研究工作区 | `chat` | `/dashboard/workspaces` | `(more)/workspaces` | `research_workspaces.py` | — | ✅ |
 | AI 研究报告库、阅读 | `tradingAnalysis` | `/dashboard/ai-research` | `(more)/research`、`/report/[id]` | `trading_analysis/` | — | ✅ |
 | 研究任务生成（仅管理员） | `tradingAnalysis` | `/dashboard/ai-research?view=authoring` | `/research-task/[id]` | `trading_analysis/` | — | ◐（轮询代替 SSE） |

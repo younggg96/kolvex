@@ -18,11 +18,12 @@
 入口：`app/api/routes/chat/routes.py` → `graphs/supervisor.py`。
 
 1. 保存用户消息（重试同一问题时复用上一条未回答的消息，`memory.save_user_message_once`）。
-2. 加载本对话最近 20 条消息（`memory.load_conversation_history`，见第 7 节）。
+2. 加载本对话摘要之后的消息（`memory.load_conversation_history`），以及对话摘要和跨对话记忆（`chat_memory.load_memory_note`，拼进系统提示词末尾），见第 7 节。
 3. 读用户自己的 API key。
 4. `_classify_intent`：先用关键词正则（`route_by_keywords`），明确的「研报 / 深度 / 该不该买」→ research，80 字以内的查数问题 → financial；判断不出来才调一次快模型。快模型回答里没有 `research` 一律按 financial。
 5. `_create_agent_for_request`：按用户选的模型、数据源、技能拼出工具集和提示词，`create_react_agent` 每轮新建。最多 `MAX_TOOL_ITERATIONS`（10）轮工具调用。
 6. 跑 Agent，收集 evidence，修单位错误，核对数字，保存助手消息。
+7. 回复保存后在后台更新记忆（`chat_memory.remember_turn_later`），不拖慢回复；回复失败的轮次不记。
 
 ### 接口
 
@@ -30,6 +31,8 @@
 | --- | --- |
 | `POST /api/v1/chat/conversations/{id}/send` | 同步，返回完整回复 |
 | `POST /api/v1/chat/conversations/{id}/stream` | SSE 流式；`continue_on_disconnect=true` 时断开连接也继续生成 |
+| `GET /api/v1/chat/memory` | 查看跨对话记忆：常用语言、查得最多的股票 |
+| `DELETE /api/v1/chat/memory` | 清除跨对话记忆 |
 | `GET` / `DELETE /api/v1/chat/conversations/{id}/stream` | 查询 / 停止正在进行的一轮 |
 | 其余 `/conversations` 接口 | 对话的增删改查，不涉及 Agent |
 
@@ -130,14 +133,25 @@
 
 环境变量：`LLM_PROVIDER`、`LLM_MODEL`、`LLM_TEMPERATURE`、`LLM_FALLBACK_PROVIDER`、`LLM_FALLBACK_MODEL`、各家 `*_API_KEY`、`OLLAMA_BASE_URL`、`TAVILY_API_KEY`（不配则 `web_search` 返回错误）。密钥只在后端。
 
-## 7. 记忆（`memory.py`）
+## 7. 记忆（`memory.py`、`chat_memory.py`）
 
-现状：
+需要迁移 `migrations/20261115000000_chat_memory.sql`（`chat_conversations` 加 `summary` / `summary_until` 两列，新表 `chat_user_memory`）。没跑迁移时一切照旧：只发最近 20 条消息，没有跨对话记忆，不报错。
 
-- 每轮从 `chat_messages` 读本对话最近 `MAX_CONTEXT_MESSAGES`（20）条，只取 `role` 和 `content` 文本。
-- 工具结果不进历史，追问时模型会重新调工具。这样做是有意的：报价要求是最新的，第 5 节的核对也只认本轮工具结果。
-- 超过 20 条后更早的消息直接丢掉，没有摘要。
-- 没有跨对话的记忆。用户的自选股和持仓可以通过工具读到，但不会记住常问哪些股票、偏好的回答方式。
+**对话内：消息 + 滚动摘要**
+
+- 每轮发给模型的是：摘要（如果有）+ `summary_until` 之后的全部消息，只取 `role` 和 `content`。
+- 摘要之后的消息攒到 `SUMMARY_TRIGGER`（30）条时，回复保存后用快模型把除最新 20 条以外的消息并进摘要，`summary_until` 移到最后一条被并进去的消息。所以每 10 条消息（约 5 轮）才多一次快模型调用，模型每轮看到摘要 + 20～29 条原文。
+- 摘要**不记任何数字**（价格、营收、比率、目标价）：第 5 节的核对只认本轮工具结果，记住的数字会过时也没法核对。需要数字时模型会重新调工具。
+- 摘要失败（模型报错、数据库出错）只记日志，旧摘要不变，下一轮再试。
+- 工具结果仍然不进历史，追问时重新调工具，原因同上。
+
+**跨对话：`chat_user_memory`（每个用户一行）**
+
+- `language`：用户最近一条语言明确的消息是中文还是英文（只有股票代码之类的消息不改它）。提示词里只在当前消息语言不明确时才用它。
+- `tickers`：本轮工具调用参数里出现的股票代码，每轮每只记一次，按次数和最近日期排序，最多 40 只；提示词里给前 8 只，并写明这不是自选股也不是持仓，不要主动提起。
+- 不调用模型，纯代码从用户消息和工具参数里取。
+- 后端用 service role 写；RLS 只允许用户读和删自己的那一行。用户通过 `GET` / `DELETE /api/v1/chat/memory` 查看和清除；界面在 Web「设置 → 偏好设置 → AI 聊天记忆」（经 Next 路由 `/api/chat-history/memory` 转发）和 App 设置的偏好设置页（仅登录后显示），清除前都要二次确认。删除对话不会清除它。
+- 用户说过的偏好（「回答短一点」「我做长线」）目前只会进这个对话的摘要，不会跨对话记住。
 
 ## 8. 目录
 
@@ -147,6 +161,7 @@ app/agent/
 ├── llm.py               # 模型工厂、可选模型表
 ├── thinking_chat.py     # DeepSeek / Kimi 的 reasoning_content 兼容
 ├── memory.py            # 对话历史读写
+├── chat_memory.py       # 对话摘要、跨对话记忆
 ├── graphs/
 │   ├── supervisor.py    # 路由、按请求建 Agent、run_agent / stream_agent
 │   ├── financial.py     # financial 提示词

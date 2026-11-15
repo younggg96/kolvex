@@ -117,6 +117,7 @@ def _create_agent_for_request(
     user_id: Optional[str] = None,
     user_api_keys: Optional[Dict[str, str]] = None,
     skills: Optional[List[str]] = None,
+    memory_note: Optional[str] = None,
 ):
     """
     为每个请求创建合适的 Agent（支持动态 model 和 source 过滤）
@@ -186,6 +187,9 @@ def _create_agent_for_request(
         prompt = RESEARCH_SYSTEM_PROMPT + source_hint
     else:
         prompt = FINANCIAL_SYSTEM_PROMPT + source_hint + ANSWER_SHAPE
+    if memory_note:
+        # Conversation summary and cross-conversation memory (app/agent/chat_memory.py).
+        prompt += "\n\n" + memory_note
 
     return create_react_agent(
         model=llm,
@@ -212,6 +216,7 @@ async def run_agent(
     revenue_evidence: Optional[List[RevenueEvidence]] = None,
     financial_evidence: Optional[List[Dict[str, Any]]] = None,
     data_gaps: Optional[List[Dict[str, Any]]] = None,
+    memory_note: Optional[str] = None,
 ) -> str:
     """
     运行 Agent 并返回最终回复
@@ -243,6 +248,7 @@ async def run_agent(
         user_id=user_id,
         user_api_keys=user_api_keys,
         skills=skills,
+        memory_note=memory_note,
     )
 
     # 3. 运行
@@ -308,6 +314,7 @@ async def stream_agent(
     sources: Optional[List[str]] = None,
     user_api_keys: Optional[Dict[str, str]] = None,
     skills: Optional[List[str]] = None,
+    memory_note: Optional[str] = None,
 ) -> AsyncGenerator[Dict[str, Any], None]:
     """
     流式运行 Agent，逐步返回事件
@@ -345,6 +352,7 @@ async def stream_agent(
         user_id=user_id,
         user_api_keys=user_api_keys,
         skills=skills,
+        memory_note=memory_note,
     )
 
     yield {

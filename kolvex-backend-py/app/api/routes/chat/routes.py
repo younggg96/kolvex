@@ -9,29 +9,30 @@
 import asyncio
 import json
 import logging
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from starlette import status as http_status
-from typing import Optional
 
 from app.agent.answer_check import check_answer
 from app.agent.unit_fix import fix_unit_slips, with_unit_fixes
 from app.api.dependencies.auth import get_current_user_id
+from app.api.routes.chat.schemas import (
+    AddMessageRequest,
+    AgentMessageResponse,
+    ConversationListResponse,
+    ConversationSchema,
+    CreateConversationRequest,
+    MessageResponse,
+    SendMessageRequest,
+    SuccessResponse,
+    UpdateConversationRequest,
+)
 from app.services.chat_service import ChatService, get_chat_service
 from app.services.user_api_keys_service import (
     UserApiKeysService,
     get_user_api_keys_service,
-)
-from app.api.routes.chat.schemas import (
-    ConversationSchema,
-    ConversationListResponse,
-    CreateConversationRequest,
-    UpdateConversationRequest,
-    AddMessageRequest,
-    SendMessageRequest,
-    MessageResponse,
-    AgentMessageResponse,
-    SuccessResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -49,8 +50,10 @@ def _with_gaps(check: Optional[dict], gaps: list) -> Optional[dict]:
     """Saved with the answer so history shows why a figure is missing."""
     if not gaps:
         return check
-    return {**(check or {"version": 1, "matched": 0, "mismatch": 0, "unverified": 0, "claims": []}),
-            "data_gaps": gaps}
+    return {
+        **(check or {"version": 1, "matched": 0, "mismatch": 0, "unverified": 0, "claims": []}),
+        "data_gaps": gaps,
+    }
 
 
 def attach_page_evidence(messages: list, context: Optional[str]) -> list:
@@ -70,10 +73,13 @@ def attach_page_evidence(messages: list, context: Optional[str]) -> list:
     return updated
 
 
-async def turn_context(user_id: str, conversation_id: str, page_context: Optional[str]) -> Optional[str]:
+async def turn_context(
+    user_id: str, conversation_id: str, page_context: Optional[str]
+) -> Optional[str]:
     """This turn's evidence: page evidence plus the chat's research workspace, if any.
     The workspace part is best effort; a missing table or DB error never blocks the chat."""
     import asyncio
+
     from app.core.supabase import get_supabase_service
     from app.services.research_workspace import chat_workspace_context
 
@@ -90,6 +96,7 @@ async def turn_context(user_id: str, conversation_id: str, page_context: Optiona
 
 # ===== Conversation Routes =====
 
+
 @router.get("/conversations", response_model=ConversationListResponse, summary="获取对话列表")
 async def get_conversations(
     page: int = Query(1, ge=1, description="页码"),
@@ -99,7 +106,7 @@ async def get_conversations(
 ):
     """
     获取当前用户的对话列表
-    
+
     需要认证：Bearer token
     """
     result = await service.get_conversations(
@@ -118,24 +125,26 @@ async def create_conversation(
 ):
     """
     创建新对话
-    
+
     需要认证：Bearer token
     """
     conversation = await service.create_conversation(
         user_id=current_user_id,
         title=request.title,
     )
-    
+
     if not conversation:
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create conversation"
+            detail="Failed to create conversation",
         )
-    
+
     return ConversationSchema(**conversation)
 
 
-@router.get("/conversations/{conversation_id}", response_model=ConversationSchema, summary="获取对话详情")
+@router.get(
+    "/conversations/{conversation_id}", response_model=ConversationSchema, summary="获取对话详情"
+)
 async def get_conversation(
     conversation_id: str,
     current_user_id: str = Depends(get_current_user_id),
@@ -143,24 +152,25 @@ async def get_conversation(
 ):
     """
     获取单个对话详情
-    
+
     需要认证：Bearer token
     """
     conversation = await service.get_conversation(
         user_id=current_user_id,
         conversation_id=conversation_id,
     )
-    
+
     if not conversation:
         raise HTTPException(
-            status_code=http_status.HTTP_404_NOT_FOUND,
-            detail="Conversation not found"
+            status_code=http_status.HTTP_404_NOT_FOUND, detail="Conversation not found"
         )
-    
+
     return ConversationSchema(**conversation)
 
 
-@router.patch("/conversations/{conversation_id}", response_model=SuccessResponse, summary="更新对话标题")
+@router.patch(
+    "/conversations/{conversation_id}", response_model=SuccessResponse, summary="更新对话标题"
+)
 async def update_conversation(
     conversation_id: str,
     request: UpdateConversationRequest,
@@ -169,7 +179,7 @@ async def update_conversation(
 ):
     """
     更新对话标题
-    
+
     需要认证：Bearer token
     """
     success = await service.update_conversation_title(
@@ -177,17 +187,18 @@ async def update_conversation(
         conversation_id=conversation_id,
         title=request.title,
     )
-    
+
     if not success:
         raise HTTPException(
-            status_code=http_status.HTTP_404_NOT_FOUND,
-            detail="Conversation not found"
+            status_code=http_status.HTTP_404_NOT_FOUND, detail="Conversation not found"
         )
-    
+
     return SuccessResponse(message="Conversation updated successfully")
 
 
-@router.delete("/conversations/{conversation_id}", response_model=SuccessResponse, summary="删除对话")
+@router.delete(
+    "/conversations/{conversation_id}", response_model=SuccessResponse, summary="删除对话"
+)
 async def delete_conversation(
     conversation_id: str,
     current_user_id: str = Depends(get_current_user_id),
@@ -195,20 +206,19 @@ async def delete_conversation(
 ):
     """
     删除对话
-    
+
     需要认证：Bearer token
     """
     success = await service.delete_conversation(
         user_id=current_user_id,
         conversation_id=conversation_id,
     )
-    
+
     if not success:
         raise HTTPException(
-            status_code=http_status.HTTP_404_NOT_FOUND,
-            detail="Conversation not found"
+            status_code=http_status.HTTP_404_NOT_FOUND, detail="Conversation not found"
         )
-    
+
     return SuccessResponse(message="Conversation deleted successfully")
 
 
@@ -219,16 +229,48 @@ async def delete_all_conversations(
 ):
     """
     删除用户所有对话
-    
+
     需要认证：Bearer token
     """
     count = await service.delete_all_conversations(current_user_id)
     return SuccessResponse(message=f"Deleted {count} conversations")
 
 
+# ===== Cross-conversation memory (app/agent/chat_memory.py) =====
+
+
+@router.get("/memory", summary="查看 AI 跨对话记住的内容")
+async def get_chat_memory(current_user_id: str = Depends(get_current_user_id)):
+    """What the assistant remembers across conversations: the user's usual language and
+    the tickers they looked up most. Empty when nothing is remembered yet."""
+    from app.agent.chat_memory import load_user_memory, usual_tickers
+
+    row = await load_user_memory(current_user_id) or {}
+    return {
+        "language": row.get("language"),
+        "tickers": usual_tickers(row.get("tickers") or {}, limit=40),
+        "updated_at": row.get("updated_at"),
+    }
+
+
+@router.delete("/memory", response_model=SuccessResponse, summary="清除 AI 跨对话记忆")
+async def delete_chat_memory(current_user_id: str = Depends(get_current_user_id)):
+    from app.agent.chat_memory import clear_user_memory
+
+    try:
+        await clear_user_memory(current_user_id)
+    except Exception as error:  # noqa: BLE001
+        logger.error("Failed to clear chat memory: %s", error)
+        raise HTTPException(status_code=500, detail="Failed to clear chat memory")
+    return SuccessResponse(message="Chat memory cleared")
+
+
 # ===== Message Routes =====
 
-@router.post("/conversations/{conversation_id}/messages", response_model=MessageResponse, summary="添加消息")
+
+@router.post(
+    "/conversations/{conversation_id}/messages", response_model=MessageResponse, summary="添加消息"
+)
 async def add_message(
     conversation_id: str,
     request: AddMessageRequest,
@@ -237,7 +279,7 @@ async def add_message(
 ):
     """
     添加消息到对话
-    
+
     需要认证：Bearer token
     """
     message = await service.add_message(
@@ -246,13 +288,12 @@ async def add_message(
         role=request.role,
         content=request.content,
     )
-    
+
     if not message:
         raise HTTPException(
-            status_code=http_status.HTTP_404_NOT_FOUND,
-            detail="Conversation not found"
+            status_code=http_status.HTTP_404_NOT_FOUND, detail="Conversation not found"
         )
-    
+
     return MessageResponse(**message)
 
 
@@ -264,18 +305,19 @@ async def get_messages(
 ):
     """
     获取对话的所有消息
-    
+
     需要认证：Bearer token
     """
     messages = await service.get_messages(
         user_id=current_user_id,
         conversation_id=conversation_id,
     )
-    
+
     return {"messages": messages}
 
 
 # ===== Agent-Powered Routes =====
+
 
 @router.post(
     "/conversations/{conversation_id}/send",
@@ -291,7 +333,7 @@ async def send_message(
 ):
     """
     发送用户消息并自动获取 AI Agent 回复。
-    
+
     流程：
     1. 保存用户消息到数据库
     2. 加载对话历史
@@ -302,9 +344,14 @@ async def send_message(
 
     需要认证：Bearer token
     """
-    from app.agent.memory import load_conversation_history, save_message, save_user_message_once
+
+    from app.agent.chat_memory import (
+        load_memory_note,
+        remember_turn_later,
+        tickers_from_tool_inputs,
+    )
     from app.agent.graphs.supervisor import run_agent
-    from langchain_core.messages import HumanMessage
+    from app.agent.memory import load_conversation_history, save_message, save_user_message_once
 
     # 1. 保存用户消息（重试时复用上一条未回复的同一问题）
     user_msg = await save_user_message_once(current_user_id, conversation_id, request.content)
@@ -315,10 +362,10 @@ async def send_message(
             detail="Conversation not found",
         )
 
-    # 2. 加载对话历史（不含刚保存的消息，因为 load 会获取到）
-    history = await load_conversation_history(
-        user_id=current_user_id,
-        conversation_id=conversation_id,
+    # 2. 加载对话历史（含刚保存的消息）和摘要/跨对话记忆
+    history, note = await asyncio.gather(
+        load_conversation_history(user_id=current_user_id, conversation_id=conversation_id),
+        load_memory_note(current_user_id, conversation_id),
     )
 
     # 3. 加载用户自定义 API keys
@@ -343,10 +390,13 @@ async def send_message(
             financial_evidence=financials,
             data_gaps=gaps,
             user_api_keys=user_api_keys or None,
+            memory_note=note,
         )
     except Exception as e:
         logger.error(f"Agent failed: {e}", exc_info=True)
-        ai_response_text = "I'm sorry, I encountered an error processing your request. Please try again."
+        ai_response_text = (
+            "I'm sorry, I encountered an error processing your request. Please try again."
+        )
 
     # 4. 保存 AI 回复
     quote_rows = [quote.model_dump(mode="json") for quote in quotes]
@@ -358,7 +408,9 @@ async def send_message(
         content=ai_response_text,
         quote_evidence=quote_rows,
         revenue_evidence=revenue_rows,
-        answer_check=_with_gaps(check_answer(ai_response_text, quote_rows, revenue_rows, financials), gaps),
+        answer_check=_with_gaps(
+            check_answer(ai_response_text, quote_rows, revenue_rows, financials), gaps
+        ),
     )
 
     if not ai_msg:
@@ -366,6 +418,13 @@ async def send_message(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to save AI response",
         )
+    remember_turn_later(
+        current_user_id,
+        conversation_id,
+        request.content,
+        tickers_from_tool_inputs([{"symbol": q.symbol} for q in quotes]),
+        user_api_keys or None,
+    )
 
     # 5. 返回
     return AgentMessageResponse(
@@ -411,8 +470,13 @@ async def stream_message(
     current_user_id: str = Depends(get_current_user_id),
     api_keys_service: UserApiKeysService = Depends(get_user_api_keys_service),
 ):
-    from app.agent.memory import load_conversation_history, save_message, save_user_message_once
+    from app.agent.chat_memory import (
+        load_memory_note,
+        remember_turn_later,
+        tickers_from_tool_inputs,
+    )
     from app.agent.graphs.supervisor import stream_agent
+    from app.agent.memory import load_conversation_history, save_message, save_user_message_once
 
     key = (current_user_id, conversation_id)
     if key in _chat_turns:
@@ -443,13 +507,15 @@ async def stream_message(
 
         if continue_on_disconnect:
             publish(json.dumps({"type": "accepted", "user_message": user_msg}))
-        history = await load_conversation_history(
-            user_id=current_user_id, conversation_id=conversation_id,
+        history, note = await asyncio.gather(
+            load_conversation_history(user_id=current_user_id, conversation_id=conversation_id),
+            load_memory_note(current_user_id, conversation_id),
         )
         user_api_keys = await api_keys_service.get_keys_dict(current_user_id)
         context = await turn_context(current_user_id, conversation_id, request.context)
 
         full_response = ""
+        tool_inputs: list = []
         async for event in stream_agent(
             messages=attach_page_evidence(history, context),
             user_id=current_user_id,
@@ -458,8 +524,11 @@ async def stream_message(
             sources=request.sources,
             skills=request.skills,
             user_api_keys=user_api_keys or None,
+            memory_note=note,
         ):
             event_type = event.get("type")
+            if event_type == "tool_start":
+                tool_inputs.append(event.get("input"))
             if event_type == "token":
                 full_response += event.get("content", "")
             elif event_type == "token_reset":
@@ -472,11 +541,14 @@ async def stream_message(
                     # Streamed tokens may hold "1,270.38 亿" for a tool's "1,270.38 billion";
                     # the saved message and the done event carry the repaired text.
                     full_response, unit_fixes = fix_unit_slips(
-                        full_response, event.get("scaled_figures") or {},
-                        [r["value"] for r in revenues if isinstance(r.get("value"), (int, float))])
+                        full_response,
+                        event.get("scaled_figures") or {},
+                        [r["value"] for r in revenues if isinstance(r.get("value"), (int, float))],
+                    )
                     # Checked here, against the exact text saved, in the same row as its evidence.
-                    answer_check = check_answer(full_response, quotes, revenues,
-                                                event.get("financial_evidence") or [])
+                    answer_check = check_answer(
+                        full_response, quotes, revenues, event.get("financial_evidence") or []
+                    )
                     if unit_fixes:
                         answer_check = with_unit_fixes(answer_check, unit_fixes)
                     answer_check = _with_gaps(answer_check, event.get("data_gaps") or [])
@@ -490,10 +562,22 @@ async def stream_message(
                         answer_check=answer_check,
                     )
                     if not ai_msg:
-                        publish(json.dumps({
-                            "type": "error", "content": "Unable to save the assistant response.",
-                        }))
+                        publish(
+                            json.dumps(
+                                {
+                                    "type": "error",
+                                    "content": "Unable to save the assistant response.",
+                                }
+                            )
+                        )
                         return
+                    remember_turn_later(
+                        current_user_id,
+                        conversation_id,
+                        request.content,
+                        tickers_from_tool_inputs(tool_inputs),
+                        user_api_keys or None,
+                    )
                     done.update(
                         message_id=ai_msg["id"],
                         content=full_response,
@@ -506,9 +590,15 @@ async def stream_message(
                 return
 
             if event_type in {"token", "token_reset", "status", "tool_start", "tool_end", "error"}:
-                publish(json.dumps({
-                    name: event[name] for name in ("type", "content", "stage", "tool") if name in event
-                }))
+                publish(
+                    json.dumps(
+                        {
+                            name: event[name]
+                            for name in ("type", "content", "stage", "tool")
+                            if name in event
+                        }
+                    )
+                )
             if event_type == "error":
                 return
 
@@ -521,10 +611,16 @@ async def stream_message(
             raise
         except TimeoutError:
             logger.warning("Chat generation timed out for conversation %s", conversation_id)
-            publish(json.dumps({"type": "error", "content": "The reply took too long to generate."}))
+            publish(
+                json.dumps({"type": "error", "content": "The reply took too long to generate."})
+            )
         except Exception:
             logger.exception("Chat generation failed for conversation %s", conversation_id)
-            publish(json.dumps({"type": "error", "content": "The AI agent could not complete the response."}))
+            publish(
+                json.dumps(
+                    {"type": "error", "content": "The AI agent could not complete the response."}
+                )
+            )
 
     task = asyncio.create_task(run_turn())
     _chat_turns[key] = task

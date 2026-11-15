@@ -1068,6 +1068,21 @@
       "themeDarkDesc": "Dark theme",
       "themeSystemDesc": "Follow system",
       "failedToUpdateTheme": "Failed to update theme"
+    },
+    "chatMemory": {
+      "title": "AI chat memory",
+      "description": "Across conversations, the AI chat remembers the language you usually write in and the stocks it looked up for you, so short questions like just a ticker are easier to understand. It does not remember prices or other figures; those are fetched again each time.",
+      "language": "Usual language",
+      "languageZh": "Chinese",
+      "languageEn": "English",
+      "tickers": "Stocks looked up most",
+      "notYet": "Nothing yet",
+      "clear": "Clear memory",
+      "confirmTitle": "Clear AI chat memory?",
+      "confirmDescription": "The AI chat will forget your usual language and the stocks it looked up. Your conversations are not deleted. This cannot be undone.",
+      "cleared": "AI chat memory cleared",
+      "clearFailed": "Could not clear AI chat memory",
+      "loadFailed": "Could not load AI chat memory"
     }
   },
   "optionsFlow": {
