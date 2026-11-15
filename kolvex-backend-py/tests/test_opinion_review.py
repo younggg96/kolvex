@@ -56,6 +56,7 @@ class SnapshotTests(unittest.TestCase):
         self.assertEqual(five["mean_benchmark_pct"], 4.0)
         self.assertEqual(five["mean_excess_pct"], 4.0)
         self.assertEqual(five["beat_share_pct"], 100.0)
+        self.assertEqual(five["beat_count"], five["n"])
         self.assertEqual(sum(b["count"] for b in five["histogram"]), 35)
         self.assertEqual(next(b for b in five["histogram"] if b["low"] == 0)["count"], 35)
         self.assertEqual(snap["as_of"], DAYS[-1])

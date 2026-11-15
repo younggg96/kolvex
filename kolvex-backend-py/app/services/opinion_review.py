@@ -41,7 +41,7 @@ MAX_LISTED_OPINIONS = 200
 # Snapshot keys that never leave the server through /review (per-creator data lives here).
 PRIVATE_KEYS = ("creators", "events")
 # Bumped when the snapshot shape changes, so an older file is rebuilt instead of served.
-SNAPSHOT_VERSION = 3
+SNAPSHOT_VERSION = 4
 RETRY_AFTER_FAILURE_SECONDS = 600.0
 SNAPSHOT_PATH = Path(
     os.getenv(
@@ -107,6 +107,7 @@ def _stats(events: list[dict], horizon: int) -> dict[str, Any]:
         "mean_excess_pct": summary["mean_pct"],
         "median_excess_pct": summary["median_pct"],
         "beat_share_pct": summary["hit_rate_pct"],
+        "beat_count": sum(1 for value in excess if value > 0),
         "beat_share_ci": list(summary["hit_rate_ci"]),
         "mean_return_pct": round(statistics.fmean(r["return_pct"] for r in scored), 2),
         "mean_benchmark_pct": round(statistics.fmean(r["benchmark_return_pct"] for r in scored), 2),
