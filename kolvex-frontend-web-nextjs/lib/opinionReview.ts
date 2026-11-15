@@ -56,6 +56,8 @@ export interface OpinionReview {
     bullish: number;
     bearish: number;
     neutral_or_mixed: number;
+    /** Directional opinions on the benchmark itself: listed, never in the statistics. */
+    on_benchmark?: number;
     no_price_data: number;
     no_publish_time: number;
     not_started: number;
@@ -79,23 +81,27 @@ export function reviewFigure(value: number): ReviewFigure {
 
 type Translate = (key: string, p?: Record<string, string>) => string;
 
-const pct = (value: number) => `${Math.abs(value)}%`;
+/** A band edge as a signed percent: "-20%", "0%", "+5%". */
+const edge = (value: number) => `${value > 0 ? "+" : ""}${value}%`;
 
-/**
- * A bar's range in words relative to the benchmark: "15%–20% worse", "20%+ better".
- * Bins never straddle zero; if one did, the plain numeric range is used.
- */
+/** A bar's excess-return band: "< -20%", "-20% ~ -15%", "0% ~ +5%", "≥ +20%". */
 export function binLabel(bin: ReviewHistogramBin, t: Translate) {
   const { low, high } = bin;
-  if (low === null && high !== null && high <= 0)
-    return t("youtubeOpinions.review.relBelow", { value: pct(high) });
-  if (high === null && low !== null && low >= 0)
-    return t("youtubeOpinions.review.relAbove", { value: pct(low) });
-  if (low !== null && high !== null && high <= 0)
-    return t("youtubeOpinions.review.relLessRange", { low: pct(high), high: pct(low) });
-  if (low !== null && high !== null && low >= 0)
-    return t("youtubeOpinions.review.relMoreRange", { low: pct(low), high: pct(high) });
-  return `${low ?? ""}%–${high ?? ""}%`;
+  if (low === null && high !== null)
+    return t("youtubeOpinions.review.relBelow", { value: edge(high) });
+  if (high === null && low !== null)
+    return t("youtubeOpinions.review.relAbove", { value: edge(low) });
+  return t("youtubeOpinions.review.relRange", { low: edge(low ?? 0), high: edge(high ?? 0) });
+}
+
+/** Whether a call on the benchmark itself moved its way: excess return is meaningless there. */
+export function callDirection(
+  sentiment: ReviewSentiment,
+  returnPct: number,
+): "match" | "against" | "flat" {
+  const direction = relativeDirection(returnPct);
+  if (direction === "same") return "flat";
+  return (direction === "more") === (sentiment === "bullish") ? "match" : "against";
 }
 
 /** The holding period as people say it: 5 sessions is a week, 20 a month. */
@@ -185,6 +191,7 @@ export interface ReviewBinOpinion {
   id: string;
   channel_id: string | null;
   channel_title: string | null;
+  channel_avatar_url?: string | null;
   ticker: string;
   sentiment: ReviewSentiment;
   video_id: string | null;
@@ -251,4 +258,73 @@ export function binQuery(
   if (bin.low !== null) params.set("low", String(bin.low));
   if (bin.high !== null) params.set("high", String(bin.high));
   return params.toString();
+}
+
+/** What a stock and the benchmark did over one holding period after an opinion. */
+export interface ReviewMove {
+  return_pct: number;
+  benchmark_return_pct: number;
+  excess_return_pct: number;
+}
+
+/** A creator in the review page's picker. Activity only; no performance figure. */
+export interface ReviewCreator {
+  channel_id: string;
+  channel_title: string | null;
+  channel_avatar_url?: string | null;
+  opinions: number;
+  stocks: number;
+}
+
+export interface ReviewCreators {
+  creators: ReviewCreator[];
+  as_of: string;
+  refreshing?: boolean;
+}
+
+/** One opinion of a creator; a horizon it has not reached yet is absent. */
+export interface CreatorOpinion {
+  id: string;
+  channel_id: string;
+  channel_title: string | null;
+  channel_avatar_url?: string | null;
+  ticker: string;
+  sentiment: ReviewSentiment;
+  video_id: string | null;
+  video_title: string | null;
+  video_url: string | null;
+  published_at: string | null;
+  entry_date: string;
+  horizons: Record<string, ReviewMove>;
+}
+
+export interface CreatorOpinions {
+  channel_id: string;
+  channel_title: string | null;
+  channel_avatar_url?: string | null;
+  total: number;
+  stocks: { ticker: string; count: number }[];
+  opinions: CreatorOpinion[];
+  benchmark: string;
+  horizons: number[];
+  as_of: string;
+  refreshing?: boolean;
+}
+
+export type ReviewView = "all" | "creators";
+
+/** The review page's view and creator from its query string. */
+export function readReviewRoute(search: string): { view: ReviewView; creator: string | null } {
+  const params = new URLSearchParams(search);
+  const creator = params.get("creator") || null;
+  const view = params.get("view") === "creators" || creator ? "creators" : "all";
+  return { view, creator: view === "creators" ? creator : null };
+}
+
+/** Query string for a view; the default view keeps the URL clean. */
+export function reviewRouteSearch(view: ReviewView, creator: string | null): string {
+  if (view === "all") return "";
+  const params = new URLSearchParams({ view });
+  if (creator) params.set("creator", creator);
+  return `?${params.toString()}`;
 }

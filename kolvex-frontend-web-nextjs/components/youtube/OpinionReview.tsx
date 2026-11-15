@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowDown, MousePointerClick } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -11,6 +10,16 @@ import { InfoTip } from "@/components/ui/info-tip";
 import { ListCard, ListEmptyState } from "@/components/ui/list-card";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Skeleton } from "@/components/ui/skeleton";
+import CompanyLogo from "@/components/ui/company-logo";
+import CreatorAvatar from "@/components/youtube/CreatorAvatar";
+import CreatorOpinionsReview from "@/components/youtube/CreatorOpinionsReview";
+import {
+  DirectionTile,
+  SentimentBadge,
+  Tile,
+  toneOf,
+  VideoLink,
+} from "@/components/youtube/reviewParts";
 import { useCachedResource } from "@/hooks/useCachedResource";
 import { useTranslation } from "@/lib/i18n";
 import { formatOpinionDate } from "@/lib/opinionDates";
@@ -23,8 +32,6 @@ import {
   binQuery,
   histogramHeights,
   horizonLabel,
-  magnitude,
-  relativeDirection,
   reviewFigure,
   segmentLabel,
   zeroPosition,
@@ -33,6 +40,9 @@ import {
   type ReviewSegment,
   type ReviewSentiment,
   type ReviewStats,
+  type ReviewView,
+  readReviewRoute,
+  reviewRouteSearch,
 } from "@/lib/opinionReview";
 import { cn } from "@/lib/utils";
 import { getYouTubeOpinionReview, getYouTubeReviewBin } from "@/lib/youtubeOpinionsApi";
@@ -52,14 +62,6 @@ type Selection = { sentiment: ReviewSentiment; index: number };
 /** Bins at or below 0% trailed the market; the rest beat it. Matches zeroPosition. */
 function isWorseBin(bin: ReviewHistogramBin) {
   return bin.high !== null && bin.high <= 0;
-}
-
-/** "比大盘少涨 6.9%" style text; the sign lives in the words, so color stays neutral. */
-function diffText(value: number, t: T) {
-  const direction = relativeDirection(value);
-  if (direction === "same") return t("youtubeOpinions.review.diffSame");
-  const key = direction === "less" ? "diffLess" : "diffMore";
-  return t(`youtubeOpinions.review.${key}`, { value: magnitude(value) });
 }
 
 /** One labelled move drawn from a centre line: left is down, right is up. */
@@ -98,19 +100,18 @@ function Histogram({
   const bins = stats.histogram ?? [];
   const heights = histogramHeights(bins);
   const zero = zeroPosition(bins) * 100;
-  const [hovered, setHovered] = useState<number | null>(null);
-  const focus = hovered ?? selected;
-  const focusBin = focus !== null ? bins[focus] : undefined;
   return (
     <figure className="mt-6 min-w-0">
-      <figcaption className="text-xs text-muted-foreground">
+      <figcaption className="flex items-center gap-1 text-xs text-muted-foreground">
         {t("youtubeOpinions.review.distribution")}
+        <InfoTip label={t("youtubeOpinions.review.distribution")}>
+          {t("youtubeOpinions.review.distributionTip")}
+        </InfoTip>
       </figcaption>
       <div
         className="relative mt-2 flex h-28 items-end gap-1"
         role="group"
         aria-label={t("youtubeOpinions.review.distribution")}
-        onMouseLeave={() => setHovered(null)}
       >
         {bins.map((bin, index) => {
           const label = binLabel(bin, t);
@@ -127,9 +128,7 @@ function Histogram({
                 range: label,
                 count: String(bin.count),
               })}
-              onMouseEnter={() => setHovered(bin.count ? index : null)}
-              onFocus={() => setHovered(bin.count ? index : null)}
-              onBlur={() => setHovered(null)}
+              title={`${label} · ${t("youtubeOpinions.review.binCount", { count: String(bin.count) })}`}
               onClick={() => onSelect(active ? null : { sentiment, index })}
               className="group flex h-full min-w-0 flex-1 cursor-pointer flex-col items-center justify-end gap-0.5 rounded-t-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default"
             >
@@ -169,54 +168,11 @@ function Histogram({
           {t("youtubeOpinions.review.axisBetter")} →
         </span>
       </div>
-      <div
-        className={cn(
-          "mt-3 flex min-h-9 items-center gap-2 rounded-lg px-3 py-2 text-xs",
-          focusBin
-            ? "bg-muted text-foreground"
-            : "border border-dashed border-border text-muted-foreground",
-        )}
-        aria-live="polite"
-      >
-        {focusBin ? (
-          <>
-            <span className="min-w-0 flex-1 tabular-nums">
-              <span className="font-semibold">{binLabel(focusBin, t)}</span>
-              {" · "}
-              {t("youtubeOpinions.review.binCount", { count: String(focusBin.count) })}
-            </span>
-            <span className="flex shrink-0 items-center gap-1 font-medium">
-              {focus === selected ? (
-                <>
-                  {t("youtubeOpinions.review.binListed")}
-                  <ArrowDown className="h-3.5 w-3.5" aria-hidden="true" />
-                </>
-              ) : (
-                t("youtubeOpinions.review.binClickToList")
-              )}
-            </span>
-          </>
-        ) : (
-          <>
-            <MousePointerClick className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            {t("youtubeOpinions.review.binHint")}
-          </>
-        )}
-      </div>
     </figure>
   );
 }
 
 const LIST_STEP = 10;
-
-function Cell({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="min-w-0 rounded-lg bg-muted/60 px-3 py-2">
-      <div className="truncate text-[0.6875rem] text-muted-foreground">{label}</div>
-      <div className="mt-0.5 text-sm font-semibold tabular-nums">{value}</div>
-    </div>
-  );
-}
 
 /** The opinions behind one bar, each with its stock, the market and the gap. Newest first. */
 function BinOpinions({
@@ -224,12 +180,15 @@ function BinOpinions({
   sentiment,
   bin,
   onClose,
+  onCreator,
   t,
 }: {
   horizon: number;
   sentiment: ReviewSentiment;
   bin: ReviewHistogramBin;
   onClose: () => void;
+  /** Opens that creator's own list in the review page's creator view. */
+  onCreator: (channelId: string) => void;
   t: T;
 }) {
   const { locale } = useTranslation();
@@ -241,7 +200,6 @@ function BinOpinions({
     { ttl: 10 * 60_000 },
   );
   const data = resource.data;
-  const sentimentWord = t(`youtubeOpinions.review.${sentiment}`);
   const cardRef = useRef<HTMLDivElement>(null);
   // The list opens below both cards, out of view on most screens: bring it into view.
   useEffect(() => {
@@ -251,13 +209,17 @@ function BinOpinions({
   return (
     <ListCard ref={cardRef} className="mt-4 min-w-0 scroll-mt-4 p-5" aria-live="polite">
       <div className="flex items-start justify-between gap-3">
-        <h3 className="min-w-0 text-sm font-semibold tabular-nums">
-          {t("youtubeOpinions.review.binTitle", {
-            sentiment: sentimentWord,
-            horizon: horizonLabel(horizon, t),
-            range: binLabel(bin, t),
-            count: String(bin.count),
-          })}
+        <h3 className="flex min-w-0 flex-wrap items-center gap-1.5 text-sm font-semibold tabular-nums">
+          <SentimentBadge sentiment={sentiment} t={t} />
+          <span className="rounded bg-muted px-1.5 py-px text-[0.6875rem] font-medium">
+            {horizonLabel(horizon, t)}
+          </span>
+          <span className="rounded bg-muted px-1.5 py-px text-[0.6875rem] font-medium">
+            {t("youtubeOpinions.review.binRangeBadge", { range: binLabel(bin, t) })}
+          </span>
+          <span className="ml-1">
+            {t("youtubeOpinions.review.binCount", { count: String(bin.count) })}
+          </span>
         </h3>
         <Button size="sm" variant="outline" onClick={onClose}>
           {t("youtubeOpinions.review.closeList")}
@@ -284,7 +246,8 @@ function BinOpinions({
           <ul className="mt-2 divide-y divide-border">
             {data.opinions.slice(0, shown).map((item) => (
               <li key={item.id} className="min-w-0 py-3">
-                <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
+                <div className="flex min-w-0 items-center gap-2 text-sm">
+                  <CompanyLogo symbol={item.ticker} size="xs" />
                   <Link
                     href={`/dashboard/youtube-opinions?tab=stocks&stock=${encodeURIComponent(item.ticker)}`}
                     className="font-semibold underline-offset-4 hover:underline"
@@ -292,44 +255,54 @@ function BinOpinions({
                     {item.ticker}
                   </Link>
                   {item.channel_id ? (
-                    <Link
-                      href={`/dashboard/youtube-opinions?tab=creators&creator=${encodeURIComponent(item.channel_id)}`}
-                      className="min-w-0 truncate text-muted-foreground underline-offset-4 hover:underline"
+                    <button
+                      type="button"
+                      onClick={() => onCreator(item.channel_id!)}
+                      className="flex min-w-0 items-center gap-1.5 text-muted-foreground underline-offset-4 hover:underline"
                     >
-                      {item.channel_title || item.channel_id}
-                    </Link>
+                      <CreatorAvatar
+                        name={item.channel_title || item.channel_id}
+                        avatarUrl={item.channel_avatar_url}
+                        size="xs"
+                      />
+                      <span className="truncate">{item.channel_title || item.channel_id}</span>
+                    </button>
                   ) : null}
-                  <span className="text-xs text-muted-foreground tabular-nums">
-                    {t("youtubeOpinions.review.saidOn", {
-                      date: formatOpinionDate(item.published_at, locale),
-                      sentiment: sentimentWord,
-                    })}
+                  <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+                    {formatOpinionDate(item.published_at, locale)}
                   </span>
-                  {item.video_url ? (
-                    <a
-                      href={item.video_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="ml-auto text-xs font-medium text-foreground underline underline-offset-4"
-                    >
-                      {t("youtubeOpinions.review.watchVideo")}
-                    </a>
-                  ) : null}
+                  <VideoLink url={item.video_url} t={t} />
                 </div>
-                <div className="mt-2 grid grid-cols-3 gap-2">
-                  <Cell
-                    label={t("youtubeOpinions.review.cellStock", { ticker: item.ticker })}
-                    value={signedPercent(item.return_pct)}
-                  />
-                  <Cell
-                    label={t("youtubeOpinions.review.cellMarket")}
-                    value={signedPercent(item.benchmark_return_pct)}
-                  />
-                  <Cell
-                    label={t("youtubeOpinions.review.cellDiff")}
-                    value={diffText(item.excess_return_pct, t)}
-                  />
-                </div>
+                {item.ticker === data.benchmark ? (
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <Tile
+                      label={t("youtubeOpinions.review.cellStock", { ticker: item.ticker })}
+                      value={signedPercent(item.return_pct)}
+                    />
+                    <DirectionTile
+                      sentiment={item.sentiment}
+                      returnPct={item.return_pct}
+                      benchmark={data.benchmark}
+                      t={t}
+                    />
+                  </div>
+                ) : (
+                  <div className="mt-2 grid grid-cols-3 gap-2">
+                    <Tile
+                      label={t("youtubeOpinions.review.cellStock", { ticker: item.ticker })}
+                      value={signedPercent(item.return_pct)}
+                    />
+                    <Tile
+                      label={t("youtubeOpinions.review.cellMarket", { benchmark: data.benchmark })}
+                      value={signedPercent(item.benchmark_return_pct)}
+                    />
+                    <Tile
+                      label={t("youtubeOpinions.review.cellExcess")}
+                      value={signedPercent(item.excess_return_pct)}
+                      tone={toneOf(item.excess_return_pct)}
+                    />
+                  </div>
+                )}
               </li>
             ))}
           </ul>
@@ -387,19 +360,21 @@ function SentimentCard({
         </p>
       ) : (
         <>
-          <p className="mt-1 text-lg font-semibold leading-snug tabular-nums">
-            {(() => {
-              const direction = relativeDirection(stats.mean_excess_pct!);
-              const key =
-                direction === "less"
-                  ? "headlineLess"
-                  : direction === "more"
-                    ? "headlineMore"
-                    : "headlineSame";
-              return t(`youtubeOpinions.review.${key}`, {
-                value: magnitude(stats.mean_excess_pct!),
-              });
-            })()}
+          <div className="mt-3 flex items-center gap-1 text-xs text-muted-foreground">
+            {t("youtubeOpinions.review.excessLabel")}
+            {stats.median_excess_pct !== undefined && stats.beat_share_ci && (
+              <InfoTip label={t("youtubeOpinions.review.excessLabel")}>
+                {t("youtubeOpinions.review.excessTip", {
+                  benchmark,
+                  median: signedPercent(stats.median_excess_pct),
+                  low: String(stats.beat_share_ci[0]),
+                  high: String(stats.beat_share_ci[1]),
+                })}
+              </InfoTip>
+            )}
+          </div>
+          <p className="mt-0.5 text-3xl font-semibold tracking-tight">
+            <Figure value={stats.mean_excess_pct!} />
           </p>
           <div className="mt-4 space-y-2">
             {(() => {
@@ -426,22 +401,12 @@ function SentimentCard({
           </div>
           {beat !== null && (
             <div className="mt-4 flex items-center gap-1 text-sm tabular-nums">
-              <span>
-                {t("youtubeOpinions.review.beatLine", {
-                  n: String(stats.n),
-                  beat: String(beat),
-                  share: String(Math.round(stats.beat_share_pct ?? 0)),
-                })}
-              </span>
-              {stats.median_excess_pct !== undefined && stats.beat_share_ci && (
-                <InfoTip label={t("youtubeOpinions.review.detailLabel")}>
-                  {t("youtubeOpinions.review.detailTip", {
-                    median: signedPercent(stats.median_excess_pct),
-                    low: String(stats.beat_share_ci[0]),
-                    high: String(stats.beat_share_ci[1]),
-                  })}
-                </InfoTip>
-              )}
+              {t("youtubeOpinions.review.beatLine", {
+                benchmark,
+                n: String(stats.n),
+                beat: String(beat),
+                share: String(Math.round(stats.beat_share_pct ?? 0)),
+              })}
             </div>
           )}
           <Histogram
@@ -470,18 +435,32 @@ function MarketContext({ review, t }: { review: Review; t: T }) {
   const span = Date.parse(last) - Date.parse(first) || 1;
   return (
     <section className="mt-10 min-w-0" aria-labelledby="review-market-heading">
-      <h2 id="review-market-heading" className="text-lg font-semibold">
-        {t("youtubeOpinions.review.marketTitle", { benchmark: review.benchmark })}
-      </h2>
+      <div className="flex items-center gap-1">
+        <h2 id="review-market-heading" className="text-lg font-semibold">
+          {t("youtubeOpinions.review.marketTitle", { benchmark: review.benchmark })}
+        </h2>
+        <InfoTip label={t("youtubeOpinions.review.marketTitle", { benchmark: review.benchmark })}>
+          {t("youtubeOpinions.review.marketTip", { benchmark: review.benchmark })}
+        </InfoTip>
+      </div>
       <ListCard className="mt-3 p-5">
-        <p className="text-sm text-muted-foreground">
-          {t("youtubeOpinions.review.marketSummary", {
-            benchmark: review.benchmark,
-            from: day(first),
-            to: day(last),
-          })}{" "}
-          {change !== null && <Figure value={change} />}
-        </p>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+          <span className="text-sm font-semibold text-foreground tabular-nums">
+            {review.benchmark} {change !== null && <Figure value={change} />}
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="h-0.5 w-4 bg-foreground" aria-hidden="true" />
+            {t("youtubeOpinions.review.legendLine", { benchmark: review.benchmark })}
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-sm bg-positive-fill/60" aria-hidden="true" />
+            {t("youtubeOpinions.review.legendBullish")}
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-sm bg-negative-fill/60" aria-hidden="true" />
+            {t("youtubeOpinions.review.legendBearish")}
+          </span>
+        </div>
         <svg
           viewBox="0 0 100 40"
           preserveAspectRatio="none"
@@ -532,9 +511,6 @@ function MarketContext({ review, t }: { review: Review; t: T }) {
           <span>{day(first)}</span>
           <span>{day(last)}</span>
         </div>
-        <p className="mt-3 text-xs text-muted-foreground">
-          {t("youtubeOpinions.review.marketLegend")}
-        </p>
       </ListCard>
     </section>
   );
@@ -614,6 +590,23 @@ export default function OpinionReview() {
   const [days, setDays] = useState("20");
   const [sentiment, setSentiment] = useState<ReviewSentiment>("bullish");
   const [selection, setSelection] = useState<Selection | null>(null);
+  const [view, setView] = useState<ReviewView>("all");
+  const [creator, setCreator] = useState<string | null>(null);
+  // ?view=creators&creator=<id> makes a creator's list shareable; read once on mount.
+  useEffect(() => {
+    const route = readReviewRoute(window.location.search);
+    setView(route.view);
+    setCreator(route.creator);
+  }, []);
+  const showView = (next: ReviewView, channelId: string | null = creator) => {
+    setView(next);
+    setCreator(channelId);
+    const url = new URL(window.location.href);
+    url.search = reviewRouteSearch(next, channelId);
+    window.history.replaceState(null, "", url);
+    if (next === "creators") window.scrollTo({ top: 0 });
+  };
+  const openCreator = (channelId: string) => showView("creators", channelId);
   const changeDays = (value: string) => {
     setDays(value);
     setSelection(null);
@@ -674,7 +667,21 @@ export default function OpinionReview() {
             {switcher}
           </header>
 
-          {review ? (
+          <SegmentedControl
+            label={t("youtubeOpinions.review.viewLabel")}
+            size="sm"
+            className="mb-4"
+            value={view}
+            onChange={(next) => showView(next)}
+            options={[
+              { value: "all", label: t("youtubeOpinions.review.viewAll") },
+              { value: "creators", label: t("youtubeOpinions.review.viewCreator") },
+            ]}
+          />
+
+          {view === "creators" ? (
+            <CreatorOpinionsReview channelId={creator} onChannel={openCreator} />
+          ) : review ? (
             <>
               <div className="flex flex-wrap items-center gap-3">
                 <SegmentedControl
@@ -687,9 +694,9 @@ export default function OpinionReview() {
                     label: horizonLabel(value, t),
                   }))}
                 />
-                <span className="text-xs text-muted-foreground">
-                  {t("youtubeOpinions.review.horizonNote")}
-                </span>
+                <InfoTip label={t("youtubeOpinions.review.horizonLabel")}>
+                  {t("youtubeOpinions.review.horizonTip")}
+                </InfoTip>
                 {review.refreshing && (
                   <span className="text-xs text-muted-foreground">
                     {t("youtubeOpinions.review.refreshing")}
@@ -720,6 +727,7 @@ export default function OpinionReview() {
                   sentiment={selection.sentiment}
                   bin={selectedBin}
                   onClose={() => setSelection(null)}
+                  onCreator={openCreator}
                   t={t}
                 />
               )}
@@ -762,21 +770,28 @@ export default function OpinionReview() {
                 </section>
               )}
 
-              <footer className="mt-10 space-y-1 border-t border-border pt-4 text-xs leading-5 text-muted-foreground">
-                <p className="tabular-nums">
-                  {t("youtubeOpinions.review.coverage", {
-                    opinions: String(review.counts.opinions),
+              <footer className="mt-10 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border pt-4 text-xs leading-5 text-muted-foreground">
+                <span className="flex items-center gap-1 tabular-nums">
+                  {t("youtubeOpinions.review.coverageShort", {
                     kept: String(review.counts.after_dedupe),
                     bullish: String(review.counts.bullish),
                     bearish: String(review.counts.bearish),
-                    neutral: String(review.counts.neutral_or_mixed),
-                    noPrice: String(review.counts.no_price_data),
                   })}
-                </p>
-                <p>
-                  {t("youtubeOpinions.review.asOf", { date: day(review.as_of) })}{" "}
-                  {t("youtubeOpinions.review.disclaimer")}
-                </p>
+                  <InfoTip label={t("youtubeOpinions.review.coverageLabel")}>
+                    {t("youtubeOpinions.review.coverage", {
+                      opinions: String(review.counts.opinions),
+                      kept: String(review.counts.after_dedupe),
+                      bullish: String(review.counts.bullish),
+                      bearish: String(review.counts.bearish),
+                      neutral: String(review.counts.neutral_or_mixed),
+                      onBenchmark: String(review.counts.on_benchmark ?? 0),
+                      benchmark: review.benchmark,
+                      noPrice: String(review.counts.no_price_data),
+                    })}
+                  </InfoTip>
+                </span>
+                <span>· {t("youtubeOpinions.review.asOf", { date: day(review.as_of) })}</span>
+                <span>· {t("youtubeOpinions.review.disclaimer")}</span>
               </footer>
             </>
           ) : resource.loading || building ? (

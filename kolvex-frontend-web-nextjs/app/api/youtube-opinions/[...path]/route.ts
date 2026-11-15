@@ -39,7 +39,8 @@ async function proxyJson(
     method === "GET" &&
     ((path.length === 1 && ["dashboard", "videos", "coverage", "review"].includes(path[0])) ||
       (path.length === 2 && path[0] === "stocks") ||
-      (path.length === 2 && path[0] === "review" && path[1] === "opinions") ||
+      (path.length === 2 && path[0] === "review" && ["opinions", "creators"].includes(path[1])) ||
+      (path.length === 3 && path[0] === "review" && path[1] === "creators") ||
       (path.length === 3 &&
         path[0] === "creators" &&
         ["profile", "latest-video", "review"].includes(path[2])));

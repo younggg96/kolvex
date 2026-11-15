@@ -45,16 +45,13 @@ test("figures carry a sign and a tone, so direction never depends on color", () 
   assert.deepEqual({ ...review.reviewFigure(0.02) }, { text: "0.0%", tone: "flat" });
 });
 
-test("histogram labels say worse or better than the market, and heights scale to the tallest bin", () => {
-  assert.equal(review.binLabel({ low: null, high: -20, count: 3 }, t), "跑输大盘 20% 以上");
-  assert.equal(review.binLabel({ low: -20, high: -15, count: 3 }, t), "跑输大盘 15%–20%");
-  assert.equal(review.binLabel({ low: -5, high: 0, count: 3 }, t), "跑输大盘 0%–5%");
-  assert.equal(review.binLabel({ low: 0, high: 5, count: 3 }, t), "跑赢大盘 0%–5%");
-  assert.equal(review.binLabel({ low: 20, high: null, count: 3 }, t), "跑赢大盘 20% 以上");
-  assert.equal(
-    review.binLabel({ low: -20, high: -15, count: 3 }, translator(en)),
-    "Trailed market by 15%–20%",
-  );
+test("histogram labels are signed excess-return bands, and heights scale to the tallest bin", () => {
+  assert.equal(review.binLabel({ low: null, high: -20, count: 3 }, t), "< -20%");
+  assert.equal(review.binLabel({ low: -20, high: -15, count: 3 }, t), "-20% ~ -15%");
+  assert.equal(review.binLabel({ low: -5, high: 0, count: 3 }, t), "-5% ~ 0%");
+  assert.equal(review.binLabel({ low: 0, high: 5, count: 3 }, t), "0% ~ +5%");
+  assert.equal(review.binLabel({ low: 20, high: null, count: 3 }, t), "≥ +20%");
+  assert.equal(review.binLabel({ low: -20, high: -15, count: 3 }, translator(en)), "-20% to -15%");
   assert.deepEqual(
     [...review.histogramHeights([{ count: 2 }, { count: 4 }, { count: 0 }])],
     [0.5, 1, 0],
@@ -62,9 +59,9 @@ test("histogram labels say worse or better than the market, and heights scale to
   assert.deepEqual([...review.histogramHeights([{ count: 0 }, { count: 0 }])], [0, 0]);
 });
 
-test("plain-language helpers: holding period, direction, beat count and the zero line", () => {
-  assert.equal(review.horizonLabel(5, t), "1 周");
-  assert.equal(review.horizonLabel(20, t), "1 个月");
+test("helpers: holding period, direction, beat count and the zero line", () => {
+  assert.equal(review.horizonLabel(5, t), "5 日");
+  assert.equal(review.horizonLabel(20, t), "20 日");
   assert.equal(review.horizonLabel(60, t), "60 个交易日");
   assert.equal(review.relativeDirection(-6.92), "less");
   assert.equal(review.relativeDirection(0.04), "same");
@@ -76,10 +73,14 @@ test("plain-language helpers: holding period, direction, beat count and the zero
   const edges = [null, -20, -15, -10, -5, 0, 5, 10, 15, 20, null];
   const bins = edges.slice(0, -1).map((low, i) => ({ low, high: edges[i + 1], count: 1 }));
   assert.equal(review.zeroPosition(bins), 0.5);
-  assert.equal(
-    t("youtubeOpinions.review.headlineLess", { value: review.magnitude(-6.9) }),
-    "这些股票平均跑输大盘 6.9%",
-  );
+});
+
+test("a call on the benchmark itself is read by direction, not excess return", () => {
+  assert.equal(review.callDirection("bullish", 1.7), "match");
+  assert.equal(review.callDirection("bullish", -0.6), "against");
+  assert.equal(review.callDirection("bearish", -2.3), "match");
+  assert.equal(review.callDirection("bearish", 0.9), "against");
+  assert.equal(review.callDirection("bearish", 0.03), "flat");
 });
 
 test("segment labels show confidence as a percent and keep unknown separate", () => {
@@ -127,4 +128,21 @@ test("a bar's opinion query keeps both edges and leaves open-ended ones out", ()
     review.binQuery(5, "bearish", { low: 20, high: null, count: 1 }),
     "horizon=5&sentiment=bearish&low=20",
   );
+});
+
+test("the creator view is read from and written to the query string", () => {
+  assert.deepEqual({ ...review.readReviewRoute("") }, { view: "all", creator: null });
+  assert.deepEqual(
+    { ...review.readReviewRoute("?view=creators&creator=UC1") },
+    { view: "creators", creator: "UC1" },
+  );
+  // A creator link alone opens the creator view; an unknown view falls back to all.
+  assert.deepEqual(
+    { ...review.readReviewRoute("?creator=UC1") },
+    { view: "creators", creator: "UC1" },
+  );
+  assert.deepEqual({ ...review.readReviewRoute("?view=other") }, { view: "all", creator: null });
+  assert.equal(review.reviewRouteSearch("all", "UC1"), "");
+  assert.equal(review.reviewRouteSearch("creators", null), "?view=creators");
+  assert.equal(review.reviewRouteSearch("creators", "UC1"), "?view=creators&creator=UC1");
 });

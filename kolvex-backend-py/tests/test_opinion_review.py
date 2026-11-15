@@ -61,6 +61,17 @@ class SnapshotTests(unittest.TestCase):
         self.assertEqual(next(b for b in five["histogram"] if b["low"] == 0)["count"], 35)
         self.assertEqual(snap["as_of"], DAYS[-1])
 
+    def test_calls_on_the_benchmark_itself_stay_out_of_the_statistics(self):
+        spy_calls = [opinion(100 + i, ticker="SPY") for i in range(3)]
+        snap = review.build_snapshot(ROWS + spy_calls, download, NOW)
+        five = snap["groups"]["5"]["bullish"]["overall"]
+        self.assertEqual(five["n"], 35)  # unchanged: the three SPY calls are not averaged in
+        self.assertEqual(snap["counts"]["on_benchmark"], 3)
+        self.assertEqual(snap["counts"]["neutral_or_mixed"], 0)
+        listed = [e for e in snap["events"] if e["ticker"] == "SPY"]
+        self.assertEqual(len(listed), 3)  # still listed per opinion
+        self.assertEqual(listed[0]["horizons"]["5"]["excess_return_pct"], 0.0)
+
     def test_small_groups_state_only_their_count(self):
         bearish = review.build_snapshot(ROWS, download, NOW)["groups"]["20"]["bearish"]["overall"]
         self.assertEqual(bearish, {"n": 5, "enough": False})
@@ -231,6 +242,46 @@ class CreatorTests(unittest.TestCase):
         self.assertEqual((card["counted"], card["enough"], card["min_group"]), (0, False, 30))
 
 
+class CreatorOpinionTests(unittest.TestCase):
+    def setUp(self):
+        review.reset()
+        self.dir = tempfile.TemporaryDirectory()
+        self.options = {"download": long_download, "now": NOW, "spawn": lambda fn: fn(),
+                        "path": Path(self.dir.name) / "s.json"}  # fmt: skip
+        repeat = {**call(5), "id": "cA-bullish-repeat", "ticker": "T1"}
+        repeat["video_published_at"] = call(40)["video_published_at"]
+        self.rows = [call(n) for n in range(3)] + [repeat, call(0, channel="cB")]
+        self.rows += [{**call(7, sentiment="neutral"), "id": "cA-neutral"}]
+
+    def tearDown(self):
+        review.reset()
+        self.dir.cleanup()
+
+    def test_picker_lists_creators_by_activity_with_no_figures(self):
+        listed = review.review_creators(lambda: self.rows, **self.options)
+        self.assertEqual([c["channel_id"] for c in listed["creators"]], ["cA", "cB"])
+        self.assertEqual(listed["creators"][0], {"channel_id": "cA", "channel_title": "cA",
+                                                 "channel_avatar_url": None, "opinions": 4,
+                                                 "stocks": 3})  # fmt: skip
+
+    def test_lists_each_opinion_with_stock_and_market_newest_first(self):
+        found = review.creator_opinions(lambda: self.rows, "cA", **self.options)
+        self.assertEqual(found["total"], 4)  # the neutral call is not listed
+        self.assertEqual(found["opinions"][0]["id"], "cA-bullish-repeat")
+        self.assertEqual(found["stocks"][0], {"ticker": "T1", "count": 2})
+        five = found["opinions"][-1]["horizons"]["5"]
+        self.assertEqual(set(five), {"return_pct", "benchmark_return_pct", "excess_return_pct"})
+        self.assertAlmostEqual(five["return_pct"] - five["benchmark_return_pct"],
+                               five["excess_return_pct"], places=3)  # fmt: skip
+        text = json.dumps(found)
+        for word in ("mean", "median", "beat", "share", "rank", "signed"):
+            self.assertNotIn(word, text)
+
+    def test_unknown_creator_has_no_opinions(self):
+        found = review.creator_opinions(lambda: self.rows, "nobody", **self.options)
+        self.assertEqual((found["total"], found["opinions"], found["stocks"]), (0, [], []))
+
+
 class BinTests(unittest.TestCase):
     def setUp(self):
         review.reset()
@@ -254,6 +305,9 @@ class BinTests(unittest.TestCase):
         self.assertEqual(empty["total"], 0)
         open_ended = review.opinions_in_bin(lambda: rows, 5, "bullish", None, 0, **self.options)
         self.assertEqual(open_ended["total"], 0)
+        spy = [{**opinion(100), "ticker": "SPY"}]
+        flat = review.opinions_in_bin(lambda: rows + spy, 5, "bullish", 0, 5, **self.options)
+        self.assertEqual(flat["total"], 35)  # the SPY call (0% excess) is not in any bar
 
     def test_rejects_unknown_horizon(self):
         with self.assertRaises(ValueError):
@@ -296,6 +350,16 @@ class RouteTests(unittest.TestCase):
             response = self.client.get("/youtube-opinions/creators/c1/review")
         self.assertEqual((response.status_code, response.json()["enough"]), (200, False))
         card.assert_called_once_with(self.service.all_rows, "c1")
+
+    def test_creator_picker_and_opinions(self):
+        with patch.object(review, "review_creators", return_value={"creators": []}) as picker:
+            response = self.client.get("/youtube-opinions/review/creators")
+        self.assertEqual((response.status_code, response.json()["creators"]), (200, []))
+        picker.assert_called_once_with(self.service.all_rows)
+        with patch.object(review, "creator_opinions", return_value={"total": 3}) as listed:
+            response = self.client.get("/youtube-opinions/review/creators/c1")
+        self.assertEqual((response.status_code, response.json()["total"]), (200, 3))
+        listed.assert_called_once_with(self.service.all_rows, "c1")
 
     def test_first_build_is_503_building(self):
         with patch.object(review, "get_review", side_effect=review.ReviewUnavailable("building")):
