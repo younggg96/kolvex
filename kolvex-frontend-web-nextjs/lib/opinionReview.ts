@@ -21,6 +21,8 @@ export interface ReviewStats {
   mean_excess_pct?: number;
   median_excess_pct?: number;
   beat_share_pct?: number;
+  /** Opinions whose stock beat the benchmark (snapshot v4+). */
+  beat_count?: number;
   beat_share_ci?: [number, number];
   mean_return_pct?: number;
   mean_benchmark_pct?: number;
@@ -75,16 +77,58 @@ export function reviewFigure(value: number): ReviewFigure {
   return { text: signedPercent(value), tone: outcomeTone(value) };
 }
 
-/** "-20% to -15%", "below -20%", "20% or more" — the histogram's x labels. */
-export function binLabel(
-  bin: ReviewHistogramBin,
-  t: (key: string, p?: Record<string, string>) => string,
-) {
-  if (bin.low === null && bin.high !== null)
-    return t("youtubeOpinions.review.binBelow", { value: `${bin.high}%` });
-  if (bin.high === null && bin.low !== null)
-    return t("youtubeOpinions.review.binAbove", { value: `${bin.low}%` });
-  return t("youtubeOpinions.review.binRange", { low: `${bin.low}%`, high: `${bin.high}%` });
+type Translate = (key: string, p?: Record<string, string>) => string;
+
+const pct = (value: number) => `${Math.abs(value)}%`;
+
+/**
+ * A bar's range in words relative to the benchmark: "15%–20% worse", "20%+ better".
+ * Bins never straddle zero; if one did, the plain numeric range is used.
+ */
+export function binLabel(bin: ReviewHistogramBin, t: Translate) {
+  const { low, high } = bin;
+  if (low === null && high !== null && high <= 0)
+    return t("youtubeOpinions.review.relBelow", { value: pct(high) });
+  if (high === null && low !== null && low >= 0)
+    return t("youtubeOpinions.review.relAbove", { value: pct(low) });
+  if (low !== null && high !== null && high <= 0)
+    return t("youtubeOpinions.review.relLessRange", { low: pct(high), high: pct(low) });
+  if (low !== null && high !== null && low >= 0)
+    return t("youtubeOpinions.review.relMoreRange", { low: pct(low), high: pct(high) });
+  return `${low ?? ""}%–${high ?? ""}%`;
+}
+
+/** The holding period as people say it: 5 sessions is a week, 20 a month. */
+export function horizonLabel(days: number, t: Translate) {
+  if (days === 5) return t("youtubeOpinions.review.horizonWeek");
+  if (days === 20) return t("youtubeOpinions.review.horizonMonth");
+  return t("youtubeOpinions.review.horizon", { days: String(days) });
+}
+
+export type RelativeDirection = "less" | "more" | "same";
+
+/** Which way a stock-minus-benchmark figure points, at the one decimal shown. */
+export function relativeDirection(value: number): RelativeDirection {
+  const rounded = Math.round(value * 10) / 10;
+  return rounded < 0 ? "less" : rounded > 0 ? "more" : "same";
+}
+
+/** Unsigned one-decimal percent, for sentences that carry the direction in words. */
+export function magnitude(value: number): string {
+  return `${Math.abs(Math.round(value * 10) / 10).toFixed(1)}%`;
+}
+
+/** How many opinions beat the benchmark; older snapshots only carry the share. */
+export function beatCount(stats: ReviewStats): number | null {
+  if (typeof stats.beat_count === "number") return stats.beat_count;
+  if (typeof stats.beat_share_pct !== "number") return null;
+  return Math.round((stats.beat_share_pct * stats.n) / 100);
+}
+
+/** Where 0% falls along the histogram, as a share of its width (bins at or below zero). */
+export function zeroPosition(bins: ReviewHistogramBin[]): number {
+  if (!bins.length) return 0.5;
+  return bins.filter((bin) => bin.high !== null && bin.high <= 0).length / bins.length;
 }
 
 /**
@@ -94,7 +138,7 @@ export function binLabel(
 export function segmentLabel(
   segment: ReviewSegment,
   dimension: "confidence" | "strength",
-  t: (key: string, p?: Record<string, string>) => string,
+  t: Translate,
 ) {
   if (segment.unknown) return t("youtubeOpinions.review.segmentUnknown");
   const scale = (value: number) =>

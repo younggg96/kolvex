@@ -44,15 +44,38 @@ test("figures carry a sign and a tone, so direction never depends on color", () 
   assert.deepEqual({ ...review.reviewFigure(0.02) }, { text: "0.0%", tone: "flat" });
 });
 
-test("histogram labels cover open-ended bins and heights scale to the tallest bin", () => {
-  assert.equal(review.binLabel({ low: null, high: -20, count: 3 }, t), "低于 -20%");
-  assert.equal(review.binLabel({ low: 20, high: null, count: 3 }, t), "20% 以上");
-  assert.equal(review.binLabel({ low: -5, high: 0, count: 3 }, t), "-5% 到 0%");
+test("histogram labels say worse or better than the market, and heights scale to the tallest bin", () => {
+  assert.equal(review.binLabel({ low: null, high: -20, count: 3 }, t), "少涨 20% 以上");
+  assert.equal(review.binLabel({ low: -20, high: -15, count: 3 }, t), "少涨 15%–20%");
+  assert.equal(review.binLabel({ low: -5, high: 0, count: 3 }, t), "少涨 0%–5%");
+  assert.equal(review.binLabel({ low: 0, high: 5, count: 3 }, t), "多涨 0%–5%");
+  assert.equal(review.binLabel({ low: 20, high: null, count: 3 }, t), "多涨 20% 以上");
+  assert.equal(review.binLabel({ low: -20, high: -15, count: 3 }, translator(en)), "15%–20% worse");
   assert.deepEqual(
     [...review.histogramHeights([{ count: 2 }, { count: 4 }, { count: 0 }])],
     [0.5, 1, 0],
   );
   assert.deepEqual([...review.histogramHeights([{ count: 0 }, { count: 0 }])], [0, 0]);
+});
+
+test("plain-language helpers: holding period, direction, beat count and the zero line", () => {
+  assert.equal(review.horizonLabel(5, t), "1 周");
+  assert.equal(review.horizonLabel(20, t), "1 个月");
+  assert.equal(review.horizonLabel(60, t), "60 个交易日");
+  assert.equal(review.relativeDirection(-6.92), "less");
+  assert.equal(review.relativeDirection(0.04), "same");
+  assert.equal(review.relativeDirection(1.25), "more");
+  assert.equal(review.magnitude(-6.92), "6.9%");
+  assert.equal(review.beatCount({ n: 284, beat_count: 93, beat_share_pct: 32.7 }), 93);
+  assert.equal(review.beatCount({ n: 284, beat_share_pct: 32.7 }), 93);
+  assert.equal(review.beatCount({ n: 12, enough: false }), null);
+  const edges = [null, -20, -15, -10, -5, 0, 5, 10, 15, 20, null];
+  const bins = edges.slice(0, -1).map((low, i) => ({ low, high: edges[i + 1], count: 1 }));
+  assert.equal(review.zeroPosition(bins), 0.5);
+  assert.equal(
+    t("youtubeOpinions.review.headlineLess", { value: review.magnitude(-6.9) }),
+    "这些股票平均比大盘少涨 6.9%",
+  );
 });
 
 test("segment labels show confidence as a percent and keep unknown separate", () => {
