@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -20,12 +21,14 @@ import {
   reviewFigure,
   segmentLabel,
   type OpinionReview as Review,
+  binQuery,
+  type ReviewHistogramBin,
   type ReviewSegment,
   type ReviewSentiment,
   type ReviewStats,
 } from "@/lib/opinionReview";
 import { cn } from "@/lib/utils";
-import { getYouTubeOpinionReview } from "@/lib/youtubeOpinionsApi";
+import { getYouTubeOpinionReview, getYouTubeReviewBin } from "@/lib/youtubeOpinionsApi";
 
 const toneClass = { positive: "text-positive", negative: "text-negative", flat: "text-foreground" };
 const EXPLORER = "/dashboard/youtube-opinions";
@@ -37,7 +40,17 @@ function Figure({ value }: { value: number }) {
   return <span className={cn("tabular-nums", toneClass[figure.tone])}>{figure.text}</span>;
 }
 
-function Histogram({ stats, t }: { stats: ReviewStats; t: T }) {
+function Histogram({
+  stats,
+  selected,
+  onSelect,
+  t,
+}: {
+  stats: ReviewStats;
+  selected: number | null;
+  onSelect: (index: number | null) => void;
+  t: T;
+}) {
   const bins = stats.histogram ?? [];
   const heights = histogramHeights(bins);
   return (
@@ -47,17 +60,20 @@ function Histogram({ stats, t }: { stats: ReviewStats; t: T }) {
       </figcaption>
       <div
         className="mt-2 flex h-24 items-end gap-1"
-        role="list"
+        role="group"
         aria-label={t("youtubeOpinions.review.distribution")}
       >
         {bins.map((bin, index) => {
           const label = binLabel(bin, t);
           const below = bin.high !== null && bin.high <= 0;
+          const active = selected === index;
           return (
-            <div
+            <button
               key={label}
-              role="listitem"
-              aria-label={t("youtubeOpinions.review.binCount", {
+              type="button"
+              disabled={!bin.count}
+              aria-pressed={active}
+              aria-label={t("youtubeOpinions.review.binOpen", {
                 range: label,
                 count: String(bin.count),
               })}
@@ -65,13 +81,18 @@ function Histogram({ stats, t }: { stats: ReviewStats; t: T }) {
                 range: label,
                 count: String(bin.count),
               })}
-              className="flex h-full min-w-0 flex-1 flex-col justify-end"
+              onClick={() => onSelect(active ? null : index)}
+              className="group flex h-full min-w-0 flex-1 flex-col justify-end rounded-t-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default"
             >
-              <div
-                className={cn("w-full rounded-t-sm", below ? "bg-negative/50" : "bg-positive/50")}
+              <span
+                className={cn(
+                  "block w-full rounded-t-sm transition-opacity",
+                  below ? "bg-negative" : "bg-positive",
+                  active ? "opacity-90" : "opacity-50 group-hover:group-enabled:opacity-70",
+                )}
                 style={{ height: `${Math.max(heights[index] * 100, bin.count ? 4 : 0)}%` }}
               />
-            </div>
+            </button>
           );
         })}
       </div>
@@ -81,6 +102,121 @@ function Histogram({ stats, t }: { stats: ReviewStats; t: T }) {
         <span>{binLabel(bins[bins.length - 1] ?? { low: 20, high: null, count: 0 }, t)}</span>
       </div>
     </figure>
+  );
+}
+
+const LIST_STEP = 10;
+
+/** The opinions behind one bar, each traceable to its video. Newest first. */
+function BinOpinions({
+  horizon,
+  sentiment,
+  bin,
+  benchmark,
+  t,
+}: {
+  horizon: number;
+  sentiment: ReviewSentiment;
+  bin: ReviewHistogramBin;
+  benchmark: string;
+  t: T;
+}) {
+  const { locale } = useTranslation();
+  const [shown, setShown] = useState(LIST_STEP);
+  const query = binQuery(horizon, sentiment, bin);
+  const resource = useCachedResource(
+    `/api/youtube-opinions/review/opinions?${query}`,
+    (signal) => getYouTubeReviewBin(query, signal),
+    { ttl: 10 * 60_000 },
+  );
+  const data = resource.data;
+  const label = binLabel(bin, t);
+  return (
+    <section className="mt-4 min-w-0 border-t border-border pt-3" aria-live="polite">
+      <h4 className="text-xs font-medium text-muted-foreground tabular-nums">
+        {t("youtubeOpinions.review.binOpinions", { range: label, count: String(bin.count) })}
+      </h4>
+      {!data ? (
+        resource.loading ? (
+          <div className="mt-3 space-y-2" aria-busy="true">
+            <Skeleton className="h-10 rounded-lg" />
+            <Skeleton className="h-10 rounded-lg" />
+          </div>
+        ) : (
+          <div className="mt-2 flex items-center gap-3 text-sm text-muted-foreground" role="alert">
+            {t("youtubeOpinions.review.binFailed")}
+            <Button size="sm" variant="outline" onClick={resource.refresh}>
+              {t("common.retry")}
+            </Button>
+          </div>
+        )
+      ) : data.opinions.length === 0 ? (
+        <p className="mt-2 text-sm text-muted-foreground">{t("youtubeOpinions.review.binEmpty")}</p>
+      ) : (
+        <>
+          <ul className="mt-2 divide-y divide-border">
+            {data.opinions.slice(0, shown).map((item) => (
+              <li
+                key={item.id}
+                className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1 py-2 text-sm"
+              >
+                <Link
+                  href={`/dashboard/youtube-opinions?tab=stocks&stock=${encodeURIComponent(item.ticker)}`}
+                  className="font-semibold underline-offset-4 hover:underline"
+                >
+                  {item.ticker}
+                </Link>
+                {item.channel_id ? (
+                  <Link
+                    href={`/dashboard/youtube-opinions?tab=creators&creator=${encodeURIComponent(item.channel_id)}`}
+                    className="min-w-0 truncate text-muted-foreground underline-offset-4 hover:underline"
+                  >
+                    {item.channel_title || item.channel_id}
+                  </Link>
+                ) : null}
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {formatOpinionDate(item.published_at, locale)}
+                </span>
+                <span className="ml-auto flex items-baseline gap-3 text-xs">
+                  <span>
+                    {t("youtubeOpinions.review.vsBenchmark", { benchmark, value: "" })}
+                    <Figure value={item.excess_return_pct} />
+                  </span>
+                  <span className="text-muted-foreground">
+                    {t("youtubeOpinions.review.stockMove", { value: "" })}
+                    <Figure value={item.return_pct} />
+                  </span>
+                  {item.video_url ? (
+                    <a
+                      href={item.video_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium text-foreground underline underline-offset-4"
+                    >
+                      {t("youtubeOpinions.review.watchVideo")}
+                    </a>
+                  ) : null}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {shown < data.opinions.length ? (
+            <Button
+              size="sm"
+              variant="outline"
+              className="mt-2"
+              onClick={() => setShown((value) => value + LIST_STEP)}
+            >
+              {t("youtubeOpinions.review.showMore")}
+            </Button>
+          ) : data.total > data.opinions.length ? (
+            <p className="mt-2 text-xs text-muted-foreground">
+              {t("youtubeOpinions.review.binCapped", { shown: String(data.opinions.length) })}
+            </p>
+          ) : null}
+        </>
+      )}
+    </section>
   );
 }
 
@@ -100,6 +236,8 @@ function SentimentCard({
   t: T;
 }) {
   const title = t(`youtubeOpinions.review.${sentiment}Title`, { days: String(days) });
+  const [selected, setSelected] = useState<number | null>(null);
+  const bin = selected === null ? null : stats.histogram?.[selected];
   return (
     <ListCard className="min-w-0 p-5">
       <h3 className="text-sm font-semibold">{title}</h3>
@@ -157,7 +295,17 @@ function SentimentCard({
               </dd>
             </div>
           </dl>
-          <Histogram stats={stats} t={t} />
+          <Histogram stats={stats} selected={selected} onSelect={setSelected} t={t} />
+          {bin && (
+            <BinOpinions
+              key={`${days}:${selected}`}
+              horizon={days}
+              sentiment={sentiment}
+              bin={bin}
+              benchmark={benchmark}
+              t={t}
+            />
+          )}
         </>
       )}
     </ListCard>
@@ -388,7 +536,7 @@ export default function OpinionReview() {
                 <div className="mt-4 grid min-w-0 gap-4 md:grid-cols-2">
                   {(["bullish", "bearish"] as const).map((key) => (
                     <SentimentCard
-                      key={key}
+                      key={`${key}:${days}`}
                       sentiment={key}
                       stats={horizon[key].overall}
                       days={Number(days)}

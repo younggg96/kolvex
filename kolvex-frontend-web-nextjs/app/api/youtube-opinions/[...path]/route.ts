@@ -40,9 +40,10 @@ async function proxyJson(
     method === "GET" &&
     ((path.length === 1 && ["dashboard", "videos", "coverage", "review"].includes(path[0])) ||
       (path.length === 2 && path[0] === "stocks") ||
+      (path.length === 2 && path[0] === "review" && path[1] === "opinions") ||
       (path.length === 3 &&
         path[0] === "creators" &&
-        ["profile", "latest-video"].includes(path[2])));
+        ["profile", "latest-video", "review"].includes(path[2])));
   const token = publicRead ? null : await getAccessToken();
   if (requireAuth && !token) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

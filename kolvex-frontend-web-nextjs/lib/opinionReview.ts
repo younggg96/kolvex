@@ -135,3 +135,76 @@ export function benchmarkChange(points: { close: number }[]): number | null {
   if (points.length < 2 || !(points[0].close > 0)) return null;
   return (points[points.length - 1].close / points[0].close - 1) * 100;
 }
+
+/** One opinion behind a histogram bar: its source and what the price did. */
+export interface ReviewBinOpinion {
+  id: string;
+  channel_id: string | null;
+  channel_title: string | null;
+  ticker: string;
+  sentiment: ReviewSentiment;
+  video_id: string | null;
+  video_title: string | null;
+  video_url: string | null;
+  published_at: string | null;
+  entry_date: string;
+  return_pct: number;
+  benchmark_return_pct: number;
+  excess_return_pct: number;
+}
+
+export interface ReviewBinOpinions {
+  horizon: number;
+  sentiment: ReviewSentiment;
+  low: number | null;
+  high: number | null;
+  total: number;
+  opinions: ReviewBinOpinion[];
+  as_of: string;
+  benchmark: string;
+}
+
+export interface CreatorHalf {
+  n: number;
+  enough: boolean;
+  mean_excess_pct?: number;
+  beat_share_pct?: number;
+}
+
+export interface CreatorReviewGroup extends ReviewStats {
+  early: CreatorHalf;
+  late: CreatorHalf;
+}
+
+/** One creator's card. Below the gates only the history size is known. */
+export interface CreatorReview {
+  channel_id: string;
+  channel_title?: string | null;
+  counted: number;
+  first_entry: string | null;
+  last_entry: string | null;
+  span_days: number;
+  enough: boolean;
+  /** Per horizon: the median entry date of the calls that horizon counts. */
+  split_dates?: Record<string, string>;
+  groups?: Record<string, Record<ReviewSentiment, CreatorReviewGroup>>;
+  benchmark: string;
+  horizons: number[];
+  min_group: number;
+  min_span_days: number;
+  min_half: number;
+  as_of: string;
+  refreshing?: boolean;
+}
+
+/** Query string for the opinions behind one bar; open-ended edges are left out. */
+export function binQuery(
+  horizon: number,
+  sentiment: ReviewSentiment,
+  bin: ReviewHistogramBin,
+): string {
+  const params = new URLSearchParams({ horizon: String(horizon), sentiment });
+  if (bin.low !== null) params.set("low", String(bin.low));
+  if (bin.high !== null) params.set("high", String(bin.high));
+  return params.toString();
+}

@@ -65,7 +65,16 @@ class SnapshotTests(unittest.TestCase):
         self.assertEqual(bearish, {"n": 5, "enough": False})
 
     def test_no_creator_is_named_or_ranked(self):
-        text = json.dumps(review.build_snapshot(ROWS, download, NOW))
+        spawn = lambda fn: fn()  # noqa: E731
+        with tempfile.TemporaryDirectory() as folder:
+            review.reset()
+            page = review.get_review(
+                lambda: ROWS, download, now=NOW, spawn=spawn, path=Path(folder) / "s.json"
+            )
+            review.reset()
+        text = json.dumps(page)
+        self.assertNotIn("creators", page)
+        self.assertNotIn("events", page)
         self.assertNotIn("Creator 1", text)
         self.assertNotIn("channel", text)
         self.assertNotIn("signed", text)
@@ -158,6 +167,106 @@ class LifecycleTests(unittest.TestCase):
         self.assertEqual(review.last_settle(after).date().isoformat(), "2026-11-10")
 
 
+LONG_DAYS = sessions("2026-03-02", 200)
+LONG_STOCK = [{"date": d, "open": 100.0, "close": 100.0 * (1 + 0.001 * (i + 1))}
+              for i, d in enumerate(LONG_DAYS)]  # fmt: skip
+LONG_SPY = [{"date": d, "open": 500.0, "close": 500.0} for d in LONG_DAYS]
+
+
+def long_download(symbols, start, end):
+    return {s: LONG_SPY if s == "SPY" else LONG_STOCK for s in symbols}
+
+
+def call(n, channel="cA", sentiment="bullish", every_days=3):
+    published = datetime(2026, 3, 2, 23, 0, tzinfo=timezone.utc) + timedelta(days=n * every_days)
+    return {"id": f"{channel}-{sentiment}-{n}", "channel_id": channel, "channel_title": channel,
+            "ticker": f"T{n}", "sentiment": sentiment, "confidence": 0.8, "direction_score": 70,
+            "video_id": f"v{n}", "video_title": f"Video {n}", "video_url": f"https://youtu.be/v{n}",
+            "video_published_at": published.isoformat()}  # fmt: skip
+
+
+class CreatorTests(unittest.TestCase):
+    def creators(self, rows):
+        return review.build_snapshot(rows, long_download, NOW)["creators"]
+
+    def test_card_needs_thirty_calls_over_ninety_days_and_shows_both_halves(self):
+        rows = [call(n) for n in range(30)] + [call(40 + n, sentiment="bearish") for n in range(10)]
+        rows += [call(n, channel="cB") for n in range(5)]
+        records = self.creators(rows)
+        mine = records["cA"]
+        self.assertTrue(mine["enough"])
+        self.assertEqual(mine["counted"], 40)
+        self.assertGreaterEqual(mine["span_days"], 90)
+        bullish = mine["groups"]["20"]["bullish"]
+        self.assertTrue(bullish["enough"])
+        self.assertEqual(bullish["n"], 30)
+        self.assertEqual(bullish["early"]["n"] + bullish["late"]["n"], 30)
+        # Each horizon splits at the median of the calls it counts.
+        self.assertEqual(set(mine["split_dates"]), {"5", "20"})
+        self.assertLessEqual(abs(bullish["early"]["n"] + mine["groups"]["20"]["bearish"]["early"]["n"]
+                                 - (bullish["late"]["n"] + mine["groups"]["20"]["bearish"]["late"]["n"])),
+                             1)  # fmt: skip
+        self.assertTrue(bullish["early"]["enough"] and bullish["late"]["enough"])
+        # Later entries open at 100 and close higher, so the late half moved more.
+        self.assertGreater(bullish["late"]["mean_excess_pct"], bullish["early"]["mean_excess_pct"])
+        self.assertEqual(mine["groups"]["20"]["bearish"]["n"], 10)
+        self.assertFalse(mine["groups"]["20"]["bearish"]["enough"])
+        self.assertEqual(records["cB"], {**records["cB"], "enough": False, "counted": 5})
+        self.assertNotIn("groups", records["cB"])
+
+    def test_many_calls_in_a_short_window_are_not_enough(self):
+        mine = self.creators([call(n, every_days=1) for n in range(40)])["cA"]
+        self.assertEqual(mine["counted"], 40)
+        self.assertLess(mine["span_days"], 90)
+        self.assertFalse(mine["enough"])
+
+    def test_unknown_creator_states_no_history(self):
+        review.reset()
+        with tempfile.TemporaryDirectory() as folder:
+            card = review.creator_review(lambda: [call(n) for n in range(3)], "nobody",
+                                         download=long_download, now=NOW,
+                                         spawn=lambda fn: fn(), path=Path(folder) / "s.json")  # fmt: skip
+        review.reset()
+        self.assertEqual((card["counted"], card["enough"], card["min_group"]), (0, False, 30))
+
+
+class BinTests(unittest.TestCase):
+    def setUp(self):
+        review.reset()
+        self.dir = tempfile.TemporaryDirectory()
+        self.options = {"download": download, "now": NOW, "spawn": lambda fn: fn(),
+                        "path": Path(self.dir.name) / "s.json"}  # fmt: skip
+
+    def tearDown(self):
+        review.reset()
+        self.dir.cleanup()
+
+    def test_lists_the_opinions_behind_one_bar(self):
+        rows = [{**opinion(i), "video_title": f"Video {i}", "video_url": f"https://youtu.be/{i}"}
+                for i in range(35)]  # fmt: skip
+        found = review.opinions_in_bin(lambda: rows, 5, "bullish", 0, 5, **self.options)
+        self.assertEqual(found["total"], 35)
+        first = found["opinions"][0]
+        self.assertEqual((first["ticker"], first["excess_return_pct"]), ("NVDA", 4.0))
+        self.assertTrue(first["video_url"].startswith("https://"))
+        empty = review.opinions_in_bin(lambda: rows, 5, "bullish", 5, 10, **self.options)
+        self.assertEqual(empty["total"], 0)
+        open_ended = review.opinions_in_bin(lambda: rows, 5, "bullish", None, 0, **self.options)
+        self.assertEqual(open_ended["total"], 0)
+
+    def test_rejects_unknown_horizon(self):
+        with self.assertRaises(ValueError):
+            review.opinions_in_bin(lambda: ROWS, 60, "bullish", 0, 5, **self.options)
+
+    def test_an_older_snapshot_file_is_rebuilt_not_served(self):
+        path = self.options["path"]
+        path.write_text(json.dumps({"method_version": 1, "built_at": NOW.isoformat()}))
+        spawned = []
+        with self.assertRaises(review.ReviewUnavailable):
+            review.get_review(lambda: ROWS, download, now=NOW, spawn=spawned.append, path=path)
+        self.assertEqual(len(spawned), 1)
+
+
 class RouteTests(unittest.TestCase):
     def setUp(self):
         app = FastAPI()
@@ -172,6 +281,20 @@ class RouteTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["as_of"], "2026-11-13")
         got.assert_called_once_with(self.service.all_rows)
+
+    def test_bin_opinions_and_creator_card(self):
+        with patch.object(review, "opinions_in_bin", return_value={"total": 2}) as listed:
+            response = self.client.get(
+                "/youtube-opinions/review/opinions?horizon=20&sentiment=bullish&low=-5&high=0"
+            )
+        self.assertEqual((response.status_code, response.json()["total"]), (200, 2))
+        listed.assert_called_once_with(self.service.all_rows, 20, "bullish", -5.0, 0.0)
+        bad = self.client.get("/youtube-opinions/review/opinions?horizon=20&sentiment=neutral")
+        self.assertEqual(bad.status_code, 422)
+        with patch.object(review, "creator_review", return_value={"enough": False}) as card:
+            response = self.client.get("/youtube-opinions/creators/c1/review")
+        self.assertEqual((response.status_code, response.json()["enough"]), (200, False))
+        card.assert_called_once_with(self.service.all_rows, "c1")
 
     def test_first_build_is_503_building(self):
         with patch.object(review, "get_review", side_effect=review.ReviewUnavailable("building")):
