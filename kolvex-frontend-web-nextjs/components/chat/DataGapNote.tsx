@@ -16,6 +16,17 @@ const SOURCES: Record<string, string> = {
   web_search: "web",
   get_creator_opinions: "creators",
   get_creator_record: "creators",
+  get_creator_recent_opinions: "creators",
+  search_creator_opinions: "creators",
+  get_market_events: "events",
+  get_macro_indicators: "macro",
+  get_institutional_holders: "smartMoney",
+  get_superinvestor_portfolio: "smartMoney",
+  get_congress_trades: "smartMoney",
+  get_options_activity: "smartMoney",
+  get_valuation: "valuation",
+  get_market_buzz: "buzz",
+  get_paper_trading_account: "paper",
 };
 
 /** Why a figure is missing: the source failed (retry may help) or has no data (it won't). */

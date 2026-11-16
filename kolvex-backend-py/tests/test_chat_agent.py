@@ -68,6 +68,10 @@ class ToolSelectionTests(unittest.TestCase):
                 "get_user_watchlist",
                 "get_daily_brief",
                 "search_news_flashes",
+                "get_market_events",
+                "get_macro_indicators",
+                "get_market_buzz",
+                "get_paper_trading_account",
             },
         )
 

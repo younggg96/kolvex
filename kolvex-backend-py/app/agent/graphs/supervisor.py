@@ -59,8 +59,30 @@ def _message_has_tool_calls(message: Any) -> bool:
 # Sub-Agent 系统提示词
 # =====================================================================
 
+from app.agent.graphs.buzz import BUZZ_SYSTEM_PROMPT  # noqa: E402
+from app.agent.graphs.creators import CREATORS_SYSTEM_PROMPT  # noqa: E402
+from app.agent.graphs.earnings import EARNINGS_SYSTEM_PROMPT  # noqa: E402
 from app.agent.graphs.financial import FINANCIAL_SYSTEM_PROMPT  # noqa: E402
+from app.agent.graphs.macro import MACRO_SYSTEM_PROMPT  # noqa: E402
+from app.agent.graphs.paper_review import PAPER_REVIEW_SYSTEM_PROMPT  # noqa: E402
+from app.agent.graphs.portfolio import PORTFOLIO_SYSTEM_PROMPT  # noqa: E402
 from app.agent.graphs.research import RESEARCH_SYSTEM_PROMPT  # noqa: E402
+from app.agent.graphs.smart_money import SMART_MONEY_SYSTEM_PROMPT  # noqa: E402
+from app.agent.graphs.valuation import VALUATION_SYSTEM_PROMPT  # noqa: E402
+
+# Every agent gets the same tools; they differ only in their prompt. financial is the fallback.
+AGENT_PROMPTS = {
+    "financial": FINANCIAL_SYSTEM_PROMPT,
+    "research": RESEARCH_SYSTEM_PROMPT,
+    "portfolio": PORTFOLIO_SYSTEM_PROMPT,
+    "creators": CREATORS_SYSTEM_PROMPT,
+    "earnings": EARNINGS_SYSTEM_PROMPT,
+    "macro": MACRO_SYSTEM_PROMPT,
+    "smart_money": SMART_MONEY_SYSTEM_PROMPT,
+    "valuation": VALUATION_SYSTEM_PROMPT,
+    "buzz": BUZZ_SYSTEM_PROMPT,
+    "paper_review": PAPER_REVIEW_SYSTEM_PROMPT,
+}
 
 # =====================================================================
 # Supervisor 路由逻辑
@@ -69,8 +91,16 @@ from app.agent.graphs.research import RESEARCH_SYSTEM_PROMPT  # noqa: E402
 ROUTER_SYSTEM_PROMPT = """You are a routing agent. Based on the user's message, determine which specialist agent should handle it.
 
 Choose ONE of:
-- "financial": For general financial questions, stock lookups, price checks, portfolio queries, or any stock-related question.
+- "financial": For general financial questions, stock lookups, price checks, or any stock-related question that fits no other agent.
 - "research": For in-depth research requests like "analyze NVDA", "give me a research report on TSLA", "deep dive into AAPL", "run trading analysis on MSFT", "should I buy/sell NVDA", "bull vs bear case for AAPL", or any request asking for comprehensive multi-factor analysis or trading decisions.
+- "portfolio": Questions about the user's own holdings or watchlist as a whole, like "what should I watch in my portfolio this week", "any news on my stocks".
+- "creators": Questions about what YouTube creators / KOLs / bloggers said: one creator's recent calls, which creators are bullish on a stock, who mentioned a topic.
+- "earnings": Questions about earnings reports: upcoming earnings dates, what to watch before a report, how a report came in.
+- "macro": Questions about the economy, the Fed, interest rates, Treasury yields, inflation (CPI), jobs or GDP.
+- "smart_money": Questions about superinvestors' 13F holdings (Buffett, 段永平, ARK ...), congress members' trades, or unusual options activity / options flow.
+- "valuation": Whether a stock is expensive or cheap, its PE versus history, reference value ranges.
+- "buzz": What is moving or trending today: top movers, volume spikes, Reddit or X attention.
+- "paper_review": Reviewing the user's own paper-trading / simulated trades.
 Scheduled alerts and notifications are unavailable. Route market condition questions to "financial".
 
 If unclear, default to "financial".
@@ -123,7 +153,7 @@ def _create_agent_for_request(
     为每个请求创建合适的 Agent（支持动态 model 和 source 过滤）
 
     Args:
-        agent_type: "financial" | "research"
+        agent_type: a key of AGENT_PROMPTS ("financial" when unknown)
         provider: LLM provider (可选, None 表示使用默认)
         model: 模型名称 (可选, None 表示使用默认)
         sources: 激活的数据源
@@ -183,10 +213,9 @@ def _create_agent_for_request(
             "context and general knowledge, and do not claim to have checked live data."
         )
 
-    if agent_type == "research":
-        prompt = RESEARCH_SYSTEM_PROMPT + source_hint
-    else:
-        prompt = FINANCIAL_SYSTEM_PROMPT + source_hint + ANSWER_SHAPE
+    prompt = AGENT_PROMPTS.get(agent_type, FINANCIAL_SYSTEM_PROMPT) + source_hint
+    if agent_type not in AGENT_PROMPTS or agent_type == "financial":
+        prompt += ANSWER_SHAPE
     if memory_note:
         # Conversation summary and cross-conversation memory (app/agent/chat_memory.py).
         prompt += "\n\n" + memory_note
@@ -511,11 +540,75 @@ _LOOKUP_WORDS = re.compile(
 )
 
 
+# The user's own holdings as a whole. A research ask ("我的持仓该不该卖") still goes to research.
+_PORTFOLIO_WORDS = re.compile(
+    r"我的(?:持仓|仓位|组合|投资组合|自选|股票)|我持有的|我手上的|我买的(?:股票)?|"
+    r"\bmy (?:portfolio|holdings|positions|watchlist|stocks)\b",
+    re.IGNORECASE,
+)
+_EARNINGS_WORDS = re.compile(
+    r"财报|业绩会|业绩发布|财季|earnings|quarterly results|earnings call|\bguidance\b",
+    re.IGNORECASE,
+)
+_CREATOR_WORDS = re.compile(
+    r"博主|创作者|油管|频道|大V|\bKOLs?\b|youtubers?|creators?|influencers?|bloggers?|"
+    r"谁(?:说过|提到|提过|聊过|讲过)",
+    re.IGNORECASE,
+)
+_MACRO_WORDS = re.compile(
+    r"宏观|美联储|联储|议息|降息|加息|(?<![净毛])利率|美债|国债|收益率曲线|通胀|CPI|PCE|非农|失业率|就业数据|GDP|"
+    r"\b(?:FOMC|the Fed|Fed (?:meeting|rate|decision)|rate (?:cut|hike)s?|interest rates?|inflation|"
+    r"treasury yields?|payrolls|unemployment|recession|macro)\b",
+    re.IGNORECASE,
+)
+
+
+_PAPER_WORDS = re.compile(r"模拟交易|模拟盘|模拟账户|虚拟交易|\bpaper[- ]?trad", re.IGNORECASE)
+_SMART_MONEY_WORDS = re.compile(
+    r"13F|超级投资者|大佬|机构持仓|机构.{0,4}(?:买|卖|持有)|巴菲特|伯克希尔|段永平|李录|高瓴|桥水|木头姐|"
+    r"国会|议员|佩洛西|期权异动|期权流|异常期权|"
+    r"\b(?:superinvestors?|hedge funds?|institutional holders?|congress(?:ional)?|senators?|pelosi|"
+    r"options? (?:flow|activity)|unusual options|smart money|buffett|berkshire)\b",
+    re.IGNORECASE,
+)
+_VALUATION_WORDS = re.compile(
+    r"估值|贵不贵|便宜吗|贵吗|高估|低估|合理价|历史市盈率|PE\s*(?:区间|分位)|"
+    r"\b(?:valuation|overvalued|undervalued|expensive|cheap|fair value)\b",
+    re.IGNORECASE,
+)
+_BUZZ_WORDS = re.compile(
+    r"异动|放量|热门股|热股|热议|热度|在炒|涨幅榜|跌幅榜|reddit|wsb|"
+    r"\b(?:trending|top (?:movers|gainers|losers)|biggest movers|most active|what'?s (?:hot|moving)|buzz)\b",
+    re.IGNORECASE,
+)
+
+
 def route_by_keywords(message: str) -> Optional[str]:
-    """ "research" or "financial" when the wording leaves no doubt, else None (ask the model)."""
+    """An agent name when the wording leaves no doubt, else None (ask the model).
+
+    Order matters: an explicit research ask first, then paper trading, the user's own holdings,
+    disclosed money (13F, congress, options flow), earnings (which also reads creator opinions),
+    creators, macro, valuation, market buzz, and short figure lookups.
+    """
     text = message.split("\n\nKolvex page evidence", 1)[0].strip()
     if _RESEARCH_WORDS.search(text):
         return "research"
+    if _PAPER_WORDS.search(text):
+        return "paper_review"
+    if _PORTFOLIO_WORDS.search(text):
+        return "portfolio"
+    if _SMART_MONEY_WORDS.search(text):
+        return "smart_money"
+    if _EARNINGS_WORDS.search(text):
+        return "earnings"
+    if _CREATOR_WORDS.search(text):
+        return "creators"
+    if _MACRO_WORDS.search(text):
+        return "macro"
+    if _VALUATION_WORDS.search(text):
+        return "valuation"
+    if _BUZZ_WORDS.search(text):
+        return "buzz"
     if len(text) <= 80 and _LOOKUP_WORDS.search(text):
         return "financial"
     return None
@@ -557,11 +650,8 @@ async def _classify_intent(
 
         intent = response.content.strip().lower()
 
-        # 规范化
-        if "research" in intent:
-            agent_type = "research"
-        else:
-            agent_type = "financial"
+        # 规范化：模型答案里出现的第一个合法名字；都没有就回到 financial
+        agent_type = next((name for name in AGENT_PROMPTS if name in intent), "financial")
 
         logger.info(f"Intent classified: '{last_user_msg[:50]}...' -> {agent_type}")
         return agent_type

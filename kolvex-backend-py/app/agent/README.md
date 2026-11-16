@@ -7,9 +7,17 @@
 
 用户在 Web / App 的 AI 聊天里提问，后端用 LangGraph 的 ReAct Agent 回答：模型自己决定调用哪些工具取实时数据，再组织成回答。
 
-- **路由**：每轮先判断意图，分给两个子 Agent 之一。两者工具相同，区别只在提示词。
-  - `financial`：问答、查数字。提示词要求第一句给答案，查一两个数字时不超过约 150 词。
+- **路由**：每轮先判断意图，分给十个子 Agent 之一。所有子 Agent 工具相同（仍受数据源和技能开关限制），区别只在提示词（`supervisor.AGENT_PROMPTS`）。
+  - `financial`：问答、查数字，也是兜底。提示词要求第一句给答案，查一两个数字时不超过约 150 词。
   - `research`：深度分析、多空、「该不该买」，提示词要求多步取数、写结构化报告。
+  - `portfolio`：用户自己的持仓 / 自选股整体情况。先读持仓（Portfolio 数据源关着就用自选股），按权重取最多 8 只，对上事件日历、近 30 天博主观点和快讯；不给买卖、调仓建议，不给组合打分。
+  - `creators`：博主说了什么。按博主（`get_creator_recent_opinions`）、按股票（`get_creator_opinions`）、按主题（`search_creator_opinions`）查；每条观点带博主、日期、视频链接；不显示数字分数，不排名、不判对错。
+  - `earnings`：财报前后。日期来自事件日历，配已申报营收、分析师、财报前博主观点；没有一致预期工具，不编预期，不预测超预期或不及预期。
+  - `macro`：利率、通胀、就业、GDP、美联储。数字来自 `get_macro_indicators`，标明数据期间和是否过期；解释只作背景，不预测美联储和点位。
+  - `smart_money`：超级投资者 13F、国会议员交易、期权异动。每条事实带日期（13F 的季度末和申报日、国会的交易日和申报日、期权的数据日和时段）；只描述，不揣测动机，不建议跟单，不把期权权利金说成「聪明钱在买」。
+  - `valuation`：「贵不贵」。用估值 Tab 的数据：SEC 摊薄 EPS、当前 PE 在公司自身五年 PE 中的分位、三档参考值；明确说是模型参考值，不是合理价或目标价。估值目前只覆盖少数股票（`valuation/releases.py` 的 `PILOTS`），其他股票只用 `get_stock_financials` 的倍数回答。
+  - `buzz`：今日异动、放量、Reddit 提及排名、X 博主 cashtag 热度。各来源分开、各带时间；热度不是观点也不是信号；涨跌原因只在有带日期的快讯支持时才写。
+  - `paper_review`：用户自己的模拟交易账本复盘（持有时长、盈亏比、止损使用、手续费、集中度），最后给两三条「在模拟盘里可以练的习惯」；只谈虚拟账户，平仓少于 5 笔时只描述不总结规律。
 - **数字核对**：报价、营收、财务指标都从工具结果里抽成 evidence，答案里的数字逐个对照（见第 5 节）。
 - **多模型**：用户可选模型，也可以填自己的 API key（见第 6 节）。
 
@@ -20,7 +28,7 @@
 1. 保存用户消息（重试同一问题时复用上一条未回答的消息，`memory.save_user_message_once`）。
 2. 加载本对话摘要之后的消息（`memory.load_conversation_history`），以及对话摘要和跨对话记忆（`chat_memory.load_memory_note`，拼进系统提示词末尾），见第 7 节。
 3. 读用户自己的 API key。
-4. `_classify_intent`：先用关键词正则（`route_by_keywords`），明确的「研报 / 深度 / 该不该买」→ research，80 字以内的查数问题 → financial；判断不出来才调一次快模型。快模型回答里没有 `research` 一律按 financial。
+4. `_classify_intent`：先用关键词正则（`route_by_keywords`），按顺序判断：「研报 / 深度 / 该不该买」→ research；「模拟交易 / 模拟盘 / paper trading」→ paper_review；「我的持仓 / 我的自选 / my portfolio」→ portfolio；「13F / 巴菲特 / 段永平 / 国会 / 议员 / 期权异动」→ smart_money；「财报 / earnings」→ earnings；「博主 / KOL / 谁提到过」→ creators；「CPI / 降息 / 美联储 / 利率（不含净利率、毛利率）」→ macro；「估值 / 贵不贵 / overvalued」→ valuation；「异动 / 放量 / Reddit / trending」→ buzz；80 字以内的查数问题 → financial。判断不出来才调一次快模型，模型答出的名字不合法时回到 financial。快模型回答里没有 `research` 一律按 financial。
 5. `_create_agent_for_request`：按用户选的模型、数据源、技能拼出工具集和提示词，`create_react_agent` 每轮新建。最多 `MAX_TOOL_ITERATIONS`（10）轮工具调用。
 6. 跑 Agent，收集 evidence，修单位错误，核对数字，保存助手消息。
 7. 回复保存后在后台更新记忆（`chat_memory.remember_turn_later`），不拖慢回复；回复失败的轮次不记。
@@ -68,6 +76,17 @@
 | `web_search` | web_tools.py | Tavily | news（且开启 Web 数据源） | 网页搜索 |
 | `get_user_portfolio` | portfolio_tools.py | 用户持仓 | portfolio（且开启 Portfolio 数据源） | 持仓、权重、盈亏（按当前用户绑定） |
 | `get_user_watchlist` | watchlist_tools.py | 用户自选股 | market（仅登录用户） | 自选股列表（按当前用户绑定） |
+| `get_creator_recent_opinions` | creator_tools.py | `youtube_stock_opinions` | creators | 某位博主近 N 天（7–365，默认 30）说过的观点，可按股票过滤；博主名匹配规则同 `get_creator_record`，多人匹配返回 `ambiguous` |
+| `search_creator_opinions` | creator_tools.py | `youtube_stock_opinions` | creators | 按主题关键词搜观点（论点、摘要、要点、风险、视频标题、公司名），所有词都要出现；**关键词匹配，不是语义搜索** |
+| `get_market_events` | calendar_tools.py | `market_events`（编辑维护的日历） | news | 上周到未来两周已发布的重要事件，可按类别（earnings / fed / economic / other）和股票过滤；返回覆盖范围，说明不是完整财报日历 |
+| `get_institutional_holders` | smart_money_tools.py | `institution_13f_filings` / `_holdings` | fundamentals | 被追踪的超级投资者里谁在最新 13F 持有某股票：股数、权重、相对上季变化、季度末和申报日 |
+| `get_superinvestor_portfolio` | smart_money_tools.py | 同上（未同步时排队同步） | fundamentals | 某位超级投资者最新 13F：前 15 大持仓、新进 / 加仓 / 减仓 / 清仓；支持中文名（巴菲特、段永平、李录、高瓴…） |
+| `get_congress_trades` | smart_money_tools.py | `congress_trades` | fundamentals | 国会议员交易申报，可按股票、议员名（英文）过滤；金额是区间 |
+| `get_options_activity` | smart_money_tools.py | `options_activity_runs` 最新一次 | options | 全市场看涨 / 看跌权利金、最活跃标的，或单只股票的权利金和最大合约 |
+| `get_valuation` | valuation_tools.py | 估值 Tab 的 `valuation_service`（SEC EPS） | fundamentals | 当前 PE、五年 PE 分位、过去一年 PE 区间、三档参考值；只覆盖 `PILOTS`，首次请求最多等 25 秒构建 |
+| `get_market_buzz` | buzz_tools.py | 股票发现（Yahoo screener）、Reddit 排名（ApeWisdom）、X 博主 cashtag | news | 异动、放量、Reddit 提及、X 热度；单个来源失败不影响其他来源，列在 `unavailable_sources` |
+| `get_paper_trading_account` | paper_trading_tools.py | `paper_accounts`（按当前用户绑定，只读） | portfolio（仅登录用户） | 模拟账户净值、盈亏、持仓、挂单、已平仓交易（持有时长、平仓原因）；没有账户时不会创建 |
+| `get_macro_indicators` | macro_tools.py | 宏观页同一份快照（FRED：BLS、BEA、美联储） | news | 美债 2/10/30 年、利差、CPI、核心 CPI、失业率、非农、GDP；每项带数据期间、前值、变化、来源和最近 6 个点 |
 
 ### 数据源和技能开关（`get_tools_for_sources`）
 
@@ -107,9 +126,10 @@
 
 | 位置 | 内容 |
 | --- | --- |
-| `config.py` `SYSTEM_PROMPT` | 两个子 Agent 共用：可用工具、回答原则、跟随用户语言，加上 `app/core/report_format.py` 的排版规则 |
+| `config.py` `SYSTEM_PROMPT` | 所有子 Agent 共用：可用工具、回答原则、跟随用户语言，加上 `app/core/report_format.py` 的排版规则 |
 | `graphs/financial.py` | financial 的角色说明 |
 | `graphs/research.py` | research 的研究步骤；明确说聊天里不能启动 TradingAgents |
+| `graphs/portfolio.py` / `creators.py` / `earnings.py` / `macro.py` / `smart_money.py` / `valuation.py` / `buzz.py` / `paper_review.py` | 八个专项 Agent 的取数步骤和回答规则（见第 1 节） |
 | `graphs/supervisor.py` | 路由提示词；按本轮可用工具追加的规则（报价时间、亿 / billion 换算、营收期间、技能被关时的说明）；financial 的 `ANSWER_SHAPE` |
 
 ## 5. 数字核对
@@ -165,7 +185,9 @@ app/agent/
 ├── graphs/
 │   ├── supervisor.py    # 路由、按请求建 Agent、run_agent / stream_agent
 │   ├── financial.py     # financial 提示词
-│   └── research.py      # research 提示词
+│   ├── research.py      # research 提示词
+│   └── portfolio.py / creators.py / earnings.py / macro.py /
+│       smart_money.py / valuation.py / buzz.py / paper_review.py   # 专项 Agent 提示词
 ├── tools/               # 见第 3 节；trading_analysis_tools.py 未接入，见下
 ├── quote_evidence.py / revenue_evidence.py / financial_evidence.py
 ├── answer_check.py / unit_fix.py / data_gaps.py
@@ -181,7 +203,7 @@ AI 研究报告库（`/dashboard/ai-research`，功能开关 `tradingAnalysis`�
 
 ```bash
 cd kolvex-backend-py
-venv/bin/python -m pytest tests/test_chat_agent.py tests/test_technical_tools.py tests/test_creator_record.py \
+venv/bin/python -m pytest tests/test_chat_agent.py tests/test_chat_agents.py tests/test_chat_agents_more.py tests/test_technical_tools.py tests/test_creator_record.py \
   tests/test_answer_check.py tests/test_unit_fix.py tests/test_financial_evidence.py tests/test_chat_numbers_eval.py \
   tests/test_research_workspace.py
 ```

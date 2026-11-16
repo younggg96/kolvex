@@ -161,6 +161,17 @@ export const TOOL_LABELS: Record<string, string> = {
   get_user_portfolio: "Loading portfolio",
   get_creator_opinions: "Reading creator opinions",
   get_creator_record: "Checking how stocks moved after a creator's opinions",
+  get_creator_recent_opinions: "Reading a creator's recent opinions",
+  search_creator_opinions: "Searching creator opinions",
+  get_market_events: "Checking the market calendar",
+  get_macro_indicators: "Reading macro indicators",
+  get_institutional_holders: "Checking superinvestor 13F holders",
+  get_superinvestor_portfolio: "Reading a superinvestor's 13F",
+  get_congress_trades: "Checking congressional trades",
+  get_options_activity: "Reading options activity",
+  get_valuation: "Reading the valuation",
+  get_market_buzz: "Checking market buzz",
+  get_paper_trading_account: "Reading your paper-trading account",
   web_search: "Searching the web",
 };
 

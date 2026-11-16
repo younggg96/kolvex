@@ -6,17 +6,29 @@ Agent Tools
 import logging
 
 from app.agent.tools.brief_tools import get_daily_brief
+from app.agent.tools.buzz_tools import get_market_buzz
+from app.agent.tools.calendar_tools import get_market_events
 from app.agent.tools.creator_tools import (
     get_creator_opinions,
+    get_creator_recent_opinions,
     get_creator_record,
+    search_creator_opinions,
 )
+from app.agent.tools.macro_tools import get_macro_indicators
 from app.agent.tools.news_flash_tools import search_news_flashes
 from app.agent.tools.options_tools import (
     get_options_chain_summary,
 )
+from app.agent.tools.paper_trading_tools import create_paper_trading_tool_for_user
 from app.agent.tools.portfolio_tools import (
     create_portfolio_tool_for_user,
     get_user_portfolio,
+)
+from app.agent.tools.smart_money_tools import (
+    get_congress_trades,
+    get_institutional_holders,
+    get_options_activity,
+    get_superinvestor_portfolio,
 )
 from app.agent.tools.stock_tools import (
     get_analyst_recommendations,
@@ -30,6 +42,7 @@ from app.agent.tools.technical_tools import get_technical_indicators
 from app.agent.tools.trading_analysis_tools import (
     create_trading_analysis_tool,
 )
+from app.agent.tools.valuation_tools import get_valuation
 from app.agent.tools.watchlist_tools import create_watchlist_tool_for_user
 from app.agent.tools.web_tools import (
     web_search,
@@ -37,7 +50,7 @@ from app.agent.tools.web_tools import (
 
 logger = logging.getLogger(__name__)
 
-# The financial and research agents share one tool set; web and portfolio are added only when
+# Every chat agent (see supervisor.AGENT_PROMPTS) shares one tool set; web and portfolio are added only when
 # their data source is on, and skills narrow the set further.
 AGENT_TOOLS = [
     get_stock_quote,
@@ -50,8 +63,18 @@ AGENT_TOOLS = [
     get_options_chain_summary,
     get_creator_opinions,
     get_creator_record,
+    get_creator_recent_opinions,
+    search_creator_opinions,
     get_daily_brief,
     search_news_flashes,
+    get_market_events,
+    get_macro_indicators,
+    get_institutional_holders,
+    get_superinvestor_portfolio,
+    get_congress_trades,
+    get_options_activity,
+    get_valuation,
+    get_market_buzz,
 ]
 
 _CHAT_TOOL_SKILLS = {
@@ -66,6 +89,17 @@ _CHAT_TOOL_SKILLS = {
     "web_search": "news",
     "get_creator_opinions": "creators",
     "get_creator_record": "creators",
+    "get_creator_recent_opinions": "creators",
+    "search_creator_opinions": "creators",
+    "get_market_events": "news",
+    "get_macro_indicators": "news",
+    "get_institutional_holders": "fundamentals",
+    "get_superinvestor_portfolio": "fundamentals",
+    "get_congress_trades": "fundamentals",
+    "get_options_activity": "options",
+    "get_valuation": "fundamentals",
+    "get_market_buzz": "news",
+    "get_paper_trading_account": "portfolio",
     "get_user_portfolio": "portfolio",
     "get_user_watchlist": "market",
     "get_daily_brief": "news",
@@ -104,9 +138,10 @@ def get_tools_for_sources(
         else get_user_portfolio
     )
 
-    # 自选股是账户内数据，不依赖外部数据源开关；登录用户都可用
+    # 自选股和模拟交易账户是账户内数据，不依赖外部数据源开关；登录用户都可用
     if user_id and user_id.strip():
         tools.append(create_watchlist_tool_for_user(user_id))
+        tools.append(create_paper_trading_tool_for_user(user_id))
 
     # source → 工具映射
     source_tool_map = {
@@ -137,9 +172,14 @@ __all__ = [
     "get_tools_for_sources",
     "create_portfolio_tool_for_user",
     "create_watchlist_tool_for_user",
+    "create_paper_trading_tool_for_user",
     "create_trading_analysis_tool",
     "get_creator_opinions",
     "get_creator_record",
+    "get_creator_recent_opinions",
+    "search_creator_opinions",
+    "get_market_events",
+    "get_macro_indicators",
     "get_technical_indicators",
     "get_daily_brief",
     "search_news_flashes",
