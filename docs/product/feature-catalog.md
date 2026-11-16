@@ -43,7 +43,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 | X 博主内容与翻译 | `youtubeOpinions` | `/dashboard/x-opinions` | `opinions` 的 X tab、`/creator/x/[id]` | `x_content.py` | [x-content.md](../x-content.md) | ◐ |
 | Reddit 热度榜 | `youtubeOpinions` | `/dashboard/reddit-opinions` | `opinions` 的 Reddit tab | `reddit_opinions.py` | `PRODUCT.md` | ✅ |
 | 观点事后表现（发布后 5 / 20 个交易日股价，对比 SPY；只陈述事实，不判对错） | `youtubeOpinions` | 股票页和博主 × 股票页的观点卡片（含「其他博主的看法」） | — | `youtube_opinions.py`（`/stocks/{ticker}/outcomes`） | [opinion-backtest.md](../opinion-backtest.md) | — |
-| 观点回看（全部看涨 / 看跌观点之后股价相对 SPY 的整体表现，可点进具体观点；「单个博主」逐条看某位博主每个观点之后跑赢还是跑输大盘；博主主页的个人卡片有样本和跨度门槛；不按博主排名） | `youtubeOpinions` | 博主观点「回看」（`/dashboard/youtube-opinions/review`）；博主主页侧栏 | — | `youtube_opinions.py`（`/review`、`/review/opinions`、`/review/creators`、`/review/creators/{id}`、`/creators/{id}/review`） | [opinion-backtest.md](../opinion-backtest.md) | — |
+| 观点回看（全部看多 / 看空观点之后股价相对 SPY 的整体表现，可点进具体观点；「单个博主」逐条看某位博主每个观点之后跑赢还是跑输大盘；博主主页的个人卡片有样本和跨度门槛；不按博主排名） | `youtubeOpinions` | 博主观点「回看」（`/dashboard/youtube-opinions/review`）；博主主页侧栏 | — | `youtube_opinions.py`（`/review`、`/review/opinions`、`/review/creators`、`/review/creators/{id}`、`/creators/{id}/review`） | [opinion-backtest.md](../opinion-backtest.md) | — |
 | 博主分享（图片 / 社交平台） | `youtubeOpinions` | 博主页、`/share/creators/[channelId]` | 博主页 | — | — | ◐ |
 | 观点更新 | `journal` | `/dashboard/journal` | `/updates` | `youtube_opinions.py` | `PRODUCT.md`「Reader Experience」 | ✅ |
 | 早晚报 | `briefs` | `/dashboard/briefs`、`/dashboard/briefs/[id]` | `(more)/briefs`、`brief/[id]` | `briefs.py` | [daily-briefs.md](../daily-briefs.md)、[prompts/daily-brief-generator.md](../prompts/daily-brief-generator.md) | ✅ |

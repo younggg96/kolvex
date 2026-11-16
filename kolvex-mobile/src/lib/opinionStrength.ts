@@ -1,8 +1,8 @@
 export type StrengthTone = "positive" | "negative" | "neutral";
 // Whole phrases, so each one has its own entry in the English catalogue.
 const labels = {
-  bull: ["轻度看涨", "中度看涨", "强烈看涨"],
-  bear: ["轻度看跌", "中度看跌", "强烈看跌"],
+  bull: ["轻度看多", "中度看多", "强烈看多"],
+  bear: ["轻度看空", "中度看空", "强烈看空"],
   rising: ["轻度转强", "中度转强", "强烈转强"],
   falling: ["轻度转弱", "中度转弱", "强烈转弱"],
 };

@@ -145,7 +145,7 @@ export function OptionChip({
         borderRadius: 999,
         borderWidth: 1,
         borderColor: selected ? "transparent" : t.rim,
-        backgroundColor: selected ? "rgba(255,255,255,0.97)" : "transparent",
+        backgroundColor: selected ? t.thumb : "transparent",
         opacity: disabled ? 0.45 : pressed ? 0.65 : 1,
       })}
     >
@@ -153,7 +153,7 @@ export function OptionChip({
         size={13}
         bold={selected}
         localize={localize}
-        color={selected ? "#111111" : t.text}
+        color={selected ? t.onThumb : t.text}
       >
         {children}
       </Copy>

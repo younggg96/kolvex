@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { marketStockHref } from "@/lib/stockLinks";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -249,7 +250,7 @@ function BinOpinions({
                 <div className="flex min-w-0 items-center gap-2 text-sm">
                   <CompanyLogo symbol={item.ticker} size="xs" />
                   <Link
-                    href={`/dashboard/youtube-opinions?tab=stocks&stock=${encodeURIComponent(item.ticker)}`}
+                    href={marketStockHref(item.ticker)}
                     className="font-semibold underline-offset-4 hover:underline"
                   >
                     {item.ticker}

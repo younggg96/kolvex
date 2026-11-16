@@ -19,6 +19,7 @@ import { usePreferences } from "../state/Preferences";
 import { DataTable } from "./DataTable";
 import { Field, Filters } from "./Content";
 import { Button, Copy, Failure, Glass, Section, LoadingStatus } from "./UI";
+import { withSign } from "../lib/format";
 const BENCHMARK = "^GSPC";
 const RANGES = {
   "6M": { period: "6mo", interval: "1d" },
@@ -160,7 +161,7 @@ export function StockPeers({ symbol }: { symbol: string }) {
   const historyLoading = historyKey !== `${symbolsKey}:${range}:${attempt}`;
   const chart = useMemo(() => rebasedReturns(history), [history]);
   const signed = (value: unknown) =>
-    finite(value) ? `${value > 0 ? "+" : ""}${f.percent(value)}` : "—";
+    finite(value) ? withSign(value, f.percent) : "—";
   const name = (item: string) => (item === BENCHMARK ? text("标普 500") : item);
   const lines = [
     ...symbols.filter((item) => chart.totals[item] !== undefined),

@@ -32,6 +32,7 @@ import { money } from "../../../lib/paperTrading";
 import { useTheme } from "../../../lib/theme";
 import { useResource } from "../../../lib/useResource";
 import { useWatchlist } from "../../../state/Watchlist";
+import { signedPercent } from "../../../lib/format";
 
 const PAGE_SIZE = 20;
 const SORTS = [
@@ -397,9 +398,7 @@ export default function Watchlist() {
                                     : t.negative
                               }
                             >
-                              {hasMove
-                                ? `${move > 0 ? "+" : move < 0 ? "−" : ""}${Math.abs(move).toFixed(2)}%`
-                                : "—"}
+                              {hasMove ? signedPercent(move) : "—"}
                             </Copy>
                           </>
                         )}

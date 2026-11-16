@@ -21,6 +21,7 @@ import GlassTabs, { glassTabsAvailable } from "./native/GlassTabs";
 import { useResource } from "../lib/useResource";
 import { usePreferences } from "../state/Preferences";
 import { Copy, Glass, Skeleton, phone, useLiquidGlass } from "./UI";
+import { signedPercent, withSign } from "../lib/format";
 
 export type RangeKey = (typeof MARKET_RANGES)[number]["key"];
 type Bar = { date: string; close: number | null };
@@ -162,15 +163,14 @@ export function InstrumentCard({
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(n);
-  const sign = (n: number) => (n >= 0 ? "+" : "−");
   const changeText =
     delta == null
       ? null
       : points
-        ? `${sign(delta)}${fmt(Math.abs(delta) * 100)} bp`
+        ? withSign(delta, (magnitude) => `${fmt(magnitude * 100)} bp`)
         : percent == null
           ? null
-          : `${sign(delta)}${fmt(Math.abs(delta))} (${sign(delta)}${Math.abs(percent).toFixed(2)}%)`;
+          : `${withSign(delta, fmt)} (${signedPercent(percent)})`;
   const spec = MARKET_RANGES.find((item) => item.key === range)!;
   const rangeLabel = versusPriorClose
     ? null
@@ -482,7 +482,12 @@ export function ComparisonTable({
                           >
                             {rounded === null
                               ? "—"
-                              : `${direction > 0 ? "+" : direction < 0 ? "−" : ""}${rounded.toFixed(2)}${suffix}`}
+                              : withSign(
+                                  value!,
+                                  (magnitude) =>
+                                    `${magnitude.toFixed(2)}${suffix}`,
+                                  { digits: 2 },
+                                )}
                           </Copy>
                         )}
                       </View>
@@ -552,14 +557,13 @@ export function ViewToggle({
             borderRadius: 999,
             alignItems: "center",
             justifyContent: "center",
-            backgroundColor:
-              value === key ? "rgba(255,255,255,0.97)" : "transparent",
+            backgroundColor: value === key ? t.thumb : "transparent",
           }}
         >
           <SymbolView
             name={{ ios, android, web: android } as never}
             size={13}
-            tintColor={value === key ? "#111111" : t.text}
+            tintColor={value === key ? t.onThumb : t.text}
           />
         </Pressable>
       ))}

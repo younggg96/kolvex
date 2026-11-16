@@ -24,6 +24,7 @@ const roles: Record<Mode, Record<string, string>> = {
     negative: "negative",
     chartUp: "chart-up",
     chartDown: "chart-down",
+    warning: "warning",
   },
   dark: {
     background: "background",
@@ -38,6 +39,7 @@ const roles: Record<Mode, Record<string, string>> = {
     negative: "negative",
     chartUp: "chart-up",
     chartDown: "chart-down",
+    warning: "warning",
   },
 };
 function block(selector: string) {
@@ -93,11 +95,12 @@ for (const mode of ["light", "dark"] as const) {
   });
   test(`${mode} text and directional labels retain AA contrast on reading surfaces`, () => {
     const pairs = [
-      ...(["text", "secondary", "accent", "negative"] as const).flatMap(
-        (foreground) =>
-          (["background", "surface"] as const).map(
-            (background) => [foreground, background] as const,
-          ),
+      ...(
+        ["text", "secondary", "accent", "negative", "warning"] as const
+      ).flatMap((foreground) =>
+        (["background", "surface"] as const).map(
+          (background) => [foreground, background] as const,
+        ),
       ),
       // Selected controls and tinted fills use foreground or secondaryOnTint, never directional labels.
       ["text", "tint"],

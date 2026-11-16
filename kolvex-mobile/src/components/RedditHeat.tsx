@@ -22,6 +22,7 @@ import { useWatchlist } from "../state/Watchlist";
 import { CompanyLogo } from "./CompanyLogo";
 import { OptionChip, OptionGroup, OptionSheet } from "./OptionSheet";
 import { Button, Copy, Failure, Glass, Skeleton, styles } from "./UI";
+import { withSign } from "../lib/format";
 
 const SORTS: [RedditSort, string][] = [
   ["mentions", "提及量最多"],
@@ -145,7 +146,7 @@ export function RedditHeat({ revision }: { revision: number }) {
             ApeWisdom 汇总所选 Reddit 社区的讨论。本页展示来源排名前 100
             个代码，搜索、排序和关注筛选仅覆盖当前榜单。数据缓存 5
             分钟，变化对比来源提供的 24
-            小时前数据。提及量基数缺失或为零时不计算百分比；排序时无对比值的代码置后。代码与名称按来源展示，未作独立证券身份核验。讨论热度不代表看涨或看跌情绪。
+            小时前数据。提及量基数缺失或为零时不计算百分比；排序时无对比值的代码置后。代码与名称按来源展示，未作独立证券身份核验。讨论热度不代表看多或看空情绪。
           </Copy>
         </Glass>
       )}
@@ -262,7 +263,9 @@ function RedditRow({ row, first }: { row: RedditStock; first: boolean }) {
       ? "此前未上榜"
       : change === null
         ? "无对比基数"
-        : `${change > 0 ? "+" : ""}${Math.round(change)}%`;
+        : withSign(change, (magnitude) => `${Math.round(magnitude)}%`, {
+            digits: 0,
+          });
   const rankChange =
     row.previousRank === null
       ? "此前未上榜"

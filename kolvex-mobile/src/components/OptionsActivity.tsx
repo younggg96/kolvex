@@ -17,6 +17,7 @@ import { useTheme } from "../lib/theme";
 import { usePreferences } from "../state/Preferences";
 import { Filters } from "./Content";
 import { Button, Copy, Glass, styles } from "./UI";
+import { withSign } from "../lib/format";
 
 export const SESSION_LABELS: Record<ActivitySession, string> = {
   pre: "盘前",
@@ -30,7 +31,10 @@ const fixed = (value: number | null | undefined, digits = 2) =>
 const pct = (value: number | null | undefined, signed = false) =>
   value === null || value === undefined || !Number.isFinite(value)
     ? "—"
-    : `${signed && value > 0 ? "+" : ""}${value.toFixed(2)}%`;
+    : withSign(value, (magnitude) => `${magnitude.toFixed(2)}%`, {
+        digits: 2,
+        plus: signed,
+      });
 const openOptions = (symbol: string) =>
   router.push(`/stock/${encodeURIComponent(symbol)}?tab=options`);
 function useTone() {

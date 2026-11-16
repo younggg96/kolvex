@@ -26,6 +26,7 @@ import { CardsSkeleton } from "./Skeletons";
 import { ModelPicker } from "./ModelPicker";
 import { MutationStatus } from "./MutationStatus";
 import { formatPrice } from "./AdvancedChart";
+import { signedPercent } from "../lib/format";
 
 type Job = {
   id: string;
@@ -84,7 +85,7 @@ export const categoryName: Record<string, string> = {
   retests: "回踩 / 反抽确认",
   false_breakouts: "假突破 / 假跌破",
 };
-const percent = (v: number) => `${v >= 0 ? "+" : ""}${(v * 100).toFixed(1)}%`;
+const percent = (v: number) => signedPercent(v * 100, 1);
 
 function ActionButton({
   icon,
@@ -581,7 +582,7 @@ function AnalysisPanel({
       <TextBody text={r.summary} symbols={[symbol]} size={15} />
       {r.invalidation && (
         <View style={card}>
-          <Copy size={14} bold color="#F59E0B">
+          <Copy size={14} bold color={t.warning}>
             失效条件
           </Copy>
           <Copy size={13} muted>

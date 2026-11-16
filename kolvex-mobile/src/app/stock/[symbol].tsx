@@ -23,6 +23,7 @@ import { useTheme } from "../../lib/theme";
 import { useResource } from "../../lib/useResource";
 import { usePreferences } from "../../state/Preferences";
 import { useWatchlist } from "../../state/Watchlist";
+import { withSign } from "../../lib/format";
 
 type StockQuote = {
   symbol: string;
@@ -62,7 +63,7 @@ const nyTime = (seconds: number, timeOnly = false) =>
     .replace(",", "");
 
 const signed = (value: number, digits = 2) =>
-  `${value >= 0 ? "+" : "−"}${Math.abs(value).toFixed(digits)}`;
+  withSign(value, (magnitude) => magnitude.toFixed(digits), { digits });
 
 function WatchButton({ symbol }: { symbol: string }) {
   const t = useTheme();

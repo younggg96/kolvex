@@ -889,7 +889,15 @@
       "mediumRisk": "Medium Risk",
       "highRisk": "High Risk",
       "riskAssessment": "Risk Assessment",
-      "portfolioHealth": "Portfolio Health"
+      "portfolioHealth": "Portfolio Health",
+      "recommendation": {
+        "strong_buy": "Strong Buy",
+        "buy": "Buy",
+        "buy_more": "Buy More",
+        "hold": "Hold",
+        "reduce": "Reduce",
+        "sell": "Sell"
+      }
     }
   },
   "community": {

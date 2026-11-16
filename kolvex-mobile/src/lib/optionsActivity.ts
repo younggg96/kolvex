@@ -1,3 +1,4 @@
+import { withSign } from "./format";
 export type ActivitySession = "pre" | "intraday" | "post";
 export type ActivitySentiment = "bullish" | "bearish" | "mixed";
 export const ACTIVITY_SESSIONS: ActivitySession[] = ["pre", "intraday", "post"];
@@ -146,15 +147,6 @@ export function formatPremium(
 ): string {
   if (value === null || value === undefined || !Number.isFinite(value))
     return "—";
-  const sign = signed
-    ? value > 0
-      ? "+"
-      : value < 0
-        ? "−"
-        : ""
-    : value < 0
-      ? "−"
-      : "";
   const abs = Math.abs(value);
   const body =
     abs >= 1e9
@@ -164,7 +156,7 @@ export function formatPremium(
         : abs >= 1e3
           ? `${(abs / 1e3).toFixed(0)}K`
           : abs.toFixed(0);
-  return `${sign}$${body}`;
+  return withSign(value, () => `$${body}`, { plus: signed });
 }
 
 /** Share of the largest magnitude, for bar widths. */

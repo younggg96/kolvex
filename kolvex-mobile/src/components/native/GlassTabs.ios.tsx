@@ -64,7 +64,7 @@ export default function GlassTabs({
     const icon = icons?.[key];
     const modifiers = [
       font({ size: size === "sm" ? 13 : 14, weight: "semibold" }),
-      foregroundStyle(active ? "#111111" : t.text),
+      foregroundStyle(active ? t.onThumb : t.text),
       // Icon tabs are round; text tabs take their label's width.
       ...(icon
         ? []

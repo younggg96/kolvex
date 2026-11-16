@@ -10,6 +10,7 @@ import { useResource } from "../../lib/useResource";
 import { usePreferences } from "../../state/Preferences";
 import { Copy, Skeleton } from "../UI";
 import { DiscoverySection } from "./DiscoveryCards";
+import { signedPercent } from "../../lib/format";
 
 const GAP = 2;
 const LABEL = 18;
@@ -160,7 +161,7 @@ function Tile({
   const percent =
     change == null || !Number.isFinite(change)
       ? "—"
-      : `${change > 0 ? "+" : ""}${change.toFixed(digits)}%`;
+      : signedPercent(change, digits);
   return (
     <Pressable
       accessibilityRole="button"

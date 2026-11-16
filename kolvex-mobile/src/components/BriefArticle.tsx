@@ -15,6 +15,7 @@ import { useTheme } from "../lib/theme";
 import { usePreferences } from "../state/Preferences";
 import { TextBody } from "./Content";
 import { Button, Copy, Failure, Glass, phone } from "./UI";
+import { signedPercent } from "../lib/format";
 
 const figure = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
 const impacts = [
@@ -306,7 +307,7 @@ function BriefSectionContent({ section }: { section: BriefSection }) {
                             : t.secondary
                       }
                     >
-                      {`${index.change_pct > 0 ? "+" : ""}${index.change_pct.toFixed(2)}%`}
+                      {signedPercent(index.change_pct)}
                     </Copy>
                   </View>
                 )}

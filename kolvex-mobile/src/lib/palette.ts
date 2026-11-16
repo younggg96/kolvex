@@ -17,6 +17,7 @@ export const palette = {
     negative: "#B42332",
     chartUp: "#16A34A",
     chartDown: "#E5484D",
+    warning: "#855700",
     // Glass tokens from the Web's globals.css (--glass-rim, --card-glass, bg-foreground/x).
     rim: "rgba(15,23,42,0.1)",
     card: "#FFFFFF",
@@ -24,6 +25,9 @@ export const palette = {
     washStrong: "rgba(15,23,42,0.14)",
     field: "rgba(15,23,42,0.06)",
     onBrand: "#000000",
+    // Selected segment: the Web's glass thumb, a near-white pill with near-black text in both modes.
+    thumb: "rgba(255,255,255,0.97)",
+    onThumb: "#111111",
   },
   dark: {
     dark: true,
@@ -39,11 +43,15 @@ export const palette = {
     negative: "#FF5000",
     chartUp: "#00C807",
     chartDown: "#FF5100",
+    warning: "#FFB020",
     rim: "rgba(255,255,255,0.13)",
     card: "rgba(0,0,0,0.4)",
     wash: "rgba(255,255,255,0.08)",
     washStrong: "rgba(255,255,255,0.14)",
     field: "rgba(255,255,255,0.06)",
     onBrand: "#000000",
+    // Selected segment: the Web's glass thumb, a near-white pill with near-black text in both modes.
+    thumb: "rgba(255,255,255,0.97)",
+    onThumb: "#111111",
   },
 } as const;

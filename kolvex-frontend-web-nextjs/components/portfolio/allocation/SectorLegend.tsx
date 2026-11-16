@@ -14,8 +14,7 @@ export function SectorLegend({
   return (
     <div className="flex flex-col gap-1.5 w-full px-4 pb-4">
       {sectorData.slice(0, 8).map((sector) => {
-        const allocation =
-          totalValue > 0 ? (sector.value / totalValue) * 100 : 0;
+        const allocation = totalValue > 0 ? (sector.value / totalValue) * 100 : 0;
         const isHovered = hoveredSector === sector.name;
         const isExpanded = expandedSectors.has(sector.name);
 
@@ -32,9 +31,7 @@ export function SectorLegend({
             <div className="flex items-center justify-between mb-0.5">
               <span
                 className={`text-[0.625rem] truncate max-w-[3.75rem] ${
-                  isHovered || isExpanded
-                    ? "text-foreground font-medium"
-                    : "text-muted-foreground"
+                  isHovered || isExpanded ? "text-foreground font-medium" : "text-muted-foreground"
                 }`}
               >
                 {sector.name}
@@ -66,4 +63,3 @@ export function SectorLegend({
 }
 
 export default SectorLegend;
-

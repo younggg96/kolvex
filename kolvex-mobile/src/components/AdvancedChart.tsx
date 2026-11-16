@@ -40,6 +40,7 @@ import {
 import type { KlineForecast } from "../lib/stockExtrasApi";
 import { callMarks, CallMarks, type CallEvent } from "./CandleGraph";
 import { Copy } from "./UI";
+import { signedPercent } from "../lib/format";
 
 export const AXIS = 56;
 const TIME_AXIS = 26;
@@ -790,7 +791,7 @@ export function AdvancedChart({
           color: tone,
           bold: true,
           priority,
-          text: `${change >= 0 ? "+" : ""}${change.toFixed(2)}% · ${formatPrice(pb.price - pa.price)} · ${between} 根`,
+          text: `${signedPercent(change)} · ${formatPrice(pb.price - pa.price)} · ${between} 根`,
         });
         body = (
           <>

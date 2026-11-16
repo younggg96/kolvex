@@ -396,11 +396,7 @@ export function Chip({
           paddingVertical: phone(size === "sm" ? 4 : 6),
           borderWidth: 0,
           // The Web's glass thumb: a white pill with near-black text.
-          backgroundColor: selected
-            ? "rgba(255,255,255,0.97)"
-            : bare
-              ? "transparent"
-              : t.wash,
+          backgroundColor: selected ? t.thumb : bare ? "transparent" : t.wash,
           opacity: disabled ? 0.45 : pressed ? 0.65 : 1,
         },
       ]}
@@ -408,7 +404,7 @@ export function Chip({
       <Copy
         size={size === "sm" ? 13 : 14}
         bold
-        color={selected ? "#111111" : t.text}
+        color={selected ? t.onThumb : t.text}
       >
         {children}
       </Copy>

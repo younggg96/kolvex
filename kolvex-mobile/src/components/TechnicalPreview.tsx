@@ -40,6 +40,7 @@ import { ChartAiPanel } from "./TechnicalAI";
 import { Filters } from "./Content";
 import { ChartSkeleton } from "./Skeletons";
 import { Chip, Copy, Failure, Glass } from "./UI";
+import { signedPercent } from "../lib/format";
 
 /** Exactly the selected window, as the Web's compact graph loads it. */
 const PREVIEW: Record<AdvancedRange, { period: string; interval: string }> = {
@@ -55,7 +56,6 @@ const PREVIEW: Record<AdvancedRange, { period: string; interval: string }> = {
 };
 const HEIGHT = 300;
 const NO_GROUPS: ReadonlySet<DrawingGroup> = new Set();
-const signed = (v: number) => `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`;
 
 export function TechnicalPreview({ symbol }: { symbol: string }) {
   const t = useTheme();
@@ -159,7 +159,7 @@ export function TechnicalPreview({ symbol }: { symbol: string }) {
                 localize={false}
                 color={change >= 0 ? t.chartUp : t.chartDown}
               >
-                {signed(change)}
+                {signedPercent(change)}
               </Copy>
             )}
             <Copy size={12} muted>
@@ -212,7 +212,7 @@ export function TechnicalPreview({ symbol }: { symbol: string }) {
         </View>
         {showExtended && extended && (
           <Copy size={12} muted localize={false}>
-            {`${text(sessionLabels[extended.session])} ${formatPrice(extended.price)}${extended.changePercent !== null ? ` (${signed(extended.changePercent)})` : ""}`}
+            {`${text(sessionLabels[extended.session])} ${formatPrice(extended.price)}${extended.changePercent !== null ? ` (${signedPercent(extended.changePercent)})` : ""}`}
           </Copy>
         )}
 

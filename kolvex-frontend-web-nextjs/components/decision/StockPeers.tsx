@@ -38,9 +38,9 @@ const RANGES = {
   "5Y": { period: "5y", interval: "1wk" },
 } as const;
 type Range = keyof typeof RANGES;
-// Validated with the dataviz palette checker on Kolvex's light and dark card surfaces.
-const SERIES_VARS =
-  "[--peer-0:#2a78d6] [--peer-1:#eb6834] [--peer-2:#1baf7a] [--peer-3:#eda100] [--peer-4:#e87ba4] dark:[--peer-0:#3987e5] dark:[--peer-1:#d95926] dark:[--peer-2:#199e70] dark:[--peer-3:#c98500] dark:[--peer-4:#d55181]";
+// Peer series colours, in slot order: the --compare-* tokens in app/globals.css (validated with
+// the dataviz palette checker on the light and dark card surfaces).
+const PEER_TOKENS = ["compare-1", "compare-6", "compare-5", "compare-2", "compare-3"] as const;
 
 type Loaded = { status: "loading" | "ready" | "error"; overview?: StockOverview };
 
@@ -72,7 +72,8 @@ export default function StockPeers({ symbol }: { symbol: string }) {
       slots.current.set(peer, slot);
     }
   }
-  const color = (item: string) => `var(--peer-${slots.current.get(item) ?? 0})`;
+  const color = (item: string) =>
+    `rgb(var(--${PEER_TOKENS[(slots.current.get(item) ?? 0) % PEER_TOKENS.length]}))`;
 
   const update = (next: string[]) => {
     setPeers(next);
@@ -221,7 +222,7 @@ export default function StockPeers({ symbol }: { symbol: string }) {
   ];
   const unavailable = peers.filter((peer) => overviews[peer]?.status === "error");
   return (
-    <div className={cn("space-y-6", SERIES_VARS)}>
+    <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <h2 className="flex items-center gap-2 text-xl font-semibold">

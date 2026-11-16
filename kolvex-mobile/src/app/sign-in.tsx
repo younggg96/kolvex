@@ -126,7 +126,7 @@ export default function SignIn() {
     }
   }
   return (
-    <View style={{ flex: 1, backgroundColor: t.dark ? "#000" : t.background }}>
+    <View style={{ flex: 1, backgroundColor: t.background }}>
       {/* The artwork is always black, so like the Web it only shows in the dark theme. */}
       {t.dark && (
         <View

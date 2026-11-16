@@ -31,6 +31,7 @@ import {
   signedMoney,
   type Position,
 } from "../../../lib/paperTrading";
+import { signedPercent } from "../../../lib/format";
 
 const skeleton = (
   <>
@@ -103,7 +104,7 @@ function Workspace() {
         [
           "账户净值",
           money(Number(s.equity)),
-          `${Number(s.return_pct) >= 0 ? "+" : ""}${Number(s.return_pct).toFixed(2)}%`,
+          signedPercent(Number(s.return_pct)),
           Number(s.total_pnl),
         ],
         [

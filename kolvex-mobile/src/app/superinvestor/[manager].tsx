@@ -41,6 +41,7 @@ import {
 } from "../../lib/freeResearchApi";
 import { useTheme } from "../../lib/theme";
 import { useResource } from "../../lib/useResource";
+import { withSign } from "../../lib/format";
 
 type Holding = Institution["holdings"][number];
 type Filter = "all" | Exclude<HoldingActivity, "unknown">;
@@ -613,7 +614,7 @@ function Holdings({ data }: { data: Institution }) {
                   localize={false}
                   color={row.change > 0 ? t.accent : t.negative}
                 >
-                  {`${row.change > 0 ? "+" : "−"}${f.number(Math.abs(row.change))}${row.change_percent !== null ? ` (${row.change_percent > 0 ? "+" : ""}${f.percent(row.change_percent)})` : ""}`}
+                  {`${withSign(row.change, f.number)}${row.change_percent !== null ? ` (${withSign(row.change_percent, f.percent)})` : ""}`}
                 </Copy>
               )}
             </View>

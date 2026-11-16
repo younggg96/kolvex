@@ -5,6 +5,7 @@
  */
 
 import { outcomeTone, signedPercent, type OutcomeTone } from "./opinionOutcome";
+import { withSign } from "@/lib/format";
 
 export type ReviewSentiment = "bullish" | "bearish";
 
@@ -82,7 +83,7 @@ export function reviewFigure(value: number): ReviewFigure {
 type Translate = (key: string, p?: Record<string, string>) => string;
 
 /** A band edge as a signed percent: "-20%", "0%", "+5%". */
-const edge = (value: number) => `${value > 0 ? "+" : ""}${value}%`;
+const edge = (value: number) => withSign(value, (magnitude) => `${magnitude}%`);
 
 /** A bar's excess-return band: "< -20%", "-20% ~ -15%", "0% ~ +5%", "≥ +20%". */
 export function binLabel(bin: ReviewHistogramBin, t: Translate) {

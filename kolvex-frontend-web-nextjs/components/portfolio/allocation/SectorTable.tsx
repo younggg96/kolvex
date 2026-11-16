@@ -17,6 +17,7 @@ import { SortableHeader } from "@/components/ui/sortable-header";
 import { cn } from "@/lib/utils";
 import type { SectorTableProps, SortKey } from "./types";
 import { formatCurrency } from "@/lib/portfolioApi";
+import { withSign } from "@/lib/format";
 import { marketStockHref } from "@/lib/stockLinks";
 
 // ================== SECTOR TABLE COMPONENT ==================
@@ -103,7 +104,9 @@ export function SectorTable({
                     />
                     <div
                       className="w-8 h-8 rounded-2xl flex items-center justify-center flex-shrink-0"
-                      style={{ backgroundColor: sector.color + "30" }}
+                      style={{
+                        backgroundColor: `color-mix(in srgb, ${sector.color} 19%, transparent)`,
+                      }}
                     >
                       <div className="w-4 h-4 rounded" style={{ backgroundColor: sector.color }} />
                     </div>
@@ -128,25 +131,21 @@ export function SectorTable({
                     </TableCell>
                     <TableCell className="py-3 px-2 text-right">
                       <div
-                        className="font-medium"
-                        style={{
-                          color: isPositive ? "#00C805" : "#ff4444",
-                        }}
+                        className={cn(
+                          "font-medium",
+                          isPositive ? "text-positive" : "text-negative",
+                        )}
                       >
-                        {isPositive ? "" : "-"}
-                        {formatCurrency(Math.abs(sector.gain))}
+                        {withSign(sector.gain, formatCurrency, { digits: 2, plus: false })}
                       </div>
                       <div className="flex items-center justify-end gap-0.5">
                         {isPositive ? (
-                          <TrendingUp className="w-3 h-3 text-[#00C805]" />
+                          <TrendingUp className="w-3 h-3 text-positive" />
                         ) : (
-                          <TrendingDown className="w-3 h-3 text-[#ff4444]" />
+                          <TrendingDown className="w-3 h-3 text-negative" />
                         )}
                         <span
-                          className="text-xs"
-                          style={{
-                            color: isPositive ? "#00C805" : "#ff4444",
-                          }}
+                          className={cn("text-xs", isPositive ? "text-positive" : "text-negative")}
                         >
                           {Math.abs(sector.gainPercent).toFixed(2)}%
                         </span>
@@ -236,25 +235,24 @@ export function SectorTable({
                           </TableCell>
                           <TableCell className="py-2 px-2 text-right">
                             <div
-                              className="font-medium text-sm"
-                              style={{
-                                color: posIsPositive ? "#00C805" : "#ff4444",
-                              }}
+                              className={cn(
+                                "font-medium text-sm",
+                                posIsPositive ? "text-positive" : "text-negative",
+                              )}
                             >
-                              {posIsPositive ? "" : "-"}
-                              {formatCurrency(Math.abs(aggPos.gain))}
+                              {withSign(aggPos.gain, formatCurrency, { digits: 2, plus: false })}
                             </div>
                             <div className="flex items-center justify-end gap-0.5">
                               {posIsPositive ? (
-                                <TrendingUp className="w-3 h-3 text-[#00C805]" />
+                                <TrendingUp className="w-3 h-3 text-positive" />
                               ) : (
-                                <TrendingDown className="w-3 h-3 text-[#ff4444]" />
+                                <TrendingDown className="w-3 h-3 text-negative" />
                               )}
                               <span
-                                className="text-xs"
-                                style={{
-                                  color: posIsPositive ? "#00C805" : "#ff4444",
-                                }}
+                                className={cn(
+                                  "text-xs",
+                                  posIsPositive ? "text-positive" : "text-negative",
+                                )}
                               >
                                 {Math.abs(aggPos.gainPercent).toFixed(2)}%
                               </span>

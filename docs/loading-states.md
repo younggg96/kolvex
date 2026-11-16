@@ -4,7 +4,7 @@ Web initial reads use `ContentLoading` from `components/ui/content-loading.tsx`:
 Loader2 and one localized status line. It fades in after 300ms using CSS only, so fast
 reads show nothing and no timers are added. Dashboard route loading, YouTube, Reddit,
 X, news, daily briefs, profile/settings, admin lists, conversations, autocomplete,
-investment transactions, Watchlist, stock observation and research lists all use it.
+investment transactions and research lists all use it. Stock row lists (Markets stock observation, Watchlist rows) instead render `StockRowsSkeleton`, placeholder rows on the same grid as the loaded rows, so the list does not jump when data arrives.
 
 Rows that already know their name or ticker render as real rows. Quote and metric
 values still in flight use `PendingValue`, a short line distinct from the "—" of

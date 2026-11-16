@@ -15,6 +15,7 @@ import { usePreferences } from "../state/Preferences";
 import { useWatchlist } from "../state/Watchlist";
 import { CompanyLogo } from "./CompanyLogo";
 import { Button, Copy, Glass, Skeleton, phone, styles } from "./UI";
+import { signedPercent } from "../lib/format";
 
 const PREVIEW_SIZE = 6;
 const EXTRA_SECTORS: Record<string, { en: string; zh: string }> = {
@@ -174,9 +175,7 @@ export function MarketWatchlist({ revision }: { revision: number }) {
                       : t.negative
                 }
               >
-                {change == null
-                  ? "—"
-                  : `${change >= 0 ? "+" : "−"}${Math.abs(change).toFixed(2)}%`}
+                {change == null ? "—" : signedPercent(change)}
               </Copy>
             </View>
           </>

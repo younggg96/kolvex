@@ -36,7 +36,7 @@ export default function MiniSparkline({
   }, [data, width, height]);
 
   const isPositive = data.length >= 2 && data[data.length - 1] >= data[0];
-  const strokeColor = color || (isPositive ? "#00C805" : "#ef4444");
+  const strokeColor = color || (isPositive ? "rgb(var(--chart-up))" : "rgb(var(--chart-down))");
 
   if (!data || data.length === 0) {
     return (
@@ -65,13 +65,7 @@ export default function MiniSparkline({
         preserveAspectRatio="none"
       >
         <defs>
-          <linearGradient
-            id={`gradient-${data.join("-")}`}
-            x1="0%"
-            y1="0%"
-            x2="0%"
-            y2="100%"
-          >
+          <linearGradient id={`gradient-${data.join("-")}`} x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor={strokeColor} stopOpacity="0.2" />
             <stop offset="100%" stopColor={strokeColor} stopOpacity="0" />
           </linearGradient>

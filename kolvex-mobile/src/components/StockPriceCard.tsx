@@ -20,6 +20,7 @@ import { useResource } from "../lib/useResource";
 import { usePreferences } from "../state/Preferences";
 import { ChartSkeleton } from "./Skeletons";
 import { Copy, Failure, Glass, phone } from "./UI";
+import { signedPercent } from "../lib/format";
 
 const RANGES = [
   { key: "1D", zh: "1日", en: "1D", period: "1d", interval: "5m" },
@@ -153,7 +154,7 @@ export function StockPriceCard({
             localize={false}
             color={up ? t.accent : t.negative}
           >
-            {`${up ? "+" : "−"}${Math.abs(change).toFixed(2)}%`}
+            {signedPercent(change)}
           </Copy>
         )}
         <Copy size={12} muted>
@@ -248,9 +249,7 @@ export function StockPriceCard({
                 alignItems: "center",
                 justifyContent: "center",
                 borderRadius: 999,
-                backgroundColor: selected
-                  ? "rgba(255,255,255,0.97)"
-                  : "transparent",
+                backgroundColor: selected ? t.thumb : "transparent",
                 opacity: pressed ? 0.65 : 1,
               })}
             >
@@ -259,7 +258,7 @@ export function StockPriceCard({
                 bold={selected}
                 lines={1}
                 localize={false}
-                color={selected ? "#111111" : t.secondary}
+                color={selected ? t.onThumb : t.secondary}
               >
                 {locale === "en" ? item.en : item.zh}
               </Copy>

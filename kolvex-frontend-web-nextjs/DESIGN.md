@@ -952,7 +952,8 @@ Selecting a destination closes the menu and opens its public route. The artwork 
 Logo disc or circular frame. The previous
 NVDA/TSLA/AMD stock reader is removed from the homepage. The signal field is
 abstract brand artwork, not a chart or a representation of market data.
-The supplied Wayglim export is kept in `components/layout/WayglimBackground.tsx`.
+The Wayglim look (studio settings) is kept in `components/layout/WayglimBackground.tsx`;
+all four Waylume/Wayglim backdrops share one engine in `components/backgrounds/WaylumeCanvas.tsx`.
 The root layout mounts one decorative background layer in light mode. The
 desktop homepage plays the Wayglim loop, and desktop interior routes pause it.
 Phones load a WebP of the exported opening frame, with portrait and landscape

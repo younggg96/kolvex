@@ -26,6 +26,7 @@ import {
   LoadingStatus,
   Section,
 } from "./UI";
+import { withSign } from "../lib/format";
 
 const NEAR = 12;
 const skeleton = (
@@ -69,7 +70,10 @@ function useFormat() {
     percent: (value: number | null | undefined, signed = false) =>
       missing(value)
         ? "—"
-        : `${signed && value > 0 ? "+" : ""}${(value * 100).toFixed(2)}%`,
+        : withSign(value * 100, (magnitude) => `${magnitude.toFixed(2)}%`, {
+            digits: 2,
+            plus: signed,
+          }),
     date: (value: string) =>
       Number.isFinite(Date.parse(value))
         ? new Date(`${value.slice(0, 10)}T12:00:00Z`).toLocaleDateString(intl, {

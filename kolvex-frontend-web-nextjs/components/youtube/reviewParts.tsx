@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 type T = (key: string, params?: Record<string, string>) => string;
 
-/** 看涨 / 看跌 as a small tinted badge; the word carries the meaning, the tint only helps. */
+/** 看多 / 看空 as a small tinted badge; the word carries the meaning, the tint only helps. */
 export function SentimentBadge({ sentiment, t }: { sentiment: ReviewSentiment; t: T }) {
   return (
     <span

@@ -104,7 +104,7 @@ function Tile({
             borderRadius: 28,
             alignItems: "center",
             justifyContent: "center",
-            backgroundColor: active ? "rgba(255,255,255,0.97)" : t.wash,
+            backgroundColor: active ? t.thumb : t.wash,
             borderWidth: active ? 0 : 1,
             borderColor: t.rim,
           }}
@@ -112,7 +112,7 @@ function Tile({
           <SymbolView
             name={item.icon}
             size={22}
-            tintColor={active ? "#111111" : t.text}
+            tintColor={active ? t.onThumb : t.text}
           />
         </View>
         <Copy size={13} lines={1}>

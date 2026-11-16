@@ -210,9 +210,9 @@ test("opinion strength reads as words at the Web's thresholds", () => {
   assert.equal(describeStrength(null).label, "暂无数据");
   assert.equal(describeStrength(0).label, "中性");
   assert.equal(describeStrength(0, true).label, "持平");
-  assert.equal(describeStrength(20).label, "轻度看涨");
-  assert.equal(describeStrength(-50).label, "中度看跌");
-  assert.equal(describeStrength(90).label, "强烈看涨");
+  assert.equal(describeStrength(20).label, "轻度看多");
+  assert.equal(describeStrength(-50).label, "中度看空");
+  assert.equal(describeStrength(90).label, "强烈看多");
   // A change spans ±200, so 90 is still moderate.
   assert.equal(describeStrength(90, true).label, "中度转强");
 });

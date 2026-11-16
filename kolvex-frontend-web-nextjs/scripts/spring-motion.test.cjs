@@ -14,7 +14,9 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 
 function load(file, extra = {}) {
   const module = { exports: {} };
-  const output = ts.transpileModule(read(file), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText;
+  const output = ts.transpileModule(read(file), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
+  }).outputText;
   vm.runInNewContext(output, { module, exports: module.exports, Math, performance, ...extra });
   return module.exports;
 }
@@ -36,7 +38,11 @@ test("released from rest, the spring rises monotonically from 0 to 1 and never o
 test("the closed form solves x'' + 2ζω x' + ω²(x - target) = 0 with ζ = 1", () => {
   const omega = spring.omegaFromResponse(0.2);
   const h = 1e-4;
-  for (const [from, to, v] of [[0, 100, 0], [40, 0, -900], [10, 10, 300]]) {
+  for (const [from, to, v] of [
+    [0, 100, 0],
+    [40, 0, -900],
+    [10, 10, 300],
+  ]) {
     for (const t of [0.01, 0.05, 0.1, 0.2]) {
       const x = (s) => spring.criticallyDamped(from, to, v, omega, s).value;
       const first = (x(t + h) - x(t - h)) / (2 * h);
@@ -45,12 +51,18 @@ test("the closed form solves x'' + 2ζω x' + ω²(x - target) = 0 with ζ = 1",
       const scale = omega * omega * Math.max(Math.abs(from - to), Math.abs(v) / omega, 1);
       assert.ok(Math.abs(residual) < 1e-5 * scale, `residual ${residual} vs scale ${scale}`);
       // The reported velocity is the derivative of the reported position.
-      assert.ok(Math.abs(spring.criticallyDamped(from, to, v, omega, t).velocity - first) < 1e-3 * (1 + Math.abs(first)));
+      assert.ok(
+        Math.abs(spring.criticallyDamped(from, to, v, omega, t).velocity - first) <
+          1e-3 * (1 + Math.abs(first)),
+      );
     }
     const start = spring.criticallyDamped(from, to, v, omega, 0);
     assert.equal(start.value, from);
     assert.equal(start.velocity, v, "starts at the gesture's velocity");
-    assert.ok(Math.abs(spring.criticallyDamped(from, to, v, omega, 3).value - to) < 1e-6, "comes to rest at the target");
+    assert.ok(
+      Math.abs(spring.criticallyDamped(from, to, v, omega, 3).value - to) < 1e-6,
+      "comes to rest at the target",
+    );
   }
 });
 
@@ -58,7 +70,12 @@ test("CSS linear() curve and durations in globals.css come from the engine", () 
   const css = read("app/globals.css");
   const declared = css.match(/--spring:\s*(linear\([^;]+\));/);
   assert.ok(declared, "--spring is declared");
-  assert.equal(declared[1], spring.SPRING_EASING);
+  // Prettier may wrap the stops onto lines; compare the stops, not the whitespace.
+  const stops = declared[1]
+    .replace(/\(\s+/, "(")
+    .replace(/,\s+/g, ", ")
+    .replace(/\s+\)$/, ")");
+  assert.equal(stops, spring.SPRING_EASING);
   for (const [name, response] of Object.entries(spring.SPRING_RESPONSE)) {
     const value = css.match(new RegExp(`--spring-${name}:\\s*(\\d+)ms;`));
     assert.ok(value, `--spring-${name} is declared`);
@@ -79,8 +96,13 @@ test("rubber band: no stretch at the edge, monotonic resistance, never past one 
   // Near the edge it moves at the coefficient's fraction of the finger.
   assert.ok(Math.abs(spring.rubberBand(1, 1e6) - 0.55) < 1e-3);
   assert.equal(spring.rubberBandClamp(50, 0, 100, 300), 50);
-  assert.ok(spring.rubberBandClamp(130, 0, 100, 300) > 100 && spring.rubberBandClamp(130, 0, 100, 300) < 130);
-  assert.ok(spring.rubberBandClamp(-30, 0, 100, 300) < 0 && spring.rubberBandClamp(-30, 0, 100, 300) > -30);
+  assert.ok(
+    spring.rubberBandClamp(130, 0, 100, 300) > 100 &&
+      spring.rubberBandClamp(130, 0, 100, 300) < 130,
+  );
+  assert.ok(
+    spring.rubberBandClamp(-30, 0, 100, 300) < 0 && spring.rubberBandClamp(-30, 0, 100, 300) > -30,
+  );
 });
 
 test("release projection follows the flick's direction and grows with its speed", () => {
@@ -101,7 +123,9 @@ test("velocity tracker reads a steady drag and reports 0 after a pause", () => {
 test("motion springs are critically damped", () => {
   const options = spring.motionSpring(0.3);
   assert.equal(options.mass, 1);
-  assert.ok(Math.abs(options.damping / (2 * Math.sqrt(options.stiffness * options.mass)) - 1) < 1e-12);
+  assert.ok(
+    Math.abs(options.damping / (2 * Math.sqrt(options.stiffness * options.mass)) - 1) < 1e-12,
+  );
 });
 
 test("graph pan bounds keep clampGraphView's behaviour", () => {
@@ -116,11 +140,15 @@ test("graph pan bounds keep clampGraphView's behaviour", () => {
 
 /** The real engine on a simulated 60 fps clock. */
 function simulated(extra = {}) {
-  let now = 1000, nextId = 1;
+  let now = 1000,
+    nextId = 1;
   const queue = new Map();
   const engine = load("lib/motion/spring.ts", {
     performance: { now: () => now },
-    requestAnimationFrame: (cb) => { queue.set(nextId, cb); return nextId++; },
+    requestAnimationFrame: (cb) => {
+      queue.set(nextId, cb);
+      return nextId++;
+    },
     cancelAnimationFrame: (id) => queue.delete(id),
     ...extra,
   });
@@ -139,10 +167,17 @@ test("a release starts at the hand's speed and comes to rest exactly on target",
   const { engine, run } = simulated();
   const frames = [];
   let completed = 0;
-  engine.animateSpring({ from: 0, to: 100, velocity: 2000, response: 0.2, onUpdate: (v, speed) => frames.push({ v, speed }), onComplete: () => completed++ });
+  engine.animateSpring({
+    from: 0,
+    to: 100,
+    velocity: 2000,
+    response: 0.2,
+    onUpdate: (v, speed) => frames.push({ v, speed }),
+    onComplete: () => completed++,
+  });
   run();
   // First frame (1/60 s in) has already moved about velocity × dt, not from rest.
-  assert.ok(frames[0].v > 2000 / 60 * 0.8, `first step ${frames[0].v}`);
+  assert.ok(frames[0].v > (2000 / 60) * 0.8, `first step ${frames[0].v}`);
   assert.equal(frames.at(-1).v, 100);
   assert.equal(frames.at(-1).speed, 0);
   assert.equal(completed, 1);
@@ -175,22 +210,38 @@ test("reduced motion jumps straight to the target", () => {
 
 test("a flick into an edge overshoots softly, then springs back onto the edge", () => {
   const { engine, run } = simulated();
-  const min = 0, max = 100, span = 60;
-  const from = 8, velocity = -600; // fast toward the left edge
+  const min = 0,
+    max = 100,
+    span = 60;
+  const from = 8,
+    velocity = -600; // fast toward the left edge
   const to = Math.min(Math.max(engine.projectRelease(from, velocity), min), max);
   assert.equal(to, min, "the projected rest point is clamped to the edge");
-  const raw = [], shown = [];
+  const raw = [],
+    shown = [];
   engine.animateSpring({
-    from, to, velocity, response: 0.3, precision: 0.001,
-    onUpdate: (value) => { raw.push(value); shown.push(engine.rubberBandClamp(value, min, max, span)); },
+    from,
+    to,
+    velocity,
+    response: 0.3,
+    precision: 0.001,
+    onUpdate: (value) => {
+      raw.push(value);
+      shown.push(engine.rubberBandClamp(value, min, max, span));
+    },
   });
   run();
-  const deepest = Math.min(...raw), deepestShown = Math.min(...shown);
+  const deepest = Math.min(...raw),
+    deepestShown = Math.min(...shown);
   assert.ok(deepest < min, "momentum carries it past the edge");
-  assert.ok(deepestShown > deepest && deepestShown < min, "the overshoot is compressed by the rubber band");
+  assert.ok(
+    deepestShown > deepest && deepestShown < min,
+    "the overshoot is compressed by the rubber band",
+  );
   assert.equal(shown.at(-1), min, "it returns exactly to the edge");
   const turn = shown.indexOf(deepestShown);
-  for (let i = turn + 1; i < shown.length; i++) assert.ok(shown[i] >= shown[i - 1] - 1e-9, "one smooth return with no second bounce");
+  for (let i = turn + 1; i < shown.length; i++)
+    assert.ok(shown[i] >= shown[i - 1] - 1e-9, "one smooth return with no second bounce");
 });
 
 test("no hand-written easing curves outside the spring", () => {
@@ -201,24 +252,42 @@ test("no hand-written easing curves outside the spring", () => {
     for (const entry of fs.readdirSync(path.join(root, dir), { withFileTypes: true })) {
       const rel = path.join(dir, entry.name);
       if (entry.isDirectory()) walk(rel);
-      else if (/\.(tsx?|css)$/.test(entry.name) && rel !== path.join("lib", "motion", "spring.ts")) {
-        read(rel).split("\n").forEach((line, index) => {
-          if (/cubic-bezier\(/.test(line) && !/infinite/.test(line)) offenders.push(`${rel}:${index + 1}`);
-          if (/\bease-linear\b/.test(line)) offenders.push(`${rel}:${index + 1} ease-linear`);
-          if (/useSpring\([^)]*damping:/.test(line)) offenders.push(`${rel}:${index + 1} under-damped motion spring`);
-          if (rel.endsWith(".css")) {
-            const decl = line.match(/\b(?:transition|animation)\s*:\s*([^;{]+)/);
-            const value = decl && decl[1].trim();
-            if (value && value !== "none" && !/!important/.test(line) && !/var\(--|linear|steps?\(|step-end|infinite/.test(value))
-              offenders.push(`${rel}:${index + 1} transition without the spring`);
-            if (/\b\d+m?s ease(-in|-out|-in-out)?\b(?! infinite)/.test(line) && !/infinite/.test(line))
-              offenders.push(`${rel}:${index + 1} browser ease`);
-          }
-        });
+      else if (
+        /\.(tsx?|css)$/.test(entry.name) &&
+        rel !== path.join("lib", "motion", "spring.ts")
+      ) {
+        read(rel)
+          .split("\n")
+          .forEach((line, index) => {
+            if (/cubic-bezier\(/.test(line) && !/infinite/.test(line))
+              offenders.push(`${rel}:${index + 1}`);
+            if (/\bease-linear\b/.test(line)) offenders.push(`${rel}:${index + 1} ease-linear`);
+            if (/useSpring\([^)]*damping:/.test(line))
+              offenders.push(`${rel}:${index + 1} under-damped motion spring`);
+            if (rel.endsWith(".css")) {
+              const decl = line.match(/\b(?:transition|animation)\s*:\s*([^;{]+)/);
+              const value = decl && decl[1].trim();
+              if (
+                value &&
+                value !== "none" &&
+                !/!important/.test(line) &&
+                !/var\(--|linear|steps?\(|step-end|infinite/.test(value)
+              )
+                offenders.push(`${rel}:${index + 1} transition without the spring`);
+              if (
+                /\b\d+m?s ease(-in|-out|-in-out)?\b(?! infinite)/.test(line) &&
+                !/infinite/.test(line)
+              )
+                offenders.push(`${rel}:${index + 1} browser ease`);
+            }
+          });
       }
     }
   };
   ["app", "components", "lib"].forEach(walk);
-  assert.ok(!/cubic-bezier\(/.test(read("tailwind.config.ts")), "tailwind.config.ts uses the spring");
+  assert.ok(
+    !/cubic-bezier\(/.test(read("tailwind.config.ts")),
+    "tailwind.config.ts uses the spring",
+  );
   assert.deepEqual(offenders, []);
 });

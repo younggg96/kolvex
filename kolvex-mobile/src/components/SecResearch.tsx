@@ -38,6 +38,7 @@ import {
   Section,
   LoadingStatus,
 } from "./UI";
+import { withSign } from "../lib/format";
 export const SEC_TIMEOUT = 55_000;
 export function useFormat() {
   return financialFormat(usePreferences().locale);
@@ -899,7 +900,7 @@ function Institutions({ companyName }: { companyName?: string | null }) {
                   {activityLabels[row.activity]}
                   {row.change === null
                     ? ""
-                    : ` · ${row.change > 0 ? "+" : row.change < 0 ? "−" : ""}${f.number(Math.abs(row.change))}`}
+                    : ` · ${withSign(row.change, f.number)}`}
                   {row.change_percent !== null && row.change !== 0
                     ? ` (${f.percent(row.change_percent)})`
                     : ""}

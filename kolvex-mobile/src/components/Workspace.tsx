@@ -57,7 +57,7 @@ export function StanceText({
     bullish: ["偏多", t.accent],
     bearish: ["偏空", t.negative],
     neutral: ["中性", t.secondary],
-    mixed: ["分歧", "#C98A00"],
+    mixed: ["分歧", t.warning],
   }[stance];
   return (
     <Copy size={size} bold color={config[1]}>

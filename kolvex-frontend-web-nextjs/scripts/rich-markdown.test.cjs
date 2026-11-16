@@ -290,5 +290,6 @@ test("the model prompt forbids emoji and documents the chart block", () => {
     path.join(__dirname, "../../kolvex-backend-py/app/agent/config.py"),
     "utf8",
   );
-  assert.match(config, /SYSTEM_PROMPT = """.*\n""" \+ REPORT_FORMATTING/s);
+  // The formatting rules close the system prompt, whether or not the concatenation is parenthesized.
+  assert.match(config, /SYSTEM_PROMPT = \(?\s*""".*\n"""\s*\+ REPORT_FORMATTING\s*\)?\n/s);
 });

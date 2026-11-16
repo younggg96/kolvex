@@ -1,4 +1,5 @@
 // Copied from the Web's lib/economicIndicators.ts; a test keeps these in step.
+import { signFor } from "./format";
 export interface EconomicIndicator {
   frequency: "daily" | "monthly" | "quarterly";
   unit: "percent" | "pp" | "thousands";
@@ -34,7 +35,8 @@ export function indicatorValue(
     minimumFractionDigits: unit === "thousands" ? (zh ? 1 : 0) : 2,
     maximumFractionDigits: unit === "thousands" ? 1 : 2,
   }).format(Math.abs(amount));
-  const prefix = amount < 0 ? "−" : signed && amount > 0 ? "+" : "";
+  const prefix = signFor(amount, unit === "thousands" ? 1 : 2);
+  const shownPrefix = prefix === "+" && !signed ? "" : prefix;
   const suffix =
     unit === "thousands"
       ? zh
@@ -47,5 +49,5 @@ export function indicatorValue(
           : zh
             ? " 个百分点"
             : " pp";
-  return `${prefix}${text}${suffix}`;
+  return `${shownPrefix}${text}${suffix}`;
 }

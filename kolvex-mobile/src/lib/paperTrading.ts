@@ -2,6 +2,7 @@
 // FastAPI directly with the account's session instead of the Next.js proxy.
 import { ApiError, apiRequest } from "./http";
 import messages from "./paperTradingErrors.json";
+import { withSign } from "./format";
 
 export type Side = "long" | "short";
 export interface Quote {
@@ -206,4 +207,4 @@ export const money = (value: number | null | undefined) =>
         currency: "USD",
       }).format(value);
 export const signedMoney = (value: number) =>
-  `${value >= 0 ? "+" : "−"}${money(Math.abs(value))}`;
+  withSign(value, money, { digits: 2 });

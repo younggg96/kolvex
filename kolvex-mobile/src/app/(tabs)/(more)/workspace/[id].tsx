@@ -701,7 +701,7 @@ function RunView({ run, symbols }: { run: ResearchRun; symbols: string[] }) {
           </Copy>
         ) : null}
         {run.status === "partial" && !!run.synthesis && (
-          <Copy size={12} color="#C98A00">
+          <Copy size={12} color={t.warning}>
             部分研究员失败，结论不完整。
           </Copy>
         )}

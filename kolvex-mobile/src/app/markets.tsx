@@ -19,6 +19,7 @@ import { useTheme } from "../lib/theme";
 import { ListPage, Glass, Copy, Button, Search } from "../components/UI";
 import { Filters, ResourceState, SourceLink } from "../components/Content";
 import { Chart } from "../components/Chart";
+import { withSign } from "../lib/format";
 type MarketRow = {
   instrument: MarketInstrument;
   history: MarketObservation[];
@@ -184,7 +185,7 @@ function MarketCard({
         {range} ·
         {change == null
           ? "—"
-          : `${change > 0 ? "+" : ""}${number(change)}${s.unit === "percent" ? "%" : s.unit === "pp" ? " 个百分点" : " 点"}`}
+          : `${withSign(change, number, { digits: 2 })}${s.unit === "percent" ? "%" : s.unit === "pp" ? " 个百分点" : " 点"}`}
       </Copy>
       <Copy muted>
         {s.date || "数据日期未提供"} · {i.note?.zh || i.en}

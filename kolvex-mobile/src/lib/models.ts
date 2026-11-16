@@ -1,3 +1,4 @@
+import { withSign } from "./format";
 export type Quote = {
   symbol: string;
   name?: string;
@@ -58,5 +59,5 @@ export function number(value: number | null | undefined, digits = 2) {
 export function percent(value: number | null | undefined) {
   return value == null || !Number.isFinite(value)
     ? "—"
-    : `${value > 0 ? "+" : ""}${number(value)}%`;
+    : withSign(value, (magnitude) => `${number(magnitude)}%`, { digits: 2 });
 }

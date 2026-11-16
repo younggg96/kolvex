@@ -48,7 +48,7 @@ export function CoverageNote({
     .slice(0, 3);
   return (
     <View style={{ gap: 2 }}>
-      <Copy size={12} color="#C98A00">
+      <Copy size={12} color={t.warning}>
         {item.truncated
           ? `上次更新后至少 ${item.untracked_count} 个视频未追踪`
           : `有 ${item.untracked_count} 个视频未追踪`}

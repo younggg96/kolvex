@@ -85,7 +85,7 @@
 ### `get_creator_record`（博主观点后股价）
 
 - 输入：博主名称 / `@handle` / channel id，可选股票代码，回看天数（30–1095，默认 365；`null` 为全部）。名称先精确匹配、再模糊匹配；匹配到多位博主时返回 `status: "ambiguous"` 和候选名单，让模型追问，不算数据缺口。
-- 计算：`app/services/creator_record.py`，方法和「回看」页相同（[docs/opinion-backtest.md](../../../docs/opinion-backtest.md)）：首个开盘价入场，5 / 20 个交易日，减去同期 SPY，7 天去重，看涨看跌分开。
+- 计算：`app/services/creator_record.py`，方法和「回看」页相同（[docs/opinion-backtest.md](../../../docs/opinion-backtest.md)）：首个开盘价入场，5 / 20 个交易日，减去同期 SPY，7 天去重，看多看空分开。
 - **只陈述事实**：不返回、提示词也禁止「说对 / 说错」、准确率、胜率、博主排名或博主之间比较。
 - 样本门槛：一组至少 30 条、入场日期跨度至少 90 天才给平均数，并给前后两半各自的平均；不够时只给条数。
 - 行情失败：单只股票失败计入 `price_unavailable`；全部失败返回错误，不用 0 代替。

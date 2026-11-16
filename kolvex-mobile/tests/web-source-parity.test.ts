@@ -23,11 +23,14 @@ function canonical(node: ts.Node): unknown {
   return {
     kind: node.kind,
     text:
-      ts.isIdentifier(node) ||
-      ts.isStringLiteral(node) ||
-      ts.isNumericLiteral(node)
-        ? node.text
-        : undefined,
+      ts.isStringLiteral(node) && ts.isImportDeclaration(node.parent)
+        ? // The Web imports "@/lib/x"; the App has no path alias and imports "./x".
+          node.text.replace(/^@\/lib\//, "./")
+        : ts.isIdentifier(node) ||
+            ts.isStringLiteral(node) ||
+            ts.isNumericLiteral(node)
+          ? node.text
+          : undefined,
     children,
   };
 }
@@ -72,6 +75,7 @@ test("native model choices track the current Web model catalogue", () => {
   assert.deepEqual(MODEL_CONFIGS, models);
 });
 for (const file of [
+  "format.ts",
   "marketBenchmarks.ts",
   "marketObservations.ts",
   "marketComparison.ts",

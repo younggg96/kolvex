@@ -15,37 +15,46 @@ function load(file, fetch, cache = new Map()) {
     }).outputText,
     { module: snapshots, exports: snapshots.exports, require: () => clientCache },
   );
-  vm.runInNewContext(
-    ts.transpileModule(fs.readFileSync(path.join(__dirname, "..", file), "utf8"), {
-      compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
-    }).outputText,
-    {
-      module,
-      exports: module.exports,
-      fetch,
-      AbortSignal,
-      console: { error() {} },
-      process: { env: { NEXT_PUBLIC_BACKEND_API_URL: "https://backend.example" } },
-      require(name) {
-        if (name === BACKEND_CONFIG)
-          return backendConfig({ NEXT_PUBLIC_BACKEND_API_URL: "https://backend.example" });
-        if (name === "./clientCache") return clientCache;
-        if (name === "./quoteSnapshots") return snapshots.exports;
-        if (name === "next/server") return { NextResponse: Response };
-        if (name === "@/lib/cache")
-          return {
-            quoteCache: cache,
-            chartCache: new Map(),
-            overviewCache: new Map(),
-            CACHE_TTL: { QUOTE: 15, CHART: 300, OVERVIEW: 600 },
-            QUOTE_CACHE_CONTROL: "quote-cache-control",
-            getCacheKey: (...parts) => parts.join(":"),
-          };
-        throw Error(name);
+  // The route and lib/server/stockQuote.ts share one sandbox, so both see the same fakes.
+  const compiled = new Map();
+  const compile = (relative, target = { exports: {} }) => {
+    vm.runInNewContext(
+      ts.transpileModule(fs.readFileSync(path.join(__dirname, "..", relative), "utf8"), {
+        compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
+      }).outputText,
+      {
+        module: target,
+        exports: target.exports,
+        fetch,
+        AbortSignal,
+        console: { error() {} },
+        process: { env: { NEXT_PUBLIC_BACKEND_API_URL: "https://backend.example" } },
+        require(name) {
+          if (name === BACKEND_CONFIG)
+            return backendConfig({ NEXT_PUBLIC_BACKEND_API_URL: "https://backend.example" });
+          if (name === "./clientCache") return clientCache;
+          if (name === "./quoteSnapshots") return snapshots.exports;
+          if (name === "next/server") return { NextResponse: Response };
+          if (name === "@/lib/cache")
+            return {
+              quoteCache: cache,
+              chartCache: new Map(),
+              overviewCache: new Map(),
+              CACHE_TTL: { QUOTE: 15, CHART: 300, OVERVIEW: 600 },
+              QUOTE_CACHE_CONTROL: "quote-cache-control",
+              getCacheKey: (...parts) => parts.join(":"),
+            };
+          if (name === "@/lib/server/stockQuote") {
+            if (!compiled.has(name)) compiled.set(name, compile("lib/server/stockQuote.ts"));
+            return compiled.get(name);
+          }
+          throw Error(name);
+        },
       },
-    },
-  );
-  return module.exports;
+    );
+    return target.exports;
+  };
+  return compile(file, module);
 }
 const tick = () => new Promise((resolve) => setImmediate(resolve));
 const quote = (symbol) => ({ symbol, price: 100, change: 1, changePercent: 1 });

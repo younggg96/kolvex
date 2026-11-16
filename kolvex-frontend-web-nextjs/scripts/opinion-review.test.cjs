@@ -46,12 +46,12 @@ test("figures carry a sign and a tone, so direction never depends on color", () 
 });
 
 test("histogram labels are signed excess-return bands, and heights scale to the tallest bin", () => {
-  assert.equal(review.binLabel({ low: null, high: -20, count: 3 }, t), "< -20%");
-  assert.equal(review.binLabel({ low: -20, high: -15, count: 3 }, t), "-20% ~ -15%");
-  assert.equal(review.binLabel({ low: -5, high: 0, count: 3 }, t), "-5% ~ 0%");
+  assert.equal(review.binLabel({ low: null, high: -20, count: 3 }, t), "< −20%");
+  assert.equal(review.binLabel({ low: -20, high: -15, count: 3 }, t), "−20% ~ −15%");
+  assert.equal(review.binLabel({ low: -5, high: 0, count: 3 }, t), "−5% ~ 0%");
   assert.equal(review.binLabel({ low: 0, high: 5, count: 3 }, t), "0% ~ +5%");
   assert.equal(review.binLabel({ low: 20, high: null, count: 3 }, t), "≥ +20%");
-  assert.equal(review.binLabel({ low: -20, high: -15, count: 3 }, translator(en)), "-20% to -15%");
+  assert.equal(review.binLabel({ low: -20, high: -15, count: 3 }, translator(en)), "−20% to −15%");
   assert.deepEqual(
     [...review.histogramHeights([{ count: 2 }, { count: 4 }, { count: 0 }])],
     [0.5, 1, 0],

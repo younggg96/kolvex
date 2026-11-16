@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { marketStockHref } from "@/lib/stockLinks";
 import { Button } from "@/components/ui/button";
 import { ChipButton } from "@/components/ui/chip-button";
 import { InfoTip } from "@/components/ui/info-tip";
@@ -110,7 +111,7 @@ function OpinionRow({
       <div className="flex min-w-0 items-center gap-2 text-sm">
         <CompanyLogo symbol={item.ticker} size="xs" />
         <Link
-          href={`/dashboard/youtube-opinions?tab=stocks&stock=${encodeURIComponent(item.ticker)}`}
+          href={marketStockHref(item.ticker)}
           className="font-semibold underline-offset-4 hover:underline"
         >
           {item.ticker}

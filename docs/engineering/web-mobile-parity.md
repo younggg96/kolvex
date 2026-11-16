@@ -22,7 +22,7 @@
 | AI 模型目录 | `lib/aiModels.ts` | `src/lib/aiModels.ts` | `web-source-parity` |
 | 行情范围 / 基准 / 对比 | `lib/marketBenchmarks.ts`、`lib/marketComparison.ts` 等 | `src/lib/` 同名文件 | `web-source-parity` |
 | 技术指标公式 | `lib/chart/` | `src/lib/` 图表相关文件 | `web-source-parity` |
-| 数字 / 日期格式化 | Web 对应 lib | `src/lib/` 同名文件 | `web-source-parity` |
+| 数字 / 日期格式化 | Web 对应 lib；正负号 `lib/format.ts` | `src/lib/` 同名文件；正负号 `src/lib/format.ts`（逐字复制） | `web-source-parity`、`tests/format.test.ts` |
 | 文中股票代码识别 | `lib/markdown/` | `src/lib/stockMentions.ts`（逐字复制） | `web-source-parity` |
 | 免费研究 | `lib/freeResearch.ts` | `src/lib/freeResearch.ts` | `tests/free-research.test.ts` |
 | 英文文案 | `useCopy` 的英文 / `lib/i18n/locales/en.json` | `translations/native-en.json`、`templates-en.json` | `npm run i18n:check` |

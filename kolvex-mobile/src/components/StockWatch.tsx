@@ -35,6 +35,7 @@ import {
   phone,
   styles,
 } from "./UI";
+import { signedPercent } from "../lib/format";
 
 type Scope = "movers" | "active" | "creators" | "core";
 const PAGE = 10;
@@ -414,9 +415,7 @@ function WatchRow({
           localize={false}
           color={move == null ? t.secondary : move < 0 ? t.negative : t.accent}
         >
-          {move == null
-            ? "—"
-            : `${move > 0 ? "+" : move < 0 ? "−" : ""}${Math.abs(move).toFixed(2)}%`}
+          {move == null ? "—" : signedPercent(move)}
         </Copy>
       </View>
     </Pressable>

@@ -32,6 +32,7 @@ import {
   Section,
   styles,
 } from "./UI";
+import { signedPercent } from "../lib/format";
 
 const NAMES = {
   conservative: "保守",
@@ -74,9 +75,7 @@ function useFormat() {
           }).format(value)
         : "—",
     percent: (value: unknown) =>
-      finite(value)
-        ? `${value > 0 ? "+" : ""}${(value * 100).toFixed(1)}%`
-        : "—",
+      finite(value) ? signedPercent(value * 100, 1) : "—",
   };
 }
 

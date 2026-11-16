@@ -68,6 +68,7 @@ import {
 } from "../../components/AdvancedChart";
 import { useAuth } from "../../state/Auth";
 import { ChartAiPanel } from "../../components/TechnicalAI";
+import { signedPercent } from "../../lib/format";
 
 export default function Technical() {
   const p = useLocalSearchParams<{ symbol: string }>();
@@ -170,7 +171,6 @@ const sessionLabels = {
   pre: "盘前 · 较收盘",
   post: "盘后 · 较收盘",
 };
-const signedPercent = (v: number) => `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`;
 const formatVolume = (v: number) =>
   v >= 1e9
     ? `${(v / 1e9).toFixed(2)}B`
@@ -379,11 +379,11 @@ function CallsLegend() {
       <Copy size={12} color={t.chartUp} localize={false}>
         ▲
       </Copy>
-      看涨{" "}
+      看多{" "}
       <Copy size={12} color={t.chartDown} localize={false}>
         ▼
       </Copy>
-      看跌 为博主观点
+      看空 为博主观点
     </Copy>
   );
 }
@@ -1087,7 +1087,7 @@ function Workspace({ symbol }: { symbol: string }) {
           />
           <ToggleRow
             icon="eye"
-            label="在K线上显示博主看涨/看跌"
+            label="在K线上显示博主看多/看空"
             value={showCalls}
             onChange={setShowCalls}
           />

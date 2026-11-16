@@ -12,6 +12,7 @@ import { CompanyLogo } from "./CompanyLogo";
 import { Filters } from "./Content";
 import { OpinionStrength } from "./OpinionStrength";
 import { Copy, Glass, Skeleton, styles } from "./UI";
+import { signedPercent } from "../lib/format";
 
 type Stock = {
   ticker: string;
@@ -167,7 +168,7 @@ export function YouTubeOverview({ revision }: { revision: number }) {
                           >
                             {p.change_1d_percent == null
                               ? "—"
-                              : `${p.change_1d_percent > 0 ? "+" : ""}${p.change_1d_percent.toFixed(2)}%`}
+                              : signedPercent(p.change_1d_percent)}
                           </Copy>
                         </>
                       ) : perf.loading ? (

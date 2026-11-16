@@ -22,7 +22,7 @@
 3. **本目录的规范文档**（`docs/engineering`、`docs/design`、`docs/product`）
 4. 单功能文档（`docs/<功能>.md`、`docs/<功能>/`）
 5. 各端 `PRODUCT.md` / `DESIGN.md` / `UX-CONTRACT.md` / `MIGRATION.md`
-6. 历史记录：`PROGRESS.md`、`artifacts/`、`.impeccable/`（只做参考，经常已过时）
+6. 历史验证记录：`artifacts/`、`kolvex-mobile/artifacts/`（只保留功能文档或 `VERIFICATION.md` 引用的截图和报告，只做参考，可能已过时）
 
 ## 3. 任务路由
 

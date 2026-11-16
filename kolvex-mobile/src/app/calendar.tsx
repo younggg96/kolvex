@@ -123,14 +123,12 @@ function Events() {
                     justifyContent: "center",
                     gap: 2,
                     borderRadius: phone(16),
-                    backgroundColor: selected
-                      ? "rgba(255,255,255,0.97)"
-                      : "transparent",
+                    backgroundColor: selected ? t.thumb : "transparent",
                   }}
                 >
                   <Copy
                     size={12}
-                    color={selected ? "#111111" : t.secondary}
+                    color={selected ? t.onThumb : t.secondary}
                     localize={false}
                   >
                     {new Intl.DateTimeFormat(english ? "en-US" : "zh-CN", {
@@ -143,7 +141,7 @@ function Events() {
                     bold
                     color={
                       selected
-                        ? "#111111"
+                        ? t.onThumb
                         : day === data.today
                           ? t.accent
                           : t.text
@@ -159,7 +157,7 @@ function Events() {
                       borderRadius: 2,
                       backgroundColor: hasEvents
                         ? selected
-                          ? "#111111"
+                          ? t.onThumb
                           : t.text
                         : "transparent",
                     }}

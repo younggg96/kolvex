@@ -39,7 +39,7 @@ function DonutTooltip({ active, payload }: CustomTooltipProps) {
         </div>
         <div className="flex justify-between gap-4">
           <span className="text-muted-foreground">P&L:</span>
-          <span className={`font-medium ${isPositive ? "text-[#00C805]" : "text-[#ff4444]"}`}>
+          <span className={`font-medium ${isPositive ? "text-positive" : "text-negative"}`}>
             {withSign(data.gain, formatCurrency)}
           </span>
         </div>
