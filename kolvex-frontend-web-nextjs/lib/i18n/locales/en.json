@@ -1427,7 +1427,6 @@
       "meanVs": "Average excess return vs {benchmark}",
       "creatorSearch": "Search creators",
       "creatorNoMatch": "No creator matches.",
-      "allCreators": "All creators",
       "creatorsLabel": "Creators",
       "sortLabel": "Sort",
       "sortRecent": "Latest",

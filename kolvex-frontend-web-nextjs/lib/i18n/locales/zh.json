@@ -1427,7 +1427,6 @@
       "meanVs": "平均超额收益（相对 {benchmark}）",
       "creatorSearch": "搜索博主",
       "creatorNoMatch": "没有找到这位博主。",
-      "allCreators": "全部博主",
       "creatorsLabel": "博主列表",
       "sortLabel": "排序",
       "sortRecent": "最近提到",

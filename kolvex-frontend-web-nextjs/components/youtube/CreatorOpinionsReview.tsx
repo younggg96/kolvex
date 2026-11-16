@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { marketStockHref } from "@/lib/stockLinks";
 import { Button } from "@/components/ui/button";
 import { InfoTip } from "@/components/ui/info-tip";
@@ -405,13 +405,11 @@ function CreatorList({
   creators,
   selected,
   onSelect,
-  columns,
   t,
 }: {
   creators: ReviewCreator[];
-  selected: string | null;
+  selected: string;
   onSelect: (channelId: string) => void;
-  columns: boolean;
   t: T;
 }) {
   const [query, setQuery] = useState("");
@@ -432,12 +430,7 @@ function CreatorList({
       ) : (
         <ul
           aria-label={t("youtubeOpinions.review.creatorsLabel")}
-          className={cn(
-            "mt-2 grid gap-0.5",
-            columns
-              ? "sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-              : "max-h-[calc(100vh-14rem)] overflow-y-auto",
-          )}
+          className="mt-2 grid max-h-[calc(100vh-14rem)] gap-0.5 overflow-y-auto"
         >
           {matches.map((creator) => (
             <li key={creator.channel_id} className="min-w-0">
@@ -455,16 +448,59 @@ function CreatorList({
   );
 }
 
+/** Narrow screens: the creators as one horizontally scrolling row of avatar chips. */
+function CreatorStrip({
+  creators,
+  selected,
+  onSelect,
+  t,
+}: {
+  creators: ReviewCreator[];
+  selected: string;
+  onSelect: (channelId: string) => void;
+  t: T;
+}) {
+  return (
+    <ul
+      aria-label={t("youtubeOpinions.review.creatorsLabel")}
+      className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none]"
+    >
+      {creators.map((creator) => {
+        const name = creator.channel_title || creator.channel_id;
+        const active = creator.channel_id === selected;
+        return (
+          <li key={creator.channel_id} className="shrink-0">
+            <button
+              type="button"
+              aria-current={active ? "true" : undefined}
+              onClick={() => onSelect(creator.channel_id)}
+              className={cn(
+                "flex max-w-[11rem] items-center gap-1.5 rounded-full border py-1 pl-1 pr-3 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                active
+                  ? "border-primary/40 bg-primary/10 font-semibold"
+                  : "border-border hover:bg-muted/60",
+              )}
+            >
+              <CreatorAvatar name={name} avatarUrl={creator.channel_avatar_url} size="xs" />
+              <span className="truncate">{name}</span>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 /**
- * The review page's creator view: every creator in a list; pick one to see each stock they
- * talked about and what it has done since their latest call on it.
+ * The review page's creator view: the creators beside the selected one (the most active by
+ * default), with each stock they talked about and what it has done since their latest call.
  */
 export default function CreatorOpinionsReview({
   channelId,
   onChannel,
 }: {
   channelId: string | null;
-  onChannel: (channelId: string | null) => void;
+  onChannel: (channelId: string) => void;
 }) {
   const { t } = useTranslation();
   const resource = useCachedResource(
@@ -476,10 +512,9 @@ export default function CreatorOpinionsReview({
 
   if (!creators) {
     return resource.loading ? (
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">
-        {Array.from({ length: 6 }, (_, index) => (
-          <Skeleton key={index} className="h-14 rounded-xl" />
-        ))}
+      <div className="grid gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]" aria-busy="true">
+        <Skeleton className="hidden h-96 rounded-2xl lg:block" />
+        <Skeleton className="h-96 rounded-2xl" />
       </div>
     ) : (
       <ListCard>
@@ -496,11 +531,13 @@ export default function CreatorOpinionsReview({
     );
   }
 
-  if (!channelId) {
+  // No creator in the address: show the most active one rather than an empty picker.
+  const selected = channelId ?? creators[0]?.channel_id;
+  if (!selected) {
     return (
-      <section className="min-w-0" aria-label={t("youtubeOpinions.review.viewCreator")}>
-        <CreatorList creators={creators} selected={null} onSelect={onChannel} columns t={t} />
-      </section>
+      <ListCard>
+        <ListEmptyState title={t("youtubeOpinions.review.creatorEmpty")} />
+      </ListCard>
     );
   }
 
@@ -510,26 +547,12 @@ export default function CreatorOpinionsReview({
       aria-label={t("youtubeOpinions.review.viewCreator")}
     >
       <div className="hidden min-w-0 lg:sticky lg:top-4 lg:block">
-        <CreatorList
-          creators={creators}
-          selected={channelId}
-          onSelect={onChannel}
-          columns={false}
-          t={t}
-        />
+        <CreatorList creators={creators} selected={selected} onSelect={onChannel} t={t} />
       </div>
-      <div className="min-w-0">
-        <Button
-          size="sm"
-          variant="ghost"
-          className="mb-2 lg:hidden"
-          onClick={() => onChannel(null)}
-        >
-          <ArrowLeft className="mr-1 h-4 w-4" aria-hidden="true" />
-          {t("youtubeOpinions.review.allCreators")}
-        </Button>
-        <CreatorStocks key={channelId} channelId={channelId} t={t} />
+      <div className="min-w-0 lg:hidden">
+        <CreatorStrip creators={creators} selected={selected} onSelect={onChannel} t={t} />
       </div>
+      <CreatorStocks key={selected} channelId={selected} t={t} />
     </section>
   );
 }
