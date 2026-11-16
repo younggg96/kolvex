@@ -277,6 +277,15 @@ class CreatorOpinionTests(unittest.TestCase):
         for word in ("mean", "median", "beat", "share", "rank", "signed"):
             self.assertNotIn(word, text)
 
+    def test_each_opinion_carries_its_move_to_the_latest_close(self):
+        found = review.creator_opinions(lambda: self.rows, "cA", **self.options)
+        for item in found["opinions"]:
+            latest = item["latest"]
+            self.assertEqual(set(latest),
+                             {"sessions", "exit_date", "return_pct", "benchmark_return_pct"})  # fmt: skip
+            self.assertGreaterEqual(latest["sessions"], 1)
+            self.assertEqual(latest["exit_date"], found["as_of"])
+
     def test_unknown_creator_has_no_opinions(self):
         found = review.creator_opinions(lambda: self.rows, "nobody", **self.options)
         self.assertEqual((found["total"], found["opinions"], found["stocks"]), (0, [], []))

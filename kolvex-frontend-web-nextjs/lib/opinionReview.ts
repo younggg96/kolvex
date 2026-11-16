@@ -297,6 +297,16 @@ export interface CreatorOpinion {
   published_at: string | null;
   entry_date: string;
   horizons: Record<string, ReviewMove>;
+  /** Entry open to the latest completed close; absent in a snapshot built before it existed. */
+  latest?: ReviewSince | null;
+}
+
+/** What the stock and the benchmark did from the entry open to the latest completed close. */
+export interface ReviewSince {
+  sessions: number;
+  exit_date: string;
+  return_pct: number;
+  benchmark_return_pct: number | null;
 }
 
 export interface CreatorOpinions {
@@ -328,4 +338,75 @@ export function reviewRouteSearch(view: ReviewView, creator: string | null): str
   const params = new URLSearchParams({ view });
   if (creator) params.set("creator", creator);
   return `?${params.toString()}`;
+}
+
+/** One stock a creator talked about: every call on it, newest first. */
+export interface CreatorStock {
+  ticker: string;
+  calls: CreatorOpinion[];
+  latest: CreatorOpinion;
+  bullish: number;
+  bearish: number;
+}
+
+export type CreatorStockSort = "recent" | "mentions" | "move";
+export type CreatorStockFilter = "all" | ReviewSentiment;
+
+function publishedKey(item: CreatorOpinion): string {
+  return item.published_at || item.entry_date || "";
+}
+
+/**
+ * A creator's opinions grouped by stock. `filter` keeps stocks whose latest call has that
+ * direction; `move` sorts by the stock's change since the latest call, unknown moves last.
+ */
+export function creatorStocks(
+  opinions: CreatorOpinion[],
+  sort: CreatorStockSort = "recent",
+  filter: CreatorStockFilter = "all",
+): CreatorStock[] {
+  const groups = new Map<string, CreatorOpinion[]>();
+  for (const item of opinions) {
+    const list = groups.get(item.ticker);
+    if (list) list.push(item);
+    else groups.set(item.ticker, [item]);
+  }
+  const stocks: CreatorStock[] = [];
+  groups.forEach((calls, ticker) => {
+    calls.sort((a, b) => publishedKey(b).localeCompare(publishedKey(a)));
+    stocks.push({
+      ticker,
+      calls,
+      latest: calls[0],
+      bullish: calls.filter((item) => item.sentiment === "bullish").length,
+      bearish: calls.filter((item) => item.sentiment === "bearish").length,
+    });
+  });
+  const kept = filter === "all" ? stocks : stocks.filter((s) => s.latest.sentiment === filter);
+  const recent = (a: CreatorStock, b: CreatorStock) =>
+    publishedKey(b.latest).localeCompare(publishedKey(a.latest)) ||
+    a.ticker.localeCompare(b.ticker);
+  const move = (s: CreatorStock) => s.latest.latest?.return_pct ?? null;
+  return kept.sort((a, b) => {
+    if (sort === "mentions") return b.calls.length - a.calls.length || recent(a, b);
+    if (sort === "move") {
+      const x = move(a);
+      const y = move(b);
+      if (x === null || y === null) return x === y ? recent(a, b) : x === null ? 1 : -1;
+      return y - x || recent(a, b);
+    }
+    return recent(a, b);
+  });
+}
+
+/** Creators whose name or channel id contains the query, ignoring case. */
+export function matchCreators<C extends { channel_id: string; channel_title: string | null }>(
+  creators: C[],
+  query: string,
+): C[] {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return creators;
+  return creators.filter((creator) =>
+    `${creator.channel_title ?? ""} ${creator.channel_id}`.toLowerCase().includes(needle),
+  );
 }

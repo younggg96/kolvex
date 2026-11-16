@@ -146,3 +146,54 @@ test("the creator view is read from and written to the query string", () => {
   assert.equal(review.reviewRouteSearch("creators", null), "?view=creators");
   assert.equal(review.reviewRouteSearch("creators", "UC1"), "?view=creators&creator=UC1");
 });
+
+test("creatorStocks groups calls by stock, newest call first", () => {
+  const call = (id, ticker, sentiment, published_at, ret) => ({
+    id,
+    ticker,
+    sentiment,
+    published_at,
+    entry_date: published_at.slice(0, 10),
+    horizons: {},
+    latest:
+      ret === null
+        ? null
+        : { sessions: 3, exit_date: "2026-11-13", return_pct: ret, benchmark_return_pct: 1 },
+  });
+  const opinions = [
+    call("a1", "AAPL", "bullish", "2026-10-01T12:00:00Z", 8),
+    call("a2", "AAPL", "bearish", "2026-11-10T12:00:00Z", -2),
+    call("n1", "NVDA", "bullish", "2026-11-12T12:00:00Z", 5),
+    call("m1", "MU", "bearish", "2026-09-01T12:00:00Z", null),
+  ];
+  const recent = review.creatorStocks(opinions);
+  assert.deepEqual(Array.from(recent.map((s) => s.ticker)), ["NVDA", "AAPL", "MU"]);
+  assert.equal(recent[1].latest.id, "a2");
+  assert.deepEqual([recent[1].bullish, recent[1].bearish], [1, 1]);
+  assert.equal(review.creatorStocks(opinions, "mentions")[0].ticker, "AAPL");
+  // Unknown moves sort last, not as zero.
+  assert.deepEqual(Array.from(review.creatorStocks(opinions, "move").map((s) => s.ticker)), [
+    "NVDA",
+    "AAPL",
+    "MU",
+  ]);
+  // The filter looks at the latest call on each stock.
+  assert.deepEqual(
+    Array.from(review.creatorStocks(opinions, "recent", "bearish").map((s) => s.ticker)),
+    ["AAPL", "MU"],
+  );
+});
+
+test("matchCreators finds creators by name or id, ignoring case", () => {
+  const creators = [
+    { channel_id: "UC1", channel_title: "NaNa说美股" },
+    { channel_id: "UC2", channel_title: "StockTalkwithJay" },
+  ];
+  assert.equal(review.matchCreators(creators, " ").length, 2);
+  assert.deepEqual(Array.from(review.matchCreators(creators, "jay").map((c) => c.channel_id)), [
+    "UC2",
+  ]);
+  assert.deepEqual(Array.from(review.matchCreators(creators, "uc1").map((c) => c.channel_id)), [
+    "UC1",
+  ]);
+});

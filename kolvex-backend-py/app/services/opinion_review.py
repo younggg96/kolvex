@@ -41,7 +41,7 @@ MAX_LISTED_OPINIONS = 200
 # Snapshot keys that never leave the server through /review (per-creator data lives here).
 PRIVATE_KEYS = ("creators", "events")
 # Bumped when the snapshot shape changes, so an older file is rebuilt instead of served.
-SNAPSHOT_VERSION = 5
+SNAPSHOT_VERSION = 6
 RETRY_AFTER_FAILURE_SECONDS = 600.0
 SNAPSHOT_PATH = Path(
     os.getenv(
@@ -156,6 +156,17 @@ def _event_record(event: dict, opinion: dict) -> dict[str, Any]:
                 "benchmark_return_pct": result["benchmark_return_pct"],
                 "excess_return_pct": result["excess_return_pct"],
             }
+    # Entry open -> the latest completed close, so a call younger than every horizon still
+    # shows what the stock has done since.
+    latest = event.get("latest") or {}
+    since = None
+    if latest.get("return_pct") is not None:
+        since = {
+            "sessions": latest["sessions"],
+            "exit_date": latest["exit_date"],
+            "return_pct": latest["return_pct"],
+            "benchmark_return_pct": latest.get("benchmark_return_pct"),
+        }
     return {
         "id": str(opinion.get("id")),
         "channel_id": opinion.get("channel_id"),
@@ -169,6 +180,7 @@ def _event_record(event: dict, opinion: dict) -> dict[str, Any]:
         "published_at": opinion.get("video_published_at"),
         "entry_date": event["entry_date"],
         "horizons": horizons,
+        "latest": since,
     }
 
 
@@ -471,7 +483,8 @@ def opinions_in_bin(
             continue
         value = result["excess_return_pct"]
         if (low is None or value >= low) and (high is None or value < high):
-            matches.append({**{k: v for k, v in record.items() if k != "horizons"}, **result})
+            listed = {k: v for k, v in record.items() if k not in ("horizons", "latest")}
+            matches.append({**listed, **result})
     matches.sort(key=lambda item: (item.get("published_at") or "", item["id"]), reverse=True)
     return {
         "horizon": horizon,

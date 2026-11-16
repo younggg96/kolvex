@@ -722,7 +722,10 @@ export default function OpinionReview() {
           />
 
           {view === "creators" ? (
-            <CreatorOpinionsReview channelId={creator} onChannel={openCreator} />
+            <CreatorOpinionsReview
+              channelId={creator}
+              onChannel={(channelId) => showView("creators", channelId)}
+            />
           ) : review ? (
             <>
               <div className="flex flex-wrap items-center gap-3">
