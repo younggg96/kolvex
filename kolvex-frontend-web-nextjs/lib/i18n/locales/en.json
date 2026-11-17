@@ -45,7 +45,8 @@
     "refresh": "Refresh",
     "previous": "Previous",
     "pageNotFound": "Page not found",
-    "backHome": "Back to home"
+    "backHome": "Back to home",
+    "machineTranslatedOriginal": "Machine translated · Original"
   },
   "sidebar": {
     "paperTrading": "Paper trading",

@@ -1,6 +1,6 @@
 "use client";
 
-import { chineseTextLanguage } from "@/lib/contentLanguage";
+import TranslatedText from "@/components/common/TranslatedText";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 import { formatOpinionDateShort } from "@/lib/opinionDates";
@@ -69,7 +69,7 @@ export default function StockDirectoryInsight({
             {author && <span className="font-medium text-foreground/80">{author}</span>}
             {date && <span className="tabular-nums"> · {date}</span>}
             {author && <span aria-hidden="true">　</span>}
-            <span lang={chineseTextLanguage(reason)}>{reason}</span>
+            <TranslatedText text={reason} />
           </>
         ) : (
           t("youtubeOpinions.directory.noReason")

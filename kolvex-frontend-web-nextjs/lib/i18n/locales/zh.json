@@ -45,7 +45,8 @@
     "refresh": "刷新",
     "previous": "上一页",
     "pageNotFound": "找不到页面",
-    "backHome": "返回首页"
+    "backHome": "返回首页",
+    "machineTranslatedOriginal": "机器翻译 · 原文"
   },
   "sidebar": {
     "paperTrading": "虚拟交易",

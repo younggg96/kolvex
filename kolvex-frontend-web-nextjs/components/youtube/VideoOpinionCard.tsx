@@ -1,5 +1,6 @@
 "use client";
 
+import TranslatedText, { useEnglishTranslation } from "@/components/common/TranslatedText";
 import { useId, useState } from "react";
 import Link from "next/link";
 import { ChevronDown, PlayCircle } from "lucide-react";
@@ -71,7 +72,11 @@ export default function VideoOpinionCard({
   const [expanded, setExpanded] = useState(false);
   const opinionsId = useId();
   const video = group.video;
-  const title = video.video_title || t("youtubeOpinions.untitledVideo");
+  const videoTitle = useEnglishTranslation(video.video_title);
+  const title = videoTitle.text || t("youtubeOpinions.untitledVideo");
+  const hoverTitle = videoTitle.translated
+    ? `${t("common.machineTranslatedOriginal")}: ${videoTitle.original}`
+    : title;
   const published = video.video_published_at || video.opinion_date || undefined;
   const creator = group.creator || group.opinions[0];
   const collapsedRows = compact ? 2 : 3;
@@ -89,7 +94,7 @@ export default function VideoOpinionCard({
 
   const heading = (
     <span
-      lang={chineseTextLanguage(video.video_title)}
+      lang={videoTitle.translated ? "en" : chineseTextLanguage(video.video_title)}
       className="line-clamp-2 text-base font-semibold leading-6 tracking-[-0.01em]"
     >
       {title}
@@ -133,14 +138,14 @@ export default function VideoOpinionCard({
               href={video.video_url}
               target="_blank"
               rel="noreferrer"
-              title={title}
+              title={hoverTitle}
               aria-label={title}
               className="rounded-sm hover:underline hover:underline-offset-4 focus-visible:outline-none "
             >
               {heading}
             </a>
           ) : (
-            <h3 title={title}>{heading}</h3>
+            <h3 title={hoverTitle}>{heading}</h3>
           )}
           <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.8125rem] text-muted-foreground tabular-nums">
             <time dateTime={published}>{formatOpinionDate(published, t("common.intlLocale"))}</time>
@@ -173,12 +178,11 @@ export default function VideoOpinionCard({
       </header>
 
       {group.video_summary && (
-        <p
-          lang={chineseTextLanguage(group.video_summary)}
+        <TranslatedText
+          as="p"
+          text={group.video_summary}
           className="mt-4 whitespace-pre-wrap text-sm leading-6 text-muted-foreground"
-        >
-          {group.video_summary}
-        </p>
+        />
       )}
 
       {opinions.length > 0 && (
@@ -230,7 +234,7 @@ export default function VideoOpinionCard({
                         {t("youtubeOpinions.mixed")}
                       </span>
                     )}
-                    <span lang={chineseTextLanguage(summary)}>{summary}</span>
+                    <TranslatedText text={summary} />
                   </span>
                   <span
                     className={cn(

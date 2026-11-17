@@ -39,7 +39,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 
 | 功能 | ID | Web 入口 | App 入口 | 后端 | 文档 | App |
 | --- | --- | --- | --- | --- | --- | --- |
-| YouTube 博主观点、博主 / 股票目录 | `youtubeOpinions` | `/dashboard/youtube-opinions` | `(tabs)/opinions`、`/creators`、`/creator/youtube/[id]` | `youtube_opinions.py` | [youtube-channel-profiles.md](../youtube-channel-profiles.md) | ◐ |
+| YouTube 博主观点、博主 / 股票目录（英文界面自动翻译中文观点） | `youtubeOpinions` | `/dashboard/youtube-opinions` | `(tabs)/opinions`、`/creators`、`/creator/youtube/[id]` | `youtube_opinions.py` | [youtube-channel-profiles.md](../youtube-channel-profiles.md)、[内容翻译](../content-translation.md) | ◐ |
 | X 博主内容与翻译（每 6 小时采集并自动入库，Web 优先读取后台中文译文） | `youtubeOpinions` | `/dashboard/x-opinions` | `opinions` 的 X tab、`/creator/x/[id]` | `x_content.py` | [x-content.md](../x-content.md)、[内容翻译](../content-translation.md) | ◐ |
 | Reddit 热度榜 | `youtubeOpinions` | `/dashboard/reddit-opinions` | `opinions` 的 Reddit tab | `reddit_opinions.py` | `PRODUCT.md` | ✅ |
 | 观点事后表现（发布后 5 / 20 个交易日股价，对比 SPY；只陈述事实，不判对错） | `youtubeOpinions` | 股票页和博主 × 股票页的观点卡片（含「其他博主的看法」） | — | `youtube_opinions.py`（`/stocks/{ticker}/outcomes`） | [opinion-backtest.md](../opinion-backtest.md) | — |

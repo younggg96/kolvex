@@ -1,5 +1,6 @@
 "use client";
 
+import TranslatedText from "@/components/common/TranslatedText";
 import { PlayCircle } from "lucide-react";
 import CompanyLogo from "@/components/ui/company-logo";
 import CreatorAvatar from "./CreatorAvatar";
@@ -104,9 +105,11 @@ export default function OpinionCard({
       </header>
 
       {(opinion.summary || opinion.thesis) && (
-        <p className="mt-4 text-[0.9375rem] leading-7 text-foreground">
-          {opinion.summary || opinion.thesis}
-        </p>
+        <TranslatedText
+          as="p"
+          text={opinion.summary || opinion.thesis}
+          className="mt-4 text-[0.9375rem] leading-7 text-foreground"
+        />
       )}
 
       {(keyPoints.length > 0 || risks.length > 0) && (
@@ -125,7 +128,7 @@ export default function OpinionCard({
                       aria-hidden="true"
                       className="mt-[0.5625rem] h-1 w-1 shrink-0 rounded-full bg-positive-fill"
                     />
-                    <span>{point}</span>
+                    <TranslatedText text={point} />
                   </li>
                 ))}
               </ul>
@@ -143,7 +146,7 @@ export default function OpinionCard({
                       aria-hidden="true"
                       className="mt-[0.5625rem] h-1 w-1 shrink-0 rounded-full bg-negative-fill"
                     />
-                    <span>{risk}</span>
+                    <TranslatedText text={risk} />
                   </li>
                 ))}
               </ul>
@@ -169,14 +172,21 @@ export default function OpinionCard({
               className="group inline-flex max-w-full items-start gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none"
             >
               <PlayCircle className="mt-0.5 h-4 w-4 shrink-0" />
-              <span className="min-w-0 group-hover:underline">
-                {opinion.video_title || t("youtubeOpinions.openVideo")}
-              </span>
+              {opinion.video_title ? (
+                <TranslatedText
+                  text={opinion.video_title}
+                  className="min-w-0 group-hover:underline"
+                />
+              ) : (
+                <span className="min-w-0 group-hover:underline">
+                  {t("youtubeOpinions.openVideo")}
+                </span>
+              )}
             </a>
           ) : (
             <p className="flex items-start gap-2 text-sm text-muted-foreground">
               <PlayCircle className="mt-0.5 h-4 w-4 shrink-0" />
-              <span className="min-w-0">{opinion.video_title}</span>
+              <TranslatedText text={opinion.video_title} className="min-w-0" />
             </p>
           )}
         </footer>
