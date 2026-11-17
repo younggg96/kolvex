@@ -2,11 +2,8 @@ import { useState } from "react";
 import { Tabs } from "expo-router";
 import { NativeTabs } from "expo-router/native-tabs";
 import { Platform, View } from "react-native";
-import { BottomSheet, RNHostView } from "@expo/ui";
-import { presentationBackgroundInteraction } from "@expo/ui/swift-ui/modifiers";
 import { Dock } from "../../components/Dock";
-import { MoreMenu } from "../../components/MoreMenu";
-import { useLiquidGlass } from "../../components/UI";
+import MoreSheet from "../../components/native/MoreSheet";
 import { profile } from "../../lib/contentApi";
 import { useText } from "../../lib/i18n";
 import { useResource } from "../../lib/useResource";
@@ -29,7 +26,6 @@ function TabNavigator({ hidden }: { hidden: boolean }) {
   const t = useTheme();
   const text = useText();
   const { theme } = usePreferences();
-  const glass = useLiquidGlass();
   const user = useAuth().session?.user.id;
   const account = useResource(`dock-profile:${user}`, (signal) =>
     user ? profile(user, signal) : Promise.resolve(null),
@@ -100,23 +96,11 @@ function TabNavigator({ hidden }: { hidden: boolean }) {
             <NativeTabs.Trigger.Label hidden />
           </NativeTabs.Trigger>
         </NativeTabs>
-        <BottomSheet
-          isPresented={menuOpen}
-          onDismiss={() => setMenuOpen(false)}
-          containerColor={glass ? undefined : t.surface}
-          contentPadding={{ top: 28, bottom: 12, left: 16, right: 16 }}
-          // No dimmed backdrop: the page behind stays as it is.
-          modifiers={[presentationBackgroundInteraction("enabled")]}
-        >
-          <RNHostView matchContents={{ vertical: true }}>
-            <View>
-              <MoreMenu
-                onNavigate={() => setMenuOpen(false)}
-                isAdmin={!!account.data?.is_admin}
-              />
-            </View>
-          </RNHostView>
-        </BottomSheet>
+        <MoreSheet
+          open={menuOpen}
+          onClose={() => setMenuOpen(false)}
+          isAdmin={!!account.data?.is_admin}
+        />
       </>
     );
   }
