@@ -10,6 +10,7 @@ import { useAvailableProviders } from "@/hooks/useAvailableProviders";
 import { getFirstAvailableModelId } from "./ChatInput";
 import { evidenceStorageKey } from "./pageEvidence";
 import { DEFAULT_CHAT_SKILLS, toggleChatSkill, type ChatSkill } from "./chatSkills";
+import { readAiAssistantSettings } from "@/lib/aiAssistantSettings";
 import type { AIModel, ChatWelcomeProps, SearchSource } from "./types";
 
 interface ChatWelcomeContainerProps {
@@ -25,7 +26,7 @@ interface ChatWelcomeContainerProps {
     conversation: {
       id: string;
       title: string;
-    } | null
+    } | null,
   ) => void;
 }
 
@@ -41,12 +42,12 @@ export function ChatWelcomeContainer({
   onSubmitted,
 }: ChatWelcomeContainerProps) {
   const router = useRouter();
-  const [activeSources, setActiveSources] = useState<SearchSource[]>([
-    "plaid",
-    "portfolio",
-    "web",
-  ]);
+  const [activeSources, setActiveSources] = useState<SearchSource[]>(["plaid", "portfolio", "web"]);
   const [activeSkills, setActiveSkills] = useState<ChatSkill[]>([...DEFAULT_CHAT_SKILLS]);
+  // The saved default lives in this browser, so it is read after hydration.
+  useEffect(() => {
+    setActiveSkills([...readAiAssistantSettings().defaultSkills]);
+  }, []);
   const [isLoading, setIsLoading] = useState(false);
   const submittingRef = useRef(false);
   const [selectedModel, setSelectedModel] = useState<AIModel>("deepseek-flash");
@@ -98,9 +99,7 @@ export function ChatWelcomeContainer({
         params.set("sources", activeSources.join(","));
         params.set("model", selectedModel);
         params.set("skills", activeSkills.join(","));
-        router.push(
-          `/dashboard/chat/${conversationId}?${params.toString()}`
-        );
+        router.push(`/dashboard/chat/${conversationId}?${params.toString()}`);
         onSubmitted?.();
       } catch (error) {
         console.error("Failed to start chat:", error);
@@ -109,13 +108,20 @@ export function ChatWelcomeContainer({
         setIsLoading(false);
       }
     },
-    [createConversation, router, activeSources, activeSkills, selectedModel, decisionContext, onSubmitted]
+    [
+      createConversation,
+      router,
+      activeSources,
+      activeSkills,
+      selectedModel,
+      decisionContext,
+      onSubmitted,
+    ],
   );
 
   return (
     <div className={cn("flex h-full", className)}>
       <div className="flex-1 flex flex-col min-w-0 relative">
-
         {/* Content Area */}
         <div className="relative flex-1 flex flex-col overflow-hidden">
           <ChatWelcome

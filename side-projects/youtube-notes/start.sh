@@ -10,5 +10,6 @@ case "${1:-}" in
   sync) shift; exec .venv/bin/python sync_kolvex.py "$@" ;;
   combine) shift; exec .venv/bin/python combine.py "$@" ;;
   api) shift; exec .venv/bin/python server.py "$@" ;;
+  worker) shift; exec .venv/bin/python auto_import.py "$@" ;;
   *) exec .venv/bin/python youtube_transcribe.py "$@" ;;
 esac

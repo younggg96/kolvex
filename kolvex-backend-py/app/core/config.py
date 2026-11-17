@@ -3,16 +3,12 @@
 """
 
 import os
-from pydantic_settings import BaseSettings
 from typing import List, Union
+
 from pydantic import field_validator
-from dotenv import load_dotenv
-
-# 加载 .env 文件
-load_dotenv()
 
 
-class Settings(BaseSettings):
+class Settings:
     """应用配置"""
 
     # 基础配置
@@ -32,13 +28,9 @@ class Settings(BaseSettings):
     SUPABASE_SERVICE_KEY: str = os.getenv("SUPABASE_SERVICE_KEY", "")
 
     # JWT 配置
-    SECRET_KEY: str = os.getenv(
-        "SECRET_KEY", "your-secret-key-change-this-in-production"
-    )
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key-change-this-in-production")
     ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(
-        os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30")
-    )
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 
     # MCP Server 配置
     MCP_HOST: str = os.getenv("MCP_HOST", "0.0.0.0")
@@ -59,7 +51,7 @@ class Settings(BaseSettings):
     OLLAMA_TIMEOUT: float = float(os.getenv("OLLAMA_TIMEOUT", "60.0"))
 
     # ==================== 股票预警系统配置 ====================
-    
+
     # Finnhub API (实时股票数据)
     FINNHUB_API_KEY: str = os.getenv("FINNHUB_API_KEY", "")
 
@@ -68,18 +60,27 @@ class Settings(BaseSettings):
     ALPACA_API_SECRET_KEY: str = os.getenv("ALPACA_API_SECRET_KEY", "")
     ALPACA_OPTIONS_FEED: str = os.getenv("ALPACA_OPTIONS_FEED", "indicative")
     # Scheduled options-activity report (3 runs per trading day). Off by default so local dev does not hit Alpaca.
-    OPTIONS_ACTIVITY_WORKER_ENABLED: bool = os.getenv("OPTIONS_ACTIVITY_WORKER_ENABLED", "false").lower() == "true"
+    OPTIONS_ACTIVITY_WORKER_ENABLED: bool = (
+        os.getenv("OPTIONS_ACTIVITY_WORKER_ENABLED", "false").lower() == "true"
+    )
 
     # Kronos K-line forecast service (forecast_service/, separate deployment). Empty = disabled.
     FORECAST_SERVICE_URL: str = os.getenv("FORECAST_SERVICE_URL", "")
     FORECAST_SERVICE_TOKEN: str = os.getenv("FORECAST_SERVICE_TOKEN", "")
 
+    # Automatic YouTube opinion import. A local Mac worker (side-projects/youtube-notes)
+    # fetches transcripts and authenticates with this shared token; empty = disabled.
+    YOUTUBE_IMPORT_WORKER_TOKEN: str = os.getenv("YOUTUBE_IMPORT_WORKER_TOKEN", "")
+    YOUTUBE_IMPORT_MODEL: str = os.getenv("YOUTUBE_IMPORT_MODEL", "deepseek-v4-pro")
+    YOUTUBE_IMPORT_SCHEDULE_TIME: str = os.getenv("YOUTUBE_IMPORT_SCHEDULE_TIME", "21:00")
+    YOUTUBE_IMPORT_TIMEZONE: str = os.getenv("YOUTUBE_IMPORT_TIMEZONE", "America/Los_Angeles")
+
     # Free public government economic statistics.
     ECONOMIC_INDICATORS_WORKER_ENABLED: bool = True
-    
+
     # OpenAI API (AI 分析，可选)
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
-    
+
     # Twilio (WhatsApp 通知，可选)
     TWILIO_ACCOUNT_SID: str = os.getenv("TWILIO_ACCOUNT_SID", "")
     TWILIO_AUTH_TOKEN: str = os.getenv("TWILIO_AUTH_TOKEN", "")

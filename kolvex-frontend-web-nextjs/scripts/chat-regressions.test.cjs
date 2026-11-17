@@ -155,6 +155,18 @@ function harness(file, mocks = {}) {
     require(name) {
       if (name === "./pageEvidence") return evidenceModule.exports;
       if (name === "./chatSkills") return skillsModule.exports;
+      // Default AI settings: the real chatSkills defaults, every agent allowed.
+      if (name === "@/lib/aiAssistantSettings") {
+        return {
+          readAiAssistantSettings: () => ({
+            defaultSkills: skillsModule.exports.DEFAULT_CHAT_SKILLS,
+            disabledAgents: [],
+            multiAgent: "auto",
+            maxAgents: 3,
+          }),
+          allowedAgents: () => [],
+        };
+      }
       if (name === "react") return react;
       if (name === "react/jsx-runtime") return { jsx: element, jsxs: element };
       if (name === "@/lib/utils") return { cn: () => "" };
@@ -300,6 +312,15 @@ function detailFixture() {
     },
     "./workspace/WorkspacePicker": { WorkspacePicker: "workspace-picker" },
     "./workspace/WorkspacePanel": { WorkspacePanel: "workspace-panel" },
+    "./workspace/AgentSuggestion": {
+      AgentLaunchCard: "agent-launch-card",
+      useAgentLaunch: () => ({
+        launch: null,
+        start: async () => {},
+        confirm: () => {},
+        dismiss: () => {},
+      }),
+    },
     "./ChatHistorySheet": { ChatHistorySheet: "chat-history-sheet" },
     "@/lib/markdown/stockMentions": { findSymbols: () => [] },
     "next/link": { __esModule: true, default: "a" },

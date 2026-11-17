@@ -465,7 +465,7 @@ class StreamAgentTests(unittest.IsolatedAsyncioTestCase):
             patch.object(supervisor, "_create_agent_for_request", return_value=FakeAgent(events)),
         ):
             out = [e async for e in supervisor.stream_agent([HumanMessage(content="hi")])]
-        return [e for e in out if e["type"] != "status"]
+        return [e for e in out if e["type"] not in ("status", "agent")]
 
     async def test_answer_arrives_token_by_token(self):
         out = await self.run_stream(

@@ -2,16 +2,19 @@
 Chat API Schemas
 """
 
-from pydantic import BaseModel, Field
-from typing import Any, Optional, List
 from datetime import datetime
+from typing import Any, List, Optional
 
+from pydantic import BaseModel, Field
+
+from app.agent.agents import ChatAgent
 from app.agent.quote_evidence import QuoteEvidence
 from app.agent.revenue_evidence import RevenueEvidence
 
 
 class MessageSchema(BaseModel):
     """消息模型"""
+
     id: str
     role: str
     content: str
@@ -23,6 +26,7 @@ class MessageSchema(BaseModel):
 
 class ConversationSchema(BaseModel):
     """对话模型"""
+
     id: str
     title: str
     messages: List[MessageSchema] = []
@@ -32,6 +36,7 @@ class ConversationSchema(BaseModel):
 
 class ConversationListResponse(BaseModel):
     """对话列表响应"""
+
     conversations: List[ConversationSchema]
     total: int
     page: int
@@ -40,30 +45,34 @@ class ConversationListResponse(BaseModel):
 
 class CreateConversationRequest(BaseModel):
     """创建对话请求"""
+
     title: str = Field(default="New Chat", max_length=200)
 
 
 class UpdateConversationRequest(BaseModel):
     """更新对话请求"""
+
     title: str = Field(max_length=200)
 
 
 class AddMessageRequest(BaseModel):
     """添加消息请求"""
+
     role: str = Field(pattern="^(user|assistant|system)$")
     content: str = Field(min_length=1, max_length=100000)
 
 
 class SendMessageRequest(BaseModel):
     """发送消息请求（Agent 模式 - 自动生成 AI 回复）"""
+
     content: str = Field(min_length=1, max_length=100000)
     model: Optional[str] = Field(
         default=None,
-        description="Model ID to use (e.g. gpt-4o-mini, deepseek-chat, qwen-plus). If not set, uses server default."
+        description="Model ID to use (e.g. gpt-4o-mini, deepseek-chat, qwen-plus). If not set, uses server default.",
     )
     sources: Optional[List[str]] = Field(
         default=None,
-        description="Active data sources: web, portfolio, plaid. If not set, all sources are available."
+        description="Active data sources: web, portfolio, plaid. If not set, all sources are available.",
     )
     skills: Optional[List[str]] = Field(
         default=None,
@@ -74,10 +83,20 @@ class SendMessageRequest(BaseModel):
         max_length=100000,
         description="Page evidence for this turn only. It is not stored as the user message.",
     )
+    agent: Optional[ChatAgent] = Field(
+        default=None,
+        description="Pin a sub-agent (a workspace agent panel). Omit to route automatically.",
+    )
+    agents: Optional[List[ChatAgent]] = Field(
+        default=None,
+        max_length=20,
+        description="Agents automatic routing may pick (user settings and skills). Omit for all.",
+    )
 
 
 class MessageResponse(BaseModel):
     """消息响应"""
+
     id: str
     conversation_id: str
     role: str
@@ -90,11 +109,13 @@ class MessageResponse(BaseModel):
 
 class AgentMessageResponse(BaseModel):
     """Agent 消息响应（包含用户消息和 AI 回复）"""
+
     message: MessageResponse
     response: MessageResponse
 
 
 class SuccessResponse(BaseModel):
     """成功响应"""
+
     message: str
     success: bool = True

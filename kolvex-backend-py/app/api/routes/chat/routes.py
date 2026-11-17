@@ -391,6 +391,8 @@ async def send_message(
             data_gaps=gaps,
             user_api_keys=user_api_keys or None,
             memory_note=note,
+            agent=request.agent,
+            allowed_agents=request.agents,
         )
     except Exception as e:
         logger.error(f"Agent failed: {e}", exc_info=True)
@@ -525,6 +527,8 @@ async def stream_message(
             skills=request.skills,
             user_api_keys=user_api_keys or None,
             memory_note=note,
+            agent=request.agent,
+            allowed_agents=request.agents,
         ):
             event_type = event.get("type")
             if event_type == "tool_start":
@@ -589,12 +593,21 @@ async def stream_message(
                 publish(json.dumps(done))
                 return
 
-            if event_type in {"token", "token_reset", "status", "tool_start", "tool_end", "error"}:
+            if event_type in {
+                "token",
+                "token_reset",
+                "status",
+                "tool_start",
+                "tool_end",
+                "error",
+                "agent",
+                "agent_suggestion",
+            }:
                 publish(
                     json.dumps(
                         {
                             name: event[name]
-                            for name in ("type", "content", "stage", "tool")
+                            for name in ("type", "content", "stage", "tool", "agent", "agents")
                             if name in event
                         }
                     )

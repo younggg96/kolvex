@@ -30,7 +30,13 @@ function errorCode(error: unknown) {
  * Workspace state: detail, the viewed run and polling. Pass a conversationId to follow
  * the workspace that chat belongs to, or a workspaceId to open one directly.
  */
-export function useResearchWorkspace({ conversationId, workspaceId }: { conversationId?: string; workspaceId?: string }) {
+export function useResearchWorkspace({
+  conversationId,
+  workspaceId,
+}: {
+  conversationId?: string;
+  workspaceId?: string;
+}) {
   const [detail, setDetail] = useState<WorkspaceDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [unavailable, setUnavailable] = useState(false);
@@ -51,7 +57,8 @@ export function useResearchWorkspace({ conversationId, workspaceId }: { conversa
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const id = workspaceId ?? (conversationId ? (await workspaceForChat(conversationId))?.id : undefined);
+      const id =
+        workspaceId ?? (conversationId ? (await workspaceForChat(conversationId))?.id : undefined);
       setUnavailable(false);
       if (id) await loadDetail(id);
       else {
@@ -61,7 +68,10 @@ export function useResearchWorkspace({ conversationId, workspaceId }: { conversa
       }
     } catch (error) {
       // Before the migration runs the backend answers 503; the chat itself keeps working.
-      setUnavailable(errorCode(error) === "workspace_unavailable" || (error as WorkspaceApiError)?.status === 503);
+      setUnavailable(
+        errorCode(error) === "workspace_unavailable" ||
+          (error as WorkspaceApiError)?.status === 503,
+      );
       setDetail(null);
     } finally {
       setLoading(false);
@@ -105,18 +115,24 @@ export function useResearchWorkspace({ conversationId, workspaceId }: { conversa
     }
   }, []);
 
-  const join = useCallback(async (targetId: string) => {
-    if (!conversationId) return;
-    await attachChat(targetId, conversationId);
-    await loadDetail(targetId);
-    void loadWorkspaces();
-  }, [conversationId, loadDetail, loadWorkspaces]);
+  const join = useCallback(
+    async (targetId: string) => {
+      if (!conversationId) return;
+      await attachChat(targetId, conversationId);
+      await loadDetail(targetId);
+      void loadWorkspaces();
+    },
+    [conversationId, loadDetail, loadWorkspaces],
+  );
 
-  const createAndJoin = useCallback(async (title: string, tickers: string[]) => {
-    const workspace = await createWorkspace({ title, tickers });
-    await join(workspace.id);
-    return workspace;
-  }, [join]);
+  const createAndJoin = useCallback(
+    async (title: string, tickers: string[]) => {
+      const workspace = await createWorkspace({ title, tickers });
+      await join(workspace.id);
+      return workspace;
+    },
+    [join],
+  );
 
   const leave = useCallback(async () => {
     if (!conversationId) return;
@@ -127,11 +143,14 @@ export function useResearchWorkspace({ conversationId, workspaceId }: { conversa
     void loadWorkspaces();
   }, [conversationId, loadWorkspaces]);
 
-  const save = useCallback(async (values: { title?: string; brief?: string; tickers?: string[] }) => {
-    if (!detail) return;
-    await updateWorkspace(detail.id, values);
-    await loadDetail(detail.id, true);
-  }, [detail, loadDetail]);
+  const save = useCallback(
+    async (values: { title?: string; brief?: string; tickers?: string[] }) => {
+      if (!detail) return;
+      await updateWorkspace(detail.id, values);
+      await loadDetail(detail.id, true);
+    },
+    [detail, loadDetail],
+  );
 
   const remove = useCallback(async () => {
     if (!detail) return;
@@ -142,20 +161,32 @@ export function useResearchWorkspace({ conversationId, workspaceId }: { conversa
     void loadWorkspaces();
   }, [detail, loadWorkspaces]);
 
-  const start = useCallback(async (question: string, agents: ResearchAgent[], model?: string) => {
-    if (!detail) return;
-    const created = await startRun(detail.id, { question, agents, model });
-    viewedRunId.current = created.id;
-    // Show queued researchers immediately; polling fills them in.
-    setRun({
-      ...created,
-      results: agents.map((agent) => ({
-        id: agent, agent, status: "queued", summary: "", content: "", stance: null,
-        confidence: null, tools_used: [], error: null, started_at: null, completed_at: null,
-      })),
-    });
-    void loadDetail(detail.id, true);
-  }, [detail, loadDetail]);
+  const start = useCallback(
+    async (question: string, agents: ResearchAgent[], model?: string) => {
+      if (!detail) return;
+      const created = await startRun(detail.id, { question, agents, model });
+      viewedRunId.current = created.id;
+      // Show queued researchers immediately; polling fills them in.
+      setRun({
+        ...created,
+        results: agents.map((agent) => ({
+          id: agent,
+          agent,
+          status: "queued",
+          summary: "",
+          content: "",
+          stance: null,
+          confidence: null,
+          tools_used: [],
+          error: null,
+          started_at: null,
+          completed_at: null,
+        })),
+      });
+      void loadDetail(detail.id, true);
+    },
+    [detail, loadDetail],
+  );
 
   /** Starts a chat that already belongs to this workspace; returns its id for navigation. */
   const newChat = useCallback(async () => {
@@ -165,6 +196,11 @@ export function useResearchWorkspace({ conversationId, workspaceId }: { conversa
     return conversation.id;
   }, [detail]);
 
+  /** Re-reads the workspace (chats, agent panels) without changing the run being viewed. */
+  const reload = useCallback(async () => {
+    if (detail) await loadDetail(detail.id, true);
+  }, [detail, loadDetail]);
+
   const viewRun = useCallback(async (runId: string) => {
     viewedRunId.current = runId;
     const next = await getRun(runId);
@@ -172,8 +208,23 @@ export function useResearchWorkspace({ conversationId, workspaceId }: { conversa
   }, []);
 
   return {
-    detail, run, loading, unavailable, workspaces, listFailed,
-    refresh, loadWorkspaces, join, createAndJoin, leave, save, remove, start, viewRun, newChat,
+    detail,
+    run,
+    loading,
+    unavailable,
+    workspaces,
+    listFailed,
+    refresh,
+    reload,
+    loadWorkspaces,
+    join,
+    createAndJoin,
+    leave,
+    save,
+    remove,
+    start,
+    viewRun,
+    newChat,
     conversationId,
   };
 }

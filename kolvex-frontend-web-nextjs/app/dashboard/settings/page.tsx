@@ -54,6 +54,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { SettingsGroup, SettingsRow } from "@/components/ui/settings-group";
 import { ChatMemorySettings } from "@/components/settings/ChatMemorySettings";
+import { AiAssistantSettings } from "@/components/settings/AiAssistantSettings";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1198,6 +1199,7 @@ function SettingsContent() {
                         )}
                       </FieldRow>
                     </SettingsGroup>
+                    <AiAssistantSettings className="mt-6" />
                     <ChatMemorySettings className="mt-6" />
                   </SettingsSection>
                 </TabsContent>

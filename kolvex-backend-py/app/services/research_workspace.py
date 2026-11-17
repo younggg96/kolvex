@@ -15,6 +15,7 @@ from typing import Any, Callable, Literal, Optional
 
 from pydantic import BaseModel, Field
 
+from app.agent.agents import CHAT_AGENTS
 from app.core.report_format import REPORT_FORMATTING
 
 logger = logging.getLogger(__name__)
@@ -207,8 +208,17 @@ def delete_workspace(db: Any, user_id: str, workspace_id: str) -> None:
     db.table(WORKSPACES).delete().eq("id", workspace_id).eq("user_id", user_id).execute()
 
 
-def attach_chat(db: Any, user_id: str, workspace_id: str, conversation_id: str) -> dict:
-    """Adds a chat to a workspace, moving it if it already belonged to another one."""
+def attach_chat(
+    db: Any,
+    user_id: str,
+    workspace_id: str,
+    conversation_id: str,
+    agent: Optional[str] = None,
+) -> dict:
+    """Adds a chat to a workspace, moving it if it already belonged to another one.
+
+    With an agent the chat becomes that agent's panel; its turns are sent with the agent pinned.
+    """
     _owned_workspace(db, user_id, workspace_id)
     _owned_conversation(db, user_id, conversation_id)
     row = {
@@ -217,6 +227,11 @@ def attach_chat(db: Any, user_id: str, workspace_id: str, conversation_id: str) 
         "user_id": user_id,
         "added_at": utcnow(),
     }
+    if agent:
+        if agent not in CHAT_AGENTS:
+            raise WorkspaceError("invalid_agent")
+        # Only sent when set, so plain attaches keep working before the agent-column migration.
+        row["agent"] = agent
     db.table(CHATS).upsert(row, on_conflict="conversation_id").execute()
     db.table(WORKSPACES).update({"updated_at": utcnow()}).eq("id", workspace_id).eq(
         "user_id", user_id
@@ -262,7 +277,7 @@ def get_workspace_detail(db: Any, user_id: str, workspace_id: str) -> dict:
     workspace = _owned_workspace(db, user_id, workspace_id)
     links = (
         db.table(CHATS)
-        .select("conversation_id,added_at")
+        .select("*")  # "*" so the page still loads before the agent-column migration
         .eq("workspace_id", workspace_id)
         .order("added_at", desc=True)
         .execute()
@@ -285,6 +300,7 @@ def get_workspace_detail(db: Any, user_id: str, workspace_id: str) -> dict:
             "title": titles.get(link["conversation_id"], {}).get("title") or "",
             "updated_at": titles.get(link["conversation_id"], {}).get("updated_at"),
             "added_at": link["added_at"],
+            "agent": link.get("agent"),
         }
         for link in links
         if link["conversation_id"] in titles

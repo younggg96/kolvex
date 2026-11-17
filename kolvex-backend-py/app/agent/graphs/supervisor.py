@@ -105,7 +105,14 @@ Scheduled alerts and notifications are unavailable. Route market condition quest
 
 If unclear, default to "financial".
 
-Respond with ONLY the agent name, nothing else."""
+Several agents: when the question is broad or needs several different kinds of data at once (for example
+"NVDA 到底是怎么回事", "what's going on with TSLA", "PLTR 最近能不能关注", a stock's move together with its
+valuation, earnings and what creators or big investors are doing), answer with 2 to 4 names separated by
+commas, the most important first, e.g. "buzz, earnings, valuation". Prefer several specialists over
+"research" unless the user asks for a written report or a buy / sell decision. A narrow question gets ONE
+name.
+
+Respond with ONLY the agent name or comma-separated names, nothing else."""
 
 # 增强提示词 - 根据激活的 sources 添加优先级指引
 SOURCE_FOCUS_PROMPTS = {
@@ -246,6 +253,8 @@ async def run_agent(
     financial_evidence: Optional[List[Dict[str, Any]]] = None,
     data_gaps: Optional[List[Dict[str, Any]]] = None,
     memory_note: Optional[str] = None,
+    agent: Optional[str] = None,
+    allowed_agents: Optional[List[str]] = None,
 ) -> str:
     """
     运行 Agent 并返回最终回复
@@ -265,8 +274,13 @@ async def run_agent(
     # 解析模型
     provider, model = resolve_model_id(model_id)
 
-    # 1. 先分类意图
-    agent_type = await _classify_intent(messages, user_api_keys=user_api_keys)
+    # 1. 固定的 Agent 直接用；否则分类意图
+    if agent in AGENT_PROMPTS:
+        agent_type = agent
+    else:
+        agent_type = await _classify_intent(
+            messages, user_api_keys=user_api_keys, allowed=allowed_agents
+        )
 
     # 2. 创建对应 Agent (传入 user_id 以绑定用户数据工具)
     agent = _create_agent_for_request(
@@ -344,6 +358,8 @@ async def stream_agent(
     user_api_keys: Optional[Dict[str, str]] = None,
     skills: Optional[List[str]] = None,
     memory_note: Optional[str] = None,
+    agent: Optional[str] = None,
+    allowed_agents: Optional[List[str]] = None,
 ) -> AsyncGenerator[Dict[str, Any], None]:
     """
     流式运行 Agent，逐步返回事件
@@ -356,6 +372,8 @@ async def stream_agent(
         model_id: 前端传来的模型 ID
         sources: 激活的数据源
         user_api_keys: 用户自定义 API keys dict {provider: key}
+        agent: 固定使用的子 Agent（工作区面板）；为空时自动路由
+        allowed_agents: 自动路由只在这些 Agent 里选（用户设置 + 技能）；为空表示全部
 
     Yields:
         事件字典，包含 type 和 content
@@ -369,8 +387,27 @@ async def stream_agent(
         "content": "Understanding your request",
     }
 
-    # 1. 先分类意图
-    agent_type = await _classify_intent(messages, user_api_keys=user_api_keys)
+    # 1. 固定的 Agent 直接用；否则分类意图
+    pinned = agent in AGENT_PROMPTS
+    specialists: list[str] = []
+    agent_type = (
+        agent
+        if pinned
+        else await _classify_intent(
+            messages,
+            user_api_keys=user_api_keys,
+            specialists=specialists,
+            allowed=allowed_agents,
+        )
+    )
+    yield {"type": "agent", "agent": agent_type, "pinned": pinned}
+    # Several specialists: the router model's pick for a broad question, else the keyword groups.
+    if not pinned:
+        suggested = specialists or suggest_agents(last_user_text(messages))
+        if allowed_agents:
+            suggested = [name for name in suggested if name in allowed_agents]
+        if len(suggested) >= 2:
+            yield {"type": "agent_suggestion", "agents": suggested}
 
     # 2. 创建对应 Agent (传入 user_id 以绑定用户数据工具)
     agent = _create_agent_for_request(
@@ -583,6 +620,25 @@ _BUZZ_WORDS = re.compile(
 )
 
 
+# Specific agents in routing order. An explicit research ask comes before all of them and a short
+# figure lookup after them; neither is a specialist, so neither is suggested.
+_KEYWORD_AGENTS = (
+    ("paper_review", _PAPER_WORDS),
+    ("portfolio", _PORTFOLIO_WORDS),
+    ("smart_money", _SMART_MONEY_WORDS),
+    ("earnings", _EARNINGS_WORDS),
+    ("creators", _CREATOR_WORDS),
+    ("macro", _MACRO_WORDS),
+    ("valuation", _VALUATION_WORDS),
+    ("buzz", _BUZZ_WORDS),
+)
+MAX_SUGGESTED_AGENTS = 4
+
+
+def _question_text(message: str) -> str:
+    return message.split("\n\nKolvex page evidence", 1)[0].strip()
+
+
 def route_by_keywords(message: str) -> Optional[str]:
     """An agent name when the wording leaves no doubt, else None (ask the model).
 
@@ -590,37 +646,77 @@ def route_by_keywords(message: str) -> Optional[str]:
     disclosed money (13F, congress, options flow), earnings (which also reads creator opinions),
     creators, macro, valuation, market buzz, and short figure lookups.
     """
-    text = message.split("\n\nKolvex page evidence", 1)[0].strip()
+    text = _question_text(message)
     if _RESEARCH_WORDS.search(text):
         return "research"
-    if _PAPER_WORDS.search(text):
-        return "paper_review"
-    if _PORTFOLIO_WORDS.search(text):
-        return "portfolio"
-    if _SMART_MONEY_WORDS.search(text):
-        return "smart_money"
-    if _EARNINGS_WORDS.search(text):
-        return "earnings"
-    if _CREATOR_WORDS.search(text):
-        return "creators"
-    if _MACRO_WORDS.search(text):
-        return "macro"
-    if _VALUATION_WORDS.search(text):
-        return "valuation"
-    if _BUZZ_WORDS.search(text):
-        return "buzz"
+    for name, words in _KEYWORD_AGENTS:
+        if words.search(text):
+            return name
     if len(text) <= 80 and _LOOKUP_WORDS.search(text):
         return "financial"
     return None
 
 
+def suggest_agents(message: str) -> list[str]:
+    """Specialists a question spans when it spans two or more, else [].
+
+    Free (no model call): the same keyword groups as routing. The chat answers with the first one;
+    the UI offers to give each its own panel in a workspace. A research ask already combines angles,
+    and the earnings agent already reads creator opinions, so neither adds a suggestion.
+    """
+    text = _question_text(message)
+    if _RESEARCH_WORDS.search(text):
+        return []
+    found = [name for name, words in _KEYWORD_AGENTS if words.search(text)]
+    if "earnings" in found and "creators" in found:
+        found.remove("creators")
+    return found[:MAX_SUGGESTED_AGENTS] if len(found) >= 2 else []
+
+
+def last_user_text(messages: list) -> str:
+    for msg in reversed(messages):
+        if isinstance(msg, HumanMessage):
+            return msg.content if isinstance(msg.content, str) else str(msg.content)
+    return ""
+
+
+_AGENT_NAME = re.compile(r"\b(" + "|".join(sorted(AGENT_PROMPTS, key=len, reverse=True)) + r")\b")
+
+
+def parse_router_answer(text: str) -> list[str]:
+    """Agent names in the router's answer, in the order given, without repeats."""
+    names: list[str] = []
+    for match in _AGENT_NAME.finditer(text.lower()):
+        if match.group(1) not in names:
+            names.append(match.group(1))
+    return names
+
+
+def _available_note(pool: List[str]) -> str:
+    if len(pool) == len(AGENT_PROMPTS):
+        return ""
+    return (
+        "\n\nOnly these agents are available for this user: "
+        + ", ".join(f'"{name}"' for name in pool)
+        + ". Never answer with any other name."
+    )
+
+
 async def _classify_intent(
     messages: list,
     user_api_keys: Optional[Dict[str, str]] = None,
+    specialists: Optional[List[str]] = None,
+    allowed: Optional[List[str]] = None,
 ) -> str:
     """
     分类用户意图，决定路由到哪个子 Agent
+
+    When the router model names several agents for a broad question, they go into `specialists`
+    (2 to MAX_SUGGESTED_AGENTS, research excluded) and the first one answers in the chat.
+    `allowed` limits the choice (the user's settings and the chat's skills); empty means all.
     """
+    pool = [name for name in AGENT_PROMPTS if not allowed or name in allowed] or list(AGENT_PROMPTS)
+    fallback = "financial" if "financial" in pool else pool[0]
     # 获取最后一条用户消息
     last_user_msg = ""
     for msg in reversed(messages):
@@ -629,12 +725,13 @@ async def _classify_intent(
             break
 
     if not last_user_msg:
-        return "financial"
+        return fallback
 
     # Clear cases skip the ~1s router call: it was a quarter of a quick answer's latency.
-    if quick := route_by_keywords(
+    quick = route_by_keywords(
         last_user_msg if isinstance(last_user_msg, str) else str(last_user_msg)
-    ):
+    )
+    if quick in pool:
         logger.info(f"Intent by keywords: '{str(last_user_msg)[:50]}...' -> {quick}")
         return quick
 
@@ -643,19 +740,22 @@ async def _classify_intent(
         fast_llm = get_fast_llm(user_api_keys=user_api_keys)
         response = await fast_llm.ainvoke(
             [
-                SystemMessage(content=ROUTER_SYSTEM_PROMPT),
+                SystemMessage(content=ROUTER_SYSTEM_PROMPT + _available_note(pool)),
                 HumanMessage(content=last_user_msg),
             ]
         )
 
-        intent = response.content.strip().lower()
-
-        # 规范化：模型答案里出现的第一个合法名字；都没有就回到 financial
-        agent_type = next((name for name in AGENT_PROMPTS if name in intent), "financial")
+        names = [n for n in parse_router_answer(_content_to_text(response.content)) if n in pool]
+        # 规范化：模型答案里的第一个可用名字；都没有就回到 financial（或第一个可用的）
+        agent_type = names[0] if names else fallback
+        several = [name for name in names if name != "research"][:MAX_SUGGESTED_AGENTS]
+        if specialists is not None and len(several) >= 2:
+            specialists.extend(several)
+            agent_type = several[0]
 
         logger.info(f"Intent classified: '{last_user_msg[:50]}...' -> {agent_type}")
         return agent_type
 
     except Exception as e:
-        logger.warning(f"Intent classification failed: {e}, defaulting to financial")
-        return "financial"
+        logger.warning(f"Intent classification failed: {e}, defaulting to {fallback}")
+        return fallback

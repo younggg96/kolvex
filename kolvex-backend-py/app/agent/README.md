@@ -38,7 +38,7 @@
 | 接口 | 说明 |
 | --- | --- |
 | `POST /api/v1/chat/conversations/{id}/send` | 同步，返回完整回复 |
-| `POST /api/v1/chat/conversations/{id}/stream` | SSE 流式；`continue_on_disconnect=true` 时断开连接也继续生成 |
+| `POST /api/v1/chat/conversations/{id}/stream` | SSE 流式；`continue_on_disconnect=true` 时断开连接也继续生成。请求体可带 `agent` 固定子 Agent，跳过路由；`agents` 限定自动路由和多 Agent 建议只在这些 Agent 里选（Web 按「设置 → 偏好设置 → AI 助手」和本对话的技能算出；为空表示全部） |
 | `GET /api/v1/chat/memory` | 查看跨对话记忆：常用语言、查得最多的股票 |
 | `DELETE /api/v1/chat/memory` | 清除跨对话记忆 |
 | `GET` / `DELETE /api/v1/chat/conversations/{id}/stream` | 查询 / 停止正在进行的一轮 |
@@ -49,6 +49,8 @@
 | `type` | 含义 |
 | --- | --- |
 | `status` | 阶段：`routing` → `planning` → `writing` |
+| `agent` | 本轮用哪个子 Agent：`agent`，`pinned` 表示是请求固定的（工作区 Agent 面板） |
+| `agent_suggestion` | 问题需要两个及以上专项 Agent 时给出 `agents`（最多 4 个，不含 research）。来源：关键词没命中时，路由模型对宽泛问题（如「NVDA 到底是怎么回事」）可以返回逗号分隔的多个名字，第一个在聊天里回答；关键词命中时按关键词组判断，不额外调用模型。固定 Agent 时不发。Web 收到后自动在工作区为每个 Agent 建（或复用）面板并让它们在服务端同时开始 |
 | `token` | 回答文字片段 |
 | `token_reset` | 撤回刚才的片段：模型写了几个字后决定去调工具 |
 | `tool_start` / `tool_end` | 工具开始 / 结束，带工具名；前端按工具名显示中英文进度文案 |

@@ -15,7 +15,7 @@
       "runtimeExecutable": "sh",
       "runtimeArgs": [
         "-c",
-        "cd kolvex-frontend-web-nextjs && exec npx next dev -p 3210"
+        "cd /Users/guanggengyang/Documents/GitHub/kolvex/kolvex-frontend-web-nextjs && exec npx next dev -p 3210"
       ],
       "port": 3210
     },
@@ -36,6 +36,15 @@
         "cd kolvex-frontend-web-nextjs && exec npx next dev -p 3230"
       ],
       "port": 3230
+    },
+    {
+      "name": "backend-8080",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "cd /Users/guanggengyang/Documents/GitHub/kolvex/kolvex-backend-py && exec venv/bin/python -m uvicorn main:app --host 127.0.0.1 --port 8080 --reload"
+      ],
+      "port": 8080
     }
   ]
 }

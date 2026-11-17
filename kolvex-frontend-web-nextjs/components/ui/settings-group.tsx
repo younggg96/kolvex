@@ -8,7 +8,7 @@ export function SettingsGroup({
   children,
   className,
 }: {
-  label?: string;
+  label?: ReactNode;
   action?: ReactNode;
   children: ReactNode;
   className?: string;
@@ -49,7 +49,12 @@ export function SettingsRow({
   className?: string;
 }) {
   const labelNode = (
-    <div className={cn("flex min-w-0 items-center gap-2 text-[0.9375rem] font-medium text-foreground", typeof label === "string" && "shrink-0")}>
+    <div
+      className={cn(
+        "flex min-w-0 items-center gap-2 text-[0.9375rem] font-medium text-foreground",
+        typeof label === "string" && "shrink-0",
+      )}
+    >
       {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
       {label}
     </div>
@@ -64,16 +69,30 @@ export function SettingsRow({
   }
   if (input) {
     return (
-      <div className={cn("flex min-h-[3.25rem] flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:py-2.5", className)}>
+      <div
+        className={cn(
+          "flex min-h-[3.25rem] flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:py-2.5",
+          className,
+        )}
+      >
         {labelNode}
-        <div className="flex min-w-0 flex-1 text-[0.9375rem] sm:justify-end [&>*]:w-full sm:[&>*]:max-w-[17.5rem]">{children}</div>
+        <div className="flex min-w-0 flex-1 text-[0.9375rem] sm:justify-end [&>*]:w-full sm:[&>*]:max-w-[17.5rem]">
+          {children}
+        </div>
       </div>
     );
   }
   return (
-    <div className={cn("flex min-h-[3.25rem] items-center justify-between gap-4 px-4 py-2.5", className)}>
+    <div
+      className={cn(
+        "flex min-h-[3.25rem] items-center justify-between gap-4 px-4 py-2.5",
+        className,
+      )}
+    >
       {labelNode}
-      <div className="flex min-w-0 flex-1 justify-end text-right text-[0.9375rem] text-muted-foreground">{children}</div>
+      <div className="flex min-w-0 flex-1 justify-end text-right text-[0.9375rem] text-muted-foreground">
+        {children}
+      </div>
     </div>
   );
 }

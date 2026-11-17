@@ -320,11 +320,16 @@ class YouTubeStockOpinionService:
         self,
         body: Any,
         uploaded_by: Optional[str] = None,
+        known_publications: Optional[Dict[str, str]] = None,
     ) -> Dict[str, Any]:
         """Import one video object or a batch of them.
 
         The latest import of a video is authoritative: its rows replace every
         row previously stored for that video, including tickers it dropped.
+
+        ``known_publications`` maps video ids to publish times already verified
+        by Kolvex (the automatic importer passes the upload-coverage time); it is
+        used only when YouTube cannot be reached to verify a video.
         """
         payloads = _as_payloads(body)
         checked = self.validate_import(payloads)
@@ -336,7 +341,7 @@ class YouTubeStockOpinionService:
             for video in checked["videos"]
             for row in self._rows_from_payload(payloads[video["index"]], uploaded_by=uploaded_by)
         ]
-        await self.correct_publication_times(rows)
+        await self.correct_publication_times(rows, known_publications)
         corrected_channels = await self.correct_channel_ids(rows)
         await self._fill_missing_avatars(rows)
         result = await asyncio.to_thread(
@@ -376,7 +381,11 @@ class YouTubeStockOpinionService:
             "rows": written_rows,
         }
 
-    async def correct_publication_times(self, rows: List[Dict[str, Any]]) -> None:
+    async def correct_publication_times(
+        self,
+        rows: List[Dict[str, Any]],
+        known_publications: Optional[Dict[str, str]] = None,
+    ) -> None:
         """Never persist analyzer-generated timestamps for a real YouTube video."""
         video_ids = list(
             dict.fromkeys(row["video_id"] for row in rows if _youtube_video_id(row.get("video_id")))
@@ -384,6 +393,9 @@ class YouTubeStockOpinionService:
         if not video_ids:
             return
         publications = await channel_profiles.publications_for_videos(video_ids)
+        for video_id, published in (known_publications or {}).items():
+            if not parse_youtube_time(publications.get(video_id)) and parse_youtube_time(published):
+                publications[video_id] = published
         missing = [
             video_id for video_id in video_ids if not parse_youtube_time(publications.get(video_id))
         ]

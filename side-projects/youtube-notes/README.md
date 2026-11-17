@@ -6,7 +6,7 @@
 
 `channels.kolvex.json` 来自 [Kolvex 博主页](https://kolvex.app/dashboard/youtube-opinions?tab=creators) 使用的同一份博主聚合数据，通过公开 dashboard API 读取，当前包含 14 位：小左第一视角、老A聊美股、NaNa说美股、阳光财经、美投侃新闻、视野环球财经、StockTalkwithJay美股、Sam谈美股、明日走势—美股BTC量化交易、老李玩钱、投资TALK君、股市咖啡屋 Stock Cafe、XTrader猫姐美股、美投讲美股。
 
-默认每位匹配最新 **5 个**常规视频，扫描最近 20 条上传，不限制关键词和日期。它是可修改的起始配置；不会自动运行定时任务或向 Kolvex 写入分析结果。
+默认每位匹配最新 **5 个**常规视频，扫描最近 20 条上传，不限制关键词和日期。它是可修改的起始配置。只有安装了下面的「自动导入」worker，才会定时运行并通过后端写入分析结果。
 
 ## 安装
 
@@ -44,6 +44,18 @@ ollama pull qwen2.5:7b
 第一步只保存清单，不下载音频、不调用 AI。清单按发布时间从新到旧排序，使用公开接口，无需登录或数据库密钥。`run` 开始前会重新核对网站，移除已被导入的视频并纳入最新未追踪视频；仍未追踪的条目保留本地处理状态，已完成字幕不会重复处理。网站接口失败或任一博主状态无法确认时停止，不使用旧清单继续转写。查询范围截断时会提示本批次只包含已确认的未追踪视频。
 
 该命令使用专用清单，不混入以前 `batch discover` 累积的历史视频，也不会覆盖普通批次。字幕和股票观点导入是两个步骤：本地字幕完成但尚未导入网站时，视频仍会显示“未追踪”。如果想生成中文笔记而不是仅获取原文字幕，可省略 `--transcript-only`，这需要启动 Ollama。
+
+### 自动导入到 Kolvex（每天 21:00 + 后台立即运行）
+
+`auto_import.py` 是常驻本地 worker：每分钟询问 Kolvex 后端是否有任务（管理后台「YouTube 导入 → 自动导入 → 立即运行」，或每天 21:00 的定时任务）。有任务时执行上面三步中的前两步（未追踪清单 + 只取字幕），然后把每个视频的字幕发给后端；后端用 DeepSeek 分析并直接导入观点。DeepSeek Key 只在后端，worker 只持有一个共享 token。
+
+```bash
+cp .env.worker.example .env.worker   # 填 KOLVEX_API_URL 和 KOLVEX_WORKER_TOKEN
+./start.sh worker --once             # 先手动试一次：有任务就执行，没有就退出
+./install_worker.sh                  # 安装 LaunchAgent，开机自启、崩溃自动重启
+```
+
+日志写到 `batches/worker.log`；卸载用 `./install_worker.sh --uninstall`。Mac 休眠时不会运行，唤醒后补跑当天的任务；需要准时可以用「系统设置 → 电池 → 选项」或 `pmset repeat wake` 让电脑在 20:58 唤醒。后端设置见 `docs/youtube-auto-import.md`。
 
 ### 1. 同步博主名单
 
@@ -171,7 +183,7 @@ ollama pull qwen2.5:7b
 ## 限制与故障
 
 - YouTube 获取与首次模型下载需要网络。默认 AI 推理在本机；若改为远程 `OLLAMA_URL`，字幕将发送到该地址。
-- YouTube 的登录验证、429、PO Token 可能导致读取失败。先更新 yt-dlp 再重试；本版本没有 cookies 导入或 PO Token 提供器。
+- YouTube 的登录验证、429、PO Token 可能导致读取失败。先更新 yt-dlp 再重试。出现「Sign in to confirm you're not a bot」时，可设置 `YTDLP_COOKIES_FROM_BROWSER=chrome`（或 safari / firefox 等已登录 YouTube 的浏览器），或 `YTDLP_COOKIES=/path/cookies.txt`；worker 会从 `.env.worker` 读取。这会使用该浏览器的 YouTube 登录身份。没有 PO Token 提供器。
 - 某些视频需要 JavaScript runtime；程序会启用可找到的 Node.js，但版本也要符合 yt-dlp 要求。遇到 runtime 警告可安装 Deno：`brew install deno`。
 - MLX 转写仅支持 Apple Silicon；已有字幕路径不依赖 MLX。音频下载上限 500MB（无字幕时才需要下载，约可覆盖 7 小时）；有字幕的视频没有时长限制。
 - 各批次内部串行；同一清单有进程锁，不同清单之间没有全局 GPU 锁。CLI 中断后，已经保存的结果仍保留；重新运行可恢复清单，失败项使用 `--retry-failed`。
@@ -182,7 +194,7 @@ ollama pull qwen2.5:7b
 
 ```bash
 .venv/bin/python -m unittest discover -s tests -v
-.venv/bin/python -m compileall -q pipeline.py youtube_transcribe.py batch.py combine.py sync_kolvex.py server.py whisper_worker.py
+.venv/bin/python -m compileall -q pipeline.py youtube_transcribe.py batch.py combine.py sync_kolvex.py server.py whisper_worker.py auto_import.py
 ```
 
 测试覆盖 URL/频道边界、字幕解析、导出格式、分批翻译与摘要、发现筛选和去重、失败继续、跳过已完成与重试，以及可选 API。整合命令另用现有输出目录和 15 视频 ZIP 验证数据完整性。

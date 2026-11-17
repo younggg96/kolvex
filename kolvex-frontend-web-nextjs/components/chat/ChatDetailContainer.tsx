@@ -18,12 +18,7 @@ import {
   type QuoteEvidence,
   type RevenueEvidence,
 } from "@/lib/chatApi";
-import type {
-  AgentStatus,
-  AIModel,
-  SearchSource,
-  ToolStatus,
-} from "./types";
+import type { AgentStatus, AIModel, SearchSource, ToolStatus } from "./types";
 import { readChatSkills, toggleChatSkill } from "./chatSkills";
 import {
   evidenceStorageKey,
@@ -43,6 +38,8 @@ import { useChatWorkspace } from "./workspace/useChatWorkspace";
 import { WorkspacePicker } from "./workspace/WorkspacePicker";
 import { ChatHistorySheet } from "./ChatHistorySheet";
 import { WorkspacePanel } from "./workspace/WorkspacePanel";
+import { AgentLaunchCard, useAgentLaunch } from "./workspace/AgentSuggestion";
+import { allowedAgents, readAiAssistantSettings } from "@/lib/aiAssistantSettings";
 
 // ===== localStorage helpers for persisting chat preferences =====
 const PANEL_PREF_KEY = "kolvex:workspacePanel";
@@ -50,11 +47,7 @@ const PANEL_PREF_KEY = "kolvex:workspacePanel";
 const FLOATING_COMPOSER_QUERY = "(max-width: 1023px)";
 const PREFS_SOURCES_KEY = "kolvex:sources";
 const PREFS_MODEL_KEY = "kolvex:model";
-const AVAILABLE_SOURCES: SearchSource[] = [
-  "plaid",
-  "portfolio",
-  "web",
-];
+const AVAILABLE_SOURCES: SearchSource[] = ["plaid", "portfolio", "web"];
 
 function loadSavedSources(conversationId: string): SearchSource[] | null {
   try {
@@ -105,7 +98,7 @@ interface ChatDetailContainerProps {
     conversation: {
       id: string;
       title: string;
-    } | null
+    } | null,
   ) => void;
 }
 
@@ -135,7 +128,7 @@ export function ChatDetailContainer({
       const parsed = initialSources
         .split(",")
         .filter((source): source is SearchSource =>
-          AVAILABLE_SOURCES.includes(source as SearchSource)
+          AVAILABLE_SOURCES.includes(source as SearchSource),
         );
       if (parsed.length > 0) return parsed;
     }
@@ -144,7 +137,9 @@ export function ChatDetailContainer({
     return DEFAULT_SOURCES;
   });
 
-  const [activeSkills, setActiveSkills] = useState(() => readChatSkills(conversationId, initialSkills));
+  const [activeSkills, setActiveSkills] = useState(() =>
+    readChatSkills(conversationId, initialSkills, readAiAssistantSettings().defaultSkills),
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [backgroundActive, setBackgroundActive] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
@@ -165,7 +160,8 @@ export function ChatDetailContainer({
   });
 
   const [selectedModel, setSelectedModel] = useState<AIModel>(() => {
-    if (initialModel && MODEL_CONFIGS.some((model) => model.id === initialModel)) return initialModel as AIModel;
+    if (initialModel && MODEL_CONFIGS.some((model) => model.id === initialModel))
+      return initialModel as AIModel;
     const saved = loadSavedModel(conversationId);
     if (saved) return saved;
     return "deepseek-flash";
@@ -173,6 +169,14 @@ export function ChatDetailContainer({
   const [activeTools, setActiveTools] = useState<ToolStatus[]>([]);
   const copy = useCopy();
   const workspace = useChatWorkspace(conversationId);
+  // A question that spans several specialists is also handed to each of them in a workspace.
+  const {
+    launch: agentLaunch,
+    start: startAgentLaunch,
+    confirm: confirmAgentLaunch,
+    dismiss: dismissAgentLaunch,
+  } = useAgentLaunch(workspace, selectedModel);
+  const lastQuestionRef = useRef("");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [panelOpen, setPanelOpen] = useState(() => {
     try {
@@ -249,6 +253,12 @@ export function ChatDetailContainer({
             }
             break;
 
+          case "agent_suggestion":
+            if (event.agents?.length) {
+              void startAgentLaunch(event.agents, lastQuestionRef.current);
+            }
+            break;
+
           case "token_reset":
             accumulatedContent = "";
             setStreamingContent("");
@@ -260,9 +270,7 @@ export function ChatDetailContainer({
               const translationKey = `chat.tools.${toolName}`;
               const translatedLabel = t(translationKey);
               const label =
-                translatedLabel === translationKey
-                  ? t("chat.tools.generic")
-                  : translatedLabel;
+                translatedLabel === translationKey ? t("chat.tools.generic") : translatedLabel;
               setActiveTools((prev) => [
                 ...prev.filter((tool) => tool.name !== toolName),
                 { name: toolName, label, status: "running" },
@@ -273,9 +281,7 @@ export function ChatDetailContainer({
           case "tool_end":
             if (event.tool) {
               setActiveTools((prev) =>
-                prev.map((tool) =>
-                  tool.name === event.tool ? { ...tool, status: "done" } : tool
-                )
+                prev.map((tool) => (tool.name === event.tool ? { ...tool, status: "done" } : tool)),
               );
             }
             break;
@@ -288,7 +294,7 @@ export function ChatDetailContainer({
 
           case "error":
             throw new Error(event.content || "The AI agent could not complete the response.");
-          }
+        }
       });
 
       if (!completion) {
@@ -296,7 +302,7 @@ export function ChatDetailContainer({
       }
       return completion;
     },
-    [t]
+    [t, startAgentLaunch],
   );
 
   // ---- Notify parent when conversation changes ----
@@ -305,7 +311,7 @@ export function ChatDetailContainer({
       onConversationChange(
         currentConversation
           ? { id: currentConversation.id, title: currentConversation.title }
-          : null
+          : null,
       );
     }
   }, [currentConversation, onConversationChange]);
@@ -319,7 +325,9 @@ export function ChatDetailContainer({
         if (active) router.replace("/dashboard/chat");
       });
     }
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [conversationId, currentConversationId, selectConversation, router]);
 
   useEffect(() => {
@@ -327,8 +335,9 @@ export function ChatDetailContainer({
       const controller = abortControllerRef.current;
       abortControllerRef.current = null;
       controller?.abort();
+      dismissAgentLaunch();
     };
-  }, [conversationId]);
+  }, [conversationId, dismissAgentLaunch]);
 
   const reconcileHistory = useCallback(async () => {
     const history = await selectConversation(conversationId, true);
@@ -338,8 +347,9 @@ export function ChatDetailContainer({
     const index = history.messages.findIndex((message) =>
       turn.userId
         ? message.id === turn.userId
-        : message.role === "user" && message.content === turn.content &&
-          (message.timestamp?.getTime() ?? 0) >= turn.startedAt
+        : message.role === "user" &&
+          message.content === turn.content &&
+          (message.timestamp?.getTime() ?? 0) >= turn.startedAt,
     );
     if (index < 0 || history.messages[index + 1]?.role !== "assistant") return false;
     interruptedTurnRef.current = null;
@@ -414,24 +424,12 @@ export function ChatDetailContainer({
       }
     };
 
-    window.addEventListener(
-      "kolvex:selectChat",
-      handleSelectChat as EventListener
-    );
-    window.addEventListener(
-      "kolvex:deleteChat",
-      handleDeleteChat as EventListener
-    );
+    window.addEventListener("kolvex:selectChat", handleSelectChat as EventListener);
+    window.addEventListener("kolvex:deleteChat", handleDeleteChat as EventListener);
 
     return () => {
-      window.removeEventListener(
-        "kolvex:selectChat",
-        handleSelectChat as EventListener
-      );
-      window.removeEventListener(
-        "kolvex:deleteChat",
-        handleDeleteChat as EventListener
-      );
+      window.removeEventListener("kolvex:selectChat", handleSelectChat as EventListener);
+      window.removeEventListener("kolvex:deleteChat", handleDeleteChat as EventListener);
     };
   }, [conversationId, deleteConversation, router, selectConversation]);
 
@@ -446,8 +444,7 @@ export function ChatDetailContainer({
   };
 
   // Whether the user has any usable model
-  const isBlocked =
-    availableProviders !== undefined && availableProviders.length === 0;
+  const isBlocked = availableProviders !== undefined && availableProviders.length === 0;
 
   // ---- Submit user message from input ----
   const handleSubmit = useCallback(
@@ -463,6 +460,8 @@ export function ChatDetailContainer({
       setAgentStatus({ stage: "routing" });
       setStreamError(null);
       setLastSubmittedMessage(trimmedMessage);
+      dismissAgentLaunch();
+      lastQuestionRef.current = trimmedMessage;
       const turn: NonNullable<typeof interruptedTurnRef.current> = {
         content: trimmedMessage,
         startedAt: Date.now(),
@@ -470,9 +469,7 @@ export function ChatDetailContainer({
       interruptedTurnRef.current = turn;
 
       // Optimistic update: show user message immediately
-      messageIdsBeforePendingRef.current = new Set(
-        messages.map((message) => message.id)
-      );
+      messageIdsBeforePendingRef.current = new Set(messages.map((message) => message.id));
       setPendingUserMessage(trimmedMessage);
 
       const controller = new AbortController();
@@ -488,9 +485,10 @@ export function ChatDetailContainer({
             model: selectedModel,
             sources: activeSources,
             skills: activeSkills,
+            agents: allowedAgents(readAiAssistantSettings(), activeSkills),
             context: pageEvidence || undefined,
           },
-          controller.signal
+          controller.signal,
         );
 
         const completion = await processAgentStream(response, controller.signal, (message) => {
@@ -498,7 +496,7 @@ export function ChatDetailContainer({
           turn.userId = message.id;
           if (turn.stopRequested) {
             void stopAgentStream(conversationId).catch((error) =>
-              console.error("Unable to stop chat generation:", error)
+              console.error("Unable to stop chat generation:", error),
             );
           }
         });
@@ -521,8 +519,13 @@ export function ChatDetailContainer({
       } catch (error) {
         if (abortControllerRef.current !== controller) return;
         console.error("Chat error:", error);
-        turn.error = error instanceof Error ? error.message : "The AI agent may be unavailable. Please try again.";
-        const state = await getAgentStreamStatus(conversationId, controller.signal).catch(() => null);
+        turn.error =
+          error instanceof Error
+            ? error.message
+            : "The AI agent may be unavailable. Please try again.";
+        const state = await getAgentStreamStatus(conversationId, controller.signal).catch(
+          () => null,
+        );
         if (abortControllerRef.current !== controller) return;
         if (state?.active) {
           setBackgroundActive(true);
@@ -550,6 +553,7 @@ export function ChatDetailContainer({
       conversationId,
       backgroundActive,
       isBlocked,
+      dismissAgentLaunch,
       processAgentStream,
       reconcileHistory,
       rememberMessages,
@@ -559,7 +563,7 @@ export function ChatDetailContainer({
       activeSkills,
       messages,
       pageEvidence,
-    ]
+    ],
   );
 
   // Defer the initial send until effects have settled. Strict Mode's setup /
@@ -588,10 +592,12 @@ export function ChatDetailContainer({
       return;
     }
     if (turn) turn.error = undefined;
-    void stopAgentStream(conversationId).then(() => {
-      setBackgroundActive(false);
-      return reconcileHistory();
-    }).catch((error) => console.error("Unable to stop chat generation:", error));
+    void stopAgentStream(conversationId)
+      .then(() => {
+        setBackgroundActive(false);
+        return reconcileHistory();
+      })
+      .catch((error) => console.error("Unable to stop chat generation:", error));
   }, [conversationId, reconcileHistory]);
 
   const handleRetry = useCallback(async () => {
@@ -627,9 +633,7 @@ export function ChatDetailContainer({
         page: t("chat.evidence.page"),
       }[evidence.place]
     : "";
-  const evidenceLabel = evidence
-    ? formatEvidenceLabel(evidence, evidencePlace)
-    : undefined;
+  const evidenceLabel = evidence ? formatEvidenceLabel(evidence, evidencePlace) : undefined;
 
   // Tickers the reader already named (page context or their own words) get a logo and a
   // link in the answer, without waiting for the answer to build a table.
@@ -683,7 +687,7 @@ export function ChatDetailContainer({
       (message) =>
         message.role === "user" &&
         message.content.trim() === normalizedPendingMessage &&
-        !messageIdsBeforePendingRef.current.has(message.id)
+        !messageIdsBeforePendingRef.current.has(message.id),
     );
 
   // The composer grows with its text, so the message list's clearance tracks its real height.
@@ -691,7 +695,10 @@ export function ChatDetailContainer({
     const composer = composerRef.current;
     if (!composer) return;
     const syncHeight = () =>
-      composer.parentElement?.style.setProperty("--chat-composer-height", `${composer.offsetHeight}px`);
+      composer.parentElement?.style.setProperty(
+        "--chat-composer-height",
+        `${composer.offsetHeight}px`,
+      );
     syncHeight();
     const observer = new ResizeObserver(syncHeight);
     observer.observe(composer);
@@ -706,10 +713,14 @@ export function ChatDetailContainer({
 
     const floating = window.matchMedia(FLOATING_COMPOSER_QUERY);
     const syncKeyboardInset = () => {
-      const editing = document.activeElement === inputRef.current || thread.hasAttribute("data-chat-keyboard");
+      const editing =
+        document.activeElement === inputRef.current || thread.hasAttribute("data-chat-keyboard");
       // Mobile browsers can shrink or pan the visible area while leaving the layout viewport in place.
-      const keyboardOpen = floating.matches && editing && viewport.scale === 1
-        && document.documentElement.clientHeight - viewport.height > 120;
+      const keyboardOpen =
+        floating.matches &&
+        editing &&
+        viewport.scale === 1 &&
+        document.documentElement.clientHeight - viewport.height > 120;
       thread.toggleAttribute("data-chat-keyboard", keyboardOpen);
       if (keyboardOpen) {
         const visibleBottom = viewport.offsetTop + viewport.height;
@@ -760,7 +771,11 @@ export function ChatDetailContainer({
               : copy("New chat", "新对话")}
           </h1>
           <Button asChild variant="ghost" size="icon" className="max-md:h-11 max-md:w-11">
-            <Link href="/dashboard/chat" aria-label={copy("New chat", "新对话")} title={copy("New chat", "新对话")}>
+            <Link
+              href="/dashboard/chat"
+              aria-label={copy("New chat", "新对话")}
+              title={copy("New chat", "新对话")}
+            >
               <SquarePen className="h-4 w-4" aria-hidden="true" />
             </Link>
           </Button>
@@ -782,9 +797,7 @@ export function ChatDetailContainer({
         {/* Content Area */}
         <ChatMessageList
           messages={messages}
-          pendingUserMessage={
-            pendingMessageWasPersisted ? undefined : pendingUserMessage
-          }
+          pendingUserMessage={pendingMessageWasPersisted ? undefined : pendingUserMessage}
           streamingContent={streamingContent}
           streamingQuoteEvidence={streamingQuoteEvidence}
           streamingRevenueEvidence={streamingRevenueEvidence}
@@ -806,11 +819,20 @@ export function ChatDetailContainer({
           className={cn(
             "z-20 max-lg:pointer-events-none max-lg:absolute max-lg:inset-x-0 max-lg:bottom-[var(--chat-composer-bottom)] lg:sticky lg:bottom-0",
             // Once collapsed, only the round button takes touches; the rest scrolls the thread.
-            !composerCollapsed && "max-lg:[&_form]:pointer-events-auto"
+            !composerCollapsed && "max-lg:[&_form]:pointer-events-auto",
           )}
         >
           <div className="mx-auto max-w-3xl px-4 md:pb-4 pt-2">
-            {inputAction && <div className="flex justify-end pb-2 [&>*]:pointer-events-auto">{inputAction}</div>}
+            {inputAction && (
+              <div className="flex justify-end pb-2 [&>*]:pointer-events-auto">{inputAction}</div>
+            )}
+            {agentLaunch && (
+              <AgentLaunchCard
+                launch={agentLaunch}
+                onConfirm={confirmAgentLaunch}
+                onDismiss={dismissAgentLaunch}
+              />
+            )}
             <ChatInput
               value={query}
               onChange={setQuery}
@@ -846,15 +868,27 @@ export function ChatDetailContainer({
           aria-label={copy("Workspace research", "工作区研究")}
           className="hidden w-[24rem] shrink-0 overflow-y-auto border-l border-border xl:block 2xl:w-[26rem]"
         >
-          <WorkspacePanel workspace={workspace} conversationId={conversationId} model={selectedModel} />
+          <WorkspacePanel
+            workspace={workspace}
+            conversationId={conversationId}
+            model={selectedModel}
+          />
         </aside>
       )}
 
       <Sheet open={sheetOpen && hasWorkspace} onOpenChange={setSheetOpen}>
-        <SheetContent side="right" closeLabel={copy("Close", "关闭")} className="w-full overflow-y-auto sm:max-w-md">
+        <SheetContent
+          side="right"
+          closeLabel={copy("Close", "关闭")}
+          className="w-full overflow-y-auto sm:max-w-md"
+        >
           <SheetTitle className="sr-only">{copy("Workspace research", "工作区研究")}</SheetTitle>
           <div className="pt-8">
-            <WorkspacePanel workspace={workspace} conversationId={conversationId} model={selectedModel} />
+            <WorkspacePanel
+              workspace={workspace}
+              conversationId={conversationId}
+              model={selectedModel}
+            />
           </div>
         </SheetContent>
       </Sheet>

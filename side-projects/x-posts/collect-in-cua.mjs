@@ -18,7 +18,7 @@ export async function createXCollector(tab, root, runDirectory) {
   const extractor = await fs.readFile(root + "/extract-posts.js", "utf8");
   const extract = handle => tab.playwright.evaluate("(" + extractor + ")(" + JSON.stringify(handle) + ")");
   const observe = () => tab.getAXState({ emit: false, disableDiffing: true });
-  const blocked = state => /(?:^|\n)\s*\d+ (?:text|heading|button) (?:Rate limit exceeded|Something went wrong|Sign in to X|Verify your identity|Log in to X)(?:,|\s*$)/im.test(state);
+  const blocked = state => /(?:^|\n)\s*\d+ (?:text|heading|button) (?:Rate limit exceeded|Something went wrong|Sign in to X|Verify your identity|Log in to X|超出速率限制|出了点问题|登录 X|验证你的身份)(?:,|\s*$)/im.test(state);
   const navigate = async url => {
     if ((await tab.url())?.toLowerCase() !== url.toLowerCase()) await tab.goto(url);
   };
@@ -28,13 +28,13 @@ export async function createXCollector(tab, root, runDirectory) {
     const time = tab.playwright.locator('a[href$="/status/' + id + '"] time,a[href$="/status/' + id + '/history"] time');
     const state = await observe();
     if (blocked(state)) throw new Error("page_blocked");
-    await time.first().waitFor({ state: "attached", timeoutMs: 6000 });
+    await time.first().waitFor({ state: "attached", timeout: 6000 });
     const article = tab.playwright.locator("article").filter({ has: time });
     const original = article.getByRole("button", { name: /^(Show original|显示原文)$/ }).first();
     const more = article.getByTestId("tweet-text-show-more-link").first();
     for (const control of [original, more]) {
       if (await control.isVisible()) {
-        await control.click({ timeoutMs: 2200 });
+        await control.click({ timeout: 2200 });
         if (blocked(await observe())) throw new Error("page_blocked");
       }
     }
@@ -65,7 +65,7 @@ export async function createXCollector(tab, root, runDirectory) {
     try {
       await navigate(source.url);
       await tab.playwright.locator('article a[href*="/' + handle + '/status/" i] time')
-        .first().waitFor({ state: "attached", timeoutMs: 8000 }).catch(() => {});
+        .first().waitFor({ state: "attached", timeout: 8000 }).catch(() => {});
       for (let scroll = 0; scroll <= source.max_scrolls; scroll++) {
         const ax = await observe();
         if (blocked(ax)) {
@@ -73,7 +73,7 @@ export async function createXCollector(tab, root, runDirectory) {
           break;
         }
         const result = await extract(handle);
-        if (!result.ready || !result.order.length || !/tab \(selected[^\n]*\) Posts\b/.test(ax)) {
+        if (!result.ready || !result.order.length || !/tab \(selected[^\n]*\) (?:Posts\b|帖子|貼文)/.test(ax)) {
           reason = "page_unrecognized";
           break;
         }

@@ -6,12 +6,14 @@ POST   /research-workspaces                       — Create a workspace
 GET    /research-workspaces/{id}                  — Workspace with chats, runs and the latest run
 PATCH  /research-workspaces/{id}                  — Rename, edit brief or tickers
 DELETE /research-workspaces/{id}                  — Delete a workspace (chats stay)
-POST   /research-workspaces/{id}/chats            — Add a chat (moves it from another workspace)
+POST   /research-workspaces/{id}/chats            — Add a chat (moves it from another workspace);
+                                                 with "agent" it becomes that agent's panel
 DELETE /research-workspaces/chats/{conversation}  — Remove a chat from its workspace
 GET    /research-workspaces/by-chat/{conversation}— The workspace a chat belongs to, or null
 POST   /research-workspaces/{id}/runs             — Start a multi-agent research run
 GET    /research-workspaces/runs/{run_id}         — Run status with each researcher's result
 """
+
 import asyncio
 import logging
 from typing import Optional
@@ -19,6 +21,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from app.agent.agents import ChatAgent
 from app.api.dependencies.auth import get_current_user_id
 from app.core.supabase import get_supabase_service
 from app.services import research_workspace as ws
@@ -42,6 +45,8 @@ class WorkspacePatch(BaseModel):
 
 class AttachBody(BaseModel):
     conversation_id: str
+    # Bind the chat to one chat sub-agent: it shows as that agent's panel.
+    agent: Optional[ChatAgent] = None
 
 
 class RunBody(BaseModel):
@@ -94,8 +99,12 @@ async def get_workspace(workspace_id: str, user_id: str = Depends(get_current_us
 
 
 @router.patch("/{workspace_id}")
-async def update_workspace(workspace_id: str, body: WorkspacePatch, user_id: str = Depends(get_current_user_id)):
-    return await call(ws.update_workspace, user_id, workspace_id, body.model_dump(exclude_unset=True))
+async def update_workspace(
+    workspace_id: str, body: WorkspacePatch, user_id: str = Depends(get_current_user_id)
+):
+    return await call(
+        ws.update_workspace, user_id, workspace_id, body.model_dump(exclude_unset=True)
+    )
 
 
 @router.delete("/{workspace_id}")
@@ -105,8 +114,10 @@ async def delete_workspace(workspace_id: str, user_id: str = Depends(get_current
 
 
 @router.post("/{workspace_id}/chats")
-async def attach_chat(workspace_id: str, body: AttachBody, user_id: str = Depends(get_current_user_id)):
-    return await call(ws.attach_chat, user_id, workspace_id, body.conversation_id)
+async def attach_chat(
+    workspace_id: str, body: AttachBody, user_id: str = Depends(get_current_user_id)
+):
+    return await call(ws.attach_chat, user_id, workspace_id, body.conversation_id, body.agent)
 
 
 @router.post("/{workspace_id}/runs")
@@ -117,6 +128,7 @@ async def start_run(
     keys: UserApiKeysService = Depends(get_user_api_keys_service),
 ):
     from app.agent.llm import resolve_model_id
+
     provider, model = resolve_model_id(body.model)
     run = await call(ws.start_run, user_id, workspace_id, body.question, body.agents, model)
     try:

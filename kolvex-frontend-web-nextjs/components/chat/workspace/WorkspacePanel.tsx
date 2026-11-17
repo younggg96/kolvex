@@ -41,6 +41,7 @@ import {
   type ResearchAgent,
   type ResearchRun,
 } from "@/lib/researchWorkspaceApi";
+import { AgentDesk } from "./AgentDesk";
 import type { ChatWorkspace } from "./useChatWorkspace";
 import { workspaceErrorCode } from "./useChatWorkspace";
 import {
@@ -184,6 +185,8 @@ export function WorkspacePanel({
           </>
         )}
       </header>
+
+      {!conversationId && <AgentDesk workspace={workspace} model={model} />}
 
       <ResearchLauncher workspace={workspace} model={model} running={running} c={c} />
 

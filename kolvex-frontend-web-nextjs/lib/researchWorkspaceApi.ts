@@ -7,7 +7,31 @@ const API_PREFIX = "/api/research-workspaces";
 
 export const RESEARCH_AGENTS = ["market", "fundamentals", "news", "creators", "portfolio"] as const;
 export type ResearchAgent = (typeof RESEARCH_AGENTS)[number];
-export const DEFAULT_RESEARCH_AGENTS: ResearchAgent[] = ["market", "fundamentals", "news", "creators"];
+export const DEFAULT_RESEARCH_AGENTS: ResearchAgent[] = [
+  "market",
+  "fundamentals",
+  "news",
+  "creators",
+];
+
+/** Chat sub-agents (backend app/agent/agents.py). A workspace chat bound to one is its panel. */
+export const CHAT_AGENTS = [
+  "financial",
+  "valuation",
+  "earnings",
+  "smart_money",
+  "creators",
+  "buzz",
+  "macro",
+  "portfolio",
+  "paper_review",
+  "research",
+] as const;
+export type ChatAgent = (typeof CHAT_AGENTS)[number];
+
+export function isChatAgent(value: unknown): value is ChatAgent {
+  return typeof value === "string" && (CHAT_AGENTS as readonly string[]).includes(value);
+}
 
 export type Stance = "bullish" | "bearish" | "neutral" | "mixed";
 export type RunStatus = "running" | "completed" | "partial" | "failed";
@@ -61,6 +85,8 @@ export interface WorkspaceChat {
   title: string;
   updated_at: string | null;
   added_at: string;
+  /** Set when the chat is an agent panel; null for an ordinary chat. */
+  agent?: ChatAgent | null;
 }
 
 export interface WorkspaceDetail extends Workspace {
@@ -70,12 +96,19 @@ export interface WorkspaceDetail extends Workspace {
 }
 
 export class WorkspaceApiError extends Error {
-  constructor(public code: string, public status: number) {
+  constructor(
+    public code: string,
+    public status: number,
+  ) {
     super(code);
   }
 }
 
-async function request<T>(endpoint: string, init: RequestInit = {}, signal?: AbortSignal): Promise<T> {
+async function request<T>(
+  endpoint: string,
+  init: RequestInit = {},
+  signal?: AbortSignal,
+): Promise<T> {
   const response = await fetch(`${API_PREFIX}${endpoint}`, {
     ...init,
     signal,
@@ -101,7 +134,10 @@ export function getWorkspace(id: string, signal?: AbortSignal) {
   return request<WorkspaceDetail>(`/${id}`, {}, signal);
 }
 
-export function updateWorkspace(id: string, body: Partial<Pick<Workspace, "title" | "brief" | "tickers">>) {
+export function updateWorkspace(
+  id: string,
+  body: Partial<Pick<Workspace, "title" | "brief" | "tickers">>,
+) {
   return request<Workspace>(`/${id}`, { method: "PATCH", body: JSON.stringify(body) });
 }
 
@@ -109,8 +145,11 @@ export function deleteWorkspace(id: string) {
   return request<{ success: boolean }>(`/${id}`, { method: "DELETE" });
 }
 
-export function attachChat(workspaceId: string, conversationId: string) {
-  return request(`/${workspaceId}/chats`, { method: "POST", body: JSON.stringify({ conversation_id: conversationId }) });
+export function attachChat(workspaceId: string, conversationId: string, agent?: ChatAgent) {
+  return request(`/${workspaceId}/chats`, {
+    method: "POST",
+    body: JSON.stringify({ conversation_id: conversationId, agent }),
+  });
 }
 
 export function detachChat(conversationId: string) {
@@ -118,11 +157,18 @@ export function detachChat(conversationId: string) {
 }
 
 export async function workspaceForChat(conversationId: string, signal?: AbortSignal) {
-  return (await request<{ workspace: Workspace | null }>(`/by-chat/${conversationId}`, {}, signal)).workspace;
+  return (await request<{ workspace: Workspace | null }>(`/by-chat/${conversationId}`, {}, signal))
+    .workspace;
 }
 
-export function startRun(workspaceId: string, body: { question?: string; agents?: ResearchAgent[]; model?: string }) {
-  return request<ResearchRun>(`/${workspaceId}/runs`, { method: "POST", body: JSON.stringify(body) });
+export function startRun(
+  workspaceId: string,
+  body: { question?: string; agents?: ResearchAgent[]; model?: string },
+) {
+  return request<ResearchRun>(`/${workspaceId}/runs`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
 }
 
 export function getRun(runId: string, signal?: AbortSignal) {

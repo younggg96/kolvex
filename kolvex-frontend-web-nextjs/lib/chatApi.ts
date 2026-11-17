@@ -93,10 +93,7 @@ export interface SuccessResponse {
 
 // ===== API Request Helper =====
 
-async function apiRequest<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
+async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const read = (options.method ?? "GET").toUpperCase() === "GET";
   const request = async (signal?: AbortSignal): Promise<T> => {
     const response = await fetch(`${API_PREFIX}${endpoint}`, {
@@ -106,16 +103,21 @@ async function apiRequest<T>(
     });
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw Object.assign(new Error(error.error || `Request failed: ${response.status}`), { status: response.status });
+      throw Object.assign(new Error(error.error || `Request failed: ${response.status}`), {
+        status: response.status,
+      });
     }
     const data = await response.json();
     if (!read) invalidateClientCache(API_PREFIX);
     return data;
   };
   // Chat contents remain tab-local and are cleared by the shared account boundary.
-  if (read && options.cache !== "no-store") return loadClientCache(`${API_PREFIX}${endpoint}`, request, {
-    ttl: 30_000, maxAge: 60_000, signal: options.signal ?? undefined,
-  });
+  if (read && options.cache !== "no-store")
+    return loadClientCache(`${API_PREFIX}${endpoint}`, request, {
+      ttl: 30_000,
+      maxAge: 60_000,
+      signal: options.signal ?? undefined,
+    });
   return request(options.signal ?? undefined);
 }
 
@@ -128,11 +130,9 @@ async function apiRequest<T>(
  */
 export async function getConversations(
   page: number = 1,
-  pageSize: number = 50
+  pageSize: number = 50,
 ): Promise<ConversationsListResponse> {
-  return apiRequest<ConversationsListResponse>(
-    `/conversations?page=${page}&page_size=${pageSize}`
-  );
+  return apiRequest<ConversationsListResponse>(`/conversations?page=${page}&page_size=${pageSize}`);
 }
 
 /**
@@ -141,18 +141,19 @@ export async function getConversations(
  */
 export async function getConversation(
   conversationId: string,
-  fresh = false
+  fresh = false,
 ): Promise<ChatConversation> {
-  return apiRequest<ChatConversation>(`/conversations/${conversationId}`, fresh ? { cache: "no-store" } : {});
+  return apiRequest<ChatConversation>(
+    `/conversations/${conversationId}`,
+    fresh ? { cache: "no-store" } : {},
+  );
 }
 
 /**
  * Create a new conversation
  * @param title Optional title for the conversation
  */
-export async function createConversation(
-  title: string = "New Chat"
-): Promise<ChatConversation> {
+export async function createConversation(title: string = "New Chat"): Promise<ChatConversation> {
   return apiRequest<ChatConversation>("/conversations", {
     method: "POST",
     body: JSON.stringify({ title }),
@@ -166,7 +167,7 @@ export async function createConversation(
  */
 export async function updateConversationTitle(
   conversationId: string,
-  title: string
+  title: string,
 ): Promise<SuccessResponse> {
   return apiRequest<SuccessResponse>(`/conversations/${conversationId}`, {
     method: "PATCH",
@@ -178,9 +179,7 @@ export async function updateConversationTitle(
  * Delete a conversation
  * @param conversationId Conversation ID
  */
-export async function deleteConversation(
-  conversationId: string
-): Promise<SuccessResponse> {
+export async function deleteConversation(conversationId: string): Promise<SuccessResponse> {
   return apiRequest<SuccessResponse>(`/conversations/${conversationId}`, {
     method: "DELETE",
   });
@@ -202,10 +201,13 @@ export async function deleteAllConversations(): Promise<SuccessResponse> {
  * @param conversationId Conversation ID
  */
 export async function getMessages(
-  conversationId: string
+  conversationId: string,
+  options: { fresh?: boolean } = {},
 ): Promise<{ messages: ChatMessage[] }> {
+  // fresh: skip the tab cache, e.g. after a turn finished on the server while nobody was reading.
   return apiRequest<{ messages: ChatMessage[] }>(
-    `/conversations/${conversationId}/messages`
+    `/conversations/${conversationId}/messages`,
+    options.fresh ? { cache: "no-store" } : {},
   );
 }
 
@@ -218,15 +220,12 @@ export async function getMessages(
 export async function addMessage(
   conversationId: string,
   role: "user" | "assistant" | "system",
-  content: string
+  content: string,
 ): Promise<ChatMessage> {
-  return apiRequest<ChatMessage>(
-    `/conversations/${conversationId}/messages`,
-    {
-      method: "POST",
-      body: JSON.stringify({ role, content }),
-    }
-  );
+  return apiRequest<ChatMessage>(`/conversations/${conversationId}/messages`, {
+    method: "POST",
+    body: JSON.stringify({ role, content }),
+  });
 }
 
 // ===== Agent-Powered Operations =====
@@ -240,9 +239,23 @@ export interface AgentMessageResponse {
  * SSE event types from the LangGraph agent stream
  */
 export interface AgentStreamEvent {
-  type: "accepted" | "status" | "token" | "token_reset" | "tool_start" | "tool_end" | "done" | "error";
+  type:
+    | "accepted"
+    | "status"
+    | "token"
+    | "token_reset"
+    | "tool_start"
+    | "tool_end"
+    | "agent"
+    | "agent_suggestion"
+    | "done"
+    | "error";
   content?: string;
   tool?: string;
+  /** "agent": the sub-agent answering this turn. */
+  agent?: string;
+  /** "agent_suggestion": specialists the question spans, offered as workspace panels. */
+  agents?: string[];
   stage?: "routing" | "planning" | "writing" | string;
   message_id?: string;
   user_message?: ChatMessage;
@@ -263,6 +276,10 @@ export interface AgentRequestOptions {
   skills?: string[];
   /** Page evidence for this turn. The backend does not store it as the user message. */
   context?: string;
+  /** Pin a chat sub-agent (a workspace agent panel) instead of routing. */
+  agent?: string;
+  /** Agents automatic routing may pick (AI assistant settings and this chat's skills). */
+  agents?: string[];
 }
 
 /**
@@ -275,21 +292,20 @@ export interface AgentRequestOptions {
 export async function sendAgentMessage(
   conversationId: string,
   content: string,
-  options?: AgentRequestOptions
+  options?: AgentRequestOptions,
 ): Promise<AgentMessageResponse> {
-  return apiRequest<AgentMessageResponse>(
-    `/conversations/${conversationId}/send`,
-    {
-      method: "POST",
-      body: JSON.stringify({
-        content,
-        model: options?.model || undefined,
-        sources: options?.sources || undefined,
-        skills: options?.skills,
-        context: options?.context || undefined,
-      }),
-    }
-  );
+  return apiRequest<AgentMessageResponse>(`/conversations/${conversationId}/send`, {
+    method: "POST",
+    body: JSON.stringify({
+      content,
+      model: options?.model || undefined,
+      sources: options?.sources || undefined,
+      skills: options?.skills,
+      context: options?.context || undefined,
+      agent: options?.agent || undefined,
+      agents: options?.agents?.length ? options.agents : undefined,
+    }),
+  });
 }
 
 /**
@@ -303,27 +319,26 @@ export async function streamAgentMessage(
   conversationId: string,
   content: string,
   options?: AgentRequestOptions,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ): Promise<Response> {
   // A stream can commit messages even if the client disconnects before "done".
   invalidateClientCache(API_PREFIX);
-  const response = await fetch(
-    `${API_PREFIX}/conversations/${conversationId}/stream`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        content,
-        model: options?.model || undefined,
-        sources: options?.sources || undefined,
-        skills: options?.skills,
-        context: options?.context || undefined,
-      }),
-      signal,
-    }
-  );
+  const response = await fetch(`${API_PREFIX}/conversations/${conversationId}/stream`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      content,
+      model: options?.model || undefined,
+      sources: options?.sources || undefined,
+      skills: options?.skills,
+      context: options?.context || undefined,
+      agent: options?.agent || undefined,
+      agents: options?.agents?.length ? options.agents : undefined,
+    }),
+    signal,
+  });
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
@@ -352,7 +367,7 @@ export function stopAgentStream(conversationId: string) {
  */
 async function consumeAgentStream(
   response: Response,
-  onEvent: (event: AgentStreamEvent) => void | Promise<void>
+  onEvent: (event: AgentStreamEvent) => void | Promise<void>,
 ): Promise<void> {
   if (!response.body) {
     throw new Error("The chat stream returned no response body.");
@@ -383,7 +398,7 @@ async function consumeAgentStream(
       const blocks = buffer.split(/\r?\n\r?\n/);
       buffer = blocks.pop() || "";
       for (const block of blocks) {
-        if (block.trim() && await processEventBlock(block)) return;
+        if (block.trim() && (await processEventBlock(block))) return;
       }
 
       if (done) break;

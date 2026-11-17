@@ -37,10 +37,25 @@ def normalize_url(value):
     return f'https://www.youtube.com/watch?v={video_id}'
 
 
+def cookie_args():
+    """Optional YouTube sign-in, for when YouTube asks to "confirm you're not a bot".
+
+    YTDLP_COOKIES_FROM_BROWSER=chrome (or safari, firefox, edge, brave…) reads that browser's cookies;
+    YTDLP_COOKIES=/path/cookies.txt uses an exported Netscape cookie file. Off when neither is set.
+    """
+    # Signed-in requests are paced, as yt-dlp recommends, so the account is not rate limited.
+    pacing = ['--sleep-requests', '1.5']
+    browser = os.environ.get('YTDLP_COOKIES_FROM_BROWSER', '').strip()
+    if browser:
+        return ['--cookies-from-browser', browser, *pacing]
+    path = os.environ.get('YTDLP_COOKIES', '').strip()
+    return ['--cookies', path, *pacing] if path else []
+
+
 def ytdlp(*args, timeout=180, playlist=False):
     command = [sys.executable, '-m', 'yt_dlp', '--ignore-config', *([] if playlist else ['--no-playlist']),
                '--no-warnings', '--socket-timeout', '20', '--retries', '2',
-               *(['--js-runtimes', 'node'] if shutil.which('node') else []), *map(str, args)]
+               *(['--js-runtimes', 'node'] if shutil.which('node') else []), *cookie_args(), *map(str, args)]
     result = subprocess.run(command, capture_output=True, text=True, timeout=timeout)
     if result.returncode:
         detail = result.stderr.strip()[-900:]
