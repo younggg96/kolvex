@@ -5,9 +5,8 @@ Records and retrieves historical portfolio snapshots
 
 import asyncio
 import logging
-from datetime import date, datetime, timedelta
-from typing import Optional, List, Dict, Any
-from decimal import Decimal
+from datetime import date, datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional
 
 from app.core.supabase import get_supabase_service
 
@@ -58,11 +57,7 @@ def calculate_position_snapshot_metrics(
         if not has_cost:
             unrealized_pnl = 0.0
         else:
-            unrealized_pnl = (
-                cost_basis - market_value
-                if is_short
-                else market_value - cost_basis
-            )
+            unrealized_pnl = cost_basis - market_value if is_short else market_value - cost_basis
         signed_market_value = -market_value if is_short else market_value
     else:
         market_value = price * units
@@ -73,11 +68,7 @@ def calculate_position_snapshot_metrics(
         elif not has_cost:
             unrealized_pnl = 0.0
         else:
-            unrealized_pnl = (
-                cost_basis - market_value
-                if is_short
-                else market_value - cost_basis
-            )
+            unrealized_pnl = cost_basis - market_value if is_short else market_value - cost_basis
         signed_market_value = -market_value if is_short else market_value
 
     return {
@@ -89,10 +80,10 @@ def calculate_position_snapshot_metrics(
 
 class PortfolioSnapshotService:
     """Service for managing portfolio snapshots"""
-    
+
     def __init__(self):
         self.supabase = get_supabase_service()
-    
+
     async def record_snapshot(
         self,
         user_id: str,
@@ -103,11 +94,12 @@ class PortfolioSnapshotService:
         accounts_count: int = 0,
         positions_snapshot: Optional[List[Dict]] = None,
         snapshot_date: Optional[date] = None,
+        replace_existing: bool = True,
     ) -> Dict[str, Any]:
         """
         Record a portfolio snapshot for a user.
         If a snapshot already exists for the date, it will be updated.
-        
+
         Args:
             user_id: The user's ID
             total_value: Total portfolio value
@@ -117,21 +109,22 @@ class PortfolioSnapshotService:
             accounts_count: Number of accounts
             positions_snapshot: Optional detailed positions data
             snapshot_date: Date of snapshot (defaults to today)
-        
+            replace_existing: Update a snapshot already saved for that date
+
         Returns:
             The created/updated snapshot record
         """
         if snapshot_date is None:
             snapshot_date = date.today()
-        
+
         # Calculate P&L percent
         pnl_percent = 0.0
         if total_cost_basis > 0:
             pnl_percent = (unrealized_pnl / total_cost_basis) * 100
-        
+
         # Get current timestamp for snapshot_time (always update on upsert)
-        current_time = datetime.now().isoformat()
-        
+        current_time = datetime.now(timezone.utc).isoformat()
+
         snapshot_data = {
             "user_id": user_id,
             "snapshot_date": snapshot_date.isoformat(),
@@ -145,18 +138,25 @@ class PortfolioSnapshotService:
             "positions_snapshot": positions_snapshot or [],
             "calculation_version": CURRENT_SNAPSHOT_CALCULATION_VERSION,
         }
-        
-        logger.info(f"📸 Recording snapshot for user {user_id[:8]}... data: {snapshot_data}")
-        
+
+        logger.info("Recording portfolio snapshot for %s on %s", user_id[:8], snapshot_date)
+
         try:
             # Upsert to handle both insert and update
-            result = (await asyncio.to_thread(self.supabase.table("portfolio_snapshots").upsert(
-                snapshot_data,
-                on_conflict="user_id,snapshot_date"
-            ).execute))
+            result = await asyncio.to_thread(
+                self.supabase.table("portfolio_snapshots")
+                .upsert(
+                    snapshot_data,
+                    on_conflict="user_id,snapshot_date",
+                    ignore_duplicates=not replace_existing,
+                )
+                .execute
+            )
         except Exception as e:
             if not _is_missing_calculation_version_error(e):
-                logger.error(f"❌ Failed to record snapshot for user {user_id[:8]}: {type(e).__name__}: {e}")
+                logger.error(
+                    f"❌ Failed to record snapshot for user {user_id[:8]}: {type(e).__name__}: {e}"
+                )
                 raise
 
             logger.warning(
@@ -164,22 +164,29 @@ class PortfolioSnapshotService:
                 "retrying snapshot write with the legacy schema"
             )
             legacy_snapshot_data = {
-                key: value
-                for key, value in snapshot_data.items()
-                if key != "calculation_version"
+                key: value for key, value in snapshot_data.items() if key != "calculation_version"
             }
-            result = (await asyncio.to_thread(self.supabase.table("portfolio_snapshots").upsert(
-                legacy_snapshot_data,
-                on_conflict="user_id,snapshot_date"
-            ).execute))
+            result = await asyncio.to_thread(
+                self.supabase.table("portfolio_snapshots")
+                .upsert(
+                    legacy_snapshot_data,
+                    on_conflict="user_id,snapshot_date",
+                    ignore_duplicates=not replace_existing,
+                )
+                .execute
+            )
 
         if result.data:
-            logger.info(f"✅ Successfully recorded snapshot for user {user_id[:8]} on {snapshot_date}: {result.data[0].get('id', 'N/A')}")
+            logger.info(
+                f"✅ Successfully recorded snapshot for user {user_id[:8]} on {snapshot_date}: {result.data[0].get('id', 'N/A')}"
+            )
             return result.data[0]
 
+        if not replace_existing:
+            return {}
         logger.warning(f"⚠️ Upsert returned no data for user {user_id[:8]}. Response: {result}")
         return snapshot_data
-    
+
     async def get_snapshots(
         self,
         user_id: str,
@@ -189,19 +196,19 @@ class PortfolioSnapshotService:
     ) -> List[Dict[str, Any]]:
         """
         Get portfolio snapshots for a user within a date range.
-        
+
         Args:
             user_id: The user's ID
             start_date: Start date (inclusive)
             end_date: End date (inclusive, defaults to today)
             limit: Maximum number of records to return
-        
+
         Returns:
             List of snapshot records ordered by date ascending
         """
         if end_date is None:
             end_date = date.today()
-        
+
         def build_query(include_calculation_version: bool):
             selected_columns = (
                 "snapshot_date, total_value, total_cost_basis, unrealized_pnl, "
@@ -210,18 +217,20 @@ class PortfolioSnapshotService:
             if include_calculation_version:
                 selected_columns += ", calculation_version"
 
-            query = self.supabase.table("portfolio_snapshots").select(
-                selected_columns
-            ).eq("user_id", user_id)
+            query = (
+                self.supabase.table("portfolio_snapshots")
+                .select(selected_columns)
+                .eq("user_id", user_id)
+            )
 
             if include_calculation_version:
-                query = query.gte(
-                    "calculation_version", CURRENT_SNAPSHOT_CALCULATION_VERSION
-                )
+                query = query.gte("calculation_version", CURRENT_SNAPSHOT_CALCULATION_VERSION)
 
-            query = query.lte("snapshot_date", end_date.isoformat()).order(
-                "snapshot_date", desc=False
-            ).limit(limit)
+            query = (
+                query.lte("snapshot_date", end_date.isoformat())
+                .order("snapshot_date", desc=False)
+                .limit(limit)
+            )
 
             if start_date:
                 query = query.gte("snapshot_date", start_date.isoformat())
@@ -230,7 +239,9 @@ class PortfolioSnapshotService:
 
         try:
             try:
-                result = (await asyncio.to_thread(build_query(include_calculation_version=True).execute))
+                result = await asyncio.to_thread(
+                    build_query(include_calculation_version=True).execute
+                )
             except Exception as e:
                 if not _is_missing_calculation_version_error(e):
                     raise
@@ -238,12 +249,14 @@ class PortfolioSnapshotService:
                     "Reading portfolio snapshots with the legacy schema because "
                     "calculation_version is unavailable"
                 )
-                result = (await asyncio.to_thread(build_query(include_calculation_version=False).execute))
+                result = await asyncio.to_thread(
+                    build_query(include_calculation_version=False).execute
+                )
             return result.data or []
         except Exception as e:
             logger.error(f"Failed to get snapshots for user {user_id}: {e}")
             return []
-    
+
     async def get_snapshots_by_period(
         self,
         user_id: str,
@@ -251,16 +264,16 @@ class PortfolioSnapshotService:
     ) -> List[Dict[str, Any]]:
         """
         Get portfolio snapshots for a specific period.
-        
+
         Args:
             user_id: The user's ID
             period: Period string (1D, 1W, 1M, 3M, YTD, ALL)
-        
+
         Returns:
             List of snapshot records
         """
         end_date = date.today()
-        
+
         # Calculate start date based on period
         if period == "1D":
             start_date = end_date
@@ -276,48 +289,64 @@ class PortfolioSnapshotService:
             start_date = None  # No start date limit
         else:
             start_date = end_date - timedelta(days=30)
-        
+
         return await self.get_snapshots(user_id, start_date, end_date)
-    
+
     async def get_latest_snapshot(self, user_id: str) -> Optional[Dict[str, Any]]:
         """Get the most recent snapshot for a user"""
         try:
             try:
-                result = (await asyncio.to_thread(self.supabase.table("portfolio_snapshots").select("*").eq(
-                    "user_id", user_id
-                ).gte(
-                    "calculation_version", CURRENT_SNAPSHOT_CALCULATION_VERSION
-                ).order("snapshot_date", desc=True).limit(1).execute))
+                result = await asyncio.to_thread(
+                    self.supabase.table("portfolio_snapshots")
+                    .select("*")
+                    .eq("user_id", user_id)
+                    .gte("calculation_version", CURRENT_SNAPSHOT_CALCULATION_VERSION)
+                    .order("snapshot_date", desc=True)
+                    .limit(1)
+                    .execute
+                )
             except Exception as e:
                 if not _is_missing_calculation_version_error(e):
                     raise
-                result = (await asyncio.to_thread(self.supabase.table("portfolio_snapshots").select("*").eq(
-                    "user_id", user_id
-                ).order("snapshot_date", desc=True).limit(1).execute))
-            
+                result = await asyncio.to_thread(
+                    self.supabase.table("portfolio_snapshots")
+                    .select("*")
+                    .eq("user_id", user_id)
+                    .order("snapshot_date", desc=True)
+                    .limit(1)
+                    .execute
+                )
+
             return result.data[0] if result.data else None
         except Exception as e:
             logger.error(f"Failed to get latest snapshot for user {user_id}: {e}")
             return None
-    
+
     async def get_first_snapshot_date(self, user_id: str) -> Optional[date]:
         """Get the date of the first snapshot for a user"""
         try:
             try:
-                result = (await asyncio.to_thread(self.supabase.table("portfolio_snapshots").select(
-                    "snapshot_date"
-                ).eq("user_id", user_id).gte(
-                    "calculation_version", CURRENT_SNAPSHOT_CALCULATION_VERSION
-                ).order("snapshot_date", desc=False).limit(1).execute))
+                result = await asyncio.to_thread(
+                    self.supabase.table("portfolio_snapshots")
+                    .select("snapshot_date")
+                    .eq("user_id", user_id)
+                    .gte("calculation_version", CURRENT_SNAPSHOT_CALCULATION_VERSION)
+                    .order("snapshot_date", desc=False)
+                    .limit(1)
+                    .execute
+                )
             except Exception as e:
                 if not _is_missing_calculation_version_error(e):
                     raise
-                result = (await asyncio.to_thread(self.supabase.table("portfolio_snapshots").select(
-                    "snapshot_date"
-                ).eq("user_id", user_id).order(
-                    "snapshot_date", desc=False
-                ).limit(1).execute))
-            
+                result = await asyncio.to_thread(
+                    self.supabase.table("portfolio_snapshots")
+                    .select("snapshot_date")
+                    .eq("user_id", user_id)
+                    .order("snapshot_date", desc=False)
+                    .limit(1)
+                    .execute
+                )
+
             if result.data:
                 return date.fromisoformat(result.data[0]["snapshot_date"])
             return None

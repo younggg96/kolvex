@@ -20,7 +20,7 @@
 | `/paper-trading` | 虚拟账户、报价校验、下单命令、交易复盘的发布与撤回 |
 | `/research-workspaces` | 研究工作区、关联聊天、研究运行记录 |
 | `/briefs` | 早晚报列表、日历、详情（管理员增删改） |
-| `/news` | 新闻终端的标题流 |
+| `/news` | 新闻终端的标题流，可附带后台准备的中文译文 |
 | `/reddit-opinions` | ApeWisdom Reddit 股票讨论热度榜 |
 | `/x-content` | X 博主、原帖、摘要、股票标签；管理员校验与导入 |
 | `/congress` | 国会议员股票交易披露 |
@@ -106,6 +106,7 @@ cp .env.example .env
 | `OLLAMA_BASE_URL`、`OLLAMA_MODEL`、`OLLAMA_TIMEOUT` | 本地模型服务地址、已安装模型及超时；本地默认地址 `http://localhost:11434`，模型需配置 |
 | `PLAID_CLIENT_ID`、`PLAID_SECRET`、`PLAID_ENV`、`PLAID_CLIENT_NAME` | Plaid Investments；环境默认 `sandbox` |
 | `PLAID_REDIRECT_URI`、`PLAID_WEBHOOK_URL` | 可选，创建 Plaid Link Token 时使用 |
+| `PLAID_SNAPSHOT_WORKER_ENABLED` | 可选。Railway 的 `production` 部署连接 Plaid production 时默认开启，其他环境默认关闭。自动采集需要共享 Redis 来避免多实例重复请求。 |
 | `YOUTUBE_DATA_API_KEY` | 获取 YouTube 公开频道资料；未配置时尝试使用 `GOOGLE_API_KEY` |
 
 `DATABASE_URL` 和 `POSTGRES_*` 用于仓库保留的本地数据库配置，不能替代 Supabase 配置。按需要检查 `tradingagents/dataflows/` 中的数据源配置。

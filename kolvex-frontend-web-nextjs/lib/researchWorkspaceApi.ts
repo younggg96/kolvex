@@ -28,6 +28,7 @@ export const CHAT_AGENTS = [
   "research",
 ] as const;
 export type ChatAgent = (typeof CHAT_AGENTS)[number];
+export type RunAgent = ResearchAgent | Exclude<ChatAgent, "research">;
 
 export function isChatAgent(value: unknown): value is ChatAgent {
   return typeof value === "string" && (CHAT_AGENTS as readonly string[]).includes(value);
@@ -53,7 +54,7 @@ export interface WorkspaceListItem extends Workspace {
 
 export interface AgentResult {
   id: string;
-  agent: ResearchAgent;
+  agent: RunAgent;
   status: AgentStatus;
   summary: string;
   content: string;
@@ -70,7 +71,7 @@ export interface ResearchRun {
   workspace_id: string;
   status: RunStatus;
   question: string;
-  agents: ResearchAgent[];
+  agents: RunAgent[];
   model_id: string | null;
   synthesis: string | null;
   stance: Stance | null;
@@ -173,6 +174,24 @@ export function startRun(
 
 export function getRun(runId: string, signal?: AbortSignal) {
   return request<ResearchRun>(`/runs/${runId}`, {}, signal);
+}
+
+export interface ChatResearchRequest {
+  message_id: string;
+  question: string;
+  agents: ChatAgent[];
+  model?: string;
+  sources?: string[];
+  skills?: string[];
+  context?: string;
+  tickers: string[];
+}
+
+export function startChatResearch(conversationId: string, body: ChatResearchRequest) {
+  return request<ResearchRun>(`/by-chat/${conversationId}/runs`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
 }
 
 /** Parse "nvda, $amd tsla" into unique upper-case tickers. Validation stays on the backend. */

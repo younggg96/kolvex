@@ -733,6 +733,7 @@ function ResultRow({
   const [open, setOpen] = useState(false);
   const expandable =
     result.status === "completed" || result.status === "failed";
+  const icon = AGENT_ICONS[result.agent] ?? AGENT_ICONS.market;
   return (
     <View
       style={{
@@ -767,9 +768,9 @@ function ResultRow({
           <SymbolView
             name={
               {
-                ios: AGENT_ICONS[result.agent][0],
-                android: AGENT_ICONS[result.agent][1],
-                web: AGENT_ICONS[result.agent][1],
+                ios: icon[0],
+                android: icon[1],
+                web: icon[1],
               } as never
             }
             size={phone(16)}
@@ -779,7 +780,7 @@ function ResultRow({
         <View style={{ flex: 1, gap: 4 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
             <Copy size={14} bold>
-              {AGENT_NAMES[result.agent]}
+              {AGENT_NAMES[result.agent] ?? "研究员"}
             </Copy>
             {result.status === "completed" ? (
               <StanceText stance={result.stance} size={12} />
@@ -908,6 +909,7 @@ function Chats({ detail, user }: { detail: WorkspaceDetail; user: string }) {
   const text = useText();
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState(false);
+  const chats = detail.chats.filter((chat) => !chat.agent);
   const newChat = async () => {
     setCreating(true);
     setError(false);
@@ -957,12 +959,12 @@ function Chats({ detail, user }: { detail: WorkspaceDetail; user: string }) {
         </Pressable>
       </View>
       {error ? <Failure message="出了点问题，请重试。" /> : null}
-      {!detail.chats.length ? (
+      {!chats.length ? (
         <Copy size={14} muted>
           这个工作区还没有对话。
         </Copy>
       ) : (
-        detail.chats.map((chat, index) => (
+        chats.map((chat, index) => (
           <Pressable
             key={chat.id}
             accessibilityRole="button"

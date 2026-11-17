@@ -55,6 +55,15 @@ class RunBody(BaseModel):
     model: Optional[str] = None
 
 
+class ChatRunBody(RunBody):
+    message_id: str
+    agents: list[ChatAgent] = Field(min_length=2, max_length=4)
+    tickers: list[str] = Field(default_factory=list, max_length=10)
+    sources: Optional[list[str]] = None
+    skills: Optional[list[str]] = None
+    context: Optional[str] = Field(default=None, max_length=100000)
+
+
 async def call(fn, *args):
     try:
         return await asyncio.to_thread(fn, get_supabase_service(), *args)
@@ -80,6 +89,34 @@ async def create_workspace(body: WorkspaceBody, user_id: str = Depends(get_curre
 @router.get("/by-chat/{conversation_id}")
 async def workspace_for_chat(conversation_id: str, user_id: str = Depends(get_current_user_id)):
     return {"workspace": await call(ws.chat_workspace, user_id, conversation_id)}
+
+
+@router.post("/by-chat/{conversation_id}/runs")
+async def start_chat_run(
+    conversation_id: str,
+    body: ChatRunBody,
+    user_id: str = Depends(get_current_user_id),
+    keys: UserApiKeysService = Depends(get_user_api_keys_service),
+):
+    try:
+        return await ws.launch_chat_research(
+            user_id,
+            conversation_id,
+            body.message_id,
+            body.question,
+            body.agents,
+            body.model,
+            body.tickers,
+            await keys.get_keys_dict(user_id),
+            body.sources,
+            body.skills,
+            body.context,
+        )
+    except ws.WorkspaceError as error:
+        raise HTTPException(status_code=error.status, detail=error.code) from None
+    except Exception:
+        logger.exception("Could not start chat team research")
+        raise HTTPException(status_code=503, detail="workspace_unavailable") from None
 
 
 @router.delete("/chats/{conversation_id}")

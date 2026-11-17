@@ -265,6 +265,34 @@ class RunTests(unittest.TestCase):
         }
         self.assertEqual(statuses, {"market": "failed", "news": "completed"})
 
+    def test_chat_team_uses_specialist_prompts_and_preserves_tool_settings(self):
+        run = ws.start_run(
+            self.db,
+            "u1",
+            self.w["id"],
+            "财报和估值",
+            ["earnings", "valuation"],
+            None,
+            source_message_id="m1",
+        )
+        run.update(sources=[], skills=["fundamentals"])
+        deps = self.deps()
+        deps.agent_factory = Mock(wraps=deps.agent_factory)
+        with patch(
+            "app.agent.tools.get_tools_for_sources",
+            return_value=[SimpleNamespace(name="get_valuation")],
+        ) as get_tools:
+            final = asyncio.run(ws.run_research(self.db, run, "u1", None, None, None, deps))
+        self.assertEqual(final["status"], "completed")
+        get_tools.assert_called_with([], "u1", ["fundamentals"])
+        prompts = [call.kwargs["prompt"] for call in deps.agent_factory.call_args_list]
+        self.assertTrue(any("Earnings Agent" in prompt for prompt in prompts))
+        self.assertTrue(any("Valuation Agent" in prompt for prompt in prompts))
+        self.assertEqual(
+            [r["agent"] for r in ws.get_run(self.db, "u1", run["id"])["results"]],
+            ["earnings", "valuation"],
+        )
+
     def test_all_failures_fail_run_without_synthesis(self):
         run = ws.start_run(self.db, "u1", self.w["id"], "", ["market"], None)
         with patch.object(

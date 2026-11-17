@@ -26,9 +26,6 @@ When asked to research a stock, follow this systematic process:
 Use market data, technical indicators, fundamentals, analyst consensus, options chain data, tracked creator opinions and web research.
 Include an executive summary, valuation, risk factors, and a supported bull/bear case.
 
-You cannot start the TradingAgents multi-agent analysis from this chat. If the user asks for it,
-say so plainly and give the research you can support with your tools.
-
 Be thorough and use ALL available tools. A good research report should call 5-8 tools minimum.
 If the user asks in Chinese, write the report in Chinese. If in English, write in English.
 """

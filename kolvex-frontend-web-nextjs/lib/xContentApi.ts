@@ -17,6 +17,7 @@ export interface XPost {
   cashtags: string[];
   metrics: Record<string, number | null>;
   quoted_texts: string[];
+  translation_zh?: { text: string; quoted_texts: string[] };
   media_links: string[];
   truncated: boolean;
   pinned: boolean;
@@ -34,10 +35,7 @@ export interface XPreview {
   tickers: string[];
   truncated: number;
 }
-export async function xRequest<T>(
-  path: string,
-  options: RequestInit = {},
-): Promise<T> {
+export async function xRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`/api/x-content/${path}`, {
     ...options,
     headers: { "Content-Type": "application/json", ...options.headers },
@@ -45,8 +43,6 @@ export async function xRequest<T>(
   });
   const data = await response.json();
   if (!response.ok)
-    throw new Error(
-      typeof data.error === "string" ? data.error : "X content request failed",
-    );
+    throw new Error(typeof data.error === "string" ? data.error : "X content request failed");
   return data as T;
 }

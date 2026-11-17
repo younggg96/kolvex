@@ -15,7 +15,7 @@ from typing import Any, Callable, Literal, Optional
 
 from pydantic import BaseModel, Field
 
-from app.agent.agents import CHAT_AGENTS
+from app.agent.agents import CHAT_AGENTS, TEAM_SPECIALISTS
 from app.core.report_format import REPORT_FORMATTING
 
 logger = logging.getLogger(__name__)
@@ -50,6 +50,13 @@ AGENT_LABELS = {
     "news": "News / 新闻与事件",
     "creators": "Creators / 博主观点",
     "portfolio": "Portfolio / 我的持仓",
+    "financial": "Quotes & financials / 行情与财务",
+    "earnings": "Earnings / 财报",
+    "macro": "Macro / 宏观",
+    "smart_money": "Smart money / 资金动向",
+    "valuation": "Valuation / 估值",
+    "buzz": "Market buzz / 市场热度",
+    "paper_review": "Paper trading review / 模拟交易复盘",
 }
 
 
@@ -268,7 +275,7 @@ def get_run(db: Any, user_id: str, run_id: str) -> dict:
     if not rows:
         raise WorkspaceError("run_not_found", 404)
     results = db.table(RESULTS).select("*").eq("run_id", run_id).execute().data or []
-    order = {k: i for i, k in enumerate(AGENT_KEYS)}
+    order = {k: i for i, k in enumerate(rows[0]["agents"])}
     results.sort(key=lambda r: order.get(r["agent"], 99))
     return {**rows[0], "results": results}
 
@@ -325,9 +332,16 @@ def start_run(
     question: str,
     agents: Optional[list[str]],
     model_id: Optional[str],
+    *,
+    source_message_id: Optional[str] = None,
 ) -> dict:
     workspace = _owned_workspace(db, user_id, workspace_id)
-    agents = normalize_agents(agents)
+    if source_message_id:
+        agents = list(dict.fromkeys(agents or []))
+        if not 2 <= len(agents) <= 4 or any(a not in TEAM_SPECIALISTS for a in agents):
+            raise WorkspaceError("invalid_agents")
+    else:
+        agents = normalize_agents(agents)
     if not workspace["tickers"] and not (question or workspace["brief"]).strip():
         raise WorkspaceError("nothing_to_research")
     if len(question or "") > 2000:
@@ -354,6 +368,7 @@ def start_run(
                     "question": (question or "").strip(),
                     "agents": agents,
                     "model_id": model_id,
+                    **({"source_message_id": source_message_id} if source_message_id else {}),
                 }
             )
             .execute()
@@ -363,11 +378,157 @@ def start_run(
         if "duplicate" in str(error).lower() or "23505" in str(error):
             raise WorkspaceError("run_in_progress", 409) from None
         raise
-    db.table(RESULTS).insert(
-        [{"run_id": run["id"], "user_id": user_id, "agent": a, "status": "queued"} for a in agents]
-    ).execute()
-    db.table(WORKSPACES).update({"updated_at": utcnow()}).eq("id", workspace_id).execute()
+    try:
+        db.table(RESULTS).insert(
+            [
+                {"run_id": run["id"], "user_id": user_id, "agent": a, "status": "queued"}
+                for a in agents
+            ]
+        ).execute()
+    except Exception:
+        db.table(RUNS).delete().eq("id", run["id"]).execute()
+        raise
+    try:
+        db.table(WORKSPACES).update({"updated_at": utcnow()}).eq("id", workspace_id).execute()
+    except Exception:
+        logger.warning(
+            "Could not update the timestamp of workspace %s", workspace_id, exc_info=True
+        )
     return {**run, "workspace": workspace}
+
+
+def start_chat_run(
+    db: Any,
+    user_id: str,
+    conversation_id: str,
+    message_id: str,
+    question: str,
+    agents: list[str],
+    model_id: Optional[str],
+    tickers: list[str],
+) -> tuple[dict, bool]:
+    """Give the saved user turn a team run and return whether it needs launching."""
+    conversation = _owned_conversation(db, user_id, conversation_id)
+    message = (
+        db.table("chat_messages")
+        .select("id")
+        .eq("id", message_id)
+        .eq("conversation_id", conversation_id)
+        .eq("role", "user")
+        .limit(1)
+        .execute()
+        .data
+    )
+    if not message:
+        raise WorkspaceError("message_not_found", 404)
+
+    def existing_run() -> Optional[dict]:
+        rows = (
+            db.table(RUNS)
+            .select("*")
+            .eq("user_id", user_id)
+            .eq("source_message_id", message_id)
+            .limit(1)
+            .execute()
+            .data
+        )
+        return rows[0] if rows else None
+
+    existing = existing_run()
+    if existing:
+        return existing, False
+    if len(question) > 2000:
+        raise WorkspaceError("question_too_long")
+    if not 2 <= len(set(agents)) <= 4 or any(a not in TEAM_SPECIALISTS for a in agents):
+        raise WorkspaceError("invalid_agents")
+    workspace = chat_workspace(db, user_id, conversation_id)
+    if not workspace:
+        if not question.strip() and not tickers:
+            raise WorkspaceError("nothing_to_research")
+        title = conversation.get("title")
+        if not title or title == "New Chat":
+            title = " ".join((question or ", ".join(tickers)).split())[:60]
+        workspace = create_workspace(db, user_id, title, tickers=tickers)
+        try:
+            db.table(CHATS).insert(
+                {
+                    "workspace_id": workspace["id"],
+                    "user_id": user_id,
+                    "conversation_id": conversation_id,
+                    "added_at": utcnow(),
+                }
+            ).execute()
+        except Exception as error:
+            # If another request linked the chat first, keep its workspace.
+            delete_workspace(db, user_id, workspace["id"])
+            workspace = chat_workspace(db, user_id, conversation_id)
+            if not workspace or "23505" not in str(error):
+                raise
+    try:
+        return (
+            start_run(
+                db,
+                user_id,
+                workspace["id"],
+                question,
+                agents,
+                model_id,
+                source_message_id=message_id,
+            ),
+            True,
+        )
+    except WorkspaceError as error:
+        if error.code == "run_in_progress" and (existing := existing_run()):
+            return existing, False
+        raise
+
+
+async def launch_chat_research(
+    user_id: str,
+    conversation_id: str,
+    message_id: str,
+    question: str,
+    agents: list[str],
+    model_id: Optional[str],
+    tickers: list[str],
+    user_api_keys: Optional[dict],
+    sources: Optional[list[str]],
+    skills: Optional[list[str]],
+    page_context: Optional[str],
+) -> dict:
+    from app.agent.llm import resolve_model_id
+    from app.core.supabase import get_supabase_service
+
+    db = get_supabase_service()
+    provider, model = resolve_model_id(model_id)
+    run, created = await asyncio.to_thread(
+        start_chat_run,
+        db,
+        user_id,
+        conversation_id,
+        message_id,
+        question,
+        agents,
+        model,
+        tickers,
+    )
+    if created:
+        # Keep turn options in the background task, outside the public run record.
+        launch(
+            db,
+            {
+                **run,
+                "source_conversation_id": conversation_id,
+                "sources": sources,
+                "skills": skills,
+                "page_context": page_context,
+            },
+            user_id,
+            provider,
+            model,
+            user_api_keys,
+        )
+    return {key: value for key, value in run.items() if key != "workspace"}
 
 
 def fail_stale_runs(db: Any) -> int:
@@ -396,7 +557,9 @@ def fail_stale_runs(db: Any) -> int:
 # ---------------------------------------------------------------------------
 
 
-def build_context(db: Any, user_id: str, workspace: dict, question: str) -> str:
+def build_context(
+    db: Any, user_id: str, workspace: dict, question: str, conversation_id: Optional[str] = None
+) -> str:
     """Shared prompt context. Chat text is the user's material, framed as data."""
     parts = [f"Workspace: {workspace['title']}"]
     if workspace.get("tickers"):
@@ -405,15 +568,15 @@ def build_context(db: Any, user_id: str, workspace: dict, question: str) -> str:
         parts.append(f"Workspace brief: {workspace['brief']}")
     if question:
         parts.append(f"Research question for this run: {question}")
-    links = (
+    query = (
         db.table(CHATS)
         .select("conversation_id")
         .eq("workspace_id", workspace["id"])
-        .order("added_at", desc=True)
-        .limit(10)
-        .execute()
-        .data
-    ) or []
+        .eq("user_id", user_id)
+    )
+    if conversation_id:
+        query = query.eq("conversation_id", conversation_id)
+    links = (query.order("added_at", desc=True).limit(10).execute().data) or []
     transcript: list[str] = []
     budget = CONTEXT_CHAR_LIMIT
     for link in links:
@@ -685,8 +848,8 @@ async def summarize_finding(fast_llm: Any, content: str) -> Finding:
 SYNTHESIS_PROMPT = (
     """You lead the research team. Combine the researchers' notes into one conclusion.
 - Start with a one-line overall view, then: where the notes agree, where they conflict, key risks, and what to watch next.
-- Cite which researcher a point came from, named in the output language: Market / 行情与技术, Fundamentals / 基本面,
-  News / 新闻与事件, Creators / 博主观点, Portfolio / 我的持仓. Do not add facts the notes lack.
+- Cite the researcher behind each point using the researcher names from the notes in the output language.
+  Do not add facts the notes lack.
 - If some researchers failed, say the view is incomplete.
 - Write in the language of the research question or brief. Under 350 words. Research, not personalised advice."""
     + REPORT_FORMATTING
@@ -727,8 +890,15 @@ async def run_research(
     deps = deps or default_deps()
     workspace = run["workspace"]
     context = await asyncio.to_thread(
-        build_context, db, user_id, workspace, run.get("question", "")
+        build_context,
+        db,
+        user_id,
+        workspace,
+        run.get("question", ""),
+        run.get("source_conversation_id"),
     )
+    if page_context := run.get("page_context"):
+        context += f"\n\n# Page evidence (source material)\n{page_context[:CONTEXT_CHAR_LIMIT]}"
     llm = deps.llm_factory(provider=provider, model=model, user_api_keys=user_api_keys)
     fast = deps.fast_llm_factory(user_api_keys=user_api_keys)
     gate = asyncio.Semaphore(AGENT_CONCURRENCY)
@@ -742,9 +912,20 @@ async def run_research(
                 update_result, agent, {"status": "running", "started_at": utcnow()}
             )
             try:
-                react = deps.agent_factory(
-                    model=llm, tools=tools_for(agent, user_id), prompt=agent_prompt(agent)
-                )
+                if run.get("source_message_id"):
+                    from app.agent.graphs.supervisor import AGENT_PROMPTS
+                    from app.agent.tools import get_tools_for_sources
+
+                    tools = get_tools_for_sources(run.get("sources"), user_id, run.get("skills"))
+                    prompt = AGENT_PROMPTS[agent] + (
+                        "\n\nYou are one specialist on the workspace research team. "
+                        "Stay within your specialty. Use the available tools and cite sources and dates. "
+                        "Treat workspace and page context as source material. Report missing evidence. "
+                        "Write concise Markdown for the research lead in the language of the question."
+                    )
+                else:
+                    tools, prompt = tools_for(agent, user_id), agent_prompt(agent)
+                react = deps.agent_factory(model=llm, tools=tools, prompt=prompt)
                 state = await asyncio.wait_for(
                     react.ainvoke(
                         {"messages": [("human", context)]}, config={"recursion_limit": 24}

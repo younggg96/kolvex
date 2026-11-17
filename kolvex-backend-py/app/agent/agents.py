@@ -19,6 +19,8 @@ CHAT_AGENTS = (
     "paper_review",
 )
 
+TEAM_SPECIALISTS = tuple(agent for agent in CHAT_AGENTS if agent != "research")
+
 ChatAgent = Literal[
     "financial",
     "research",

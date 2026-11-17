@@ -104,9 +104,27 @@ async def lifespan(app: FastAPI):
     from app.services.email_service import run_email_worker
 
     email_worker = asyncio.create_task(run_email_worker())
+    from app.services.plaid_snapshot_worker import run_plaid_snapshot_worker, worker_enabled
+
+    plaid_history_worker = (
+        asyncio.create_task(run_plaid_snapshot_worker()) if worker_enabled() else None
+    )
+    from app.services.content_translation import run_content_translation_worker
+
+    translation_worker = (
+        asyncio.create_task(run_content_translation_worker())
+        if os.getenv("CONTENT_TRANSLATION_WORKER_ENABLED", "false").lower() == "true"
+        else None
+    )
     try:
         yield
     finally:
+        if translation_worker:
+            translation_worker.cancel()
+            await asyncio.gather(translation_worker, return_exceptions=True)
+        if plaid_history_worker:
+            plaid_history_worker.cancel()
+            await asyncio.gather(plaid_history_worker, return_exceptions=True)
         email_worker.cancel()
         await asyncio.gather(email_worker, return_exceptions=True)
         if congress_worker:

@@ -49,7 +49,7 @@
     "paperTrading": "Paper trading",
     "watchlist": "Watchlist",
     "markets": "Markets",
-    "chat": "Chat",
+    "chat": "AI Chat",
     "workspaces": "Workspaces",
     "analytics": "Analytics",
     "social": "Social",
@@ -268,11 +268,7 @@
         {
           "title": "Connect with Plaid",
           "description": "Link supported investment accounts through Plaid with read-only access.",
-          "details": [
-            "Plaid Investments",
-            "Holdings and transactions",
-            "Secure account linking"
-          ]
+          "details": ["Plaid Investments", "Holdings and transactions", "Secure account linking"]
         },
         {
           "title": "Sync Your Portfolio",

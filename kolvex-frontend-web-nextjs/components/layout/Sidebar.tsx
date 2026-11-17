@@ -5,6 +5,7 @@ import LogoIcon from "@/components/common/LogoIcon";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import {
+  ArrowRight,
   Settings,
   PanelLeftClose,
   PanelLeft,
@@ -43,6 +44,9 @@ import { useBreakpoints } from "@/hooks";
 import { useUserProfileContext } from "@/components/user/UserProfileProvider";
 import { useTranslation } from "@/lib/i18n";
 import { isProductFeatureEnabled } from "@/lib/productFeatures";
+import { cn } from "@/lib/utils";
+
+const CHAT_HREF = "/dashboard/chat";
 
 interface AppSidebarProps {
   onNavigate?: () => void;
@@ -50,12 +54,7 @@ interface AppSidebarProps {
 
 function AppSidebar({ onNavigate }: AppSidebarProps) {
   const pathname = usePathname();
-  const {
-    state,
-    toggleSidebar,
-    isInitialized,
-    setOpenMobile,
-  } = useSidebar();
+  const { state, toggleSidebar, isInitialized, setOpenMobile } = useSidebar();
   const { profile } = useUserProfileContext();
   const { t } = useTranslation();
   const c = useCopy();
@@ -65,17 +64,23 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
 
   const isAdmin = profile?.is_admin ?? false;
 
-  // Main entries, bucketed into their scenario groups; empty groups are dropped.
+  const enabledItems = MAIN_NAV_ITEMS.filter((item) => isProductFeatureEnabled(item.featureId));
+  const chat = enabledItems.find((item) => item.href === CHAT_HREF);
+  const chatActive = isNavItemActive(pathname, CHAT_HREF);
+
+  // AI Chat lives in the header; group the remaining routes in the scroller.
   const groups = NAV_GROUPS.map((group) => ({
     ...group,
     title: t(group.titleKey),
-    items: MAIN_NAV_ITEMS.filter(
-      (item) => item.group === group.id && isProductFeatureEnabled(item.featureId),
-    ).map((item) => ({ ...item, title: t(item.titleKey) })),
+    items: enabledItems
+      .filter((item) => item.group === group.id && item.href !== CHAT_HREF)
+      .map((item) => ({ ...item, title: t(item.titleKey) })),
   })).filter((group) => group.items.length > 0);
 
   const footerLinks = [
-    ...(isAdmin ? [{ icon: ShieldCheck, title: t("sidebar.admin"), href: "/dashboard/admin" }] : []),
+    ...(isAdmin
+      ? [{ icon: ShieldCheck, title: t("sidebar.admin"), href: "/dashboard/admin" }]
+      : []),
     { icon: Settings, title: t("sidebar.settings"), href: "/dashboard/settings" },
   ];
 
@@ -100,7 +105,7 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
       collapsible="icon"
       className="app-sidebar border-r border-border/70"
     >
-      {/* Fixed top: brand, collapse toggle, and the two global entry points. */}
+      {/* Fixed top: brand, collapse toggle, and global entry points. */}
       <SidebarHeader className="gap-3 border-b border-border/40 pb-3">
         <div className="flex items-center justify-between gap-2 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center">
           <Link
@@ -135,6 +140,33 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
         </div>
 
         <SidebarMenu>
+          {chat && (
+            <SidebarMenuItem>
+              <Link
+                href={chat.href}
+                onClick={handleNavigate}
+                aria-current={chatActive ? "page" : undefined}
+                title={state === "collapsed" ? t(chat.titleKey) : undefined}
+                className={cn(
+                  "flex h-11 w-full items-center gap-3 rounded-[var(--radius-control)] px-3 text-sm font-semibold transition-colors motion-reduce:transition-none dark:rounded-full group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0",
+                  chatActive
+                    ? "bg-foreground text-background hover:bg-foreground/90"
+                    : "bg-[rgb(var(--button-primary))] text-[rgb(var(--surface))] hover:bg-[rgb(var(--primary-hover))] focus-visible:bg-[rgb(var(--button-primary))] dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/85 dark:focus-visible:bg-primary",
+                )}
+              >
+                <chat.icon aria-hidden="true" className="size-[1.125rem] shrink-0" />
+                <span className="min-w-0 truncate group-data-[collapsible=icon]:sr-only">
+                  {t(chat.titleKey)}
+                </span>
+                {!chatActive && (
+                  <ArrowRight
+                    aria-hidden="true"
+                    className="ml-auto size-4 shrink-0 group-data-[collapsible=icon]:hidden"
+                  />
+                )}
+              </Link>
+            </SidebarMenuItem>
+          )}
           {canAsk && (
             <SidebarMenuItem>
               <SidebarMenuButton
@@ -192,17 +224,30 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
                         onClick={handleNavigate}
                         tooltip={item.title}
                       >
-                        <Link href={item.href} aria-current={!hasChildren && active ? "page" : undefined}>
+                        <Link
+                          href={item.href}
+                          aria-current={!hasChildren && active ? "page" : undefined}
+                        >
                           <item.icon />
                           <span>{item.title}</span>
                         </Link>
                       </SidebarMenuButton>
                       {item.children && (
-                        <SidebarMenuSub className="ml-5 mt-1 border-l border-border/50 pl-3" aria-label={item.title}>
+                        <SidebarMenuSub
+                          className="ml-5 mt-1 border-l border-border/50 pl-3"
+                          aria-label={item.title}
+                        >
                           {item.children.map((child) => (
                             <SidebarMenuSubItem key={child.href}>
-                              <SidebarMenuSubButton asChild isActive={isActive(child.href)} onClick={handleNavigate}>
-                                <Link href={child.href} aria-current={isActive(child.href) ? "page" : undefined}>
+                              <SidebarMenuSubButton
+                                asChild
+                                isActive={isActive(child.href)}
+                                onClick={handleNavigate}
+                              >
+                                <Link
+                                  href={child.href}
+                                  aria-current={isActive(child.href) ? "page" : undefined}
+                                >
                                   <child.icon aria-hidden="true" />
                                   <span>{child.title}</span>
                                 </Link>
@@ -242,11 +287,7 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
         </SidebarMenu>
         <UserMenu
           isCollapsed={
-            isMounted &&
-            isInitialized &&
-            state === "collapsed" &&
-            !isMobile &&
-            !isTablet
+            isMounted && isInitialized && state === "collapsed" && !isMobile && !isTablet
           }
         />
       </SidebarFooter>

@@ -5,6 +5,7 @@ import { Languages, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { translateText } from "@/components/trading-analysis/translate";
 import { useTranslation } from "@/lib/i18n";
+import type { XPost } from "@/lib/xContentApi";
 
 // Bounded session-only cache. Originals in the database are never overwritten.
 const translations = new Map<string, string[]>();
@@ -66,10 +67,12 @@ export default function XTranslatedText({
   text,
   quotes = [],
   compact = false,
+  preparedChinese,
 }: {
   text: string;
   quotes?: string[];
   compact?: boolean;
+  preparedChinese?: XPost["translation_zh"];
 }) {
   const { locale } = useTranslation();
   const c = (en: string, zh: string) => (locale === "zh" ? zh : en);
@@ -80,7 +83,15 @@ export default function XTranslatedText({
   const [error, setError] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const sourceKey = JSON.stringify([text, ...quotes]);
+  const prepared =
+    locale === "zh" &&
+    preparedChinese?.text &&
+    preparedChinese.quoted_texts.length === quotes.length
+      ? preparedChinese
+      : null;
   const key = `${locale}:${sourceKey}`;
+  const hasPrepared = prepared !== null;
+  const [originalKey, setOriginalKey] = useState<string | null>(null);
   const [resultKey, setResultKey] = useState("");
   const [attempt, setAttempt] = useState(0);
   const [visible, setVisible] = useState(false);
@@ -102,7 +113,7 @@ export default function XTranslatedText({
 
   useEffect(() => {
     const element = root.current;
-    if (!element) return;
+    if (!element || hasPrepared) return;
     if (!("IntersectionObserver" in window)) {
       setVisible(true);
       return;
@@ -118,7 +129,7 @@ export default function XTranslatedText({
     );
     observer.observe(element);
     return () => observer.disconnect();
-  }, []);
+  }, [hasPrepared]);
 
   useEffect(() => {
     setTranslated(null);
@@ -127,7 +138,7 @@ export default function XTranslatedText({
     setBusy(false);
     setError(false);
     setResultKey(key);
-    if (!visible) return;
+    if (hasPrepared || !visible) return;
     const controller = new AbortController();
     let current = true;
     setBusy(true);
@@ -148,15 +159,27 @@ export default function XTranslatedText({
       current = false;
       controller.abort();
     };
-  }, [key, visible, attempt, runTranslation]);
+  }, [key, visible, attempt, runTranslation, hasPrepared]);
 
   function toggle() {
+    if (hasPrepared) {
+      setOriginalKey((previous) => (previous === key ? null : key));
+      return;
+    }
     if (busy) return;
     if (translated) setShow((value) => !value);
     else setAttempt((value) => value + 1);
   }
-  const showingTranslation = resultKey === key && show && translated;
-  const content = showingTranslation ? translated! : [text, ...quotes];
+  const currentTranslation = resultKey === key && show ? translated : null;
+  const contentTranslation = prepared
+    ? originalKey === key
+      ? null
+      : [prepared.text, ...prepared.quoted_texts]
+    : currentTranslation;
+  const showingTranslation = contentTranslation !== null;
+  const content = contentTranslation ?? [text, ...quotes];
+  const isBusy = !hasPrepared && resultKey === key && busy;
+  const hasError = !hasPrepared && resultKey === key && error;
   return (
     <div ref={root} className="w-full min-w-0 max-w-none">
       <p
@@ -191,12 +214,12 @@ export default function XTranslatedText({
           variant="ghost"
           size="sm"
           onClick={() => void toggle()}
-          disabled={busy}
-          aria-pressed={!!showingTranslation}
-          aria-busy={busy}
+          disabled={isBusy}
+          aria-pressed={showingTranslation}
+          aria-busy={isBusy}
           className="min-h-10 gap-1.5 px-2 text-xs text-muted-foreground"
         >
-          {busy ? (
+          {isBusy ? (
             <Loader2
               className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none"
               aria-hidden="true"
@@ -204,11 +227,11 @@ export default function XTranslatedText({
           ) : (
             <Languages className="h-3.5 w-3.5" aria-hidden="true" />
           )}
-          {busy
+          {isBusy
             ? c("Translating…", "正在翻译…")
             : showingTranslation
               ? c("Show original", "显示原文")
-              : error
+              : hasError
                 ? c("Retry translation", "重试翻译")
                 : c("Show translation", "显示译文")}
         </Button>
@@ -217,7 +240,7 @@ export default function XTranslatedText({
             {c("Machine translation", "机器翻译")}
           </span>
         )}
-        {error && (
+        {hasError && (
           <span role="alert" className="text-xs text-destructive">
             {c("Translation unavailable. Showing original.", "翻译暂不可用，已显示原文。")}
           </span>

@@ -254,8 +254,12 @@ export interface AgentStreamEvent {
   tool?: string;
   /** "agent": the sub-agent answering this turn. */
   agent?: string;
-  /** "agent_suggestion": specialists the question spans, offered as workspace panels. */
+  /** "agent_suggestion": specialists waiting for confirmation in Ask me mode. */
   agents?: string[];
+  question?: string;
+  workspace_id?: string;
+  run_id?: string;
+  workspace_error?: string;
   stage?: "routing" | "planning" | "writing" | string;
   message_id?: string;
   user_message?: ChatMessage;
@@ -280,6 +284,9 @@ export interface AgentRequestOptions {
   agent?: string;
   /** Agents automatic routing may pick (AI assistant settings and this chat's skills). */
   agents?: string[];
+  teamResearch?: "auto" | "ask" | "off";
+  maxTeamAgents?: number;
+  tickers?: string[];
 }
 
 /**
@@ -336,6 +343,9 @@ export async function streamAgentMessage(
       context: options?.context || undefined,
       agent: options?.agent || undefined,
       agents: options?.agents?.length ? options.agents : undefined,
+      team_research: options?.teamResearch,
+      max_team_agents: options?.maxTeamAgents,
+      tickers: options?.tickers,
     }),
     signal,
   });

@@ -131,8 +131,8 @@ export function AiAssistantSettings({ className }: { className?: string }) {
             {c("Several agents", "多 Agent 协作")}
             <InfoTip label={c("About several agents", "多 Agent 协作说明")}>
               {c(
-                "When a question needs several agents, each gets its own panel in a workspace and works on it at the same time. Every agent is a separate model call.",
-                "问题需要多个 Agent 时，每个 Agent 在工作区里有自己的面板，同时研究这个问题。每个 Agent 都是一次单独的模型调用。",
+                "When a question needs several agents, they work on it together in a workspace and produce one combined conclusion.",
+                "问题需要多个 Agent 时，研究员会在工作区并行分析，并产出一份综合结论。",
               )}
             </InfoTip>
           </span>

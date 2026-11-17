@@ -97,6 +97,7 @@ export function WorkspacePanel({
   if (!detail) return null;
   const run = workspace.run;
   const running = run?.status === "running";
+  const chats = detail.chats.filter((chat) => !chat.agent);
 
   return (
     <div className={cn("w-full min-w-0 space-y-8 px-4 pb-10 pt-5 md:px-5", className)}>
@@ -186,7 +187,7 @@ export function WorkspacePanel({
         )}
       </header>
 
-      {!conversationId && <AgentDesk workspace={workspace} model={model} />}
+      {run && <RunView run={run} c={c} locale={locale} symbols={detail.tickers} />}
 
       <ResearchLauncher workspace={workspace} model={model} running={running} c={c} />
 
@@ -220,13 +221,13 @@ export function WorkspacePanel({
               {c("New chat", "新对话")}
             </Button>
           </div>
-          {detail.chats.length === 0 ? (
+          {chats.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               {c("No chats in this workspace yet.", "这个工作区还没有对话。")}
             </p>
           ) : (
             <ListRows className="-mx-2 max-md:mx-0">
-              {detail.chats.map((chat) => (
+              {chats.map((chat) => (
                 <ListRow
                   key={chat.id}
                   className={cn(chat.id === conversationId && "bg-foreground/[0.06]")}
@@ -251,7 +252,7 @@ export function WorkspacePanel({
         </Card>
       </section>
 
-      {run && <RunView run={run} c={c} locale={locale} symbols={detail.tickers} />}
+      {!conversationId && <AgentDesk workspace={workspace} model={model} />}
 
       {detail.runs.length > 1 && (
         <section className="space-y-2">
@@ -529,7 +530,11 @@ function RunView({
     <section className="space-y-3" aria-live="polite">
       <Card className="space-y-3 p-4">
         <div className="flex items-center gap-3">
-          <h3 className="text-sm font-semibold text-foreground">{c("Conclusion", "综合结论")}</h3>
+          <h3 className="text-sm font-semibold text-foreground">
+            {run.status === "running"
+              ? c("Team research", "团队研究")
+              : c("Conclusion", "综合结论")}
+          </h3>
           <StanceText stance={run.stance} c={c} />
           <span className="figure ml-auto text-xs text-muted-foreground">
             {formatRunTime(run.started_at, locale)}
@@ -543,10 +548,12 @@ function RunView({
               label={c("Researchers finished", "已完成的研究员")}
             />
             <p className="figure text-xs text-muted-foreground">
-              {c(
-                `${done} of ${results.length} researchers done`,
-                `${done}/${results.length} 位研究员已完成`,
-              )}
+              {done === results.length
+                ? c("Combining the findings…", "正在汇总研究结果…")
+                : c(
+                    `${done} of ${results.length} researchers finished`,
+                    `${done}/${results.length} 位研究员已结束`,
+                  )}
             </p>
           </div>
         )}

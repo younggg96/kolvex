@@ -40,21 +40,21 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 | 功能 | ID | Web 入口 | App 入口 | 后端 | 文档 | App |
 | --- | --- | --- | --- | --- | --- | --- |
 | YouTube 博主观点、博主 / 股票目录 | `youtubeOpinions` | `/dashboard/youtube-opinions` | `(tabs)/opinions`、`/creators`、`/creator/youtube/[id]` | `youtube_opinions.py` | [youtube-channel-profiles.md](../youtube-channel-profiles.md) | ◐ |
-| X 博主内容与翻译（每 6 小时采集并自动入库） | `youtubeOpinions` | `/dashboard/x-opinions` | `opinions` 的 X tab、`/creator/x/[id]` | `x_content.py` | [x-content.md](../x-content.md)、[内容翻译](../content-translation.md) | ◐ |
+| X 博主内容与翻译（每 6 小时采集并自动入库，Web 优先读取后台中文译文） | `youtubeOpinions` | `/dashboard/x-opinions` | `opinions` 的 X tab、`/creator/x/[id]` | `x_content.py` | [x-content.md](../x-content.md)、[内容翻译](../content-translation.md) | ◐ |
 | Reddit 热度榜 | `youtubeOpinions` | `/dashboard/reddit-opinions` | `opinions` 的 Reddit tab | `reddit_opinions.py` | `PRODUCT.md` | ✅ |
 | 观点事后表现（发布后 5 / 20 个交易日股价，对比 SPY；只陈述事实，不判对错） | `youtubeOpinions` | 股票页和博主 × 股票页的观点卡片（含「其他博主的看法」） | — | `youtube_opinions.py`（`/stocks/{ticker}/outcomes`） | [opinion-backtest.md](../opinion-backtest.md) | — |
 | 观点回看（全部看多 / 看空观点之后股价相对 SPY 的整体表现，可点进具体观点；「单个博主」先列全部博主，选中后按股票看这位博主说过的每只股票、说完至今涨跌以及与观点方向是否一致；博主主页的个人卡片有样本和跨度门槛；不按博主排名） | `youtubeOpinions` | 博主观点「回看」（`/dashboard/youtube-opinions/review`）；博主主页侧栏 | — | `youtube_opinions.py`（`/review`、`/review/opinions`、`/review/creators`、`/review/creators/{id}`、`/creators/{id}/review`） | [opinion-backtest.md](../opinion-backtest.md) | — |
 | 博主分享（图片 / 社交平台） | `youtubeOpinions` | 博主页、`/share/creators/[channelId]` | 博主页 | — | — | ◐ |
 | 观点更新 | `journal` | `/dashboard/journal` | `/updates` | `youtube_opinions.py` | `PRODUCT.md`「Reader Experience」 | ✅ |
 | 早晚报 | `briefs` | `/dashboard/briefs`、`/dashboard/briefs/[id]` | `(more)/briefs`、`brief/[id]` | `briefs.py` | [daily-briefs.md](../daily-briefs.md)、[prompts/daily-brief-generator.md](../prompts/daily-brief-generator.md) | ✅ |
-| 新闻终端 | `news` | `/dashboard/news` | `(more)/news` | `news_feed.py` | [news-feed.md](../news-feed.md)、[内容翻译](../content-translation.md) | ✅ |
+| 新闻终端（Web 优先读取后台中文译文） | `news` | `/dashboard/news` | `(more)/news` | `news_feed.py` | [news-feed.md](../news-feed.md)、[内容翻译](../content-translation.md) | ✅ |
 
 ### AI
 
 | 功能 | ID | Web 入口 | App 入口 | 后端 | 文档 | App |
 | --- | --- | --- | --- | --- | --- | --- |
-| AI 聊天（十个子 Agent：问答、深度研究、持仓、博主观点、财报、宏观、资金动向、估值、市场热度、模拟交易复盘；按意图自动路由） | `chat` | `/dashboard/chat`、`⌘K` | `(tabs)/chat`、`/chat/[id]` | `chat/` | `kolvex-backend-py/app/agent/README.md`、[model-catalog.md](../model-catalog.md)、[opinion-backtest.md](../opinion-backtest.md)（博主观点后股价工具）；记忆见 README 第 7 节（需迁移 `20261115000000_chat_memory.sql`；查看 / 清除入口在两端设置的偏好设置页） | ✅ |
-| 研究工作区（研究团队一次性研究；Agent 面板：每个面板是固定到一个子 Agent 的对话，可同时运行、分别继续；聊天问题需要多个专项 Agent 时自动在工作区为每个 Agent 开面板并同时开始研究；「设置 → 偏好设置 → AI 助手」可设默认技能、关闭 Agent、多 Agent 自动 / 先问我 / 关闭和最多几个，存在浏览器本地） | `chat` | `/dashboard/workspaces` | `(more)/workspaces` | `research_workspaces.py`、`chat/`（请求体 `agent`，事件 `agent_suggestion`） | `kolvex-backend-py/app/agent/README.md`（流式事件）；Agent 面板需迁移 `20261116231455_workspace_chat_agent.sql` | ◐（App 无 Agent 面板） |
+| AI 聊天（十个子 Agent：问答、深度研究、持仓、博主观点、财报、宏观、资金动向、估值、市场热度、模拟交易复盘；按意图自动路由） | `chat` | `/dashboard/chat`（桌面侧栏顶部主入口，手机网页底栏首项） | `(tabs)/chat`、`/chat/[id]` | `chat/` | `kolvex-backend-py/app/agent/README.md`、[model-catalog.md](../model-catalog.md)、[opinion-backtest.md](../opinion-backtest.md)（博主观点后股价工具）；记忆见 README 第 7 节（需迁移 `20261115000000_chat_memory.sql`；查看 / 清除入口在两端设置的偏好设置页） | ✅ |
+| 研究工作区（聊天按问题选择专项研究员，自动创建或复用工作区并启动一轮研究；专项结果、进度和综合结论保存在工作区；全局历史只列普通对话；Web 设置可选自动 / 先问我 / 关闭和人数上限） | `chat` | `/dashboard/workspaces` | `(more)/workspaces` | `research_workspaces.py`、`chat/` | [聊天和团队研究](../../kolvex-backend-py/app/agent/README.md) · 迁移 `20261117011931_chat_team_research.sql` | ◐（App 可查看团队研究，聊天自动发起待移植） |
 | AI 研究报告库、阅读 | `tradingAnalysis` | `/dashboard/ai-research` | `(more)/research`、`/report/[id]` | `trading_analysis/` | [内容翻译](../content-translation.md) | ✅ |
 | 研究任务生成（仅管理员） | `tradingAnalysis` | `/dashboard/ai-research?view=authoring` | `/research-task/[id]` | `trading_analysis/` | — | ◐（轮询代替 SSE） |
 
@@ -63,7 +63,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 | 功能 | ID | Web 入口 | App 入口 | 后端 | 文档 | App |
 | --- | --- | --- | --- | --- | --- | --- |
 | 自选股 | `watchlist` | `/dashboard/watchlist` | `(more)/watchlist` | Supabase 直连 + RLS | [watchlist-sync.md](../watchlist-sync.md) | ✅ |
-| 投资组合（Plaid） | `portfolio` | `/dashboard/portfolio`、公开页 `/portfolio/[userId]` | `/portfolio`（只读持仓快照） | `portfolio/`、`plaid.py` | `kolvex-frontend-web-nextjs/FEATURE_INVENTORY.md`「Plaid」 | ◐（2026-11-12 重新启用；App 缺 Plaid 授权、交易、配置、收益图、AI 分析、股票观察「我的持仓」） |
+| 投资组合（Plaid） | `portfolio` | `/dashboard/portfolio`、公开页 `/portfolio/[userId]` | `/portfolio`（只读持仓快照） | `portfolio/`、`plaid.py` | `kolvex-frontend-web-nextjs/FEATURE_INVENTORY.md`「Plaid」 | ◐（Web 收盘后自动采集交易日收益快照；App 缺 Plaid 授权、交易、配置、收益图、AI 分析、股票观察「我的持仓」） |
 | 虚拟交易 | `paperTrading` | `/dashboard/paper-trading`、个股 `?tab=paper-trading` | `(more)/paper-trading`、个股 tab | `paper_trading.py` | [paper-trading/PLAN.md](../paper-trading/PLAN.md)、[README.md](../paper-trading/README.md)、Web `UX-CONTRACT.md` | ✅ |
 | 超级投资者（13F） | `superinvestors` | `/dashboard/superinvestors`、`/dashboard/superinvestors/[manager]` | `(more)/superinvestors`、`/superinvestor/[manager]` | `free_research.py`（`/market/free-research/institutions`） | — | ✅ |
 | 国会交易 | `congressTrades` | `/dashboard/congress-trades` | `(more)/congress-trades` | `congress_trades.py` | — | ✅ |

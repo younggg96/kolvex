@@ -221,6 +221,11 @@ def _create_agent_for_request(
         )
 
     prompt = AGENT_PROMPTS.get(agent_type, FINANCIAL_SYSTEM_PROMPT) + source_hint
+    prompt += (
+        "\n\nKolvex has a Research team in the research workspace. The app decides when to start "
+        "a team run; you may point users to the workspace's Start research button when asked. "
+        "Do not speculate about internal orchestration, integrations, or whether a job started."
+    )
     if agent_type not in AGENT_PROMPTS or agent_type == "financial":
         prompt += ANSWER_SHAPE
     if memory_note:
@@ -360,6 +365,7 @@ async def stream_agent(
     memory_note: Optional[str] = None,
     agent: Optional[str] = None,
     allowed_agents: Optional[List[str]] = None,
+    team_research: bool = False,
 ) -> AsyncGenerator[Dict[str, Any], None]:
     """
     流式运行 Agent，逐步返回事件
@@ -390,9 +396,29 @@ async def stream_agent(
     # 1. 固定的 Agent 直接用；否则分类意图
     pinned = agent in AGENT_PROMPTS
     specialists: list[str] = []
+    question = _question_text(last_user_text(messages))
+    explicit_team = (
+        team_research
+        and not pinned
+        and bool(_TEAM_REQUEST.search(question))
+        and not _TEAM_HELP.search(question)
+    )
+    if explicit_team and _TEAM_COMMAND.fullmatch(question):
+        question = next(
+            (
+                text
+                for msg in reversed(messages)
+                if isinstance(msg, HumanMessage)
+                and (text := _question_text(str(msg.content)))
+                and not _TEAM_REQUEST.search(text)
+            ),
+            "",
+        )
     agent_type = (
         agent
         if pinned
+        else "financial"
+        if explicit_team
         else await _classify_intent(
             messages,
             user_api_keys=user_api_keys,
@@ -403,11 +429,22 @@ async def stream_agent(
     yield {"type": "agent", "agent": agent_type, "pinned": pinned}
     # Several specialists: the router model's pick for a broad question, else the keyword groups.
     if not pinned:
-        suggested = specialists or suggest_agents(last_user_text(messages))
+        suggested = specialists or suggest_agents(question)
+        if explicit_team and len(suggested) < 2:
+            preferred = [name for name, words in _KEYWORD_AGENTS if words.search(question)]
+            suggested = list(
+                dict.fromkeys(
+                    [*preferred, "financial", "earnings", "valuation", "buzz", "creators", "macro"]
+                )
+            )
         if allowed_agents:
             suggested = [name for name in suggested if name in allowed_agents]
         if len(suggested) >= 2:
-            yield {"type": "agent_suggestion", "agents": suggested}
+            suggestion = {"type": "agent_suggestion", "agents": suggested[:MAX_SUGGESTED_AGENTS]}
+            if team_research:
+                suggestion["question"] = question
+                suggestion["explicit"] = explicit_team
+            yield suggestion
 
     # 2. 创建对应 Agent (传入 user_id 以绑定用户数据工具)
     agent = _create_agent_for_request(
@@ -562,6 +599,22 @@ async def stream_agent(
 # =====================================================================
 
 # Asking for a report, a recommendation or a bull/bear case means the research agent.
+_TEAM_REQUEST = re.compile(
+    r"多\s*(?:个\s*)?agents?(?![a-z])|多智能体|研究团队|multi[\s-]*agents?\b|"
+    r"multiple\s+agents?\b|research\s+team\b",
+    re.IGNORECASE,
+)
+_TEAM_HELP = re.compile(
+    r"什么是|怎么用|怎么使用|如何使用|how (?:do i|to) use|what is", re.IGNORECASE
+)
+_TEAM_COMMAND = re.compile(
+    r"(?:我(?:想要?|要)?|请|帮我|可以|能不能|你能|启动|使用|用|试试|打开|开启|让|一下|"
+    r"的|功能|来|分析|研究|协作|吗|吧|这(?:个问题)?|[\s。！？!?.,，、]|"
+    r"(?:" + _TEAM_REQUEST.pattern + r")|"
+    r"\b(?:i|want|to|can|you|we|please|start|use|run|enable|the|a|feature)\b)+",
+    re.IGNORECASE,
+)
+
 _RESEARCH_WORDS = re.compile(
     r"深度|研究报告|研报|deep[- ]?dive|research report|bull(?:ish)? (?:and|vs\.?|or) bear|bear case|bull case|"
     r"多空|该不该买|值不值得|要不要买|能不能买|should i (?:buy|sell|hold)|worth (?:buying|holding)|"

@@ -163,3 +163,11 @@ their vendor/assumption origins, source links, forecast and sensitivity tables.
   `stock-discovery`, `stock-news`, Watchlist and virtual-trading
   tests. Five live local symbols (NVDA/AAPL/MSFT/TSLA/AMD) returned identical full
   batch and single-quote responses with no-store headers and server cache hits.
+
+## Team research from chat
+
+The saved chat reply links to the workspace. The workspace owns progress, specialist
+results, and the combined conclusion. In Ask me mode, the composer keeps the
+confirmation visible until dismissed or another question is sent. Global history
+and the workspace Chats list show ordinary conversations. Existing pinned Agent
+conversations are opened from Agent panels.

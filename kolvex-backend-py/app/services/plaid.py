@@ -7,21 +7,16 @@ import logging
 import os
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
-from zoneinfo import ZoneInfo
 
 import httpx
 from cryptography.fernet import Fernet
 
 from app.core.config import settings
 from app.core.supabase import get_supabase_service
-from app.services.portfolio_snapshot_service import (
-    calculate_position_snapshot_metrics,
-    get_portfolio_snapshot_service,
-)
+from app.services.plaid_history import calculate_snapshot, capture_session, connected_during_session
+from app.services.portfolio_snapshot_service import get_portfolio_snapshot_service
 
 logger = logging.getLogger(__name__)
-
-NEW_YORK = ZoneInfo("America/New_York")
 
 PLAID_BASE_URLS = {
     "sandbox": "https://sandbox.plaid.com",
@@ -152,9 +147,13 @@ class PlaidService:
             "last_error": None,
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }
-        (await asyncio.to_thread(self.supabase.table("plaid_items").upsert(
-            row, on_conflict="user_id,item_id"
-        ).execute))
+        (
+            await asyncio.to_thread(
+                self.supabase.table("plaid_items")
+                .upsert(row, on_conflict="user_id,item_id")
+                .execute
+            )
+        )
         await self._ensure_portfolio_connection(user_id, mark_synced=False)
         return {
             "success": True,
@@ -163,43 +162,43 @@ class PlaidService:
         }
 
     async def status(self, user_id: str) -> Dict[str, Any]:
-        items = (
-            (await asyncio.to_thread(self.supabase.table("plaid_items")
+        items = await asyncio.to_thread(
+            self.supabase.table("plaid_items")
             .select("id,institution_name,is_connected,last_synced_at,item_id")
             .eq("user_id", user_id)
             .eq("is_connected", True)
-            .execute))
+            .execute
         )
         connection = await self._get_portfolio_connection(user_id)
         accounts_count = 0
         holdings_count = 0
         if connection:
-            accounts = (
-                (await asyncio.to_thread(self.supabase.table("portfolio_accounts")
+            accounts = await asyncio.to_thread(
+                self.supabase.table("portfolio_accounts")
                 .select("id", count="exact")
                 .eq("connection_id", connection["id"])
-                .execute))
+                .execute
             )
             accounts_count = accounts.count or 0
             account_ids = [row["id"] for row in (accounts.data or [])]
             if account_ids:
                 holdings_count = (
-                    (await asyncio.to_thread(self.supabase.table("portfolio_positions")
-                    .select("id", count="exact")
-                    .in_("account_id", account_ids)
-                    .execute))
-                    .count
-                    or 0
-                )
+                    await asyncio.to_thread(
+                        self.supabase.table("portfolio_positions")
+                        .select("id", count="exact")
+                        .in_("account_id", account_ids)
+                        .execute
+                    )
+                ).count or 0
 
         transactions_count = (
-            (await asyncio.to_thread(self.supabase.table("plaid_investment_transactions")
-            .select("id", count="exact")
-            .eq("user_id", user_id)
-            .execute))
-            .count
-            or 0
-        )
+            await asyncio.to_thread(
+                self.supabase.table("plaid_investment_transactions")
+                .select("id", count="exact")
+                .eq("user_id", user_id)
+                .execute
+            )
+        ).count or 0
         first_item = (items.data or [None])[0]
         return {
             "is_connected": bool(items.data),
@@ -213,14 +212,10 @@ class PlaidService:
         }
 
     async def sync(self, user_id: str) -> Dict[str, Any]:
-        items = (
-            (await asyncio.to_thread(self.supabase.table("plaid_items")
-            .select("*")
-            .eq("user_id", user_id)
-            .eq("is_connected", True)
-            .execute))
-        )
-        if not items.data:
+        started_at = datetime.now(timezone.utc)
+        items = await self._get_items(user_id)
+        active_items = [item for item in items if item["is_connected"]]
+        if not active_items:
             raise ValueError("Plaid is not connected")
 
         connection = await self._ensure_portfolio_connection(user_id, mark_synced=False)
@@ -228,41 +223,66 @@ class PlaidService:
         holdings_count = 0
         transactions_count = 0
         last_error = None
+        snapshot_holdings = {}
 
-        for item in items.data:
+        for item in active_items:
             try:
                 access_token = self._decrypt(item["access_token_encrypted"])
                 holdings = await self._post(
                     "/investments/holdings/get",
                     {"access_token": access_token},
                 )
-                synced_account_ids = await self._sync_holdings(
-                    connection["id"], item, holdings
-                )
+                synced_account_ids = await self._sync_holdings(connection["id"], item, holdings)
+                snapshot_holdings[item["id"]] = holdings
                 accounts_count += len(synced_account_ids)
                 holdings_count += len(holdings.get("holdings", []))
                 tx_count = await self._sync_transactions(user_id, item, access_token)
                 transactions_count += tx_count
                 now = datetime.now(timezone.utc).isoformat()
-                (await asyncio.to_thread(self.supabase.table("plaid_items").update(
-                    {"last_synced_at": now, "last_error": None}
-                ).eq("id", item["id"]).execute))
+                (
+                    await asyncio.to_thread(
+                        self.supabase.table("plaid_items")
+                        .update({"last_synced_at": now, "last_error": None})
+                        .eq("id", item["id"])
+                        .execute
+                    )
+                )
             except Exception as error:
                 last_error = str(error)
                 logger.exception("Failed to sync Plaid item %s", item.get("item_id"))
-                (await asyncio.to_thread(self.supabase.table("plaid_items").update(
-                    {"last_error": last_error[:1000], "is_connected": False}
-                ).eq("id", item["id"]).execute))
+                (
+                    await asyncio.to_thread(
+                        self.supabase.table("plaid_items")
+                        .update({"last_error": last_error[:1000], "is_connected": False})
+                        .eq("id", item["id"])
+                        .execute
+                    )
+                )
 
         now = datetime.now(timezone.utc).isoformat()
-        (await asyncio.to_thread(self.supabase.table("portfolio_connections").update(
-            {"is_connected": True, "last_synced_at": now, "updated_at": now}
-        ).eq("id", connection["id"]).execute))
+        (
+            await asyncio.to_thread(
+                self.supabase.table("portfolio_connections")
+                .update({"is_connected": True, "last_synced_at": now, "updated_at": now})
+                .eq("id", connection["id"])
+                .execute
+            )
+        )
 
         if last_error and accounts_count == 0 and holdings_count == 0:
             raise PlaidApiError(last_error)
 
-        await self._record_snapshot(user_id, connection["id"])
+        if len(snapshot_holdings) == len(items) and not last_error:
+            try:
+                session = capture_session(started_at)
+                if (
+                    session
+                    and connected_during_session(connection, session)
+                    and not await self.has_snapshot(user_id, session)
+                ):
+                    await self._record_snapshot(connection, session, snapshot_holdings)
+            except Exception:
+                logger.exception("Failed to record portfolio snapshot after Plaid sync")
 
         return {
             "success": True,
@@ -286,10 +306,8 @@ class PlaidService:
         )
         if symbol:
             query = query.eq("symbol", symbol.strip().upper())
-        result = (
-            (await asyncio.to_thread(query.order("date", desc=True)
-            .range(offset, offset + limit - 1)
-            .execute))
+        result = await asyncio.to_thread(
+            query.order("date", desc=True).range(offset, offset + limit - 1).execute
         )
         rows = result.data or []
         return {
@@ -301,59 +319,96 @@ class PlaidService:
         }
 
     async def disconnect(self, user_id: str) -> Dict[str, Any]:
-        (await asyncio.to_thread(self.supabase.table("plaid_items").delete().eq("user_id", user_id).execute))
-        (await asyncio.to_thread(self.supabase.table("plaid_investment_transactions").delete().eq(
-            "user_id", user_id
-        ).execute))
+        (
+            await asyncio.to_thread(
+                self.supabase.table("plaid_items").delete().eq("user_id", user_id).execute
+            )
+        )
+        (
+            await asyncio.to_thread(
+                self.supabase.table("plaid_investment_transactions")
+                .delete()
+                .eq("user_id", user_id)
+                .execute
+            )
+        )
         connection = await self._get_portfolio_connection(user_id)
         if connection:
-            (await asyncio.to_thread(self.supabase.table("portfolio_connections").delete().eq(
-                "id", connection["id"]
-            ).execute))
-        return {"success": True, "message": "Plaid Investments disconnected"}
-
-    async def _record_snapshot(self, user_id: str, connection_id: str) -> None:
-        """Record today's portfolio value so the performance chart has history."""
-        try:
-            accounts = (
+            (
                 await asyncio.to_thread(
-                    self.supabase.table("portfolio_accounts")
-                    .select("id, portfolio_positions(*)")
-                    .eq("connection_id", connection_id)
+                    self.supabase.table("portfolio_connections")
+                    .delete()
+                    .eq("id", connection["id"])
                     .execute
                 )
-            ).data or []
-            positions = [
-                position
-                for account in accounts
-                for position in account.get("portfolio_positions") or []
-            ]
-            totals = {"market_value": 0.0, "cost_basis": 0.0, "unrealized_pnl": 0.0}
-            for position in positions:
-                metrics = calculate_position_snapshot_metrics(position)
-                for key in totals:
-                    totals[key] += metrics[key]
+            )
+        return {"success": True, "message": "Plaid Investments disconnected"}
+
+    async def _get_items(self, user_id: str) -> list[dict]:
+        query = self.supabase.table("plaid_items").select("*").eq("user_id", user_id)
+        return (await asyncio.to_thread(query.execute)).data or []
+
+    async def capture_daily_snapshot(self, connection: dict, session: date) -> bool:
+        """Read holdings only so an automated history run leaves transaction sync alone."""
+        if not connected_during_session(connection, session):
+            return False
+        user_id = connection["user_id"]
+        if await self.has_snapshot(user_id, session):
+            return False
+        items = await self._get_items(user_id)
+        if not items or any(not item["is_connected"] for item in items):
+            return False
+        holdings = {}
+        for item in items:
+            holdings[item["id"]] = await self._post(
+                "/investments/holdings/get",
+                {"access_token": self._decrypt(item["access_token_encrypted"])},
+            )
+        return await self._record_snapshot(connection, session, holdings)
+
+    async def has_snapshot(self, user_id: str, session: date) -> bool:
+        query = (
+            self.supabase.table("portfolio_snapshots")
+            .select("snapshot_date")
+            .eq("user_id", user_id)
+            .eq("snapshot_date", session.isoformat())
+            .limit(1)
+        )
+        return bool((await asyncio.to_thread(query.execute)).data)
+
+    async def _record_snapshot(
+        self, connection: dict, session: date, holdings: dict[str, dict]
+    ) -> bool:
+        user_id = connection["user_id"]
+        snapshot = await calculate_snapshot(holdings.values(), session)
+        if snapshot is None:
+            logger.info(
+                "Plaid snapshot for %s on %s awaits complete valuation", user_id[:8], session
+            )
+            return False
+        current = await self._get_portfolio_connection(user_id)
+        if not current or current["id"] != connection["id"] or not current["is_connected"]:
+            return False
+        current_items = await self._get_items(user_id)
+        if {item["id"] for item in current_items if item["is_connected"]} != holdings.keys():
+            return False
+        return bool(
             await get_portfolio_snapshot_service().record_snapshot(
                 user_id=user_id,
-                total_value=round(totals["market_value"], 2),
-                total_cost_basis=round(totals["cost_basis"], 2),
-                unrealized_pnl=round(totals["unrealized_pnl"], 2),
-                positions_count=len(positions),
-                accounts_count=len(accounts),
-                snapshot_date=datetime.now(NEW_YORK).date(),
+                snapshot_date=session,
+                replace_existing=False,
+                **snapshot,
             )
-        except Exception:
-            # A missing snapshot must not fail an otherwise successful sync.
-            logger.exception("Failed to record portfolio snapshot after Plaid sync")
+        )
 
     async def _get_portfolio_connection(self, user_id: str) -> Optional[Dict[str, Any]]:
-        result = (
-            (await asyncio.to_thread(self.supabase.table("portfolio_connections")
+        result = await asyncio.to_thread(
+            self.supabase.table("portfolio_connections")
             .select("*")
             .eq("user_id", user_id)
             .eq("provider", "plaid")
             .limit(1)
-            .execute))
+            .execute
         )
         return result.data[0] if result.data else None
 
@@ -366,9 +421,14 @@ class PlaidService:
             updates = {"is_connected": True, "updated_at": now}
             if mark_synced:
                 updates["last_synced_at"] = now
-            (await asyncio.to_thread(self.supabase.table("portfolio_connections").update(updates).eq(
-                "id", existing["id"]
-            ).execute))
+            (
+                await asyncio.to_thread(
+                    self.supabase.table("portfolio_connections")
+                    .update(updates)
+                    .eq("id", existing["id"])
+                    .execute
+                )
+            )
             return {**existing, **updates}
 
         data = {
@@ -378,7 +438,9 @@ class PlaidService:
             "is_public": False,
             "last_synced_at": now if mark_synced else None,
         }
-        created = (await asyncio.to_thread(self.supabase.table("portfolio_connections").insert(data).execute))
+        created = await asyncio.to_thread(
+            self.supabase.table("portfolio_connections").insert(data).execute
+        )
         if not created.data:
             raise Exception("Failed to create Plaid portfolio connection")
         return created.data[0]
@@ -422,7 +484,9 @@ class PlaidService:
             "connection_id": connection_id,
             "account_id": account["account_id"],
             "brokerage_name": item.get("institution_name") or "Plaid",
-            "account_name": account.get("name") or account.get("official_name") or "Investment Account",
+            "account_name": account.get("name")
+            or account.get("official_name")
+            or "Investment Account",
             "account_number": account.get("mask"),
             "account_type": account.get("subtype") or account.get("type") or "investment",
         }
@@ -497,9 +561,7 @@ class PlaidService:
         for row in existing.data or []:
             key = f"{row.get('symbol')}:{row.get('position_type', 'equity')}"
             if key not in synced_keys:
-                self.supabase.table("portfolio_positions").delete().eq(
-                    "id", row["id"]
-                ).execute()
+                self.supabase.table("portfolio_positions").delete().eq("id", row["id"]).execute()
 
     async def _sync_transactions(
         self,
@@ -562,9 +624,13 @@ class PlaidService:
                 }
             )
         if rows:
-            (await asyncio.to_thread(self.supabase.table("plaid_investment_transactions").upsert(
-                rows, on_conflict="user_id,investment_transaction_id"
-            ).execute))
+            (
+                await asyncio.to_thread(
+                    self.supabase.table("plaid_investment_transactions")
+                    .upsert(rows, on_conflict="user_id,investment_transaction_id")
+                    .execute
+                )
+            )
         return len(rows)
 
 

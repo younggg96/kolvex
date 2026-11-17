@@ -39,6 +39,8 @@ import { WorkspacePicker } from "./workspace/WorkspacePicker";
 import { ChatHistorySheet } from "./ChatHistorySheet";
 import { WorkspacePanel } from "./workspace/WorkspacePanel";
 import { AgentLaunchCard, useAgentLaunch } from "./workspace/AgentSuggestion";
+import { workspaceErrorText } from "./workspace/parts";
+import { isChatAgent, type ChatResearchRequest } from "@/lib/researchWorkspaceApi";
 import { allowedAgents, readAiAssistantSettings } from "@/lib/aiAssistantSettings";
 
 // ===== localStorage helpers for persisting chat preferences =====
@@ -169,14 +171,13 @@ export function ChatDetailContainer({
   const [activeTools, setActiveTools] = useState<ToolStatus[]>([]);
   const copy = useCopy();
   const workspace = useChatWorkspace(conversationId);
-  // A question that spans several specialists is also handed to each of them in a workspace.
+  const { refresh: refreshWorkspace } = workspace;
   const {
     launch: agentLaunch,
-    start: startAgentLaunch,
+    offer: offerAgentLaunch,
     confirm: confirmAgentLaunch,
     dismiss: dismissAgentLaunch,
-  } = useAgentLaunch(workspace, selectedModel);
-  const lastQuestionRef = useRef("");
+  } = useAgentLaunch(conversationId, refreshWorkspace);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [panelOpen, setPanelOpen] = useState(() => {
     try {
@@ -227,7 +228,12 @@ export function ChatDetailContainer({
 
   // ---- Stream processing helper ----
   const processAgentStream = useCallback(
-    async (response: Response, signal: AbortSignal, onAccepted: (message: ChatMessage) => void) => {
+    async (
+      response: Response,
+      signal: AbortSignal,
+      researchOptions: Omit<ChatResearchRequest, "message_id" | "question" | "agents">,
+      onAccepted: (message: ChatMessage) => void,
+    ) => {
       let accumulatedContent = "";
       let completion: AgentStreamEvent | undefined;
 
@@ -254,8 +260,17 @@ export function ChatDetailContainer({
             break;
 
           case "agent_suggestion":
-            if (event.agents?.length) {
-              void startAgentLaunch(event.agents, lastQuestionRef.current);
+            if (event.message_id && event.question !== undefined) {
+              const agents = (event.agents ?? []).filter(isChatAgent);
+              const tickers = findSymbols(event.question);
+              if (agents.length >= 2)
+                offerAgentLaunch({
+                  ...researchOptions,
+                  agents,
+                  message_id: event.message_id,
+                  question: event.question,
+                  tickers: tickers.length ? tickers.slice(0, 10) : researchOptions.tickers,
+                });
             }
             break;
 
@@ -293,7 +308,11 @@ export function ChatDetailContainer({
             break;
 
           case "error":
-            throw new Error(event.content || "The AI agent could not complete the response.");
+            throw new Error(
+              event.workspace_error
+                ? workspaceErrorText(event.workspace_error, copy)
+                : event.content || "The AI agent could not complete the response.",
+            );
         }
       });
 
@@ -302,7 +321,7 @@ export function ChatDetailContainer({
       }
       return completion;
     },
-    [t, startAgentLaunch],
+    [t, copy, offerAgentLaunch],
   );
 
   // ---- Notify parent when conversation changes ----
@@ -461,7 +480,6 @@ export function ChatDetailContainer({
       setStreamError(null);
       setLastSubmittedMessage(trimmedMessage);
       dismissAgentLaunch();
-      lastQuestionRef.current = trimmedMessage;
       const turn: NonNullable<typeof interruptedTurnRef.current> = {
         content: trimmedMessage,
         startedAt: Date.now(),
@@ -476,31 +494,54 @@ export function ChatDetailContainer({
       abortControllerRef.current = controller;
       let userMessage: ChatMessage | undefined;
       try {
+        const settings = readAiAssistantSettings();
+        const latestQuestionWithTicker = [...messages]
+          .reverse()
+          .find((message) => message.role === "user" && findSymbols(message.content).length > 0);
+        const tickers = findSymbols(trimmedMessage);
+        const researchOptions = {
+          model: selectedModel,
+          sources: activeSources,
+          skills: activeSkills,
+          context: pageEvidence || undefined,
+          tickers: (tickers.length
+            ? tickers
+            : findSymbols(latestQuestionWithTicker?.content ?? "")
+          ).slice(0, 10),
+        };
         // Stream response from LangGraph Agent via backend
         // The /stream endpoint saves user message + generates AI response
         const response = await streamAgentMessage(
           conversationId,
           trimmedMessage,
           {
-            model: selectedModel,
-            sources: activeSources,
-            skills: activeSkills,
-            agents: allowedAgents(readAiAssistantSettings(), activeSkills),
-            context: pageEvidence || undefined,
+            ...researchOptions,
+            agents: allowedAgents(settings, activeSkills),
+            teamResearch: settings.multiAgent,
+            maxTeamAgents: settings.maxAgents,
           },
           controller.signal,
         );
 
-        const completion = await processAgentStream(response, controller.signal, (message) => {
-          userMessage = message;
-          turn.userId = message.id;
-          if (turn.stopRequested) {
-            void stopAgentStream(conversationId).catch((error) =>
-              console.error("Unable to stop chat generation:", error),
-            );
-          }
-        });
+        const completion = await processAgentStream(
+          response,
+          controller.signal,
+          researchOptions,
+          (message) => {
+            userMessage = message;
+            turn.userId = message.id;
+            if (turn.stopRequested) {
+              void stopAgentStream(conversationId).catch((error) =>
+                console.error("Unable to stop chat generation:", error),
+              );
+            }
+          },
+        );
         if (controller.signal.aborted) return;
+        if (completion.run_id) {
+          setPanelOpen(true);
+          void refreshWorkspace();
+        }
         interruptedTurnRef.current = null;
         const committed = userMessage ? [userMessage] : [];
         if (completion.message_id && completion.created_at && completion.content) {
@@ -555,6 +596,7 @@ export function ChatDetailContainer({
       isBlocked,
       dismissAgentLaunch,
       processAgentStream,
+      refreshWorkspace,
       reconcileHistory,
       rememberMessages,
       selectConversation,

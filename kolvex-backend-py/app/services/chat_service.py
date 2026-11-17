@@ -4,11 +4,12 @@
 
 import asyncio
 import logging
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-from supabase import Client
+from typing import Any, Dict, List, Optional
+
+from postgrest.exceptions import APIError
 
 from app.core.supabase import get_supabase_service
+from supabase import Client
 
 logger = logging.getLogger(__name__)
 
@@ -41,28 +42,47 @@ class ChatService:
         try:
             offset = (page - 1) * page_size
 
-            result = (
-                (await asyncio.to_thread(self.supabase.table("chat_conversations")
-                .select("*, chat_messages(id, role, content, created_at)", count="exact")
-                .eq("user_id", user_id)
-                .order("updated_at", desc=True)
-                .range(offset, offset + page_size - 1)
-                .execute))
-            )
+            def fetch(hide_panels: bool):
+                columns = "*, chat_messages(id, role, content, created_at)"
+                if hide_panels:
+                    columns += ", panel:research_workspace_chats()"
+                query = self.supabase.table("chat_conversations").select(columns, count="exact")
+                if hide_panels:
+                    query = (
+                        query.eq("panel.user_id", user_id)
+                        .filter("panel.agent", "not.is", "null")
+                        .is_("panel", "null")
+                    )
+                return (
+                    query.eq("user_id", user_id)
+                    .order("updated_at", desc=True)
+                    .range(offset, offset + page_size - 1)
+                    .execute()
+                )
+
+            try:
+                result = await asyncio.to_thread(fetch, True)
+            except APIError as error:
+                # Databases without workspace panels cannot have agent-bound conversations.
+                if error.code not in {"PGRST200", "42703"}:
+                    raise
+                result = await asyncio.to_thread(fetch, False)
 
             conversations = []
             for conv in result.data or []:
                 messages = conv.pop("chat_messages", [])
                 # Sort messages by created_at
                 messages.sort(key=lambda m: m.get("created_at", ""))
-                
-                conversations.append({
-                    "id": conv["id"],
-                    "title": conv["title"],
-                    "messages": messages,
-                    "created_at": conv["created_at"],
-                    "updated_at": conv["updated_at"],
-                })
+
+                conversations.append(
+                    {
+                        "id": conv["id"],
+                        "title": conv["title"],
+                        "messages": messages,
+                        "created_at": conv["created_at"],
+                        "updated_at": conv["updated_at"],
+                    }
+                )
 
             return {
                 "conversations": conversations,
@@ -96,13 +116,13 @@ class ChatService:
             对话详情
         """
         try:
-            result = (
-                (await asyncio.to_thread(self.supabase.table("chat_conversations")
+            result = await asyncio.to_thread(
+                self.supabase.table("chat_conversations")
                 .select("*, chat_messages(*)")
                 .eq("id", conversation_id)
                 .eq("user_id", user_id)
                 .single()
-                .execute))
+                .execute
             )
 
             if not result.data:
@@ -142,35 +162,42 @@ class ChatService:
         """
         try:
             # Check conversation limit
-            count_result = (
-                (await asyncio.to_thread(self.supabase.table("chat_conversations")
+            count_result = await asyncio.to_thread(
+                self.supabase.table("chat_conversations")
                 .select("id", count="exact")
                 .eq("user_id", user_id)
-                .execute))
+                .execute
             )
-            
+
             if count_result.count and count_result.count >= MAX_CONVERSATIONS_PER_USER:
                 # Delete oldest conversation
-                oldest = (
-                    (await asyncio.to_thread(self.supabase.table("chat_conversations")
+                oldest = await asyncio.to_thread(
+                    self.supabase.table("chat_conversations")
                     .select("id")
                     .eq("user_id", user_id)
                     .order("updated_at", desc=False)
                     .limit(1)
-                    .execute))
+                    .execute
                 )
                 if oldest.data:
-                    (await asyncio.to_thread(self.supabase.table("chat_conversations").delete().eq(
-                        "id", oldest.data[0]["id"]
-                    ).execute))
+                    (
+                        await asyncio.to_thread(
+                            self.supabase.table("chat_conversations")
+                            .delete()
+                            .eq("id", oldest.data[0]["id"])
+                            .execute
+                        )
+                    )
 
-            result = (
-                (await asyncio.to_thread(self.supabase.table("chat_conversations")
-                .insert({
-                    "user_id": user_id,
-                    "title": title,
-                })
-                .execute))
+            result = await asyncio.to_thread(
+                self.supabase.table("chat_conversations")
+                .insert(
+                    {
+                        "user_id": user_id,
+                        "title": title,
+                    }
+                )
+                .execute
             )
 
             if result.data:
@@ -206,12 +233,12 @@ class ChatService:
             是否成功
         """
         try:
-            result = (
-                (await asyncio.to_thread(self.supabase.table("chat_conversations")
+            result = await asyncio.to_thread(
+                self.supabase.table("chat_conversations")
                 .update({"title": title})
                 .eq("id", conversation_id)
                 .eq("user_id", user_id)
-                .execute))
+                .execute
             )
             return bool(result.data)
         except Exception as e:
@@ -234,12 +261,12 @@ class ChatService:
             是否成功
         """
         try:
-            result = (
-                (await asyncio.to_thread(self.supabase.table("chat_conversations")
+            result = await asyncio.to_thread(
+                self.supabase.table("chat_conversations")
                 .delete()
                 .eq("id", conversation_id)
                 .eq("user_id", user_id)
-                .execute))
+                .execute
             )
             return bool(result.data)
         except Exception as e:
@@ -257,11 +284,8 @@ class ChatService:
             删除的数量
         """
         try:
-            result = (
-                (await asyncio.to_thread(self.supabase.table("chat_conversations")
-                .delete()
-                .eq("user_id", user_id)
-                .execute))
+            result = await asyncio.to_thread(
+                self.supabase.table("chat_conversations").delete().eq("user_id", user_id).execute
             )
             return len(result.data) if result.data else 0
         except Exception as e:
@@ -289,32 +313,34 @@ class ChatService:
         """
         try:
             # Verify conversation belongs to user
-            conv_result = (
-                (await asyncio.to_thread(self.supabase.table("chat_conversations")
+            conv_result = await asyncio.to_thread(
+                self.supabase.table("chat_conversations")
                 .select("id, title")
                 .eq("id", conversation_id)
                 .eq("user_id", user_id)
                 .single()
-                .execute))
+                .execute
             )
-            
+
             if not conv_result.data:
                 return None
 
             # Add message
-            result = (
-                (await asyncio.to_thread(self.supabase.table("chat_messages")
-                .insert({
-                    "conversation_id": conversation_id,
-                    "role": role,
-                    "content": content,
-                })
-                .execute))
+            result = await asyncio.to_thread(
+                self.supabase.table("chat_messages")
+                .insert(
+                    {
+                        "conversation_id": conversation_id,
+                        "role": role,
+                        "content": content,
+                    }
+                )
+                .execute
             )
 
             if result.data:
                 msg = result.data[0]
-                
+
                 # Auto-update title for first user message
                 conv = conv_result.data
                 if conv["title"] == "New Chat" and role == "user":
@@ -351,24 +377,24 @@ class ChatService:
         """
         try:
             # Verify conversation belongs to user
-            conv_result = (
-                (await asyncio.to_thread(self.supabase.table("chat_conversations")
+            conv_result = await asyncio.to_thread(
+                self.supabase.table("chat_conversations")
                 .select("id")
                 .eq("id", conversation_id)
                 .eq("user_id", user_id)
                 .single()
-                .execute))
+                .execute
             )
-            
+
             if not conv_result.data:
                 return []
 
-            result = (
-                (await asyncio.to_thread(self.supabase.table("chat_messages")
+            result = await asyncio.to_thread(
+                self.supabase.table("chat_messages")
                 .select("*")
                 .eq("conversation_id", conversation_id)
                 .order("created_at", desc=False)
-                .execute))
+                .execute
             )
 
             return result.data or []

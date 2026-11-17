@@ -183,6 +183,35 @@ class StreamAgentTests(unittest.TestCase):
             events = collect(messages=[HumanMessage(content="NVDA 估值贵不贵？巴菲特在买吗？")])
         self.assertIn({"type": "agent_suggestion", "agents": ["smart_money", "valuation"]}, events)
 
+    def test_explicit_team_request_uses_the_previous_question(self):
+        classify = AsyncMock()
+        with patch.object(supervisor, "_classify_intent", classify):
+            events = collect(
+                messages=[
+                    HumanMessage(content="NVDA 到底是怎么回事"),
+                    HumanMessage(content="我想要使用多agent 的功能"),
+                ],
+                allowed_agents=["earnings", "valuation"],
+                team_research=True,
+            )
+        classify.assert_not_awaited()
+        self.assertIn(
+            {
+                "type": "agent_suggestion",
+                "agents": ["earnings", "valuation"],
+                "question": "NVDA 到底是怎么回事",
+                "explicit": True,
+            },
+            events,
+        )
+
+    def test_asking_how_to_use_the_team_does_not_launch_it(self):
+        with patch.object(supervisor, "_classify_intent", AsyncMock(return_value="financial")):
+            events = collect(
+                messages=[HumanMessage(content="怎么使用多 Agent？")], team_research=True
+            )
+        self.assertFalse(any(event["type"] == "agent_suggestion" for event in events))
+
 
 class WorkspaceAgentChatTests(unittest.TestCase):
     def setUp(self):
@@ -209,6 +238,38 @@ class WorkspaceAgentChatTests(unittest.TestCase):
         with self.assertRaises(ws.WorkspaceError) as ctx:
             ws.attach_chat(self.db, "u1", self.w["id"], "c1", "astrology")
         self.assertEqual(ctx.exception.code, "invalid_agent")
+
+    def test_specialists_share_one_workspace_run_and_one_source_message(self):
+        self.db.rows["chat_messages"] = [
+            {"id": "m1", "role": "user", "conversation_id": "c1"},
+        ]
+        first, created = ws.start_chat_run(
+            self.db, "u1", "c1", "m1", "研究 NVDA", ["earnings", "valuation"], "model", ["NVDA"]
+        )
+        self.assertTrue(created)
+        second, created = ws.start_chat_run(
+            self.db, "u1", "c1", "m1", "研究 NVDA", ["earnings", "valuation"], "model", ["NVDA"]
+        )
+        self.assertFalse(created)
+        self.assertEqual(first["id"], second["id"])
+        self.assertEqual(ws.chat_workspace(self.db, "u1", "c1")["tickers"], ["NVDA"])
+        self.assertEqual(len(self.db.rows["chat_conversations"]), 2)
+        self.assertEqual(len(self.db.rows[ws.RUNS]), 1)
+        self.assertEqual([r["agent"] for r in self.db.rows[ws.RESULTS]], ["earnings", "valuation"])
+
+    def test_starting_in_an_existing_workspace_reuses_it(self):
+        ws.attach_chat(self.db, "u1", self.w["id"], "c1")
+        self.db.rows["chat_messages"] = [{"id": "m1", "role": "user", "conversation_id": "c1"}]
+        run, _ = ws.start_chat_run(
+            self.db, "u1", "c1", "m1", "研究 NVDA", ["earnings", "valuation"], None, ["NVDA"]
+        )
+        self.assertEqual(run["workspace_id"], self.w["id"])
+        self.assertEqual(len(self.db.rows[ws.WORKSPACES]), 1)
+        with self.assertRaises(ws.WorkspaceError) as error:
+            ws.start_chat_run(
+                self.db, "u1", "c2", "m1", "研究 NVDA", ["earnings", "valuation"], None, ["NVDA"]
+            )
+        self.assertEqual(error.exception.code, "message_not_found")
 
 
 if __name__ == "__main__":

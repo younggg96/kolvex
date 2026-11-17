@@ -15,11 +15,13 @@ import {
 import { cn } from "@/lib/utils";
 import { RICH_MARKDOWN_COMPONENTS } from "@/components/markdown/rich-markdown";
 import { richRemarkPlugins, richUrlTransform, stripEmoji } from "@/lib/markdown/prose";
-import type { AgentStatus, ResearchAgent, Stance } from "@/lib/researchWorkspaceApi";
+import type { AgentStatus, RunAgent, Stance } from "@/lib/researchWorkspaceApi";
+import { CHAT_AGENT_META } from "./chatAgents";
 
 type Copy = (en: string, zh: string) => string;
 
-export const AGENT_META: Record<ResearchAgent, { icon: LucideIcon; en: string; zh: string }> = {
+export const AGENT_META: Record<RunAgent, { icon: LucideIcon; en: string; zh: string }> = {
+  ...CHAT_AGENT_META,
   market: { icon: CandlestickChart, en: "Market", zh: "行情与技术" },
   fundamentals: { icon: Landmark, en: "Fundamentals", zh: "基本面" },
   news: { icon: Newspaper, en: "News", zh: "新闻与事件" },
@@ -27,13 +29,21 @@ export const AGENT_META: Record<ResearchAgent, { icon: LucideIcon; en: string; z
   portfolio: { icon: Briefcase, en: "Portfolio", zh: "我的持仓" },
 };
 
-export function agentName(agent: ResearchAgent, c: Copy) {
+export function agentName(agent: RunAgent, c: Copy) {
   const meta = AGENT_META[agent];
   return c(meta.en, meta.zh);
 }
 
 /** Direction as a written word in the semantic colour; never colour alone. */
-export function StanceText({ stance, c, className }: { stance: Stance | null | undefined; c: Copy; className?: string }) {
+export function StanceText({
+  stance,
+  c,
+  className,
+}: {
+  stance: Stance | null | undefined;
+  c: Copy;
+  className?: string;
+}) {
   if (!stance) return null;
   const config = {
     bullish: { label: c("Bullish", "偏多"), tone: "text-positive" },
@@ -41,14 +51,21 @@ export function StanceText({ stance, c, className }: { stance: Stance | null | u
     neutral: { label: c("Neutral", "中性"), tone: "text-muted-foreground" },
     mixed: { label: c("Mixed", "分歧"), tone: "text-warning" },
   }[stance];
-  return <span className={cn("whitespace-nowrap text-sm font-semibold", config.tone, className)}>{config.label}</span>;
+  return (
+    <span className={cn("whitespace-nowrap text-sm font-semibold", config.tone, className)}>
+      {config.label}
+    </span>
+  );
 }
 
 export function AgentStatusText({ status, c }: { status: AgentStatus; c: Copy }) {
   if (status === "running") {
     return (
       <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-        <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+        <Loader2
+          className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none"
+          aria-hidden="true"
+        />
         {c("Researching", "研究中")}
       </span>
     );
@@ -88,12 +105,19 @@ export function RelayBar({ statuses, label }: { statuses: AgentStatus[]; label: 
       className="flex gap-1"
     >
       {statuses.map((status, index) => (
-        <span key={index} className="relative h-1 flex-1 overflow-hidden rounded-full bg-foreground/[0.08]">
+        <span
+          key={index}
+          className="relative h-1 flex-1 overflow-hidden rounded-full bg-foreground/[0.08]"
+        >
           <span
             className={cn(
               "absolute inset-0 origin-left rounded-full transition-transform duration-500 ease-spring motion-reduce:transition-none",
               status === "failed" ? "bg-negative/50" : "bg-foreground/60",
-              status === "completed" || status === "failed" ? "scale-x-100" : status === "running" ? "scale-x-[0.35]" : "scale-x-0",
+              status === "completed" || status === "failed"
+                ? "scale-x-100"
+                : status === "running"
+                  ? "scale-x-[0.35]"
+                  : "scale-x-0",
             )}
           />
         </span>
@@ -102,7 +126,15 @@ export function RelayBar({ statuses, label }: { statuses: AgentStatus[]; label: 
   );
 }
 
-export function ResearchMarkdown({ children, className, symbols }: { children: string; className?: string; symbols?: string[] }) {
+export function ResearchMarkdown({
+  children,
+  className,
+  symbols,
+}: {
+  children: string;
+  className?: string;
+  symbols?: string[];
+}) {
   const remarkPlugins = richRemarkPlugins(symbols);
   return (
     <div
@@ -129,7 +161,10 @@ export function ResearchMarkdown({ children, className, symbols }: { children: s
 export function formatRunTime(iso: string | null | undefined, locale: string) {
   if (!iso) return "";
   return new Intl.DateTimeFormat(locale === "zh" ? "zh-CN" : "en-US", {
-    month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   }).format(new Date(iso));
 }
 
@@ -140,6 +175,10 @@ const ERROR_COPY: Record<string, [string, string]> = {
   too_many_tickers: ["Use at most 10 tickers.", "最多 10 只股票。"],
   workspace_unavailable: ["Workspaces are unavailable right now.", "工作区暂时不可用。"],
   workspace_not_found: ["This workspace no longer exists.", "这个工作区已不存在。"],
+  question_too_long: [
+    "Shorten the question to 2,000 characters to start research.",
+    "请将研究问题缩短至 2,000 字以内。",
+  ],
 };
 
 export function workspaceErrorText(code: string | undefined, c: Copy) {

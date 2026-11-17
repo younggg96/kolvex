@@ -9,6 +9,7 @@
 import asyncio
 import json
 import logging
+import re
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -30,6 +31,7 @@ from app.api.routes.chat.schemas import (
     UpdateConversationRequest,
 )
 from app.services.chat_service import ChatService, get_chat_service
+from app.services.research_workspace import WorkspaceError, launch_chat_research
 from app.services.user_api_keys_service import (
     UserApiKeysService,
     get_user_api_keys_service,
@@ -518,6 +520,7 @@ async def stream_message(
 
         full_response = ""
         tool_inputs: list = []
+        team_run = None
         async for event in stream_agent(
             messages=attach_page_evidence(history, context),
             user_id=current_user_id,
@@ -529,8 +532,65 @@ async def stream_message(
             memory_note=note,
             agent=request.agent,
             allowed_agents=request.agents,
+            team_research=request.team_research != "off",
         ):
             event_type = event.get("type")
+            if event_type == "agent_suggestion":
+                if request.team_research == "off":
+                    continue
+                agents = event["agents"][: request.max_team_agents]
+                question = event.get("question", request.content)
+                if request.team_research == "ask":
+                    publish(
+                        json.dumps(
+                            {
+                                "type": "agent_suggestion",
+                                "agents": agents,
+                                "question": question,
+                                "message_id": user_msg["id"],
+                            }
+                        )
+                    )
+                    if not event.get("explicit"):
+                        continue
+                    full_response = (
+                        "可以交给研究团队分析。"
+                        if re.search(r"[\u3400-\u9fff]", request.content)
+                        else "The research team can take this question."
+                    )
+                else:
+                    try:
+                        team_run = await launch_chat_research(
+                            current_user_id,
+                            conversation_id,
+                            user_msg["id"],
+                            question,
+                            agents,
+                            request.model,
+                            request.tickers,
+                            user_api_keys,
+                            request.sources,
+                            request.skills,
+                            request.context,
+                        )
+                    except WorkspaceError as error:
+                        publish(json.dumps({"type": "error", "workspace_error": error.code}))
+                        return
+                    except Exception:
+                        logger.exception("Could not start chat team research")
+                        publish(
+                            json.dumps(
+                                {"type": "error", "workspace_error": "workspace_unavailable"}
+                            )
+                        )
+                        return
+                    link = f"/dashboard/workspaces/{team_run['workspace_id']}"
+                    full_response = (
+                        f"已交给研究团队。[查看研究进度和结果]({link})"
+                        if re.search(r"[\u3400-\u9fff]", request.content)
+                        else f"Sent to the research team. [View progress and results]({link})"
+                    )
+                event_type, event = "done", {}
             if event_type == "tool_start":
                 tool_inputs.append(event.get("input"))
             if event_type == "token":
@@ -539,6 +599,8 @@ async def stream_message(
                 full_response = ""
             elif event_type == "done":
                 done = {"type": "done", "message_id": None}
+                if team_run:
+                    done.update(workspace_id=team_run["workspace_id"], run_id=team_run["id"])
                 if full_response.strip():
                     quotes = event.get("quote_evidence") or []
                     revenues = event.get("revenue_evidence") or []
@@ -601,7 +663,6 @@ async def stream_message(
                 "tool_end",
                 "error",
                 "agent",
-                "agent_suggestion",
             }:
                 publish(
                     json.dumps(

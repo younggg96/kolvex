@@ -416,7 +416,11 @@ function XPosts({
                       </a>
                     </div>
                     <div className="mt-4">
-                      <XTranslatedText text={post.text} quotes={post.quoted_texts} />
+                      <XTranslatedText
+                        text={post.text}
+                        quotes={post.quoted_texts}
+                        preparedChinese={post.translation_zh}
+                      />
                     </div>
                     {post.truncated && (
                       <p className="mt-2 text-xs text-muted-foreground">

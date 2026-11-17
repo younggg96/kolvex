@@ -518,3 +518,60 @@ test("the Web translation client switches to POST when Unicode expands beyond th
   await translateText("Market news", "zh");
   assert.equal(calls[1].url, "/api/translate?tl=zh-CN&q=Market%20news");
 });
+
+test("prepared headlines render immediately and replace an in-flight live translation", async () => {
+  const h = translationHarness();
+  const original = article("1", "Market news");
+  h.render([original]);
+  assert.equal(h.requests.length, 1);
+  const prepared = { ...original, title_zh: "市场快讯" };
+  assert.equal(h.render([prepared]).translations[original.title], "市场快讯");
+  assert.equal(h.requests[0].signal.aborted, true);
+  await h.respond(0, "旧译文");
+  assert.equal(h.render([prepared]).translations[original.title], "市场快讯");
+  assert.equal(h.requests.length, 1);
+  assert.equal(h.render([prepared], "en").translations[original.title], undefined);
+  h.unmount();
+});
+
+test("a polling response without a prepared translation retains a matching translation until the original changes", () => {
+  const original = article("1", "Market news");
+  const prepared = { ...original, title_zh: "市场快讯" };
+  const existing = feed.receiveNews(feed.EMPTY_FEED, [prepared]);
+  const refreshed = feed.receiveNews(existing, [original]);
+  assert.equal(refreshed.articles[0].title_zh, "市场快讯");
+  const corrected = feed.receiveNews(refreshed, [article("1", "Corrected news")]);
+  assert.equal(corrected.articles[0].title_zh, undefined);
+});
+
+test("an X post with a prepared translation renders Chinese without waiting for a browser request", () => {
+  const React = require("react");
+  const { renderToStaticMarkup } = require("react-dom/server");
+  let locale = "zh";
+  const { default: XTranslatedText } = load("components/x/XTranslatedText.tsx", {
+    react: React,
+    "react/jsx-runtime": require("react/jsx-runtime"),
+    "lucide-react": { Languages: () => null },
+    "@/components/ui/button": {
+      Button: ({ children }) => React.createElement("button", null, children),
+    },
+    "@/components/trading-analysis/translate": {
+      translateText: () => assert.fail("Unexpected live request"),
+    },
+    "@/lib/i18n": { useTranslation: () => ({ locale }) },
+  });
+  const render = () =>
+    renderToStaticMarkup(
+      React.createElement(XTranslatedText, {
+        text: "Shares rise",
+        quotes: ["Source quote"],
+        preparedChinese: { text: "股价上涨", quoted_texts: ["原文引用"] },
+      }),
+    );
+  assert.match(render(), /股价上涨/);
+  assert.match(render(), /原文引用/);
+  assert.match(render(), /显示原文/);
+  locale = "en";
+  assert.match(render(), /Shares rise/);
+  assert.doesNotMatch(render(), /股价上涨/);
+});

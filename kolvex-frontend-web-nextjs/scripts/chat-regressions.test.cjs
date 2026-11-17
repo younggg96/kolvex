@@ -262,10 +262,11 @@ test("failed creation unlocks the welcome page for a retry", async () => {
   assert.equal(f.pushes.length, 1);
 });
 
-function detailFixture() {
+function detailFixture(done = { type: "done" }) {
   const request = deferred(),
     selections = [],
     streams = [];
+  let workspaceRefreshes = 0;
   const h = harness("components/chat/ChatDetailContainer.tsx", {
     "next/navigation": {
       useRouter: () => ({ replace() {} }),
@@ -292,7 +293,7 @@ function detailFixture() {
       },
       readAgentStream: async (_response, onEvent) => {
         await onEvent({ type: "token", content: "OK" });
-        await onEvent({ type: "done" });
+        await onEvent(done);
       },
       getAgentStreamStatus: async () => ({ active: false }),
       stopAgentStream: async () => ({ active: false }),
@@ -308,15 +309,25 @@ function detailFixture() {
     },
     "@/components/decision/shared": { useCopy: () => (en) => en },
     "./workspace/useChatWorkspace": {
-      useChatWorkspace: () => ({ detail: null, run: null, loading: false, unavailable: false }),
+      useChatWorkspace: () => ({
+        detail: null,
+        run: null,
+        loading: false,
+        unavailable: false,
+        refresh: async () => {
+          workspaceRefreshes += 1;
+        },
+      }),
     },
+    "./workspace/parts": { workspaceErrorText: (code) => code },
+    "@/lib/researchWorkspaceApi": { isChatAgent: (agent) => typeof agent === "string" },
     "./workspace/WorkspacePicker": { WorkspacePicker: "workspace-picker" },
     "./workspace/WorkspacePanel": { WorkspacePanel: "workspace-panel" },
     "./workspace/AgentSuggestion": {
       AgentLaunchCard: "agent-launch-card",
       useAgentLaunch: () => ({
         launch: null,
-        start: async () => {},
+        offer: () => {},
         confirm: () => {},
         dismiss: () => {},
       }),
@@ -333,6 +344,9 @@ function detailFixture() {
     request,
     streams,
     selections,
+    get workspaceRefreshes() {
+      return workspaceRefreshes;
+    },
     render: (extra = {}) => h.render("ChatDetailContainer", { ...props, ...extra }),
   };
 }
@@ -351,6 +365,19 @@ test("detail sends page evidence as an API option, never appended to the message
   assert.equal(f.streams[0][2].context, evidence);
   f.request.resolve({});
   await tick();
+});
+
+test("an automatic team handoff refreshes the workspace after the run is saved", async () => {
+  const f = detailFixture({ type: "done", workspace_id: "workspace-1", run_id: "run-1" });
+  f.render({ firstMessage: "What changed with NVDA?" });
+  f.h.setupEffects();
+  f.h.flushTimers();
+  assert.equal(f.streams[0][2].teamResearch, "auto");
+  assert.equal(f.streams[0][2].maxTeamAgents, 3);
+  assert.equal(f.workspaceRefreshes, 0);
+  f.request.resolve({});
+  await tick();
+  assert.equal(f.workspaceRefreshes, 1);
 });
 
 test("clearing evidence removes stored context and omits it on the next send", async () => {

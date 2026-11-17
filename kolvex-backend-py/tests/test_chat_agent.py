@@ -679,6 +679,68 @@ class StreamRouteTests(unittest.TestCase):
         self.assertEqual(history_message.model_dump(mode="json")["quote_evidence"], quotes)
 
 
+class TeamResearchStreamTests(unittest.TestCase):
+    def test_auto_routes_to_one_workspace_run_without_creating_a_chat_agent(self):
+        from app.api.routes.chat import routes
+        from app.services import research_workspace as ws
+        from tests.test_research_workspace import FakeDB
+
+        db = FakeDB()
+        db.rows["chat_conversations"] = [{"id": "c1", "user_id": "user-1", "title": "NVDA"}]
+        db.rows["chat_messages"] = [{"id": "m1", "conversation_id": "c1", "role": "user"}]
+        app = FastAPI()
+        app.include_router(routes.router)
+        app.dependency_overrides[routes.get_current_user_id] = lambda: "user-1"
+        app.dependency_overrides[routes.get_user_api_keys_service] = lambda: SimpleNamespace(
+            get_keys_dict=AsyncMock(return_value={})
+        )
+        question = "NVDA 到底是怎么回事"
+        router_model = Mock(
+            ainvoke=AsyncMock(return_value=AIMessage(content="buzz, earnings, valuation"))
+        )
+        with (
+            patch("app.agent.memory.save_user_message_once", AsyncMock(return_value={"id": "m1"})),
+            patch(
+                "app.agent.memory.save_message",
+                AsyncMock(return_value={"id": "m2", "created_at": "now"}),
+            ) as save,
+            patch(
+                "app.agent.memory.load_conversation_history",
+                AsyncMock(return_value=[HumanMessage(content=question)]),
+            ),
+            patch("app.agent.chat_memory.load_memory_note", AsyncMock(return_value=None)),
+            patch("app.agent.chat_memory.remember_turn_later"),
+            patch.object(routes, "turn_context", AsyncMock(return_value=None)),
+            patch.object(supervisor, "get_fast_llm", return_value=router_model),
+            patch.object(supervisor, "_create_agent_for_request") as normal_chat_agent,
+            patch("app.core.supabase.get_supabase_service", return_value=db),
+            patch.object(ws, "launch") as launch,
+        ):
+            response = TestClient(app).post(
+                "/conversations/c1/stream",
+                json={
+                    "content": question,
+                    "team_research": "auto",
+                    "max_team_agents": 2,
+                    "sources": [],
+                    "skills": ["fundamentals", "news"],
+                    "tickers": ["NVDA"],
+                },
+            )
+        events = [
+            json.loads(line[6:]) for line in response.text.splitlines() if line.startswith("data: ")
+        ]
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(events[-1]["type"], "done")
+        self.assertEqual(events[-1]["run_id"], db.rows[ws.RUNS][0]["id"])
+        self.assertEqual(db.rows[ws.RUNS][0]["agents"], ["buzz", "earnings"])
+        self.assertEqual(len(db.rows["chat_conversations"]), 1)
+        self.assertIn("查看研究进度和结果", save.await_args.kwargs["content"])
+        normal_chat_agent.assert_not_called()
+        launch.assert_called_once()
+        self.assertEqual(launch.call_args.args[1]["sources"], [])
+
+
 class DetachedStreamTests(unittest.IsolatedAsyncioTestCase):
     async def test_web_disconnect_does_not_cancel_or_duplicate_the_turn(self):
         from fastapi import HTTPException

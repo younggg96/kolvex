@@ -10,6 +10,15 @@ export const RESEARCH_AGENTS = [
   "portfolio",
 ] as const;
 export type ResearchAgent = (typeof RESEARCH_AGENTS)[number];
+export type RunAgent =
+  | ResearchAgent
+  | "financial"
+  | "earnings"
+  | "macro"
+  | "smart_money"
+  | "valuation"
+  | "buzz"
+  | "paper_review";
 export const DEFAULT_RESEARCH_AGENTS: ResearchAgent[] = [
   "market",
   "fundamentals",
@@ -40,7 +49,7 @@ export interface WorkspaceListItem extends Workspace {
 
 export interface AgentResult {
   id: string;
-  agent: ResearchAgent;
+  agent: RunAgent;
   status: AgentStatus;
   summary: string;
   content: string;
@@ -57,7 +66,7 @@ export interface ResearchRun {
   workspace_id: string;
   status: RunStatus;
   question: string;
-  agents: ResearchAgent[];
+  agents: RunAgent[];
   model_id: string | null;
   synthesis: string | null;
   stance: Stance | null;
@@ -72,6 +81,7 @@ export interface WorkspaceChat {
   title: string;
   updated_at: string | null;
   added_at: string;
+  agent?: string | null;
 }
 
 export interface WorkspaceDetail extends Workspace {

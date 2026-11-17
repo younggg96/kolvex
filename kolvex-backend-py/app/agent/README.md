@@ -44,17 +44,23 @@
 | `GET` / `DELETE /api/v1/chat/conversations/{id}/stream` | 查询 / 停止正在进行的一轮 |
 | 其余 `/conversations` 接口 | 对话的增删改查，不涉及 Agent |
 
+### 从聊天启动团队研究
+
+Web 流式请求发送 `team_research`（`auto` / `ask` / `off`）、`max_team_agents` 和识别的股票代码。路由模型可为宽泛问题选择多个专项研究员，常见复合问题也可直接按关键词识别。明确要求用多 Agent 的简短追问会继承上一条研究问题。关闭时和固定 Agent 面板内仍按普通聊天处理。未发送新字段的客户端保持普通聊天。
+
+自动模式在服务端创建或复用当前对话的工作区，为这条用户消息保存一轮研究，然后在后台并行执行。聊天保存一条带进度入口的回复。工作区保存每位专项研究员的状态、内容和综合结论。按用户消息 ID 去重，沿用模型、数据源和技能设置。`GET /chat/conversations` 在分页前过滤已绑定子 Agent 的历史面板，旧面板可在 Web 工作区里打开。团队研究需要迁移 `20261117011931_chat_team_research.sql`。
+
 ### 流式事件（`stream_agent`）
 
 | `type` | 含义 |
 | --- | --- |
 | `status` | 阶段：`routing` → `planning` → `writing` |
 | `agent` | 本轮用哪个子 Agent：`agent`，`pinned` 表示是请求固定的（工作区 Agent 面板） |
-| `agent_suggestion` | 问题需要两个及以上专项 Agent 时给出 `agents`（最多 4 个，不含 research）。来源：关键词没命中时，路由模型对宽泛问题（如「NVDA 到底是怎么回事」）可以返回逗号分隔的多个名字，第一个在聊天里回答；关键词命中时按关键词组判断，不额外调用模型。固定 Agent 时不发。Web 收到后自动在工作区为每个 Agent 建（或复用）面板并让它们在服务端同时开始 |
+| `agent_suggestion` | Web 选择「先问我」时返回专项研究员 `agents`、研究问题 `question` 和用户消息 `message_id`。确认后调用 `POST /research-workspaces/by-chat/{conversation_id}/runs` |
 | `token` | 回答文字片段 |
 | `token_reset` | 撤回刚才的片段：模型写了几个字后决定去调工具 |
 | `tool_start` / `tool_end` | 工具开始 / 结束，带工具名；前端按工具名显示中英文进度文案 |
-| `done` | 结束，带 `quote_evidence`、`revenue_evidence`、`financial_evidence`、`data_gaps`、`scaled_figures` |
+| `done` | 结束，带报价、财务证据与数据缺口。自动交给团队的回复带 `workspace_id` 和 `run_id` |
 | `error` | 失败。异常原文只写日志，不发给用户 |
 
 ## 3. 工具
@@ -130,7 +136,7 @@
 | --- | --- |
 | `config.py` `SYSTEM_PROMPT` | 所有子 Agent 共用：可用工具、回答原则、跟随用户语言，加上 `app/core/report_format.py` 的排版规则 |
 | `graphs/financial.py` | financial 的角色说明 |
-| `graphs/research.py` | research 的研究步骤；明确说聊天里不能启动 TradingAgents |
+| `graphs/research.py` | 单 Agent 深度研究的步骤 |
 | `graphs/portfolio.py` / `creators.py` / `earnings.py` / `macro.py` / `smart_money.py` / `valuation.py` / `buzz.py` / `paper_review.py` | 八个专项 Agent 的取数步骤和回答规则（见第 1 节） |
 | `graphs/supervisor.py` | 路由提示词；按本轮可用工具追加的规则（报价时间、亿 / billion 换算、营收期间、技能被关时的说明）；financial 的 `ANSWER_SHAPE` |
 
@@ -199,7 +205,7 @@ app/agent/
 
 AI 研究报告库（`/dashboard/ai-research`，功能开关 `tradingAnalysis`）**不走这个 Agent**。报告由开源多 Agent 框架 TradingAgents 生成：`app/services/trading_analysis_service.py` 在后台线程里跑，Redis 记录进度，结果存 Supabase，只有管理员能发起，生成后所有登录用户可读。
 
-`tools/trading_analysis_tools.py` 里有一个把 TradingAgents 包成聊天工具的版本，但没有接入，因为：一次要跑好几分钟，会卡住聊天；绕过了 `TradingAnalysisService`，结果不保存、不进报告库；模型写死；而且等于让任何用户在聊天里触发一次很贵的多模型调用。research 提示词因此明确说聊天里不能启动它。
+`tools/trading_analysis_tools.py` 里有一个把 TradingAgents 包成聊天工具的版本，但没有接入，因为：一次要跑好几分钟，会卡住聊天；绕过了 `TradingAnalysisService`，结果不保存、不进报告库；模型写死；而且等于让任何用户在聊天里触发一次很贵的多模型调用。聊天里的团队研究走工作区的研究任务。
 
 ## 10. 测试
 

@@ -26,8 +26,9 @@ header, with pause/resume and refresh. No bookmark controls or storage hook.
   reader's local timezone and Chinese/English formatting. Titles link directly
   to the source in a new tab. No row selection or secondary detail surface.
 - Headlines automatically follow the active application language. English uses
-  source titles; Chinese translates displayed titles with the existing
-  `translateText` client and `/api/translate` service, without individual actions.
+  source titles. Chinese shows prepared titles from the feed when present.
+  Remaining displayed titles use `translateText` and `/api/translate` without
+  individual actions.
   The [shared translation service](content-translation.md) retries transient
   upstream failures and reuses only validated translations.
 - `useNewsTranslations` limits concurrency to three, deduplicates identical text,

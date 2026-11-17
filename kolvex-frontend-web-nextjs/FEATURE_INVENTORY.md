@@ -51,3 +51,5 @@
 | 投资交易表 | `components/portfolio/InvestmentTransactionsTable.tsx` |
 
 后端提供 `/api/v1/plaid/status`、`/link-token`、`/exchange-token`、`/sync`、`/transactions`、`/disconnect`。
+
+组合价值和未实现盈亏曲线读取每日估值快照。后端在美股收盘后到下一次开盘前（最长 18 小时）自动读取已连接账户的持仓；在这个窗口内手动刷新也可采集当次收盘的快照。同一个纽约交易日只保存一份完整的美元估值。对有明确美国市场身份的股票和 ETF，券商报价缺失或过期时可使用同一交易日的收盘价。估值或成本不完整时历史留空。已有快照继续显示，连接前和漏采的历史需要独立的可验证持仓数据才能补齐。

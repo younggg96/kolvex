@@ -1,37 +1,46 @@
 """Administration for retained user, portfolio and research features."""
+
 import asyncio
 import logging
-from datetime import datetime, timezone, timedelta
-from typing import Dict, Any, Optional, List
-from fastapi import APIRouter, Depends, Query, HTTPException, status, BackgroundTasks
-from supabase import Client
+from datetime import datetime, timezone
+from typing import Any, Dict, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+
 from app.api.dependencies.auth import verify_admin
 from app.core.supabase import get_supabase_service
+from supabase import Client
 
-logger = logging.getLogger(__name__)
 from .briefs import router as briefs_router
 from .email import router as email_router
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 router.include_router(briefs_router)
 router.include_router(email_router)
 BUSINESS_TABLES = (
-    "market_events", "user_profiles", "user_api_keys", "chat_conversations", "chat_messages",
-    "trading_analyses", "youtube_stock_opinions", "portfolio_connections",
-    "portfolio_accounts", "portfolio_positions", "portfolio_snapshots",
+    "market_events",
+    "user_profiles",
+    "user_api_keys",
+    "chat_conversations",
+    "chat_messages",
+    "trading_analyses",
+    "youtube_stock_opinions",
+    "portfolio_connections",
+    "portfolio_accounts",
+    "portfolio_positions",
+    "portfolio_snapshots",
 )
 
+
 @router.get("/database/stats")
-def get_database_stats(admin_id: str = Depends(verify_admin), supabase: Client = Depends(get_supabase_service)):
+def get_database_stats(
+    admin_id: str = Depends(verify_admin), supabase: Client = Depends(get_supabase_service)
+):
     counts = {}
     for name in BUSINESS_TABLES:
         try:
-            result = (
-                supabase.table(name)
-                .select("id", count="exact")
-                .limit(0)
-                .execute()
-            )
+            result = supabase.table(name).select("id", count="exact").limit(0).execute()
             counts[name] = result.count or 0
         except Exception as exc:
             logger.exception("Failed to count table %s", name)
@@ -41,8 +50,11 @@ def get_database_stats(admin_id: str = Depends(verify_admin), supabase: Client =
             ) from exc
     return {"tables": counts}
 
+
 @router.get("/overview")
-def get_admin_overview(admin_id: str = Depends(verify_admin), supabase: Client = Depends(get_supabase_service)):
+def get_admin_overview(
+    admin_id: str = Depends(verify_admin), supabase: Client = Depends(get_supabase_service)
+):
     return get_database_stats(admin_id, supabase)
 
 
@@ -54,11 +66,10 @@ async def trigger_portfolio_snapshot(
     """
     📸 为所有用户记录 Portfolio 快照
 
-    此功能会立即为所有已连接券商账户的用户保存当前的投资组合快照。
-    用于生成用户的盈利曲线。
+    为已连接的投资组合生成历史快照。Plaid 使用已完成交易日的估值。
 
     Args:
-        sync_first: 是否先同步持仓数据（默认 True）
+        sync_first: 已弃用
 
     Returns:
         操作结果摘要
@@ -67,6 +78,8 @@ async def trigger_portfolio_snapshot(
 
     logger = logging.getLogger(__name__)
 
+    from app.services.plaid import get_plaid_service
+    from app.services.plaid_history import capture_session
     from app.services.portfolio.service import PortfolioService
     from app.services.portfolio_snapshot_service import get_portfolio_snapshot_service
 
@@ -78,11 +91,11 @@ async def trigger_portfolio_snapshot(
         logger.info(f"📸 Starting portfolio snapshot (sync_first={sync_first})")
 
         # 获取所有已连接的用户
-        result = (
-            (await asyncio.to_thread(supabase.table("portfolio_connections")
-            .select("user_id, is_connected")
+        result = await asyncio.to_thread(
+            supabase.table("portfolio_connections")
+            .select("id, user_id, provider, created_at")
             .eq("is_connected", True)
-            .execute))
+            .execute
         )
 
         if not result.data:
@@ -101,11 +114,31 @@ async def trigger_portfolio_snapshot(
         success_count = 0
         failed_count = 0
         details = []
+        session = capture_session(datetime.now(timezone.utc))
+        plaid_service = get_plaid_service()
 
         for connection in result.data:
             user_id = connection["user_id"]
 
             try:
+                if connection["provider"] == "plaid":
+                    saved = session is not None and (
+                        await plaid_service.has_snapshot(user_id, session)
+                        or await plaid_service.capture_daily_snapshot(connection, session)
+                    )
+                    if saved:
+                        success_count += 1
+                    else:
+                        failed_count += 1
+                    details.append(
+                        {
+                            "user_id": user_id[:8] + "...",
+                            "success": saved,
+                            "reason": None if saved else "No complete session valuation available",
+                        }
+                    )
+                    continue
+
                 # 获取持仓数据计算快照
                 holdings = await portfolio_service.get_user_holdings(user_id)
 
@@ -161,9 +194,7 @@ async def trigger_portfolio_snapshot(
                     positions_count=positions_count,
                     accounts_count=accounts_count,
                 )
-                logger.info(
-                    f"✅ Snapshot recorded for user {user_id[:8]}: {snapshot_result}"
-                )
+                logger.info(f"✅ Snapshot recorded for user {user_id[:8]}: {snapshot_result}")
 
                 success_count += 1
                 details.append(
@@ -177,13 +208,9 @@ async def trigger_portfolio_snapshot(
                 )
 
             except Exception as e:
-                logger.error(
-                    f"❌ Failed to record snapshot for user {user_id[:8]}: {e}"
-                )
+                logger.error(f"❌ Failed to record snapshot for user {user_id[:8]}: {e}")
                 failed_count += 1
-                details.append(
-                    {"user_id": user_id[:8] + "...", "success": False, "reason": str(e)}
-                )
+                details.append({"user_id": user_id[:8] + "...", "success": False, "reason": str(e)})
 
         # 生成更详细的消息
         message = f"Completed: {success_count}/{total_users} users"
@@ -208,6 +235,7 @@ async def trigger_portfolio_snapshot(
             "message": f"Error: {str(e)}",
         }
 
+
 @router.get("/users", response_model=Dict[str, Any])
 def list_all_users(
     page: int = Query(1, ge=1, description="页码"),
@@ -228,9 +256,7 @@ def list_all_users(
             query = query.or_(f"email.ilike.%{search}%,username.ilike.%{search}%")
 
         response = (
-            query.order("created_at", desc=True)
-            .range(offset, offset + page_size - 1)
-            .execute()
+            query.order("created_at", desc=True).range(offset, offset + page_size - 1).execute()
         )
 
         return {
@@ -245,6 +271,7 @@ def list_all_users(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to list users: {str(e)}",
         )
+
 
 @router.patch("/users/{user_id}/admin", response_model=Dict[str, Any])
 def toggle_user_admin(

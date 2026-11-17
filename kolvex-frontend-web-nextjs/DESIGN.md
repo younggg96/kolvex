@@ -1452,9 +1452,11 @@ Rules that follow from that:
   palette. Indicator stacking is isolated per control and reduced motion skips
   movement. Selection measurement ignores its own style writes.
 - Desktop sidebar, mobile dock and the mobile opinion source nav take a grey
-  wash on hover; the selected route is the only entry marked, by its pill (solid
-  secondary in the sidebar, glass in the dock and source nav). Icons follow the
-  text colour instead of turning green.
+  wash on hover by default. The current route uses a filled pill, and icons
+  follow the label color. AI Chat is the primary link in the fixed desktop
+  sidebar header: it uses a solid brand fill from another route and a neutral,
+  inverted fill when chat is current. The collapsed rail keeps the chat icon
+  and its accessible label.
 - Menus (`DropdownMenuItem`, `MultiSelect`, native disclosures) highlight on a
   grey wash with foreground text.
 - Tables keep semantic positive/negative direction colours untouched; the row

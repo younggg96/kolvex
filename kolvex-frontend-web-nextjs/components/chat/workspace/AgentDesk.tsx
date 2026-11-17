@@ -44,61 +44,7 @@ import type { ChatWorkspace } from "./useChatWorkspace";
 type Copy = (en: string, zh: string) => string;
 type AgentPanelChat = WorkspaceChat & { agent: ChatAgent };
 
-const ACCEPTED = Symbol("accepted");
 const POLL_MS = 3000;
-
-/**
- * Starts a turn with the agent pinned and returns once the server has accepted it. The proxy asks
- * the backend to continue on disconnect, so the turn finishes and is saved without this page.
- */
-export async function startAgentTurn(
-  conversationId: string,
-  agent: ChatAgent,
-  question: string,
-  model?: string,
-) {
-  const abort = new AbortController();
-  try {
-    const response = await streamAgentMessage(
-      conversationId,
-      question,
-      { agent, model, skills: panelSkills(readAiAssistantSettings(), agent) },
-      abort.signal,
-    );
-    await readAgentStream(response, (event) => {
-      if (event.type === "accepted") throw ACCEPTED;
-      if (event.type === "error") throw new Error(event.content || "error");
-    });
-  } catch (error) {
-    if (error !== ACCEPTED) throw error;
-  } finally {
-    abort.abort();
-  }
-}
-
-/**
- * The workspace's agent panels for these agents: existing panels are reused, missing ones are
- * created as chats bound to their agent. Returns the chat id per agent.
- */
-export async function ensureAgentPanels(
-  workspaceId: string,
-  existing: WorkspaceChat[],
-  agents: ChatAgent[],
-  c: Copy,
-) {
-  const ids = {} as Record<ChatAgent, string>;
-  for (const agent of agents) {
-    const panel = existing.find((chat) => chat.agent === agent);
-    if (panel) {
-      ids[agent] = panel.id;
-      continue;
-    }
-    const conversation = await createConversation(chatAgentName(agent, c));
-    await attachChat(workspaceId, conversation.id, agent);
-    ids[agent] = conversation.id;
-  }
-  return ids;
-}
 
 /**
  * The workspace's agent panels: one chat per chat sub-agent, side by side. Each panel streams on
@@ -119,7 +65,8 @@ export function AgentDesk({ workspace, model }: { workspace: ChatWorkspace; mode
     setAdding(true);
     setError(false);
     try {
-      await ensureAgentPanels(detail.id, [], [agent], c);
+      const conversation = await createConversation(chatAgentName(agent, c));
+      await attachChat(detail.id, conversation.id, agent);
       await workspace.reload();
     } catch {
       setError(true);
@@ -144,8 +91,8 @@ export function AgentDesk({ workspace, model }: { workspace: ChatWorkspace; mode
           <h3 className="text-sm font-semibold text-foreground">{c("Agents", "Agent 面板")}</h3>
           <InfoTip label={c("How agent panels work", "Agent 面板是什么")}>
             {c(
-              "Each panel is a chat with one specialist agent. Panels run at the same time, and each keeps its own thread. They all see this workspace's tickers and brief. The panel chats also appear under Chats.",
-              "每个面板是和一个专项 Agent 的对话。多个面板可以同时运行，各自保留对话记录，都能看到本工作区的股票和研究背景。面板对话也会出现在「对话」列表里。",
+              "Each panel keeps a conversation with one specialist who can see the workspace's tickers and brief.",
+              "每个面板保留与一位专项研究员的对话，研究员可以看到本工作区的股票和研究背景。",
             )}
           </InfoTip>
         </div>

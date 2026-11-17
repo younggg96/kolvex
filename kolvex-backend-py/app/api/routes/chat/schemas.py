@@ -3,7 +3,7 @@ Chat API Schemas
 """
 
 from datetime import datetime
-from typing import Any, List, Optional
+from typing import Any, List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -92,6 +92,9 @@ class SendMessageRequest(BaseModel):
         max_length=20,
         description="Agents automatic routing may pick (user settings and skills). Omit for all.",
     )
+    team_research: Literal["auto", "ask", "off"] = "off"
+    max_team_agents: int = Field(default=3, ge=2, le=4)
+    tickers: list[str] = Field(default_factory=list, max_length=10)
 
 
 class MessageResponse(BaseModel):

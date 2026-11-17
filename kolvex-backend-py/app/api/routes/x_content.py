@@ -1,12 +1,16 @@
 """Public source content; all writes require the existing administrator permission."""
+
 import logging
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field
+from starlette.concurrency import run_in_threadpool
 
 from app.api.dependencies.auth import verify_admin
+from app.core.redis import get_redis
 from app.core.supabase import get_supabase_service
+from app.services.content_translation import enrich_posts
 from app.services.x_content import XContentService
 
 router = APIRouter(prefix="/x-content", tags=["X Content"])
@@ -25,8 +29,8 @@ class CreatorInput(BaseModel):
     avatar_url: str | None = Field(default=None, max_length=2048)
     location: str | None = Field(default=None, max_length=200)
     website: str | None = Field(default=None, max_length=2048)
-    followers_count: int | None = Field(default=None, ge=0, le=2**53-1)
-    following_count: int | None = Field(default=None, ge=0, le=2**53-1)
+    followers_count: int | None = Field(default=None, ge=0, le=2**53 - 1)
+    following_count: int | None = Field(default=None, ge=0, le=2**53 - 1)
 
 
 def run(action):
@@ -36,12 +40,18 @@ def run(action):
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
         logger.exception("X content request failed")
-        raise HTTPException(status_code=503, detail="X content is unavailable. Check the database migration and retry.") from exc
+        raise HTTPException(
+            status_code=503,
+            detail="X content is unavailable. Check the database migration and retry.",
+        ) from exc
 
 
 @router.get("/creators")
-def creators(limit: int = Query(1000, ge=1, le=1000), offset: int = Query(0, ge=0, le=100000),
-             service=Depends(get_service)):
+def creators(
+    limit: int = Query(1000, ge=1, le=1000),
+    offset: int = Query(0, ge=0, le=100000),
+    service=Depends(get_service),
+):
     return run(lambda: service.creators(limit, offset))
 
 
@@ -52,14 +62,27 @@ def summaries(author: str | None = Query(None, max_length=16), service=Depends(g
 
 @router.post("/creators")
 def save_creator(payload: CreatorInput, admin=Depends(verify_admin), service=Depends(get_service)):
-    return run(lambda: service.save_creator(payload.username, payload.display_name, payload.bio, **payload.model_dump(exclude={"username", "display_name", "bio"}, exclude_unset=True)))
+    return run(
+        lambda: service.save_creator(
+            payload.username,
+            payload.display_name,
+            payload.bio,
+            **payload.model_dump(exclude={"username", "display_name", "bio"}, exclude_unset=True),
+        )
+    )
 
 
 @router.get("/posts")
-def posts(author: str | None = Query(None, max_length=16), ticker: str | None = Query(None, max_length=16),
-          limit: int = Query(20, ge=1, le=100), offset: int = Query(0, ge=0, le=100000),
-          service=Depends(get_service)):
-    return run(lambda: service.posts(author, ticker, limit, offset))
+async def posts(
+    author: str | None = Query(None, max_length=16),
+    ticker: str | None = Query(None, max_length=16),
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0, le=100000),
+    service=Depends(get_service),
+):
+    feed = await run_in_threadpool(run, lambda: service.posts(author, ticker, limit, offset))
+    feed["posts"] = await enrich_posts(get_redis(), feed["posts"])
+    return feed
 
 
 @router.get("/tickers")
@@ -68,10 +91,18 @@ def tickers(service=Depends(get_service)):
 
 
 @router.post("/validate")
-def validate(payload: dict[str, Any] | list[dict[str, Any]], admin=Depends(verify_admin), service=Depends(get_service)):
+def validate(
+    payload: dict[str, Any] | list[dict[str, Any]],
+    admin=Depends(verify_admin),
+    service=Depends(get_service),
+):
     return run(lambda: service.validate(payload))
 
 
 @router.post("/upload")
-def upload(payload: dict[str, Any] | list[dict[str, Any]], admin=Depends(verify_admin), service=Depends(get_service)):
+def upload(
+    payload: dict[str, Any] | list[dict[str, Any]],
+    admin=Depends(verify_admin),
+    service=Depends(get_service),
+):
     return run(lambda: service.upload(payload))
