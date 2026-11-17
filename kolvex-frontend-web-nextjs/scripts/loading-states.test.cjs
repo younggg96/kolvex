@@ -105,6 +105,9 @@ test("stock workspace first render shows loading placeholders across summary, se
     "@/lib/chart/quote": compile("lib/chart/quote.ts"),
     "@/lib/format": require("./helpers/format.cjs").format,
     "@/hooks/useResearchTranslation": { useResearchTranslation: (analysis) => ({ analysis }) },
+    "@/components/trading-analysis/SavedAnalysisLanguage": {
+      useSavedAnalysisLanguage: () => ({ read: (text) => text }),
+    },
     "@/lib/stockFundamentals": {
       finite: (value) => typeof value === "number" && Number.isFinite(value),
       getStockOverview: () => new Promise(() => {}),

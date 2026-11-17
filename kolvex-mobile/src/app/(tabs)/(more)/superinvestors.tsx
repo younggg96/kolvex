@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { router } from "expo-router";
 import { AuthGate, Filters } from "../../../components/Content";
+import FeaturedInvestors from "../../../components/FeaturedInvestors";
 import { Note, useFormat } from "../../../components/SecResearch";
 import { CardsSkeleton } from "../../../components/Skeletons";
 import {
@@ -169,6 +170,7 @@ function Directory() {
       onRefresh={refresh}
       refreshing={resource.loading && !!resource.data}
     >
+      <FeaturedInvestors />
       {resource.loading && !resource.data ? (
         <LoadingStatus label="正在加载最新 13F 申报…">{skeleton}</LoadingStatus>
       ) : resource.error && !resource.data ? (

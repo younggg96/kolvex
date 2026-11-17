@@ -13,6 +13,7 @@ import { SourceNote } from "@/components/decision/SecData";
 import { useFinancialFormat } from "@/components/decision/StockFinancialData";
 import { useCopy } from "@/components/decision/shared";
 import { useCachedResource } from "@/hooks/useCachedResource";
+import { loadClientCache } from "@/lib/clientCache";
 import {
   INSTITUTIONS_KEY,
   institutionSummaryKey,
@@ -43,15 +44,21 @@ type Loaded = Entry & {
 };
 type Sort = "latest" | "size" | "activity";
 
+function loadManagers(signal?: AbortSignal, force = false) {
+  return loadClientCache(
+    INSTITUTIONS_KEY,
+    (requestSignal) =>
+      loadFundamentals<{ managers: InstitutionManager[] }>(INSTITUTIONS_KEY, requestSignal),
+    { signal, force, ttl: 600_000, timeout: 50_000 },
+  );
+}
+
 /**
  * Every summary is a separate request, so one slow SEC read can fail alone
  * without hiding the rest of the directory.
  */
 async function loadDirectory(signal: AbortSignal): Promise<Entry[]> {
-  const { managers } = await loadFundamentals<{ managers: InstitutionManager[] }>(
-    INSTITUTIONS_KEY,
-    signal,
-  );
+  const { managers } = await loadManagers(signal);
   const results = await Promise.allSettled(
     managers.map((manager) =>
       loadFundamentals<InstitutionSummary>(institutionSummaryKey(manager.id), signal),
@@ -77,11 +84,20 @@ export default function SuperinvestorsDirectory() {
   const f = useFinancialFormat();
   const quarterLabel = useQuarterLabel();
   const [sort, setSort] = useState<Sort>("latest");
-  const { data, loading, refreshing, error, refresh } = useCachedResource(
-    "superinvestors:directory",
-    loadDirectory,
-    { ttl: 600_000, timeout: 90_000 },
-  );
+  const {
+    data,
+    loading,
+    refreshing,
+    error,
+    refresh: refreshDirectory,
+  } = useCachedResource("superinvestors:directory", loadDirectory, {
+    ttl: 600_000,
+    timeout: 90_000,
+  });
+  const refresh = () => {
+    void loadManagers(undefined, true).catch(() => {});
+    refreshDirectory();
+  };
   const entries = data ?? [];
   const loaded = entries.filter((entry): entry is Loaded => Boolean(entry.summary?.filing));
   const failed = entries.filter((entry) => !entry.summary);
@@ -427,11 +443,11 @@ function InvestorCard({ entry }: { entry: Loaded }) {
               `前 ${summary.top.length} 大持仓占申报市值 ${f.percent(topShare)}`,
             )}
           />
-          <p className="flex min-w-0 items-baseline gap-2 text-xs">
+          <div className="flex min-w-0 items-baseline gap-2 text-xs">
             <span className="shrink-0 text-muted-foreground">{c("Largest", "第一大")}</span>
             <HoldingName row={first} link={false} size="xs" className="flex-1" />
             <span className="figure shrink-0">{f.percent(first.weight)}</span>
-          </p>
+          </div>
           <p className="flex items-baseline justify-between gap-2 text-xs text-muted-foreground">
             <span>{c(`Top ${summary.top.length} share`, `前 ${summary.top.length} 大占比`)}</span>
             <span className="figure text-foreground">{f.percent(topShare)}</span>

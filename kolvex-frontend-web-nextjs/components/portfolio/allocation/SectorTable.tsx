@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/lib/i18n";
 import React from "react";
 import Link from "next/link";
 import { TrendingUp, TrendingDown, ChevronRight } from "lucide-react";
@@ -34,15 +35,16 @@ export function SectorTable({
   expandedSectors,
   toggleSector,
 }: SectorTableProps) {
+  const { t } = useTranslation();
   return (
     <Table>
       <TableHeader>
         <TableRow className="border-b border-border hover:bg-transparent">
-          <TableHead className="text-left py-2 px-2">Name</TableHead>
+          <TableHead className="text-left py-2 px-2">{t("portfolio.allocation.name")}</TableHead>
           {isOwner && (
             <>
               <SortableHeader<SortKey>
-                label="Value/Invested"
+                label={t("portfolio.allocation.valueInvested")}
                 sortKey="value"
                 currentSortKey={sortKey}
                 sortDirection={sortDir}
@@ -51,7 +53,7 @@ export function SectorTable({
                 className="py-2 px-2"
               />
               <SortableHeader<SortKey>
-                label="Gain"
+                label={t("portfolio.allocation.gain")}
                 sortKey="gain"
                 currentSortKey={sortKey}
                 sortDirection={sortDir}
@@ -60,7 +62,7 @@ export function SectorTable({
                 className="py-2 px-2"
               />
               <SortableHeader<SortKey>
-                label="Allocation"
+                label={t("portfolio.allocation.share")}
                 sortKey="allocation"
                 currentSortKey={sortKey}
                 sortDirection={sortDir}
@@ -197,7 +199,7 @@ export function SectorTable({
                                   variant="secondary"
                                   className="!text-[0.5625rem] sm:!text-[0.6875rem]"
                                 >
-                                  Stock + Option
+                                  {t("portfolio.allocation.stockAndOption")}
                                 </Badge>
                               )}
                               {aggPos.hasOptions && !aggPos.hasEquity && (
@@ -206,12 +208,16 @@ export function SectorTable({
                                   variant="outline"
                                   className="!text-[0.5625rem] sm:!text-[0.6875rem]"
                                 >
-                                  Option
+                                  {t("portfolio.allocation.option")}
                                 </Badge>
                               )}
                               {hasMultiple && (
                                 <span className="text-xs text-muted-foreground">
-                                  ({aggPos.subPositions.length} positions)
+                                  (
+                                  {t("portfolio.allocation.positionCount", {
+                                    count: String(aggPos.subPositions.length),
+                                  })}
+                                  )
                                 </span>
                               )}
                             </div>

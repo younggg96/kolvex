@@ -44,6 +44,8 @@ Expo Router NativeTabs owns the iOS bottom bar. Android and web use Expo Router 
 
 Chinese/English UI; securities and USD amounts retain market notation. Date-only source dates are never converted through local time. Demo quotes and chart are explicitly marked on every page; live failures never synthesize prices. No Japan-market scope. UI message coverage is generated and checked; source editorial prose is translated only when the API supplies a translation.
 
+Superinvestors puts the featured selector before the full directory. The active issuer’s holding weights or disclosed transactions stack above the chart. Native charts use theme colors and a dashed SPY line for the 13F model. The dates and signed returns are readable outside the chart.
+
 ## Mobile 0.2 migration
 
 Five stable tabs: Markets, Opinions, Research, Watchlist and More. The More hub owns account, briefs, news, chat and portfolio entry points. All keep the same glass, spacing, system typography and inline feedback. `UI.ListPage` is the virtualized counterpart of `UI.Page` for large news/watchlist feeds; `components/Content.tsx` owns authentication gates, fields, selectors, pagination, safe sources and native text rendering. No report HTML is executed.

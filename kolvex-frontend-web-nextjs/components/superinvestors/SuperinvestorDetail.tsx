@@ -16,6 +16,7 @@ import {
   type InstitutionManager,
 } from "@/lib/freeResearch";
 import InstitutionHoldings from "./InstitutionHoldings";
+import { PortfolioReturnChart } from "./InvestorReturnChart";
 import { InvestorAvatar, useInvestorByline, useQuarterLabel } from "./shared";
 
 const DIRECTORY = "/dashboard/superinvestors";
@@ -87,6 +88,9 @@ export default function SuperinvestorDetail({ manager }: { manager: string }) {
                   </p>
                 </div>
               </header>
+              <Card className="mb-6 p-4 sm:p-6">
+                <PortfolioReturnChart manager={manager} />
+              </Card>
               <InstitutionHoldings manager={manager} />
             </>
           )}

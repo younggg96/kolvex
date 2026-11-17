@@ -3,7 +3,6 @@ import { cache } from "react";
 import type { TradingAnalysis, TradingAnalysisListResponse } from "@/lib/tradingAnalysisApi";
 import type { YouTubeOpinionDashboard } from "@/lib/youtubeOpinionsApi";
 import { validReportId, validTicker } from "@/lib/publicRoutes";
-import { applyResearchTranslation, storedTranslation } from "@/lib/researchTranslation";
 import { BACKEND_API_URL } from "@/lib/config/backend";
 
 /** Cache tag on every public read; publishing changes call `revalidateTag` with it. */
@@ -70,8 +69,5 @@ export const getPublicResearch = cache(async (id: string) => {
     `trading-analysis/public/${encodeURIComponent(id)}`,
   );
   // Recheck publication on every (re)validated read so unpublishing revokes the public page.
-  // Public reading pages are Chinese; show the stored translation, falling back per field.
-  return data && isPublished(data)
-    ? applyResearchTranslation(data, storedTranslation(data, "zh"))
-    : null;
+  return data && isPublished(data) ? data : null;
 });

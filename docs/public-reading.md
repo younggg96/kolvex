@@ -66,18 +66,25 @@ successful sitemap. Split sitemaps before reaching 50,000 entries.
   one `Comment` per opinion (creator as author, opinion date, summary, source
   video URL, ticker); missing fields are omitted. Research pages' `Article` also
   carries `about` (ticker), `inLanguage` and `isAccessibleForFree`.
-- The shared root layout still renders `<html lang="en">`. `ReadingLayout` (used
-  by `(public)` pages and creator share pages) sets `lang="zh-CN"` on its wrapper,
-  and public reading paths also send `Content-Language: zh-CN` (`next.config.js`).
-  Do not switch `<html lang>` from request headers in the root layout: that makes
-  every page dynamic and undoes ISR.
-- Creator share pages reuse bilingual components (`useCopy`), so the page and its
-  error boundary wrap them in `FixedLocale locale="zh"` (`lib/i18n`); the server
-  HTML is Chinese and matches hydration whatever the visitor's language setting.
+- The reading shell renders Chinese in cached server HTML and labels itself
+  `lang="zh-CN"`. The header offers `中文` and `English`; the chosen interface
+  language is shared with the homepage, sign-in, contact and legal pages, and the
+  workspace. The browser restores the saved choice after hydration, or uses its
+  preferred supported language on a first visit. The wrapper's `lang` follows
+  the selection. After sign-in the account's saved preference applies.
+- The choice applies to navigation, list and detail labels, dates, pagination,
+  and error states, including creator share pages. Stock tickers, company and
+  creator names and video text keep the supplied text. Public reports show the
+  original in English mode and use an existing stored Chinese translation in
+  Chinese mode, with the original for any missing sections. Reading switches
+  do not request a translation or rerun research.
+- The cached HTML response, Chinese metadata and canonical URLs remain the same
+  for search discovery. No request headers, cookies or locale routes are needed
+  to choose the browser interface language.
 
-The library's own copy is Chinese; supplied research stays in its original
-language. This is one canonical public version, not a claimed pair of translated
-locale routes. Account UI language preferences remain unchanged.
+The contact page offers the support email link. Privacy and Terms include a
+Chinese translation of the existing English text and keep the same canonical
+URLs. The homepage supplies an English Open Graph and X card.
 
 ## Verification
 

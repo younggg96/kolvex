@@ -202,6 +202,7 @@ function harness(file, mocks = {}) {
 function welcomeFixture(createConversation, props = {}) {
   const pushes = [];
   const h = harness("components/chat/ChatWelcomeContainer.tsx", {
+    "@/lib/i18n": { useTranslation: () => ({ t: (key) => key }) },
     "next/navigation": { useRouter: () => ({ push: (url) => pushes.push(url) }) },
     "./ChatWelcome": { ChatWelcome: "welcome" },
     "./useChatHistory": { useChatHistory: () => ({ createConversation }) },

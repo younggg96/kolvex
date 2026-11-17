@@ -1,28 +1,53 @@
-export interface BriefImage { url: string; caption: string; credit: string; source_page: string }
+export interface BriefImage {
+  url: string;
+  caption: string;
+  credit: string;
+  source_page: string;
+}
 export interface BriefItem {
-  title: string; summary: string; kicker: string;
+  title: string;
+  summary: string;
+  kicker: string;
   key_stats: { label: string; value: string | number }[];
   image?: BriefImage | null;
   sources: { name: string; url: string }[];
   related_tickers: string[];
-  impact?: { short_term: string; long_term: string; price_range: string; positioning: string } | null;
-  time_pt: string; detail: string; checklist: string[];
+  impact?: {
+    short_term: string;
+    long_term: string;
+    price_range: string;
+    positioning: string;
+  } | null;
+  time_pt: string;
+  detail: string;
+  checklist: string[];
 }
 export interface BriefSection {
-  section_id: string; order: number; title: string; subtitle: string;
-  narrative: string | string[]; paragraphs: string[];
-  indices: { name: string; prev_close: number | null; close: number | null; change_pct: number | null; note: string | null }[];
+  section_id: string;
+  order: number;
+  title: string;
+  subtitle: string;
+  narrative: string | string[];
+  paragraphs: string[];
+  indices: {
+    name: string;
+    prev_close: number | null;
+    close: number | null;
+    change_pct: number | null;
+    note: string | null;
+  }[];
   movers_up: { name: string; detail: string }[];
   movers_down: { name: string; detail: string }[];
   commodities: { name: string; detail: string }[];
   items: BriefItem[];
-  takeaway: string; strategy_line: string;
+  takeaway: string;
+  strategy_line: string;
   events: { date_label: string; title: string; detail: string }[];
 }
 export const BRIEF_TYPES = ["morning", "intraday", "evening"] as const;
-export type BriefType = typeof BRIEF_TYPES[number];
+export type BriefType = (typeof BRIEF_TYPES)[number];
 export function isBriefType(value?: string): value is BriefType {
-  return BRIEF_TYPES.some(type => type === value);
+  return BRIEF_TYPES.some((type) => type === value);
 }
 
 export type BriefLanguage = "zh" | "en";
@@ -38,7 +63,17 @@ export interface DailyBrief {
   schema_version: "kolvex-brief/1.0";
   language?: BriefLanguage;
   translations?: Partial<Record<BriefLanguage, LocalizedBrief>>;
-  brief: { id: string; type: BriefType; date: string; title: string; headline: string; subtitle: string; generated_at_pt: string; market_status: "trading_day" | "weekend"; hero_image?: BriefImage | null };
+  brief: {
+    id: string;
+    type: BriefType;
+    date: string;
+    title: string;
+    headline: string;
+    subtitle: string;
+    generated_at_pt: string;
+    market_status: "trading_day" | "weekend";
+    hero_image?: BriefImage | null;
+  };
   sections: BriefSection[];
   disclaimer?: string;
 }
@@ -50,20 +85,40 @@ export function localizedBrief(document: DailyBrief, locale: BriefLanguage): Dai
   return {
     ...document,
     language: locale,
-    brief: { ...document.brief, title: copy.title, headline: copy.headline,
-      subtitle: copy.subtitle ?? "", hero_image: copy.hero_image ?? document.brief.hero_image },
+    brief: {
+      ...document.brief,
+      title: copy.title,
+      headline: copy.headline,
+      subtitle: copy.subtitle ?? "",
+      hero_image: copy.hero_image ?? document.brief.hero_image,
+    },
     sections: copy.sections,
     disclaimer: copy.disclaimer ?? "",
   };
 }
 
-export interface SavedBrief { id: string; brief_date: string; brief_type: BriefType; title: string; headline: string }
+export interface SavedBrief {
+  id: string;
+  brief_date: string;
+  brief_type: BriefType;
+  title: string;
+  headline: string;
+}
 
-export async function briefRequest<T>(query = "", body?: string, signal?: AbortSignal, mutation?: { method: "PUT" | "DELETE"; revision: string }): Promise<T> {
+export async function briefRequest<T>(
+  query = "",
+  body?: string,
+  signal?: AbortSignal,
+  mutation?: { method: "PUT" | "DELETE"; revision: string },
+): Promise<T> {
   const response = await fetch(`/api/admin/briefs${query}`, {
     method: mutation?.method ?? (body === undefined ? "GET" : "POST"),
-    headers: { ...(body === undefined ? {} : { "Content-Type": "application/json" }), ...(mutation ? { "If-Match": mutation.revision } : {}) },
-    body, signal: signal ?? AbortSignal.timeout(30000),
+    headers: {
+      ...(body === undefined ? {} : { "Content-Type": "application/json" }),
+      ...(mutation ? { "If-Match": mutation.revision } : {}),
+    },
+    body,
+    signal: signal ?? AbortSignal.timeout(30000),
   });
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || "请求失败，请重试。");
@@ -73,10 +128,20 @@ export async function briefRequest<T>(query = "", body?: string, signal?: AbortS
 export interface BriefSummary extends SavedBrief {
   summary?: DailyBrief["brief"];
 }
-export interface BriefList { items: BriefSummary[]; total: number }
+export interface BriefList {
+  items: BriefSummary[];
+  total: number;
+}
 export type BriefFilter = "all" | BriefType;
-export interface BriefSearchParams { type?: string; page?: string; date?: string }
-export interface BriefCalendarData { month: string; days: { date: string; types: BriefType[] }[] }
+export interface BriefSearchParams {
+  type?: string;
+  page?: string;
+  date?: string;
+}
+export interface BriefCalendarData {
+  month: string;
+  days: { date: string; types: BriefType[] }[];
+}
 
 export function briefFilters(params?: BriefSearchParams, now = new Date()) {
   const type: BriefFilter = isBriefType(params?.type) ? params.type : "all";
@@ -98,12 +163,23 @@ export function isWeekendBriefDate(value: string): boolean {
 export function briefReadingFilters(params?: BriefSearchParams, now = new Date()) {
   const { date } = briefFilters(params, now);
   const parts = new Intl.DateTimeFormat("en-US", {
-    hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "America/Los_Angeles",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+    timeZone: "America/Los_Angeles",
   }).formatToParts(now);
-  const minutes = Number(parts.find(part => part.type === "hour")!.value) * 60
-    + Number(parts.find(part => part.type === "minute")!.value);
-  const type: BriefType = isWeekendBriefDate(date) ? "evening" : isBriefType(params?.type)
-    ? params.type : minutes < 390 ? "morning" : minutes < 840 ? "intraday" : "evening";
+  const minutes =
+    Number(parts.find((part) => part.type === "hour")!.value) * 60 +
+    Number(parts.find((part) => part.type === "minute")!.value);
+  const type: BriefType = isWeekendBriefDate(date)
+    ? "evening"
+    : isBriefType(params?.type)
+      ? params.type
+      : minutes < 390
+        ? "morning"
+        : minutes < 840
+          ? "intraday"
+          : "evening";
   return { date, type, id: `${type}-${date}` };
 }
 export function briefLibraryHref(type: BriefFilter = "all", page = 1, date?: string) {
@@ -117,14 +193,29 @@ export function briefArticleHref(id: string, type: BriefFilter = "all", page = 1
   return `/dashboard/briefs/${encodeURIComponent(id)}${briefLibraryHref(type, page, date).replace("/dashboard/briefs", "")}`;
 }
 export function formatBriefDate(date: string, locale: string) {
-  return new Intl.DateTimeFormat(locale, { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`));
+  return new Intl.DateTimeFormat(locale, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(`${date}T12:00:00Z`));
 }
-
 
 export function isBriefDate(value?: string): boolean {
   if (!value || value.startsWith("0000") || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const parsed = new Date(`${value}T12:00:00Z`);
   return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+}
+
+/** The publication timestamp is displayed in Pacific time even for overseas readers. */
+export function formatBriefPublishedAt(value: string, locale: string): string {
+  const instant = new Date(value);
+  if (Number.isNaN(instant.getTime())) return value;
+  return new Intl.DateTimeFormat(locale, {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "America/Los_Angeles",
+  }).format(instant);
 }
 
 /** Calendar cells use local calendar dates; issue "today" always uses Pacific time. */
@@ -144,7 +235,12 @@ export function shiftBriefDate(value: string, days: number): string {
   return briefDateKey(date);
 }
 export function pacificBriefToday(now = new Date()): string {
-  const parts = new Intl.DateTimeFormat("en-US", { year: "numeric", month: "2-digit", day: "2-digit", timeZone: "America/Los_Angeles" }).formatToParts(now);
-  const get = (type: string) => parts.find(part => part.type === type)!.value;
+  const parts = new Intl.DateTimeFormat("en-US", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    timeZone: "America/Los_Angeles",
+  }).formatToParts(now);
+  const get = (type: string) => parts.find((part) => part.type === type)!.value;
   return `${get("year")}-${get("month")}-${get("day")}`;
 }

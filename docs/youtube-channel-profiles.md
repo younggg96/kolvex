@@ -50,3 +50,5 @@ replace this record and prior stock rows through the same authoritative cleanup.
 Public video groups expose creator metadata and `video_summary` independently
 from their empty `opinions` array. Stock lists, counts, sentiment filters and
 daily aggregates exclude the video-level record.
+
+Web 的个股博主观点和视频列表会本地化简短的时间范围标签、日期和计数。视频标题、博主名称和观点原文保持来源文字。

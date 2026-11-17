@@ -29,7 +29,7 @@ export default function LandingHeader() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
-  const isAuthRoute = pathname === "/auth";
+  const isAuthRoute = pathname === "/auth" || pathname.startsWith("/auth/");
   const [navigationOpen, setNavigationOpen] = useState(false);
 
   useEffect(() => {
@@ -56,8 +56,8 @@ export default function LandingHeader() {
 
   return (
     <header className="glass-header sticky top-0 z-40 border-b">
-      <div className="landing-width flex min-h-[4.5rem] items-center justify-between gap-4 py-3">
-        <Link href="/" className="flex items-center gap-1.5 sm:gap-2 group transition-all">
+      <div className="landing-width flex min-h-[4.5rem] items-center justify-between gap-2 py-3 sm:gap-4">
+        <Link href="/" className="group flex shrink-0 items-center gap-1.5 transition-all sm:gap-2">
           <LogoIcon
             size={24}
             className="h-7 w-7 text-primary transition-transform duration-200 group-hover:scale-110 motion-reduce:transform-none"
@@ -119,7 +119,7 @@ export default function LandingHeader() {
                       <div className="relative w-6 h-6 rounded-full overflow-hidden transition-all">
                         <Image
                           src={profile.avatar_url}
-                          alt="Profile"
+                          alt={t("settings.account.profileImage")}
                           fill
                           className="object-cover"
                           sizes="24px"
@@ -136,7 +136,7 @@ export default function LandingHeader() {
                 !isAuthRoute && (
                   <Link
                     href="/auth"
-                    className="max-[641px]:[.landing-page_&]:hidden rounded-full px-3 py-2 text-sm font-medium transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+                    className="hidden whitespace-nowrap rounded-full px-3 py-2 text-sm font-medium transition-colors hover:bg-foreground/[0.06] hover:text-foreground sm:inline"
                   >
                     {t("landing.nav.signIn")}
                   </Link>
@@ -147,10 +147,20 @@ export default function LandingHeader() {
           {!isAuthRoute && (
             <Button
               asChild
-              className="[.landing-page_&]:px-5 [.landing-page_&]:text-[0.8125rem] max-[641px]:[.landing-page_&]:hidden"
+              className="max-sm:px-2.5 [.landing-page_&]:px-5 [.landing-page_&]:text-[0.8125rem] max-[641px]:[.landing-page_&]:hidden"
             >
               <Link href={isAuthenticated ? "/dashboard" : "/auth"}>
-                {isAuthenticated ? c("Open workspace", "打开工作台") : c("Get started", "开始使用")}
+                {isAuthenticated ? (
+                  <>
+                    <span className="sm:hidden">{c("Workspace", "工作台")}</span>
+                    <span className="hidden sm:inline">{c("Open workspace", "打开工作台")}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="sm:hidden">{t("landing.nav.signIn")}</span>
+                    <span className="hidden sm:inline">{c("Get started", "开始使用")}</span>
+                  </>
+                )}
               </Link>
             </Button>
           )}
@@ -159,9 +169,11 @@ export default function LandingHeader() {
             size="icon"
             onClick={() => setLocale(locale === "zh" ? "en" : "zh")}
             aria-label={locale === "zh" ? "Switch to English" : "切换为中文"}
-            className="text-xs font-semibold"
+            className="w-auto min-w-9 px-2 text-xs font-semibold"
           >
-            {locale === "zh" ? "EN" : "中"}
+            <span lang={locale === "zh" ? "en" : "zh-CN"}>
+              {locale === "zh" ? "English" : "中文"}
+            </span>
           </Button>
           <ThemeToggle />
         </div>

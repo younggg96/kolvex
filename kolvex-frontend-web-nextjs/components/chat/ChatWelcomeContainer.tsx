@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { ChatWelcome } from "./ChatWelcome";
 import { useChatHistory } from "./useChatHistory";
@@ -41,6 +42,7 @@ export function ChatWelcomeContainer({
   onClearEvidence,
   onSubmitted,
 }: ChatWelcomeContainerProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const [activeSources, setActiveSources] = useState<SearchSource[]>(["plaid", "portfolio", "web"]);
   const [activeSkills, setActiveSkills] = useState<ChatSkill[]>([...DEFAULT_CHAT_SKILLS]);
@@ -103,7 +105,7 @@ export function ChatWelcomeContainer({
         onSubmitted?.();
       } catch (error) {
         console.error("Failed to start chat:", error);
-        toast.error("Unable to start a conversation. Please try again.");
+        toast.error(t("chat.actions.startFailed"));
         submittingRef.current = false;
         setIsLoading(false);
       }
@@ -116,6 +118,7 @@ export function ChatWelcomeContainer({
       selectedModel,
       decisionContext,
       onSubmitted,
+      t,
     ],
   );
 

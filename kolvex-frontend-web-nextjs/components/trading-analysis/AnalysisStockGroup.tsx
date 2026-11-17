@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import SetupTradeLink from "@/components/paper-trading/SetupTradeLink";
@@ -6,6 +8,7 @@ import { marketStockHref } from "@/lib/stockLinks";
 import { formatPrice } from "@/lib/stockApi";
 import { cn } from "@/lib/utils";
 import type { AnalysisIndexItem } from "@/lib/stockAnalysisHistory";
+import { SavedAnalysisLanguage, useSavedAnalysisLanguage } from "./SavedAnalysisLanguage";
 import { planGridClass, researchGridClass, researchSummaryClass } from "./researchList";
 
 type Props = {
@@ -18,19 +21,58 @@ type Props = {
 const PLAN = "youtubeOpinions.ai.tradePlan";
 
 function Chevron() {
-  return <ChevronDown aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180 motion-reduce:transition-none" />;
+  return (
+    <ChevronDown
+      aria-hidden="true"
+      className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180 motion-reduce:transition-none"
+    />
+  );
 }
 
-function StockLink({ ticker, t, className }: { ticker: string; t: Props["t"]; className?: string }) {
-  return <Link href={marketStockHref(ticker)} className={cn("inline-flex min-h-11 items-center rounded-md text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary", className)}>{t("redditOpinions.openStock", { ticker })}</Link>;
+function StockLink({
+  ticker,
+  t,
+  className,
+}: {
+  ticker: string;
+  t: Props["t"];
+  className?: string;
+}) {
+  return (
+    <Link
+      href={marketStockHref(ticker)}
+      className={cn(
+        "inline-flex min-h-11 items-center rounded-md text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary",
+        className,
+      )}
+    >
+      {t("redditOpinions.openStock", { ticker })}
+    </Link>
+  );
 }
 
 export function AnalysisStockGroup({ item, mode, locale, t }: Props) {
-  const date = new Intl.DateTimeFormat(locale, { year: "numeric", month: "short", day: "numeric" }).format(new Date(item.created_at));
+  const date = new Intl.DateTimeFormat(locale, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  }).format(new Date(item.created_at));
   const dateTime = <time dateTime={item.created_at}>{date}</time>;
-  const biasTone = item.bias === "bullish" ? "text-positive" : item.bias === "bearish" ? "text-negative" : "text-foreground";
-  const bias = item.bias ? <span className={cn("whitespace-nowrap text-sm font-semibold", biasTone)}>{t(`youtubeOpinions.ai.bias.${item.bias}`)}</span> : null;
+  const biasTone =
+    item.bias === "bullish"
+      ? "text-positive"
+      : item.bias === "bearish"
+        ? "text-negative"
+        : "text-foreground";
+  const bias = item.bias ? (
+    <span className={cn("whitespace-nowrap text-sm font-semibold", biasTone)}>
+      {t(`youtubeOpinions.ai.bias.${item.bias}`)}
+    </span>
+  ) : null;
   const setup = mode === "planned" ? item.setup : null;
+  const language = useSavedAnalysisLanguage(
+    setup ? [setup.name, setup.reason] : [item.summary, ...item.signals],
+  );
 
   if (setup) {
     const entry = `${formatPrice(setup.entry_low)} – ${formatPrice(setup.entry_high)}`;
@@ -46,35 +88,65 @@ export function AnalysisStockGroup({ item, mode, locale, t }: Props) {
               <CompanyLogo symbol={item.ticker} size="md" className={phoneListLogoClass} />
               <div className="min-w-0">
                 <h3 className="text-[0.9375rem] font-semibold">{item.ticker}</h3>
-                <p className="mt-0.5 truncate text-xs text-muted-foreground">{setup.name}</p>
+                <p lang={language.lang} className="mt-0.5 truncate text-xs text-muted-foreground">
+                  {language.read(setup.name)}
+                </p>
               </div>
             </div>
             <div className="hidden sm:block">{bias}</div>
-            <div className={cn(cell, "hidden min-[1400px]:block")}><span className="sr-only">{t(`${PLAN}.entry`)} </span>{entry}</div>
-            <div className={cn(cell, "hidden text-right min-[1400px]:block")}><span className="sr-only">{t(`${PLAN}.stop`)} </span>{stop}</div>
-            <div className={cn(cell, "hidden text-right min-[1400px]:block")}><span className="sr-only">{t(`${PLAN}.target`)} </span>{targets}</div>
+            <div className={cn(cell, "hidden min-[1400px]:block")}>
+              <span className="sr-only">{t(`${PLAN}.entry`)} </span>
+              {entry}
+            </div>
+            <div className={cn(cell, "hidden text-right min-[1400px]:block")}>
+              <span className="sr-only">{t(`${PLAN}.stop`)} </span>
+              {stop}
+            </div>
+            <div className={cn(cell, "hidden text-right min-[1400px]:block")}>
+              <span className="sr-only">{t(`${PLAN}.target`)} </span>
+              {targets}
+            </div>
             <div className="text-right">
-              <div className="figure text-[0.9375rem] font-semibold tabular-nums"><span className="sr-only">{t(`${PLAN}.ratio`)} </span>{ratio}</div>
+              <div className="figure text-[0.9375rem] font-semibold tabular-nums">
+                <span className="sr-only">{t(`${PLAN}.ratio`)} </span>
+                {ratio}
+              </div>
               <div className="mt-0.5 sm:hidden">{bias}</div>
             </div>
-            <div className="figure hidden text-right text-sm text-muted-foreground sm:block">{dateTime}</div>
+            <div className="figure hidden text-right text-sm text-muted-foreground sm:block">
+              {dateTime}
+            </div>
             <Chevron />
           </summary>
           <div className="px-2 pb-5 pt-1 sm:pl-[3.75rem] sm:pr-10">
             <dl className="mb-4 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3 min-[1400px]:hidden">
-              {[["entry", entry], ["stop", stop], ["target", targets]].map(([label, value]) => (
+              {[
+                ["entry", entry],
+                ["stop", stop],
+                ["target", targets],
+              ].map(([label, value]) => (
                 <div key={label} className="min-w-0">
                   <dt className="text-xs text-muted-foreground">{t(`${PLAN}.${label}`)}</dt>
-                  <dd className="figure mt-1 break-words text-sm font-medium tabular-nums">{value}</dd>
+                  <dd className="figure mt-1 break-words text-sm font-medium tabular-nums">
+                    {value}
+                  </dd>
                 </div>
               ))}
               <div className="sm:hidden">
-                <dt className="text-xs text-muted-foreground">{t("tradingAnalysis.explore.colDate")}</dt>
+                <dt className="text-xs text-muted-foreground">
+                  {t("tradingAnalysis.explore.colDate")}
+                </dt>
                 <dd className="figure mt-1 text-sm font-medium">{dateTime}</dd>
               </div>
             </dl>
+            <SavedAnalysisLanguage control={language} />
             <h4 className="text-xs text-muted-foreground">{t("youtubeOpinions.ai.planReason")}</h4>
-            <p className="mt-1.5 whitespace-pre-line break-words text-sm leading-7">{setup.reason}</p>
+            <p
+              lang={language.lang}
+              className="mt-1.5 whitespace-pre-line break-words text-sm leading-7"
+            >
+              {language.read(setup.reason)}
+            </p>
             <div className="flex flex-wrap items-center gap-x-4">
               <SetupTradeLink symbol={item.ticker} setup={setup} />
               <StockLink ticker={item.ticker} t={t} className="mt-4" />
@@ -93,21 +165,39 @@ export function AnalysisStockGroup({ item, mode, locale, t }: Props) {
             <CompanyLogo symbol={item.ticker} size="md" className={phoneListLogoClass} />
             <div className="min-w-0">
               <h3 className="text-[0.9375rem] font-semibold">{item.ticker}</h3>
-              {item.summary && <p className="mt-0.5 hidden truncate text-xs text-muted-foreground group-open:!hidden sm:block">{item.summary}</p>}
+              {item.summary && (
+                <p
+                  lang={language.lang}
+                  className="mt-0.5 hidden truncate text-xs text-muted-foreground group-open:!hidden sm:block"
+                >
+                  {language.read(item.summary)}
+                </p>
+              )}
               <p className="figure mt-0.5 text-xs text-muted-foreground sm:hidden">{dateTime}</p>
             </div>
           </div>
           <div className="text-right sm:text-left">{bias}</div>
-          <div className="figure hidden text-right text-sm text-muted-foreground sm:block">{dateTime}</div>
+          <div className="figure hidden text-right text-sm text-muted-foreground sm:block">
+            {dateTime}
+          </div>
           <Chevron />
         </summary>
         <div className="px-2 pb-5 pt-1 sm:pl-[3.75rem] sm:pr-10">
-          {item.summary && <p className="whitespace-pre-line break-words text-sm leading-7">{item.summary}</p>}
+          <SavedAnalysisLanguage control={language} />
+          {item.summary && (
+            <p lang={language.lang} className="whitespace-pre-line break-words text-sm leading-7">
+              {language.read(item.summary)}
+            </p>
+          )}
           {item.signals.length > 0 && (
             <div className="mt-4">
               <h4 className="text-xs text-muted-foreground">{t("youtubeOpinions.ai.signals")}</h4>
               <ul className="mt-1.5 max-w-[72ch] list-disc space-y-1 pl-5 text-sm leading-6">
-                {item.signals.map((signal, index) => <li key={index}>{signal}</li>)}
+                {item.signals.map((signal, index) => (
+                  <li lang={language.lang} key={index}>
+                    {language.read(signal)}
+                  </li>
+                ))}
               </ul>
             </div>
           )}

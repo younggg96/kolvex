@@ -18,6 +18,7 @@ import {
   ChevronDown,
   type LucideIcon,
 } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import type { ProgressEvent } from "@/lib/tradingAnalysisApi";
 
@@ -102,10 +103,7 @@ function groupByAgent(events: ProgressEvent[]): AgentGroup[] {
       currentGroup!.toolCalls.push(`→ ${ev.detail}`);
     }
 
-    if (
-      ev.detail &&
-      (ev.detail_type === "thinking" || ev.detail_type === "report_preview")
-    ) {
+    if (ev.detail && (ev.detail_type === "thinking" || ev.detail_type === "report_preview")) {
       currentGroup!.latestDetail = ev.detail;
       currentGroup!.latestDetailType = ev.detail_type;
     }
@@ -120,19 +118,13 @@ function groupByAgent(events: ProgressEvent[]): AgentGroup[] {
   return groups;
 }
 
-function AgentStep({
-  group,
-}: {
-  group: AgentGroup;
-}) {
+function AgentStep({ group }: { group: AgentGroup }) {
+  const { t } = useTranslation();
   const Icon = AGENT_ICONS[group.agentName] || Bot;
   const isSystem = group.agentName === "System";
   const [expanded, setExpanded] = useState(true);
 
-  const hasDetail = !!(
-    group.latestDetail ||
-    group.toolCalls.length > 0
-  );
+  const hasDetail = !!(group.latestDetail || group.toolCalls.length > 0);
 
   const toggleExpanded = useCallback(() => {
     if (hasDetail) setExpanded((p) => !p);
@@ -142,15 +134,15 @@ function AgentStep({
     return (
       <div className="space-y-1.5">
         {group.events.map((ev, i) => (
-          <div
-            key={i}
-            className="flex items-start gap-2.5 text-xs leading-5 text-muted-foreground"
-          >
-            <CheckCircle2 aria-hidden="true" className="mt-1 h-3 w-3 shrink-0 text-muted-foreground" />
+          <div key={i} className="flex items-start gap-2.5 text-xs leading-5 text-muted-foreground">
+            <CheckCircle2
+              aria-hidden="true"
+              className="mt-1 h-3 w-3 shrink-0 text-muted-foreground"
+            />
             <span className="min-w-0 break-words">{ev.message || ev.stage}</span>
             {ev.elapsed != null && (
               <span className="ml-auto text-[0.6875rem] text-muted-foreground tabular-nums shrink-0">
-                {ev.elapsed}s
+                {t("tradingAnalysis.durationSeconds", { seconds: String(ev.elapsed) })}
               </span>
             )}
           </div>
@@ -168,16 +160,24 @@ function AgentStep({
         aria-expanded={hasDetail ? expanded : undefined}
         className={cn(
           "flex w-full items-center gap-2.5 rounded-full py-1.5 text-left outline-offset-4",
-          hasDetail && "cursor-pointer hover:bg-foreground/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary",
+          hasDetail &&
+            "cursor-pointer hover:bg-foreground/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary",
         )}
       >
         <Icon aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-        <span className={cn("min-w-0 truncate text-xs font-medium", group.isActive ? "text-foreground" : "text-muted-foreground")}>
-          {group.agentName}
+        <span
+          className={cn(
+            "min-w-0 truncate text-xs font-medium",
+            group.isActive ? "text-foreground" : "text-muted-foreground",
+          )}
+        >
+          {Object.hasOwn(AGENT_ICONS, group.agentName)
+            ? t(`tradingAnalysis.activity.agents.${group.agentName}`)
+            : group.agentName}
         </span>
         {group.elapsed != null && (
           <span className="ml-auto shrink-0 text-[0.6875rem] text-muted-foreground tabular-nums">
-            {group.elapsed}s
+            {t("tradingAnalysis.durationSeconds", { seconds: String(group.elapsed) })}
           </span>
         )}
         {hasDetail && (
@@ -196,7 +196,10 @@ function AgentStep({
           {group.toolCalls.length > 0 && (
             <div className="space-y-1.5">
               {group.toolCalls.map((tc, i) => (
-                <div key={i} className="flex items-start gap-2 text-xs leading-5 text-muted-foreground">
+                <div
+                  key={i}
+                  className="flex items-start gap-2 text-xs leading-5 text-muted-foreground"
+                >
                   {tc.startsWith("→") ? (
                     <FileText aria-hidden="true" className="mt-1 h-3 w-3 shrink-0" />
                   ) : (
@@ -211,7 +214,11 @@ function AgentStep({
           {group.latestDetail && (
             <div className="text-xs leading-6 text-muted-foreground">
               <p className="mb-1 text-[0.6875rem] font-medium">
-                {group.latestDetailType === "report_preview" ? "Report" : "Thinking"}
+                {t(
+                  group.latestDetailType === "report_preview"
+                    ? "tradingAnalysis.activity.report"
+                    : "tradingAnalysis.activity.thinking",
+                )}
               </p>
               <div className="line-clamp-4 break-words [overflow-wrap:anywhere]">
                 {group.latestDetail}
@@ -231,6 +238,7 @@ export function ProgressLog({
   events: ProgressEvent[];
   isLive?: boolean;
 }) {
+  const { t } = useTranslation();
   const groups = useMemo(() => groupByAgent(events), [events]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -245,16 +253,15 @@ export function ProgressLog({
   return (
     <div className="py-4">
       <div className="mb-3 flex items-center gap-2">
-        <span className="text-xs font-medium text-muted-foreground">Agent activity</span>
+        <span className="text-xs font-medium text-muted-foreground">
+          {t("tradingAnalysis.activity.title")}
+        </span>
         <div className="ml-auto flex items-center gap-1.5" aria-live="polite">
           <span
-            className={cn(
-              "h-1 w-1 rounded-full",
-              isLive ? "bg-positive-fill" : "bg-warning"
-            )}
+            className={cn("h-1 w-1 rounded-full", isLive ? "bg-positive-fill" : "bg-warning")}
           />
           <span className="text-[0.6875rem] text-muted-foreground">
-            {isLive ? "Live" : "Syncing"}
+            {t(isLive ? "tradingAnalysis.activity.live" : "tradingAnalysis.activity.syncing")}
           </span>
         </div>
       </div>
@@ -266,7 +273,7 @@ export function ProgressLog({
       >
         {groups.map((group, i) => (
           <AgentStep
-            key={`${group.agentName}-${i}`}
+            key={`${Object.hasOwn(AGENT_ICONS, group.agentName) ? t(`tradingAnalysis.activity.agents.${group.agentName}`) : group.agentName}-${i}`}
             group={group}
           />
         ))}

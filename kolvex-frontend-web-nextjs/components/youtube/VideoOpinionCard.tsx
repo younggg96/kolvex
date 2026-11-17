@@ -4,6 +4,7 @@ import { useId, useState } from "react";
 import Link from "next/link";
 import { ChevronDown, PlayCircle } from "lucide-react";
 import CompanyLogo from "@/components/ui/company-logo";
+import { chineseTextLanguage } from "@/lib/contentLanguage";
 import { cn, proxyImageUrl } from "@/lib/utils";
 import type { OpinionSentiment } from "@/lib/youtubeOpinionsApi";
 import OpinionStrength from "./OpinionStrength";
@@ -87,7 +88,10 @@ export default function VideoOpinionCard({
     .filter((item) => item.count > 0);
 
   const heading = (
-    <span className="line-clamp-2 text-base font-semibold leading-6 tracking-[-0.01em]">
+    <span
+      lang={chineseTextLanguage(video.video_title)}
+      className="line-clamp-2 text-base font-semibold leading-6 tracking-[-0.01em]"
+    >
       {title}
     </span>
   );
@@ -99,25 +103,30 @@ export default function VideoOpinionCard({
           href={`/dashboard/youtube-opinions?tab=creators&creator=${encodeURIComponent(creator.channel_id)}`}
           className="mb-3 flex w-fit max-w-full items-center gap-2 rounded-sm text-sm font-semibold hover:underline focus-visible:outline-none "
         >
-          <CreatorAvatar name={creator.channel_title || creator.channel_id} avatarUrl={creator.channel_avatar_url} size="xs" />
+          <CreatorAvatar
+            name={creator.channel_title || creator.channel_id}
+            avatarUrl={creator.channel_avatar_url}
+            size="xs"
+          />
           <span className="truncate">{creator.channel_title || creator.channel_id}</span>
         </Link>
       )}
       <header className="flex min-w-0 items-start gap-4 sm:gap-5">
-        {!compact && (video.video_url ? (
-          <a
-            href={video.video_url}
-            target="_blank"
-            rel="noreferrer"
-            tabIndex={-1}
-            aria-hidden="true"
-            className="group/video shrink-0"
-          >
+        {!compact &&
+          (video.video_url ? (
+            <a
+              href={video.video_url}
+              target="_blank"
+              rel="noreferrer"
+              tabIndex={-1}
+              aria-hidden="true"
+              className="group/video shrink-0"
+            >
+              <Thumbnail src={thumbnailFor(video)} />
+            </a>
+          ) : (
             <Thumbnail src={thumbnailFor(video)} />
-          </a>
-        ) : (
-          <Thumbnail src={thumbnailFor(video)} />
-        ))}
+          ))}
         <div className="min-w-0 flex-1 sm:pt-0.5">
           {video.video_url ? (
             <a
@@ -136,68 +145,113 @@ export default function VideoOpinionCard({
           <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.8125rem] text-muted-foreground tabular-nums">
             <time dateTime={published}>{formatOpinionDate(published, t("common.intlLocale"))}</time>
             {opinions.length > 0 ? (
-              <span>{t("youtubeOpinions.videoStockCount", { count: String(opinions.length) })}</span>
-            ) : (
-              <span>{t(group.analyzed || group.creator ? "youtubeOpinions.videoAnalysisOnly" : "youtubeOpinions.untrackedVideo")}</span>
-            )}
-            {!compact && tally.map((item) => (
-              <span key={item.sentiment} className={cn("font-semibold", item.className)}>
-                {t(`youtubeOpinions.${item.sentiment}`)} {item.count}
+              <span>
+                {t(
+                  opinions.length === 1
+                    ? "youtubeOpinions.videoStockCountOne"
+                    : "youtubeOpinions.videoStockCount",
+                  { count: String(opinions.length) },
+                )}
               </span>
-            ))}
+            ) : (
+              <span>
+                {t(
+                  group.analyzed || group.creator
+                    ? "youtubeOpinions.videoAnalysisOnly"
+                    : "youtubeOpinions.untrackedVideo",
+                )}
+              </span>
+            )}
+            {!compact &&
+              tally.map((item) => (
+                <span key={item.sentiment} className={cn("font-semibold", item.className)}>
+                  {t(`youtubeOpinions.${item.sentiment}`)} {item.count}
+                </span>
+              ))}
           </p>
         </div>
       </header>
 
-      {group.video_summary && <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{group.video_summary}</p>}
+      {group.video_summary && (
+        <p
+          lang={chineseTextLanguage(group.video_summary)}
+          className="mt-4 whitespace-pre-wrap text-sm leading-6 text-muted-foreground"
+        >
+          {group.video_summary}
+        </p>
+      )}
 
-      {opinions.length > 0 && <ul id={opinionsId} className="mt-5 min-w-0">
-        {shown.map((opinion) => {
-          const confidence =
-            opinion.confidence === null || opinion.confidence === undefined
-              ? null
-              : Math.round(opinion.confidence * 100);
-          const summary = opinion.summary || opinion.thesis;
-          return (
-            <li key={opinion.id} className="border-t border-border/70 first:border-t-0">
-              <button
-                type="button"
-                onClick={() => onStock?.(opinion.ticker)}
-                className={cn(
-                  "grid w-full min-w-0 cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 rounded-xl px-3 py-3 text-left transition-colors duration-150 hover:bg-foreground/[0.05] active:bg-foreground/[0.09] focus-visible:bg-foreground/[0.05] focus-visible:outline focus-visible:outline-1 focus-visible:-outline-offset-1 focus-visible:outline-primary motion-reduce:transition-none",
-                  !compact && "sm:grid-cols-[7rem_7.5rem_minmax(0,1fr)_auto]",
-                )}
-              >
-                <span className="flex min-w-0 items-center gap-2.5">
-                  <CompanyLogo symbol={opinion.ticker} size="sm" />
-                  <span className="truncate text-[0.9375rem] font-semibold">{opinion.ticker}</span>
-                  <OpinionStrength value={opinion.direction_score} className={cn("ml-1", !compact && "sm:hidden")} />
-                </span>
-                <span className={cn("hidden h-6 items-center", !compact && "sm:flex")}>
-                  <OpinionStrength value={opinion.direction_score} />
-                </span>
-                <span className={cn("col-span-2 row-start-2 min-w-0 break-words text-sm leading-6 text-muted-foreground", !compact && "sm:col-span-1 sm:col-start-3 sm:row-start-1", compact && !expanded && "line-clamp-2")}>
-                  {opinion.sentiment === "mixed" && (
-                    <span className="mr-1.5 font-semibold text-warning">{t("youtubeOpinions.mixed")}</span>
+      {opinions.length > 0 && (
+        <ul id={opinionsId} className="mt-5 min-w-0">
+          {shown.map((opinion) => {
+            const confidence =
+              opinion.confidence === null || opinion.confidence === undefined
+                ? null
+                : Math.round(opinion.confidence * 100);
+            const summary = opinion.summary || opinion.thesis;
+            return (
+              <li key={opinion.id} className="border-t border-border/70 first:border-t-0">
+                <button
+                  type="button"
+                  onClick={() => onStock?.(opinion.ticker)}
+                  className={cn(
+                    "grid w-full min-w-0 cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 rounded-xl px-3 py-3 text-left transition-colors duration-150 hover:bg-foreground/[0.05] active:bg-foreground/[0.09] focus-visible:bg-foreground/[0.05] focus-visible:outline focus-visible:outline-1 focus-visible:-outline-offset-1 focus-visible:outline-primary motion-reduce:transition-none",
+                    !compact && "sm:grid-cols-[8.5rem_11rem_minmax(0,1fr)_auto]",
                   )}
-                  {summary}
-                </span>
-                <span
-                  className={cn("col-start-2 row-start-1 flex items-center justify-end text-xs text-muted-foreground tabular-nums", !compact && "sm:col-start-4 sm:min-w-10")}
-                  title={t("youtubeOpinions.confidence")}
                 >
-                  {confidence !== null && (
-                    <>
-                      <span className="sr-only">{t("youtubeOpinions.confidence")} </span>
-                      {confidence}%
-                    </>
-                  )}
-                </span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>}
+                  <span className="flex min-w-0 items-center gap-2.5">
+                    <CompanyLogo symbol={opinion.ticker} size="sm" />
+                    <span className="break-all text-[0.9375rem] font-semibold">
+                      {opinion.ticker}
+                    </span>
+                    <OpinionStrength
+                      value={opinion.direction_score}
+                      className={cn(
+                        "ml-1 min-w-0 [&>span:last-child]:whitespace-normal",
+                        !compact && "sm:hidden",
+                      )}
+                    />
+                  </span>
+                  <span className={cn("hidden min-w-0 items-center", !compact && "sm:flex")}>
+                    <OpinionStrength
+                      value={opinion.direction_score}
+                      className="[&>span:last-child]:whitespace-normal"
+                    />
+                  </span>
+                  <span
+                    className={cn(
+                      "col-span-2 row-start-2 min-w-0 break-words text-sm leading-6 text-muted-foreground",
+                      !compact && "sm:col-span-1 sm:col-start-3 sm:row-start-1",
+                      compact && !expanded && "line-clamp-2",
+                    )}
+                  >
+                    {opinion.sentiment === "mixed" && (
+                      <span className="mr-1.5 font-semibold text-warning">
+                        {t("youtubeOpinions.mixed")}
+                      </span>
+                    )}
+                    <span lang={chineseTextLanguage(summary)}>{summary}</span>
+                  </span>
+                  <span
+                    className={cn(
+                      "col-start-2 row-start-1 flex items-center justify-end text-xs text-muted-foreground tabular-nums",
+                      !compact && "sm:col-start-4 sm:min-w-10",
+                    )}
+                    title={t("youtubeOpinions.confidence")}
+                  >
+                    {confidence !== null && (
+                      <>
+                        <span className="sr-only">{t("youtubeOpinions.confidence")} </span>
+                        {confidence}%
+                      </>
+                    )}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
 
       {hidden > 0 && (
         <button
@@ -207,9 +261,14 @@ export default function VideoOpinionCard({
           onClick={() => setExpanded((value) => !value)}
           className="mt-2 inline-flex min-h-10 cursor-pointer items-center gap-1.5 rounded-xl px-3 text-[0.8125rem] font-semibold text-muted-foreground transition-colors duration-150 hover:bg-foreground/[0.05] hover:text-foreground focus-visible:bg-foreground/[0.05] focus-visible:outline focus-visible:outline-1 focus-visible:-outline-offset-1 focus-visible:outline-primary motion-reduce:transition-none"
         >
-          {expanded ? t("youtubeOpinions.collapseVideoOpinions") : t("youtubeOpinions.showRemainingVideoOpinions", { count: String(hidden) })}
+          {expanded
+            ? t("youtubeOpinions.collapseVideoOpinions")
+            : t("youtubeOpinions.showRemainingVideoOpinions", { count: String(hidden) })}
           <ChevronDown
-            className={cn("h-3.5 w-3.5 transition-transform duration-150", expanded && "rotate-180")}
+            className={cn(
+              "h-3.5 w-3.5 transition-transform duration-150",
+              expanded && "rotate-180",
+            )}
           />
         </button>
       )}

@@ -41,6 +41,10 @@ import { cn } from "@/lib/utils";
 import { BENCHMARKS, indexValue } from "@/lib/marketBenchmarks";
 import { DirectionBadge, Empty, HeldMark, Panel, TextLink, money, useCopy } from "./shared";
 import { useDecisionCommand } from "./CommandLayer";
+import {
+  SavedAnalysisLanguage,
+  useSavedAnalysisLanguage,
+} from "@/components/trading-analysis/SavedAnalysisLanguage";
 import SetupTradeLink from "@/components/paper-trading/SetupTradeLink";
 import { signedPercent, withSign } from "@/lib/format";
 
@@ -176,6 +180,10 @@ export default function StockWorkspace({
   const [technical, setTechnical] = useState<AiTechnicalAnalysis | null>(null);
   const [technicalVersion, setTechnicalVersion] =
     useState<AnalysisVersion<AiTechnicalAnalysis> | null>(null);
+  const setupLanguage = useSavedAnalysisLanguage(
+    [technical?.setup?.name, technical?.setup?.reason],
+    technicalVersion?.request?.locale,
+  );
   const publishedResearch =
     publishedResource.data?.items.find((item) => item.status === "completed") ?? null;
   const researchSource = personalResearch.history.selected?.payload || publishedResearch;
@@ -673,7 +681,8 @@ export default function StockWorkspace({
                         <ResultHeader
                           label={c("Setup plan", "条件计划")}
                           labelId="stock-setup-title"
-                          title={technical.setup.name}
+                          title={setupLanguage.read(technical.setup.name)}
+                          titleLang={setupLanguage.lang}
                           badge={{
                             label: t(
                               technical.setup.direction === "bullish"
@@ -691,11 +700,14 @@ export default function StockWorkspace({
                               ? `${technical.provider ? `${technical.provider} / ` : ""}${technical.model}`
                               : undefined
                           }
-                          formatDate={date}
                           t={t}
                         />
-                        <p className="mt-2 text-[13px] leading-6 text-muted-foreground">
-                          {technical.setup.reason}
+                        <SavedAnalysisLanguage control={setupLanguage} />
+                        <p
+                          lang={setupLanguage.lang}
+                          className="mt-2 text-[13px] leading-6 text-muted-foreground"
+                        >
+                          {setupLanguage.read(technical.setup.reason)}
                         </p>
                         {!benchmark && <SetupTradeLink symbol={ticker} setup={technical.setup} />}
                         <dl className="mt-5 grid grid-cols-2 gap-x-5 gap-y-4">
@@ -748,7 +760,15 @@ export default function StockWorkspace({
                             {Object.entries(technical.setup.checks).map(([name, passed]) => (
                               <li key={name}>
                                 {passed === null ? "—" : passed ? "✓" : "△"}{" "}
-                                {name.replaceAll("_", " ")}
+                                {[
+                                  "trend_alignment",
+                                  "price_vs_ema20",
+                                  "ema20_vs_ema50",
+                                  "rsi_momentum",
+                                  "volume_confirmation",
+                                ].includes(name)
+                                  ? t(`youtubeOpinions.ai.tradePlan.checks.${name}`)
+                                  : t("youtubeOpinions.ai.tradePlan.checks.other")}
                               </li>
                             ))}
                           </ul>

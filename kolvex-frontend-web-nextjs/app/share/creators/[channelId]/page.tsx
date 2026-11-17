@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import PublicCreatorShareView from "@/components/youtube/PublicCreatorShareView";
-import { FixedLocale } from "@/lib/i18n";
 import { creatorShareContent } from "@/lib/creatorSharing";
 import { getPublicCreatorOpinions } from "./data";
 import { ReadingSchema } from "@/components/public/ReadingSchema";
@@ -60,10 +59,7 @@ export default async function CreatorSharePage({ params }: Props) {
           },
         )}
       />
-      {/* Public reading pages are Chinese-only; keep server HTML and hydration in one locale. */}
-      <FixedLocale locale="zh">
-        <PublicCreatorShareView data={data} />
-      </FixedLocale>
+      <PublicCreatorShareView data={data} />
     </>
   );
 }

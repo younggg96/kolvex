@@ -26,6 +26,7 @@ function compile(file, mocks = {}) {
   }).outputText;
   const load = (key) => {
     if (key in mocks) return mocks[key];
+    if (key === "@/lib/i18n") return { useTranslation: () => ({ locale: "en", t: (key) => key }) };
     if (key.startsWith("@/") || key.startsWith("./") || key.startsWith("../"))
       return compile(resolveModule(file, key));
     return require(key);

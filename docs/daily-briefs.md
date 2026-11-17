@@ -124,8 +124,10 @@ supply `brief`, `id`, `type`, `date`, `generated_at_pt` or `market_status`.
 
 Complete, valid import example: `docs/examples/bilingual-intraday-2026-10-29.json`.
 The same structure applies to morning and evening with matching shared IDs.
-Missing localized text renders the full base edition, never a partially mixed
-article. Shared hero images are reused when no localized image exists. Reader
+If the selected language is unavailable, the reader explains the fallback in the
+interface language and renders the full base edition, including its metadata and
+section labels, in the original language. The issue date is a calendar date and
+the publication time is formatted in Pacific time. Shared hero images are reused when no localized image exists. Reader
 page titles and admin previews select content identically. The existing JSONB
 column stores both languages; no table migration is needed. POST keeps duplicate protection; use Admin Edit to update an existing edition or add the other language.
 Legacy identical retries compare normalized payloads so the new defaults do not

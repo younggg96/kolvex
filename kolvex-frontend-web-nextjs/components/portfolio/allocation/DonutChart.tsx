@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/lib/i18n";
 import React from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import type { DonutChartProps, SectorData } from "./types";
@@ -16,6 +17,7 @@ interface CustomTooltipProps {
 }
 
 function DonutTooltip({ active, payload }: CustomTooltipProps) {
+  const { t } = useTranslation();
   if (!active || !payload || !payload.length) return null;
 
   const data = payload[0].payload;
@@ -30,15 +32,15 @@ function DonutTooltip({ active, payload }: CustomTooltipProps) {
       </div>
       <div className="space-y-1 text-sm">
         <div className="flex justify-between gap-4">
-          <span className="text-muted-foreground">Value:</span>
+          <span className="text-muted-foreground">{t("portfolio.allocation.value")}</span>
           <span className="font-medium text-white">{formatCurrency(totalValue)}</span>
         </div>
         <div className="flex justify-between gap-4">
-          <span className="text-muted-foreground">Items:</span>
+          <span className="text-muted-foreground">{t("portfolio.stats.positions")}</span>
           <span className="font-medium text-white">{data.count}</span>
         </div>
         <div className="flex justify-between gap-4">
-          <span className="text-muted-foreground">P&L:</span>
+          <span className="text-muted-foreground">{t("portfolio.transactions.pnl")}</span>
           <span className={`font-medium ${isPositive ? "text-positive" : "text-negative"}`}>
             {withSign(data.gain, formatCurrency)}
           </span>
@@ -101,6 +103,7 @@ export function DonutChart({
   setHoveredSector,
   toggleSector,
 }: DonutChartProps) {
+  const { t } = useTranslation();
   return (
     <div className="relative w-full aspect-square">
       <ResponsiveContainer width="100%" height="100%">
@@ -142,7 +145,7 @@ export function DonutChart({
       </ResponsiveContainer>
       {/* Center Text */}
       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-        <span className="text-xs text-muted-foreground">Total Value</span>
+        <span className="text-xs text-muted-foreground">{t("portfolio.stats.totalValue")}</span>
         <span className="text-xl font-bold text-foreground">{formatCurrency(totalValue)}</span>
       </div>
     </div>

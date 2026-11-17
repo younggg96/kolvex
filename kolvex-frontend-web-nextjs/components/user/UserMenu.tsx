@@ -58,7 +58,7 @@ export default function UserMenu({ isCollapsed = false }: UserMenuProps) {
               <div className="relative h-8 w-8 overflow-hidden rounded-full">
                 <Image
                   src={profile.avatar_url}
-                  alt="Profile"
+                  alt={t("settings.account.profileImage")}
                   fill
                   className="object-cover"
                   sizes="32px"
@@ -74,43 +74,30 @@ export default function UserMenu({ isCollapsed = false }: UserMenuProps) {
           {/* User Details */}
           {!isCollapsed && (
             <div className="flex flex-col overflow-hidden text-left flex-1">
-              <span className="truncate text-sm font-semibold text-foreground">
-                {displayName}
-              </span>
-              <span className="truncate text-xs text-muted-foreground">
-                {displayEmail}
-              </span>
+              <span className="truncate text-sm font-semibold text-foreground">{displayName}</span>
+              <span className="truncate text-xs text-muted-foreground">{displayEmail}</span>
             </div>
           )}
 
           {/* Dropdown Icon */}
-          {!isCollapsed && (
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          )}
+          {!isCollapsed && <ChevronDown className="h-4 w-4 text-muted-foreground" />}
         </button>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align={"start"} className="w-48">
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-0.5">
-            <p className="text-sm font-semibold text-foreground">
-              {displayName}
-            </p>
-            <p className="truncate text-xs text-muted-foreground">
-              {displayEmail}
-            </p>
+            <p className="text-sm font-semibold text-foreground">{displayName}</p>
+            <p className="truncate text-xs text-muted-foreground">{displayEmail}</p>
           </div>
         </DropdownMenuLabel>
 
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem
-          onClick={() => router.push("/dashboard/settings?tab=account")}
-        >
+        <DropdownMenuItem onClick={() => router.push("/dashboard/settings?tab=account")}>
           <User className="h-4 w-4" />
           <span>{t("userMenu.account")}</span>
         </DropdownMenuItem>
-
 
         <DropdownMenuSeparator />
 

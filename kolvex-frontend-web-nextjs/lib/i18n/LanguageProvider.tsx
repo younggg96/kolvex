@@ -9,12 +9,14 @@ export type Locale = "en" | "zh";
 
 export interface LanguageContextValue {
   locale: Locale;
+  ready: boolean;
   setLocale: (locale: Locale) => void;
   t: (key: string, params?: Record<string, string>) => string;
 }
 
 // ── Constants ──────────────────────────────────────────────────
 const STORAGE_KEY = "kolvex-locale";
+const LEGACY_READING_KEY = "kolvex-public-reading-locale";
 const DEFAULT_LOCALE: Locale = "en";
 const VALID_LOCALES: Locale[] = ["en", "zh"];
 
@@ -72,13 +74,16 @@ function getNestedValue(obj: Record<string, unknown>, path: string): string | un
  */
 function interpolate(template: string, params?: Record<string, string>): string {
   if (!params) return template;
-  return Object.entries(params).reduce(
-    (result, [key, value]) => result.replace(new RegExp(`\\{${key}\\}`, "g"), value),
-    template,
+  return template.replace(/\{(\w+)\}/g, (literal, key: string) =>
+    Object.hasOwn(params, key) ? params[key] : literal,
   );
 }
 
-function translate(locale: Locale, key: string, params?: Record<string, string>): string {
+export function translateForLocale(
+  locale: Locale,
+  key: string,
+  params?: Record<string, string>,
+): string {
   const value = getNestedValue(translations[locale], key);
   if (value !== undefined) return interpolate(value, params);
 
@@ -98,76 +103,66 @@ const LanguageContext = createContext<LanguageContextValue | undefined>(undefine
 // ── Provider ───────────────────────────────────────────────────
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
-  const [mounted, setMounted] = useState(false);
+  const [ready, setReady] = useState(false);
 
-  // Restore from localStorage on mount, fallback to browser language
   useEffect(() => {
+    let preferred = detectBrowserLocale();
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored && VALID_LOCALES.includes(stored as Locale)) {
-        setLocaleState(stored as Locale);
-      } else {
-        // No stored preference — use browser/system language
-        const browserLocale = detectBrowserLocale();
-        setLocaleState(browserLocale);
-        localStorage.setItem(STORAGE_KEY, browserLocale);
+      const legacy = localStorage.getItem(LEGACY_READING_KEY);
+      if (stored === "en" || stored === "zh") preferred = stored;
+      else if (legacy === "en" || legacy === "zh") {
+        preferred = legacy;
+        localStorage.setItem(STORAGE_KEY, legacy);
       }
     } catch {
-      // localStorage unavailable (SSR or permission denied)
-      setLocaleState(detectBrowserLocale());
+      // Some browsing modes disable storage. The browser language still works.
     }
-    setMounted(true);
+    setLocaleState(preferred);
+    setReady(true);
   }, []);
 
-  // Persist to localStorage + update <html lang>
+  useEffect(() => {
+    if (ready) document.documentElement.lang = locale === "zh" ? "zh-CN" : "en";
+  }, [locale, ready]);
+
   const setLocale = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale);
     try {
       localStorage.setItem(STORAGE_KEY, newLocale);
     } catch {
-      // ignore
+      // Navigation still uses the in-memory preference.
     }
-    // Update the html lang attribute for accessibility / SEO
-    document.documentElement.lang = newLocale;
   }, []);
 
   // Translation function
   const t = useCallback(
-    (key: string, params?: Record<string, string>) => translate(locale, key, params),
+    (key: string, params?: Record<string, string>) => translateForLocale(locale, key, params),
     [locale],
   );
 
   const value = useMemo<LanguageContextValue>(
-    () => ({ locale, setLocale, t }),
-    [locale, setLocale, t],
+    () => ({ locale, ready, setLocale, t }),
+    [locale, ready, setLocale, t],
   );
-
-  // Prevent hydration mismatch: render children only after mounting
-  // (locale might differ between server default and client localStorage)
-  if (!mounted) {
-    return (
-      <LanguageContext.Provider value={{ locale: DEFAULT_LOCALE, setLocale, t }}>
-        {children}
-      </LanguageContext.Provider>
-    );
-  }
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }
 
 /**
  * Render a subtree in one fixed locale regardless of the visitor's preference, so the
- * server HTML and the hydrated page match (used by Chinese-only public reading pages).
+ * server HTML and the hydrated page match.
  */
 export function FixedLocale({ locale, children }: { locale: Locale; children: React.ReactNode }) {
-  const { setLocale } = useTranslation();
+  const { ready, setLocale } = useTranslation();
   const value = useMemo<LanguageContextValue>(
     () => ({
       locale,
+      ready,
       setLocale,
-      t: (key: string, params?: Record<string, string>) => translate(locale, key, params),
+      t: (key: string, params?: Record<string, string>) => translateForLocale(locale, key, params),
     }),
-    [locale, setLocale],
+    [locale, ready, setLocale],
   );
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }

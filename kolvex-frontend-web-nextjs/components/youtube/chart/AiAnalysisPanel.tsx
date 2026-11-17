@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  SavedAnalysisLanguage,
+  useSavedAnalysisLanguage,
+} from "@/components/trading-analysis/SavedAnalysisLanguage";
 import Link from "next/link";
 import { Eye, EyeOff, RefreshCw } from "lucide-react";
 import { ContentLoading } from "@/components/ui/content-loading";
@@ -43,7 +47,6 @@ export default function AiAnalysisPanel({
   busy = false,
   onRetry,
   showRetry = true,
-  formatDate,
   t,
   className,
   version,
@@ -54,7 +57,6 @@ export default function AiAnalysisPanel({
   busy?: boolean;
   onRetry: () => void;
   showRetry?: boolean;
-  formatDate: (date: string) => string;
   t: Translate;
   className?: string;
   /** Saved analysis version, so the header can show who generated it. */
@@ -65,6 +67,21 @@ export default function AiAnalysisPanel({
 }) {
   const c = useCopy();
   const result = state.result;
+  const language = useSavedAnalysisLanguage(
+    result
+      ? [
+          result.summary,
+          result.invalidation,
+          ...result.levels.map((level) => level.reason),
+          ...result.trendlines.map((line) => line.reason),
+          ...(result.findings ?? [])
+            .filter((finding) => finding.status === "available" || finding.id.startsWith("custom_"))
+            .map((finding) => finding.explanation),
+          ...(!result.findings?.length ? result.signals : []),
+        ]
+      : [],
+    version?.request?.locale,
+  );
   const loading = state.status === "loading";
   const indicators = result
     ? indicatorOrder.flatMap((key) => {
@@ -99,7 +116,6 @@ export default function AiAnalysisPanel({
           generatedAt={result.generated_at}
           author={version ? authorLabel(version, c) : undefined}
           model={result.model ? `${result.provider || ""} / ${result.model}` : undefined}
-          formatDate={formatDate}
           t={t}
         />
       ) : (
@@ -157,14 +173,23 @@ export default function AiAnalysisPanel({
 
       {state.status === "done" && result && (
         <div className="mt-5">
-          <AnalysisSummary key={result.summary} text={result.summary} t={t} />
+          <SavedAnalysisLanguage control={language} />
+          <AnalysisSummary
+            key={language.read(result.summary)}
+            text={language.read(result.summary)}
+            lang={language.lang}
+            t={t}
+          />
           {result.invalidation && (
             <div className="mt-4 rounded-3xl bg-muted/60 p-4">
               <h4 className="text-sm font-semibold text-warning">
                 {t("youtubeOpinions.ai.invalidation")}
               </h4>
-              <p className="mt-2 max-w-[90ch] whitespace-pre-line break-words text-[13px] leading-6 text-muted-foreground">
-                {result.invalidation}
+              <p
+                lang={language.lang}
+                className="mt-2 max-w-[90ch] whitespace-pre-line break-words text-[13px] leading-6 text-muted-foreground"
+              >
+                {language.read(result.invalidation)}
               </p>
             </div>
           )}
@@ -253,8 +278,11 @@ export default function AiAnalysisPanel({
                         {t(`youtubeOpinions.ai.${level.kind}`)}
                       </span>
                     </div>
-                    <p className="min-w-[10rem] flex-1 break-words text-[13px] leading-5 text-muted-foreground">
-                      {level.reason}
+                    <p
+                      lang={language.lang}
+                      className="min-w-[10rem] flex-1 break-words text-[13px] leading-5 text-muted-foreground"
+                    >
+                      {language.read(level.reason)}
                     </p>
                     <span
                       className={cn(
@@ -274,7 +302,7 @@ export default function AiAnalysisPanel({
             </section>
           )}
 
-          <TechnicalFindings result={result} t={t} />
+          <TechnicalFindings result={result} t={t} read={language.read} lang={language.lang} />
           {hasDetails && (
             <Disclosure title={t("youtubeOpinions.ai.supportingDetails")} className="mt-0 py-3">
               <div className="space-y-5 pb-4 pt-2">
@@ -308,8 +336,11 @@ export default function AiAnalysisPanel({
                           >
                             {t(`youtubeOpinions.ai.${line.kind}Line`)}
                           </p>
-                          <p className="mt-1 break-words text-[13px] leading-6 text-muted-foreground">
-                            {line.reason}
+                          <p
+                            lang={language.lang}
+                            className="mt-1 break-words text-[13px] leading-6 text-muted-foreground"
+                          >
+                            {language.read(line.reason)}
                           </p>
                         </li>
                       ))}
@@ -323,9 +354,10 @@ export default function AiAnalysisPanel({
                       {result.signals.map((signal) => (
                         <li
                           key={signal}
+                          lang={language.lang}
                           className="break-words text-[13px] leading-6 text-muted-foreground"
                         >
-                          {signal}
+                          {language.read(signal)}
                         </li>
                       ))}
                     </ul>

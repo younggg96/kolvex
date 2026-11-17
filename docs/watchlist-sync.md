@@ -62,3 +62,5 @@ between acknowledgement and local cleanup. Other browsers can import their own
 legacy list with a distinct source UUID. Another account cannot claim a failed
 migration from the same browser. The server list is never copied to a global
 localStorage list.
+
+Web 自选股行里的最新观点使用界面语言显示日期，并保留博主名称和观点原文。

@@ -3,8 +3,7 @@ import { translateText } from "./translate";
 
 // Key translations by their source and language so historical reports never
 // display a translation from a different version.
-function useTranslation(entries: [string, string][], locale: string) {
-  const targetLang = locale === "en" ? "zh" : locale;
+export function useTextTranslations(entries: [string, string][], targetLang: string) {
   const sourceKey = JSON.stringify([targetLang, entries]);
   const [state, setState] = useState({
     sourceKey,
@@ -55,10 +54,7 @@ function useTranslation(entries: [string, string][], locale: string) {
       const results = await Promise.all(
         entries.map(
           async ([key, content]) =>
-            [
-              key,
-              await translateText(content, targetLang, controller.signal),
-            ] as const,
+            [key, await translateText(content, targetLang, controller.signal)] as const,
         ),
       );
       if (request.current !== controller) return;
@@ -94,13 +90,10 @@ function useTranslation(entries: [string, string][], locale: string) {
   };
 }
 
-export function useContentTranslation(
-  originalContent: string | null | undefined,
-  locale: string,
-) {
-  const { translated, ...translation } = useTranslation(
+export function useContentTranslation(originalContent: string | null | undefined, locale: string) {
+  const { translated, ...translation } = useTextTranslations(
     originalContent ? [["content", originalContent]] : [],
-    locale,
+    locale === "en" ? "zh" : locale,
   );
   const displayContent = translation.showTranslated
     ? (translated?.content ?? originalContent)
@@ -116,14 +109,13 @@ export function useDebateTranslation(
   const entries: [string, string][] = keys
     .filter((key) => key && debate?.[key])
     .map((key) => [key, debate![key]]);
-  const { translated, ...translation } = useTranslation(entries, locale);
+  const { translated, ...translation } = useTextTranslations(
+    entries,
+    locale === "en" ? "zh" : locale,
+  );
   const getContent = useCallback(
     (key: string) => {
-      return (
-        (translation.showTranslated ? translated?.[key] : null) ??
-        debate?.[key] ??
-        null
-      );
+      return (translation.showTranslated ? translated?.[key] : null) ?? debate?.[key] ?? null;
     },
     [debate, translation.showTranslated, translated],
   );

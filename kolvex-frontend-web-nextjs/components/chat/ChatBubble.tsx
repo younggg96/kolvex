@@ -29,7 +29,7 @@ const CHAT_PROSE_CLASSES = cn(
   "prose-code:text-[0.8125rem] prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:font-normal prose-code:before:content-none prose-code:after:content-none",
   "prose-pre:bg-muted prose-pre:text-foreground prose-pre:rounded-2xl prose-pre:text-[0.8125rem] prose-pre:overflow-x-auto",
   "prose-blockquote:font-normal prose-blockquote:not-italic prose-blockquote:border-l prose-blockquote:border-l-border prose-blockquote:bg-muted/50 prose-blockquote:py-1 prose-blockquote:px-4 prose-blockquote:rounded-r-lg [&_blockquote_p:first-of-type]:before:content-none [&_blockquote_p:last-of-type]:after:content-none",
-  "[&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
+  "[&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
 );
 
 export function ChatBubble({
@@ -62,10 +62,9 @@ export function ChatBubble({
 
   const formatTime = (date?: Date) => {
     if (!date) return "";
-    return new Intl.DateTimeFormat("en-US", {
+    return new Intl.DateTimeFormat(t("common.intlLocale"), {
       hour: "numeric",
       minute: "2-digit",
-      hour12: true,
     }).format(date);
   };
 
@@ -77,9 +76,7 @@ export function ChatBubble({
             className="glass-card rounded-3xl border border-foreground/10 bg-card-glass px-4 py-2.5 text-foreground"
             aria-label={t("chat.userName")}
           >
-            <p className="text-[0.9375rem] leading-relaxed whitespace-pre-wrap">
-              {question}
-            </p>
+            <p className="text-[0.9375rem] leading-relaxed whitespace-pre-wrap">{question}</p>
           </div>
           {timestamp && (
             <p className="mt-1 px-1 text-right text-[0.6875rem] text-muted-foreground">
@@ -95,101 +92,105 @@ export function ChatBubble({
   return (
     <div className="group flex w-full justify-start animate-fade-in">
       <div className="w-full min-w-0 max-w-[45rem]">
-          <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="font-semibold text-foreground">
-              {t("chat.assistantName")}
-            </span>
-            {modelName && <span>{modelName}</span>}
-            {timestamp && <span>{formatTime(timestamp)}</span>}
+        <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="font-semibold text-foreground">{t("chat.assistantName")}</span>
+          {modelName && <span>{modelName}</span>}
+          {timestamp && <span>{formatTime(timestamp)}</span>}
+        </div>
+
+        <div className="text-foreground">
+          <div className={CHAT_PROSE_CLASSES}>
+            <ReactMarkdown
+              remarkPlugins={remarkPlugins}
+              urlTransform={richUrlTransform}
+              components={RICH_MARKDOWN_COMPONENTS}
+            >
+              {displayContent}
+            </ReactMarkdown>
+            {isStreaming && (
+              <span className="inline-flex ml-0.5 align-middle">
+                <span className="h-[1.125rem] w-[0.1875rem] animate-pulse rounded-sm bg-foreground" />
+              </span>
+            )}
           </div>
+        </div>
 
-          <div className="text-foreground">
-            <div className={CHAT_PROSE_CLASSES}>
-              <ReactMarkdown
-                remarkPlugins={remarkPlugins}
-                urlTransform={richUrlTransform}
-                components={RICH_MARKDOWN_COMPONENTS}
-              >
-                {displayContent}
-              </ReactMarkdown>
-              {isStreaming && (
-                <span className="inline-flex ml-0.5 align-middle">
-                  <span className="h-[1.125rem] w-[0.1875rem] animate-pulse rounded-sm bg-foreground" />
-                </span>
-              )}
-            </div>
-          </div>
+        {!isStreaming && answerCheck?.data_gaps && <DataGapNote gaps={answerCheck.data_gaps} />}
 
-          {!isStreaming && answerCheck?.data_gaps && <DataGapNote gaps={answerCheck.data_gaps} />}
-
-          {!!(quoteEvidence?.length || revenueEvidence?.length) && (
-            <div className="mt-4 grid max-w-md gap-2">
-              {answerCheck && <AnswerCheckNote check={answerCheck} />}
-              {quoteEvidence
-                ?.slice(0, quotesExpanded ? undefined : QUOTE_COLLAPSE_LIMIT)
-                .map((quote) => <QuoteEvidenceCard key={quote.symbol} quote={quote} />)}
-              {(quoteEvidence?.length ?? 0) > QUOTE_COLLAPSE_LIMIT && (
-                <button
-                  type="button"
-                  onClick={() => setQuotesExpanded((v) => !v)}
-                  aria-expanded={quotesExpanded}
-                  className="flex items-center gap-1 justify-self-start px-1 text-xs text-muted-foreground hover:text-foreground"
-                >
-                  <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", quotesExpanded && "rotate-180")} />
-                  {quotesExpanded
-                    ? t("chat.quoteEvidence.collapse")
-                    : t("chat.quoteEvidence.expand", { count: String((quoteEvidence?.length ?? 0) - QUOTE_COLLAPSE_LIMIT) })}
-                </button>
-              )}
-              {revenueEvidence?.map((revenue) => (
-                <RevenueEvidenceCard
-                  key={`${revenue.symbol}:${revenue.period_kind}:${revenue.period_end}`}
-                  revenue={revenue}
-                />
+        {!!(quoteEvidence?.length || revenueEvidence?.length) && (
+          <div className="mt-4 grid max-w-md gap-2">
+            {answerCheck && <AnswerCheckNote check={answerCheck} />}
+            {quoteEvidence
+              ?.slice(0, quotesExpanded ? undefined : QUOTE_COLLAPSE_LIMIT)
+              .map((quote) => (
+                <QuoteEvidenceCard key={quote.symbol} quote={quote} />
               ))}
-            </div>
-          )}
+            {(quoteEvidence?.length ?? 0) > QUOTE_COLLAPSE_LIMIT && (
+              <button
+                type="button"
+                onClick={() => setQuotesExpanded((v) => !v)}
+                aria-expanded={quotesExpanded}
+                className="flex items-center gap-1 justify-self-start px-1 text-xs text-muted-foreground hover:text-foreground"
+              >
+                <ChevronDown
+                  className={cn("h-3.5 w-3.5 transition-transform", quotesExpanded && "rotate-180")}
+                />
+                {quotesExpanded
+                  ? t("chat.quoteEvidence.collapse")
+                  : t("chat.quoteEvidence.expand", {
+                      count: String((quoteEvidence?.length ?? 0) - QUOTE_COLLAPSE_LIMIT),
+                    })}
+              </button>
+            )}
+            {revenueEvidence?.map((revenue) => (
+              <RevenueEvidenceCard
+                key={`${revenue.symbol}:${revenue.period_kind}:${revenue.period_end}`}
+                revenue={revenue}
+              />
+            ))}
+          </div>
+        )}
 
-          {/* Actions */}
-          {!isStreaming && content && (
-            <div
+        {/* Actions */}
+        {!isStreaming && content && (
+          <div
+            className={cn(
+              "flex items-center gap-1 mt-2 px-0.5",
+              "opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity duration-150",
+            )}
+          >
+            <Button
+              variant="ghost"
+              size="xs"
+              onClick={handleCopy}
               className={cn(
-                "flex items-center gap-1 mt-2 px-0.5",
-                "opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity duration-150"
+                "flex items-center gap-1.5 rounded-full px-2.5 py-1",
+                "text-xs text-muted-foreground",
+                "hover:bg-foreground/[0.06] hover:text-foreground",
+                "transition-colors duration-150",
               )}
             >
-              <Button
-                variant="ghost"
-                size="xs"
-                onClick={handleCopy}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-full px-2.5 py-1",
-                  "text-xs text-muted-foreground",
-                  "hover:bg-foreground/[0.06] hover:text-foreground",
-                  "transition-colors duration-150"
-                )}
-              >
-                {copied ? (
-                  <>
-                    <Check className="w-3.5 h-3.5 text-positive" />
-                    <span className="text-positive">{t("chat.actions.copied")}</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-3.5 h-3.5" />
-                    <span>{t("chat.actions.copy")}</span>
-                  </>
-                )}
-              </Button>
-
-              {onRetry && (
-                <Button variant="ghost" size="xs" onClick={onRetry}>
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>{t("chat.actions.retry")}</span>
-                </Button>
+              {copied ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-positive" />
+                  <span className="text-positive">{t("chat.actions.copied")}</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>{t("chat.actions.copy")}</span>
+                </>
               )}
-            </div>
-          )}
+            </Button>
+
+            {onRetry && (
+              <Button variant="ghost" size="xs" onClick={onRetry}>
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>{t("chat.actions.retry")}</span>
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -24,10 +24,23 @@ const USER_SCROLL_THRESHOLD_PX = 12;
 
 // Tool category icons
 function getToolIcon(toolName: string) {
-  if (toolName === "get_user_watchlist" || toolName.includes("stock") || toolName.includes("quote") || toolName.includes("financials") || toolName === "get_reported_revenue" || toolName.includes("history") || toolName.includes("company") || toolName.includes("analyst")) {
+  if (
+    toolName === "get_user_watchlist" ||
+    toolName.includes("stock") ||
+    toolName.includes("quote") ||
+    toolName.includes("financials") ||
+    toolName === "get_reported_revenue" ||
+    toolName.includes("history") ||
+    toolName.includes("company") ||
+    toolName.includes("analyst")
+  ) {
     return <BarChart3 className="w-3 h-3" />;
   }
-  if (toolName === "get_daily_brief" || toolName.includes("news") || toolName.includes("trending")) {
+  if (
+    toolName === "get_daily_brief" ||
+    toolName.includes("news") ||
+    toolName.includes("trending")
+  ) {
     return <Newspaper className="w-3 h-3" />;
   }
   if (toolName.includes("portfolio") || toolName.includes("plaid")) {
@@ -63,61 +76,52 @@ function AgentActivityIndicator({
   return (
     <div className="flex w-full justify-start animate-fade-in" aria-live="polite">
       <div className="w-full max-w-[45rem]">
-          <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="font-semibold text-foreground">
-              {t("chat.assistantName")}
-            </span>
-            {modelName && <span>{modelName}</span>}
-          </div>
-          <div>
-            <div className="flex flex-col gap-1.5">
-              {/* Tool items */}
-              {tools.map((tool) => (
-                <div
-                  key={tool.name}
-                  className="flex items-center gap-2 text-xs"
-                >
-                  {tool.status === "running" ? (
-                    <Loader2 className="w-3 h-3 text-muted-foreground animate-spin flex-shrink-0" />
-                  ) : (
-                    <CheckCircle2 className="w-3 h-3 text-positive flex-shrink-0" />
+        <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="font-semibold text-foreground">{t("chat.assistantName")}</span>
+          {modelName && <span>{modelName}</span>}
+        </div>
+        <div>
+          <div className="flex flex-col gap-1.5">
+            {/* Tool items */}
+            {tools.map((tool) => (
+              <div key={tool.name} className="flex items-center gap-2 text-xs">
+                {tool.status === "running" ? (
+                  <Loader2 className="w-3 h-3 text-muted-foreground animate-spin flex-shrink-0" />
+                ) : (
+                  <CheckCircle2 className="w-3 h-3 text-positive flex-shrink-0" />
+                )}
+                <span
+                  className={cn(
+                    "flex items-center gap-1.5",
+                    tool.status === "done" ? "text-muted-foreground" : "text-foreground",
                   )}
-                  <span
-                    className={cn(
-                      "flex items-center gap-1.5",
-                      tool.status === "done"
-                        ? "text-muted-foreground"
-                        : "text-foreground"
-                    )}
-                  >
-                    {getToolIcon(tool.name)}
-                    {tool.label}
-                  </span>
-                </div>
-              ))}
+                >
+                  {getToolIcon(tool.name)}
+                  {tool.label}
+                </span>
+              </div>
+            ))}
 
-              {/* Current agent stage */}
-              {isThinking && (
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <div className="flex gap-0.5">
-                    {[0, 1, 2].map((i) => (
-                      <span
-                        key={i}
-                        className="h-1 w-1 rounded-full bg-foreground/60"
-                        style={{
-                          animation: "pulse 1.4s ease-in-out infinite",
-                          animationDelay: `${i * 0.2}s`,
-                        }}
-                      />
-                    ))}
-                  </div>
-                  <span className="ml-0.5">
-                    {statusMessage || t("chat.activity.working")}
-                  </span>
+            {/* Current agent stage */}
+            {isThinking && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <div className="flex gap-0.5">
+                  {[0, 1, 2].map((i) => (
+                    <span
+                      key={i}
+                      className="h-1 w-1 rounded-full bg-foreground/60"
+                      style={{
+                        animation: "pulse 1.4s ease-in-out infinite",
+                        animationDelay: `${i * 0.2}s`,
+                      }}
+                    />
+                  ))}
                 </div>
-              )}
-            </div>
+                <span className="ml-0.5">{statusMessage || t("chat.activity.working")}</span>
+              </div>
+            )}
           </div>
+        </div>
       </div>
     </div>
   );
@@ -255,11 +259,7 @@ export function ChatMessageList({
 
           {/* Pending user message (optimistic update — always visible) */}
           {pendingUserMessage && (
-            <ChatBubble
-              role="user"
-              content={pendingUserMessage}
-              isFirst={messages.length === 0}
-            />
+            <ChatBubble role="user" content={pendingUserMessage} isFirst={messages.length === 0} />
           )}
 
           {/* Agent activity: tools + thinking indicator (compact, single block) */}
@@ -286,12 +286,13 @@ export function ChatMessageList({
 
           {errorMessage && (
             <div className="flex w-full justify-start">
-              <div role="alert" className="flex max-w-xl items-start gap-3 rounded-3xl bg-negative/10 px-4 py-3 text-sm">
+              <div
+                role="alert"
+                className="flex max-w-xl items-start gap-3 rounded-3xl bg-negative/10 px-4 py-3 text-sm"
+              >
                 <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-negative" />
                 <div className="min-w-0">
-                  <p className="font-medium text-foreground">
-                    {t("chat.activity.interrupted")}
-                  </p>
+                  <p className="font-medium text-foreground">{t("chat.activity.interrupted")}</p>
                   <p className="mt-1 text-muted-foreground">{errorMessage}</p>
                   {onRetry && (
                     <Button
@@ -328,9 +329,9 @@ export function ChatMessageList({
               ? "max-lg:bottom-[calc(5.5rem+env(safe-area-inset-bottom)+24px-1.125rem)]"
               : "max-lg:bottom-[calc(var(--chat-bottom-overlay)+0.5rem)]",
             "w-9 h-9 !rounded-full bg-background surface-overlay",
-            "animate-fade-in"
+            "animate-fade-in",
           )}
-          aria-label="Scroll to bottom"
+          aria-label={t("chat.actions.scrollToBottom")}
         >
           <ChevronDown className="w-4 h-4" />
         </Button>

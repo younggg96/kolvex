@@ -192,7 +192,7 @@ class SecClient:
             "coverage": "Non-derivative transactions from the latest 12 Form 4/4-A filings. Amendments are shown separately; this is not a complete trading history.",
         }
 
-    async def _holdings_filing(self, cik, filing):
+    async def holdings_filing(self, cik, filing):
         index = await self.json(self.archive(cik, filing, "index.json"))
         files = index.get("directory", {}).get("item", [])
         # Prefer information-table names, then inspect a bounded number of XML documents.
@@ -226,14 +226,14 @@ class SecClient:
             if r["form"] == "13F-HR/A"
             and r["period"] in {current["period"], previous["period"] if previous else None}
         ]
-        now = await self._holdings_filing(identity["cik"], current)
+        now = await self.holdings_filing(identity["cik"], current)
         prior, failed = None, False
         # No share-change calculation across gaps or amended snapshots.
         from .parsers import days
 
         if previous and 70 <= days(previous["period"], current["period"]) <= 110 and not amendments:
             try:
-                prior = await self._holdings_filing(identity["cik"], previous)
+                prior = await self.holdings_filing(identity["cik"], previous)
             except (SecUnavailable, ValueError):
                 failed = True
 

@@ -1,5 +1,7 @@
 "use client";
 
+import { chineseTextLanguage, opinionHorizonLabel } from "@/lib/contentLanguage";
+import { formatOpinionDate, opinionDay } from "@/lib/opinionDates";
 import Link from "next/link";
 import { useId, useRef, useState } from "react";
 import { ArrowUpRight, ChevronRight, ExternalLink } from "lucide-react";
@@ -59,15 +61,16 @@ export default function CreatorIntelligence({
   const dayOpinions = history.filter(
     (opinion) => opinion.opinion_date.slice(0, 10) === selectedDay,
   );
+  const dateLocale = t("common.intlLocale");
+  const compactDate = new Intl.DateTimeFormat(dateLocale, {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
   const date = (value: string, compact = false) => {
-    const parsed = new Date(`${value.slice(0, 10)}T00:00:00`);
-    return Number.isNaN(parsed.getTime())
-      ? value
-      : new Intl.DateTimeFormat(t("common.intlLocale"), {
-          year: compact ? undefined : "numeric",
-          month: "short",
-          day: "numeric",
-        }).format(parsed);
+    if (!compact) return formatOpinionDate(value, dateLocale) || value;
+    const day = opinionDay(value);
+    return day ? compactDate.format(new Date(`${day}T12:00:00Z`)) : value;
   };
   const groups: Array<{ side: Side; label: string; empty: string }> = [
     {
@@ -228,7 +231,10 @@ export default function CreatorIntelligence({
                       {group.label}
                     </h3>
                     <span className="whitespace-nowrap text-xs text-muted-foreground tabular-nums">
-                      {c(`${items.length} creators`, `${items.length} 位博主`)}
+                      {c(
+                        `${items.length} ${items.length === 1 ? "creator" : "creators"}`,
+                        `${items.length} 位博主`,
+                      )}
                     </span>
                   </header>
                   {items.length ? (
@@ -263,9 +269,11 @@ export default function CreatorIntelligence({
                               </span>
                             </span>
                             <span className="mt-3 line-clamp-2 text-sm leading-6 text-foreground/85">
-                              {opinion.summary ||
-                                opinion.thesis ||
-                                c("Read this opinion", "查看这条观点")}
+                              <span lang={chineseTextLanguage(opinion.summary || opinion.thesis)}>
+                                {opinion.summary ||
+                                  opinion.thesis ||
+                                  c("Read this opinion", "查看这条观点")}
+                              </span>
                             </span>
                             <span className="mt-3 flex items-center justify-between gap-2 text-xs font-medium">
                               <span>{c("Read opinion", "查看观点")}</span>
@@ -300,7 +308,7 @@ export default function CreatorIntelligence({
                         {expanded
                           ? c("Show fewer creators", "收起博主")
                           : c(
-                              `View ${items.length - 3} more creators`,
+                              `View ${items.length - 3} more ${items.length === 4 ? "creator" : "creators"}`,
                               `查看另外 ${items.length - 3} 位博主`,
                             )}
                       </button>
@@ -356,7 +364,10 @@ export default function CreatorIntelligence({
                           {date(day, true)}
                         </time>
                         <span className="text-xs text-muted-foreground">
-                          {c(`${items.length} opinions`, `${items.length} 条观点`)}
+                          {c(
+                            `${items.length} ${items.length === 1 ? "opinion" : "opinions"}`,
+                            `${items.length} 条观点`,
+                          )}
                         </span>
                       </button>
                     </li>
@@ -462,7 +473,9 @@ export default function CreatorIntelligence({
                   {selected.time_horizon && (
                     <div className="flex gap-2">
                       <dt>{c("Time horizon", "时间范围")}</dt>
-                      <dd className="font-medium text-foreground">{selected.time_horizon}</dd>
+                      <dd className="font-medium text-foreground">
+                        {opinionHorizonLabel(selected.time_horizon, t)}
+                      </dd>
                     </div>
                   )}
                   {selected.confidence != null && (
@@ -476,13 +489,19 @@ export default function CreatorIntelligence({
                 </dl>
               )}
               <div className="mt-5 space-y-5 text-sm leading-7 [overflow-wrap:anywhere]">
-                {selected.summary && <p className="whitespace-pre-wrap">{selected.summary}</p>}
+                {selected.summary && (
+                  <p lang={chineseTextLanguage(selected.summary)} className="whitespace-pre-wrap">
+                    {selected.summary}
+                  </p>
+                )}
                 {selected.thesis && selected.thesis !== selected.summary && (
                   <div>
                     <h4 className="mb-1 text-xs font-semibold text-muted-foreground">
                       {c("Investment view", "投资判断")}
                     </h4>
-                    <p className="whitespace-pre-wrap">{selected.thesis}</p>
+                    <p lang={chineseTextLanguage(selected.thesis)} className="whitespace-pre-wrap">
+                      {selected.thesis}
+                    </p>
                   </div>
                 )}
                 {!!selected.key_points?.length && (
@@ -492,7 +511,9 @@ export default function CreatorIntelligence({
                     </h4>
                     <ul className="mt-2 list-disc space-y-1 pl-5">
                       {selected.key_points.map((point, index) => (
-                        <li key={index}>{point}</li>
+                        <li key={index} lang={chineseTextLanguage(point)}>
+                          {point}
+                        </li>
                       ))}
                     </ul>
                   </div>
@@ -504,7 +525,9 @@ export default function CreatorIntelligence({
                     </h4>
                     <ul className="mt-2 list-disc space-y-1 pl-5">
                       {selected.risks.map((risk, index) => (
-                        <li key={index}>{risk}</li>
+                        <li key={index} lang={chineseTextLanguage(risk)}>
+                          {risk}
+                        </li>
                       ))}
                     </ul>
                   </div>
@@ -526,7 +549,7 @@ export default function CreatorIntelligence({
                   className="mt-5 inline-flex max-w-full items-center gap-2 rounded-sm text-sm font-semibold underline-offset-4 hover:underline focus-visible:outline-none "
                 >
                   <ExternalLink className="h-4 w-4 shrink-0" aria-hidden />
-                  <span className="break-words">
+                  <span lang={chineseTextLanguage(selected.video_title)} className="break-words">
                     {selected.video_title || c("Watch source video", "查看原始视频")}
                   </span>
                 </a>

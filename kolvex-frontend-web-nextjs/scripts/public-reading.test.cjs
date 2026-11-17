@@ -225,6 +225,28 @@ test("stock summary states only recorded counts and omits itself when nothing is
   );
 });
 
+test("English stock summary keeps source names and formats the recorded New York date", () => {
+  const seo = load("lib/publicSeo.ts");
+  const counts = {
+    total_opinions: 1,
+    total_creators: 1,
+    bullish_count: 0,
+    bearish_count: 1,
+    neutral_count: 0,
+  };
+  const latest = {
+    ticker: "NVDA",
+    channel_title: "原始博主名称",
+    opinion_date: "2026-11-17T00:30:00Z",
+    sentiment: "bearish",
+  };
+  assert.equal(
+    seo.stockOpinionSummary("NVDA", counts, latest, 1, "en"),
+    "Kolvex has recorded 1 opinion on NVDA from 1 creator: 0 bullish, 1 bearish, and 0 neutral. The latest opinion comes from 原始博主名称 (Nov 16, 2026, bearish). Published AI research on NVDA: 1 report.",
+  );
+  assert.equal(seo.stockOpinionSummary("NVDA", null, null, 0, "en"), null);
+});
+
 test("opinion structured data mirrors each recorded opinion and its source video", () => {
   const seo = load("lib/publicSeo.ts");
   const data = seo.opinionCollectionData(

@@ -33,12 +33,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CHAT_SKILLS, type ChatSkill } from "./chatSkills";
-import type {
-  ChatInputProps,
-  SearchSource,
-  AIModel,
-  AIModelConfig,
-} from "./types";
+import type { ChatInputProps, SearchSource, AIModel, AIModelConfig } from "./types";
 
 import { MODEL_CONFIGS, PROVIDER_NAME_TO_ID } from "@/lib/aiModels";
 export { MODEL_CONFIGS, PROVIDER_NAME_TO_ID, getFirstAvailableModelId } from "@/lib/aiModels";
@@ -70,7 +65,7 @@ function SourceChip({ icon, label, active, onClick }: SourceChipProps) {
         " ",
         active
           ? "bg-foreground/10 text-foreground"
-          : "text-foreground/70 hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]"
+          : "text-foreground/70 hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]",
       )}
       aria-pressed={active}
       title={label}
@@ -101,12 +96,9 @@ function ModelSelector({
     return backendId ? availableProviders.includes(backendId) : false;
   };
 
-  const hasAnyAvailable =
-    !availableProviders || MODEL_CONFIGS.some((m) => isModelAvailable(m));
+  const hasAnyAvailable = !availableProviders || MODEL_CONFIGS.some((m) => isModelAvailable(m));
 
-  const isCurrentModelAvailable = currentModel
-    ? isModelAvailable(currentModel)
-    : false;
+  const isCurrentModelAvailable = currentModel ? isModelAvailable(currentModel) : false;
 
   const triggerLabel = !hasAnyAvailable
     ? t("chat.input.addApiKey")
@@ -125,7 +117,7 @@ function ModelSelector({
             " ",
             !hasAnyAvailable
               ? "text-muted-foreground"
-              : "text-foreground/70 hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1] data-[state=open]:bg-foreground/10 data-[state=open]:text-foreground"
+              : "text-foreground/70 hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1] data-[state=open]:bg-foreground/10 data-[state=open]:text-foreground",
           )}
         >
           {hasAnyAvailable ? (
@@ -133,17 +125,11 @@ function ModelSelector({
           ) : (
             <Lock className="w-3.5 h-3.5 text-muted-foreground" />
           )}
-          <span className="max-w-[55vw] truncate text-left sm:max-w-none">
-            {triggerLabel}
-          </span>
+          <span className="max-w-[55vw] truncate text-left sm:max-w-none">{triggerLabel}</span>
           <ChevronDown className="w-3 h-3 text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="start"
-        side="top"
-        className="w-52 max-h-72 overflow-y-auto"
-      >
+      <DropdownMenuContent align="start" side="top" className="w-52 max-h-72 overflow-y-auto">
         {/* Prompt when no API keys configured */}
         {!hasAnyAvailable && (
           <div className="px-3 py-3 text-center">
@@ -172,14 +158,14 @@ function ModelSelector({
               className={cn(
                 "flex items-center gap-2",
                 available ? "cursor-pointer" : "cursor-not-allowed opacity-40",
-                selectedModel === model.id && available && "bg-accent"
+                selectedModel === model.id && available && "bg-accent",
               )}
             >
               {available ? (
                 <Check
                   className={cn(
                     "w-3 h-3 flex-shrink-0 text-positive",
-                    selectedModel === model.id ? "opacity-100" : "opacity-0"
+                    selectedModel === model.id ? "opacity-100" : "opacity-0",
                   )}
                 />
               ) : (
@@ -192,7 +178,7 @@ function ModelSelector({
                     ? "text-muted-foreground/50"
                     : selectedModel === model.id
                       ? "font-semibold text-foreground"
-                      : "text-foreground"
+                      : "text-foreground",
                 )}
               >
                 {model.name}
@@ -222,6 +208,7 @@ function SendButton({
   onCancel?: () => void;
   className?: string;
 }) {
+  const { t } = useTranslation();
   if (isLoading && onCancel) {
     return (
       <Button
@@ -230,8 +217,8 @@ function SendButton({
         size="icon"
         variant="outline"
         className={cn("h-9 w-9 flex-shrink-0 rounded-full border-border", className)}
-        aria-label="Stop generating"
-        title="Stop generating"
+        aria-label={t("chat.actions.stop")}
+        title={t("chat.actions.stop")}
       >
         <Square className="h-3.5 w-3.5 fill-current" />
       </Button>
@@ -247,9 +234,9 @@ function SendButton({
         "h-9 w-9 flex-shrink-0 rounded-full transition-colors duration-150",
         "glass-button glass-button-primary bg-primary/85 text-primary-foreground hover:bg-primary/75",
         "disabled:bg-foreground/[0.08] disabled:text-muted-foreground disabled:opacity-100",
-        className
+        className,
       )}
-      aria-label="Send"
+      aria-label={t("chat.actions.send")}
     >
       <ArrowUp className="h-[1.125rem] w-[1.125rem]" strokeWidth={2.5} />
     </Button>
@@ -294,10 +281,7 @@ export function ChatInput({
   useEffect(() => {
     if (inputRef?.current) {
       inputRef.current.style.height = "auto";
-      inputRef.current.style.height = `${Math.min(
-        inputRef.current.scrollHeight,
-        120
-      )}px`;
+      inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 120)}px`;
     }
   }, [value, inputRef]);
 
@@ -338,8 +322,7 @@ export function ChatInput({
   })();
 
   const hasAnyModel =
-    !availableProviders ||
-    availableProviders.length === 0
+    !availableProviders || availableProviders.length === 0
       ? false
       : MODEL_CONFIGS.some((m) => {
           const bid = PROVIDER_NAME_TO_ID[m.provider];
@@ -421,7 +404,7 @@ export function ChatInput({
               "chat-composer-surface glass-track glass-track-strong absolute inset-0 rounded-[28px]",
               "[transition:top_var(--spring-standard)_var(--spring),left_var(--spring-standard)_var(--spring),box-shadow_150ms,border-color_150ms]",
               "group-focus-within/composer:[box-shadow:var(--glass-drop),inset_0_0_0_1px_rgb(var(--foreground)/0.35),var(--glass-sheen)]",
-              collapsed && "max-lg:left-[calc(100%-48px)] max-lg:top-[calc(100%-48px)]"
+              collapsed && "max-lg:left-[calc(100%-48px)] max-lg:top-[calc(100%-48px)]",
             )}
           />
         )}
@@ -431,21 +414,16 @@ export function ChatInput({
           className={cn(
             "relative flex flex-col transition-opacity",
             !inline && "overflow-hidden rounded-[28px]",
-            collapsed
-              ? "opacity-0 duration-100"
-              : "opacity-100 delay-100 duration-200"
+            collapsed ? "opacity-0 duration-100" : "opacity-100 delay-100 duration-200",
           )}
         >
           {evidenceLabel && (
-            <div
-              className={cn(
-                "flex items-center gap-2",
-                inline ? "px-0 pb-1 pt-1" : "px-4 pt-3"
-              )}
-            >
+            <div className={cn("flex items-center gap-2", inline ? "px-0 pb-1 pt-1" : "px-4 pt-3")}>
               <p className="min-w-0 flex-1 truncate text-[0.8125rem] text-muted-foreground">
                 <span className="font-medium text-foreground">{t("chat.evidence.using")}</span>
-                <span className="px-1.5 text-foreground/30" aria-hidden>·</span>
+                <span className="px-1.5 text-foreground/30" aria-hidden>
+                  ·
+                </span>
                 {evidenceLabel}
               </p>
               {onClearEvidence && (
@@ -473,7 +451,7 @@ export function ChatInput({
                 ? "pb-3 pt-1"
                 : docked
                   ? "px-5 pt-3.5"
-                  : cn("px-5", evidenceLabel ? "pt-1" : "pt-4", hasFooter ? "pb-1" : "pb-3")
+                  : cn("px-5", evidenceLabel ? "pt-1" : "pt-4", hasFooter ? "pb-1" : "pb-3"),
             )}
           >
             <textarea
@@ -497,7 +475,7 @@ export function ChatInput({
                 inline
                   ? "min-h-11 border-b-2 border-transparent text-[1.0625rem] leading-7 focus-visible:border-primary focus-visible:!bg-transparent focus-visible:outline-none"
                   : "min-h-[1.75rem] max-h-[10rem] text-base leading-relaxed focus-visible:!bg-transparent focus-visible:outline-none",
-                fieldClassName
+                fieldClassName,
               )}
               rows={1}
             />
@@ -505,11 +483,7 @@ export function ChatInput({
             {/* Send Button - floats at the field's end on phones, its own column on desktop. */}
             {!hasFooter && (
               <div className="col-start-1 row-start-1 justify-self-end self-end md:col-start-2">
-                <SendButton
-                  disabled={isSendDisabled}
-                  isLoading={isLoading}
-                  onCancel={onCancel}
-                />
+                <SendButton disabled={isSendDisabled} isLoading={isLoading} onCancel={onCancel} />
               </div>
             )}
           </div>
@@ -519,9 +493,7 @@ export function ChatInput({
             <div
               className={cn(
                 "flex items-center justify-between gap-2",
-                inline
-                  ? "border-t border-border px-0 py-2"
-                  : "px-2.5 pb-2.5 pt-1"
+                inline ? "border-t border-border px-0 py-2" : "px-2.5 pb-2.5 pt-1",
               )}
             >
               {/* Left Side - Source Toggles & Model Selector */}
@@ -573,8 +545,13 @@ export function ChatInput({
                             key={skill}
                             className="flex min-h-10 cursor-pointer items-center gap-2.5 rounded-2xl px-2.5 text-sm text-foreground transition-colors hover:bg-foreground/[0.06] focus-within:bg-foreground/[0.06]"
                           >
-                            <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-                            <span className="min-w-0 flex-1">{t(`chat.input.skills.${skill}`)}</span>
+                            <Icon
+                              className="size-4 shrink-0 text-muted-foreground"
+                              aria-hidden="true"
+                            />
+                            <span className="min-w-0 flex-1">
+                              {t(`chat.input.skills.${skill}`)}
+                            </span>
                             <Checkbox
                               type="button"
                               className="border-muted-foreground/50 focus-visible:ring-2 focus-visible:ring-foreground/60 focus-visible:ring-offset-2 focus-visible:ring-offset-card data-[state=checked]:border-transparent data-[state=checked]:bg-foreground/10 data-[state=checked]:text-foreground"
@@ -604,12 +581,9 @@ export function ChatInput({
                 )}
 
                 {/* Divider */}
-                {showSourceToggle &&
-                  onToggleSource &&
-                  showModelSelector &&
-                  onSelectModel && (
-                    <div className="mx-1 h-4 w-px bg-foreground/15" aria-hidden />
-                  )}
+                {showSourceToggle && onToggleSource && showModelSelector && onSelectModel && (
+                  <div className="mx-1 h-4 w-px bg-foreground/15" aria-hidden />
+                )}
 
                 {/* Model Selector */}
                 {showModelSelector && onSelectModel && (
@@ -622,11 +596,7 @@ export function ChatInput({
               </div>
 
               {/* Send Button */}
-              <SendButton
-                disabled={isSendDisabled}
-                isLoading={isLoading}
-                onCancel={onCancel}
-              />
+              <SendButton disabled={isSendDisabled} isLoading={isLoading} onCancel={onCancel} />
             </div>
           )}
         </div>
@@ -637,7 +607,7 @@ export function ChatInput({
               "absolute bottom-0 right-0 transition-[opacity,transform] duration-200 lg:hidden",
               collapsed
                 ? "pointer-events-auto scale-100 opacity-100 delay-100"
-                : "pointer-events-none scale-50 opacity-0"
+                : "pointer-events-none scale-50 opacity-0",
             )}
           >
             <Button

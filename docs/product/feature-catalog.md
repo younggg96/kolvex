@@ -27,7 +27,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 | 宏观指标 | `/dashboard?tab=macro` | `/macro` | `economic_indicators.py`、`market_observations.py` | `kolvex-backend-py/docs/macro-data.md` | ✅ |
 | 重大事件日历 | `/dashboard?tab=calendar` | `/calendar` | `market_events.py` | [market-events.md](../market-events.md) | ✅ |
 | 个股工作台（概览、财报、盈利、指标趋势、同行、持股、分析师、简介） | `/dashboard/market/[ticker]?tab=…` | `/stock/[symbol]?tab=…` | `market_data.py` | [decision-workspace.md](../decision-workspace.md) | ✅ |
-| 技术图表、画线、AI 技术分析 | 个股 `?tab=technical` | `/technical/[symbol]` | `chart_drawings.py`、`market_data.py`（ai-technical、chart-jobs） | [technical-analysis-focus.md](../technical-analysis-focus.md) | ◐ |
+| 技术图表、画线、AI 技术分析（Web 已存结论和条件计划可按需翻译） | 个股 `?tab=technical` | `/technical/[symbol]` | `chart_drawings.py`、`market_data.py`（ai-technical、chart-jobs） | [technical-analysis-focus.md](../technical-analysis-focus.md) | ◐ |
 | 估值（PE 区间、情景模拟、公司估值计算器） | 个股 `?tab=valuation` | 个股 `valuation` tab | `valuation.py` | [stock-valuation/PRD.md](../stock-valuation/PRD.md)、[README.md](../stock-valuation/README.md) | ◐ |
 | 期权链 | 个股 `?tab=options` | 个股 `options` tab | `options.py` | `PRODUCT.md` | ✅ |
 | AI 基本面分析 | 个股概览 | 个股 `summary` tab | `market_data.py`（ai-fundamentals） | — | ✅ |
@@ -46,7 +46,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 | 观点回看（全部看多 / 看空观点之后股价相对 SPY 的整体表现，可点进具体观点；「单个博主」先列全部博主，选中后按股票看这位博主说过的每只股票、说完至今涨跌以及与观点方向是否一致；博主主页的个人卡片有样本和跨度门槛；不按博主排名） | `youtubeOpinions` | 博主观点「回看」（`/dashboard/youtube-opinions/review`）；博主主页侧栏 | — | `youtube_opinions.py`（`/review`、`/review/opinions`、`/review/creators`、`/review/creators/{id}`、`/creators/{id}/review`） | [opinion-backtest.md](../opinion-backtest.md) | — |
 | 博主分享（图片 / 社交平台） | `youtubeOpinions` | 博主页、`/share/creators/[channelId]` | 博主页 | — | — | ◐ |
 | 观点更新 | `journal` | `/dashboard/journal` | `/updates` | `youtube_opinions.py` | `PRODUCT.md`「Reader Experience」 | ✅ |
-| 早晚报 | `briefs` | `/dashboard/briefs`、`/dashboard/briefs/[id]` | `(more)/briefs`、`brief/[id]` | `briefs.py` | [daily-briefs.md](../daily-briefs.md)、[prompts/daily-brief-generator.md](../prompts/daily-brief-generator.md) | ✅ |
+| 早晚报（Web 优先显示对应语言版本，缺版时标明并显示完整原版） | `briefs` | `/dashboard/briefs`、`/dashboard/briefs/[id]` | `(more)/briefs`、`brief/[id]` | `briefs.py` | [daily-briefs.md](../daily-briefs.md)、[prompts/daily-brief-generator.md](../prompts/daily-brief-generator.md) | ✅ |
 | 新闻终端（Web 优先读取后台中文译文） | `news` | `/dashboard/news` | `(more)/news` | `news_feed.py` | [news-feed.md](../news-feed.md)、[内容翻译](../content-translation.md) | ✅ |
 
 ### AI
@@ -55,7 +55,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 | --- | --- | --- | --- | --- | --- | --- |
 | AI 聊天（十个子 Agent：问答、深度研究、持仓、博主观点、财报、宏观、资金动向、估值、市场热度、模拟交易复盘；按意图自动路由） | `chat` | `/dashboard/chat`（桌面侧栏顶部主入口，手机网页底栏首项） | `(tabs)/chat`、`/chat/[id]` | `chat/` | `kolvex-backend-py/app/agent/README.md`、[model-catalog.md](../model-catalog.md)、[opinion-backtest.md](../opinion-backtest.md)（博主观点后股价工具）；记忆见 README 第 7 节（需迁移 `20261115000000_chat_memory.sql`；查看 / 清除入口在两端设置的偏好设置页） | ✅ |
 | 研究工作区（聊天按问题选择专项研究员，自动创建或复用工作区并启动一轮研究；专项结果、进度和综合结论保存在工作区；全局历史只列普通对话；Web 设置可选自动 / 先问我 / 关闭和人数上限） | `chat` | `/dashboard/workspaces` | `(more)/workspaces` | `research_workspaces.py`、`chat/` | [聊天和团队研究](../../kolvex-backend-py/app/agent/README.md) · 迁移 `20261117011931_chat_team_research.sql` | ◐（App 可查看团队研究，聊天自动发起待移植） |
-| AI 研究报告库、阅读 | `tradingAnalysis` | `/dashboard/ai-research` | `(more)/research`、`/report/[id]` | `trading_analysis/` | [内容翻译](../content-translation.md) | ✅ |
+| AI 研究报告库、阅读（Web 列表支持按需翻译已存技术结论和条件计划） | `tradingAnalysis` | `/dashboard/ai-research` | `(more)/research`、`/report/[id]` | `trading_analysis/` | [内容翻译](../content-translation.md) | ✅ |
 | 研究任务生成（仅管理员） | `tradingAnalysis` | `/dashboard/ai-research?view=authoring` | `/research-task/[id]` | `trading_analysis/` | — | ◐（轮询代替 SSE） |
 
 ### 交易与持仓
@@ -65,7 +65,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 | 自选股 | `watchlist` | `/dashboard/watchlist` | `(more)/watchlist` | Supabase 直连 + RLS | [watchlist-sync.md](../watchlist-sync.md) | ✅ |
 | 投资组合（Plaid） | `portfolio` | `/dashboard/portfolio`、公开页 `/portfolio/[userId]` | `/portfolio`（只读持仓快照） | `portfolio/`、`plaid.py` | `kolvex-frontend-web-nextjs/FEATURE_INVENTORY.md`「Plaid」 | ◐（Web 收盘后自动采集交易日收益快照；App 缺 Plaid 授权、交易、配置、收益图、AI 分析、股票观察「我的持仓」） |
 | 虚拟交易 | `paperTrading` | `/dashboard/paper-trading`、个股 `?tab=paper-trading` | `(more)/paper-trading`、个股 tab | `paper_trading.py` | [paper-trading/PLAN.md](../paper-trading/PLAN.md)、[README.md](../paper-trading/README.md)、Web `UX-CONTRACT.md` | ✅ |
-| 超级投资者（13F；名单由管理后台「超级投资者」维护，存 `institution_managers` 表） | `superinvestors` | `/dashboard/superinvestors`、`/dashboard/superinvestors/[manager]`；管理 `/dashboard/admin?tab=institutions` | `(more)/superinvestors`、`/superinvestor/[manager]` | `free_research.py`（`/market/free-research/institutions`）、`admin/institutions.py`（`/admin/institutions`） | [superinvestors-coverage.md](../superinvestors-coverage.md)；需迁移 `20261117090000_institution_managers.sql` | ✅ |
+| 超级投资者（明星专区展示前五大 13F 持仓占比、个股曲线和 13F 模拟收益；佩洛西展示交易披露与标的走势） | `superinvestors` | `/dashboard/superinvestors`、`/dashboard/superinvestors/[manager]`；管理 `/dashboard/admin?tab=institutions` | `(more)/superinvestors`、`/superinvestor/[manager]` | `free_research.py`、`congress_trades.py`、`admin/institutions.py` | [名单、收益口径与上线步骤](../superinvestors-coverage.md) | ✅ |
 | 国会交易 | `congressTrades` | `/dashboard/congress-trades` | `(more)/congress-trades` | `congress_trades.py` | — | ✅ |
 | 期权异动 | `optionsActivity` | `/dashboard/options-activity` | `(more)/options-activity` | `options_activity.py` | — | ✅ |
 
@@ -77,8 +77,8 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 | 个人资料、头像、主题、语言、模型 API Key | `settings` | `/dashboard/settings`、`/config` | `/account`、`/preferences`、`(more)/settings` | `users.py`、`upload/`、`user_api_keys/` | — | ✅ |
 | 管理后台（用户、日报、事件、YouTube、X、期权异动、邮件设置、超级投资者名单） | `admin` | `/dashboard/admin` | `(more)/admin` | `admin/` 等 | [mcp-content-admin.md](../mcp-content-admin.md) | ◐ |
 | YouTube 自动导入（本地 Mac worker 每天 21:00 获取未追踪视频字幕 → 后端 DeepSeek 分析 → 导入观点；管理后台「YouTube 导入」可立即运行并查看结果） | `admin` | `/dashboard/admin?tab=youtube` | — | `youtube_auto_import.py`（`/admin/youtube-auto-import/*`、`/youtube-auto-import/worker/*`） | [youtube-auto-import.md](../youtube-auto-import.md)；需迁移 `20261116150000_youtube_auto_import.sql` | — |
-| 公开阅读页与 SEO | — | `app/(public)/`：`/stocks`、`/creators`、`/research`（ISR 缓存 600 秒，分页用 `/page/N` 路径；`/llms.txt`、观点结构化数据） | —（App 无访客模式） | — | [public-reading.md](../public-reading.md) | — |
-| 隐私政策、条款、联系 | — | `/privacy`、`/terms`、`/contact` | 打开网页 | 联系表单返回 410 | — | ✅ |
+| 公开阅读页与 SEO | — | `app/(public)/`：`/stocks`、`/creators`、`/research`（中文缓存首屏，进入后沿用全站语言偏好；ISR 缓存 600 秒，分页用 `/page/N` 路径；`/llms.txt`、观点结构化数据） | —（App 无访客模式） | — | [public-reading.md](../public-reading.md) | — |
+| 隐私政策、条款、联系 | — | `/privacy`、`/terms`、`/contact` | 打开网页 | Web 双语，联系页使用支持邮箱 | — | ✅ |
 
 ### 已退役（不得恢复）
 
@@ -104,7 +104,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 - 会花钱的 AI 调用只能由用户明确点击触发。
 
 **多语言与主题**
-- 中英双语、浅色和深色都要支持，桌面和 390px 手机宽度都要可用。
+- 中英双语、浅色和深色都要支持，桌面和 390px 手机宽度都要可用。Web 的首页、公开阅读、登录、联系及法律页共用同一个浏览器语言偏好。
 
 **跨端**
 - 用户可见的新能力要么两端同时实现，要么在 `MIGRATION.md` 登记为待移植（见 [web-mobile-parity.md](../engineering/web-mobile-parity.md)）。

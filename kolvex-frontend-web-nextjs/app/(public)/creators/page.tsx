@@ -5,6 +5,7 @@ import { PUBLIC_PAGE_SIZE, publicPage, publicPagePath, validChannelId } from "@/
 import { readingMetadata } from "@/lib/publicSeo";
 import {
   ReadingHeading,
+  ReadingText,
   ReadingPagination,
   ReadingSectionHeading,
 } from "@/components/public/ReadingElements";
@@ -40,11 +41,19 @@ export default async function CreatorsPage({ params }: Props) {
   if (page > 1 && offset >= creators.length) notFound();
   return (
     <>
-      <ReadingHeading title="博主观点" />
-      <ReadingSectionHeading title="已收录博主" count={creators.length} />
+      <ReadingHeading title={<ReadingText en="Creator opinions" zh="博主观点" />} />
+      <ReadingSectionHeading
+        title={<ReadingText en="Listed creators" zh="已收录博主" />}
+        count={creators.length}
+      />
       <CreatorDirectory creators={creators.slice(offset, offset + PUBLIC_PAGE_SIZE)} />
       {!creators.length && (
-        <p className="py-12 text-muted-foreground">暂时没有已收录的博主观点。</p>
+        <p className="py-12 text-muted-foreground">
+          <ReadingText
+            en="No creator opinions have been recorded yet."
+            zh="暂时没有已收录的博主观点。"
+          />
+        </p>
       )}
       <ReadingPagination
         page={page}

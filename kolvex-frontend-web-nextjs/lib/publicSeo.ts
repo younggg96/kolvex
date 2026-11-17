@@ -1,3 +1,4 @@
+import { formatOpinionDate } from "@/lib/opinionDates";
 import { publicPageMetadata, SITE_URL } from "@/lib/seo";
 
 export function readingMetadata(title: string, description: string, path: string) {
@@ -122,7 +123,40 @@ export function stockOpinionSummary(
   counts: OpinionCounts | null | undefined,
   latest: PublicOpinion | null | undefined,
   researchTotal: number,
+  locale: "zh" | "en" = "zh",
 ) {
+  if (locale === "en") {
+    const parts: string[] = [];
+    if (counts && counts.total_opinions > 0) {
+      const creators =
+        counts.total_creators > 0
+          ? ` from ${counts.total_creators} ${counts.total_creators === 1 ? "creator" : "creators"}`
+          : "";
+      parts.push(
+        `Kolvex has recorded ${counts.total_opinions} ${counts.total_opinions === 1 ? "opinion" : "opinions"} on ${ticker}${creators}: ${counts.bullish_count} bullish, ${counts.bearish_count} bearish, and ${counts.neutral_count} neutral.`,
+      );
+      if (latest?.opinion_date && latest.channel_title) {
+        const date = formatOpinionDate(latest.opinion_date, "en-US");
+        const direction =
+          latest.sentiment === "bullish" ||
+          latest.sentiment === "bearish" ||
+          latest.sentiment === "neutral" ||
+          latest.sentiment === "mixed"
+            ? latest.sentiment
+            : null;
+        const byline = [date, direction].filter(Boolean).join(", ");
+        parts.push(
+          `The latest opinion comes from ${latest.channel_title}${byline ? ` (${byline})` : ""}.`,
+        );
+      }
+    }
+    if (researchTotal > 0)
+      parts.push(
+        `Published AI research on ${ticker}: ${researchTotal} ${researchTotal === 1 ? "report" : "reports"}.`,
+      );
+    return parts.length ? parts.join(" ") : null;
+  }
+
   const parts: string[] = [];
   if (counts && counts.total_opinions > 0) {
     const creators =

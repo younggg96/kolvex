@@ -32,6 +32,18 @@ saved version restores those choices for the next generation. Old snapshots with
 focus fields still render and use the default selection. Unsaved choices are scoped to
 the current stock chart; they are not stored in browser storage or sent to analytics.
 
+## Reading saved analysis in another language
+
+Saved results retain their generation language. If it differs from the Web
+interface language, the chart analysis, conditional plan and AI Research library
+offer an explicit translation action. It sends the generated reading text through
+the existing translation endpoint. Conclusions, evidence and plan prose change
+together within each panel once translation succeeds. Figures, score inputs,
+chart geometry, user-authored scenarios and saved versions stay in their original
+form. Readers can switch back to the original. The original remains available
+during translation and on failure. Opening a page or switching interface language
+does not initiate translation or generate a new analysis.
+
 ## API contract
 
 `POST /api/v1/market/ai-technical/{symbol}` accepts its existing history, visible-window

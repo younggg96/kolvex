@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 const headers = { "Cache-Control": "private, no-store" };
 const ID = /^[a-z][a-z0-9_]{1,39}$/;
 const ERRORS: Record<string, string> = {
-  tables_missing: "数据库还没有机构名单表，请先执行迁移 20261117090000_institution_managers.sql。",
+  tables_missing: "数据库还没有机构名单表，请先执行迁移 20261117045338_institution_managers.sql。",
   id_taken: "这个 ID 已被使用。",
   cik_taken: "这个 CIK 已在名单中。",
   no_13f_filings: "SEC 上找不到这个 CIK 的 13F-HR 申报，不能加入。",

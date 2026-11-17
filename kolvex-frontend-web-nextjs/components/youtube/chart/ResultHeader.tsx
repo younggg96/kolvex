@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { formatOpinionDate } from "@/lib/opinionDates";
 import type { AiTechnicalAnalysis } from "@/lib/stockApi";
 
 type Translate = (key: string, params?: Record<string, string>) => string;
@@ -28,7 +29,7 @@ export default function ResultHeader({
   generatedAt,
   author,
   model,
-  formatDate,
+  titleLang,
   t,
 }: {
   label: string;
@@ -40,19 +41,23 @@ export default function ResultHeader({
   generatedAt?: string;
   author?: string;
   model?: string;
-  formatDate: (date: string) => string;
+  titleLang?: string;
   t: Translate;
 }) {
   const meta: ReactNode[] = [
     t(`youtubeOpinions.intervals.${interval}`),
     <span key="view" className="tabular-nums">
-      {formatDate(view.start.slice(0, 10))} – {formatDate(view.end.slice(0, 10))}
+      {formatOpinionDate(view.start.slice(0, 10), t("common.intlLocale"))} –{" "}
+      {formatOpinionDate(view.end.slice(0, 10), t("common.intlLocale"))}
     </span>,
   ];
   if (generatedAt) {
     meta.push(
       <time key="generated" dateTime={generatedAt} className="tabular-nums">
-        {new Date(generatedAt).toLocaleString(t("common.intlLocale"), { dateStyle: "medium", timeStyle: "short" })}
+        {new Date(generatedAt).toLocaleString(t("common.intlLocale"), {
+          dateStyle: "medium",
+          timeStyle: "short",
+        })}
       </time>,
     );
   }
@@ -61,10 +66,26 @@ export default function ResultHeader({
 
   return (
     <header>
-      <p id={labelId} className="text-sm font-semibold leading-5 text-muted-foreground">{label}</p>
+      <p id={labelId} className="text-sm font-semibold leading-5 text-muted-foreground">
+        {label}
+      </p>
       <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-2">
-        <h3 className="text-lg font-semibold leading-tight tracking-tight sm:text-xl">{title}</h3>
-        {badge && <span className={cn("rounded-full border px-2.5 py-1 text-xs font-semibold", toneClass[badge.tone])}>{badge.label}</span>}
+        <h3
+          lang={titleLang}
+          className="text-lg font-semibold leading-tight tracking-tight sm:text-xl"
+        >
+          {title}
+        </h3>
+        {badge && (
+          <span
+            className={cn(
+              "rounded-full border px-2.5 py-1 text-xs font-semibold",
+              toneClass[badge.tone],
+            )}
+          >
+            {badge.label}
+          </span>
+        )}
       </div>
       <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 break-words text-[11px] leading-4 text-muted-foreground">
         {meta.map((item, index) => (

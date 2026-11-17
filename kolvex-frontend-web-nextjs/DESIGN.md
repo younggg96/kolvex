@@ -721,7 +721,10 @@ that rail scrolls. Below the desktop breakpoint, AI controls and results open
 from a translated toolbar action in a bounded popover. Nested focus dialogs retain their existing draft,
 confirmation and Escape behavior. Default dialog geometry is unchanged.
 
-Written analysis leads with trend, direction and a 16px/28px conclusion.
+Written analysis leads with trend, direction and a 16px/28px conclusion. Saved
+analysis and conditional plans can offer a compact inline translation action
+when their original language differs from the workspace language. Translated
+text is identified and the original remains readable during loading and errors.
 `AnalysisSummary` clamps the conclusion to three rendered lines and only shows the
 expand/collapse control when the text actually overflows at the current width; the
 check measures the rendered paragraph (and re-runs on width and font changes), not
@@ -835,8 +838,12 @@ URL is introduced. Homepage research links lead to these public reading routes.
 Authenticated authoring, portfolios, accounts and daily briefs keep their existing
 access rules.
 
-Public library copy is Chinese-first, with `lang="zh-CN"` on its reading shell;
-report bodies retain their supplied language. The shell has crawlable text
+Public library copy defaults to Chinese in cached HTML. The header shows both
+`中文` and `English` as buttons with a visible selected state. The reading shell
+shares the browser language preference with the landing, auth, contact, legal,
+and workspace pages and updates its `lang` attribute. Interface
+labels and dates follow the selection; source names and report bodies keep their
+supplied text. The shell has crawlable text
 navigation, document scrolling, 16/32px padding, 1120px outer width and the
 existing shared Button, logo and semantic light/dark tokens. Stock identifiers,
 source names and New York opinion dates carry hierarchy; no promotional metrics
@@ -848,8 +855,8 @@ Lists use 20-item numbered URL pages with real previous/next links, explicit
 empty states and retryable route errors. Navigation waits for server content
 without a streaming loading boundary so missing pages retain real HTTP 404 status. Each page has its own
 canonical URL. Missing and unpublished reports return not-found; backend failures
-remain errors. Publication is checked on every request without persistent content
-caching. Dynamic sitemap discovery reads public endpoints only, includes all
+remain errors. Publication is checked on every revalidated fetch; public content uses a
+600-second cache and publication actions invalidate its cache tag. Dynamic sitemap discovery reads public endpoints only, includes all
 published report batches and public opinion directories, and fails visibly if
 its data source fails. Full access and testing details live in
 `../docs/public-reading.md`.
@@ -894,7 +901,7 @@ creator avatar, company logo and reading measure.
 
 `StrengthIndicator` owns the qualitative word/meter presentation. The existing
 `OpinionStrength` supplies the active workspace translation; public reading
-supplies its documented fixed Chinese copy. Stock opinion rows and creator share
+uses the selected interface language. Stock opinion rows and creator share
 pages reuse that presentation, avatar sizes, 15px/28px text and source-video icon.
 Creator shares use `ReadingLayout`, preserving their existing sharing actions.
 
@@ -1016,6 +1023,16 @@ route accepts that allowlist alongside ordinary tickers. Index detail headings
 show localized index names and point values without a currency prefix. Card
 retry buttons remain separate from the link, with independent keyboard focus.
 
+
+### Featured investors
+
+The Superinvestors directory starts with one selector for the nine featured names.
+The active institution uses a single card with its largest disclosed share positions
+on the left and the selected stock's return curve on the right. On phones the
+positions precede the chart. A row selects its curve and visibly retains its state.
+Chart totals include signs and the actual date range. The 13F simulation toggle
+uses the same chart space, with SPY as a dashed comparison. Pelosi uses the same
+layout with disclosed trades and amount ranges in the list.
 
 ### Market activity lists
 

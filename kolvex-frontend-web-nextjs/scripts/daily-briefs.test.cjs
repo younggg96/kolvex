@@ -7,14 +7,36 @@ const ts = require("typescript");
 
 const source = fs.readFileSync(path.join(__dirname, "../lib/dailyBriefs.ts"), "utf8");
 const exportsObject = {};
-vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText, {
-  exports: exportsObject, URLSearchParams, Intl, Date, Number,
-});
-const { briefReadingFilters, briefFilters, briefLibraryHref, briefArticleHref, formatBriefDate, briefDateKey, briefCalendarDate, shiftBriefDate, pacificBriefToday } = exportsObject;
+vm.runInNewContext(
+  ts.transpileModule(source, {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
+  }).outputText,
+  {
+    exports: exportsObject,
+    URLSearchParams,
+    Intl,
+    Date,
+    Number,
+  },
+);
+const {
+  briefReadingFilters,
+  briefFilters,
+  briefLibraryHref,
+  briefArticleHref,
+  formatBriefDate,
+  briefDateKey,
+  briefCalendarDate,
+  shiftBriefDate,
+  pacificBriefToday,
+} = exportsObject;
 
 test("article and return links retain the reader's filter and page", () => {
   assert.equal(briefLibraryHref("evening", 2), "/dashboard/briefs?type=evening&page=2");
-  assert.equal(briefArticleHref("evening-2026-10-17", "evening", 2), "/dashboard/briefs/evening-2026-10-17?type=evening&page=2");
+  assert.equal(
+    briefArticleHref("evening-2026-10-17", "evening", 2),
+    "/dashboard/briefs/evening-2026-10-17?type=evening&page=2",
+  );
   assert.equal(briefLibraryHref(), "/dashboard/briefs");
   assert.equal(briefArticleHref("bad/id?query"), "/dashboard/briefs/bad%2Fid%3Fquery");
 });
@@ -36,16 +58,25 @@ test("Pacific issue dates remain calendar labels in any reader timezone", () => 
       assert.equal(formatBriefDate("2026-10-17", "en-US"), "Oct 17, 2026");
       assert.match(formatBriefDate("2026-10-17", "zh-CN"), /2026.*10.*17/);
     }
-  } finally { if (original === undefined) delete process.env.TZ; else process.env.TZ = original; }
+  } finally {
+    if (original === undefined) delete process.env.TZ;
+    else process.env.TZ = original;
+  }
 });
-
 
 test("calendar filters survive type changes, article links and returns", () => {
   const parsed = briefFilters({ date: "2026-10-17", type: "evening", page: "2" });
   assert.equal(parsed.date, "2026-10-17");
-  assert.equal(briefLibraryHref(parsed.type, parsed.page, parsed.date), "/dashboard/briefs?type=evening&page=2&date=2026-10-17");
-  assert.equal(briefArticleHref("evening-2026-10-17", parsed.type, parsed.page, parsed.date), "/dashboard/briefs/evening-2026-10-17?type=evening&page=2&date=2026-10-17");
-  for (const date of ["2026-02-30", "2026-13-01", "invalid", "2026-1-1"]) assert.equal(briefFilters({ date }, new Date("2026-10-18T12:00:00Z")).date, "2026-10-18");
+  assert.equal(
+    briefLibraryHref(parsed.type, parsed.page, parsed.date),
+    "/dashboard/briefs?type=evening&page=2&date=2026-10-17",
+  );
+  assert.equal(
+    briefArticleHref("evening-2026-10-17", parsed.type, parsed.page, parsed.date),
+    "/dashboard/briefs/evening-2026-10-17?type=evening&page=2&date=2026-10-17",
+  );
+  for (const date of ["2026-02-30", "2026-13-01", "invalid", "2026-1-1"])
+    assert.equal(briefFilters({ date }, new Date("2026-10-18T12:00:00Z")).date, "2026-10-18");
 });
 
 test("calendar day changes handle leap days, month/year boundaries and DST", () => {
@@ -61,7 +92,10 @@ test("calendar day changes handle leap days, month/year boundaries and DST", () 
       assert.equal(pacificBriefToday(new Date("2026-10-18T01:00:00Z")), "2026-10-17");
       assert.equal(pacificBriefToday(new Date("2026-12-18T07:00:00Z")), "2026-12-17");
     }
-  } finally { if (original === undefined) delete process.env.TZ; else process.env.TZ = original; }
+  } finally {
+    if (original === undefined) delete process.env.TZ;
+    else process.env.TZ = original;
+  }
 });
 
 test("reader entry defaults to only today in Pacific time, even with no published issue", () => {
@@ -77,7 +111,10 @@ test("reader entry defaults to only today in Pacific time, even with no publishe
     assert.equal(entry.type, "all");
     assert.equal(briefFilters({ type: "morning" }, now).date, expected);
     assert.equal(briefFilters({ date: "2026-10-16" }, now).date, "2026-10-16");
-    assert.equal(briefLibraryHref(entry.type, entry.page, entry.date), `/dashboard/briefs?date=${expected}`);
+    assert.equal(
+      briefLibraryHref(entry.type, entry.page, entry.date),
+      `/dashboard/briefs?date=${expected}`,
+    );
   }
 });
 
@@ -107,13 +144,29 @@ test("direct reader selects all three editions at Pacific session boundaries in 
   }
 });
 
-
 test("uploaded language follows preference without translating or mutating source data", () => {
   const original = {
-    language: "zh", schema_version: "kolvex-brief/1.0",
-    brief: { id: "intraday-2026-10-29", type: "intraday", date: "2026-10-29", title: "中文标题", headline: "中文摘要", subtitle: "中文副标题", hero_image: { url: "https://example.com/image.png" } },
-    sections: [{ section_id: "intraday", title: "中文正文" }], disclaimer: "中文声明",
-    translations: { en: { title: "English title", headline: "English headline", sections: [{ section_id: "intraday", title: "Uploaded English body" }], disclaimer: "English disclaimer" } },
+    language: "zh",
+    schema_version: "kolvex-brief/1.0",
+    brief: {
+      id: "intraday-2026-10-29",
+      type: "intraday",
+      date: "2026-10-29",
+      title: "中文标题",
+      headline: "中文摘要",
+      subtitle: "中文副标题",
+      hero_image: { url: "https://example.com/image.png" },
+    },
+    sections: [{ section_id: "intraday", title: "中文正文" }],
+    disclaimer: "中文声明",
+    translations: {
+      en: {
+        title: "English title",
+        headline: "English headline",
+        sections: [{ section_id: "intraday", title: "Uploaded English body" }],
+        disclaimer: "English disclaimer",
+      },
+    },
   };
   const snapshot = JSON.stringify(original);
   const english = exportsObject.localizedBrief(original, "en");
@@ -127,36 +180,69 @@ test("uploaded language follows preference without translating or mutating sourc
   assert.equal(english.language, "en");
   assert.equal(exportsObject.localizedBrief(original, "zh"), original);
   assert.equal(JSON.stringify(original), snapshot);
-  assert.equal(exportsObject.localizedBrief({ ...original, translations: {} }, "en").brief.headline, "中文摘要");
-  const reverse = { ...original, language: "en", translations: { zh: { title: "上传中文", headline: "中文摘要", sections: [], hero_image: null } } };
+  assert.equal(
+    exportsObject.localizedBrief({ ...original, translations: {} }, "en").brief.headline,
+    "中文摘要",
+  );
+  const reverse = {
+    ...original,
+    language: "en",
+    translations: {
+      zh: { title: "上传中文", headline: "中文摘要", sections: [], hero_image: null },
+    },
+  };
   assert.equal(exportsObject.localizedBrief(reverse, "zh").brief.title, "上传中文");
-  assert.equal(exportsObject.localizedBrief(reverse, "zh").brief.hero_image.url, original.brief.hero_image.url);
-  const legacy = { ...original }; delete legacy.language; delete legacy.translations;
+  assert.equal(
+    exportsObject.localizedBrief(reverse, "zh").brief.hero_image.url,
+    original.brief.hero_image.url,
+  );
+  const legacy = { ...original };
+  delete legacy.language;
+  delete legacy.translations;
   assert.equal(exportsObject.localizedBrief(legacy, "en"), legacy);
 });
 
 test("admin mutations forward method, JSON and revision headers", async () => {
-  const calls = [], contextExports = {};
-  vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText, {
-    exports: contextExports, URLSearchParams, Intl, Date, Number, AbortSignal,
-    fetch: async (url, options) => { calls.push({ url, options }); return { ok: true, json: async () => ({ id: "test" }) }; },
+  const calls = [],
+    contextExports = {};
+  vm.runInNewContext(
+    ts.transpileModule(source, {
+      compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
+    }).outputText,
+    {
+      exports: contextExports,
+      URLSearchParams,
+      Intl,
+      Date,
+      Number,
+      AbortSignal,
+      fetch: async (url, options) => {
+        calls.push({ url, options });
+        return { ok: true, json: async () => ({ id: "test" }) };
+      },
+    },
+  );
+  await contextExports.briefRequest("?id=test", '{"test":true}', undefined, {
+    method: "PUT",
+    revision: "3",
   });
-  await contextExports.briefRequest('?id=test', '{"test":true}', undefined, { method: 'PUT', revision: '3' });
-  await contextExports.briefRequest('?id=test', undefined, undefined, { method: 'DELETE', revision: '4' });
-  assert.equal(calls[0].options.method, 'PUT');
-  assert.equal(calls[0].options.headers['If-Match'], '3');
+  await contextExports.briefRequest("?id=test", undefined, undefined, {
+    method: "DELETE",
+    revision: "4",
+  });
+  assert.equal(calls[0].options.method, "PUT");
+  assert.equal(calls[0].options.headers["If-Match"], "3");
   assert.equal(calls[0].options.body, '{"test":true}');
-  assert.equal(calls[1].options.method, 'DELETE');
-  assert.equal(calls[1].options.headers['If-Match'], '4');
+  assert.equal(calls[1].options.method, "DELETE");
+  assert.equal(calls[1].options.headers["If-Match"], "4");
   assert.equal(calls[1].options.body, undefined);
 });
-
 
 test("weekend reader resolves to one issue regardless of session or explicit edition", () => {
   for (const date of ["2026-10-31", "2026-11-01", "2026-03-08"]) {
     for (const type of [undefined, "morning", "intraday", "evening", "all"]) {
       for (const instant of ["2026-11-01T08:00:00Z", "2026-11-01T22:00:00Z"]) {
-        const result = briefReadingFilters({date, type}, new Date(instant));
+        const result = briefReadingFilters({ date, type }, new Date(instant));
         assert.equal(result.type, "evening");
         assert.equal(result.id, `evening-${date}`);
       }
@@ -165,5 +251,15 @@ test("weekend reader resolves to one issue regardless of session or explicit edi
   assert.equal(exportsObject.isWeekendBriefDate("2026-11-02"), false);
   assert.equal(exportsObject.isWeekendBriefDate("2026-02-30"), false);
   // Pacific Saturday while UTC and many reader timezones already show Sunday.
-  assert.equal(briefReadingFilters(undefined, new Date("2026-11-01T06:59:59Z")).id, "evening-2026-10-31");
+  assert.equal(
+    briefReadingFilters(undefined, new Date("2026-11-01T06:59:59Z")).id,
+    "evening-2026-10-31",
+  );
+});
+
+test("formats publication time in Pacific time with the edition language", () => {
+  const { formatBriefPublishedAt } = exportsObject;
+  assert.equal(formatBriefPublishedAt("2026-11-16T22:05:00Z", "en-US"), "Nov 16, 2026, 2:05 PM");
+  assert.match(formatBriefPublishedAt("2026-11-16T14:05:00-08:00", "zh-CN"), /11月16日.*14:05/);
+  assert.equal(formatBriefPublishedAt("legacy timestamp", "en-US"), "legacy timestamp");
 });

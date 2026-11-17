@@ -43,7 +43,9 @@
     "intlLocale": "en-US",
     "justNow": "Just now",
     "refresh": "Refresh",
-    "previous": "Previous"
+    "previous": "Previous",
+    "pageNotFound": "Page not found",
+    "backHome": "Back to home"
   },
   "sidebar": {
     "paperTrading": "Paper trading",
@@ -360,9 +362,11 @@
   },
   "footer": {
     "nav": "Footer",
-    "privacy": "Privacy",
-    "terms": "Terms",
-    "contact": "Contact"
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "contact": "Contact",
+    "email": "Email Kolvex",
+    "github": "Kolvex on GitHub"
   },
   "chat": {
     "title": "Chat with Kolvex",
@@ -371,7 +375,11 @@
     "actions": {
       "copy": "Copy",
       "copied": "Copied",
-      "retry": "Retry"
+      "retry": "Retry",
+      "stop": "Stop generating",
+      "send": "Send",
+      "scrollToBottom": "Scroll to bottom",
+      "startFailed": "Unable to start a conversation. Please try again."
     },
     "activity": {
       "routing": "Understanding your request",
@@ -519,7 +527,8 @@
         "paper": "Your paper-trading account",
         "other": "A data source"
       }
-    }
+    },
+    "newChat": "New chat"
   },
   "analytics": {
     "title": "Analytics",
@@ -665,7 +674,15 @@
       "syncPositions": "Sync Positions"
     },
     "allocation": {
-      "title": "Portfolio Allocation by Sector"
+      "title": "Portfolio Allocation by Sector",
+      "name": "Name",
+      "value": "Value",
+      "valueInvested": "Value / invested",
+      "gain": "Gain",
+      "share": "Allocation",
+      "stockAndOption": "Stock + option",
+      "option": "Option",
+      "positionCount": "Positions: {count}"
     },
     "stats": {
       "totalValue": "Total Value",
@@ -767,7 +784,17 @@
       "exportCsv": "Export CSV",
       "analyze": "AI analyze",
       "aiAnalysis": "AI trade analysis",
-      "noAiModel": "Add API key in Settings"
+      "noAiModel": "Add API key in Settings",
+      "title": "Investment transactions",
+      "filterBySymbol": "Filter by symbol",
+      "security": "Security",
+      "loadedCount": "{visible} of {total} loaded",
+      "netAmount": "Net {amount}",
+      "loading": "Loading transactions",
+      "cashType": "Cash",
+      "dividendType": "Dividend",
+      "feeType": "Fee",
+      "transferType": "Transfer"
     },
     "holdings": {
       "myPortfolio": "My portfolio",
@@ -911,6 +938,10 @@
         "reduce": "Reduce",
         "sell": "Sell"
       }
+    },
+    "loadingPortfolio": "Loading portfolio",
+    "aiAnalysis": {
+      "model": "Model:"
     }
   },
   "community": {
@@ -1014,7 +1045,9 @@
       "clickToUpload": "Upload photo",
       "orDragAndDrop": "or drag and drop",
       "dropImageHere": "Drop image here",
-      "imageFormats": "PNG, JPG or GIF (MAX. 2MB)"
+      "imageFormats": "PNG, JPG or GIF (MAX. 2MB)",
+      "avatarZoom": "Avatar zoom",
+      "profileImage": "Profile photo"
     },
     "apiKeys": {
       "title": "API Keys",
@@ -1088,7 +1121,8 @@
       "themeLightDesc": "Light theme",
       "themeDarkDesc": "Dark theme",
       "themeSystemDesc": "Follow system",
-      "failedToUpdateTheme": "Failed to update theme"
+      "failedToUpdateTheme": "Failed to update theme",
+      "languageSyncFailed": "Language changed in this browser. Your account preference could not be synced."
     },
     "chatMemory": {
       "title": "AI chat memory",
@@ -1465,6 +1499,12 @@
     "historyView": "Opinion history view",
     "byVideo": "By video",
     "byOpinion": "By opinion",
+    "horizons": {
+      "short": "Short term",
+      "medium": "Medium term",
+      "long": "Long term"
+    },
+    "videoStockCountOne": "{count} stock",
     "videoStockCount": "{count} stocks",
     "untitledVideo": "Untitled video",
     "creatorStockSummary": "{opinions} opinions, latest {date}",
@@ -1686,8 +1726,21 @@
         "drawingApplyHint": "{count} selected · Run AI drawings to apply",
         "apply": "Apply selection"
       },
+      "textLanguage": {
+        "original": "Original analysis",
+        "translated": "Machine translation",
+        "failed": "Translation unavailable. Showing original."
+      },
       "tradePlan": {
         "title": "Conditional setup",
+        "checks": {
+          "trend_alignment": "Trend alignment",
+          "price_vs_ema20": "Price vs. EMA20",
+          "ema20_vs_ema50": "EMA20 vs. EMA50",
+          "rsi_momentum": "RSI momentum",
+          "volume_confirmation": "Volume confirmation",
+          "other": "Other check"
+        },
         "entry": "Entry range",
         "entryPoint": "Entry",
         "stop": "Stop-loss",
@@ -2041,6 +2094,28 @@
       "retry": "Retry",
       "notConfigured": "Add an API key for your selected model in settings to translate.",
       "openSettings": "Open settings"
+    },
+    "loadingReport": "Loading research report",
+    "activity": {
+      "title": "Agent activity",
+      "live": "Live",
+      "syncing": "Syncing",
+      "report": "Report",
+      "thinking": "Thinking",
+      "agents": {
+        "Market Analyst": "Market Analyst",
+        "Social Analyst": "Social Analyst",
+        "News Analyst": "News Analyst",
+        "Fundamentals Analyst": "Fundamentals Analyst",
+        "Bull Researcher": "Bull Researcher",
+        "Bear Researcher": "Bear Researcher",
+        "Research Manager": "Research Manager",
+        "Trader": "Trader",
+        "Aggressive Analyst": "Aggressive Analyst",
+        "Conservative Analyst": "Conservative Analyst",
+        "Neutral Analyst": "Neutral Analyst",
+        "Risk Judge": "Risk Judge"
+      }
     }
   },
   "news": {
@@ -2126,6 +2201,7 @@
     "signIn": "Sign in",
     "loadError": "Briefs are temporarily unavailable",
     "loadErrorDetail": "Check your connection and try again.",
+    "originalEdition": "This issue is available in Chinese. Showing the original edition.",
     "previousClose": "Previous close",
     "gainers": "Gainers",
     "losers": "Losers",
@@ -2211,5 +2287,9 @@
     "clearFilters": "Clear search and follow filter",
     "dataNotes": "About this data",
     "clearSearch": "Clear search"
+  },
+  "contact": {
+    "title": "Contact Kolvex",
+    "support": "For product support, questions or feedback, email us."
   }
 }

@@ -3,8 +3,11 @@
 import StockBadge from "@/components/ui/stock-badge";
 import ReactMarkdown from "react-markdown";
 import ImageContent from "./BriefImage";
-import { useTranslation } from "@/lib/i18n";
+import { FixedLocale, useTranslation } from "@/lib/i18n";
 import {
+  formatBriefDate,
+  formatBriefPublishedAt,
+  isBriefDate,
   isWeekendBriefDate,
   localizedBrief,
   type BriefSection,
@@ -224,6 +227,24 @@ function SectionBody({ section }: { section: BriefSection }) {
 export default function BriefContent({ document: original }: { document: DailyBrief }) {
   const { t, locale } = useTranslation();
   const document = localizedBrief(original, locale);
+  const language = document.language ?? "zh";
+  return (
+    <>
+      {language !== locale && (
+        <p className="mx-auto mb-4 max-w-[67.5rem] text-xs text-muted-foreground">
+          {t("briefs.originalEdition")}
+        </p>
+      )}
+      <FixedLocale locale={language}>
+        <BriefArticle document={document} />
+      </FixedLocale>
+    </>
+  );
+}
+
+function BriefArticle({ document }: { document: DailyBrief }) {
+  const { t } = useTranslation();
+  const dateLocale = t("common.intlLocale");
   const { brief } = document;
   return (
     <article
@@ -233,7 +254,9 @@ export default function BriefContent({ document: original }: { document: DailyBr
       <header className="space-y-4">
         {brief.hero_image && <ImageContent key={brief.hero_image.url} image={brief.hero_image} />}
         <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-          <span>{brief.date}</span>
+          <time dateTime={brief.date}>
+            {isBriefDate(brief.date) ? formatBriefDate(brief.date, dateLocale) : brief.date}
+          </time>
           <span>
             {t(
               isWeekendBriefDate(brief.date) || brief.market_status === "weekend"
@@ -249,7 +272,10 @@ export default function BriefContent({ document: original }: { document: DailyBr
         <h1 className="text-2xl font-semibold leading-tight sm:text-[2rem]">{brief.headline}</h1>
         <p className="text-sm leading-6 text-muted-foreground">{brief.subtitle}</p>
         <p className="text-xs text-muted-foreground">
-          {t("briefs.generatedAt")} {brief.generated_at_pt}
+          {t("briefs.generatedAt")}{" "}
+          <time dateTime={brief.generated_at_pt}>
+            {formatBriefPublishedAt(brief.generated_at_pt, dateLocale)}
+          </time>
         </p>
       </header>
       {[...document.sections]

@@ -1,26 +1,13 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-  ReactNode,
-} from "react";
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/lib/i18n";
-import type { Locale } from "@/lib/i18n";
-import type {
-  UserProfile as DBUserProfile,
-  ProfileUpdate,
-} from "@/lib/supabase/database.types";
+import type { UserProfile as DBUserProfile, ProfileUpdate } from "@/lib/supabase/database.types";
 
 export interface UserProfile extends DBUserProfile {}
 
 export interface UserProfileUpdate extends ProfileUpdate {}
-
-
 
 interface UserProfileContextValue {
   profile: UserProfile | null;
@@ -109,10 +96,8 @@ export function UserProfileProvider({ children }: UserProfileProviderProps) {
         return false;
       }
     },
-    [isAuthenticated]
+    [isAuthenticated],
   );
-
-
 
   // 只在认证状态确定后且未获取过数据时获取
   useEffect(() => {
@@ -123,8 +108,8 @@ export function UserProfileProvider({ children }: UserProfileProviderProps) {
 
   // Sync locale from user profile to LanguageProvider
   useEffect(() => {
-    if (profile?.locale) {
-      setLocale(profile.locale as Locale);
+    if (profile?.locale === "en" || profile?.locale === "zh") {
+      setLocale(profile.locale);
     }
   }, [profile?.locale, setLocale]);
 
@@ -144,19 +129,13 @@ export function UserProfileProvider({ children }: UserProfileProviderProps) {
     updateProfile,
   };
 
-  return (
-    <UserProfileContext.Provider value={value}>
-      {children}
-    </UserProfileContext.Provider>
-  );
+  return <UserProfileContext.Provider value={value}>{children}</UserProfileContext.Provider>;
 }
 
 export function useUserProfileContext(): UserProfileContextValue {
   const context = useContext(UserProfileContext);
   if (!context) {
-    throw new Error(
-      "useUserProfileContext must be used within a UserProfileProvider"
-    );
+    throw new Error("useUserProfileContext must be used within a UserProfileProvider");
   }
   return context;
 }

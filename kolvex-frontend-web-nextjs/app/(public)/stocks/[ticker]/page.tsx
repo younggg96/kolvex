@@ -1,6 +1,4 @@
 import Link from "next/link";
-import CompanyLogo from "@/components/ui/company-logo";
-import HeaderBackButton from "@/components/layout/HeaderBackButton";
 import { notFound, permanentRedirect } from "next/navigation";
 import { getPublicOpinions, getPublicResearchList } from "@/lib/publicContent";
 import {
@@ -16,10 +14,12 @@ import {
   readingMetadata,
   stockOpinionSummary,
 } from "@/lib/publicSeo";
-import { marketStockHref } from "@/lib/stockLinks";
 import {
   OpinionList,
   ReadingHeading,
+  ReadingText,
+  ReadingBackButton,
+  ReadingQuotesIcon,
   ReadingPagination,
   ReadingSectionHeading,
   ResearchList,
@@ -93,44 +93,72 @@ export default async function StockReadingPage(props: Props) {
         )}
       />
       <div className="mb-6">
-        <HeaderBackButton href="/stocks" label="返回股票目录" />
+        <ReadingBackButton href="/stocks" en="Back to stock directory" zh="返回股票目录" />
       </div>
       {/* The stock identity is the quotes-page shortcut: logo + ticker chip open `/dashboard/market/<TICKER>`. */}
       <ReadingHeading
-        title={`${ticker} 股票研究与博主观点`}
-        icon={
-          <Link
-            href={marketStockHref(ticker)}
-            aria-label={`打开 ${ticker} 行情页`}
-            className="shrink-0 rounded-full transition-opacity duration-150 hover:opacity-80 focus-visible:outline-none "
-          >
-            <CompanyLogo symbol={ticker} size="lg" />
-          </Link>
+        title={
+          <ReadingText
+            en={`${ticker} research and creator opinions`}
+            zh={`${ticker} 股票研究与博主观点`}
+          />
         }
+        icon={<ReadingQuotesIcon ticker={ticker} />}
       >
-        {summary ??
-          `阅读不同来源对 ${ticker} 的看法。每条观点保留日期和原视频，已发布研究保留其分析时点。`}
+        <ReadingText
+          en={
+            stockOpinionSummary(
+              ticker,
+              opinions?.summary,
+              page === 1 ? opinions?.latest[0] : null,
+              research.total,
+              "en",
+            ) ??
+            `Read what creators have said about ${ticker}, with dates and links to the original videos. Published reports include the date of analysis.`
+          }
+          zh={
+            summary ??
+            `阅读不同来源对 ${ticker} 的看法。每条观点保留日期和原视频，已发布研究保留其分析时点。`
+          }
+        />
       </ReadingHeading>
       <div className="grid min-w-0 gap-x-12 gap-y-10 lg:grid-cols-[minmax(0,1fr)_300px]">
         <section className="min-w-0" aria-labelledby="stock-opinions">
-          <ReadingSectionHeading id="stock-opinions" title="博主观点" count={total} />
+          <ReadingSectionHeading
+            id="stock-opinions"
+            title={<ReadingText en="Creator opinions" zh="博主观点" />}
+            count={total}
+          />
           {opinions?.latest.length ? (
             <OpinionList opinions={opinions.latest} />
           ) : (
-            <p className="py-8 text-muted-foreground">暂时没有该股票的已收录博主观点。</p>
+            <p className="py-8 text-muted-foreground">
+              <ReadingText
+                en="No creator opinions have been recorded for this stock."
+                zh="暂时没有该股票的已收录博主观点。"
+              />
+            </p>
           )}
           <ReadingPagination page={page} total={total} size={PUBLIC_PAGE_SIZE} path={path} />
         </section>
         <aside className="min-w-0 border-t border-border pt-8 lg:border-t-0 lg:pt-0">
-          <ReadingSectionHeading title="已发布研究" count={research.total} />
+          <ReadingSectionHeading
+            title={<ReadingText en="Published reports" zh="已发布研究" />}
+            count={research.total}
+          />
           {research.items.length ? (
             <ResearchList items={research.items} layout="stack" />
           ) : (
-            <p className="text-sm leading-7 text-muted-foreground">暂时没有该股票的已发布研究。</p>
+            <p className="text-sm leading-7 text-muted-foreground">
+              <ReadingText
+                en="No reports have been published for this stock."
+                zh="暂时没有该股票的已发布研究。"
+              />
+            </p>
           )}
           {research.total > PUBLIC_PAGE_SIZE && (
             <Link href="/research" className="mt-5 inline-block text-sm text-positive underline">
-              浏览全部研究报告
+              <ReadingText en="Browse all research reports" zh="浏览全部研究报告" />
             </Link>
           )}
         </aside>

@@ -8,6 +8,7 @@ import {
   SEC_TIMEOUT,
   useFormat,
 } from "../../components/SecResearch";
+import { PortfolioCurve } from "../../components/FeaturedInvestors";
 import { CardsSkeleton } from "../../components/Skeletons";
 import {
   ACTIVITY_LABELS,
@@ -167,6 +168,9 @@ function Detail() {
       ) : (
         <>
           <Overview data={data} held={held} totalValue={totalValue} />
+          <Glass style={{ padding: 20 }}>
+            <PortfolioCurve manager={manager} />
+          </Glass>
           <Allocation held={held} />
           <QuarterActivity data={data} />
           <Holdings key={manager} data={data} />

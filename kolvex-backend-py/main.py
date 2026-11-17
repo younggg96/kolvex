@@ -88,6 +88,14 @@ async def lifespan(app: FastAPI):
         if os.getenv("SEC_13F_SYNC_ENABLED", "true").lower() == "true"
         else None
     )
+    from app.services.sec.performance import performance_store
+
+    # Backfills past 13F quarters and recomputes the simulated return curves about once a day.
+    performance_worker = (
+        asyncio.create_task(performance_store.run_worker())
+        if os.getenv("SEC_13F_PERFORMANCE_ENABLED", "true").lower() == "true"
+        else None
+    )
     from app.services.options_activity.service import run_options_activity_worker
 
     options_activity_worker = (
@@ -147,6 +155,9 @@ async def lifespan(app: FastAPI):
                 await options_activity_worker
             except asyncio.CancelledError:
                 pass
+        if performance_worker:
+            performance_worker.cancel()
+            await asyncio.gather(performance_worker, return_exceptions=True)
         if holdings_worker:
             holdings_worker.cancel()
             try:

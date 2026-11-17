@@ -5,6 +5,7 @@ import { PUBLIC_PAGE_SIZE, publicPage, publicPagePath, validTicker } from "@/lib
 import { readingMetadata } from "@/lib/publicSeo";
 import {
   ReadingHeading,
+  ReadingText,
   ReadingPagination,
   ReadingSectionHeading,
 } from "@/components/public/ReadingElements";
@@ -38,10 +39,17 @@ export default async function StocksPage({ params }: Props) {
   if (page > 1 && offset >= stocks.length) notFound();
   return (
     <>
-      <ReadingHeading title="股票目录" />
-      <ReadingSectionHeading title="已收录股票" count={stocks.length} />
+      <ReadingHeading title={<ReadingText en="Stock directory" zh="股票目录" />} />
+      <ReadingSectionHeading
+        title={<ReadingText en="Listed stocks" zh="已收录股票" />}
+        count={stocks.length}
+      />
       <StockDirectory stocks={stocks.slice(offset, offset + PUBLIC_PAGE_SIZE)} />
-      {!stocks.length && <p className="py-12 text-muted-foreground">暂时没有可阅读的股票观点。</p>}
+      {!stocks.length && (
+        <p className="py-12 text-muted-foreground">
+          <ReadingText en="No stock opinions are available yet." zh="暂时没有可阅读的股票观点。" />
+        </p>
+      )}
       <ReadingPagination page={page} total={stocks.length} size={PUBLIC_PAGE_SIZE} path="/stocks" />
     </>
   );

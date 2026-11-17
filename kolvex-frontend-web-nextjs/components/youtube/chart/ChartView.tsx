@@ -1447,7 +1447,6 @@ export default function ChartView({
             analysisForecast && forecastable ? () => setShowForecast((value) => !value) : undefined
           }
           showRetry={advanced}
-          formatDate={formatDate}
           t={t}
           className={stackedResults ? "order-first" : "mt-5"}
         />

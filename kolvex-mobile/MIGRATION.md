@@ -85,7 +85,11 @@ Status abbreviations: `C` Code, `B` Bundle, `W` RN-Web. `Auth` means the screen 
 
 ## Known remaining work
 
+Added 2026-11-17: every institution detail page shows the 13F simulated return vs SPY (`/institutions/{manager}/performance`). Ported: `PortfolioCurve` from `src/components/FeaturedInvestors.tsx` on `superinvestor/[manager]`.
+
 Added 2026-11-17: the Superinvestors list now comes from the admin-edited `institution_managers` table; each manager may carry a `profile` (Chinese name, person, role) that the byline prefers over `src/lib/investorProfiles.json`. Ported. Not ported: the Web admin tab 超级投资者 (`/dashboard/admin?tab=institutions`) for adding and enabling managers; native admin has no equivalent yet.
+
+The Superinvestors featured section shows 13F share weights, stock returns, the 13F model vs. SPY, and Pelosi disclosures. Native charts show the date window and ending returns in text (C B, Auth).
 
 Added 2026-11-09: the seven rows from Superinvestors to Kronos forecast. Added 2026-11-10: Congress trades (`/congress-trades`, under Settings), the company valuation calculator (valuation tab → 公司估值计算), stock mentions in AI Markdown (`src/lib/stockMentions.ts`, a verbatim Web copy checked by the parity test), the home tab's 股票观察 lists (今日异动 / 放量活跃 / 常看美股 from `/market/discovery`), options-activity admin controls (管理中心 → 期权异动) and research workspaces (`/workspaces`, `/workspace/[id]`, under Settings). Later the same day: the 博主热议 scope of 股票观察 (`src/lib/creatorBuzz.ts`), adding a chat to a workspace from the chat screen, creator-opinion markers on the technical chart, and the research task's stage progress, agent log and debate card (fed by the polled `progress_events`, not SSE). Not ported: the 我的持仓 scope of 股票观察 (written when Portfolio was disabled; Portfolio was re-enabled on 2026-11-12 on both platforms and this scope is still missing on native, see item 6). Also ported: upload-coverage hints and other creators' views on YouTube creator pages (`src/components/CreatorExtras.tsx`, opened with `?ticker=` from a stock's opinions), personal AI research on the stock research tab (`src/components/PersonalResearch.tsx`), and single titles on pushed screens (the navigation bar keeps only Back).
 

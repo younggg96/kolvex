@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+from datetime import datetime
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException, Path
@@ -9,6 +10,8 @@ from fastapi import APIRouter, HTTPException, Path
 from app.services.sec.client import MANAGERS, SecNotFound, SecUnavailable, sec_client
 from app.services.sec.holdings_store import institution_store
 from app.services.sec.parsers import number, summarize_institution
+from app.services.sec.performance import performance_store
+from app.services.sec.stock_returns import MARKET_TZ, adjusted_history
 from app.services.sec.tickers import cusip_tickers
 from app.services.yfinance.client import get_yfinance_service
 
@@ -66,6 +69,18 @@ async def institution_summary(manager: str):
     )
 
 
+@router.get("/institutions/{manager}/performance")
+async def institution_performance(manager: str):
+    """13F simulated return curve vs SPY; `status` is pending until the background worker first computes it."""
+    if manager not in MANAGERS:
+        raise HTTPException(404, "Manager is outside the tracked list")
+    try:
+        return await performance_store.read(manager)
+    except Exception as exc:
+        logger.warning("13F performance read failed for %s", manager, exc_info=True)
+        raise HTTPException(503, "13F performance unavailable; retry later") from exc
+
+
 def revenue_outlook(symbol):
     ticker = get_yfinance_service().get_ticker(symbol)
     frame = ticker.revenue_estimate
@@ -97,10 +112,20 @@ def revenue_outlook(symbol):
 @router.get("/{symbol}/{kind}")
 async def company_research(
     symbol: str = Path(pattern=r"^[A-Za-z0-9][A-Za-z0-9.\-]{0,11}$"),
-    kind: Literal["financials", "filings", "insiders", "revenue-outlook"] = "financials",
+    kind: Literal[
+        "financials", "filings", "insiders", "revenue-outlook", "stock-returns"
+    ] = "financials",
 ):
     symbol = symbol.upper()
     try:
+        if kind == "stock-returns":
+            try:
+                return await asyncio.to_thread(
+                    adjusted_history, symbol, datetime.now(MARKET_TZ).date()
+                )
+            except Exception as exc:
+                logger.warning("Adjusted stock prices unavailable for %s", symbol, exc_info=True)
+                raise HTTPException(503, "Adjusted stock prices unavailable") from exc
         if kind == "revenue-outlook":
             try:
                 return await asyncio.to_thread(revenue_outlook, symbol)

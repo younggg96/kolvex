@@ -42,8 +42,7 @@ import { toast } from "sonner";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useTranslation, SUPPORTED_LOCALES } from "@/lib/i18n";
-import type { Locale } from "@/lib/i18n";
+import { useTranslation, SUPPORTED_LOCALES, translateForLocale } from "@/lib/i18n";
 import {
   Select,
   SelectContent,
@@ -195,6 +194,7 @@ function SettingsContent() {
     refetch: refreshProfile,
   } = useCurrentUserProfile();
 
+  const [savingLanguage, setSavingLanguage] = useState(false);
   const [activeTab, setActiveTab] = useState("account");
   const [mounted, setMounted] = useState(false);
 
@@ -558,17 +558,23 @@ function SettingsContent() {
   };
 
   const handleLanguageChange = async (newLocale: string) => {
-    setLocale(newLocale as Locale);
-    const langName = SUPPORTED_LOCALES.find((l) => l.value === newLocale)?.nativeLabel || newLocale;
-    toast.success(t("settings.preferences.languageChanged", { language: langName }));
-
-    // Persist to Supabase if user is authenticated
+    if ((newLocale !== "en" && newLocale !== "zh") || savingLanguage) return;
+    setLocale(newLocale);
+    const language = SUPPORTED_LOCALES.find((option) => option.value === newLocale)?.nativeLabel;
     if (profile) {
-      const result = await updateProfileLocale(newLocale as "en" | "zh");
+      setSavingLanguage(true);
+      const result = await updateProfileLocale(newLocale);
+      setSavingLanguage(false);
       if (!result.success) {
-        console.error("Failed to save locale to server:", result.error);
+        toast.error(translateForLocale(newLocale, "settings.preferences.languageSyncFailed"));
+        return;
       }
     }
+    toast.success(
+      translateForLocale(newLocale, "settings.preferences.languageChanged", {
+        language: language ?? newLocale,
+      }),
+    );
   };
 
   const tabOptions = settingsTabDefs.map((tab) => ({
@@ -627,7 +633,7 @@ function SettingsContent() {
                               >
                                 <Image
                                   src={profile.avatar_url}
-                                  alt="Profile"
+                                  alt={t("settings.account.profileImage")}
                                   fill
                                   className="object-cover"
                                   sizes="(max-width: 640px) 64px, 80px"
@@ -659,7 +665,7 @@ function SettingsContent() {
                               <div className="relative w-full h-full flex items-center justify-center">
                                 <Image
                                   src={profile.avatar_url}
-                                  alt="Profile"
+                                  alt={t("settings.account.profileImage")}
                                   fill
                                   className="object-contain"
                                   sizes="90vw"
@@ -712,7 +718,7 @@ function SettingsContent() {
                                       step={0.1}
                                       value={zoom}
                                       onChange={(e) => setZoom(Number(e.target.value))}
-                                      aria-label="Zoom"
+                                      aria-label={t("settings.account.avatarZoom")}
                                       className="h-2 flex-1 cursor-pointer appearance-none rounded-full bg-muted accent-primary"
                                     />
                                     <ZoomIn className="h-4 w-4 text-muted-foreground" />
@@ -1138,7 +1144,11 @@ function SettingsContent() {
                   <SettingsSection title={t("settings.preferences.title")}>
                     <SettingsGroup>
                       <FieldRow icon={Globe} label={t("settings.preferences.language")}>
-                        <Select value={locale} onValueChange={handleLanguageChange}>
+                        <Select
+                          value={locale}
+                          onValueChange={handleLanguageChange}
+                          disabled={savingLanguage}
+                        >
                           <SelectTrigger
                             className="w-auto min-w-[8.5rem] max-w-[12.5rem]"
                             aria-label={t("settings.preferences.language")}

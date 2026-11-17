@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/lib/i18n";
 import { Skeleton } from "@/components/ui/skeleton";
 import React, { useMemo, useState } from "react";
 import { Download, RefreshCw } from "lucide-react";
@@ -30,24 +31,31 @@ interface InvestmentTransactionsTableProps {
   syncing: boolean;
 }
 
-function formatQuantity(value?: number | null) {
+function formatQuantity(value: number | null | undefined, locale: string) {
   if (value === null || value === undefined) return "-";
-  return value.toLocaleString(undefined, { maximumFractionDigits: 6 });
+  return value.toLocaleString(locale, { maximumFractionDigits: 6 });
 }
 
-function formatDate(value?: string | null) {
+function formatDate(value: string | null | undefined, locale: string) {
   if (!value) return "-";
-  const d = new Date(value);
+  const isCalendarDate = /^\d{4}-\d{2}-\d{2}$/.test(value);
+  const d = new Date(isCalendarDate ? `${value}T12:00:00Z` : value);
   if (Number.isNaN(d.getTime())) return "-";
-  return d.toLocaleDateString(undefined, {
+  return d.toLocaleDateString(locale, {
+    timeZone: isCalendarDate ? "UTC" : undefined,
     year: "numeric",
     month: "short",
     day: "numeric",
   });
 }
 
-function normalizeLabel(value?: string | null) {
+function normalizeLabel(value: string | null | undefined, t: (key: string) => string) {
   if (!value) return "-";
+  const key = value.toLowerCase();
+  if (key === "buy" || key === "sell") return t(`portfolio.transactions.${key}`);
+  if (["cash", "dividend", "fee", "transfer"].includes(key)) {
+    return t(`portfolio.transactions.${key}Type`);
+  }
   return value.replace(/_/g, " ");
 }
 
@@ -86,9 +94,7 @@ function exportTransactions(transactions: PlaidInvestmentTransaction[]) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `plaid-investment-transactions-${new Date()
-    .toISOString()
-    .slice(0, 10)}.csv`;
+  link.download = `plaid-investment-transactions-${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -106,15 +112,13 @@ export function InvestmentTransactionsTable({
   onSync,
   syncing,
 }: InvestmentTransactionsTableProps) {
+  const { t } = useTranslation();
+  const dateLocale = t("common.intlLocale");
   const [symbolInput, setSymbolInput] = useState(symbolFilter || "");
 
   const visibleCount = transactions.length;
   const netAmount = useMemo(
-    () =>
-      transactions.reduce(
-        (sum, transaction) => sum + (transaction.amount || 0),
-        0,
-      ),
+    () => transactions.reduce((sum, transaction) => sum + (transaction.amount || 0), 0),
     [transactions],
   );
 
@@ -127,24 +131,29 @@ export function InvestmentTransactionsTable({
     <ListCard className="overflow-hidden !p-0 sm:!p-0 max-md:-mx-[16px]">
       <ListToolbar className="flex-col items-stretch gap-3 px-4 py-3 sm:flex-row sm:items-center">
         <div>
-          <h3 className="text-sm font-semibold">Investment transactions</h3>
+          <h3 className="text-sm font-semibold">{t("portfolio.transactions.title")}</h3>
           <p className="text-xs text-muted-foreground">
-            {visibleCount.toLocaleString()} of {total.toLocaleString()} loaded
-            {transactions.length > 0 ? ` · Net ${formatCurrency(netAmount)}` : ""}
+            {t("portfolio.transactions.loadedCount", {
+              visible: visibleCount.toLocaleString(dateLocale),
+              total: total.toLocaleString(dateLocale),
+            })}
+            {transactions.length > 0
+              ? ` · ${t("portfolio.transactions.netAmount", { amount: formatCurrency(netAmount) })}`
+              : ""}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <form onSubmit={applySymbolFilter} className="flex items-center gap-2">
             <SearchInput
-              aria-label="Filter by symbol"
+              aria-label={t("portfolio.transactions.filterBySymbol")}
               value={symbolInput}
               onChange={(event) => setSymbolInput(event.target.value)}
-              placeholder="Symbol"
+              placeholder={t("portfolio.transactions.symbol")}
               size="sm"
               containerClassName="w-28"
             />
             <Button type="submit" variant="outline" size="sm" className="h-8 gap-1.5">
-              Filter
+              {t("common.filter")}
             </Button>
           </form>
           <Button
@@ -157,14 +166,9 @@ export function InvestmentTransactionsTable({
             <Download className="h-3.5 w-3.5" />
             CSV
           </Button>
-          <Button
-            size="sm"
-            onClick={onSync}
-            disabled={syncing}
-            className="h-8 gap-1.5"
-          >
+          <Button size="sm" onClick={onSync} disabled={syncing} className="h-8 gap-1.5">
             <RefreshCw className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
-            Sync
+            {t("portfolio.transactions.syncInvestments")}
           </Button>
         </div>
       </ListToolbar>
@@ -173,14 +177,14 @@ export function InvestmentTransactionsTable({
         <Table className="min-w-[56.25rem]">
           <TableHeader>
             <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Security</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead className="text-right">Quantity</TableHead>
-              <TableHead className="text-right">Price</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
-              <TableHead className="text-right">Fees</TableHead>
-              <TableHead>Account</TableHead>
+              <TableHead>{t("portfolio.transactions.date")}</TableHead>
+              <TableHead>{t("portfolio.transactions.security")}</TableHead>
+              <TableHead>{t("portfolio.transactions.type")}</TableHead>
+              <TableHead className="text-right">{t("portfolio.transactions.quantity")}</TableHead>
+              <TableHead className="text-right">{t("portfolio.transactions.price")}</TableHead>
+              <TableHead className="text-right">{t("portfolio.transactions.amount")}</TableHead>
+              <TableHead className="text-right">{t("portfolio.transactions.fees")}</TableHead>
+              <TableHead>{t("userMenu.account")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -189,35 +193,33 @@ export function InvestmentTransactionsTable({
             ) : transactions.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
-                  No investment transactions yet.
+                  {t("portfolio.transactions.emptyTitle")}
                 </TableCell>
               </TableRow>
             ) : (
               transactions.map((transaction) => (
                 <TableRow key={transaction.id || transaction.investment_transaction_id}>
                   <TableCell className="whitespace-nowrap text-xs">
-                    {formatDate(transaction.date)}
+                    {formatDate(transaction.date, dateLocale)}
                   </TableCell>
                   <TableCell>
-                    <div className="font-medium">
-                      {transaction.symbol || "-"}
-                    </div>
+                    <div className="font-medium">{transaction.symbol || "-"}</div>
                     <div className="max-w-[13.75rem] truncate text-xs text-muted-foreground">
                       {transaction.name || transaction.security_id || "-"}
                     </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant="secondary" className="capitalize">
-                      {normalizeLabel(transaction.type)}
+                      {normalizeLabel(transaction.type, t)}
                     </Badge>
                     {transaction.subtype && (
                       <div className="mt-1 text-xs capitalize text-muted-foreground">
-                        {normalizeLabel(transaction.subtype)}
+                        {normalizeLabel(transaction.subtype, t)}
                       </div>
                     )}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
-                    {formatQuantity(transaction.quantity)}
+                    {formatQuantity(transaction.quantity, dateLocale)}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
                     {transaction.price === null || transaction.price === undefined
@@ -245,8 +247,20 @@ export function InvestmentTransactionsTable({
       </div>
 
       {hasMore && (
-        <ListLoadMore onClick={onLoadMore} loading={loading} skeleton={<div className="overflow-x-auto"><Table><TableBody><TransactionRowsSkeleton rows={3} /></TableBody></Table></div>}>
-          Load more
+        <ListLoadMore
+          onClick={onLoadMore}
+          loading={loading}
+          skeleton={
+            <div className="overflow-x-auto">
+              <Table>
+                <TableBody>
+                  <TransactionRowsSkeleton rows={3} />
+                </TableBody>
+              </Table>
+            </div>
+          }
+        >
+          {t("common.loadMore")}
         </ListLoadMore>
       )}
     </ListCard>
@@ -255,11 +269,38 @@ export function InvestmentTransactionsTable({
 
 /** Table rows shaped like transactions: date, symbol/name, type badge, four figures, account. */
 function TransactionRowsSkeleton({ rows }: { rows: number }) {
-  return <>{Array.from({ length: rows }, (_, i) => <TableRow key={i} aria-hidden="true" className="hover:bg-transparent">
-    <TableCell>{i === 0 && <span role="status" className="sr-only">Loading transactions</span>}<Skeleton className="h-3 w-16 rounded-md" /></TableCell>
-    <TableCell><Skeleton className="h-4 w-12 rounded-md" /><Skeleton className={i % 2 ? "mt-1.5 h-3 w-28 rounded-md" : "mt-1.5 h-3 w-40 rounded-md"} /></TableCell>
-    <TableCell><Skeleton className="h-5 w-14 rounded-full" /></TableCell>
-    {[0, 1, 2, 3].map(j => <TableCell key={j}><Skeleton className="ml-auto h-4 w-14 rounded-md" /></TableCell>)}
-    <TableCell><Skeleton className="h-4 w-20 rounded-md" /></TableCell>
-  </TableRow>)}</>;
+  const { t } = useTranslation();
+  return (
+    <>
+      {Array.from({ length: rows }, (_, i) => (
+        <TableRow key={i} aria-hidden="true" className="hover:bg-transparent">
+          <TableCell>
+            {i === 0 && (
+              <span role="status" className="sr-only">
+                {t("portfolio.transactions.loading")}
+              </span>
+            )}
+            <Skeleton className="h-3 w-16 rounded-md" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-12 rounded-md" />
+            <Skeleton
+              className={i % 2 ? "mt-1.5 h-3 w-28 rounded-md" : "mt-1.5 h-3 w-40 rounded-md"}
+            />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-5 w-14 rounded-full" />
+          </TableCell>
+          {[0, 1, 2, 3].map((j) => (
+            <TableCell key={j}>
+              <Skeleton className="ml-auto h-4 w-14 rounded-md" />
+            </TableCell>
+          ))}
+          <TableCell>
+            <Skeleton className="h-4 w-20 rounded-md" />
+          </TableCell>
+        </TableRow>
+      ))}
+    </>
+  );
 }

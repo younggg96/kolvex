@@ -4,6 +4,7 @@ import { PUBLIC_PAGE_SIZE, publicPage, publicPagePath } from "@/lib/publicRoutes
 import { readingMetadata } from "@/lib/publicSeo";
 import {
   ReadingHeading,
+  ReadingText,
   ReadingPagination,
   ReadingSectionHeading,
   ResearchList,
@@ -33,12 +34,20 @@ export default async function ResearchPage({ params }: Props) {
   if (page > 1 && (page - 1) * PUBLIC_PAGE_SIZE >= data.total) notFound();
   return (
     <>
-      <ReadingHeading title="股票研究" />
-      <ReadingSectionHeading title="已发布研究" count={data.total} />
+      <ReadingHeading title={<ReadingText en="Stock research" zh="股票研究" />} />
+      <ReadingSectionHeading
+        title={<ReadingText en="Published reports" zh="已发布研究" />}
+        count={data.total}
+      />
       {data.items.length ? (
         <ResearchList items={data.items} />
       ) : (
-        <p className="py-12 text-muted-foreground">暂时没有已发布的研究报告。</p>
+        <p className="py-12 text-muted-foreground">
+          <ReadingText
+            en="No research reports have been published yet."
+            zh="暂时没有已发布的研究报告。"
+          />
+        </p>
       )}
       <ReadingPagination page={page} total={data.total} size={PUBLIC_PAGE_SIZE} path="/research" />
     </>

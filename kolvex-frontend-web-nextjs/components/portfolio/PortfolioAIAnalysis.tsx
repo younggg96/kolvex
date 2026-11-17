@@ -680,7 +680,7 @@ export function PortfolioAIAnalysis({ className }: PortfolioAIAnalysisProps) {
                   {t("portfolio.ai.positionsAnalyzed", {
                     count: String(analysis.positions_analyzed),
                   })}{" "}
-                  • Model: {analysis.model}
+                  • {t("portfolio.aiAnalysis.model")} {analysis.model}
                 </span>
                 <span>{new Date(analysis.analyzed_at).toLocaleString()}</span>
               </div>

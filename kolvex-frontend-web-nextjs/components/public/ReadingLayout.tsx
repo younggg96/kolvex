@@ -1,5 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import { Suspense } from "react";
+import { useCopy } from "@/components/decision/shared";
+import { FixedLocale, useTranslation } from "@/lib/i18n";
 import { ReadingHeader } from "./ReadingHeader";
 import { ReadingMotion } from "./ReadingMotion";
 
@@ -33,20 +37,64 @@ const readingMotionClass = [
 ].join(" ");
 
 export function ReadingLayout({ children }: { children: React.ReactNode }) {
+  const { locale, ready } = useTranslation();
   return (
-    <div lang="zh-CN" className={`site-page-surface reading-shell min-h-dvh bg-background text-foreground ${readingMotionClass}`}>
-      <a href="#public-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-background focus:p-4">跳到正文</a>
+    <FixedLocale locale={ready ? locale : "zh"}>
+      <ReadingShell>{children}</ReadingShell>
+    </FixedLocale>
+  );
+}
+
+function ReadingShell({ children }: { children: React.ReactNode }) {
+  const c = useCopy();
+  const { t } = useTranslation();
+  return (
+    <div
+      lang={t("common.intlLocale")}
+      className={`site-page-surface reading-shell min-h-dvh bg-background text-foreground ${readingMotionClass}`}
+    >
+      <a
+        href="#public-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-background focus:p-4"
+      >
+        {c("Skip to content", "跳到正文")}
+      </a>
       <ReadingHeader />
-      <main id="public-content" className="mx-auto w-full max-w-[70rem] px-[16px] pb-10 pt-6 md:px-8 md:pt-8">{children}</main>
-      <Suspense fallback={null}><ReadingMotion /></Suspense>
+      <main
+        id="public-content"
+        className="mx-auto w-full max-w-[70rem] px-[16px] pb-10 pt-6 md:px-8 md:pt-8"
+      >
+        {children}
+      </main>
+      <Suspense fallback={null}>
+        <ReadingMotion />
+      </Suspense>
       <footer className="mx-auto max-w-[70rem] space-y-4 border-t border-border px-[16px] py-8 text-xs text-muted-foreground md:px-8">
-        <p>研究和观点保留其原始日期与来源，阅读时请结合当时的市场背景。</p>
-        <nav aria-label="网站信息" className="flex flex-wrap items-center gap-x-6">
-          <Link href="/" className="py-2 hover:underline">首页</Link>
-          <Link href="/contact" className="py-2 hover:underline">联系 Kolvex</Link>
-          <Link href="/privacy" className="py-2 hover:underline">隐私政策</Link>
-          <Link href="/terms" className="py-2 hover:underline">服务条款</Link>
-          <a href="https://github.com/younggg96/kolvex" className="py-2 hover:underline">在 GitHub 加星</a>
+        <p>
+          {c(
+            "Research and opinions retain their original dates and sources. Read them in the context of the market at the time.",
+            "研究和观点保留其原始日期与来源，阅读时请结合当时的市场背景。",
+          )}
+        </p>
+        <nav
+          aria-label={c("Site information", "网站信息")}
+          className="flex flex-wrap items-center gap-x-6"
+        >
+          <Link href="/" className="py-2 hover:underline">
+            {c("Home", "首页")}
+          </Link>
+          <Link href="/contact" className="py-2 hover:underline">
+            {c("Contact Kolvex", "联系 Kolvex")}
+          </Link>
+          <Link href="/privacy" className="py-2 hover:underline">
+            {c("Privacy policy", "隐私政策")}
+          </Link>
+          <Link href="/terms" className="py-2 hover:underline">
+            {c("Terms of service", "服务条款")}
+          </Link>
+          <a href="https://github.com/younggg96/kolvex" className="py-2 hover:underline">
+            {c("Star on GitHub", "在 GitHub 加星")}
+          </a>
         </nav>
       </footer>
     </div>

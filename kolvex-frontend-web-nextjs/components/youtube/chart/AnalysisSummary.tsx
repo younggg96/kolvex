@@ -12,8 +12,13 @@ const CLAMPED_LINES = 3;
  * text actually overflows at the current width. Character counts are not used:
  * the same conclusion can fit or overflow depending on the chart panel width.
  */
-export default function AnalysisSummary({ text, t }: {
+export default function AnalysisSummary({
+  text,
+  lang,
+  t,
+}: {
   text: string;
+  lang?: string;
   t: (key: string) => string;
 }) {
   const id = useId();
@@ -55,6 +60,7 @@ export default function AnalysisSummary({ text, t }: {
     <div className="min-w-0">
       <p
         id={id}
+        lang={lang}
         ref={ref}
         className={cn(
           "whitespace-pre-line break-words text-sm leading-6",
@@ -71,7 +77,7 @@ export default function AnalysisSummary({ text, t }: {
           className="mt-2 text-muted-foreground"
           aria-controls={id}
           aria-expanded={expanded}
-          onClick={() => setExpanded(value => !value)}
+          onClick={() => setExpanded((value) => !value)}
         >
           {t(expanded ? "youtubeOpinions.ai.readLess" : "youtubeOpinions.ai.readMore")}
           <ChevronDown className={cn("h-4 w-4", expanded && "rotate-180")} aria-hidden="true" />
