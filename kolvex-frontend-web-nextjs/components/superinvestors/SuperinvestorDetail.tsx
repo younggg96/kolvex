@@ -19,11 +19,11 @@ export default function SuperinvestorDetail({ manager }: { manager: string }) {
   const c = useCopy();
   const f = useFinancialFormat();
   const quarterLabel = useQuarterLabel();
-  const byline = useInvestorByline()(manager, true);
   const managers = useFreeResearch<{ managers: InstitutionManager[] }>(INSTITUTIONS_KEY);
   // Same cache key as InstitutionHoldings, so this shares its single SEC read.
   const institution = useFreeResearch<Institution>(institutionKey(manager));
   const identity = managers.data?.managers.find((item) => item.id === manager);
+  const byline = useInvestorByline()(manager, true, identity?.profile);
   const unknown = Boolean(managers.data) && !identity;
   const filing = institution.data?.filing;
   const parent = c("Superinvestors", "超级投资者");

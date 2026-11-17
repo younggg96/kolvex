@@ -78,6 +78,10 @@ async def lifespan(app: FastAPI):
 
     paper_worker = asyncio.create_task(run_paper_worker())
     from app.services.sec.holdings_store import institution_store
+    from app.services.sec.managers import manager_registry
+
+    # Reads the admin-edited coverage list now and every few minutes; the built-in list serves until then.
+    managers_refresher = asyncio.create_task(manager_registry.run_refresher())
 
     holdings_worker = (
         asyncio.create_task(institution_store.run_worker())
@@ -119,6 +123,8 @@ async def lifespan(app: FastAPI):
     try:
         yield
     finally:
+        managers_refresher.cancel()
+        await asyncio.gather(managers_refresher, return_exceptions=True)
         if translation_worker:
             translation_worker.cancel()
             await asyncio.gather(translation_worker, return_exceptions=True)

@@ -107,7 +107,7 @@ def manifest_progress():
         videos = json.loads(MANIFEST.read_text()).get('videos', [])
     except Exception:
         return 0, 0, None
-    done = sum(item.get('status') in ('done', 'error') for item in videos)
+    done = sum(item.get('status') in ('done', 'error', 'waiting') for item in videos)
     current = next((item.get('title') for item in videos if item.get('status') == 'running'), None)
     return done, len(videos), current
 
@@ -140,7 +140,11 @@ def process(client, run):
             # Retry earlier failures too: a daily run should pick up videos that failed yesterday.
             manifest, _ = run_batch(MANIFEST, OUTPUT, DEFAULT_MODEL, transcript_only=True, retry_failed=True)
         failures = []
-        pending = [item for item in manifest['videos'] if item['id'] not in imported]
+        # A live stream that has not ended is left for a later run rather than reported as a failure.
+        for item in manifest['videos']:
+            if item.get('status') == 'waiting':
+                log(f'{item["id"]} 暂不处理：{item.get("error")}')
+        pending = [item for item in manifest['videos'] if item['id'] not in imported and item.get('status') != 'waiting']
         state.update(stage='analyze', done=0, total=len(pending), current=None)
         client.post(f'runs/{run_id}/heartbeat', state)
         for index, item in enumerate(pending):

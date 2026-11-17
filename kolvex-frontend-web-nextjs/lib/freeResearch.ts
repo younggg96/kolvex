@@ -20,7 +20,9 @@ export interface InsiderTransaction {
   value: number | null; shares_after: number | null; ownership: string | null; amended: boolean; source_url: string;
 }
 export interface SecInsiders extends SecMeta { transactions: InsiderTransaction[]; filings: Filing[]; failed_filings: number; filing_limit: number }
-export interface InstitutionManager { id: string; name: string; cik: number }
+export interface InstitutionManagerProfile { zhName: string; person: { en: string; zh: string }; role: { en: string; zh: string } }
+/** `profile` is set by admins in the coverage list; null falls back to the bundled INVESTOR_PROFILES. */
+export interface InstitutionManager { id: string; name: string; cik: number; category?: string | null; profile?: InstitutionManagerProfile | null }
 export interface Institution extends SecMeta {
   filing: Filing | null; previous_filing: Filing | null; partial: boolean; amendments: Filing[];
   holdings: { issuer: string; ticker?: string | null; class: string; cusip: string; put_call: string | null; share_type: string | null;

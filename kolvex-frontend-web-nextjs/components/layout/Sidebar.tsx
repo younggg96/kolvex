@@ -44,7 +44,6 @@ import { useBreakpoints } from "@/hooks";
 import { useUserProfileContext } from "@/components/user/UserProfileProvider";
 import { useTranslation } from "@/lib/i18n";
 import { isProductFeatureEnabled } from "@/lib/productFeatures";
-import { cn } from "@/lib/utils";
 
 const CHAT_HREF = "/dashboard/chat";
 
@@ -147,21 +146,24 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
                 onClick={handleNavigate}
                 aria-current={chatActive ? "page" : undefined}
                 title={state === "collapsed" ? t(chat.titleKey) : undefined}
-                className={cn(
-                  "flex h-11 w-full items-center gap-3 rounded-[var(--radius-control)] px-3 text-sm font-semibold transition-colors motion-reduce:transition-none dark:rounded-full group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0",
-                  chatActive
-                    ? "bg-foreground text-background hover:bg-foreground/90"
-                    : "bg-[rgb(var(--button-primary))] text-[rgb(var(--surface))] hover:bg-[rgb(var(--primary-hover))] focus-visible:bg-[rgb(var(--button-primary))] dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/85 dark:focus-visible:bg-primary",
-                )}
+                className="sidebar-chat-cta flex h-11 w-full items-center gap-3 rounded-[var(--radius-control)] px-3 text-sm font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background dark:rounded-full group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0"
               >
-                <chat.icon aria-hidden="true" className="size-[1.125rem] shrink-0" />
+                <chat.icon
+                  aria-hidden="true"
+                  className="sidebar-chat-icon size-[1.125rem] shrink-0"
+                />
                 <span className="min-w-0 truncate group-data-[collapsible=icon]:sr-only">
                   {t(chat.titleKey)}
                 </span>
-                {!chatActive && (
+                {chatActive ? (
+                  <span
+                    aria-hidden="true"
+                    className="sidebar-chat-live ml-auto shrink-0 group-data-[collapsible=icon]:hidden"
+                  />
+                ) : (
                   <ArrowRight
                     aria-hidden="true"
-                    className="ml-auto size-4 shrink-0 group-data-[collapsible=icon]:hidden"
+                    className="sidebar-chat-arrow ml-auto size-4 shrink-0 group-data-[collapsible=icon]:hidden"
                   />
                 )}
               </Link>

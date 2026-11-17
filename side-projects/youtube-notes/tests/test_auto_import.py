@@ -63,6 +63,10 @@ class ProcessTests(unittest.TestCase):
         self.assertEqual(finish['transcript_failures'][0]['video_id'], 'bbbbbbbbbbb')
         self.assertIn('429', finish['transcript_failures'][0]['error'])
 
+    def test_unfinished_live_stream_is_not_reported_as_failure(self):
+        client, _ = self.run_process([video('aaaaaaaaaaa', status='waiting', error='直播尚未结束')])
+        self.assertEqual(client.calls[-1], ('runs/r1/finish', {'transcript_failures': []}))
+
     def test_resumed_run_skips_already_imported_videos(self):
         client, _ = self.run_process(
             [video('aaaaaaaaaaa', output_dir=self.folder)],

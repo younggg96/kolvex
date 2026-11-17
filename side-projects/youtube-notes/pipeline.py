@@ -37,6 +37,10 @@ def normalize_url(value):
     return f'https://www.youtube.com/watch?v={video_id}'
 
 
+class VideoNotReady(Exception):
+    """A scheduled or still-running live stream or premiere: nothing to transcribe yet, so not a failure."""
+
+
 def cookie_args():
     """Optional YouTube sign-in, for when YouTube asks to "confirm you're not a bot".
 
@@ -59,6 +63,8 @@ def ytdlp(*args, timeout=180, playlist=False):
     result = subprocess.run(command, capture_output=True, text=True, timeout=timeout)
     if result.returncode:
         detail = result.stderr.strip()[-900:]
+        if re.search(r'live event will begin|Premieres in', detail):
+            raise VideoNotReady(f'直播或首映尚未结束，结束后会自动处理：{detail[-200:]}')
         raise RuntimeError(f'YouTube 获取失败：{detail}。可更新 yt-dlp 后重试；登录验证或限流可能需要稍后再试。')
     return result.stdout
 
@@ -111,7 +117,9 @@ def caption_candidates(info):
 def fetch_transcript(url, folder, update):
     update(stage='captions', message='正在检查视频信息与现有字幕…')
     info = json.loads(ytdlp('--dump-single-json', '--skip-download', url))
-    if info.get('is_live') or not info.get('duration'):
+    if info.get('is_live') or info.get('live_status') in ('is_live', 'is_upcoming', 'post_live'):
+        raise VideoNotReady('直播或首映尚未结束，结束后会自动处理。')
+    if not info.get('duration'):
         raise ValueError('请选择已结束的视频。')
     metadata = {k: info.get(k) for k in ('title', 'duration', 'channel', 'id', 'channel_id',
                 'channel_url', 'uploader_id', 'webpage_url', 'upload_date', 'timestamp')}

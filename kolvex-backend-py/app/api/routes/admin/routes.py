@@ -13,11 +13,13 @@ from supabase import Client
 
 from .briefs import router as briefs_router
 from .email import router as email_router
+from .institutions import router as institutions_router
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 router.include_router(briefs_router)
 router.include_router(email_router)
+router.include_router(institutions_router)
 BUSINESS_TABLES = (
     "market_events",
     "user_profiles",

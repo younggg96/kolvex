@@ -98,7 +98,7 @@ function Detail() {
   const manager = String(raw ?? "");
   const f = useFormat();
   const quarterLabel = useQuarterLabel();
-  const byline = useInvestorByline()(manager, true);
+  const bylineFor = useInvestorByline();
   const list = useResource(
     "sec-managers",
     (signal) => managers(signal),
@@ -112,6 +112,7 @@ function Detail() {
   );
   const identity = list.data?.managers.find((item) => item.id === manager);
   const unknown = !!list.data && !identity;
+  const byline = bylineFor(manager, true, identity?.profile);
   const data = resource.data;
   const holdings = useMemo(() => data?.holdings ?? [], [data]);
   const held = holdings.filter((row) => row.activity !== "exited");

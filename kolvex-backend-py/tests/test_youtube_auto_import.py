@@ -211,6 +211,15 @@ class RouteTests(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 401)
 
+    def test_non_ascii_configured_token_is_rejected_not_crashed(self):
+        with patch.object(routes.settings, "YOUTUBE_IMPORT_WORKER_TOKEN", "密钥"):
+            response = self.client.post(
+                "/youtube-auto-import/worker/claim",
+                json={},
+                headers={"X-Worker-Token": "secret-token"},
+            )
+        self.assertEqual(response.status_code, 401)
+
     def test_run_now_conflicts_with_active_run(self):
         self.assertEqual(self.client.post("/admin/youtube-auto-import/run").status_code, 409)
         self.store.run["status"] = "succeeded"

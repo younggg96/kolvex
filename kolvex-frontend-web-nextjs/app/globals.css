@@ -2117,3 +2117,213 @@ html[data-chat-history-open] .app-workbench .app-sidebar {
     border-color: transparent;
   }
 }
+
+/* ========================================
+   SIDEBAR — AI chat entry and nav motion
+   ======================================== */
+
+.sidebar-chat-cta {
+  --cta-from: rgb(var(--button-primary));
+  --cta-to: rgb(var(--primary-hover));
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background-image: linear-gradient(135deg, var(--cta-from), var(--cta-to));
+  color: rgb(var(--surface));
+  box-shadow:
+    0 1px 2px rgb(var(--primary-hover) / 0.24),
+    inset 0 1px 0 rgb(255 255 255 / 0.14);
+  transition:
+    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease;
+}
+
+.dark .sidebar-chat-cta {
+  --cta-from: rgb(var(--primary));
+  --cta-to: color-mix(in srgb, rgb(var(--primary)), black 18%);
+  color: rgb(var(--primary-foreground));
+}
+
+/* Light sweep that crosses the button on hover. */
+.sidebar-chat-cta::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgb(255 255 255 / 0.22) 50%,
+    transparent 70%
+  );
+  transform: translateX(-120%);
+  pointer-events: none;
+}
+
+.sidebar-chat-cta .sidebar-chat-icon,
+.sidebar-chat-cta .sidebar-chat-arrow {
+  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.sidebar-chat-cta:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 6px 16px -4px rgb(var(--primary-hover) / 0.45),
+    inset 0 1px 0 rgb(255 255 255 / 0.18);
+}
+
+.sidebar-chat-cta:hover::after {
+  animation: sidebar-cta-sweep 700ms ease-out;
+}
+
+.sidebar-chat-cta:hover .sidebar-chat-arrow {
+  transform: translateX(3px);
+}
+
+.sidebar-chat-cta:hover .sidebar-chat-icon {
+  transform: rotate(-8deg) scale(1.06);
+}
+
+.sidebar-chat-cta:active {
+  transform: translateY(0) scale(0.98);
+  transition-duration: 80ms;
+}
+
+/* Current page: a calm tinted pill instead of a solid block. */
+.sidebar-chat-cta[aria-current="page"] {
+  background-image: none;
+  background-color: rgb(var(--secondary));
+  color: rgb(var(--secondary-foreground));
+  box-shadow: inset 0 0 0 1px rgb(var(--primary) / 0.28);
+}
+
+.dark .sidebar-chat-cta[aria-current="page"] {
+  background-color: rgb(var(--primary) / 0.14);
+  color: rgb(var(--primary));
+  box-shadow: inset 0 0 0 1px rgb(var(--primary) / 0.3);
+}
+
+.sidebar-chat-cta[aria-current="page"]:hover {
+  transform: none;
+  background-color: color-mix(in srgb, rgb(var(--secondary)), rgb(var(--primary)) 10%);
+}
+
+.dark .sidebar-chat-cta[aria-current="page"]:hover {
+  background-color: rgb(var(--primary) / 0.2);
+}
+
+.sidebar-chat-cta[aria-current="page"]::after {
+  display: none;
+}
+
+.sidebar-chat-cta[aria-current="page"] .sidebar-chat-icon {
+  color: rgb(var(--primary-hover));
+}
+
+.dark .sidebar-chat-cta[aria-current="page"] .sidebar-chat-icon {
+  color: rgb(var(--primary));
+}
+
+/* "You are here" dot that breathes softly. */
+.sidebar-chat-live {
+  position: relative;
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: rgb(var(--primary));
+}
+
+.sidebar-chat-live::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: inherit;
+  animation: sidebar-live-ping 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Nav rows: colour fades in and the icon nudges on hover. */
+.app-sidebar [data-sidebar="menu-button"],
+.app-sidebar [data-sidebar="menu-sub-button"] {
+  transition-property: width, height, padding, background-color, color, box-shadow;
+  transition-duration: 180ms;
+  transition-timing-function: ease;
+}
+
+.app-sidebar [data-sidebar="menu-button"] > svg,
+.app-sidebar [data-sidebar="menu-sub-button"] > svg {
+  transition: transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.app-sidebar [data-sidebar="menu-button"]:hover > svg,
+.app-sidebar [data-sidebar="menu-sub-button"]:hover > svg {
+  transform: translateX(2px);
+}
+
+.app-sidebar [data-sidebar="menu-button"][data-active="true"],
+.app-sidebar [data-sidebar="menu-sub-button"][data-active="true"] {
+  animation: sidebar-active-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.app-sidebar [data-sidebar="menu-button"][data-active="true"] > svg,
+.app-sidebar [data-sidebar="menu-sub-button"][data-active="true"] > svg {
+  color: rgb(var(--primary-hover));
+}
+
+.dark .app-sidebar [data-sidebar="menu-button"][data-active="true"] > svg,
+.dark .app-sidebar [data-sidebar="menu-sub-button"][data-active="true"] > svg {
+  color: rgb(var(--primary));
+}
+
+.app-sidebar [data-sidebar="menu-button"]:active,
+.app-sidebar [data-sidebar="menu-sub-button"]:active {
+  transform: scale(0.98);
+}
+
+@keyframes sidebar-cta-sweep {
+  from {
+    transform: translateX(-120%);
+  }
+  to {
+    transform: translateX(120%);
+  }
+}
+
+@keyframes sidebar-live-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  80%,
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+@keyframes sidebar-active-in {
+  from {
+    background-color: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-chat-cta,
+  .sidebar-chat-cta .sidebar-chat-icon,
+  .sidebar-chat-cta .sidebar-chat-arrow,
+  .app-sidebar [data-sidebar="menu-button"],
+  .app-sidebar [data-sidebar="menu-sub-button"],
+  .app-sidebar [data-sidebar="menu-button"] > svg,
+  .app-sidebar [data-sidebar="menu-sub-button"] > svg {
+    transition: none;
+    animation: none;
+    transform: none !important;
+  }
+
+  .sidebar-chat-cta:hover::after,
+  .sidebar-chat-live::before {
+    animation: none;
+  }
+}

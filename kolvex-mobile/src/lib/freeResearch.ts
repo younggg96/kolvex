@@ -67,10 +67,18 @@ export interface SecInsiders extends SecMeta {
   failed_filings: number;
   filing_limit: number;
 }
+export interface InstitutionManagerProfile {
+  zhName: string;
+  person: { en: string; zh: string };
+  role: { en: string; zh: string };
+}
+/** `profile` is set by admins in the coverage list; null falls back to the bundled investorProfiles.json. */
 export interface InstitutionManager {
   id: string;
   name: string;
   cik: number;
+  category?: string | null;
+  profile?: InstitutionManagerProfile | null;
 }
 export interface Institution extends SecMeta {
   filing: Filing | null;

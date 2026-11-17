@@ -65,7 +65,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 | 自选股 | `watchlist` | `/dashboard/watchlist` | `(more)/watchlist` | Supabase 直连 + RLS | [watchlist-sync.md](../watchlist-sync.md) | ✅ |
 | 投资组合（Plaid） | `portfolio` | `/dashboard/portfolio`、公开页 `/portfolio/[userId]` | `/portfolio`（只读持仓快照） | `portfolio/`、`plaid.py` | `kolvex-frontend-web-nextjs/FEATURE_INVENTORY.md`「Plaid」 | ◐（Web 收盘后自动采集交易日收益快照；App 缺 Plaid 授权、交易、配置、收益图、AI 分析、股票观察「我的持仓」） |
 | 虚拟交易 | `paperTrading` | `/dashboard/paper-trading`、个股 `?tab=paper-trading` | `(more)/paper-trading`、个股 tab | `paper_trading.py` | [paper-trading/PLAN.md](../paper-trading/PLAN.md)、[README.md](../paper-trading/README.md)、Web `UX-CONTRACT.md` | ✅ |
-| 超级投资者（13F） | `superinvestors` | `/dashboard/superinvestors`、`/dashboard/superinvestors/[manager]` | `(more)/superinvestors`、`/superinvestor/[manager]` | `free_research.py`（`/market/free-research/institutions`） | — | ✅ |
+| 超级投资者（13F；名单由管理后台「超级投资者」维护，存 `institution_managers` 表） | `superinvestors` | `/dashboard/superinvestors`、`/dashboard/superinvestors/[manager]`；管理 `/dashboard/admin?tab=institutions` | `(more)/superinvestors`、`/superinvestor/[manager]` | `free_research.py`（`/market/free-research/institutions`）、`admin/institutions.py`（`/admin/institutions`） | [superinvestors-coverage.md](../superinvestors-coverage.md)；需迁移 `20261117090000_institution_managers.sql` | ✅ |
 | 国会交易 | `congressTrades` | `/dashboard/congress-trades` | `(more)/congress-trades` | `congress_trades.py` | — | ✅ |
 | 期权异动 | `optionsActivity` | `/dashboard/options-activity` | `(more)/options-activity` | `options_activity.py` | — | ✅ |
 
@@ -75,7 +75,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 | --- | --- | --- | --- | --- | --- | --- |
 | 登录注册、OAuth、找回密码 | — | `/auth/*` | `/sign-in`、`/auth/*` | `auth/` | — | ✅（App 必须登录） |
 | 个人资料、头像、主题、语言、模型 API Key | `settings` | `/dashboard/settings`、`/config` | `/account`、`/preferences`、`(more)/settings` | `users.py`、`upload/`、`user_api_keys/` | — | ✅ |
-| 管理后台（用户、日报、事件、YouTube、X、期权异动、邮件设置） | `admin` | `/dashboard/admin` | `(more)/admin` | `admin/` 等 | [mcp-content-admin.md](../mcp-content-admin.md) | ◐ |
+| 管理后台（用户、日报、事件、YouTube、X、期权异动、邮件设置、超级投资者名单） | `admin` | `/dashboard/admin` | `(more)/admin` | `admin/` 等 | [mcp-content-admin.md](../mcp-content-admin.md) | ◐ |
 | YouTube 自动导入（本地 Mac worker 每天 21:00 获取未追踪视频字幕 → 后端 DeepSeek 分析 → 导入观点；管理后台「YouTube 导入」可立即运行并查看结果） | `admin` | `/dashboard/admin?tab=youtube` | — | `youtube_auto_import.py`（`/admin/youtube-auto-import/*`、`/youtube-auto-import/worker/*`） | [youtube-auto-import.md](../youtube-auto-import.md)；需迁移 `20261116150000_youtube_auto_import.sql` | — |
 | 公开阅读页与 SEO | — | `app/(public)/`：`/stocks`、`/creators`、`/research`（ISR 缓存 600 秒，分页用 `/page/N` 路径；`/llms.txt`、观点结构化数据） | —（App 无访客模式） | — | [public-reading.md](../public-reading.md) | — |
 | 隐私政策、条款、联系 | — | `/privacy`、`/terms`、`/contact` | 打开网页 | 联系表单返回 410 | — | ✅ |

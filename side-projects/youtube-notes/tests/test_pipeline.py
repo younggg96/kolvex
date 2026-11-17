@@ -56,6 +56,17 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(candidates[0][-2:], ('zh-Hans', 'manual'))
         self.assertEqual(candidates[1][-2:], ('zh-Hans', 'auto'))
 
+    def test_scheduled_or_running_live_stream_is_not_ready_rather_than_failed(self):
+        failed = p.subprocess.CompletedProcess([], 1, '', 'ERROR: [youtube] abc: This live event will begin in 18 hours.')
+        with patch.object(p.subprocess, 'run', return_value=failed), self.assertRaises(p.VideoNotReady):
+            p.ytdlp('--dump-single-json', 'url')
+        blocked = p.subprocess.CompletedProcess([], 1, '', 'ERROR: [youtube] abc: Sign in to confirm you’re not a bot.')
+        with patch.object(p.subprocess, 'run', return_value=blocked), self.assertRaises(RuntimeError):
+            p.ytdlp('--dump-single-json', 'url')
+        with tempfile.TemporaryDirectory() as temp, patch.object(p, 'ytdlp', return_value=json.dumps({'live_status': 'is_live', 'duration': 0})), \
+             self.assertRaises(p.VideoNotReady):
+            p.fetch_transcript('url', Path(temp), lambda **_: None)
+
     def test_translation_mismatch_fails_without_fabrication(self):
         segments = [{'start': 0, 'end': 2, 'text': 'Hello'}]
         with patch.object(p, 'generate', return_value={'translations': []}):

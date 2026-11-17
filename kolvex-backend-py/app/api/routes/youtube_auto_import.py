@@ -31,7 +31,8 @@ def verify_worker(x_worker_token: Optional[str] = Header(default=None)) -> None:
     expected = settings.YOUTUBE_IMPORT_WORKER_TOKEN
     if not expected:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "worker_not_configured")
-    if not x_worker_token or not hmac.compare_digest(x_worker_token, expected):
+    # Compare bytes: compare_digest raises on non-ASCII str, e.g. a mistyped token.
+    if not x_worker_token or not hmac.compare_digest(x_worker_token.encode(), expected.encode()):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid_worker_token")
 
 

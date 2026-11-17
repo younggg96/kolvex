@@ -247,8 +247,8 @@ function LeadCard({ entry }: { entry: Loaded }) {
                   {entry.manager.name}
                 </Link>
               </h2>
-              {byline(entry.manager.id, true) && (
-                <p className="mt-0.5 truncate text-sm text-muted-foreground">{byline(entry.manager.id, true)}</p>
+              {byline(entry.manager.id, true, entry.manager.profile) && (
+                <p className="mt-0.5 truncate text-sm text-muted-foreground">{byline(entry.manager.id, true, entry.manager.profile)}</p>
               )}
               <p className="mt-1 text-xs text-muted-foreground">
                 {quarterLabel(summary.filing.period)}
@@ -341,8 +341,8 @@ function InvestorCard({ entry }: { entry: Loaded }) {
         <InvestorAvatar id={entry.manager.id} name={entry.manager.name} />
         <div className="min-w-0 flex-1">
           <h4 className="truncate font-semibold">{entry.manager.name}</h4>
-          {byline(entry.manager.id) && (
-            <p className="mt-0.5 truncate text-xs text-foreground/75">{byline(entry.manager.id)}</p>
+          {byline(entry.manager.id, false, entry.manager.profile) && (
+            <p className="mt-0.5 truncate text-xs text-foreground/75">{byline(entry.manager.id, false, entry.manager.profile)}</p>
           )}
           <p className="mt-0.5 text-xs text-muted-foreground">
             {c("Filed", "申报于")} {f.date(summary.filing.filed)}

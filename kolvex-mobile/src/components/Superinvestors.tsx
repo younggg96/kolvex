@@ -206,8 +206,13 @@ const LOGOS: Record<string, ImageSourcePropType> = {
 /** Secondary identity line: Chinese firm name (zh only) and the investor behind it. */
 export function useInvestorByline() {
   const { locale } = usePreferences();
-  return (id: string, withRole = false) => {
-    const profile = INVESTOR_PROFILES[id];
+  /** `remote` is the admin-edited profile from the institutions list; it wins over the bundled one. */
+  return (
+    id: string,
+    withRole = false,
+    remote?: { zhName: string; person: Bilingual; role: Bilingual } | null,
+  ) => {
+    const profile = remote ?? INVESTOR_PROFILES[id];
     if (!profile) return null;
     if (locale === "en")
       return withRole

@@ -239,7 +239,11 @@ function LeadCard({ entry }: { entry: Loaded }) {
   const t = useTheme();
   const f = useFormat();
   const quarterLabel = useQuarterLabel();
-  const byline = useInvestorByline()(entry.manager.id, true);
+  const byline = useInvestorByline()(
+    entry.manager.id,
+    true,
+    entry.manager.profile,
+  );
   const summary = entry.summary;
   const topShare = sumWeights(summary.top);
   const changes = changeTotal(summary);
@@ -376,7 +380,11 @@ function Stat({ label, children }: { label: string; children: string }) {
 function InvestorCard({ entry }: { entry: Loaded }) {
   const t = useTheme();
   const f = useFormat();
-  const byline = useInvestorByline()(entry.manager.id);
+  const byline = useInvestorByline()(
+    entry.manager.id,
+    false,
+    entry.manager.profile,
+  );
   const summary = entry.summary;
   const first = summary.top[0];
   const topShare = sumWeights(summary.top);

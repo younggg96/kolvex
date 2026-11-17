@@ -67,6 +67,21 @@ class BatchTests(unittest.TestCase):
                 self.assertEqual(process.call_count, 1)
                 self.assertEqual(failed, 0)
 
+    def test_unfinished_live_stream_waits_and_is_retried_without_retry_failed(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            done = root / 'done'
+            done.mkdir()
+            (done / 'transcript.json').write_text('{}')
+            path = root / 'batch.json'
+            b.atomic_json(path, {'videos': [{'id': 'abcdefghijk', 'url': 'url1', 'title': 'Live', 'status': 'pending'}]})
+            with patch.object(b, 'require_environment'), patch.object(b, 'process_video', side_effect=b.VideoNotReady('未开始')):
+                first, failed = b.run_batch(path, root, 'test')
+            self.assertEqual((failed, first['videos'][0]['status'], first['videos'][0]['attempts']), (0, 'waiting', 0))
+            with patch.object(b, 'require_environment'), patch.object(b, 'process_video', return_value=done) as process:
+                second, failed = b.run_batch(path, root, 'test')
+            self.assertEqual((process.call_count, failed, second['videos'][0]['status']), (1, 0, 'done'))
+
     def test_transcript_completion_does_not_skip_full_processing(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

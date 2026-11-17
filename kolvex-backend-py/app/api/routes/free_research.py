@@ -17,7 +17,8 @@ router = APIRouter(prefix="/market/free-research", tags=["Market Data"])
 
 @router.get("/institutions")
 def managers():
-    return {"managers": [{"id": key, **value} for key, value in MANAGERS.items()]}
+    """Enabled managers in display order; `profile` carries the Chinese name and byline when an admin set one."""
+    return {"managers": MANAGERS.public_list()}
 
 
 async def tracked_institution(manager: str, map_now: int = 100):

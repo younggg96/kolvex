@@ -11,49 +11,10 @@ from xml.etree.ElementTree import ParseError
 
 import httpx
 
+# MANAGERS: the curated coverage list (admin-edited), not a claim to cover all institutional investors.
+from .managers import manager_registry as MANAGERS
 from .parsers import value_multiplier, compare_holdings, financial_history, filings_from, is_earnings_filing, parse_holdings, parse_insider
 
-# An explicit, curated coverage list, not a claim to cover all institutional investors.
-MANAGERS = {
-    "berkshire": {"cik": 1067983, "name": "Berkshire Hathaway"},
-    "bridgewater": {"cik": 1350694, "name": "Bridgewater Associates"},
-    "pershing": {"cik": 1336528, "name": "Pershing Square"},
-    "duquesne": {"cik": 1536411, "name": "Duquesne Family Office"},
-    "appaloosa": {"cik": 1656456, "name": "Appaloosa"},
-    "baupost": {"cik": 1061768, "name": "Baupost Group"},
-    "tiger": {"cik": 1167483, "name": "Tiger Global"},
-    "third_point": {"cik": 1040273, "name": "Third Point"},
-    "oaktree": {"cik": 949509, "name": "Oaktree Capital"},
-    "renaissance": {"cik": 1037389, "name": "Renaissance Technologies"},
-    # Followed closely by Chinese-speaking investors.
-    "duan_yongping": {"cik": 1759760, "name": "H&H International Investment"},
-    "himalaya": {"cik": 1709323, "name": "Himalaya Capital"},
-    "hhlr": {"cik": 1762304, "name": "HHLR Advisors"},
-    "greenwoods": {"cik": 1848138, "name": "Greenwoods Asset Management"},
-    "temasek": {"cik": 1021944, "name": "Temasek Holdings"},
-    # Value investors.
-    "pabrai": {"cik": 1549575, "name": "Dalal Street (Pabrai)"},
-    "markel": {"cik": 1096343, "name": "Markel Group"},
-    "fairfax": {"cik": 915191, "name": "Fairfax Financial"},
-    "akre": {"cik": 1112520, "name": "Akre Capital Management"},
-    "gardner_russo": {"cik": 860643, "name": "Gardner Russo & Quinn"},
-    "ruane": {"cik": 1720792, "name": "Ruane, Cunniff & Goldfarb"},
-    "fundsmith": {"cik": 1569205, "name": "Fundsmith"},
-    # Activists.
-    "icahn": {"cik": 921669, "name": "Carl Icahn"},
-    "elliott": {"cik": 1791786, "name": "Elliott Investment Management"},
-    "trian": {"cik": 1345471, "name": "Trian Fund Management"},
-    "valueact": {"cik": 1418814, "name": "ValueAct Capital"},
-    "starboard": {"cik": 1517137, "name": "Starboard Value"},
-    # Growth and technology.
-    "ark": {"cik": 1697748, "name": "ARK Invest"},
-    "coatue": {"cik": 1135730, "name": "Coatue Management"},
-    "lone_pine": {"cik": 1061165, "name": "Lone Pine Capital"},
-    "altimeter": {"cik": 1541617, "name": "Altimeter Capital"},
-    # Macro and endowments.
-    "soros": {"cik": 1029160, "name": "Soros Fund Management"},
-    "gates": {"cik": 1166559, "name": "Gates Foundation Trust"},
-}
 FINANCIALS_TTL = 21600
 
 

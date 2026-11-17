@@ -10,7 +10,7 @@ export async function GET(_request: Request, { params }: { params: { path: strin
   const institutions = path[0] === "institutions";
   const valid = institutions
     ? path.length === 1 ||
-      (/^[a-z_]{1,32}$/.test(path[1] ?? "") &&
+      (/^[a-z][a-z0-9_]{1,39}$/.test(path[1] ?? "") &&
         (path.length === 2 || (path.length === 3 && path[2] === "summary")))
     : path.length === 2 && /^[A-Za-z0-9][A-Za-z0-9.\-]{0,11}$/.test(path[0]) && kinds.has(path[1]);
   if (!valid) return NextResponse.json({ error: "Invalid research request" }, { status: 400 });

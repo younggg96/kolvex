@@ -11,7 +11,7 @@ import sys
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
-from pipeline import DEFAULT_MODEL, atomic_json, normalize_url, ytdlp
+from pipeline import DEFAULT_MODEL, VideoNotReady, atomic_json, normalize_url, ytdlp
 from youtube_transcribe import process_video, require_environment
 
 ROOT = Path(__file__).parent
@@ -262,6 +262,10 @@ def run_batch(manifest_path, output, model, transcript_only=False, retry_failed=
                 item.update(status='error', error='用户中断，可使用 --retry-failed 重试。')
                 atomic_json(manifest_path, manifest)
                 raise
+            except VideoNotReady as error:
+                # Not a failure and not an attempt: later runs pick it up without --retry-failed.
+                item.update(status='waiting', error=str(error), attempts=item['attempts'] - 1)
+                print(f'暂不处理：{error}', file=sys.stderr)
             except Exception as error:
                 item.update(status='error', error=str(error))
                 failed += 1
@@ -315,7 +319,8 @@ def main(argv=None):
         else:
             manifest, failed = run_batch(args.manifest, args.output, args.model, args.transcript_only, args.retry_failed)
             done = sum(item['status'] == 'done' for item in manifest['videos'])
-            print(f'完成 {done}/{len(manifest["videos"])}，失败 {failed}。\n清单：{args.manifest.resolve()}')
+            waiting = sum(item['status'] == 'waiting' for item in manifest['videos'])
+            print(f'完成 {done}/{len(manifest["videos"])}，失败 {failed}' + (f'，等待直播结束 {waiting}' if waiting else '') + f'。\n清单：{args.manifest.resolve()}')
             return 1 if failed else 0
         return 0
     except (Exception, KeyboardInterrupt) as error:

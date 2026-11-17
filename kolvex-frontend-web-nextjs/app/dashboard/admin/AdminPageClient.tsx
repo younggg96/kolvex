@@ -12,6 +12,7 @@ import YouTubeCreatorManager from "@/components/admin/YouTubeCreatorManager";
 import XContentManager from "@/components/admin/XContentManager";
 import OptionsActivityManager from "@/components/admin/OptionsActivityManager";
 import EmailSettingsManager from "@/components/admin/EmailSettingsManager";
+import InstitutionManager from "@/components/admin/InstitutionManager";
 import { useUserProfileContext } from "@/components/user/UserProfileProvider";
 import { Button } from "@/components/ui/button";
 import { SettingsGroup, SettingsRow } from "@/components/ui/settings-group";
@@ -168,7 +169,9 @@ export default function AdminPageClient({ initialTab }: { initialTab?: string })
                       ? "email"
                       : initialTab === "youtube"
                         ? "youtube"
-                        : "database"
+                        : initialTab === "institutions"
+                          ? "institutions"
+                          : "database"
           }
         >
           <TabsList className="max-w-full flex-wrap h-auto">
@@ -181,6 +184,7 @@ export default function AdminPageClient({ initialTab }: { initialTab?: string })
             <TabsTrigger value="briefs">日报管理</TabsTrigger>
             <TabsTrigger value="options">期权异动</TabsTrigger>
             <TabsTrigger value="email">邮件设置</TabsTrigger>
+            <TabsTrigger value="institutions">超级投资者</TabsTrigger>
           </TabsList>
 
           <TabsContent value="database" className="mt-6">
@@ -278,6 +282,9 @@ export default function AdminPageClient({ initialTab }: { initialTab?: string })
           </TabsContent>
           <TabsContent value="email" className="mt-6">
             <EmailSettingsManager />
+          </TabsContent>
+          <TabsContent value="institutions" className="mt-6">
+            <InstitutionManager />
           </TabsContent>
           <TabsContent value="briefs" className="mt-6">
             <DailyBriefImporter />

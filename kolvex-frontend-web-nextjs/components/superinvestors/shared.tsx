@@ -167,7 +167,7 @@ export interface InvestorProfile {
 const FOUNDER = { en: "Founder", zh: "创始人" };
 const FOUNDER_CEO = { en: "Founder & CEO", zh: "创始人兼 CEO" };
 
-/** Curated alongside the backend MANAGERS list; ids must match. */
+/** Bundled bylines and logos for the original 33 managers; admin-added managers get theirs from the API `profile`. */
 export const INVESTOR_PROFILES: Record<string, InvestorProfile> = {
   berkshire: { zhName: "伯克希尔·哈撒韦", person: { en: "Warren Buffett", zh: "沃伦·巴菲特" }, role: { en: "Chairman", zh: "董事长" }, logo: "berkshire" },
   bridgewater: { zhName: "桥水基金", person: { en: "Ray Dalio", zh: "瑞·达利欧" }, role: FOUNDER, logo: "bridgewater" },
@@ -207,8 +207,9 @@ export const INVESTOR_PROFILES: Record<string, InvestorProfile> = {
 /** Secondary identity line: Chinese firm name (zh only) and the investor behind it. */
 export function useInvestorByline() {
   const c = useCopy();
-  return (id: string, withRole = false) => {
-    const profile = INVESTOR_PROFILES[id];
+  /** `remote` is the admin-edited profile from the institutions list; it wins over the bundled one. */
+  return (id: string, withRole = false, remote?: InvestorProfile | null) => {
+    const profile = remote ?? INVESTOR_PROFILES[id];
     if (!profile) return null;
     const person = c(profile.person.en, profile.person.zh);
     const role = c(profile.role.en, profile.role.zh);

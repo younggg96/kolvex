@@ -183,6 +183,7 @@ cp .env.worker.example .env.worker   # 填 KOLVEX_API_URL 和 KOLVEX_WORKER_TOKE
 ## 限制与故障
 
 - YouTube 获取与首次模型下载需要网络。默认 AI 推理在本机；若改为远程 `OLLAMA_URL`，字幕将发送到该地址。
+- 尚未开始或仍在进行的直播 / 首映不算失败：清单里记为 `waiting`，不计入重试次数，之后每次 `run` 和自动导入都会再检查，结束后自动处理，无需 `--retry-failed`；自动导入也不会把它上报为字幕失败。
 - YouTube 的登录验证、429、PO Token 可能导致读取失败。先更新 yt-dlp 再重试。出现「Sign in to confirm you're not a bot」时，可设置 `YTDLP_COOKIES_FROM_BROWSER=chrome`（或 safari / firefox 等已登录 YouTube 的浏览器），或 `YTDLP_COOKIES=/path/cookies.txt`；worker 会从 `.env.worker` 读取。这会使用该浏览器的 YouTube 登录身份。没有 PO Token 提供器。
 - 某些视频需要 JavaScript runtime；程序会启用可找到的 Node.js，但版本也要符合 yt-dlp 要求。遇到 runtime 警告可安装 Deno：`brew install deno`。
 - MLX 转写仅支持 Apple Silicon；已有字幕路径不依赖 MLX。音频下载上限 500MB（无字幕时才需要下载，约可覆盖 7 小时）；有字幕的视频没有时长限制。
