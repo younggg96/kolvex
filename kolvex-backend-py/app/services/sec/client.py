@@ -1,4 +1,5 @@
 """Bounded, cached, rate-limited SEC reads. Does not call paid services."""
+
 import asyncio
 import json
 import os
@@ -13,7 +14,15 @@ import httpx
 
 # MANAGERS: the curated coverage list (admin-edited), not a claim to cover all institutional investors.
 from .managers import manager_registry as MANAGERS
-from .parsers import value_multiplier, compare_holdings, financial_history, filings_from, is_earnings_filing, parse_holdings, parse_insider
+from .parsers import (
+    compare_holdings,
+    filings_from,
+    financial_history,
+    is_earnings_filing,
+    parse_holdings,
+    parse_insider,
+    value_multiplier,
+)
 
 FINANCIALS_TTL = 21600
 
@@ -50,12 +59,21 @@ class SecClient:
                     return cached[1]
                 async with self._gate:
                     delay = max(0, self._next_request - time.monotonic())
-                    self._next_request = max(self._next_request, time.monotonic()) + .25
+                    self._next_request = max(self._next_request, time.monotonic()) + 0.25
                 if delay:
                     await asyncio.sleep(delay)
                 try:
                     async with httpx.AsyncClient(timeout=12, follow_redirects=False) as client:
-                        async with client.stream("GET", url, headers={"User-Agent": os.getenv("SEC_USER_AGENT", "Kolvex/1.0 (https://kolvex.app)"), "Accept-Encoding": "gzip, deflate"}) as response:
+                        async with client.stream(
+                            "GET",
+                            url,
+                            headers={
+                                "User-Agent": os.getenv(
+                                    "SEC_USER_AGENT", "Kolvex/1.0 (https://kolvex.app)"
+                                ),
+                                "Accept-Encoding": "gzip, deflate",
+                            },
+                        ) as response:
                             response.raise_for_status()
                             parts, size = [], 0
                             async for part in response.aiter_bytes():
@@ -90,7 +108,10 @@ class SecClient:
     async def company(self, symbol):
         tickers = await self.json("https://www.sec.gov/files/company_tickers.json", 86400)
         normalized = symbol.upper().replace(".", "-")
-        row = next((r for r in tickers.values() if r["ticker"].upper().replace(".", "-") == normalized), None)
+        row = next(
+            (r for r in tickers.values() if r["ticker"].upper().replace(".", "-") == normalized),
+            None,
+        )
         if not row:
             raise SecNotFound("No SEC ticker mapping")
         return {"symbol": symbol.upper(), "cik": row["cik_str"], "name": row["title"]}
@@ -119,7 +140,10 @@ class SecClient:
         if cached and cached[0] > time.monotonic():
             self._financials.move_to_end(company["cik"])
             return {**company, **cached[1]}
-        raw = await self.read(f"https://data.sec.gov/api/xbrl/companyfacts/CIK{int(company['cik']):010d}.json", FINANCIALS_TTL)
+        raw = await self.read(
+            f"https://data.sec.gov/api/xbrl/companyfacts/CIK{int(company['cik']):010d}.json",
+            FINANCIALS_TTL,
+        )
         # Company facts run to several megabytes. Parse off the event loop, keep only the result.
         try:
             history = await asyncio.to_thread(lambda: financial_history(json.loads(raw)))
@@ -134,9 +158,18 @@ class SecClient:
     async def filings(self, symbol):
         company = await self.company(symbol)
         submissions = await self.submissions(company["cik"])
-        rows = [{**r, "earnings": is_earnings_filing(r)} for r in filings_from(submissions) if r["form"] in {"10-K", "10-Q", "8-K", "10-K/A", "10-Q/A", "8-K/A", "20-F", "20-F/A", "6-K"}][:40]
-        return {**company, **self.meta(), "filings": rows,
-            "coverage": "Recent SEC filings only. 8-K filings may include earnings releases and exhibits; transcripts and slides are not guaranteed."}
+        rows = [
+            {**r, "earnings": is_earnings_filing(r)}
+            for r in filings_from(submissions)
+            if r["form"]
+            in {"10-K", "10-Q", "8-K", "10-K/A", "10-Q/A", "8-K/A", "20-F", "20-F/A", "6-K"}
+        ][:40]
+        return {
+            **company,
+            **self.meta(),
+            "filings": rows,
+            "coverage": "Recent SEC filings only. 8-K filings may include earnings releases and exhibits; transcripts and slides are not guaranteed.",
+        }
 
     async def insiders(self, symbol):
         company = await self.company(symbol)
@@ -149,9 +182,15 @@ class SecClient:
                 rows.extend(parse_insider(raw, filing, company["cik"]))
             except (SecUnavailable, ValueError, ParseError):
                 failed += 1
-        return {**company, **self.meta(), "transactions": sorted(rows, key=lambda r: r["date"] or "", reverse=True),
-            "filings": filings, "failed_filings": failed, "filing_limit": 12,
-            "coverage": "Non-derivative transactions from the latest 12 Form 4/4-A filings. Amendments are shown separately; this is not a complete trading history."}
+        return {
+            **company,
+            **self.meta(),
+            "transactions": sorted(rows, key=lambda r: r["date"] or "", reverse=True),
+            "filings": filings,
+            "failed_filings": failed,
+            "filing_limit": 12,
+            "coverage": "Non-derivative transactions from the latest 12 Form 4/4-A filings. Amendments are shown separately; this is not a complete trading history.",
+        }
 
     async def _holdings_filing(self, cik, filing):
         index = await self.json(self.archive(cik, filing, "index.json"))
@@ -170,28 +209,53 @@ class SecClient:
         filings = filings_from(await self.submissions(identity["cik"]))
         originals = [r for r in filings if r["form"] == "13F-HR"]
         if not originals:
-            return {**identity, **self.meta(), "holdings": [], "filing": None, "previous_filing": None, "partial": False, "amendments": []}
+            return {
+                **identity,
+                **self.meta(),
+                "holdings": [],
+                "filing": None,
+                "previous_filing": None,
+                "partial": False,
+                "amendments": [],
+            }
         current = originals[0]
         previous = next((r for r in originals[1:] if r["period"] < current["period"]), None)
-        amendments = [r for r in filings if r["form"] == "13F-HR/A" and r["period"] in {current["period"], previous["period"] if previous else None}]
+        amendments = [
+            r
+            for r in filings
+            if r["form"] == "13F-HR/A"
+            and r["period"] in {current["period"], previous["period"] if previous else None}
+        ]
         now = await self._holdings_filing(identity["cik"], current)
         prior, failed = None, False
         # No share-change calculation across gaps or amended snapshots.
         from .parsers import days
+
         if previous and 70 <= days(previous["period"], current["period"]) <= 110 and not amendments:
             try:
                 prior = await self._holdings_filing(identity["cik"], previous)
             except (SecUnavailable, ValueError):
                 failed = True
+
         def dollars(rows, period):
             scale = value_multiplier(rows, period)
-            return [{**r, "value": r["value"] * scale if r["value"] is not None else None} for r in rows]
+            return [
+                {**r, "value": r["value"] * scale if r["value"] is not None else None} for r in rows
+            ]
+
         now = dollars(now, current["period"])
         if prior is not None:
             prior = dollars(prior, previous["period"])
-        return {**identity, **self.meta(), "filing": current, "previous_filing": previous,
-            "holdings": compare_holdings(now, prior), "partial": failed or bool(amendments), "amendments": amendments,
-            "coverage": "Original 13F snapshots from the selected manager, not live positions. Amendments are linked separately and disable change calculations. Share changes are unadjusted for corporate actions."}
+        return {
+            **identity,
+            **self.meta(),
+            "filing": current,
+            "previous_filing": previous,
+            "holdings": compare_holdings(now, prior),
+            "partial": failed or bool(amendments),
+            "amendments": amendments,
+            "coverage": "Original 13F snapshots from the selected manager, not live positions. Amendments are linked separately and disable change calculations. Share changes are unadjusted for corporate actions.",
+        }
 
 
 sec_client = SecClient()

@@ -38,7 +38,9 @@ import {
 export { superinvestorHref };
 
 type Entry = { manager: InstitutionManager; summary: InstitutionSummary | null };
-type Loaded = Entry & { summary: InstitutionSummary & { filing: NonNullable<InstitutionSummary["filing"]> } };
+type Loaded = Entry & {
+  summary: InstitutionSummary & { filing: NonNullable<InstitutionSummary["filing"]> };
+};
 type Sort = "latest" | "size" | "activity";
 
 /**
@@ -46,9 +48,14 @@ type Sort = "latest" | "size" | "activity";
  * without hiding the rest of the directory.
  */
 async function loadDirectory(signal: AbortSignal): Promise<Entry[]> {
-  const { managers } = await loadFundamentals<{ managers: InstitutionManager[] }>(INSTITUTIONS_KEY, signal);
+  const { managers } = await loadFundamentals<{ managers: InstitutionManager[] }>(
+    INSTITUTIONS_KEY,
+    signal,
+  );
   const results = await Promise.allSettled(
-    managers.map((manager) => loadFundamentals<InstitutionSummary>(institutionSummaryKey(manager.id), signal)),
+    managers.map((manager) =>
+      loadFundamentals<InstitutionSummary>(institutionSummaryKey(manager.id), signal),
+    ),
   );
   return managers.map((manager, index) => {
     const result = results[index];
@@ -57,7 +64,12 @@ async function loadDirectory(signal: AbortSignal): Promise<Entry[]> {
 }
 
 const changeTotal = (summary: InstitutionSummary) =>
-  summary.changes ? summary.changes.new + summary.changes.increased + summary.changes.reduced + summary.changes.exited : -1;
+  summary.changes
+    ? summary.changes.new +
+      summary.changes.increased +
+      summary.changes.reduced +
+      summary.changes.exited
+    : -1;
 const bySize = (a: Loaded, b: Loaded) => b.summary.value - a.summary.value;
 
 export default function SuperinvestorsDirectory() {
@@ -76,16 +88,26 @@ export default function SuperinvestorsDirectory() {
   const lead = [...loaded].sort(bySize)[0];
   const totalValue = loaded.reduce((sum, entry) => sum + entry.summary.value, 0);
   const latestFiled = loaded.reduce<string | null>(
-    (latest, entry) => (!latest || entry.summary.filing.filed > latest ? entry.summary.filing.filed : latest),
+    (latest, entry) =>
+      !latest || entry.summary.filing.filed > latest ? entry.summary.filing.filed : latest,
     null,
   );
 
   const groups = (() => {
-    if (sort === "size") return [{ key: "all", label: null as string | null, items: [...loaded].sort(bySize) }];
+    if (sort === "size")
+      return [{ key: "all", label: null as string | null, items: [...loaded].sort(bySize) }];
     if (sort === "activity")
-      return [{ key: "all", label: null, items: [...loaded].sort((a, b) => changeTotal(b.summary) - changeTotal(a.summary)) }];
+      return [
+        {
+          key: "all",
+          label: null,
+          items: [...loaded].sort((a, b) => changeTotal(b.summary) - changeTotal(a.summary)),
+        },
+      ];
     const byQuarter = new Map<string, Loaded[]>();
-    for (const entry of [...loaded].sort((a, b) => b.summary.filing.filed.localeCompare(a.summary.filing.filed))) {
+    for (const entry of [...loaded].sort((a, b) =>
+      b.summary.filing.filed.localeCompare(a.summary.filing.filed),
+    )) {
       const q = reportingQuarter(entry.summary.filing.period);
       const key = q ? `${q.year}-${q.quarter}` : "other";
       byQuarter.set(key, [...(byQuarter.get(key) ?? []), entry]);
@@ -94,7 +116,10 @@ export default function SuperinvestorsDirectory() {
       .sort(([a], [b]) => b.localeCompare(a))
       .map(([key, items]) => ({
         key,
-        label: key === "other" ? c("Other periods", "其他期间") : quarterLabel(items[0].summary.filing.period),
+        label:
+          key === "other"
+            ? c("Other periods", "其他期间")
+            : quarterLabel(items[0].summary.filing.period),
         items,
       }));
   })();
@@ -103,7 +128,10 @@ export default function SuperinvestorsDirectory() {
     <div className="space-y-8 md:space-y-10">
       {loading && !data ? (
         <div className="space-y-6">
-          <ContentLoading className="min-h-0" label={c("Loading the latest 13F filings…", "正在加载最新 13F 申报…")}>
+          <ContentLoading
+            className="min-h-0"
+            label={c("Loading the latest 13F filings…", "正在加载最新 13F 申报…")}
+          >
             <DirectorySkeleton />
           </ContentLoading>
         </div>
@@ -132,7 +160,9 @@ export default function SuperinvestorsDirectory() {
                 {loaded.length > 0 && (
                   <p className="mt-1 text-xs text-muted-foreground">
                     {c("Combined reported value", "合计申报市值")}{" "}
-                    <span className="figure font-medium text-foreground">${f.number(totalValue)}</span>
+                    <span className="figure font-medium text-foreground">
+                      ${f.number(totalValue)}
+                    </span>
                     {latestFiled && (
                       <>
                         {" · "}
@@ -164,7 +194,10 @@ export default function SuperinvestorsDirectory() {
                   title={c("Refresh filings", "刷新申报")}
                 >
                   <RefreshCw
-                    className={cn("h-4 w-4", refreshing && "animate-spin motion-reduce:animate-none")}
+                    className={cn(
+                      "h-4 w-4",
+                      refreshing && "animate-spin motion-reduce:animate-none",
+                    )}
                     aria-hidden="true"
                   />
                 </Button>
@@ -238,7 +271,9 @@ function LeadCard({ entry }: { entry: Loaded }) {
           <div className="flex min-w-0 items-start gap-3">
             <InvestorAvatar id={entry.manager.id} name={entry.manager.name} size="lg" />
             <div className="min-w-0">
-              <p className="text-xs font-medium text-muted-foreground">{c("Largest reported value", "申报市值最大")}</p>
+              <p className="text-xs font-medium text-muted-foreground">
+                {c("Largest reported value", "申报市值最大")}
+              </p>
               <h2 id="superinvestor-lead-title" className="mt-1 truncate text-xl font-semibold">
                 <Link
                   href={superinvestorHref(entry.manager.id)}
@@ -248,7 +283,9 @@ function LeadCard({ entry }: { entry: Loaded }) {
                 </Link>
               </h2>
               {byline(entry.manager.id, true, entry.manager.profile) && (
-                <p className="mt-0.5 truncate text-sm text-muted-foreground">{byline(entry.manager.id, true, entry.manager.profile)}</p>
+                <p className="mt-0.5 truncate text-sm text-muted-foreground">
+                  {byline(entry.manager.id, true, entry.manager.profile)}
+                </p>
               )}
               <p className="mt-1 text-xs text-muted-foreground">
                 {quarterLabel(summary.filing.period)}
@@ -261,14 +298,19 @@ function LeadCard({ entry }: { entry: Loaded }) {
           <dl className="grid grid-cols-3 gap-4">
             <Stat label={c("Reported value", "申报市值")}>${f.number(summary.value)}</Stat>
             <Stat label={c("Positions", "持仓数")}>{f.number(summary.positions, false)}</Stat>
-            <Stat label={c("Changes", "季度变动")}>{changes < 0 ? "—" : f.number(changes, false)}</Stat>
+            <Stat label={c("Changes", "季度变动")}>
+              {changes < 0 ? "—" : f.number(changes, false)}
+            </Stat>
           </dl>
 
           {summary.top.length > 0 && (
             <div className="space-y-2">
               <div className="flex items-baseline justify-between gap-3 text-xs">
                 <span className="text-muted-foreground">
-                  {c(`Top ${summary.top.length} concentration`, `前 ${summary.top.length} 大持仓集中度`)}
+                  {c(
+                    `Top ${summary.top.length} concentration`,
+                    `前 ${summary.top.length} 大持仓集中度`,
+                  )}
                 </span>
                 <span className="figure font-semibold">{f.percent(topShare)}</span>
               </div>
@@ -299,7 +341,10 @@ function LeadCard({ entry }: { entry: Loaded }) {
                 className="grid min-h-12 grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 border-b border-border py-2 text-sm last:border-0"
               >
                 <span className="flex items-center gap-1.5">
-                  <span aria-hidden="true" className={cn("h-2 w-2 shrink-0 rounded-full", ALLOCATION_SHADES[index])} />
+                  <span
+                    aria-hidden="true"
+                    className={cn("h-2 w-2 shrink-0 rounded-full", ALLOCATION_SHADES[index])}
+                  />
                   <span className="figure text-xs text-muted-foreground">{index + 1}</span>
                 </span>
                 <span className="flex min-w-0 items-center gap-2">
@@ -311,13 +356,18 @@ function LeadCard({ entry }: { entry: Loaded }) {
                 </span>
                 <span className="text-right">
                   <span className="figure block font-medium">{f.percent(row.weight)}</span>
-                  <span className="figure block text-xs text-muted-foreground">${f.number(row.value)}</span>
+                  <span className="figure block text-xs text-muted-foreground">
+                    ${f.number(row.value)}
+                  </span>
                 </span>
               </li>
             ))}
           </ol>
           <ListFooterLink href={superinvestorHref(entry.manager.id)}>
-            {c(`View all ${f.number(summary.positions, false)} holdings`, `查看全部 ${f.number(summary.positions, false)} 个持仓`)}
+            {c(
+              `View all ${f.number(summary.positions, false)} holdings`,
+              `查看全部 ${f.number(summary.positions, false)} 个持仓`,
+            )}
           </ListFooterLink>
         </div>
       </Card>
@@ -342,7 +392,9 @@ function InvestorCard({ entry }: { entry: Loaded }) {
         <div className="min-w-0 flex-1">
           <h4 className="truncate font-semibold">{entry.manager.name}</h4>
           {byline(entry.manager.id, false, entry.manager.profile) && (
-            <p className="mt-0.5 truncate text-xs text-foreground/75">{byline(entry.manager.id, false, entry.manager.profile)}</p>
+            <p className="mt-0.5 truncate text-xs text-foreground/75">
+              {byline(entry.manager.id, false, entry.manager.profile)}
+            </p>
           )}
           <p className="mt-0.5 text-xs text-muted-foreground">
             {c("Filed", "申报于")} {f.date(summary.filing.filed)}
@@ -387,38 +439,113 @@ function InvestorCard({ entry }: { entry: Loaded }) {
         </div>
       )}
 
-      <ChangeBreakdown compact changes={summary.changes} className="mt-auto border-t border-border pt-3" />
+      <ChangeBreakdown
+        compact
+        changes={summary.changes}
+        className="mt-auto border-t border-border pt-3"
+      />
     </Link>
   );
 }
 
 /** Mirrors the loaded directory: the lead card (summary + top holdings) and one group of investor cards. */
 function DirectorySkeleton() {
-  return <div className="space-y-8 md:space-y-10">
-    <Card className="grid gap-6 p-5 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-8 md:p-6">
-      <div className="flex min-w-0 flex-col gap-6">
-        <div className="flex items-start gap-3"><Skeleton className="h-12 w-12 shrink-0 rounded-full" /><div className="flex flex-1 flex-col gap-2"><Skeleton className="h-3 w-28 rounded-md" /><Skeleton className="h-6 w-48 rounded-md" /><Skeleton className="h-3 w-36 rounded-md" /></div></div>
-        <div className="grid grid-cols-3 gap-4">{[0, 1, 2].map(i => <div key={i} className="flex flex-col gap-2"><Skeleton className="h-3 w-16 rounded-md" /><Skeleton className="h-6 w-20 rounded-md" /></div>)}</div>
-        <div className="space-y-2"><div className="flex justify-between"><Skeleton className="h-3 w-32 rounded-md" /><Skeleton className="h-3 w-10 rounded-md" /></div><Skeleton className="h-2 w-full rounded-full" /></div>
-        <div className="space-y-2 border-t border-border pt-4"><Skeleton className="h-3 w-20 rounded-md" /><Skeleton className="h-4 w-56 rounded-md" /></div>
-      </div>
-      <div className="flex min-w-0 flex-col md:border-l md:border-border md:pl-8">
-        <Skeleton className="h-3 w-24 rounded-md" />
-        <div className="mt-2">{[0, 1, 2, 3, 4].map(i => <div key={i} className="grid min-h-12 grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 border-b border-border py-2 last:border-0">
-          <Skeleton className="h-3 w-5 rounded" /><Skeleton className={cn("h-4 rounded-md", i % 2 ? "w-28" : "w-40")} /><span className="flex flex-col items-end gap-1.5"><Skeleton className="h-4 w-12 rounded-md" /><Skeleton className="h-3 w-14 rounded-md" /></span>
-        </div>)}</div>
-      </div>
-    </Card>
-    <div className="space-y-6">
-      <div className="flex items-end justify-between gap-3"><div className="flex flex-col gap-2"><Skeleton className="h-6 w-40 rounded-md" /><Skeleton className="h-3 w-56 rounded-md" /></div><Skeleton className="h-11 w-44 rounded-full" /></div>
-      <div className="space-y-3">
-        <div className="flex justify-between border-b border-border pb-2"><Skeleton className="h-4 w-24 rounded-md" /><Skeleton className="h-3 w-12 rounded-md" /></div>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">{[0, 1, 2, 3, 4, 5].map(i => <div key={i} className="glass-card flex flex-col gap-4 rounded-3xl border border-foreground/10 bg-card-glass p-4 sm:p-5">
-          <div className="flex items-start gap-3"><Skeleton className="h-10 w-10 shrink-0 rounded-full" /><div className="flex flex-1 flex-col gap-1.5"><Skeleton className={cn("h-4 rounded-md", i % 2 ? "w-28" : "w-36")} /><Skeleton className="h-3 w-24 rounded-md" /></div></div>
-          <div className="flex items-end justify-between"><div className="flex flex-col gap-1.5"><Skeleton className="h-6 w-20 rounded-md" /><Skeleton className="h-3 w-16 rounded-md" /></div><div className="flex flex-col items-end gap-1.5"><Skeleton className="h-4 w-8 rounded-md" /><Skeleton className="h-3 w-10 rounded-md" /></div></div>
-          <div className="space-y-2"><Skeleton className="h-1.5 w-full rounded-full" /><Skeleton className="h-3 w-3/4 rounded-md" /></div>
-        </div>)}</div>
+  return (
+    <div className="space-y-8 md:space-y-10">
+      <Card className="grid gap-6 p-5 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-8 md:p-6">
+        <div className="flex min-w-0 flex-col gap-6">
+          <div className="flex items-start gap-3">
+            <Skeleton className="h-12 w-12 shrink-0 rounded-full" />
+            <div className="flex flex-1 flex-col gap-2">
+              <Skeleton className="h-3 w-28 rounded-md" />
+              <Skeleton className="h-6 w-48 rounded-md" />
+              <Skeleton className="h-3 w-36 rounded-md" />
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="flex flex-col gap-2">
+                <Skeleton className="h-3 w-16 rounded-md" />
+                <Skeleton className="h-6 w-20 rounded-md" />
+              </div>
+            ))}
+          </div>
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <Skeleton className="h-3 w-32 rounded-md" />
+              <Skeleton className="h-3 w-10 rounded-md" />
+            </div>
+            <Skeleton className="h-2 w-full rounded-full" />
+          </div>
+          <div className="space-y-2 border-t border-border pt-4">
+            <Skeleton className="h-3 w-20 rounded-md" />
+            <Skeleton className="h-4 w-56 rounded-md" />
+          </div>
+        </div>
+        <div className="flex min-w-0 flex-col md:border-l md:border-border md:pl-8">
+          <Skeleton className="h-3 w-24 rounded-md" />
+          <div className="mt-2">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className="grid min-h-12 grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 border-b border-border py-2 last:border-0"
+              >
+                <Skeleton className="h-3 w-5 rounded" />
+                <Skeleton className={cn("h-4 rounded-md", i % 2 ? "w-28" : "w-40")} />
+                <span className="flex flex-col items-end gap-1.5">
+                  <Skeleton className="h-4 w-12 rounded-md" />
+                  <Skeleton className="h-3 w-14 rounded-md" />
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Card>
+      <div className="space-y-6">
+        <div className="flex items-end justify-between gap-3">
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-6 w-40 rounded-md" />
+            <Skeleton className="h-3 w-56 rounded-md" />
+          </div>
+          <Skeleton className="h-11 w-44 rounded-full" />
+        </div>
+        <div className="space-y-3">
+          <div className="flex justify-between border-b border-border pb-2">
+            <Skeleton className="h-4 w-24 rounded-md" />
+            <Skeleton className="h-3 w-12 rounded-md" />
+          </div>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {[0, 1, 2, 3, 4, 5].map((i) => (
+              <div
+                key={i}
+                className="glass-card flex flex-col gap-4 rounded-3xl border border-foreground/10 bg-card-glass p-4 sm:p-5"
+              >
+                <div className="flex items-start gap-3">
+                  <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
+                  <div className="flex flex-1 flex-col gap-1.5">
+                    <Skeleton className={cn("h-4 rounded-md", i % 2 ? "w-28" : "w-36")} />
+                    <Skeleton className="h-3 w-24 rounded-md" />
+                  </div>
+                </div>
+                <div className="flex items-end justify-between">
+                  <div className="flex flex-col gap-1.5">
+                    <Skeleton className="h-6 w-20 rounded-md" />
+                    <Skeleton className="h-3 w-16 rounded-md" />
+                  </div>
+                  <div className="flex flex-col items-end gap-1.5">
+                    <Skeleton className="h-4 w-8 rounded-md" />
+                    <Skeleton className="h-3 w-10 rounded-md" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Skeleton className="h-1.5 w-full rounded-full" />
+                  <Skeleton className="h-3 w-3/4 rounded-md" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
-  </div>;
+  );
 }

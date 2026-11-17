@@ -1,14 +1,16 @@
 """Free research reads: SEC filings and the existing Yahoo provider only."""
+
 import asyncio
 import logging
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException, Path
+
 from app.services.sec.client import MANAGERS, SecNotFound, SecUnavailable, sec_client
-from app.services.yfinance.client import get_yfinance_service
+from app.services.sec.holdings_store import institution_store
 from app.services.sec.parsers import number, summarize_institution
 from app.services.sec.tickers import cusip_tickers
-from app.services.sec.holdings_store import institution_store
+from app.services.yfinance.client import get_yfinance_service
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +61,9 @@ async def institution(manager: str):
 @router.get("/institutions/{manager}/summary")
 async def institution_summary(manager: str):
     """Card data for the Superinvestors list; the full table stays on the manager endpoint."""
-    return await stored(manager, institution_store.summary) or summarize_institution(await tracked_institution(manager, map_now=5))
+    return await stored(manager, institution_store.summary) or summarize_institution(
+        await tracked_institution(manager, map_now=5)
+    )
 
 
 def revenue_outlook(symbol):
@@ -69,12 +73,25 @@ def revenue_outlook(symbol):
     rows = []
     if frame is not None and not frame.empty:
         for period, row in frame.iterrows():
-            rows.append({"period": str(period), "average": number(row.get("avg")), "low": number(row.get("low")),
-                "high": number(row.get("high")), "analysts": number(row.get("numberOfAnalysts")),
-                "year_ago": number(row.get("yearAgoRevenue")), "growth": number(row.get("growth"))})
-    return {"symbol": symbol, "source": "Yahoo Finance", "currency": info.get("financialCurrency"),
-        "estimates": rows, "historical_surprises": [],
-        "coverage": "Current consensus periods only; historical revenue surprises are unavailable from this endpoint."}
+            rows.append(
+                {
+                    "period": str(period),
+                    "average": number(row.get("avg")),
+                    "low": number(row.get("low")),
+                    "high": number(row.get("high")),
+                    "analysts": number(row.get("numberOfAnalysts")),
+                    "year_ago": number(row.get("yearAgoRevenue")),
+                    "growth": number(row.get("growth")),
+                }
+            )
+    return {
+        "symbol": symbol,
+        "source": "Yahoo Finance",
+        "currency": info.get("financialCurrency"),
+        "estimates": rows,
+        "historical_surprises": [],
+        "coverage": "Current consensus periods only; historical revenue surprises are unavailable from this endpoint.",
+    }
 
 
 @router.get("/{symbol}/{kind}")

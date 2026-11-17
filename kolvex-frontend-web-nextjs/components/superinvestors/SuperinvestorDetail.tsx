@@ -9,7 +9,12 @@ import { useCopy } from "@/components/decision/shared";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ListEmptyState } from "@/components/ui/list-card";
-import { INSTITUTIONS_KEY, institutionKey, type Institution, type InstitutionManager } from "@/lib/freeResearch";
+import {
+  INSTITUTIONS_KEY,
+  institutionKey,
+  type Institution,
+  type InstitutionManager,
+} from "@/lib/freeResearch";
 import InstitutionHoldings from "./InstitutionHoldings";
 import { InvestorAvatar, useInvestorByline, useQuarterLabel } from "./shared";
 
@@ -32,7 +37,12 @@ export default function SuperinvestorDetail({ manager }: { manager: string }) {
     <DashboardLayout
       title={identity?.name ?? parent}
       breadcrumb={
-        <PageBreadcrumb items={[{ label: parent, href: DIRECTORY }, ...(identity ? [{ label: identity.name }] : [])]} />
+        <PageBreadcrumb
+          items={[
+            { label: parent, href: DIRECTORY },
+            ...(identity ? [{ label: identity.name }] : []),
+          ]}
+        />
       }
     >
       <div className="min-h-0 flex-1 overflow-y-auto bg-background dark:bg-transparent">
@@ -63,7 +73,8 @@ export default function SuperinvestorDetail({ manager }: { manager: string }) {
                       <>
                         <span aria-hidden="true">·</span>
                         <span>
-                          {quarterLabel(filing.period)} {c("filed", "申报于")} {f.date(filing.filed)}
+                          {quarterLabel(filing.period)} {c("filed", "申报于")}{" "}
+                          {f.date(filing.filed)}
                         </span>
                       </>
                     )}

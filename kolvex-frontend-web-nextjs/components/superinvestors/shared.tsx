@@ -7,10 +7,15 @@ import { marketStockHref } from "@/lib/stockLinks";
 import { ArrowDown, ArrowUp, Minus, Plus, X } from "lucide-react";
 import { useFinancialFormat } from "@/components/decision/StockFinancialData";
 import { useCopy } from "@/components/decision/shared";
-import { reportingQuarter, type HoldingActivity, type InstitutionSummary } from "@/lib/freeResearch";
+import {
+  reportingQuarter,
+  type HoldingActivity,
+  type InstitutionSummary,
+} from "@/lib/freeResearch";
 import { cn } from "@/lib/utils";
 
-export const superinvestorHref = (id: string) => `/dashboard/superinvestors/${encodeURIComponent(id)}`;
+export const superinvestorHref = (id: string) =>
+  `/dashboard/superinvestors/${encodeURIComponent(id)}`;
 
 export function useActivityLabel() {
   const c = useCopy();
@@ -32,7 +37,14 @@ export const activityTone = (kind: HoldingActivity) =>
       ? "text-negative"
       : "text-muted-foreground";
 
-const ACTIVITY_ICON = { new: Plus, increased: ArrowUp, reduced: ArrowDown, exited: X, unchanged: Minus, unknown: Minus };
+const ACTIVITY_ICON = {
+  new: Plus,
+  increased: ArrowUp,
+  reduced: ArrowDown,
+  exited: X,
+  unchanged: Minus,
+  unknown: Minus,
+};
 
 /** Written label plus icon, so direction never rests on color alone. */
 export function ActivityBadge({ kind, className }: { kind: HoldingActivity; className?: string }) {
@@ -99,13 +111,19 @@ export function AllocationBar({
     <div
       role="img"
       aria-label={label}
-      className={cn("flex h-2 w-full gap-px overflow-hidden rounded-full bg-foreground/[0.07]", className)}
+      className={cn(
+        "flex h-2 w-full gap-px overflow-hidden rounded-full bg-foreground/[0.07]",
+        className,
+      )}
     >
       {weights.map((weight, index) =>
         weight && weight > 0 ? (
           <span
             key={index}
-            className={cn("h-full first:rounded-l-full", ALLOCATION_SHADES[Math.min(index, ALLOCATION_SHADES.length - 1)])}
+            className={cn(
+              "h-full first:rounded-l-full",
+              ALLOCATION_SHADES[Math.min(index, ALLOCATION_SHADES.length - 1)],
+            )}
             style={{ width: `${Math.min(weight, 1) * 100}%` }}
           />
         ) : null,
@@ -114,7 +132,8 @@ export function AllocationBar({
   );
 }
 
-export const sumWeights = (rows: { weight: number | null }[]) => rows.reduce((sum, row) => sum + (row.weight ?? 0), 0);
+export const sumWeights = (rows: { weight: number | null }[]) =>
+  rows.reduce((sum, row) => sum + (row.weight ?? 0), 0);
 
 /** New / added / reduced / exited counts, each with its written label. */
 export function ChangeBreakdown({
@@ -145,7 +164,12 @@ export function ChangeBreakdown({
       {items.map(([kind, count, label]) => (
         <li key={kind} className="inline-flex items-center gap-1 whitespace-nowrap">
           <span className="text-muted-foreground">{label}</span>
-          <span className={cn("figure font-semibold", count ? activityTone(kind) : "text-muted-foreground")}>
+          <span
+            className={cn(
+              "figure font-semibold",
+              count ? activityTone(kind) : "text-muted-foreground",
+            )}
+          >
             {f.number(count, false)}
           </span>
         </li>
@@ -169,39 +193,145 @@ const FOUNDER_CEO = { en: "Founder & CEO", zh: "创始人兼 CEO" };
 
 /** Bundled bylines and logos for the original 33 managers; admin-added managers get theirs from the API `profile`. */
 export const INVESTOR_PROFILES: Record<string, InvestorProfile> = {
-  berkshire: { zhName: "伯克希尔·哈撒韦", person: { en: "Warren Buffett", zh: "沃伦·巴菲特" }, role: { en: "Chairman", zh: "董事长" }, logo: "berkshire" },
-  bridgewater: { zhName: "桥水基金", person: { en: "Ray Dalio", zh: "瑞·达利欧" }, role: FOUNDER, logo: "bridgewater" },
-  pershing: { zhName: "潘兴广场", person: { en: "Bill Ackman", zh: "比尔·阿克曼" }, role: FOUNDER_CEO, logo: "pershing" },
-  duquesne: { zhName: "杜肯家族办公室", person: { en: "Stanley Druckenmiller", zh: "斯坦利·德鲁肯米勒" }, role: FOUNDER },
+  berkshire: {
+    zhName: "伯克希尔·哈撒韦",
+    person: { en: "Warren Buffett", zh: "沃伦·巴菲特" },
+    role: { en: "Chairman", zh: "董事长" },
+    logo: "berkshire",
+  },
+  bridgewater: {
+    zhName: "桥水基金",
+    person: { en: "Ray Dalio", zh: "瑞·达利欧" },
+    role: FOUNDER,
+    logo: "bridgewater",
+  },
+  pershing: {
+    zhName: "潘兴广场",
+    person: { en: "Bill Ackman", zh: "比尔·阿克曼" },
+    role: FOUNDER_CEO,
+    logo: "pershing",
+  },
+  duquesne: {
+    zhName: "杜肯家族办公室",
+    person: { en: "Stanley Druckenmiller", zh: "斯坦利·德鲁肯米勒" },
+    role: FOUNDER,
+  },
   appaloosa: { zhName: "阿帕卢萨", person: { en: "David Tepper", zh: "大卫·泰珀" }, role: FOUNDER },
-  baupost: { zhName: "包普斯特集团", person: { en: "Seth Klarman", zh: "塞斯·卡拉曼" }, role: { en: "CEO", zh: "CEO" } },
-  tiger: { zhName: "老虎环球", person: { en: "Chase Coleman", zh: "蔡斯·科尔曼" }, role: FOUNDER, logo: "tiger" },
-  third_point: { zhName: "第三点", person: { en: "Daniel Loeb", zh: "丹尼尔·勒布" }, role: FOUNDER_CEO },
-  oaktree: { zhName: "橡树资本", person: { en: "Howard Marks", zh: "霍华德·马克斯" }, role: { en: "Co-founder", zh: "联合创始人" }, logo: "oaktree" },
-  renaissance: { zhName: "文艺复兴科技", person: { en: "Jim Simons", zh: "吉姆·西蒙斯" }, role: FOUNDER, logo: "renaissance" },
-  duan_yongping: { zhName: "H&H 国际投资", person: { en: "Duan Yongping", zh: "段永平" }, role: FOUNDER },
+  baupost: {
+    zhName: "包普斯特集团",
+    person: { en: "Seth Klarman", zh: "塞斯·卡拉曼" },
+    role: { en: "CEO", zh: "CEO" },
+  },
+  tiger: {
+    zhName: "老虎环球",
+    person: { en: "Chase Coleman", zh: "蔡斯·科尔曼" },
+    role: FOUNDER,
+    logo: "tiger",
+  },
+  third_point: {
+    zhName: "第三点",
+    person: { en: "Daniel Loeb", zh: "丹尼尔·勒布" },
+    role: FOUNDER_CEO,
+  },
+  oaktree: {
+    zhName: "橡树资本",
+    person: { en: "Howard Marks", zh: "霍华德·马克斯" },
+    role: { en: "Co-founder", zh: "联合创始人" },
+    logo: "oaktree",
+  },
+  renaissance: {
+    zhName: "文艺复兴科技",
+    person: { en: "Jim Simons", zh: "吉姆·西蒙斯" },
+    role: FOUNDER,
+    logo: "renaissance",
+  },
+  duan_yongping: {
+    zhName: "H&H 国际投资",
+    person: { en: "Duan Yongping", zh: "段永平" },
+    role: FOUNDER,
+  },
   himalaya: { zhName: "喜马拉雅资本", person: { en: "Li Lu", zh: "李录" }, role: FOUNDER },
   hhlr: { zhName: "高瓴 HHLR", person: { en: "Zhang Lei", zh: "张磊" }, role: FOUNDER },
   greenwoods: { zhName: "景林资产", person: { en: "Jiang Jinzhi", zh: "蒋锦志" }, role: FOUNDER },
-  temasek: { zhName: "淡马锡", person: { en: "Dilhan Pillay", zh: "狄尔汉·皮莱" }, role: { en: "CEO", zh: "CEO" } },
-  pabrai: { zhName: "帕伯莱投资", person: { en: "Mohnish Pabrai", zh: "莫尼什·帕伯莱" }, role: FOUNDER },
-  markel: { zhName: "马克尔集团", person: { en: "Tom Gayner", zh: "汤姆·盖纳" }, role: { en: "CEO", zh: "CEO" } },
-  fairfax: { zhName: "费尔法克斯金融", person: { en: "Prem Watsa", zh: "普雷姆·瓦特萨" }, role: { en: "Founder & Chairman", zh: "创始人兼董事长" } },
+  temasek: {
+    zhName: "淡马锡",
+    person: { en: "Dilhan Pillay", zh: "狄尔汉·皮莱" },
+    role: { en: "CEO", zh: "CEO" },
+  },
+  pabrai: {
+    zhName: "帕伯莱投资",
+    person: { en: "Mohnish Pabrai", zh: "莫尼什·帕伯莱" },
+    role: FOUNDER,
+  },
+  markel: {
+    zhName: "马克尔集团",
+    person: { en: "Tom Gayner", zh: "汤姆·盖纳" },
+    role: { en: "CEO", zh: "CEO" },
+  },
+  fairfax: {
+    zhName: "费尔法克斯金融",
+    person: { en: "Prem Watsa", zh: "普雷姆·瓦特萨" },
+    role: { en: "Founder & Chairman", zh: "创始人兼董事长" },
+  },
   akre: { zhName: "阿克雷资本", person: { en: "Chuck Akre", zh: "查克·阿克雷" }, role: FOUNDER },
-  gardner_russo: { zhName: "加德纳·鲁索", person: { en: "Tom Russo", zh: "汤姆·鲁索" }, role: { en: "Partner", zh: "合伙人" } },
-  ruane: { zhName: "红杉基金（鲁安·坎尼夫）", person: { en: "Bill Ruane", zh: "比尔·鲁安" }, role: FOUNDER },
-  fundsmith: { zhName: "芬德史密斯", person: { en: "Terry Smith", zh: "特里·史密斯" }, role: FOUNDER_CEO },
+  gardner_russo: {
+    zhName: "加德纳·鲁索",
+    person: { en: "Tom Russo", zh: "汤姆·鲁索" },
+    role: { en: "Partner", zh: "合伙人" },
+  },
+  ruane: {
+    zhName: "红杉基金（鲁安·坎尼夫）",
+    person: { en: "Bill Ruane", zh: "比尔·鲁安" },
+    role: FOUNDER,
+  },
+  fundsmith: {
+    zhName: "芬德史密斯",
+    person: { en: "Terry Smith", zh: "特里·史密斯" },
+    role: FOUNDER_CEO,
+  },
   icahn: { zhName: "伊坎", person: { en: "Carl Icahn", zh: "卡尔·伊坎" }, role: FOUNDER },
   elliott: { zhName: "艾略特管理", person: { en: "Paul Singer", zh: "保罗·辛格" }, role: FOUNDER },
-  trian: { zhName: "特里安基金", person: { en: "Nelson Peltz", zh: "尼尔森·佩尔茨" }, role: FOUNDER_CEO },
-  valueact: { zhName: "ValueAct 资本", person: { en: "Mason Morfit", zh: "梅森·莫菲特" }, role: { en: "CEO", zh: "CEO" } },
-  starboard: { zhName: "Starboard 价值", person: { en: "Jeff Smith", zh: "杰夫·史密斯" }, role: FOUNDER_CEO },
+  trian: {
+    zhName: "特里安基金",
+    person: { en: "Nelson Peltz", zh: "尼尔森·佩尔茨" },
+    role: FOUNDER_CEO,
+  },
+  valueact: {
+    zhName: "ValueAct 资本",
+    person: { en: "Mason Morfit", zh: "梅森·莫菲特" },
+    role: { en: "CEO", zh: "CEO" },
+  },
+  starboard: {
+    zhName: "Starboard 价值",
+    person: { en: "Jeff Smith", zh: "杰夫·史密斯" },
+    role: FOUNDER_CEO,
+  },
   ark: { zhName: "方舟投资", person: { en: "Cathie Wood", zh: "凯茜·伍德" }, role: FOUNDER_CEO },
-  coatue: { zhName: "Coatue 资本", person: { en: "Philippe Laffont", zh: "菲利普·拉丰" }, role: FOUNDER },
-  lone_pine: { zhName: "孤松资本", person: { en: "Stephen Mandel", zh: "斯蒂芬·曼德尔" }, role: FOUNDER },
-  altimeter: { zhName: "Altimeter 资本", person: { en: "Brad Gerstner", zh: "布拉德·格斯特纳" }, role: FOUNDER_CEO },
-  soros: { zhName: "索罗斯基金管理", person: { en: "George Soros", zh: "乔治·索罗斯" }, role: FOUNDER },
-  gates: { zhName: "盖茨基金会信托", person: { en: "Bill Gates", zh: "比尔·盖茨" }, role: { en: "Co-founder", zh: "联合创始人" } },
+  coatue: {
+    zhName: "Coatue 资本",
+    person: { en: "Philippe Laffont", zh: "菲利普·拉丰" },
+    role: FOUNDER,
+  },
+  lone_pine: {
+    zhName: "孤松资本",
+    person: { en: "Stephen Mandel", zh: "斯蒂芬·曼德尔" },
+    role: FOUNDER,
+  },
+  altimeter: {
+    zhName: "Altimeter 资本",
+    person: { en: "Brad Gerstner", zh: "布拉德·格斯特纳" },
+    role: FOUNDER_CEO,
+  },
+  soros: {
+    zhName: "索罗斯基金管理",
+    person: { en: "George Soros", zh: "乔治·索罗斯" },
+    role: FOUNDER,
+  },
+  gates: {
+    zhName: "盖茨基金会信托",
+    person: { en: "Bill Gates", zh: "比尔·盖茨" },
+    role: { en: "Co-founder", zh: "联合创始人" },
+  },
 };
 
 /** Secondary identity line: Chinese firm name (zh only) and the investor behind it. */
@@ -221,7 +351,15 @@ export function useInvestorByline() {
 }
 
 /** Firm mark when one is vendored, otherwise a neutral monogram. */
-export function InvestorAvatar({ id, name, size = "md" }: { id: string; name: string; size?: "md" | "lg" | "xl" }) {
+export function InvestorAvatar({
+  id,
+  name,
+  size = "md",
+}: {
+  id: string;
+  name: string;
+  size?: "md" | "lg" | "xl";
+}) {
   const logo = INVESTOR_PROFILES[id]?.logo;
   const [failed, setFailed] = useState(false);
   if (!logo || failed) return <Monogram name={name} size={size} />;
@@ -234,7 +372,12 @@ export function InvestorAvatar({ id, name, size = "md" }: { id: string; name: st
       )}
     >
       {/* eslint-disable-next-line @next/next/no-img-element -- tiny vendored static mark */}
-      <img src={`/superinvestors/${logo}.png`} alt="" className="h-full w-full object-cover" onError={() => setFailed(true)} />
+      <img
+        src={`/superinvestors/${logo}.png`}
+        alt=""
+        className="h-full w-full object-cover"
+        onError={() => setFailed(true)}
+      />
     </span>
   );
 }
@@ -252,7 +395,11 @@ export function Monogram({ name, size = "md" }: { name: string; size?: "md" | "l
       aria-hidden="true"
       className={cn(
         "flex shrink-0 items-center justify-center rounded-full bg-foreground/[0.07] font-semibold tracking-tight text-foreground/80",
-        size === "xl" ? "h-14 w-14 text-lg" : size === "lg" ? "h-12 w-12 text-base" : "h-10 w-10 text-sm",
+        size === "xl"
+          ? "h-14 w-14 text-lg"
+          : size === "lg"
+            ? "h-12 w-12 text-base"
+            : "h-10 w-10 text-sm",
       )}
     >
       {letters || "·"}
@@ -312,7 +459,9 @@ export function HoldingName({
       )}
       <span className="min-w-0 flex-1">
         <span className="flex min-w-0 items-center gap-1.5">
-          <span className={cn("truncate font-semibold", !ticker && "font-medium")}>{ticker ?? row.issuer}</span>
+          <span className={cn("truncate font-semibold", !ticker && "font-medium")}>
+            {ticker ?? row.issuer}
+          </span>
           {option}
         </span>
         {detail && (ticker || row.class) && (
@@ -324,12 +473,17 @@ export function HoldingName({
     </>
   );
   const shared = cn("flex min-w-0 items-center gap-2.5", className);
-  const title = [ticker, row.issuer, row.class, row.cusip && `CUSIP ${row.cusip}`].filter(Boolean).join(" · ");
+  const title = [ticker, row.issuer, row.class, row.cusip && `CUSIP ${row.cusip}`]
+    .filter(Boolean)
+    .join(" · ");
   return ticker && link ? (
     <Link
       href={marketStockHref(ticker)}
       title={title}
-      className={cn(shared, "rounded-xl transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring")}
+      className={cn(
+        shared,
+        "rounded-xl transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+      )}
     >
       {body}
     </Link>
