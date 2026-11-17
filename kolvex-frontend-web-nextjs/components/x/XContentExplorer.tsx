@@ -3,22 +3,12 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import {
-  ChevronDown,
-  ExternalLink,
-  Loader2,
-  RefreshCw,
-  X,
-} from "lucide-react";
+import { ChevronDown, ExternalLink, Loader2, RefreshCw, X } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SearchFieldIcon } from "@/components/ui/search-input";
-import {
-  ListCard,
-  ListRows,
-  listFeedRowClass,
-} from "@/components/ui/list-card";
+import { ListCard, ListRows, listFeedRowClass } from "@/components/ui/list-card";
 import StockBadge from "@/components/ui/stock-badge";
 import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -46,10 +36,7 @@ export default function XContentExplorer() {
   const author = params.get("author") || "";
   const ticker = params.get("ticker") || "";
   const rawPage = Number(params.get("page") || "1");
-  const page =
-    Number.isSafeInteger(rawPage) && rawPage > 0 && rawPage <= 5001
-      ? rawPage
-      : 1;
+  const page = Number.isSafeInteger(rawPage) && rawPage > 0 && rawPage <= 5001 ? rawPage : 1;
   const [creators, setCreators] = useState<XCreator[] | null>(null);
   const [creatorError, setCreatorError] = useState(false);
   const [creatorAttempt, setCreatorAttempt] = useState(0);
@@ -103,19 +90,20 @@ export default function XContentExplorer() {
         <div className="mx-auto w-full max-w-[1440px] space-y-6">
           <header className="space-y-4">
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
-                {title}
-              </h1>
+              <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{title}</h1>
             </div>
-            <a href="#x-posts-heading" className={cn(focusClass, "inline-flex min-h-10 items-center text-sm text-muted-foreground underline underline-offset-4 xl:hidden")}>
+            <a
+              href="#x-posts-heading"
+              className={cn(
+                focusClass,
+                "inline-flex min-h-10 items-center text-sm text-muted-foreground underline underline-offset-4 xl:hidden",
+              )}
+            >
               {c("Jump to original posts", "跳到原始推文")}
             </a>
           </header>
           <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,26rem)]">
-            <aside
-              aria-labelledby="x-summary-heading"
-              className="order-1 min-w-0 xl:order-2"
-            >
+            <aside aria-labelledby="x-summary-heading" className="order-1 min-w-0 xl:order-2">
               <XCreatorSummaries
                 author={author}
                 creators={creators}
@@ -134,10 +122,7 @@ export default function XContentExplorer() {
                     )}
                   >
                     {c("Creator profile", "博主资料")}
-                    <ChevronDown
-                      className="h-4 w-4 group-open:rotate-180"
-                      aria-hidden="true"
-                    />
+                    <ChevronDown className="h-4 w-4 group-open:rotate-180" aria-hidden="true" />
                   </summary>
                   <div className="pt-2">
                     <XCreatorProfile creator={selected} />
@@ -225,10 +210,10 @@ function XPosts({
   }, [author, ticker, page, revision, scope]);
 
   const format = new Intl.NumberFormat(locale === "zh" ? "zh-CN" : "en-US");
-  const postDate = new Intl.DateTimeFormat(
-    locale === "zh" ? "zh-CN" : "en-US",
-    { dateStyle: "medium", timeStyle: "short" },
-  );
+  const postDate = new Intl.DateTimeFormat(locale === "zh" ? "zh-CN" : "en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
   const metrics: Record<string, string> = {
     replies: c("Replies", "回复"),
     reposts: c("Reposts", "转发"),
@@ -242,12 +227,7 @@ function XPosts({
   return (
     <section aria-labelledby="x-posts-heading" className="space-y-4">
       <div className="flex items-center justify-between gap-2">
-        <h2
-          ref={headingRef}
-          tabIndex={-1}
-          id="x-posts-heading"
-          className="text-xl font-semibold"
-        >
+        <h2 ref={headingRef} tabIndex={-1} id="x-posts-heading" className="text-xl font-semibold">
           {c("Original posts", "原始推文")}
         </h2>
         <Button
@@ -260,10 +240,7 @@ function XPosts({
           onClick={refresh}
         >
           <RefreshCw
-            className={cn(
-              "h-4 w-4",
-              loading && "animate-spin motion-reduce:animate-none",
-            )}
+            className={cn("h-4 w-4", loading && "animate-spin motion-reduce:animate-none")}
             aria-hidden="true"
           />
         </Button>
@@ -309,10 +286,7 @@ function XPosts({
                 composing.current = false;
               }}
               onKeyDown={(event) => {
-                if (
-                  event.key === "Enter" &&
-                  (event.nativeEvent.isComposing || composing.current)
-                )
+                if (event.key === "Enter" && (event.nativeEvent.isComposing || composing.current))
                   event.preventDefault();
               }}
               onChange={(event) => {
@@ -331,8 +305,7 @@ function XPosts({
                 onClick={() => {
                   setDraftTicker("");
                   setFilterError(false);
-                  if (ticker)
-                    router.push(href({ ticker: "" }), { scroll: false });
+                  if (ticker) router.push(href({ ticker: "" }), { scroll: false });
                   tickerRef.current?.focus();
                 }}
               >
@@ -344,21 +317,14 @@ function XPosts({
             {c("Search", "搜索")}
           </Button>
           {filterError && (
-            <p
-              id="x-ticker-error"
-              role="alert"
-              className="w-full text-sm text-destructive"
-            >
+            <p id="x-ticker-error" role="alert" className="w-full text-sm text-destructive">
               {c("Enter a valid stock ticker.", "请输入有效的股票代码。")}
             </p>
           )}
         </form>
 
         {error && (
-          <div
-            role="alert"
-            className="flex flex-wrap items-center justify-between gap-2 py-4"
-          >
+          <div role="alert" className="flex flex-wrap items-center justify-between gap-2 py-4">
             <p className="text-sm text-muted-foreground">
               {feed
                 ? c(
@@ -387,10 +353,7 @@ function XPosts({
           )}
           {feed &&
             (ticker ? `${ticker} · ` : "") +
-              c(
-                `${format.format(feed.total)} posts`,
-                `共 ${format.format(feed.total)} 条推文`,
-              )}
+              c(`${format.format(feed.total)} posts`, `共 ${format.format(feed.total)} 条推文`)}
         </p>
         {feed?.posts.length === 0 && (
           <div className="space-y-4 py-8 text-center">
@@ -424,10 +387,7 @@ function XPosts({
                   <article className="min-w-0">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div className="flex min-w-0 items-center gap-3">
-                        <CreatorAvatar
-                          creator={post.creator}
-                          username={post.author_username}
-                        />
+                        <CreatorAvatar creator={post.creator} username={post.author_username} />
                         <div className="min-w-0">
                           <Link
                             className={`${focusClass} text-sm font-semibold hover:underline`}
@@ -456,10 +416,7 @@ function XPosts({
                       </a>
                     </div>
                     <div className="mt-4">
-                      <XTranslatedText
-                        text={post.text}
-                        quotes={post.quoted_texts}
-                      />
+                      <XTranslatedText text={post.text} quotes={post.quoted_texts} />
                     </div>
                     {post.truncated && (
                       <p className="mt-2 text-xs text-muted-foreground">
@@ -479,22 +436,17 @@ function XPosts({
                           // would strand the user away from the quotes page).
                           const quotesHref = marketStockHref(tag);
                           const isActiveFilter =
-                            !!ticker &&
-                            ticker.toUpperCase() === tag.toUpperCase();
+                            !!ticker && ticker.toUpperCase() === tag.toUpperCase();
                           return (
-                            <Link
+                            <StockBadge
                               key={tag}
+                              symbol={tag}
                               href={quotesHref}
                               aria-label={c(`Open ${tag} quotes`, `打开 ${tag} 行情`)}
-                              className={cn(
-                                focusClass,
-                                "inline-flex hover:border-foreground/25 hover:bg-foreground/[0.06] hover:text-foreground",
-                                isActiveFilter &&
-                                  "border-foreground/40 text-foreground",
-                              )}
-                            >
-                              <StockBadge symbol={tag} href={null} />
-                            </Link>
+                              className={
+                                isActiveFilter ? "border-foreground/40 text-foreground" : undefined
+                              }
+                            />
                           );
                         })}
                       </div>
@@ -509,10 +461,7 @@ function XPosts({
                             rel="noopener noreferrer"
                             className={`${focusClass} py-2 text-xs underline underline-offset-4`}
                           >
-                            {c(
-                              `Media ${index + 1} on X`,
-                              `在 X 查看媒体 ${index + 1}`,
-                            )}
+                            {c(`Media ${index + 1} on X`, `在 X 查看媒体 ${index + 1}`)}
                           </a>
                         ))}
                       </div>
@@ -523,9 +472,7 @@ function XPosts({
                           post.metrics[key] != null && (
                             <div key={key} className="flex gap-1">
                               <dt>{label}</dt>
-                              <dd className="tabular-nums">
-                                {format.format(post.metrics[key]!)}
-                              </dd>
+                              <dd className="tabular-nums">{format.format(post.metrics[key]!)}</dd>
                             </div>
                           ),
                       )}

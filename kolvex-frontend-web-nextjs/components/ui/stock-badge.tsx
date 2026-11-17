@@ -1,10 +1,11 @@
 import Link from "next/link";
 import CompanyLogo from "@/components/ui/company-logo";
 import { marketStockUrl, normalizeStockSymbol } from "@/lib/stockLinks";
+import { cn } from "@/lib/utils";
 
 /** Shared pill shell — keeps the historic look and min-h-11 touch target. */
 const PILL_CLASS =
-  "inline-flex min-h-11 max-w-full items-center gap-2 rounded-3xl border border-foreground/10 glass-card bg-card-glass p-1 pr-3 text-sm font-semibold transition-colors duration-150 focus-visible:outline-none ";
+  "inline-flex min-h-11 max-w-full items-center gap-2 rounded-3xl border border-foreground/10 glass-card bg-card-glass p-1 pr-3 text-sm font-semibold transition-colors duration-150";
 
 /**
  * A consistent stock identity for event, article and opinion tags.
@@ -18,26 +19,40 @@ const PILL_CLASS =
 export default function StockBadge({
   symbol,
   href,
+  className,
+  "aria-label": ariaLabel,
 }: {
   symbol: string;
   href?: string | null;
+  className?: string;
+  "aria-label"?: string;
 }) {
   const ticker = normalizeStockSymbol(symbol);
   const target = href === null ? null : (href ?? marketStockUrl(ticker));
 
   const content = (
     <>
-      <span aria-hidden="true"><CompanyLogo symbol={ticker} size="sm" /></span>
+      <span aria-hidden="true">
+        <CompanyLogo symbol={ticker} size="sm" />
+      </span>
       <span className="figure min-w-0 break-all">{ticker}</span>
     </>
   );
 
   if (!target) {
-    return <span className={PILL_CLASS}>{content}</span>;
+    return <span className={cn(PILL_CLASS, className)}>{content}</span>;
   }
 
   return (
-    <Link href={target} className={`${PILL_CLASS}transition-colors hover:border-foreground/25 hover:bg-foreground/[0.06] hover:text-foreground`}>
+    <Link
+      href={target}
+      aria-label={ariaLabel}
+      className={cn(
+        PILL_CLASS,
+        "hover:border-foreground/25 hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+        className,
+      )}
+    >
       {content}
     </Link>
   );

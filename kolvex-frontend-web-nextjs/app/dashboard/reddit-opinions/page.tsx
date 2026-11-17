@@ -47,7 +47,10 @@ import { withSign } from "@/lib/format";
 
 // Mobile-only rows use the same compact rhythm as listRowTargetClass on mobile
 // (no min height, py-2), matching the YouTube opinions stock list.
-const MOBILE_GRID = "grid grid-cols-[minmax(0,1fr)_5.5rem_1rem] items-center gap-2 px-2 py-2";
+const MOBILE_GRID = "grid grid-cols-[minmax(0,1fr)_5.5rem_1rem] items-center gap-2 py-2";
+const STOCK_IDENTITY = "flex min-w-0 items-center gap-3";
+const STOCK_TICKER = "block text-[0.9375rem] font-semibold";
+const STOCK_NAME = "mt-0.5 block text-[0.8125rem] text-muted-foreground";
 /** Cells carry the hover band so the table row keeps rounded ends inside the card. The
  *  wash is neutral so green keeps signalling direction rather than interaction. */
 const HOVER_CELL =
@@ -310,7 +313,7 @@ export default function RedditOpinionsPage() {
                       <SkeletonRepeat count={8}>
                         {(i) => (
                           <div className={MOBILE_GRID}>
-                            <span className="flex min-w-0 items-center gap-2.5">
+                            <span className={STOCK_IDENTITY}>
                               <Skeleton className="h-3 w-5 shrink-0 rounded" />
                               <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
                               <span className="flex min-w-0 flex-1 flex-col gap-2">
@@ -335,10 +338,10 @@ export default function RedditOpinionsPage() {
                       </div>
                       <SkeletonRepeat count={8}>
                         {(i) => (
-                          <div className="grid grid-cols-[3.5rem_minmax(12rem,1fr)_repeat(4,5rem)_3.5rem] items-center gap-4 border-b border-border px-2 py-2">
+                          <div className="grid h-20 grid-cols-[3.5rem_minmax(12rem,1fr)_repeat(4,5rem)_3.5rem] items-center gap-4 px-2">
                             <Skeleton className="h-3.5 w-5 rounded" />
-                            <span className="flex min-h-11 items-center gap-3">
-                              <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
+                            <span className={STOCK_IDENTITY}>
+                              <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
                               <span className="flex flex-1 flex-col gap-2">
                                 <Skeleton className="h-4 w-14 rounded-md" />
                                 <Skeleton
@@ -382,7 +385,7 @@ export default function RedditOpinionsPage() {
                                   "cursor-pointer list-none outline-none [&::-webkit-details-marker]:hidden",
                                 )}
                               >
-                                <span className="flex min-w-0 items-center gap-2.5">
+                                <span className={STOCK_IDENTITY}>
                                   <span className="w-5 shrink-0 text-center text-xs tabular-nums text-muted-foreground">
                                     <span className="sr-only">{t("redditOpinions.rank")} </span>
                                     {row.rank}
@@ -397,13 +400,8 @@ export default function RedditOpinionsPage() {
                                       ticker: row.ticker,
                                     })}
                                   >
-                                    <span className="block text-sm font-semibold">
-                                      {row.ticker}
-                                    </span>
-                                    <span
-                                      className="mt-1 block truncate text-xs text-muted-foreground"
-                                      title={row.name}
-                                    >
+                                    <span className={STOCK_TICKER}>{row.ticker}</span>
+                                    <span className={cn(STOCK_NAME, "truncate")} title={row.name}>
                                       {row.name}
                                     </span>
                                   </Link>
@@ -506,7 +504,7 @@ export default function RedditOpinionsPage() {
                           {rows.map((row, index) => (
                             <TableRow
                               key={row.ticker}
-                              className="opinion-result-row group hover:!bg-transparent"
+                              className="opinion-result-row group h-20 border-0 hover:!bg-transparent"
                               style={{ animationDelay: `${Math.min(index, 6) * 20}ms` }}
                             >
                               <TableCell className={cn(HOVER_CELL, "text-muted-foreground")}>
@@ -515,15 +513,18 @@ export default function RedditOpinionsPage() {
                               <TableCell className={cn(HOVER_CELL, "min-w-48 max-w-72")}>
                                 <Link
                                   href={marketStockHref(row.ticker)}
-                                  className="-m-1 flex min-h-11 items-center gap-3 p-1 transition-colors duration-150 hover:text-foreground focus-visible:outline-none"
+                                  className={cn(
+                                    STOCK_IDENTITY,
+                                    "-m-1 min-h-11 p-1 transition-colors duration-150 hover:text-foreground focus-visible:outline-none",
+                                  )}
                                   aria-label={t("redditOpinions.openStock", { ticker: row.ticker })}
                                 >
                                   <span aria-hidden="true">
-                                    <CompanyLogo symbol={row.ticker} name={row.name} size="sm" />
+                                    <CompanyLogo symbol={row.ticker} name={row.name} size="md" />
                                   </span>
                                   <div className="min-w-0 flex-1">
-                                    <span className="font-semibold">{row.ticker}</span>
-                                    <span className="mt-1 block break-words text-xs leading-5 text-muted-foreground">
+                                    <span className={STOCK_TICKER}>{row.ticker}</span>
+                                    <span className={cn(STOCK_NAME, "break-words")}>
                                       {row.name}
                                     </span>
                                   </div>

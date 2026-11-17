@@ -124,7 +124,7 @@ export function AccountCard({
         </CollapsibleTrigger>
 
         <CollapsibleContent>
-          <CardContent className="!px-2 !pb-2 !pt-0 border-t border-border">
+          <CardContent className="!px-0 !pb-0 !pt-0 border-t border-border">
             {/* Equities */}
             <EquityPositionsTable
               positions={sortEquityPositions(equityPositions)}

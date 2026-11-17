@@ -10,7 +10,11 @@ function load(file, deps = {}, globals = {}) {
   const clientCache = require("./helpers/client-cache.cjs")();
   vm.runInNewContext(
     ts.transpileModule(fs.readFileSync(path.join(__dirname, "..", file), "utf8"), {
-      compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
+      compilerOptions: {
+        module: ts.ModuleKind.CommonJS,
+        target: ts.ScriptTarget.ES2020,
+        jsx: ts.JsxEmit.ReactJSX,
+      },
     }).outputText,
     {
       exports,
@@ -384,11 +388,11 @@ function translationRoute(fetch) {
         NextResponse: { json: (body, options = {}) => ({ body, status: options.status || 200 }) },
       },
     },
-    { fetch },
+    { fetch, setTimeout },
   );
 }
 
-test("translation API retries a failed cached response without caching and preserves Chinese output", async () => {
+test("translation API bypasses the upstream cache and falls back after malformed output", async () => {
   const calls = [],
     urls = [];
   const route = translationRoute(async (url, options) => {
@@ -404,7 +408,7 @@ test("translation API retries a failed cached response without caching and prese
   assert.equal(response.status, 200);
   assert.equal(response.body.translated, "英国核心CPI同比实际2.8%");
   assert.equal(calls.length, 2);
-  assert.equal(calls[0].next.revalidate, 86400);
+  assert.equal(calls[0].cache, "no-store");
   assert.equal(calls[1].cache, "no-store");
   assert.ok(calls[1].signal);
   assert.equal(urls[0].hostname, "translate.googleapis.com");
@@ -440,6 +444,77 @@ test("translation API retry is bounded and does not accept empty output", async 
     return { ok: true, json: async () => [[[null]]] };
   });
   const response = await route.POST({ json: async () => ({ q: "Headline", tl: "zh-CN" }) });
-  assert.equal(response.status, 500);
-  assert.equal(calls, 2);
+  assert.equal(response.status, 503);
+  assert.equal(calls, 3);
+});
+
+test("translation coalesces concurrent requests, retries a transient outage, and only reuses valid output", async () => {
+  let calls = 0;
+  const route = translationRoute(async () => {
+    calls++;
+    if (calls <= 2) return { ok: false, status: 503 };
+    return { ok: true, json: async () => [[["新闻"]]] };
+  });
+  const post = (tl = "zh-CN") => route.POST({ json: async () => ({ q: "News", tl }) });
+  const get = () => route.GET({ url: "https://example.test/api/translate?q=News&tl=zh-CN" });
+  const results = await Promise.all([post(), get()]);
+  assert.ok(results.every((result) => result.body.translated === "新闻"));
+  assert.equal((await get()).body.translated, "新闻");
+  assert.equal(calls, 3);
+  await post("en");
+  assert.equal(calls, 4);
+});
+
+test("a failed translation does not poison a subsequent attempt", async () => {
+  let available = false;
+  const route = translationRoute(async () => ({
+    ok: available,
+    status: available ? 200 : 429,
+    json: async () => [[["新闻"]]],
+  }));
+  const get = () => route.GET({ url: "https://example.test/api/translate?q=News&tl=zh-CN" });
+  assert.equal((await get()).status, 503);
+  available = true;
+  assert.equal((await get()).body.translated, "新闻");
+});
+
+test("upstream requests bound the encoded size and preserve Unicode and whitespace across chunks", async () => {
+  const text = "今日行情 📈。 ".repeat(400) + "Last line";
+  const chunks = [];
+  const route = translationRoute(async (url) => {
+    const query = new URL(url).searchParams.get("q");
+    assert.ok(encodeURIComponent(query).length <= 6000);
+    chunks.push(query);
+    return { ok: true, json: async () => [[[query]]] };
+  });
+  const response = await route.POST({ json: async () => ({ q: text, tl: "zh-CN" }) });
+  assert.equal(response.status, 200);
+  assert.ok(chunks.length > 1);
+  assert.equal(response.body.translated, text);
+});
+
+test("the Web translation client switches to POST when Unicode expands beyond the GET budget", async () => {
+  const calls = [];
+  const { translateText } = load(
+    "components/trading-analysis/translate.tsx",
+    {
+      "react/jsx-runtime": {},
+      "lucide-react": {},
+      "@/lib/utils": {},
+      "@/components/ui/tooltip": {},
+    },
+    {
+      fetch: async (url, options) => {
+        calls.push({ url, options });
+        return { ok: true, json: async () => ({ translated: "Translation" }) };
+      },
+    },
+  );
+  const text = "今日股市行情".repeat(40);
+  await translateText(text, "zh");
+  assert.equal(calls[0].url, "/api/translate");
+  assert.equal(calls[0].options.method, "POST");
+  assert.deepEqual(JSON.parse(calls[0].options.body), { q: text, tl: "zh-CN" });
+  await translateText("Market news", "zh");
+  assert.equal(calls[1].url, "/api/translate?tl=zh-CN&q=Market%20news");
 });

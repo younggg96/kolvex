@@ -469,8 +469,11 @@ localized accessible label, and the shared search Input. The page scroller uses
 `details` rows show rank, the shared 32px company logo, ticker, truncated company
 name and right-aligned mentions with signed percentage change beneath. Touch or
 keyboard expansion reveals the full name, rank movement and upvotes. From md,
-the full shared Table retains its quiet 12px bordered container and labelled
-keyboard-focusable horizontal scroll region. Activity stays neutral in color.
+the shared Table keeps a labelled keyboard-focusable horizontal scroll region
+inside the list card. Its stock rows follow the canonical 80px minimum height,
+40px company logo and divider-free rhythm. Stock identity typography and the
+12px gap beside the logo match the YouTube stock directory at each breakpoint.
+Activity stays neutral in color.
 Keep the ApeWisdom methodology link and actual fetch date/time in a compact
 footer, with retry and distinct empty/search-empty states in document flow.
 Repeated descriptions, coverage counts and explanatory notes are omitted.

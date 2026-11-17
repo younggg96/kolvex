@@ -1,22 +1,19 @@
 import { Languages, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const GET_URL_SAFE_LIMIT = 1500;
 
 export async function translateText(
   text: string,
   targetLang: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ): Promise<string> {
   if (!text?.trim()) return text;
   const tl = targetLang === "zh" ? "zh-CN" : targetLang;
 
-  const usePost = text.length > GET_URL_SAFE_LIMIT;
+  const encodedText = encodeURIComponent(text);
+  const usePost = encodedText.length > GET_URL_SAFE_LIMIT;
 
   const res = usePost
     ? await fetch("/api/translate", {
@@ -25,10 +22,7 @@ export async function translateText(
         body: JSON.stringify({ q: text, tl }),
         signal,
       })
-    : await fetch(
-        `/api/translate?tl=${encodeURIComponent(tl)}&q=${encodeURIComponent(text)}`,
-        { signal }
-      );
+    : await fetch(`/api/translate?tl=${encodeURIComponent(tl)}&q=${encodedText}`, { signal });
 
   if (!res.ok) throw new Error("Translation failed");
   const data = await res.json();
@@ -49,9 +43,7 @@ export function TranslateButton({
   onToggle: () => void;
   t: (key: string) => string;
 }) {
-  const label = showTranslated
-    ? t("tradingAnalysis.showOriginal")
-    : t("tradingAnalysis.translate");
+  const label = showTranslated ? t("tradingAnalysis.showOriginal") : t("tradingAnalysis.translate");
 
   return (
     <Tooltip>
@@ -67,11 +59,14 @@ export function TranslateButton({
             "inline-flex h-10 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-full px-3 text-sm font-medium transition-colors duration-150 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
             showTranslated
               ? "glass-thumb text-foreground"
-              : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground"
+              : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground",
           )}
         >
           {isTranslating ? (
-            <Loader2 aria-hidden="true" className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+            <Loader2
+              aria-hidden="true"
+              className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none"
+            />
           ) : (
             <Languages aria-hidden="true" className="h-3.5 w-3.5" />
           )}
@@ -79,9 +74,7 @@ export function TranslateButton({
         </button>
       </TooltipTrigger>
       <TooltipContent side="bottom">
-        <p className="text-xs">
-          {isTranslating ? t("tradingAnalysis.translating") : label}
-        </p>
+        <p className="text-xs">{isTranslating ? t("tradingAnalysis.translating") : label}</p>
       </TooltipContent>
     </Tooltip>
   );
