@@ -5,20 +5,12 @@ import { ChevronRight, Briefcase } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ListCard } from "@/components/ui/list-card";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { EmptyState } from "@/components/common/EmptyState";
 import { EquityPositionsTable } from "./EquityPositionsTable";
 import { OptionPositionsTable } from "./OptionPositionsTable";
 import { useTranslation } from "@/lib/i18n";
-import type {
-  PortfolioPosition,
-  EquitySortKey,
-  OptionSortKey,
-} from "./types";
+import type { PortfolioPosition, EquitySortKey, OptionSortKey } from "./types";
 import type { PrivacySettings } from "@/lib/supabase/database.types";
 
 interface PortfolioAccount {
@@ -49,11 +41,7 @@ interface AccountCardProps {
   // Sparkline data
   sparklineDataMap: Map<string, number[]>;
   // Visibility toggle
-  onToggleVisibility: (
-    e: React.MouseEvent,
-    positionId: string,
-    currentlyHidden: boolean
-  ) => void;
+  onToggleVisibility: (e: React.MouseEvent, positionId: string, currentlyHidden: boolean) => void;
 }
 
 export function AccountCard({
@@ -76,11 +64,9 @@ export function AccountCard({
 }: AccountCardProps) {
   const { t } = useTranslation();
   const equityPositions =
-    account.portfolio_positions?.filter((p) => p.position_type !== "option") ||
-    [];
+    account.portfolio_positions?.filter((p) => p.position_type !== "option") || [];
   const optionPositions =
-    account.portfolio_positions?.filter((p) => p.position_type === "option") ||
-    [];
+    account.portfolio_positions?.filter((p) => p.position_type === "option") || [];
   const accountPositions = account.portfolio_positions?.length || 0;
 
   return (
@@ -111,10 +97,7 @@ export function AccountCard({
                   {t("portfolio.holdings.positions", { count: String(accountPositions) })}
                 </Badge>
                 {optionPositions.length > 0 && (
-                  <Badge
-                    variant="outline"
-                    className="text-xs border-primary/30 text-primary"
-                  >
+                  <Badge variant="outline" className="text-xs border-primary/30 text-primary">
                     {t("portfolio.holdings.options", { count: String(optionPositions.length) })}
                   </Badge>
                 )}
@@ -155,10 +138,7 @@ export function AccountCard({
 
             {/* Empty */}
             {accountPositions === 0 && (
-              <EmptyState
-                icon={Briefcase}
-                title={t("portfolio.holdings.noPositions")}
-              />
+              <EmptyState icon={Briefcase} title={t("portfolio.holdings.noPositions")} />
             )}
           </CardContent>
         </CollapsibleContent>
@@ -166,4 +146,3 @@ export function AccountCard({
     </Collapsible>
   );
 }
-
