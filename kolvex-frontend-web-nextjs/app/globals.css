@@ -2123,6 +2123,14 @@ html[data-chat-history-open] .app-workbench .app-sidebar {
   :root:not(.dark) .glass-card[class~="border-foreground/10"] {
     border-color: transparent;
   }
+
+  /* Without the rim and drop shadow, the backdrop blur's edge sampling shows
+     through the near-clear neutral fill as bands and a corner seam. The tint
+     over the page reads the same without it. */
+  :root:not(.dark) .glass-button-neutral {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 
 /* ========================================

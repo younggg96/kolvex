@@ -20,19 +20,17 @@ import { cn } from "@/lib/utils";
 
 type Size = "sm" | "md";
 
-const SIZES: Record<Size, { item: string; gap: string; pad: string; thumbPress: string }> = {
+const SIZES: Record<Size, { item: string; gap: string; pad: string }> = {
   sm: {
     item: "min-h-8 px-3 text-[0.8125rem]",
     gap: "gap-0.5",
     pad: "p-1",
-    thumbPress: "[scale:1_0.88]",
   },
   md: {
     item: "min-h-8 px-3 text-sm sm:min-h-10 sm:px-4",
     // Same track as TabsList pills, so every switcher looks alike.
     gap: "gap-0.5 sm:gap-1",
     pad: "p-0.5 sm:p-1",
-    thumbPress: "[scale:1_0.9]",
   },
 };
 
@@ -74,9 +72,6 @@ export interface SegmentedControlProps<T extends string> extends Omit<
   /** Let the pill wrap instead of forcing one row (wide label sets). */
   wrap?: boolean;
 }
-
-/** Longer than the glide so a fast tap still reads as a distinct press. */
-const PRESS_MS = 320;
 
 const BINDS: Record<
   NonNullable<SegmentedControlProps<string>["semantics"]>,
@@ -120,7 +115,6 @@ export function SegmentedControl<T extends string>({
 }: SegmentedControlProps<T>) {
   const controlRef = React.useRef<HTMLDivElement>(null);
   const itemRefs = React.useRef(new Map<T, HTMLButtonElement>());
-  const settle = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const thumbRef = React.useRef<HTMLSpanElement>(null);
   const pillRef = React.useRef<{ pill: StretchPill; wrap: boolean } | null>(null);
   // The value the pill last sat under: re-measuring the same value (resize,
@@ -129,7 +123,6 @@ export function SegmentedControl<T extends string>({
   // Armed one frame after mount so the first placement never animates in.
   const ready = React.useRef(false);
   const [thumb, setThumb] = React.useState<Thumb | null>(null);
-  const [pressed, setPressed] = React.useState(false);
 
   const measure = React.useCallback(() => {
     const target = value == null ? null : itemRefs.current.get(value);
@@ -175,8 +168,10 @@ export function SegmentedControl<T extends string>({
     });
     return () => {
       cancelAnimationFrame(frame);
+      // Stop the frame loop but keep the pill and its position: React's dev
+      // double-mount runs this cleanup, and a fresh pill would snap on the
+      // next selection instead of gliding.
       pillRef.current?.pill.destroy();
-      pillRef.current = null;
     };
   }, []);
 
@@ -230,18 +225,8 @@ export function SegmentedControl<T extends string>({
     );
   }, [center, value]);
 
-  React.useEffect(
-    () => () => {
-      if (settle.current) clearTimeout(settle.current);
-    },
-    [],
-  );
-
   const select = (next: T) => {
     if (next === value) return;
-    setPressed(true);
-    if (settle.current) clearTimeout(settle.current);
-    settle.current = setTimeout(() => setPressed(false), PRESS_MS);
     onChange(next);
   };
 
@@ -304,10 +289,8 @@ export function SegmentedControl<T extends string>({
         aria-hidden="true"
         className={cn(
           "pointer-events-none absolute left-0 top-0 z-0 rounded-full glass-thumb will-change-[transform,width]",
-          // Press squash only; movement is spring-driven, not a CSS transition.
-          "transition-[scale] duration-[var(--spring-standard)] ease-[var(--spring)] motion-reduce:!transition-none",
+          // Only moves sideways (and stretches); no CSS transition or press squash.
           hasThumb ? "opacity-100" : "opacity-0",
-          pressed && config.thumbPress,
           thumbClassName,
         )}
         // A single row centres the thumb with CSS: offsetTop rounds to whole

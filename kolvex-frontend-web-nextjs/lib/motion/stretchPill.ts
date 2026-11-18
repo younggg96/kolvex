@@ -99,6 +99,19 @@ export class StretchPill {
     const nextRight = box.left + box.width;
     const nextBottom = box.top + box.height;
 
+    // A re-measure that lands on the same target (e.g. a ResizeObserver's
+    // first callback right after a selection) must not cut the glide short.
+    if (
+      snap &&
+      this.placed &&
+      this.left.t === box.left &&
+      this.right.t === nextRight &&
+      this.top.t === box.top &&
+      this.bottom.t === nextBottom
+    ) {
+      return;
+    }
+
     if (snap || !this.placed || typeof requestAnimationFrame === "undefined") {
       for (const [spring, value] of [
         [this.left, box.left],
@@ -147,7 +160,8 @@ export class StretchPill {
   }
 
   private tick = (now: number) => {
-    const dt = Math.min((now - this.last) / 1000, MAX_DT);
+    // A frame's timestamp can predate the performance.now() taken in start().
+    const dt = Math.min(Math.max(0, (now - this.last) / 1000), MAX_DT);
     this.last = now;
     const springs = [this.left, this.right, this.top, this.bottom];
     for (let i = 0; i < SUBSTEPS; i++)

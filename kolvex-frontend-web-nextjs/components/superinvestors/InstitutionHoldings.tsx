@@ -426,7 +426,6 @@ function HoldingsTable({ data }: { data: Institution }) {
           </div>
           <SearchInput
             type="search"
-            label={c("Filter", "筛选")}
             shortcut="mod+k"
             containerClassName="w-full md:w-64"
             value={query}

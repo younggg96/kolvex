@@ -363,9 +363,7 @@ export default function SearchPage() {
       <div className="flex items-center gap-1 lg:gap-3">
         <form role="search" noValidate onSubmit={submit} className="min-w-0 flex-1">
           <CommandSearch
-            label={c("Search", "搜索")}
             hasValue={!!value}
-            heightClassName="h-[44px] lg:h-14"
             shortcut="mod+k"
           >
             <div

@@ -194,8 +194,9 @@ function PillIndicator() {
 
   React.useEffect(
     () => () => {
+      // Keep the pill and its position across React's dev double-mount, or
+      // the next tab change would snap instead of gliding.
       pillRef.current?.destroy();
-      pillRef.current = null;
     },
     [],
   );

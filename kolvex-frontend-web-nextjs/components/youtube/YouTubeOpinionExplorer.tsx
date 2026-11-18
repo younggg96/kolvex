@@ -1350,9 +1350,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                           <div className="contents lg:flex lg:min-w-0 lg:flex-1 lg:flex-nowrap lg:items-center lg:gap-2">
                             <CommandSearch
                               className="hidden shrink lg:block lg:w-64 xl:w-72"
-                              label={t("common.search")}
                               hasValue={!!search}
-                              heightClassName="h-11"
                               shortcut="mod+k"
                             >
                               <div className="relative">
@@ -2101,9 +2099,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                           {showAllCreatorStocks && (
                             <CommandSearch
                               className="mb-3 hidden lg:block"
-                              label={t("common.search")}
                               hasValue={!!search}
-                              heightClassName="h-10"
                             >
                               <div className="relative">
                                 <SearchFieldIcon className="left-3.5 h-4 w-4" />

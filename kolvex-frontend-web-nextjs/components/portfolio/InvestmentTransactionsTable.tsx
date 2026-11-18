@@ -145,7 +145,6 @@ export function InvestmentTransactionsTable({
         <div className="flex flex-wrap items-center gap-2">
           <form onSubmit={applySymbolFilter} className="flex items-center gap-2">
             <SearchInput
-              label={t("portfolio.transactions.symbol")}
               aria-label={t("portfolio.transactions.filterBySymbol")}
               value={symbolInput}
               onChange={(event) => setSymbolInput(event.target.value)}

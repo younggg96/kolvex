@@ -266,9 +266,7 @@ function XPosts({
         >
           <CommandSearch
             className="flex-1 sm:max-w-xs"
-            label={c("Ticker", "股票代码")}
             hasValue={!!(draftTicker || ticker)}
-            heightClassName="h-10"
             shortcut="mod+k"
           >
             <div className="relative">

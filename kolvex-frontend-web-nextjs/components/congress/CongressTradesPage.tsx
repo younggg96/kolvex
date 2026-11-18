@@ -74,7 +74,6 @@ export default function CongressTradesPage({ initialTicker }: { initialTicker: s
   const tickerField = (
     <SearchInput
       id="congress-ticker"
-      label={c("Ticker", "股票代码")}
       aria-label={c("Ticker", "股票代码")}
       placeholder={c("Ticker, e.g. NVDA", "股票代码,如 NVDA")}
       autoCapitalize="characters"
@@ -98,7 +97,6 @@ export default function CongressTradesPage({ initialTicker }: { initialTicker: s
     >
       <SearchInput
         id="congress-ticker-desktop"
-        label={c("Ticker", "股票代码")}
         shortcut="mod+k"
         aria-label={c("Ticker", "股票代码")}
         containerClassName="w-full"
@@ -113,7 +111,6 @@ export default function CongressTradesPage({ initialTicker }: { initialTicker: s
       />
       <SearchInput
         id="congress-member"
-        label={c("Member", "议员")}
         aria-label={c("Member", "议员姓名")}
         containerClassName="w-full"
         maxLength={100}
@@ -174,7 +171,6 @@ export default function CongressTradesPage({ initialTicker }: { initialTicker: s
                 <Label htmlFor="congress-member-sheet">{c("Member", "议员姓名")}</Label>
                 <SearchInput
                   id="congress-member-sheet"
-                  label={c("Member", "议员")}
                   containerClassName="w-full"
                   className="min-h-11 text-base"
                   maxLength={100}

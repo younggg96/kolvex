@@ -192,9 +192,7 @@ export default function Watchlist() {
                         {c("Search Watchlist", "搜索自选股")}
                       </label>
                       <CommandSearch
-                        label={c("Search", "搜索")}
                         hasValue={!!draft}
-                        heightClassName="h-11"
                         shortcut="mod+k"
                       >
                         <div className="relative">

@@ -550,9 +550,7 @@ export default function StockObservationList({
             </label>
             <CommandSearch
               className="w-full"
-              label={c("Search", "搜索")}
               hasValue={!!searchDraft}
-              heightClassName="h-11"
               shortcut="mod+k"
             >
               <div className="relative">

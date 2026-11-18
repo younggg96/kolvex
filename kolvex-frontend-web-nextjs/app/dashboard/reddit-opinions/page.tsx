@@ -211,9 +211,7 @@ export default function RedditOpinionsPage() {
               <div className="hidden items-center gap-3 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] xl:grid-cols-[minmax(0,1fr)_11rem_11rem_auto]">
                 <CommandSearch
                   className="lg:col-span-3 xl:col-span-1"
-                  label={t("common.search")}
                   hasValue={!!query}
-                  heightClassName="h-11"
                   shortcut="mod+k"
                 >
                   <div className="relative">
