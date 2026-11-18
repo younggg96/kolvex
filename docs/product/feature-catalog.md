@@ -39,8 +39,8 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 
 | 功能 | ID | Web 入口 | App 入口 | 后端 | 文档 | App |
 | --- | --- | --- | --- | --- | --- | --- |
-| YouTube 博主观点、博主 / 股票目录（Web 博主头像栏可切换为完整列表，英文界面自动翻译中文观点） | `youtubeOpinions` | `/dashboard/youtube-opinions` | `(tabs)/opinions`、`/creators`、`/creator/youtube/[id]` | `youtube_opinions.py` | [youtube-channel-profiles.md](../youtube-channel-profiles.md)、[内容翻译](../content-translation.md) | ◐ |
-| X 博主内容与翻译（每 3 小时采集入库，Web 支持横滑头像筛选与 AI 分析，优先读取后台中文译文） | `youtubeOpinions` | `/dashboard/x-opinions` | `opinions` 的 X tab、`/creator/x/[id]` | `x_content.py` | [x-content.md](../x-content.md)、[内容翻译](../content-translation.md) | ◐ |
+| YouTube 博主观点、博主 / 股票目录（Web 博主大头像栏标记近 24 小时新视频，可切换为完整列表，英文界面自动翻译中文观点） | `youtubeOpinions` | `/dashboard/youtube-opinions` | `(tabs)/opinions`、`/creators`、`/creator/youtube/[id]` | `youtube_opinions.py` | [youtube-channel-profiles.md](../youtube-channel-profiles.md)、[内容翻译](../content-translation.md) | ◐ |
+| X 博主内容与翻译（每 3 小时采集入库，Web 支持大头像横滑筛选，选中后显示 AI 分析，优先读取后台中文译文） | `youtubeOpinions` | `/dashboard/x-opinions` | `opinions` 的 X tab、`/creator/x/[id]` | `x_content.py` | [x-content.md](../x-content.md)、[内容翻译](../content-translation.md) | ◐ |
 | Reddit 热度榜 | `youtubeOpinions` | `/dashboard/reddit-opinions` | `opinions` 的 Reddit tab | `reddit_opinions.py` | `PRODUCT.md` | ✅ |
 | 观点事后表现（发布后 5 / 20 个交易日股价，对比 SPY；只陈述事实，不判对错） | `youtubeOpinions` | 股票页和博主 × 股票页的观点卡片（含「其他博主的看法」） | — | `youtube_opinions.py`（`/stocks/{ticker}/outcomes`） | [opinion-backtest.md](../opinion-backtest.md) | — |
 | 观点回看（全部看多 / 看空观点之后股价相对 SPY 的整体表现，可点进具体观点；「单个博主」先列全部博主，选中后按股票看这位博主说过的每只股票、说完至今涨跌以及与观点方向是否一致；博主主页的个人卡片有样本和跨度门槛；不按博主排名） | `youtubeOpinions` | 博主观点「回看」（`/dashboard/youtube-opinions/review`）；博主主页侧栏 | — | `youtube_opinions.py`（`/review`、`/review/opinions`、`/review/creators`、`/review/creators/{id}`、`/creators/{id}/review`） | [opinion-backtest.md](../opinion-backtest.md) | — |
@@ -65,7 +65,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 | 自选股 | `watchlist` | `/dashboard/watchlist` | `(more)/watchlist` | Supabase 直连 + RLS | [watchlist-sync.md](../watchlist-sync.md) | ✅ |
 | 投资组合（Plaid + 手动导入：复制提示词交给 Codex / Muse 生成 JSON 后粘贴导入，每次整体替换上一次手动导入；可逐个移除账户） | `portfolio` | `/dashboard/portfolio`、公开页 `/portfolio/[userId]` | `/portfolio`（只读持仓快照，含手动导入的账户） | `portfolio/`（含 `manual_routes.py`、`account_routes.py`；需迁移 `20261118000000_portfolio_manual_provider.sql`、`20261118010000_portfolio_removed_accounts.sql`）、`plaid.py` | `kolvex-frontend-web-nextjs/FEATURE_INVENTORY.md`「Plaid」「手动导入」「移除账户」 | ◐（Web 收盘后自动采集 Plaid 交易日收益快照，手动导入不生成历史；App 缺 Plaid 授权、手动导入、移除账户、交易、配置、收益图、AI 分析、股票观察「我的持仓」） |
 | 虚拟交易 | `paperTrading` | `/dashboard/paper-trading`、个股 `?tab=paper-trading` | `(more)/paper-trading`、个股 tab | `paper_trading.py` | [paper-trading/PLAN.md](../paper-trading/PLAN.md)、[README.md](../paper-trading/README.md)、Web `UX-CONTRACT.md` | ✅ |
-| 超级投资者（Web 明星专区用横滑人物肖像栏，与 13F 机构目录分区；展示前五大 13F 持仓占比和 1月/3月/6月/今年 的 13F 模拟收益；佩洛西展示交易披露与标的走势） | `superinvestors` | `/dashboard/superinvestors`、`/dashboard/superinvestors/[manager]`；管理 `/dashboard/admin?tab=institutions` | `(more)/superinvestors`、`/superinvestor/[manager]` | `free_research.py`、`congress_trades.py`、`admin/institutions.py` | [名单、收益口径与上线步骤](../superinvestors-coverage.md) | ✅ |
+| 超级投资者（Web 明星专区用大头像横滑栏，与 13F 机构目录分区；展示前五大 13F 持仓占比和 1月/3月/6月/今年 的 13F 模拟收益；佩洛西展示交易披露与标的走势） | `superinvestors` | `/dashboard/superinvestors`、`/dashboard/superinvestors/[manager]`；管理 `/dashboard/admin?tab=institutions` | `(more)/superinvestors`、`/superinvestor/[manager]` | `free_research.py`、`congress_trades.py`、`admin/institutions.py` | [名单、收益口径与上线步骤](../superinvestors-coverage.md) | ✅ |
 | 国会交易 | `congressTrades` | `/dashboard/congress-trades` | `(more)/congress-trades` | `congress_trades.py` | — | ✅ |
 | 期权异动 | `optionsActivity` | `/dashboard/options-activity` | `(more)/options-activity` | `options_activity.py` | — | ✅ |
 
@@ -76,7 +76,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 | 登录注册、OAuth、找回密码 | — | `/auth/*` | `/sign-in`、`/auth/*` | `auth/` | — | ✅（App 必须登录） |
 | 个人资料、头像、主题、语言、模型 API Key | `settings` | `/dashboard/settings`、`/config` | `/account`、`/preferences`、`(more)/settings` | `users.py`、`upload/`、`user_api_keys/` | — | ✅ |
 | 管理后台（用户、日报、事件、YouTube、X、期权异动、邮件设置、超级投资者名单） | `admin` | `/dashboard/admin` | `(more)/admin` | `admin/` 等 | [mcp-content-admin.md](../mcp-content-admin.md) | ◐ |
-| 人物动态（横滑人物头像、新动态角标与筛选面板；JSON 导入支持头像和配图） | `personUpdates` | `/dashboard/person-updates`、`/tracker`、`/dashboard/admin?tab=person-updates` | — | `person_updates.py` | [人物动态](../person-updates.md) | — |
+| 人物动态（大头像横滑栏、近 24 小时动态提示圈与筛选面板；JSON 导入支持头像和配图） | `personUpdates` | `/dashboard/person-updates`、`/tracker`、`/dashboard/admin?tab=person-updates` | — | `person_updates.py` | [人物动态](../person-updates.md) | — |
 | YouTube 自动导入（本地 Mac worker 每天 21:00 获取未追踪视频字幕 → 后端 DeepSeek 分析 → 导入观点；管理后台「YouTube 导入」可立即运行并查看结果） | `admin` | `/dashboard/admin?tab=youtube` | — | `youtube_auto_import.py`（`/admin/youtube-auto-import/*`、`/youtube-auto-import/worker/*`） | [youtube-auto-import.md](../youtube-auto-import.md)；需迁移 `20261116150000_youtube_auto_import.sql` | — |
 | 公开阅读页与 SEO | — | `app/(public)/`：`/stocks`、`/creators`、`/research`（中文缓存首屏，进入后沿用全站语言偏好；ISR 缓存 600 秒，分页用 `/page/N` 路径；`/llms.txt`、观点结构化数据） | —（App 无访客模式） | — | [public-reading.md](../public-reading.md) | — |
 | 隐私政策、条款、联系 | — | `/privacy`、`/terms`、`/contact` | 打开网页 | Web 双语，联系页使用支持邮箱 | — | ✅ |

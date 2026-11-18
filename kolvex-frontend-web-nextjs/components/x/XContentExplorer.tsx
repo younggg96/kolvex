@@ -89,53 +89,37 @@ export default function XContentExplorer() {
         className="min-h-0 flex-1 overflow-y-auto bg-background px-4 pb-10 pt-4 md:px-8 md:pt-8 dark:bg-transparent"
       >
         <div className="mx-auto w-full max-w-[1440px] space-y-6">
-          <header className="space-y-4">
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{title}</h1>
-            </div>
-            <a
-              href="#x-posts-heading"
-              className={cn(
-                focusClass,
-                "inline-flex min-h-10 items-center text-sm text-muted-foreground underline underline-offset-4 xl:hidden",
-              )}
-            >
-              {c("Jump to original posts", "跳到原始推文")}
-            </a>
+          <header>
+            <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{title}</h1>
           </header>
-          <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,26rem)]">
-            <aside aria-labelledby="x-summary-heading" className="order-1 min-w-0 xl:order-2">
-              <XCreatorSummaries
-                author={author}
-                creators={creators}
-                creatorError={creatorError}
-                retryCreators={() => setCreatorAttempt((value) => value + 1)}
-                creatorPostsHref={(username) => href({ author: username })}
-                selectCreator={(username) => {
-                  if (username !== author)
-                    router.push(href({ author: username }), { scroll: false });
-                }}
-              />
-            </aside>
-            <div className="order-2 min-w-0 space-y-4 xl:order-1">
-              {selected && (
-                <details key={author} className="group">
-                  <summary
-                    className={cn(
-                      focusClass,
-                      "flex min-h-10 w-fit cursor-pointer list-none items-center gap-2 text-sm text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden",
-                    )}
-                  >
-                    {c("Creator profile", "博主资料")}
-                    <ChevronDown className="h-4 w-4 group-open:rotate-180" aria-hidden="true" />
-                  </summary>
-                  <div className="pt-2">
-                    <XCreatorProfile creator={selected} />
-                  </div>
-                </details>
-              )}
-              <XPosts {...{ author, ticker, page, href, c, locale }} />
-            </div>
+          <XCreatorSummaries
+            author={author}
+            creators={creators}
+            creatorError={creatorError}
+            retryCreators={() => setCreatorAttempt((value) => value + 1)}
+            creatorPostsHref={(username) => href({ author: username })}
+            selectCreator={(username) => {
+              if (username !== author) router.push(href({ author: username }), { scroll: false });
+            }}
+          />
+          <div className="min-w-0 space-y-4">
+            {selected && (
+              <details key={author} className="group">
+                <summary
+                  className={cn(
+                    focusClass,
+                    "flex min-h-10 w-fit cursor-pointer list-none items-center gap-2 text-sm text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden",
+                  )}
+                >
+                  {c("Creator profile", "博主资料")}
+                  <ChevronDown className="h-4 w-4 group-open:rotate-180" aria-hidden="true" />
+                </summary>
+                <div className="pt-2">
+                  <XCreatorProfile creator={selected} />
+                </div>
+              </details>
+            )}
+            <XPosts {...{ author, ticker, page, href, c, locale }} />
           </div>
         </div>
       </div>

@@ -12,7 +12,7 @@ export interface AvatarRailItem {
   label: string;
   avatar: ReactNode;
   href?: string;
-  badge?: { text: string; label: string };
+  updateLabel?: string;
 }
 
 export function AvatarRail({
@@ -75,41 +75,39 @@ export function AvatarRail({
         onScroll={updateEdges}
         className="overflow-x-auto overscroll-x-contain px-1 py-1"
       >
-        <ul className="flex w-max min-w-full items-start gap-2" aria-label={label}>
+        <ul className="flex w-max min-w-full items-start gap-2 md:gap-3" aria-label={label}>
           {items.map((item) => {
             const isSelected = selected === item.id;
             const itemProps = {
               "data-avatar-selected": isSelected,
-              title: item.badge ? `${item.label} · ${item.badge.label}` : item.label,
+              "aria-label": item.updateLabel ? `${item.label} · ${item.updateLabel}` : item.label,
+              title: item.updateLabel ? `${item.label} · ${item.updateLabel}` : item.label,
               className: cn(
-                "group/avatar flex w-[4.75rem] flex-col items-center gap-2 rounded-2xl px-1 py-2 text-xs transition-colors hover:bg-foreground/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary motion-reduce:transition-none",
+                "group/avatar flex w-[82px] cursor-pointer flex-col items-center gap-1.5 rounded-xl px-1 pb-2 pt-1.5 text-center text-[12px] leading-5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary md:w-[96px] md:text-sm",
                 isSelected
-                  ? "bg-foreground/[0.08] font-semibold text-foreground"
-                  : "text-muted-foreground",
+                  ? "font-semibold text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
               ),
             };
             const content = (
               <>
-                <span className="relative" aria-hidden="true">
-                  <span
-                    className={cn(
-                      "flex size-[3.25rem] items-center justify-center rounded-full border-2 motion-safe:transition-transform motion-safe:duration-200 motion-safe:ease-out motion-safe:group-active/avatar:scale-95",
-                      item.badge ? "border-primary" : "border-transparent",
-                      isSelected && "motion-safe:scale-105",
-                    )}
-                  >
+                <span
+                  aria-hidden="true"
+                  data-recent={item.updateLabel ? "true" : undefined}
+                  className={cn(
+                    "flex size-[74px] items-center justify-center rounded-full border-2 p-[3px] motion-safe:transition-transform motion-safe:duration-200 motion-safe:ease-out motion-safe:group-hover/avatar:-translate-y-0.5 motion-safe:group-active/avatar:scale-95 md:size-[88px]",
+                    item.updateLabel ? "border-primary" : "border-transparent",
+                  )}
+                >
+                  <span className="flex size-full items-center justify-center overflow-hidden rounded-full bg-muted [&>*]:size-full">
                     {item.avatar}
                   </span>
-                  {item.badge && (
-                    <span className="absolute -right-1 -top-1 min-w-5 rounded-full border border-background bg-primary px-1 text-center text-[10px] font-semibold leading-[1.05rem] tabular-nums text-primary-foreground">
-                      {item.badge.text}
-                    </span>
-                  )}
                 </span>
-                <span className="line-clamp-2 w-full leading-4 [overflow-wrap:anywhere]">
-                  {item.label}
-                </span>
-                {item.badge && <span className="sr-only">{item.badge.label}</span>}
+                <span className="w-full truncate">{item.label}</span>
+                <span
+                  aria-hidden="true"
+                  className={cn("h-0.5 w-4 rounded-full", isSelected && "bg-foreground")}
+                />
               </>
             );
             return (
@@ -147,7 +145,7 @@ export function AvatarRail({
           type="button"
           variant="outline"
           size="icon"
-          className="absolute left-0 top-5 z-10 hidden rounded-full bg-background lg:inline-flex"
+          className="absolute left-0 top-9 z-10 hidden rounded-full bg-background lg:inline-flex"
           aria-label={c("Scroll left", "向左浏览")}
           onClick={() => scroll(-1)}
         >
@@ -159,7 +157,7 @@ export function AvatarRail({
           type="button"
           variant="outline"
           size="icon"
-          className="absolute right-0 top-5 z-10 hidden rounded-full bg-background lg:inline-flex"
+          className="absolute right-0 top-9 z-10 hidden rounded-full bg-background lg:inline-flex"
           aria-label={c("Scroll right", "向右浏览")}
           onClick={() => scroll(1)}
         >

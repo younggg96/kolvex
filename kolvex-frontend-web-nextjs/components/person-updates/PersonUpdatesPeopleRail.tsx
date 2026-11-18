@@ -21,14 +21,11 @@ export function PersonUpdatesPeopleRail({
     (person) => ({
       id: person.name,
       label: person.label,
-      badge: person.newCount
-        ? {
-            text: person.newCount > 99 ? "99+" : String(person.newCount),
-            label: c(
-              `${person.newCount} new ${person.newCount === 1 ? "update" : "updates"} in the past 24 hours`,
-              `近 24 小时 ${person.newCount} 条新动态`,
-            ),
-          }
+      updateLabel: person.newCount
+        ? c(
+            `${person.newCount} new ${person.newCount === 1 ? "update" : "updates"} in the past 24 hours`,
+            `近 24 小时 ${person.newCount} 条新动态`,
+          )
         : undefined,
       avatar: (
         <Avatar className="h-11 w-11">
@@ -40,8 +37,8 @@ export function PersonUpdatesPeopleRail({
               className="object-cover"
             />
           )}
-          <AvatarFallback className="bg-foreground/[0.08] text-sm font-semibold text-foreground">
-            {person.name ? Array.from(person.label)[0] : <UsersRound className="size-5" />}
+          <AvatarFallback className="bg-muted text-xl font-semibold text-foreground">
+            {person.name ? Array.from(person.label)[0] : <UsersRound className="size-6" />}
           </AvatarFallback>
         </Avatar>
       ),

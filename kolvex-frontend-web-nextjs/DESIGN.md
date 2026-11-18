@@ -1026,7 +1026,7 @@ retry buttons remain separate from the link, with independent keyboard focus.
 
 ### Featured investors
 
-The featured spotlight uses a horizontal AvatarRail with portraits or name
+The featured spotlight uses the shared large AvatarRail with portraits or name
 monograms. Choosing a tile switches the spotlight card below it. For 13F
 filings, the card displays the person and the reporting institution. Portrait
 credits appear after the spotlight. The card places
@@ -1302,11 +1302,10 @@ Browser database access remains denied; verify_admin owns all write operations.
 ## X creator content
 
 `/dashboard/x-opinions` uses DashboardLayout and OpinionSourceNav, with the
-existing semantic tokens and shared Button/Input controls. Desktop places the creator directory in a 300px right rail beside a single
-chronological feed, matching the YouTube overview. Mobile stacks the directory
-above it. The shared AvatarRail filters the feed by author and swaps the analysis
-spotlight in the same card. Its AI badge appears only for an available summary.
-All creators restores the unfiltered feed and shows an available analysis. Posts use hairline-separated rows on the page background, with the shared
+existing semantic tokens and shared Button/Input controls. The full-width shared
+AvatarRail appears above the chronological feed on both desktop and mobile. It filters the feed by author. The chosen author’s AI
+analysis appears in a disclosure beneath the rail. All creators restores the
+unfiltered feed. Posts use hairline-separated rows on the page background, with the shared
 Avatar and initial fallback. Public profile facts include biography, website, location
 and known follower/following counts; absent facts are omitted. Profile administration
 can load and edit these fields. Post text, quotes and biographies translate automatically to the saved user
@@ -1314,8 +1313,8 @@ interface locale as they approach the viewport. A shared three-request limit
 bounds translation traffic. Switching locale cancels stale work; an explicit
 original/translation toggle and retry remain available, with machine-translation
 attribution, an original toggle, cancellation and retry. Translations stay in a
-bounded session cache and never replace stored originals. The page title is screen-reader-only, with no visible introductory
-heading or description. Author, stock ticker and page are committed URL filters. Stock filter
+bounded session cache and never replace stored originals. The page title sits
+above the rail. Author, stock ticker and page are committed URL filters. Stock filter
 validation is explicit on submit, with a localized clear action and inline error.
 New requests cancel old ones, time out, and retain a retry action. No-results
 and first-use empty states explain how to recover.
@@ -1723,9 +1722,11 @@ an avatar opens the existing creator detail, with native link behavior for
 modified clicks. View all switches to the detailed rows and Avatar view returns
 to the rail. Both use the same searched, filtered and sorted creator set. The
 shared filter sheet owns sentiment and sort on this tab at every breakpoint.
-New marks opinion activity on the current New York calendar day. AvatarRail
-uses the canonical staggered list entrance and a small press/selection
-transition. Reduced motion disables those animations and smooth scrolling.
+A ring marks a video published in the preceding 24 hours from recorded video
+timestamps or available upload coverage. Opinion and import dates do not mark a
+video as new. The shared rail has 64px portraits on phones and 78px on desktop,
+one-line names, and a short underline for the selection. Status rings have
+accessible text. Reduced motion disables entrance, press and scroll animations.
 
 ### Virtual trading after-hours valuation
 
@@ -1812,9 +1813,9 @@ summary are followed by an optional full-aspect event image, topic and ticker
 badges, and an external source link with its hostname. A missing or failed
 avatar uses the first character of the name. Missing or failed event images
 leave the remaining row intact. The horizontal avatar rail offers an All
-people item and one circular portrait per person. A primary outline and count
-identify updates published in the past 24 hours, while a neutral tile marks
-the selected person. Touch scrolling, keyboard focus and desktop overflow
+people item and one circular portrait per person. A primary ring identifies
+updates published in the past 24 hours, with the count in the accessible
+label and hover tooltip. An underline identifies the current selection. Touch scrolling, keyboard focus and desktop overflow
 buttons reach additional people. The labeled shared FilterSheet opens from the
 bottom on phones and centers on desktop. Person and topic changes apply
 immediately and are reflected in the URL.

@@ -12,11 +12,11 @@ import {
 import { isProductFeatureEnabled } from "@/lib/productFeatures";
 
 import Link from "next/link";
-import { formatOpinionDate, formatOpinionDateShort, opinionDay } from "@/lib/opinionDates";
+import { formatOpinionDate, formatOpinionDateShort } from "@/lib/opinionDates";
 import { useRouter } from "next/navigation";
 import PageBreadcrumb, { type BreadcrumbItem } from "@/components/layout/PageBreadcrumb";
 import { useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
-import { GalleryHorizontalEnd, LineChart, List, Loader2, X } from "lucide-react";
+import { LineChart, Loader2, X } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
   opinionHeaderActionClass,
@@ -80,7 +80,7 @@ import PriceChart, { type PriceRange } from "./PriceChart";
 import { legacyRangeToPriceRange, priceRangeToLegacyRange, rangeStartDay } from "@/lib/chart/range";
 import StrengthChart, { type StrengthPoint } from "./StrengthChart";
 import VideoOpinionCard from "./VideoOpinionCard";
-import { videoHistory } from "@/lib/youtubeVideoHistory";
+import { recentVideoCreators, videoHistory } from "@/lib/youtubeVideoHistory";
 import { formatPrice } from "@/lib/stockApi";
 import { useStockPerformance } from "@/hooks/useStockPerformance";
 import CreatorShare from "./CreatorShare";
@@ -937,53 +937,31 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     );
 
   function creatorDirectory() {
-    const today = opinionDay(new Date().toISOString());
+    const recent = recentVideoCreators(catalogue?.latest_videos ?? [], coverage, Date.now());
     return (
-      <>
-        <div className="mb-1 flex justify-end">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="min-h-11 gap-2"
-            aria-controls="youtube-creator-directory-view"
-            onClick={() => setShowCreatorList((value) => !value)}
-          >
-            {showCreatorList ? (
-              <GalleryHorizontalEnd className="size-4" aria-hidden="true" />
-            ) : (
-              <List className="size-4" aria-hidden="true" />
-            )}
-            {showCreatorList ? c("Avatar view", "头像视图") : c("View all", "查看全部")}
-          </Button>
-        </div>
-        <div id="youtube-creator-directory-view">
-          {showCreatorList ? (
-            creatorRows(visibleCreators, true)
-          ) : (
-            <AvatarRail
-              items={visibleCreators.map((item) => ({
-                id: item.channel_id,
-                label: item.channel_title || item.channel_id,
-                href: routeHref({ tab: "creators", creator: item.channel_id }),
-                avatar: <Avatar creator={item} />,
-                badge:
-                  opinionDay(item.latest_opinion_at) === today
-                    ? {
-                        text: c("New", "新"),
-                        label: c("Updated today (ET)", "今日更新（美东时间）"),
-                      }
-                    : undefined,
-              }))}
-              label={t("youtubeOpinions.trackedCreators")}
-              onSelect={(creator) => void navigate({ tab: "creators", creator })}
-            />
-          )}
-        </div>
-      </>
+      <div id="youtube-creator-directory-view">
+        {showCreatorList ? (
+          <ListCard>{creatorRows(visibleCreators, true)}</ListCard>
+        ) : (
+          <AvatarRail
+            items={visibleCreators.map((item) => ({
+              id: item.channel_id,
+              label: item.channel_title || item.channel_id,
+              href: routeHref({ tab: "creators", creator: item.channel_id }),
+              avatar: <Avatar creator={item} size="lg" />,
+              updateLabel: recent.has(item.channel_id)
+                ? c("Video published in the past 24 hours", "近 24 小时发布视频")
+                : undefined,
+            }))}
+            label={t("youtubeOpinions.trackedCreators")}
+            onSelect={(creator) => void navigate({ tab: "creators", creator })}
+          />
+        )}
+      </div>
     );
   }
 
+  const DirectorySurface = route.tab === "creators" ? "div" : ListCard;
   const initialLoading =
     !ready ||
     (!inDetail ? !catalogue && !catalogueError : !context && !contextError && !detailError);
@@ -1315,11 +1293,8 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                             : t("youtubeOpinions.trackedCreators")}
                         </h2>
                         {catalogue &&
-                          !(
-                            route.tab === "stocks" &&
-                            stockScope === "holdings" &&
-                            (held.loading || held.error)
-                          ) && (
+                          route.tab === "stocks" &&
+                          !(stockScope === "holdings" && (held.loading || held.error)) && (
                             <p className="mt-1 text-xs text-muted-foreground tabular-nums [text-wrap:balance] md:text-sm">
                               {t("youtubeOpinions.catalogueSummary", {
                                 stocks: String(catalogue.summary.total_stocks),
@@ -1382,7 +1357,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                       </div>
                     </header>
                     <section aria-labelledby="creator-directory-heading" className="min-w-0">
-                      <ListCard>
+                      <DirectorySurface>
                         {/* Below lg the dock's search replaces the field and every filter and sort lives in one sheet. */}
                         <div className="flex min-w-0 flex-wrap items-center gap-x-2 mb-2 lg:flex-nowrap lg:gap-x-3">
                           {route.tab === "stocks" && (
@@ -1438,6 +1413,20 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                                 )}
                               </div>
                             </CommandSearch>
+                            {route.tab === "creators" && visibleCreators.length > 0 && (
+                              <Button
+                                type="button"
+                                variant="link"
+                                size="sm"
+                                className="ml-auto min-h-[44px] px-2 font-medium text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary"
+                                aria-controls="youtube-creator-directory-view"
+                                onClick={() => setShowCreatorList((value) => !value)}
+                              >
+                                {showCreatorList
+                                  ? c("Avatar view", "头像视图")
+                                  : c("View all", "查看全部")}
+                              </Button>
+                            )}
                             {route.tab === "stocks" && isProductFeatureEnabled("portfolio") && (
                               <div className="order-last flex w-full shrink-0 items-center gap-1 lg:order-none lg:w-auto">
                                 {stockScope === "holdings" && held.error && (
@@ -1514,40 +1503,17 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                             </TabsContent>
                           </>
                         )}
-                      </ListCard>
+                      </DirectorySurface>
                     </section>
                   </div>
                   {!allStocks && (
                     <section aria-labelledby="creator-latest-opinions-title" className="min-w-0">
-                      <header className="mb-3 flex min-h-14 max-md:min-h-0 items-start gap-2">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <h2
-                              id="creator-latest-opinions-title"
-                              className="text-xl font-semibold tracking-[-0.01em]"
-                            >
-                              {c("Latest creator videos", "博主最新视频")}
-                            </h2>
-                            {catalogue?.latest_videos?.length ? (
-                              <span
-                                className="rounded-full bg-muted px-2 py-0.5 text-xs tabular-nums text-muted-foreground"
-                                aria-label={c(
-                                  `Showing ${catalogue.latest_videos.length} latest videos`,
-                                  `展示 ${catalogue.latest_videos.length} 位博主的最新视频`,
-                                )}
-                              >
-                                {catalogue.latest_videos.length}
-                              </span>
-                            ) : null}
-                          </div>
-                          <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                            {c(
-                              "Each creator’s latest video, with stock opinions grouped together",
-                              "每位博主仅展示最新一期，合并同视频内的股票观点",
-                            )}
-                          </p>
-                        </div>
-                      </header>
+                      <h2
+                        id="creator-latest-opinions-title"
+                        className="mb-3 text-xl font-semibold tracking-[-0.01em]"
+                      >
+                        {c("Latest creator videos", "博主最新视频")}
+                      </h2>
                       <ListCard>
                         {catalogueError ? (
                           <EmptyLine

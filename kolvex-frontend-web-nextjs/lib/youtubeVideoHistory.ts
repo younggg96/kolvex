@@ -1,14 +1,39 @@
 import { opinionDay } from "./opinionDates";
-import type { YouTubeOpinion, YouTubeUntrackedUpload } from "./youtubeOpinionsApi";
+import type {
+  YouTubeOpinion,
+  YouTubeUntrackedUpload,
+  YouTubeUploadCoverage,
+} from "./youtubeOpinionsApi";
 
 export type VideoOpinionGroup = {
   videoId: string;
-  video: Pick<YouTubeOpinion, "video_id" | "video_title" | "video_url" | "thumbnail_url" | "video_published_at"> & { opinion_date?: string };
+  video: Pick<
+    YouTubeOpinion,
+    "video_id" | "video_title" | "video_url" | "thumbnail_url" | "video_published_at"
+  > & { opinion_date?: string };
   opinions: YouTubeOpinion[];
   creator?: Pick<YouTubeOpinion, "channel_id" | "channel_title" | "channel_avatar_url">;
   video_summary?: string | null;
   analyzed?: boolean;
 };
+
+export function recentVideoCreators(
+  videos: readonly VideoOpinionGroup[],
+  coverage: Readonly<Record<string, YouTubeUploadCoverage>>,
+  now: number,
+) {
+  const recent = new Set<string>();
+  const add = (channel: string | undefined, publishedAt: string | null | undefined) => {
+    if (!channel || !publishedAt) return;
+    const age = now - Date.parse(publishedAt);
+    if (age >= 0 && age < 24 * 60 * 60 * 1000) recent.add(channel);
+  };
+  for (const { creator, video } of videos) add(creator?.channel_id, video.video_published_at);
+  for (const entry of Object.values(coverage)) {
+    if (entry.status === "available") add(entry.channel_id, entry.latest_published_at);
+  }
+  return recent;
+}
 
 export function groupOpinionsByVideo(opinions: YouTubeOpinion[]) {
   const groups = new Map<string, VideoOpinionGroup>();
@@ -17,10 +42,15 @@ export function groupOpinionsByVideo(opinions: YouTubeOpinion[]) {
     const group = groups.get(key);
     if (group) {
       if (opinion.ticker) group.opinions.push(opinion);
-    } else groups.set(key, {
-      videoId: key, video: opinion, opinions: opinion.ticker ? [opinion] : [],
-      creator: opinion, video_summary: opinion.video_summary, analyzed: true,
-    });
+    } else
+      groups.set(key, {
+        videoId: key,
+        video: opinion,
+        opinions: opinion.ticker ? [opinion] : [],
+        creator: opinion,
+        video_summary: opinion.video_summary,
+        analyzed: true,
+      });
   }
   return Array.from(groups.values());
 }

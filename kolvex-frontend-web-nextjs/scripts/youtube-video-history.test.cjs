@@ -21,7 +21,34 @@ function loadHelper(name) {
   );
   return module.exports;
 }
-const { videoHistory } = loadHelper("youtubeVideoHistory");
+const { recentVideoCreators, videoHistory } = loadHelper("youtubeVideoHistory");
+
+test("recent creator markers use verified video publication, with a rolling 24-hour window", () => {
+  const now = Date.parse("2026-11-18T12:00:00Z");
+  const video = (channel_id, video_published_at) => ({
+    creator: { channel_id },
+    video: { video_published_at, opinion_date: "2026-11-18" },
+  });
+  const coverage = (channel_id, status, latest_published_at) => ({
+    channel_id,
+    status,
+    latest_published_at,
+  });
+  const recent = recentVideoCreators(
+    [
+      video("tracked", "2026-11-17T12:01:00Z"),
+      video("expired", "2026-11-17T12:00:00Z"),
+      video("future", "2026-11-18T12:00:01Z"),
+      video("opinion-only", null),
+    ],
+    {
+      upload: coverage("upload", "available", "2026-11-18T06:00:00-05:00"),
+      unavailable: coverage("unavailable", "unavailable", "2026-11-18T11:00:00Z"),
+    },
+    now,
+  );
+  assert.deepEqual([...recent], ["tracked", "upload"]);
+});
 const opinion = {
   id: "opinion",
   ticker: "NVDA",
