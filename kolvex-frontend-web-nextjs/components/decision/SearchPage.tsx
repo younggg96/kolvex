@@ -362,10 +362,7 @@ export default function SearchPage() {
     <div className="mb-6 max-lg:m-0 max-lg:px-1 max-lg:pt-1">
       <div className="flex items-center gap-1 lg:gap-3">
         <form role="search" noValidate onSubmit={submit} className="min-w-0 flex-1">
-          <CommandSearch
-            hasValue={!!value}
-            shortcut="mod+k"
-          >
+          <CommandSearch hasValue={!!value} shortcut="mod+k">
             <div
               className={cn(
                 "glass-field relative flex h-[44px] items-center rounded-3xl bg-foreground/[0.06] lg:h-14",

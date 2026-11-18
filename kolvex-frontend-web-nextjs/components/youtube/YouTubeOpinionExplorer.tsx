@@ -2097,10 +2097,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                         </h2>
                         <ListCard>
                           {showAllCreatorStocks && (
-                            <CommandSearch
-                              className="mb-3 hidden lg:block"
-                              hasValue={!!search}
-                            >
+                            <CommandSearch className="mb-3 hidden lg:block" hasValue={!!search}>
                               <div className="relative">
                                 <SearchFieldIcon className="left-3.5 h-4 w-4" />
                                 <Input

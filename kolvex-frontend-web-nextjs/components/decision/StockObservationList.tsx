@@ -548,11 +548,7 @@ export default function StockObservationList({
             <label htmlFor="stock-search" className="sr-only">
               {c("Search this list", "搜索当前名单")}
             </label>
-            <CommandSearch
-              className="w-full"
-              hasValue={!!searchDraft}
-              shortcut="mod+k"
-            >
+            <CommandSearch className="w-full" hasValue={!!searchDraft} shortcut="mod+k">
               <div className="relative">
                 <Input
                   shape="pill"

@@ -191,10 +191,7 @@ export default function Watchlist() {
                       >
                         {c("Search Watchlist", "搜索自选股")}
                       </label>
-                      <CommandSearch
-                        hasValue={!!draft}
-                        shortcut="mod+k"
-                      >
+                      <CommandSearch hasValue={!!draft} shortcut="mod+k">
                         <div className="relative">
                           <SearchFieldIcon />
                           <Input
