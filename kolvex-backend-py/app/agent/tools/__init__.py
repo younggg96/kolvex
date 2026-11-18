@@ -164,7 +164,14 @@ def get_tools_for_sources(
 
     if skills is None:
         return tools
-    return [tool for tool in tools if _CHAT_TOOL_SKILLS.get(tool.name) in skills]
+    # Turning on the holdings data source is the user's explicit choice to share holdings, so
+    # the skill filter must not take the holdings tool away again.
+    holdings_on = sources is not None and any(s in ("portfolio", "plaid") for s in sources)
+    return [
+        tool
+        for tool in tools
+        if _CHAT_TOOL_SKILLS.get(tool.name) in skills or (holdings_on and tool is portfolio_tool)
+    ]
 
 
 __all__ = [

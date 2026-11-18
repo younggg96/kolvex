@@ -74,20 +74,41 @@ export function AccountCard({
     account.portfolio_positions?.filter((p) => p.position_type === "option") || [];
   const accountPositions = account.portfolio_positions?.length || 0;
 
+  const badges = (
+    <>
+      {account.source === "manual" && (
+        <Badge variant="outline" className="whitespace-nowrap text-xs">
+          {t("portfolio.manualImport.badge")}
+        </Badge>
+      )}
+      <Badge variant="default" className="whitespace-nowrap text-xs">
+        {t("portfolio.holdings.positions", { count: String(accountPositions) })}
+      </Badge>
+      {optionPositions.length > 0 && (
+        <Badge
+          variant="outline"
+          className="whitespace-nowrap border-primary/30 text-xs text-primary"
+        >
+          {t("portfolio.holdings.options", { count: String(optionPositions.length) })}
+        </Badge>
+      )}
+    </>
+  );
+
   return (
     <Collapsible open={isExpanded} onOpenChange={onToggle}>
       <ListCard className="overflow-hidden !p-0 sm:!p-0">
         <CollapsibleTrigger asChild>
           <CardHeader className="cursor-pointer select-none transition-colors hover:bg-foreground/[0.06] py-2.5 px-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
                 <ChevronRight
                   className={`h-4 w-4 text-muted-foreground transition-transform ${
                     isExpanded ? "rotate-90" : ""
                   }`}
                 />
-                <div>
-                  <CardTitle className="text-sm font-semibold">
+                <div className="min-w-0">
+                  <CardTitle className="truncate text-sm font-semibold">
                     {account.account_name || t("portfolio.holdings.brokerageAccount")}
                   </CardTitle>
                   <p className="text-xs text-muted-foreground font-mono">
@@ -97,22 +118,11 @@ export function AccountCard({
                         ? account.brokerage_name
                         : account.id.slice(0, 8)}
                   </p>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5 sm:hidden">{badges}</div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                {account.source === "manual" && (
-                  <Badge variant="outline" className="text-xs">
-                    {t("portfolio.manualImport.badge")}
-                  </Badge>
-                )}
-                <Badge variant="default" className="text-xs">
-                  {t("portfolio.holdings.positions", { count: String(accountPositions) })}
-                </Badge>
-                {optionPositions.length > 0 && (
-                  <Badge variant="outline" className="text-xs border-primary/30 text-primary">
-                    {t("portfolio.holdings.options", { count: String(optionPositions.length) })}
-                  </Badge>
-                )}
+              <div className="flex shrink-0 items-center gap-2">
+                <span className="hidden items-center gap-2 sm:flex">{badges}</span>
                 {isOwner && onRemove && (
                   <Button
                     type="button"

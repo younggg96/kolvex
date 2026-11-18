@@ -20,6 +20,7 @@ from app.api.routes.news_feed import router as news_feed_router
 from app.api.routes.options import router as options_router
 from app.api.routes.options_activity import router as options_activity_router
 from app.api.routes.paper_trading import router as paper_trading_router
+from app.api.routes.person_updates import router as person_updates_router
 from app.api.routes.plaid import router as plaid_router
 from app.api.routes.portfolio import router as portfolio_router
 from app.api.routes.reddit_opinions import router as reddit_opinions_router
@@ -62,6 +63,7 @@ api_router.include_router(chart_drawings_router)
 api_router.include_router(paper_trading_router)
 api_router.include_router(research_workspaces_router)
 api_router.include_router(briefs_router)
+api_router.include_router(person_updates_router)
 api_router.include_router(market_events_router)
 api_router.include_router(market_observations_router)
 

@@ -179,7 +179,7 @@ function StockRow({
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((value) => !value)}
-        className="flex w-full min-w-0 items-center gap-3 rounded-xl px-2 py-3 text-left transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="flex w-full min-w-0 items-center gap-2.5 rounded-xl px-1 py-3 text-left sm:gap-3 sm:px-2 transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <CompanyLogo symbol={stock.ticker} size="sm" />
         <div className="min-w-0 flex-1">
@@ -188,16 +188,20 @@ function StockRow({
             <SentimentBadge sentiment={call.sentiment} t={t} />
             <TrendTag call={call} t={t} />
           </div>
-          <div className="mt-0.5 truncate text-xs text-muted-foreground tabular-nums">
-            {formatOpinionDate(call.published_at ?? call.entry_date, locale)}
-            {" · "}
-            {t("youtubeOpinions.review.mentions", { count: String(stock.calls.length) })}
-            {stock.calls.length > 1 && stock.bullish > 0 && stock.bearish > 0
-              ? ` (${t("youtubeOpinions.review.mentionSplit", {
-                  bullish: String(stock.bullish),
-                  bearish: String(stock.bearish),
-                })})`
-              : null}
+          {/* Wraps rather than truncates: on a phone the mention count would otherwise be cut off. */}
+          <div className="mt-0.5 flex flex-wrap gap-x-1 text-xs text-muted-foreground tabular-nums">
+            <span className="whitespace-nowrap">
+              {formatOpinionDate(call.published_at ?? call.entry_date, locale)} ·
+            </span>
+            <span className="whitespace-nowrap">
+              {t("youtubeOpinions.review.mentions", { count: String(stock.calls.length) })}
+              {stock.calls.length > 1 && stock.bullish > 0 && stock.bearish > 0
+                ? ` (${t("youtubeOpinions.review.mentionSplit", {
+                    bullish: String(stock.bullish),
+                    bearish: String(stock.bearish),
+                  })})`
+                : null}
+            </span>
           </div>
         </div>
         <SinceFigure call={call} benchmark={benchmark} t={t} />
@@ -268,7 +272,7 @@ function CreatorStocks({ channelId, t }: { channelId: string; t: T }) {
   const name = data.channel_title || channelId;
   return (
     <div className="min-w-0">
-      <ListCard className="min-w-0 p-4 sm:p-5">
+      <ListCard className="min-w-0 p-3 sm:p-5">
         <div className="flex min-w-0 items-center gap-2">
           <CreatorAvatar name={name} avatarUrl={data.channel_avatar_url} size="md" />
           <div className="min-w-0 flex-1">

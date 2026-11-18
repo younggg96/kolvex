@@ -47,6 +47,44 @@ function normalizeOptionCost(rawAveragePrice: number, currentPremium: number) {
   };
 }
 
+/** Contract count, cost, value and P&L for one option position (shared by table and phone cards). */
+function optionFigures(pos: PortfolioPosition) {
+  const safePrice = isHiddenValue(pos.price) ? 0 : (pos.price as number);
+  const safeAvgPrice = isHiddenValue(pos.average_purchase_price)
+    ? 0
+    : (pos.average_purchase_price as number);
+
+  const signedContracts = isHiddenValue(pos.units) ? 0 : Number(pos.units || 0);
+  const contracts = Math.abs(signedContracts);
+  const currentPremium = Math.abs(Number(safePrice || 0));
+  const { costPerContract } = normalizeOptionCost(
+    Math.abs(Number(safeAvgPrice || 0)),
+    currentPremium,
+  );
+  const computedMarketValue = currentPremium * contracts * OPTION_CONTRACT_MULTIPLIER;
+  const storedMarketValue = isHiddenValue(pos.market_value)
+    ? 0
+    : Math.abs(Number(pos.market_value || 0));
+  const marketValue = computedMarketValue || storedMarketValue;
+  const canShowMarketValue = computedMarketValue > 0 || !isHiddenValue(pos.market_value);
+  const totalCost = costPerContract * contracts;
+  const isShort = signedContracts < 0 || (!signedContracts && (pos.weight_percent ?? 0) < 0);
+  // Short options profit when the premium falls. Long options profit when it rises.
+  const pnl = isShort ? totalCost - marketValue : marketValue - totalCost;
+  const pnlPerShare = contracts > 0 ? pnl / (contracts * OPTION_CONTRACT_MULTIPLIER) : 0;
+  return {
+    safePrice,
+    contracts,
+    costPerContract,
+    marketValue,
+    canShowMarketValue,
+    isShort,
+    pnl,
+    profit: pnl >= 0,
+    pnlPerShare,
+  };
+}
+
 export function OptionPositionsTable({
   positions,
   isOwner,
@@ -67,7 +105,14 @@ export function OptionPositionsTable({
       <div className="px-4 py-4 bg-primary/5 text-xs font-medium text-primary dark:text-primary-dark flex items-center border-y border-primary/30 dark:border-border-dark">
         {t("portfolio.table.optionsContracts")}
       </div>
-      <div className="overflow-x-auto">
+      <OptionPositionsCards
+        positions={positions}
+        isOwner={isOwner}
+        isPublic={isPublic}
+        privacySettings={privacySettings}
+        onToggleVisibility={onToggleVisibility}
+      />
+      <div className="hidden overflow-x-auto sm:block">
         <Table className="min-w-[68.75rem] [&_td]:py-2 [&_th]:h-9">
           <TableHeader>
             <TableRow>
@@ -188,35 +233,17 @@ export function OptionPositionsTable({
           <TableBody>
             {positions.map((pos: PortfolioPosition) => {
               const isHiddenPosition = pos.is_hidden || pos.units == null;
-
-              // Safely get numeric values, handling hidden values "***"
-              const safePrice = isHiddenValue(pos.price) ? 0 : (pos.price as number);
-              const safeAvgPrice = isHiddenValue(pos.average_purchase_price)
-                ? 0
-                : (pos.average_purchase_price as number);
-
-              const signedContracts = isHiddenValue(pos.units) ? 0 : Number(pos.units || 0);
-              const contracts = Math.abs(signedContracts);
-              const currentPremium = Math.abs(Number(safePrice || 0));
-              const { costPerContract } = normalizeOptionCost(
-                Math.abs(Number(safeAvgPrice || 0)),
-                currentPremium,
-              );
-              const computedMarketValue = currentPremium * contracts * OPTION_CONTRACT_MULTIPLIER;
-              const storedMarketValue = isHiddenValue(pos.market_value)
-                ? 0
-                : Math.abs(Number(pos.market_value || 0));
-              const marketValue = computedMarketValue || storedMarketValue;
-              const canShowMarketValue =
-                computedMarketValue > 0 || !isHiddenValue(pos.market_value);
-              const totalCost = costPerContract * contracts;
-              const isShort =
-                signedContracts < 0 || (!signedContracts && (pos.weight_percent ?? 0) < 0);
-              // Short options profit when the premium falls. Long options profit when it rises.
-              const pnl = isShort ? totalCost - marketValue : marketValue - totalCost;
-              const profit = pnl >= 0;
-              const pnlPerShare =
-                contracts > 0 ? pnl / (contracts * OPTION_CONTRACT_MULTIPLIER) : 0;
+              const {
+                safePrice,
+                contracts,
+                costPerContract,
+                marketValue,
+                canShowMarketValue,
+                isShort,
+                pnl,
+                profit,
+                pnlPerShare,
+              } = optionFigures(pos);
               const pnlPerShareProfit = pnlPerShare >= 0;
               // Privacy: per-share PnL visibility (owner always sees, public checks setting)
               const showPnlPerShare =
@@ -421,5 +448,143 @@ export function OptionPositionsTable({
         </Table>
       </div>
     </>
+  );
+}
+
+/** Phone layout: one row per contract instead of an 11-column table that scrolls sideways. */
+function OptionPositionsCards({
+  positions,
+  isOwner,
+  isPublic,
+  privacySettings,
+  onToggleVisibility,
+}: Pick<
+  OptionPositionsTableProps,
+  "positions" | "isOwner" | "isPublic" | "privacySettings" | "onToggleVisibility"
+>) {
+  const { t } = useTranslation();
+
+  return (
+    <ul className="divide-y divide-border sm:hidden">
+      {positions.map((pos: PortfolioPosition) => {
+        const isSecret = (pos.is_hidden || pos.units == null) && !isOwner;
+        const f = optionFigures(pos);
+        const symbol = pos.underlying_symbol || pos.symbol;
+        const showPnl = isOwner || privacySettings?.show_position_pnl !== false;
+        const pnlHidden =
+          isSecret ||
+          !showPnl ||
+          isHiddenValue(pos.average_purchase_price) ||
+          isHiddenValue(pos.price);
+        const money = (val: number, hidden: boolean) =>
+          isSecret || hidden ? "***" : formatCurrency(val);
+
+        return (
+          <li
+            key={pos.id}
+            className={`flex items-start gap-3 px-4 py-3 ${isSecret ? "opacity-70" : ""}`}
+          >
+            {isSecret ? (
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-muted/80">
+                <Lock className="h-4 w-4 text-muted-foreground" />
+              </div>
+            ) : (
+              <Link href={marketStockHref(symbol)} aria-label={symbol} className="shrink-0">
+                <CompanyLogo
+                  symbol={symbol}
+                  name={pos.security_name || symbol}
+                  size="sm"
+                  border="light"
+                />
+              </Link>
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-baseline justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-1.5 font-semibold">
+                  {isSecret ? (
+                    <span className="text-muted-foreground">***</span>
+                  ) : (
+                    <Link href={marketStockHref(symbol)} className="truncate">
+                      {symbol}
+                    </Link>
+                  )}
+                  {!isSecret && pos.strike_price ? (
+                    <Badge
+                      variant={f.isShort ? "destructive" : "default"}
+                      size="xxs"
+                      className="shrink-0 !text-[0.625rem]"
+                    >
+                      {f.isShort ? t("portfolio.table.short") : t("portfolio.table.long")}
+                    </Badge>
+                  ) : null}
+                </div>
+                <span className="shrink-0 font-medium tabular-nums">
+                  {money(f.marketValue, !f.canShowMarketValue)}
+                </span>
+              </div>
+              <div className="mt-0.5 flex items-baseline justify-between gap-3 text-xs">
+                <span className="truncate tabular-nums text-muted-foreground">
+                  {isSecret
+                    ? "***"
+                    : [
+                        pos.strike_price
+                          ? `${formatCurrency(pos.strike_price, "USD", 0, 0)} ${pos.option_type || ""}`.trim()
+                          : null,
+                        pos.expiration_date,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ") || "-"}
+                </span>
+                {pnlHidden ? (
+                  <span className="shrink-0 text-muted-foreground">***</span>
+                ) : (
+                  <span
+                    className={`inline-flex shrink-0 items-center gap-0.5 font-medium tabular-nums ${
+                      f.profit ? "text-positive" : "text-negative"
+                    }`}
+                  >
+                    {f.profit ? (
+                      <ArrowUpRight className="h-3 w-3" />
+                    ) : (
+                      <ArrowDownRight className="h-3 w-3" />
+                    )}
+                    {f.profit ? "+" : "−"}
+                    {formatCurrency(Math.abs(f.pnl))}
+                  </span>
+                )}
+              </div>
+              <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs tabular-nums text-muted-foreground">
+                <span>
+                  {t("portfolio.table.contracts")}{" "}
+                  {isSecret || isHiddenValue(pos.units) ? "***" : f.contracts}
+                </span>
+                <span>
+                  {t("portfolio.table.price")} {money(f.safePrice, isHiddenValue(pos.price))}
+                </span>
+                <span>
+                  {t("portfolio.table.cost")}{" "}
+                  {money(f.costPerContract, isHiddenValue(pos.average_purchase_price))}
+                </span>
+              </div>
+            </div>
+            {isOwner && isPublic && (
+              <button
+                onClick={(e) => onToggleVisibility(e, pos.id, pos.is_hidden || false)}
+                className={`-mr-1.5 shrink-0 rounded-full p-2 transition-colors ${
+                  pos.is_hidden ? "text-muted-foreground" : "text-positive"
+                }`}
+                aria-label={
+                  pos.is_hidden
+                    ? t("portfolio.table.hiddenFromPublic")
+                    : t("portfolio.table.visibleToPublic")
+                }
+              >
+                {pos.is_hidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            )}
+          </li>
+        );
+      })}
+    </ul>
   );
 }

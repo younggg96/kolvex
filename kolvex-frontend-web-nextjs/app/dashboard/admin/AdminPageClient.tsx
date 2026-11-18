@@ -5,6 +5,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useCallback, useEffect, useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import MarketEventManager from "@/components/admin/MarketEventManager";
+import PersonUpdatesImporter from "@/components/admin/PersonUpdatesImporter";
+import { useCopy } from "@/components/decision/shared";
 import DailyBriefImporter from "@/components/admin/DailyBriefImporter";
 import YouTubeOpinionImporter from "@/components/admin/YouTubeOpinionImporter";
 import YouTubeAutoImportPanel from "@/components/admin/YouTubeAutoImportPanel";
@@ -18,6 +20,17 @@ import { Button } from "@/components/ui/button";
 import { SettingsGroup, SettingsRow } from "@/components/ui/settings-group";
 import { SearchInput } from "@/components/ui/search-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+const DIRECT_ADMIN_TABS = new Set([
+  "x",
+  "events",
+  "briefs",
+  "options",
+  "email",
+  "youtube",
+  "institutions",
+  "person-updates",
+]);
 
 interface AdminUser {
   id: string;
@@ -34,6 +47,7 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 export default function AdminPageClient({ initialTab }: { initialTab?: string }) {
+  const c = useCopy();
   const { profile, isLoading } = useUserProfileContext();
   const [tables, setTables] = useState<Record<string, number>>({});
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -156,23 +170,7 @@ export default function AdminPageClient({ initialTab }: { initialTab?: string })
         )}
 
         <Tabs
-          defaultValue={
-            initialTab === "x"
-              ? "x"
-              : initialTab === "events"
-                ? "events"
-                : initialTab === "briefs"
-                  ? "briefs"
-                  : initialTab === "options"
-                    ? "options"
-                    : initialTab === "email"
-                      ? "email"
-                      : initialTab === "youtube"
-                        ? "youtube"
-                        : initialTab === "institutions"
-                          ? "institutions"
-                          : "database"
-          }
+          defaultValue={initialTab && DIRECT_ADMIN_TABS.has(initialTab) ? initialTab : "database"}
         >
           <TabsList className="max-w-full flex-wrap h-auto">
             <TabsTrigger value="database">数据库</TabsTrigger>
@@ -182,6 +180,9 @@ export default function AdminPageClient({ initialTab }: { initialTab?: string })
             <TabsTrigger value="x">X 内容</TabsTrigger>
             <TabsTrigger value="events">重大事件</TabsTrigger>
             <TabsTrigger value="briefs">日报管理</TabsTrigger>
+            <TabsTrigger value="person-updates">
+              {c("人物动态 · Person Updates", "人物动态")}
+            </TabsTrigger>
             <TabsTrigger value="options">期权异动</TabsTrigger>
             <TabsTrigger value="email">邮件设置</TabsTrigger>
             <TabsTrigger value="institutions">超级投资者</TabsTrigger>
@@ -277,6 +278,13 @@ export default function AdminPageClient({ initialTab }: { initialTab?: string })
 
           <TabsContent value="events" forceMount className="mt-6 data-[state=inactive]:hidden">
             <MarketEventManager />
+          </TabsContent>
+          <TabsContent
+            value="person-updates"
+            forceMount
+            className="mt-6 data-[state=inactive]:hidden"
+          >
+            <PersonUpdatesImporter />
           </TabsContent>
           <TabsContent value="options" className="mt-6">
             <OptionsActivityManager />

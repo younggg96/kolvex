@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/theme/ThemeToggle";
 import { useCopy } from "@/components/decision/shared";
 import { SUPPORTED_LOCALES, useTranslation } from "@/lib/i18n";
+import { isProductFeatureEnabled } from "@/lib/productFeatures";
 import { cn } from "@/lib/utils";
 
 const readingLocales = [...SUPPORTED_LOCALES].reverse();
@@ -15,6 +16,9 @@ const links = [
   { href: "/research", en: "Stock research", zh: "股票研究" },
   { href: "/creators", en: "Creator opinions", zh: "博主观点" },
   { href: "/stocks", en: "Stock directory", zh: "股票目录" },
+  ...(isProductFeatureEnabled("personUpdates")
+    ? [{ href: "/tracker", en: "Person updates", zh: "人物动态" }]
+    : []),
 ];
 
 export function ReadingHeader() {

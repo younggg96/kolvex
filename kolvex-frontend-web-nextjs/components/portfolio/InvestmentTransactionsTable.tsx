@@ -173,7 +173,8 @@ export function InvestmentTransactionsTable({
         </div>
       </ListToolbar>
 
-      <div className="overflow-x-auto">
+      <TransactionCards transactions={transactions} loading={loading} locale={dateLocale} />
+      <div className="hidden overflow-x-auto sm:block">
         <Table className="min-w-[56.25rem]">
           <TableHeader>
             <TableRow>
@@ -305,5 +306,79 @@ function TransactionRowsSkeleton({ rows }: { rows: number }) {
         </TableRow>
       ))}
     </>
+  );
+}
+
+/** Phone layout: one row per transaction instead of an 8-column table that scrolls sideways. */
+function TransactionCards({
+  transactions,
+  loading,
+  locale,
+}: {
+  transactions: PlaidInvestmentTransaction[];
+  loading: boolean;
+  locale: string;
+}) {
+  const { t } = useTranslation();
+  const money = (v: number | null | undefined) =>
+    v === null || v === undefined ? "-" : formatCurrency(v);
+
+  if (loading && transactions.length === 0) {
+    return (
+      <div className="space-y-4 px-4 py-4 sm:hidden" aria-hidden="true">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="flex justify-between gap-3">
+            <div className="space-y-1.5">
+              <Skeleton className="h-4 w-14 rounded-md" />
+              <Skeleton className="h-3 w-32 rounded-md" />
+            </div>
+            <Skeleton className="h-4 w-16 rounded-md" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (transactions.length === 0) {
+    return (
+      <p className="px-4 py-8 text-center text-sm text-muted-foreground sm:hidden">
+        {t("portfolio.transactions.emptyTitle")}
+      </p>
+    );
+  }
+
+  return (
+    <ul className="divide-y divide-border sm:hidden">
+      {transactions.map((tx) => (
+        <li key={tx.id || tx.investment_transaction_id} className="list-reveal px-4 py-3">
+          <div className="flex items-baseline justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="font-semibold">{tx.symbol || "-"}</span>
+              <Badge variant="secondary" size="xxs" className="shrink-0 capitalize">
+                {normalizeLabel(tx.type, t)}
+              </Badge>
+            </div>
+            <span className="shrink-0 font-medium tabular-nums">{money(tx.amount)}</span>
+          </div>
+          <div className="mt-0.5 flex items-baseline justify-between gap-3 text-xs text-muted-foreground">
+            <span className="truncate">{tx.name || tx.security_id || "-"}</span>
+            <span className="shrink-0">{formatDate(tx.date, locale)}</span>
+          </div>
+          <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs tabular-nums text-muted-foreground">
+            <span>
+              {t("portfolio.transactions.quantity")} {formatQuantity(tx.quantity, locale)}
+            </span>
+            <span>
+              {t("portfolio.transactions.price")} {money(tx.price)}
+            </span>
+            {tx.fees ? (
+              <span>
+                {t("portfolio.transactions.fees")} {money(tx.fees)}
+              </span>
+            ) : null}
+            {tx.account_name ? <span className="truncate">{tx.account_name}</span> : null}
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }

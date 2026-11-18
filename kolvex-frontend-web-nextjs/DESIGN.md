@@ -1785,3 +1785,17 @@ Late requests cannot roll newer session observations back. Missing quotes remain
 unavailable rather than receiving fabricated sample prices. Historic comparison
 tables and explicitly dated financial/valuation inputs keep their own snapshot
 meaning and reporting periods.
+
+### Key Person Updates
+
+The public `/tracker` timeline uses a time column and a content column on wide
+screens, then stacks them on narrow screens. PT is primary and ET and Beijing
+time remain visible, including their local dates. Person and tag share the
+standard Select and each selected filter is reflected in the URL. Entries show
+the original content, text impact labels, a source link, and an optional image
+with alt text. A failed image leaves the entry readable.
+
+The Admin 人物动态 tab uses the shared Textarea and three text buttons for paste,
+validate and preview, save, and clearing the editor. Preview reuses the reader's
+timeline rows in the persistent result region. Progress, validation errors, and
+saved record IDs use a live status region. The draft survives tab changes.

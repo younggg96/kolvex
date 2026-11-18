@@ -1,0 +1,29 @@
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+const test = require("node:test");
+const vm = require("node:vm");
+const ts = require("typescript");
+
+const context = { exports: {} };
+const source = fs.readFileSync(path.join(__dirname, "../lib/personUpdates.ts"), "utf8");
+vm.runInNewContext(
+  ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText,
+  context,
+);
+const { PERSON_UPDATE_ZONES, personUpdateTime } = context.exports;
+
+test("the same instant keeps each market's local date", () => {
+  const winter = "2026-11-18T02:44:00-05:00";
+  const result = PERSON_UPDATE_ZONES.map(([zone]) => personUpdateTime(winter, "en-US", zone));
+  assert.equal(result[0], "Nov 17, 2026, 23:44");
+  assert.equal(result[1], "Nov 18, 2026, 02:44");
+  assert.equal(result[2], "Nov 18, 2026, 15:44");
+});
+
+test("market time follows daylight saving time", () => {
+  const summer = "2026-07-20T12:00:00Z";
+  assert.match(personUpdateTime(summer, "zh-CN", "America/Los_Angeles"), /05:00/);
+  assert.match(personUpdateTime(summer, "zh-CN", "America/New_York"), /08:00/);
+  assert.match(personUpdateTime(summer, "zh-CN", "Asia/Shanghai"), /20:00/);
+});

@@ -25,14 +25,16 @@ function Stat({
   value,
   note,
   tone,
+  className,
 }: {
+  className?: string;
   label: string;
   value: React.ReactNode;
   note?: React.ReactNode;
   tone?: "positive" | "negative";
 }) {
   return (
-    <div className="min-w-0 py-3 pr-4 sm:pr-6">
+    <div className={cn("min-w-0 py-3 pr-4 sm:pr-6", className)}>
       <dt className="text-[0.8125rem] text-muted-foreground">{label}</dt>
       <dd
         className={cn(
@@ -81,6 +83,8 @@ export function PortfolioStatsGrid({
         />
       )}
       <Stat
+        // With three stats, P&L takes the full first row on phones so the two counts pair up.
+        className={showTotalValue ? undefined : "col-span-2 sm:col-span-1"}
         label={t("portfolio.stats.unrealizedPnl")}
         tone={pnlTone}
         value={isHidden(totalPnL) ? totalPnL : withSign(totalPnL, formatCurrency)}

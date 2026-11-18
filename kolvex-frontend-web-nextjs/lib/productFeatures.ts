@@ -5,6 +5,7 @@ export type ProductFeatureId =
   | "chat"
   | "tradingAnalysis"
   | "youtubeOpinions"
+  | "personUpdates"
   | "briefs"
   | "news"
   | "portfolio"
@@ -113,6 +114,15 @@ export const PRODUCT_FEATURES = [
     ],
     apiPrefixes: ["/api/youtube-opinions", "/api/reddit-opinions", "/api/x-content"],
     libFiles: ["lib/youtubeOpinionsApi.ts", "lib/xContentApi.ts"],
+  },
+  {
+    id: "personUpdates",
+    label: "Key Person Updates",
+    enabled: true,
+    routePrefixes: ["/tracker"],
+    apiPrefixes: ["/api/person-updates", "/api/admin/person-updates"],
+    componentDirs: ["components/person-updates"],
+    libFiles: ["lib/personUpdates.ts"],
   },
   {
     id: "briefs",

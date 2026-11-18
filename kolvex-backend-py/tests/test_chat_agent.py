@@ -75,6 +75,15 @@ class ToolSelectionTests(unittest.TestCase):
             },
         )
 
+    def test_holdings_source_keeps_portfolio_tool_without_portfolio_skill(self):
+        # The web's default skills leave "portfolio" out; the holdings source switch still wins.
+        default_skills = ["market", "fundamentals", "options", "news", "creators"]
+        for source in ("portfolio", "plaid"):
+            tools = names(get_tools_for_sources([source, "web"], "user-1", skills=default_skills))
+            self.assertIn("get_user_portfolio", tools)
+        tools = names(get_tools_for_sources(["web"], "user-1", skills=default_skills))
+        self.assertNotIn("get_user_portfolio", tools)
+
     def test_empty_skills_disable_all_tools(self):
         self.assertEqual(get_tools_for_sources(None, "user-1", skills=[]), [])
 

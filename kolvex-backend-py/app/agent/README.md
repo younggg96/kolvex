@@ -99,7 +99,7 @@ Web 流式请求发送 `team_research`（`auto` / `ask` / `off`）、`max_team_a
 ### 数据源和技能开关（`get_tools_for_sources`）
 
 - `sources`：前端的数据源开关。`None` 表示全开；`web` 打开 `web_search`，`portfolio` / `plaid` 打开 `get_user_portfolio`。用户关掉的数据源不会被重新打开。
-- `skills`：前端的技能开关（market / fundamentals / options / news / creators / portfolio）。`None` 不过滤；空列表表示一个工具都不给，提示词会要求模型说明没有查实时数据。
+- `skills`：前端的技能开关（market / fundamentals / options / news / creators / portfolio）。`None` 不过滤；空列表表示一个工具都不给，提示词会要求模型说明没有查实时数据。例外：`sources` 明确打开了 `portfolio` / `plaid` 时，`get_user_portfolio` 不受技能过滤（Web 默认技能不含 portfolio，但打开持仓数据源就是用户同意读取持仓）。
 
 ### `get_technical_indicators`（技术指标）
 

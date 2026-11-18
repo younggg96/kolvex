@@ -84,7 +84,7 @@ function Th({
       scope="col"
       style={column?.minWidth ? { minWidth: column.minWidth } : undefined}
       className={cn(
-        "border-b border-foreground/10 px-3.5 py-2.5 text-xs font-semibold text-muted-foreground",
+        "border-b border-foreground/10 px-2.5 py-2.5 text-xs sm:px-3.5 font-semibold text-muted-foreground",
         !column?.wraps && "whitespace-nowrap",
         ALIGN_CLASS[align || "left"],
       )}
@@ -109,7 +109,7 @@ function Td({
     <td
       style={column?.minWidth ? { minWidth: column.minWidth } : undefined}
       className={cn(
-        "px-3.5 py-2.5 align-top text-[0.8125rem] leading-6 text-foreground",
+        "px-2.5 py-2.5 align-top text-[0.8125rem] sm:px-3.5 leading-6 text-foreground",
         column?.wraps && !column.numeric ? "[overflow-wrap:anywhere]" : "whitespace-nowrap",
         ALIGN_CLASS[resolved],
         resolved === "right" && "figure",
