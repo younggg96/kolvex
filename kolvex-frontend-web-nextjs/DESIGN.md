@@ -1786,10 +1786,12 @@ unavailable rather than receiving fabricated sample prices. Historic comparison
 tables and explicitly dated financial/valuation inputs keep their own snapshot
 meaning and reporting periods.
 
-### Key Person Updates
+### Person Updates
 
-The public `/tracker` timeline uses a time column and a content column on wide
-screens, then stacks them on narrow screens. PT is primary and ET and Beijing
+Person Updates / 人物动态 appears in the workspace's Read group (and its mobile
+More menu) at `/dashboard/person-updates`. It shares the timeline with public
+`/tracker`. The timeline uses separate time and content columns on wide screens
+and stacks them on narrow screens. PT is primary and ET and Beijing
 time remain visible, including their local dates. Person and tag share the
 standard Select and each selected filter is reflected in the URL. Entries show
 the original content, text impact labels, a source link, and an optional image

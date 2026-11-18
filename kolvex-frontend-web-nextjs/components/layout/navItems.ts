@@ -10,11 +10,17 @@ import {
   Telescope,
   MessageSquareText,
   Activity,
+  UserRound,
   FolderKanban,
   MessagesSquare,
   type LucideIcon,
 } from "lucide-react";
-import { RedditIcon, XIcon, YouTubeIcon, type PlatformIconComponent } from "@/components/common/PlatformIcons";
+import {
+  RedditIcon,
+  XIcon,
+  YouTubeIcon,
+  type PlatformIconComponent,
+} from "@/components/common/PlatformIcons";
 import type { ProductFeatureId } from "@/lib/productFeatures";
 export const SEARCH_HREF = "/dashboard/search";
 
@@ -84,6 +90,15 @@ export const MAIN_NAV_ITEMS: MainNavItem[] = [
     href: "/dashboard/news",
     type: "link",
     featureId: "news",
+    group: "read",
+  },
+  {
+    icon: UserRound,
+    titleKey: "sidebar.personUpdates",
+    shortTitleKey: "sidebar.personUpdates",
+    href: "/dashboard/person-updates",
+    type: "link",
+    featureId: "personUpdates",
     group: "read",
   },
   {
@@ -171,11 +186,18 @@ export const MAIN_NAV_ITEMS: MainNavItem[] = [
 ];
 export function isNavItemActive(pathname: string, href: string) {
   if (href === "/dashboard") return pathname === href || pathname.startsWith("/dashboard/market/");
-  if (href === "/dashboard/ai-research" &&
-    (pathname === "/dashboard/trading-analysis" || pathname.startsWith("/dashboard/trading-analysis/"))) return true;
+  if (
+    href === "/dashboard/ai-research" &&
+    (pathname === "/dashboard/trading-analysis" ||
+      pathname.startsWith("/dashboard/trading-analysis/"))
+  )
+    return true;
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
 export function isMainNavItemActive(pathname: string, item: MainNavItem) {
-  return isNavItemActive(pathname, item.href) || Boolean(item.children?.some((child) => isNavItemActive(pathname, child.href)));
+  return (
+    isNavItemActive(pathname, item.href) ||
+    Boolean(item.children?.some((child) => isNavItemActive(pathname, child.href)))
+  );
 }

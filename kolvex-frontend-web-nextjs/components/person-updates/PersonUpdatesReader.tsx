@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useTranslation } from "@/lib/i18n";
 import type { PersonUpdate } from "@/lib/personUpdates";
 import { PersonUpdateTimeline } from "./PersonUpdateTimeline";
 
@@ -57,6 +58,13 @@ function TrackerFilter({
         ))}
       </SelectContent>
     </Select>
+  );
+}
+
+export function PersonUpdatesTitle() {
+  const { t } = useTranslation();
+  return (
+    <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("sidebar.personUpdates")}</h1>
   );
 }
 
@@ -147,7 +155,12 @@ export function PersonUpdatesReader() {
           <p>{c("No updates match these filters.", "没有符合筛选条件的动态。")}</p>
           <Button
             variant="outline"
-            onClick={() => window.history.replaceState(null, "", "/tracker")}
+            onClick={() => {
+              const url = new URL(window.location.href);
+              url.searchParams.delete("person");
+              url.searchParams.delete("tag");
+              window.history.replaceState(null, "", url);
+            }}
           >
             {c("Clear filters", "清除筛选")}
           </Button>

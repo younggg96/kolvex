@@ -1,6 +1,6 @@
-# 关键人物动态
+# 人物动态
 
-- 公开时间线在 `/tracker`。按发布时间倒序，时间相同按 ID 倒序。人物和标签可以组合筛选。每条显示人物中文名、标题、摘要、文字影响等级、原文链接和可选配图。PT 为主，另显示 ET 与北京时间，均根据时区和夏令时转换。
+- 工作台「资讯 → 人物动态」打开 `/dashboard/person-updates`，手机网页从导航菜单进入。公开版在 `/tracker`，两处使用同一时间线和筛选。按发布时间倒序，时间相同按 ID 倒序。人物和标签可以组合筛选。每条显示人物中文名、标题、摘要、文字影响等级、原文链接和可选配图。PT 为主，另显示 ET 与北京时间，均根据时区和夏令时转换。
 - Muse 使用现有管理员账号密码登录，打开 `/dashboard/admin?tab=person-updates`，把 JSON 粘贴到文本框。校验并预览只读。保存会重新验证当前文本并批量写入。清空会清除文本、结果和预览。
 - 结果区持续显示逐条错误或保存数量和 ID，直到下一次操作或清空。保存失败时保留 JSON。前台重新打开或刷新即读取最新记录。
 - 数据入口是人工粘贴。功能没有抓取、定时任务、文件上传或自动数据源。
@@ -24,7 +24,7 @@
 
 ## 接口与权限
 
-- `GET /api/v1/person-updates` 公开读取，`/tracker` 打开时按需请求。
+- `GET /api/v1/person-updates` 公开读取，两处时间线打开时按需请求。
 - `POST /api/v1/admin/person-updates/validate` 与 `POST /api/v1/admin/person-updates` 通过 Next.js 代理转发，并沿用 FastAPI 的 `verify_admin`。
 - 数据库迁移 `20261118123410_person_updates.sql` 创建唯一内容表 `public.person_updates`。表启用 RLS，只有后台 `service_role` 具备读写所需权限。
 - 当前为 Web 功能，App 可通过浏览器访问公开页。

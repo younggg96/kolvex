@@ -17,7 +17,7 @@ const links = [
   { href: "/creators", en: "Creator opinions", zh: "博主观点" },
   { href: "/stocks", en: "Stock directory", zh: "股票目录" },
   ...(isProductFeatureEnabled("personUpdates")
-    ? [{ href: "/tracker", en: "Person updates", zh: "人物动态" }]
+    ? [{ href: "/tracker", en: "Person Updates", zh: "人物动态" }]
     : []),
 ];
 
