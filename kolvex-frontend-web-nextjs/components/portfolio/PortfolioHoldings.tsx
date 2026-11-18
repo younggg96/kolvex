@@ -13,14 +13,13 @@ import { PortfolioPerformanceChart } from "./PortfolioPerformanceChart";
 import { NotConnectedState, InitialSyncState } from "./ConnectionStates";
 import { AccountCard } from "./AccountCard";
 import { DisconnectDialog } from "./DisconnectDialog";
+import { ClearManualDialog } from "./ClearManualDialog";
+import { ManualImportDialog } from "./ManualImportDialog";
 import { PortfolioAIAnalysis } from "./PortfolioAIAnalysis";
 import { InvestmentTransactionsTable } from "./InvestmentTransactionsTable";
 import { usePortfolioData } from "./hooks/usePortfolioData";
 import { useEquitySort, useOptionSort } from "./hooks/usePortfolioSort";
-import {
-  useStockDataCache,
-  usePortfolioSymbols,
-} from "./hooks/useStockDataCache";
+import { useStockDataCache, usePortfolioSymbols } from "./hooks/useStockDataCache";
 import { downloadHoldings } from "./utils/downloadHoldings";
 import type { PortfolioHoldingsProps } from "./types";
 
@@ -33,19 +32,19 @@ export default function PortfolioHoldings({
 }: PortfolioHoldingsProps) {
   const { t } = useTranslation();
   const [disconnectDialogOpen, setDisconnectDialogOpen] = useState(false);
-  const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(
-    new Set(),
+  const [manualImportOpen, setManualImportOpen] = useState(false);
+  const [clearManualOpen, setClearManualOpen] = useState(false);
+  const [clearingManual, setClearingManual] = useState(false);
+  const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(new Set());
+  const [activeTab, setActiveTab] = useState<"holdings" | "transactions" | "ai-insights">(
+    "holdings",
   );
-  const [activeTab, setActiveTab] = useState<
-    "holdings" | "transactions" | "ai-insights"
-  >("holdings");
-  const [sparklineDataMap, setSparklineDataMap] = useState<
-    Map<string, number[]>
-  >(new Map());
+  const [sparklineDataMap, setSparklineDataMap] = useState<Map<string, number[]>>(new Map());
 
   const {
     status,
     holdings,
+    plaidStatus,
     transactions,
     transactionsTotal,
     transactionsHasMore,
@@ -65,23 +64,26 @@ export default function PortfolioHoldings({
     handleDisconnect,
     handleCopyShareLink,
     handleTogglePositionVisibility,
+    handleManualImported,
+    handleClearManual,
   } = usePortfolioData({ userId, isOwner });
+  const hasPlaid = Boolean(plaidStatus?.is_connected);
+  const hasManual = Boolean(holdings?.accounts?.some((account) => account.source === "manual"));
 
   const equitySort = useEquitySort();
   const optionSort = useOptionSort();
-  const { fetchSparklines, lastRefreshTime } =
-    useStockDataCache();
+  const { fetchSparklines, lastRefreshTime } = useStockDataCache();
   const portfolioSymbols = usePortfolioSymbols(holdings?.accounts);
 
   const tabOptions = useMemo(
     () => [
       { value: "holdings", label: t("portfolio.tabs.holdings") },
-      ...(isOwner
+      ...(isOwner && hasPlaid
         ? [{ value: "transactions", label: t("portfolio.tabs.transactions") }]
         : []),
       { value: "ai-insights", label: t("portfolio.tabs.aiInsights") },
     ],
-    [isOwner, t],
+    [hasPlaid, isOwner, t],
   );
 
   const handleDownload = useCallback(
@@ -95,6 +97,21 @@ export default function PortfolioHoldings({
     const success = await handleDisconnect();
     if (success) setDisconnectDialogOpen(false);
   }, [handleDisconnect]);
+
+  const handleClearManualAndClose = useCallback(async () => {
+    setClearingManual(true);
+    const success = await handleClearManual();
+    setClearingManual(false);
+    if (success) setClearManualOpen(false);
+  }, [handleClearManual]);
+
+  const manualImportDialog = isOwner ? (
+    <ManualImportDialog
+      open={manualImportOpen}
+      onOpenChange={setManualImportOpen}
+      onImported={handleManualImported}
+    />
+  ) : null;
 
   useEffect(() => {
     if (holdings?.accounts) {
@@ -117,10 +134,7 @@ export default function PortfolioHoldings({
     [holdings?.accounts],
   );
 
-  const symbolsKey = useMemo(
-    () => portfolioSymbols.sort().join(","),
-    [portfolioSymbols],
-  );
+  const symbolsKey = useMemo(() => portfolioSymbols.sort().join(","), [portfolioSymbols]);
 
   useEffect(() => {
     if (portfolioSymbols.length === 0) return;
@@ -162,41 +176,39 @@ export default function PortfolioHoldings({
     ? holdings
       ? calculateTotalValue(holdings)
       : 0
-    : publicHoldings?.total_value ?? 0;
+    : (publicHoldings?.total_value ?? 0);
   const totalPnL = isOwner
     ? holdings
       ? calculateTotalPnL(holdings)
       : 0
-    : publicHoldings?.total_pnl ?? 0;
+    : (publicHoldings?.total_pnl ?? 0);
   const pnlPercent = isOwner
     ? typeof totalValue === "number" && totalValue > 0
-      ? ((totalPnL as number) /
-          ((totalValue as number) - (totalPnL as number))) *
-        100
+      ? ((totalPnL as number) / ((totalValue as number) - (totalPnL as number))) * 100
       : 0
-    : publicHoldings?.pnl_percent ?? 0;
+    : (publicHoldings?.pnl_percent ?? 0);
   const totalPositions = isOwner
-    ? holdings?.accounts?.reduce(
-        (acc, curr) => acc + (curr.portfolio_positions?.length || 0),
-        0,
-      ) || 0
-    : publicHoldings?.positions_count ?? 0;
+    ? holdings?.accounts?.reduce((acc, curr) => acc + (curr.portfolio_positions?.length || 0), 0) ||
+      0
+    : (publicHoldings?.positions_count ?? 0);
 
   if (loading) return <PortfolioSkeleton />;
 
   // Visitors cannot connect or sync someone else's portfolio.
   if (!isOwner && (!status?.is_connected || status.accounts_count === 0)) {
-    return (
-      <EmptyState icon={AlertCircle} title={t("portfolio.holdings.notShared")} />
-    );
+    return <EmptyState icon={AlertCircle} title={t("portfolio.holdings.notShared")} />;
   }
 
   if (!status?.is_connected) {
     return (
-      <NotConnectedState
-        onConnectPlaid={handleConnectPlaid}
-        connecting={connecting}
-      />
+      <>
+        <NotConnectedState
+          onConnectPlaid={handleConnectPlaid}
+          onManualImport={() => setManualImportOpen(true)}
+          connecting={connecting}
+        />
+        {manualImportDialog}
+      </>
     );
   }
 
@@ -217,6 +229,10 @@ export default function PortfolioHoldings({
             onCopyShareLink={handleCopyShareLink}
             copied={copied}
             onConnect={handleConnectPlaid}
+            hasPlaid={hasPlaid}
+            hasManual={hasManual}
+            onManualImport={() => setManualImportOpen(true)}
+            onClearManual={() => setClearManualOpen(true)}
             onDisconnect={() => setDisconnectDialogOpen(true)}
             onDownload={handleDownload}
             onRefresh={handleSync}
@@ -230,47 +246,27 @@ export default function PortfolioHoldings({
           userId={userId}
           isOwner={isOwner}
           liveValue={totalValue}
-          livePnL={
-            isOwner || holdings?.privacy_settings?.show_total_pnl
-              ? totalPnL
-              : "***"
-          }
+          livePnL={isOwner || holdings?.privacy_settings?.show_total_pnl ? totalPnL : "***"}
           livePnlPercent={
-            isOwner || holdings?.privacy_settings?.show_pnl_percent
-              ? pnlPercent
-              : "***"
+            isOwner || holdings?.privacy_settings?.show_pnl_percent ? pnlPercent : "***"
           }
         />
       )}
 
       <PortfolioStatsGrid
         totalValue={totalValue}
-        totalPnL={
-          isOwner || holdings?.privacy_settings?.show_total_pnl
-            ? totalPnL
-            : "***"
-        }
-        pnlPercent={
-          isOwner || holdings?.privacy_settings?.show_pnl_percent
-            ? pnlPercent
-            : "***"
-        }
+        totalPnL={isOwner || holdings?.privacy_settings?.show_total_pnl ? totalPnL : "***"}
+        pnlPercent={isOwner || holdings?.privacy_settings?.show_pnl_percent ? pnlPercent : "***"}
         totalPositions={
-          isOwner || holdings?.privacy_settings?.show_positions_count
-            ? totalPositions
-            : "***"
+          isOwner || holdings?.privacy_settings?.show_positions_count ? totalPositions : "***"
         }
         accountsCount={
           isOwner || holdings?.privacy_settings?.show_positions_count
             ? holdings?.accounts?.length || 0
             : "***"
         }
-        hiddenPositionsCount={
-          !isOwner ? publicHoldings?.hidden_positions_count : undefined
-        }
-        hiddenAccountsCount={
-          !isOwner ? publicHoldings?.hidden_accounts_count : undefined
-        }
+        hiddenPositionsCount={!isOwner ? publicHoldings?.hidden_positions_count : undefined}
+        hiddenAccountsCount={!isOwner ? publicHoldings?.hidden_accounts_count : undefined}
         showTotalValue={!isOwner || !holdings?.accounts?.length}
       />
 
@@ -337,7 +333,6 @@ export default function PortfolioHoldings({
             />
           )}
 
-
           {activeTab === "ai-insights" && isOwner && <PortfolioAIAnalysis />}
 
           {activeTab === "ai-insights" && !isOwner && (
@@ -354,9 +349,7 @@ export default function PortfolioHoldings({
           title={t("portfolio.holdings.noAccountData")}
           description={t("portfolio.holdings.noAccountDataDesc")}
           action={{
-            label: syncing
-              ? t("portfolio.connect.syncing")
-              : t("portfolio.holdings.syncNow"),
+            label: syncing ? t("portfolio.connect.syncing") : t("portfolio.holdings.syncNow"),
             onClick: handleSync,
           }}
         />
@@ -368,6 +361,15 @@ export default function PortfolioHoldings({
         onDisconnect={handleDisconnectAndClose}
         disconnecting={disconnecting}
       />
+      {isOwner && (
+        <ClearManualDialog
+          open={clearManualOpen}
+          onOpenChange={setClearManualOpen}
+          onConfirm={handleClearManualAndClose}
+          clearing={clearingManual}
+        />
+      )}
+      {manualImportDialog}
     </div>
   );
 }

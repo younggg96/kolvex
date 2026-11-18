@@ -154,6 +154,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       }
       return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+    case "manual-import":
+      return proxyRequest(request, "/manual-import", {
+        method: "POST",
+        hasBody: true,
+      });
+
     case "analysis":
       // /api/portfolio/analysis -> POST /analysis (full portfolio analysis)
       // /api/portfolio/analysis/stock -> POST /analysis/stock (single stock analysis)
@@ -188,6 +194,22 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         method: "PUT",
         hasBody: true,
       });
+
+    default:
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+}
+
+/**
+ * DELETE handler
+ * - /api/portfolio/manual-import -> DELETE /manual-import
+ */
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
+  const { path } = await params;
+
+  switch (path[0]) {
+    case "manual-import":
+      return proxyRequest(request, "/manual-import", { method: "DELETE" });
 
     default:
       return NextResponse.json({ error: "Not found" }, { status: 404 });

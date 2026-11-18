@@ -18,6 +18,7 @@ interface PortfolioAccount {
   account_name?: string;
   account_number?: string;
   brokerage_name?: string;
+  source?: string;
   portfolio_positions?: PortfolioPosition[];
 }
 
@@ -88,11 +89,18 @@ export function AccountCard({
                   <p className="text-xs text-muted-foreground font-mono">
                     {account.account_number
                       ? `•••• ${account.account_number.slice(-4)}`
-                      : account.id.slice(0, 8)}
+                      : account.source === "manual"
+                        ? account.brokerage_name
+                        : account.id.slice(0, 8)}
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                {account.source === "manual" && (
+                  <Badge variant="outline" className="text-xs">
+                    {t("portfolio.manualImport.badge")}
+                  </Badge>
+                )}
                 <Badge variant="default" className="text-xs">
                   {t("portfolio.holdings.positions", { count: String(accountPositions) })}
                 </Badge>

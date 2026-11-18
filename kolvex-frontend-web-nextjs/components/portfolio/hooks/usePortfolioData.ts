@@ -1,10 +1,6 @@
 import { invalidateClientCache, subscribeClientCache } from "@/lib/clientCache";
 import { useState, useEffect, useCallback } from "react";
-import {
-  usePlaidLink,
-  type PlaidLinkOnExit,
-  type PlaidLinkOnSuccess,
-} from "react-plaid-link";
+import { usePlaidLink, type PlaidLinkOnExit, type PlaidLinkOnSuccess } from "react-plaid-link";
 import { toast } from "sonner";
 import {
   getConnectionStatus,
@@ -13,6 +9,7 @@ import {
   togglePublicSharing,
   togglePositionVisibility,
   getShareUrl,
+  clearManualHoldings,
 } from "@/lib/portfolioApi";
 import {
   createPlaidLinkToken,
@@ -25,10 +22,7 @@ import {
   type PlaidInvestmentTransaction,
   type PlaidTransactionsResponse,
 } from "@/lib/plaidApi";
-import type {
-  PortfolioConnectionStatus,
-  PortfolioHoldings,
-} from "../types";
+import type { PortfolioConnectionStatus, PortfolioHoldings } from "../types";
 
 interface UsePortfolioDataOptions {
   userId?: string;
@@ -109,7 +103,9 @@ function clearPortfolioCache(userId?: string) {
   } catch {}
 }
 
-subscribeClientCache(prefix => { if (!prefix) clearPortfolioCache(); });
+subscribeClientCache((prefix) => {
+  if (!prefix) clearPortfolioCache();
+});
 
 // OAuth institutions (e.g. Robinhood) leave the page; Link must resume with the same token.
 const PLAID_LINK_TOKEN_KEY = "kolvex:plaid-link-token";
@@ -142,13 +138,15 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
   const [plaidStatus, setPlaidStatus] = useState<PlaidConnectionStatus | null>(null);
   const [plaidLinkToken, setPlaidLinkToken] = useState<string | null>(null);
   const [shouldOpenPlaidLink, setShouldOpenPlaidLink] = useState(false);
-  const [plaidReceivedRedirectUri, setPlaidReceivedRedirectUri] =
-    useState<string | undefined>(undefined);
+  const [plaidReceivedRedirectUri, setPlaidReceivedRedirectUri] = useState<string | undefined>(
+    undefined,
+  );
   const [transactions, setTransactions] = useState<PlaidInvestmentTransaction[]>([]);
   const [transactionsTotal, setTransactionsTotal] = useState(0);
   const [transactionsHasMore, setTransactionsHasMore] = useState(false);
-  const [transactionSymbolFilter, setTransactionSymbolFilter] =
-    useState<string | undefined>(undefined);
+  const [transactionSymbolFilter, setTransactionSymbolFilter] = useState<string | undefined>(
+    undefined,
+  );
   const [loadingTransactions, setLoadingTransactions] = useState(false);
   const [holdings, setHoldings] = useState<PortfolioHoldings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -217,11 +215,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
         const cached = readCache<PlaidTransactionsResponse>(transactionsCacheKey);
         const result =
           cached ||
-          (await getPlaidInvestmentTransactions(
-            transactionsPageSize,
-            0,
-            normalizedSymbol,
-          ));
+          (await getPlaidInvestmentTransactions(transactionsPageSize, 0, normalizedSymbol));
         if (!cached) writeCache(transactionsCacheKey, result);
         setTransactions(result.transactions);
         setTransactionsTotal(result.total);
@@ -235,90 +229,93 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     [cacheUserId],
   );
 
-  const loadData = useCallback(async (forceRefresh = false) => {
-    const rootCacheKey = getCacheKey("root", [cacheUserId, isOwner ? "owner" : "public"]);
-    const cachedRoot = forceRefresh ? null : readCache<PortfolioRootCache>(rootCacheKey);
-    if (cachedRoot) {
-      setStatus(cachedRoot.status);
-      setHoldings(cachedRoot.holdings);
-      setPlaidStatus(cachedRoot.plaidStatus);
-      setLoadingTransactions(Boolean(isOwner && cachedRoot.plaidStatus?.is_connected));
-      setLoading(false);
-      if (isOwner && cachedRoot.plaidStatus?.is_connected) {
-        await loadTransactions(true, 0, forceRefresh);
-      }
-      return;
-    }
-
-    setLoading(true);
-    try {
-      if (isOwner) {
-        const [statusData, holdingsData, plaidData] = await Promise.all([
-          getConnectionStatus(),
-          getMyHoldings(),
-          getPlaidStatus().catch(() => null),
-        ]);
-        const mergedStatus = plaidData?.is_connected
-          ? {
-              ...statusData,
-              is_registered: true,
-              is_connected: true,
-              accounts_count: Math.max(
-                statusData.accounts_count || 0,
-                plaidData.accounts_count || 0,
-              ),
-              last_synced_at: plaidData.last_synced_at || statusData.last_synced_at,
-            }
-          : statusData;
-        const mergedHoldings = {
-          ...holdingsData,
-          is_connected: holdingsData?.is_connected || Boolean(plaidData?.is_connected),
-          last_synced_at: plaidData?.last_synced_at || holdingsData?.last_synced_at,
-        };
-        setStatus(mergedStatus);
-        setHoldings(mergedHoldings);
-        setPlaidStatus(plaidData);
-        writeCache<PortfolioRootCache>(rootCacheKey, {
-          status: mergedStatus,
-          holdings: mergedHoldings,
-          plaidStatus: plaidData,
-        });
-        if (plaidData?.is_connected) {
+  const loadData = useCallback(
+    async (forceRefresh = false) => {
+      const rootCacheKey = getCacheKey("root", [cacheUserId, isOwner ? "owner" : "public"]);
+      const cachedRoot = forceRefresh ? null : readCache<PortfolioRootCache>(rootCacheKey);
+      if (cachedRoot) {
+        setStatus(cachedRoot.status);
+        setHoldings(cachedRoot.holdings);
+        setPlaidStatus(cachedRoot.plaidStatus);
+        setLoadingTransactions(Boolean(isOwner && cachedRoot.plaidStatus?.is_connected));
+        setLoading(false);
+        if (isOwner && cachedRoot.plaidStatus?.is_connected) {
           await loadTransactions(true, 0, forceRefresh);
         }
-      } else if (userId) {
-        const publicHoldings = await getPublicHoldings(userId);
-        if (publicHoldings) {
-          const publicStatus = {
-            is_registered: true,
-            is_connected: true,
-            is_public: true,
-            accounts_count: publicHoldings.accounts.length,
-          };
-          const publicHoldingsView = {
-            accounts: publicHoldings.accounts,
-            last_synced_at: publicHoldings.last_synced_at,
-            is_connected: true,
-            is_public: true,
-            total_value: publicHoldings.total_value ?? undefined,
-            privacy_settings: publicHoldings.privacy_settings,
-            hidden_positions_count: publicHoldings.hidden_positions_count,
-          };
-          setHoldings(publicHoldingsView);
-          setStatus(publicStatus);
-          writeCache<PortfolioRootCache>(rootCacheKey, {
-            status: publicStatus,
-            holdings: publicHoldingsView,
-            plaidStatus: null,
-          });
-        }
+        return;
       }
-    } catch (error) {
-      console.error("Failed to load data:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [cacheUserId, isOwner, userId, loadTransactions]);
+
+      setLoading(true);
+      try {
+        if (isOwner) {
+          const [statusData, holdingsData, plaidData] = await Promise.all([
+            getConnectionStatus(),
+            getMyHoldings(),
+            getPlaidStatus().catch(() => null),
+          ]);
+          const mergedStatus = plaidData?.is_connected
+            ? {
+                ...statusData,
+                is_registered: true,
+                is_connected: true,
+                accounts_count: Math.max(
+                  statusData.accounts_count || 0,
+                  plaidData.accounts_count || 0,
+                ),
+                last_synced_at: plaidData.last_synced_at || statusData.last_synced_at,
+              }
+            : statusData;
+          const mergedHoldings = {
+            ...holdingsData,
+            is_connected: holdingsData?.is_connected || Boolean(plaidData?.is_connected),
+            last_synced_at: plaidData?.last_synced_at || holdingsData?.last_synced_at,
+          };
+          setStatus(mergedStatus);
+          setHoldings(mergedHoldings);
+          setPlaidStatus(plaidData);
+          writeCache<PortfolioRootCache>(rootCacheKey, {
+            status: mergedStatus,
+            holdings: mergedHoldings,
+            plaidStatus: plaidData,
+          });
+          if (plaidData?.is_connected) {
+            await loadTransactions(true, 0, forceRefresh);
+          }
+        } else if (userId) {
+          const publicHoldings = await getPublicHoldings(userId);
+          if (publicHoldings) {
+            const publicStatus = {
+              is_registered: true,
+              is_connected: true,
+              is_public: true,
+              accounts_count: publicHoldings.accounts.length,
+            };
+            const publicHoldingsView = {
+              accounts: publicHoldings.accounts,
+              last_synced_at: publicHoldings.last_synced_at,
+              is_connected: true,
+              is_public: true,
+              total_value: publicHoldings.total_value ?? undefined,
+              privacy_settings: publicHoldings.privacy_settings,
+              hidden_positions_count: publicHoldings.hidden_positions_count,
+            };
+            setHoldings(publicHoldingsView);
+            setStatus(publicStatus);
+            writeCache<PortfolioRootCache>(rootCacheKey, {
+              status: publicStatus,
+              holdings: publicHoldingsView,
+              plaidStatus: null,
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load data:", error);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [cacheUserId, isOwner, userId, loadTransactions],
+  );
 
   useEffect(() => {
     loadData();
@@ -399,9 +396,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
   useEffect(() => {
     if (!plaidLinkError) return;
     const message =
-      plaidLinkError instanceof Error
-        ? plaidLinkError.message
-        : "Failed to load Plaid Link";
+      plaidLinkError instanceof Error ? plaidLinkError.message : "Failed to load Plaid Link";
     toast.error(message);
     setConnecting(false);
     setShouldOpenPlaidLink(false);
@@ -424,6 +419,12 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
   const handleSync = useCallback(async () => {
     setSyncing(true);
     try {
+      if (!plaidStatus?.is_connected) {
+        // Manual imports have nothing upstream to sync; just re-read them.
+        clearPortfolioCache(cacheUserId);
+        await loadData(true);
+        return;
+      }
       await syncPlaidInvestments();
       clearPortfolioCache(cacheUserId);
       await loadData(true);
@@ -432,6 +433,23 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
       toast.error(error.message || "Refresh failed");
     } finally {
       setSyncing(false);
+    }
+  }, [cacheUserId, loadData, plaidStatus?.is_connected]);
+
+  const handleManualImported = useCallback(async () => {
+    clearPortfolioCache(cacheUserId);
+    await loadData(true);
+  }, [cacheUserId, loadData]);
+
+  const handleClearManual = useCallback(async () => {
+    try {
+      await clearManualHoldings();
+      clearPortfolioCache(cacheUserId);
+      await loadData(true);
+      return true;
+    } catch (error: any) {
+      toast.error(error.message || "Failed to clear manual holdings");
+      return false;
     }
   }, [cacheUserId, loadData]);
 
@@ -450,18 +468,19 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     }
   }, [cacheUserId, loadData, loadTransactions]);
 
-  const handleTogglePublic = useCallback(async (isPublic: boolean) => {
-    try {
-      await togglePublicSharing(isPublic);
-      setHoldings((prev) => (prev ? { ...prev, is_public: isPublic } : null));
-      clearPortfolioCache(cacheUserId);
-      toast.success(
-        isPublic ? "Portfolio is now public" : "Portfolio is now private",
-      );
-    } catch (error: any) {
-      toast.error(error.message || "Operation failed");
-    }
-  }, [cacheUserId]);
+  const handleTogglePublic = useCallback(
+    async (isPublic: boolean) => {
+      try {
+        await togglePublicSharing(isPublic);
+        setHoldings((prev) => (prev ? { ...prev, is_public: isPublic } : null));
+        clearPortfolioCache(cacheUserId);
+        toast.success(isPublic ? "Portfolio is now public" : "Portfolio is now private");
+      } catch (error: any) {
+        toast.error(error.message || "Operation failed");
+      }
+    },
+    [cacheUserId],
+  );
 
   const handleDisconnect = useCallback(async () => {
     setDisconnecting(true);
@@ -475,6 +494,8 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
       setTransactionsTotal(0);
       setTransactionsHasMore(false);
       toast.success("Plaid Investments disconnected");
+      // Manually imported holdings stay after Plaid is gone.
+      await loadData(true);
       return true;
     } catch (error: any) {
       toast.error(error.message || "Failed to disconnect");
@@ -482,7 +503,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     } finally {
       setDisconnecting(false);
     }
-  }, [cacheUserId]);
+  }, [cacheUserId, loadData]);
 
   const handleCopyShareLink = useCallback(async () => {
     if (!userId) return;
@@ -498,11 +519,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
   }, [userId]);
 
   const handleTogglePositionVisibility = useCallback(
-    async (
-      e: React.MouseEvent,
-      positionId: string,
-      currentlyHidden: boolean,
-    ) => {
+    async (e: React.MouseEvent, positionId: string, currentlyHidden: boolean) => {
       e.stopPropagation();
       try {
         await togglePositionVisibility(positionId, !currentlyHidden);
@@ -513,19 +530,13 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
             accounts: prev.accounts.map((account) => ({
               ...account,
               portfolio_positions: account.portfolio_positions?.map((pos) =>
-                pos.id === positionId
-                  ? { ...pos, is_hidden: !currentlyHidden }
-                  : pos,
+                pos.id === positionId ? { ...pos, is_hidden: !currentlyHidden } : pos,
               ),
             })),
           };
         });
         clearPortfolioCache(cacheUserId);
-        toast.success(
-          currentlyHidden
-            ? "Position now visible"
-            : "Position hidden from public",
-        );
+        toast.success(currentlyHidden ? "Position now visible" : "Position hidden from public");
       } catch (error: any) {
         toast.error(error.message || "Failed to update visibility");
       }
@@ -558,5 +569,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     handleDisconnect,
     handleCopyShareLink,
     handleTogglePositionVisibility,
+    handleManualImported,
+    handleClearManual,
   };
 }

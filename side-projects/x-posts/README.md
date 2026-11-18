@@ -2,7 +2,7 @@
 
 首批目标：`https://x.com/MentoviaX`。
 
-通过专用 Chrome 的公开 Posts 时间线采集原文。本机 shell 和 Playwright 工作流每 30 分钟采集并同步，无需 AI。操作规程见 [COLLECTOR.md](./COLLECTOR.md)。
+默认由 AI 通过 cua_repl 操作已登录的日常 Chrome，每 3 小时采集公开 Posts 并同步到生产数据库。操作规程见 [COLLECTOR.md](./COLLECTOR.md)。
 
 ## 最初手工导出
 
@@ -18,9 +18,13 @@
 
 原始数据和检查点被本目录 `.gitignore` 排除，不包含登录 Cookie、Token 或其他账号凭证。
 
+## 默认 AI 定时同步
+
+Codex 自动化 `x-kolvex` 已恢复为每 3 小时执行一次。每轮按 [COLLECTOR.md](./COLLECTOR.md) 准备合并名单、读取公开时间线、展开长文并入库。依赖本机、Codex、浏览器扩展和已登录 Chrome 可用，会消耗模型用量。独立 Playwright LaunchAgent 保持暂停。
+
 ## 无 AI 的自动同步
 
-入口为 `run.sh`，由 Python 编排 Playwright 采集和生产入库，不调用 Codex 或其他模型。浏览器使用独立 Chrome 配置目录，由用户首次手动登录 X。脚本只读取公开时间线和详情页的渲染 DOM。
+以下保留为可选的手动方案，目前未启用。入口为 `run.sh`，由 Python 编排 Playwright 采集和生产入库，不调用 Codex 或其他模型。浏览器使用独立 Chrome 配置目录，由用户首次手动登录 X。脚本只读取公开时间线和详情页的渲染 DOM。
 
 ### 首次设置
 
@@ -58,7 +62,7 @@ npm --prefix side-projects/x-posts ci --ignore-scripts
 ./side-projects/x-posts/run.sh uninstall
 ```
 
-名单来自 `sources.json` 与生产数据库 `x_creators` 的合并结果。已安装的 Codex 桌面自动化 `x-kolvex` 在切换时暂停，避免两个调度入口并发采集。终端另有 `watch` 命令，可前台每 30 分钟循环，使用时应暂停 LaunchAgent。
+名单来自 `sources.json` 与生产数据库 `x_creators` 的合并结果。当前 Codex 桌面自动化 `x-kolvex` 已启用，独立 Playwright 调度保持暂停；重新选择无 AI 方案时需停用 Codex 定时入口，避免重复采集。终端另有 `watch` 命令，可前台每 30 分钟循环，使用时应暂停 LaunchAgent。
 
 ### 数据与恢复
 
@@ -74,7 +78,7 @@ Chrome 自行保存在运行目录下的专用目录 `state/chrome-profile/` 的
 
 ### 本机设置状态
 
-2026-11-17 已安装无 AI 运行环境及每 30 分钟配置，原 Codex 自动化已暂停。X 在首次登录时提示临时限制，定时任务因此保持暂停。限制解除后运行 `run.sh login`，成功后自动恢复调度。后台 launchd 到 shell 和 Python 的调用已实测，真实登录后的完整采集尚待验证。
+2026-11-18 用户要求每次使用 AI 采集，Codex 自动化已恢复为每 3 小时一次。独立 Playwright 调度保持暂停。后台 launchd 到 shell 和 Python 的调用此前已实测，专用 Chrome 的登录仍曾受到 X 限制。
 
 ### 验证
 

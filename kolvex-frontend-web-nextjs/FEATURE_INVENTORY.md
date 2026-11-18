@@ -53,3 +53,16 @@
 后端提供 `/api/v1/plaid/status`、`/link-token`、`/exchange-token`、`/sync`、`/transactions`、`/disconnect`。
 
 组合价值和未实现盈亏曲线读取每日估值快照。后端在美股收盘后到下一次开盘前（最长 18 小时）自动读取已连接账户的持仓；在这个窗口内手动刷新也可采集当次收盘的快照。同一个纽约交易日只保存一份完整的美元估值。对有明确美国市场身份的股票和 ETF，券商报价缺失或过期时可使用同一交易日的收盘价。估值或成本不完整时历史留空。已有快照继续显示，连接前和漏采的历史需要独立的可验证持仓数据才能补齐。
+
+## 手动导入持仓
+
+| 能力 | 路径 |
+| --- | --- |
+| 提示词、JSON 解析与校验 | `lib/portfolioManualImport.ts`（测试 `scripts/portfolio-manual-import.test.cjs`） |
+| 导入弹窗 | `components/portfolio/ManualImportDialog.tsx` |
+| 清除确认 | `components/portfolio/ClearManualDialog.tsx` |
+| 入口 | 未连接页「手动导入持仓」按钮；持仓页「设置」菜单「手动导入 / 重新导入持仓」「清除手动导入」 |
+
+用户复制提示词，连同券商截图或导出文件发给 Codex、Muse 等外部助手，再把返回的 JSON 粘贴进弹窗。前端先校验并预览，再调用 `POST /api/v1/portfolio/manual-import`；`DELETE` 同一路径清除。数据存为 `portfolio_connections.provider = 'manual'` 的连接，每次导入整体替换上一次手动导入，但账户和持仓行 id 保持不变，所以公开隐藏设置不会丢。没写价格的股票由后端取 Finnhub 实时报价，取不到就留空（市值不计入），不估算。期权按 OCC 合约代码存储，价格和成本按每股计、市值乘 100。
+
+持仓、公开页、状态和 AI 持仓工具都会合并 Plaid 与手动导入的账户；公开开关和隐私设置对用户的所有连接同时生效。手动导入是静态快照，不参与每日收益快照采集，也没有交易记录（「交易」标签只在连接 Plaid 时显示）。断开 Plaid 不会删除手动导入的持仓。

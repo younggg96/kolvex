@@ -21,6 +21,8 @@ import {
   FileSpreadsheet,
   FileJson,
   RefreshCw,
+  FileInput,
+  Trash2,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { PortfolioHoldings } from "@/lib/supabase/database.types";
@@ -36,6 +38,10 @@ export interface PortfolioHeaderActionsProps {
   onCopyShareLink: () => void;
   copied: boolean;
   onConnect: () => void;
+  hasPlaid: boolean;
+  hasManual: boolean;
+  onManualImport: () => void;
+  onClearManual: () => void;
   onDisconnect: () => void;
   onDownload: (format: DownloadFormat) => void;
   onRefresh: () => void;
@@ -53,6 +59,10 @@ export function PortfolioHeaderActions({
   onCopyShareLink,
   copied,
   onConnect,
+  hasPlaid,
+  hasManual,
+  onManualImport,
+  onClearManual,
   onDisconnect,
   onDownload,
   onRefresh,
@@ -85,9 +95,7 @@ export function PortfolioHeaderActions({
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size={size} className="gap-1.5">
             <Settings2 className="w-3.5 h-3.5" />
-            <span
-              className={cn("hidden sm:inline", size === "xs" && "text-xs")}
-            >
+            <span className={cn("hidden sm:inline", size === "xs" && "text-xs")}>
               {t("portfolio.actions.settings")}
             </span>
           </Button>
@@ -113,11 +121,7 @@ export function PortfolioHeaderActions({
           {holdings?.is_public && (
             <>
               <DropdownMenuItem onClick={onCopyShareLink}>
-                {copied ? (
-                  <Check className="mr-2 h-4 w-4" />
-                ) : (
-                  <Copy className="mr-2 h-4 w-4" />
-                )}
+                {copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
                 {t("portfolio.actions.copyShareLink")}
               </DropdownMenuItem>
               <PrivacySettingsDialog
@@ -132,7 +136,13 @@ export function PortfolioHeaderActions({
           )}
           <DropdownMenuItem onClick={onConnect}>
             <Link2 className="mr-2 h-4 w-4" />
-            {t("portfolio.actions.addAnotherBroker")}
+            {hasPlaid
+              ? t("portfolio.actions.addAnotherBroker")
+              : t("portfolio.connect.connectPlaid")}
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={onManualImport}>
+            <FileInput className="mr-2 h-4 w-4" />
+            {hasManual ? t("portfolio.manualImport.reimport") : t("portfolio.manualImport.open")}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           {/* Download Options */}
@@ -144,14 +154,25 @@ export function PortfolioHeaderActions({
             <FileJson className="mr-2 h-4 w-4" />
             {t("portfolio.actions.downloadJson")}
           </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            className="!text-negative focus:!text-negative"
-            onClick={onDisconnect}
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            {t("portfolio.actions.disconnect")}
-          </DropdownMenuItem>
+          {(hasManual || hasPlaid) && <DropdownMenuSeparator />}
+          {hasManual && (
+            <DropdownMenuItem
+              className="!text-negative focus:!text-negative"
+              onClick={onClearManual}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              {t("portfolio.manualImport.clear")}
+            </DropdownMenuItem>
+          )}
+          {hasPlaid && (
+            <DropdownMenuItem
+              className="!text-negative focus:!text-negative"
+              onClick={onDisconnect}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              {t("portfolio.actions.disconnect")}
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

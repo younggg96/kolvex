@@ -6,6 +6,7 @@ Portfolio Tools
 
 import json
 import logging
+
 from langchain_core.tools import tool
 
 from app.core.supabase import get_supabase_service
@@ -24,13 +25,15 @@ def _fetch_portfolio(user_id: str) -> str:
     """
     if not user_id or not user_id.strip():
         logger.error("_fetch_portfolio called with empty user_id")
-        return json.dumps({
-            "status": "error",
-            "error_type": "missing_user_id",
-            "message": "Unable to retrieve portfolio: user authentication context is missing. "
-                       "This is an internal system error, not the user's fault. "
-                       "Please apologize and ask the user to try refreshing the page or logging in again.",
-        })
+        return json.dumps(
+            {
+                "status": "error",
+                "error_type": "missing_user_id",
+                "message": "Unable to retrieve portfolio: user authentication context is missing. "
+                "This is an internal system error, not the user's fault. "
+                "Please apologize and ask the user to try refreshing the page or logging in again.",
+            }
+        )
 
     logger.info(f"Fetching portfolio for user_id={user_id}")
 
@@ -39,51 +42,54 @@ def _fetch_portfolio(user_id: str) -> str:
 
         # 1. 获取用户的直连券商缓存
         conn_result = (
-            supabase.table("portfolio_connections")
-            .select("id")
-            .eq("user_id", user_id)
-            .execute()
+            supabase.table("portfolio_connections").select("id").eq("user_id", user_id).execute()
         )
 
         if not conn_result.data:
             logger.info(f"No broker portfolio found for user_id={user_id}")
-            return json.dumps({
-                "status": "empty",
-                "user_id": user_id,
-                "message": "The user has not connected a brokerage account yet, so there is no portfolio data available. "
-                           "Suggest the user connect a supported brokerage from the portfolio page.",
-                "positions": [],
-            })
+            return json.dumps(
+                {
+                    "status": "empty",
+                    "user_id": user_id,
+                    "message": "The user has not connected a brokerage account yet, so there is no portfolio data available. "
+                    "Suggest the user connect a brokerage via Plaid or import holdings manually from the portfolio page.",
+                    "positions": [],
+                }
+            )
 
-        connection_id = conn_result.data[0]["id"]
+        connection_ids = [row["id"] for row in conn_result.data]
 
-        # 2. 通过连接 → 账户 → 持仓关系链查询
+        # 2. 通过连接 → 账户 → 持仓关系链查询（Plaid 与手动导入合并）
         accounts_result = (
             supabase.table("portfolio_accounts")
             .select("id, portfolio_positions(*)")
-            .eq("connection_id", connection_id)
+            .in_("connection_id", connection_ids)
             .execute()
         )
 
         # 3. 汇总所有账户的持仓
         all_positions = []
-        for account in (accounts_result.data or []):
+        for account in accounts_result.data or []:
             for pos in account.get("portfolio_positions", []):
                 # 跳过隐藏的持仓
                 if pos.get("is_hidden", False):
                     continue
                 all_positions.append(pos)
 
-        logger.info(f"Portfolio query returned {len(all_positions)} visible positions for user_id={user_id}")
+        logger.info(
+            f"Portfolio query returned {len(all_positions)} visible positions for user_id={user_id}"
+        )
 
         if not all_positions:
-            return json.dumps({
-                "status": "empty",
-                "user_id": user_id,
-                "message": "The user's brokerage account is connected but has no positions yet. "
-                           "Suggest the user to sync their portfolio in the Settings page, or check if they have holdings in their brokerage account.",
-                "positions": [],
-            })
+            return json.dumps(
+                {
+                    "status": "empty",
+                    "user_id": user_id,
+                    "message": "The user's brokerage account is connected but has no positions yet. "
+                    "Suggest the user to sync their portfolio in the Settings page, or check if they have holdings in their brokerage account.",
+                    "positions": [],
+                }
+            )
 
         # 4. 格式化持仓数据
         holdings = []
@@ -107,18 +113,20 @@ def _fetch_portfolio(user_id: str) -> str:
                 if cost_basis > 0:
                     gain_loss_percent = round(open_pnl / cost_basis * 100, 2)
 
-            holdings.append({
-                "symbol": pos.get("symbol"),
-                "name": pos.get("security_name"),
-                "quantity": units,
-                "avg_cost": avg_cost,
-                "current_price": price,
-                "market_value": round(market_value, 2),
-                "gain_loss": round(open_pnl, 2),
-                "gain_loss_percent": gain_loss_percent,
-                "position_type": position_type,
-                "currency": pos.get("currency"),
-            })
+            holdings.append(
+                {
+                    "symbol": pos.get("symbol"),
+                    "name": pos.get("security_name"),
+                    "quantity": units,
+                    "avg_cost": avg_cost,
+                    "current_price": price,
+                    "market_value": round(market_value, 2),
+                    "gain_loss": round(open_pnl, 2),
+                    "gain_loss_percent": gain_loss_percent,
+                    "position_type": position_type,
+                    "currency": pos.get("currency"),
+                }
+            )
 
         # 5. 计算权重
         for h in holdings:
@@ -141,34 +149,40 @@ def _fetch_portfolio(user_id: str) -> str:
         )
     except Exception as e:
         logger.error(f"Error getting portfolio for user {user_id}: {e}", exc_info=True)
-        return json.dumps({
-            "status": "error",
-            "error_type": "database_error",
-            "message": f"A technical error occurred while fetching portfolio data: {str(e)}. "
-                       "This is a temporary system issue, not related to the user's identity. "
-                       "Please apologize and suggest the user try again later.",
-        })
+        return json.dumps(
+            {
+                "status": "error",
+                "error_type": "database_error",
+                "message": f"A technical error occurred while fetching portfolio data: {str(e)}. "
+                "This is a temporary system issue, not related to the user's identity. "
+                "Please apologize and suggest the user try again later.",
+            }
+        )
 
 
 @tool
 def get_user_portfolio() -> str:
     """Get the current authenticated user's portfolio holdings including stocks, quantities, average cost, current price, gains/losses, and total value.
-    
+
     This tool automatically uses the current user's identity — no user_id argument needed.
     Call this tool whenever the user asks about their portfolio, holdings, positions, P&L, or invested stocks.
-    
+
     Returns:
         JSON string with portfolio holdings data including symbol, quantity, avg_cost, current_price, market_value, gain_loss, gain_loss_percent, weight_percent
     """
     # 这个默认实现会被 create_portfolio_tool_for_user() 替换
-    logger.warning("Default get_user_portfolio called — user_id was not bound. Check tool creation flow.")
-    return json.dumps({
-        "status": "error",
-        "error_type": "tool_not_configured",
-        "message": "A temporary system issue prevented loading portfolio data. "
-                   "This is NOT the user's fault. Please apologize for the inconvenience "
-                   "and suggest the user try again. If the issue persists, they can try refreshing the page or logging in again.",
-    })
+    logger.warning(
+        "Default get_user_portfolio called — user_id was not bound. Check tool creation flow."
+    )
+    return json.dumps(
+        {
+            "status": "error",
+            "error_type": "tool_not_configured",
+            "message": "A temporary system issue prevented loading portfolio data. "
+            "This is NOT the user's fault. Please apologize for the inconvenience "
+            "and suggest the user try again. If the issue persists, they can try refreshing the page or logging in again.",
+        }
+    )
 
 
 def create_portfolio_tool_for_user(user_id: str):
@@ -181,10 +195,10 @@ def create_portfolio_tool_for_user(user_id: str):
     @tool
     def get_user_portfolio() -> str:
         """Get the current authenticated user's portfolio holdings including stocks, quantities, average cost, current price, gains/losses, and total value.
-        
+
         This tool automatically uses the current user's identity — no user_id argument needed.
         Call this tool whenever the user asks about their portfolio, holdings, positions, P&L, or invested stocks.
-        
+
         Returns:
             JSON string with portfolio holdings data including symbol, quantity, avg_cost, current_price, market_value, gain_loss, gain_loss_percent, weight_percent
         """

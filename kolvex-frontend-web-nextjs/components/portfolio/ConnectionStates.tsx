@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Check, Loader2, RefreshCw, Link2, ShieldCheck } from "lucide-react";
+import { Check, Loader2, RefreshCw, Link2, ShieldCheck, FileInput } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ListCard, ListRows } from "@/components/ui/list-card";
 import { useTranslation } from "@/lib/i18n";
@@ -9,6 +9,7 @@ import type { ConnectionStateProps, InitialSyncStateProps } from "./types";
 
 export function NotConnectedState({
   onConnectPlaid,
+  onManualImport,
   connecting,
 }: ConnectionStateProps) {
   const { t } = useTranslation();
@@ -20,44 +21,43 @@ export function NotConnectedState({
       </h2>
 
       <ListCard className="mt-8 !p-0 sm:!p-0 max-md:-mx-[16px]">
-      <ListRows className="divide-y divide-border">
-        <li className="flex items-start gap-3 px-4 py-4">
-          <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-foreground" />
-          <div>
-            <h3 className="text-[0.9375rem] font-semibold">
-              {t("portfolio.connect.plaidTitle")}
-            </h3>
-            <p className="mt-1 text-[0.8125rem] leading-5 text-muted-foreground">
-              {t("portfolio.connect.plaidDescription")}
-            </p>
-          </div>
-        </li>
-        <li className="flex flex-wrap gap-x-6 gap-y-2 px-4 py-4 text-[0.8125rem] text-muted-foreground">
-          {(["secure", "readOnly", "encrypted"] as const).map((key) => (
-            <span key={key} className="flex items-center gap-1.5">
-              <Check className="h-3.5 w-3.5 text-positive" />
-              {t(`portfolio.connect.${key}`)}
-            </span>
-          ))}
-        </li>
-      </ListRows>
+        <ListRows className="divide-y divide-border">
+          <li className="flex items-start gap-3 px-4 py-4">
+            <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-foreground" />
+            <div>
+              <h3 className="text-[0.9375rem] font-semibold">
+                {t("portfolio.connect.plaidTitle")}
+              </h3>
+              <p className="mt-1 text-[0.8125rem] leading-5 text-muted-foreground">
+                {t("portfolio.connect.plaidDescription")}
+              </p>
+            </div>
+          </li>
+          <li className="flex flex-wrap gap-x-6 gap-y-2 px-4 py-4 text-[0.8125rem] text-muted-foreground">
+            {(["secure", "readOnly", "encrypted"] as const).map((key) => (
+              <span key={key} className="flex items-center gap-1.5">
+                <Check className="h-3.5 w-3.5 text-positive" />
+                {t(`portfolio.connect.${key}`)}
+              </span>
+            ))}
+          </li>
+        </ListRows>
       </ListCard>
 
-      <Button
-        size="lg"
-        onClick={onConnectPlaid}
-        disabled={connecting}
-        className="mt-8 gap-2"
-      >
-        {connecting ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Link2 className="h-4 w-4" />
-        )}
-        {connecting
-          ? t("portfolio.connect.connecting")
-          : t("portfolio.connect.connectPlaid")}
-      </Button>
+      <div className="mt-8 flex flex-wrap gap-3">
+        <Button size="lg" onClick={onConnectPlaid} disabled={connecting} className="gap-2">
+          {connecting ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Link2 className="h-4 w-4" />
+          )}
+          {connecting ? t("portfolio.connect.connecting") : t("portfolio.connect.connectPlaid")}
+        </Button>
+        <Button size="lg" variant="outline" onClick={onManualImport} className="gap-2">
+          <FileInput className="h-4 w-4" />
+          {t("portfolio.manualImport.open")}
+        </Button>
+      </div>
     </div>
   );
 }
@@ -74,20 +74,9 @@ export function InitialSyncState({ onSync, syncing }: InitialSyncStateProps) {
       <p className="mt-3 max-w-[52ch] text-[0.9375rem] leading-relaxed text-muted-foreground">
         {t("portfolio.connect.connectedDescription")}
       </p>
-      <Button
-        size="lg"
-        onClick={onSync}
-        disabled={syncing}
-        className="mt-8 gap-2"
-      >
-        {syncing ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <RefreshCw className="h-4 w-4" />
-        )}
-        {syncing
-          ? t("portfolio.connect.syncing")
-          : t("portfolio.connect.syncPositions")}
+      <Button size="lg" onClick={onSync} disabled={syncing} className="mt-8 gap-2">
+        {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+        {syncing ? t("portfolio.connect.syncing") : t("portfolio.connect.syncPositions")}
       </Button>
     </div>
   );

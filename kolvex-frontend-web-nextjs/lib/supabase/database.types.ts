@@ -55,6 +55,8 @@ export interface PortfolioAccount {
   account_name?: string;
   account_number?: string;
   account_type?: string;
+  /** Which connection the account came from; "manual" for pasted imports. */
+  source?: "plaid" | "manual" | string;
   created_at: string;
   updated_at: string;
   portfolio_positions?: PortfolioPosition[];

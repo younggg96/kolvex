@@ -431,13 +431,24 @@ class PlaidService:
             )
             return {**existing, **updates}
 
+        # A manual-import connection may already hold the user's sharing settings.
+        others = await asyncio.to_thread(
+            self.supabase.table("portfolio_connections")
+            .select("is_public,privacy_settings")
+            .eq("user_id", user_id)
+            .limit(1)
+            .execute
+        )
+        template = (others.data or [{}])[0]
         data = {
             "user_id": user_id,
             "provider": "plaid",
             "is_connected": True,
-            "is_public": False,
+            "is_public": bool(template.get("is_public", False)),
             "last_synced_at": now if mark_synced else None,
         }
+        if template.get("privacy_settings"):
+            data["privacy_settings"] = template["privacy_settings"]
         created = await asyncio.to_thread(
             self.supabase.table("portfolio_connections").insert(data).execute
         )

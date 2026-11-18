@@ -95,6 +95,33 @@ export async function togglePublicSharing(
   });
 }
 
+// ========== Manual import ==========
+
+export interface ManualImportResult {
+  success: boolean;
+  accounts_count: number;
+  positions_count: number;
+  unpriced_symbols: string[];
+  imported_at: string;
+}
+
+/** Replace the user's manually imported holdings with this snapshot. */
+export async function importManualHoldings(
+  payload: import("./portfolioManualImport").ManualImportPayload,
+): Promise<ManualImportResult> {
+  return apiRequest<ManualImportResult>("/manual-import", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+/** Remove every manually imported account and position. */
+export async function clearManualHoldings(): Promise<{ success: boolean; removed: boolean }> {
+  return apiRequest<{ success: boolean; removed: boolean }>("/manual-import", {
+    method: "DELETE",
+  });
+}
+
 // ========== Position Visibility ==========
 
 /**

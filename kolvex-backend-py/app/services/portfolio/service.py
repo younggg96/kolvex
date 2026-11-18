@@ -5,12 +5,13 @@ Portfolio 服务层
 
 import asyncio
 import logging
-from typing import Optional, Dict, Any, List
-from supabase import Client
+from typing import Any, Dict, List, Optional
 
 from app.core.supabase import get_supabase_service
+from supabase import Client
 
 logger = logging.getLogger(__name__)
+
 
 class PortfolioService:
     """Broker-neutral portfolio cache and sharing service."""
@@ -28,24 +29,25 @@ class PortfolioService:
         Returns:
             持仓数据（包含每个持仓的 weight_percent 字段）
         """
-        connection = await self._get_connection(user_id)
-        if not connection:
+        connections = await self._get_connections(user_id)
+        if not connections:
             return {
                 "accounts": [],
                 "is_connected": False,
                 "is_public": False,
                 "total_value": 0,
             }
+        connection = connections[0]
 
-        # 获取账户和持仓（包含 is_hidden 字段供用户管理）
-        accounts = (
-            (await asyncio.to_thread(self.supabase.table("portfolio_accounts")
+        # 获取所有连接（Plaid + 手动导入）下的账户和持仓（包含 is_hidden 字段供用户管理）
+        accounts = await asyncio.to_thread(
+            self.supabase.table("portfolio_accounts")
             .select("*, portfolio_positions(*, is_hidden)")
-            .eq("connection_id", connection["id"])
-            .execute))
+            .in_("connection_id", [c["id"] for c in connections])
+            .execute
         )
 
-        accounts_data = accounts.data or []
+        accounts_data = _tag_sources(accounts.data or [], connections)
 
         # 计算总市值
         total_portfolio_value = 0.0
@@ -69,9 +71,7 @@ class PortfolioService:
 
                 # 计算持仓权重 (0-100)
                 if total_portfolio_value > 0:
-                    pos["weight_percent"] = round(
-                        (value / total_portfolio_value) * 100, 2
-                    )
+                    pos["weight_percent"] = round((value / total_portfolio_value) * 100, 2)
                 else:
                     pos["weight_percent"] = 0.0
 
@@ -79,9 +79,9 @@ class PortfolioService:
                 pos["market_value"] = round(value, 2)
 
         return {
-            "is_connected": connection.get("is_connected", False),
+            "is_connected": any(c.get("is_connected") for c in connections),
             "is_public": connection.get("is_public", False),
-            "last_synced_at": connection.get("last_synced_at"),
+            "last_synced_at": _latest_sync(connections),
             "accounts": accounts_data,
             "total_value": round(total_portfolio_value, 2),
         }
@@ -97,18 +97,19 @@ class PortfolioService:
             公开持仓数据，如果未公开则返回 None
         """
         # 检查是否公开
-        result = (
-            (await asyncio.to_thread(self.supabase.table("portfolio_connections")
+        result = await asyncio.to_thread(
+            self.supabase.table("portfolio_connections")
             .select("*")
             .eq("user_id", user_id)
             .eq("is_public", True)
-            .execute))
+            .execute
         )
 
         if not result.data:
             return None
 
-        connection = result.data[0]
+        public_connections = _order_connections(result.data)
+        connection = public_connections[0]
 
         # 获取隐私设置
         default_settings = {
@@ -133,18 +134,16 @@ class PortfolioService:
         hidden_account_ids = set(privacy_settings.get("hidden_accounts", []))
 
         # 获取账户和持仓（获取所有字段，然后过滤隐藏持仓）
-        accounts = (
-            (await asyncio.to_thread(self.supabase.table("portfolio_accounts")
+        accounts = await asyncio.to_thread(
+            self.supabase.table("portfolio_accounts")
             .select("*, portfolio_positions(*)")
-            .eq("connection_id", connection["id"])
-            .execute))
+            .in_("connection_id", [c["id"] for c in public_connections])
+            .execute
         )
 
         # 过滤掉隐藏的账户
         accounts_data = [
-            acc
-            for acc in (accounts.data or [])
-            if acc.get("id") not in hidden_account_ids
+            acc for acc in (accounts.data or []) if acc.get("id") not in hidden_account_ids
         ]
 
         # 计算总市值和盈亏（仅计算可见持仓用于统计）
@@ -180,9 +179,7 @@ class PortfolioService:
                 value = price * units * multiplier
 
                 if total_portfolio_value > 0 and not is_hidden:
-                    pos["weight_percent"] = round(
-                        (value / total_portfolio_value) * 100, 2
-                    )
+                    pos["weight_percent"] = round((value / total_portfolio_value) * 100, 2)
                 else:
                     pos["weight_percent"] = 0.0
 
@@ -213,8 +210,8 @@ class PortfolioService:
             "user_id": user_id,
             "is_connected": True,  # 公开持仓必然已连接
             "is_public": True,  # 公开持仓必然已公开
-            "last_synced_at": connection.get("last_synced_at"),
-            "accounts": accounts_data,
+            "last_synced_at": _latest_sync(public_connections),
+            "accounts": _tag_sources(accounts_data, public_connections),
             "privacy_settings": privacy_settings,
         }
 
@@ -255,7 +252,6 @@ class PortfolioService:
 
         return response
 
-
     async def toggle_public_sharing(self, user_id: str, is_public: bool) -> bool:
         """
         切换持仓公开分享状态
@@ -271,11 +267,12 @@ class PortfolioService:
         if not connection:
             raise Exception("用户未连接 Portfolio")
 
-        result = (
-            (await asyncio.to_thread(self.supabase.table("portfolio_connections")
+        # Sharing is one setting per user, so keep every connection in step.
+        result = await asyncio.to_thread(
+            self.supabase.table("portfolio_connections")
             .update({"is_public": is_public})
-            .eq("id", connection["id"])
-            .execute))
+            .eq("user_id", user_id)
+            .execute
         )
 
         return bool(result.data)
@@ -294,40 +291,40 @@ class PortfolioService:
         Returns:
             是否成功
         """
-        connection = await self._get_connection(user_id)
-        if not connection:
+        connections = await self._get_connections(user_id)
+        if not connections:
             raise Exception("用户未连接 Portfolio")
 
         # 验证持仓属于该用户
-        position = (
-            (await asyncio.to_thread(self.supabase.table("portfolio_positions")
+        position = await asyncio.to_thread(
+            self.supabase.table("portfolio_positions")
             .select("id, account_id")
             .eq("id", position_id)
             .single()
-            .execute))
+            .execute
         )
 
         if not position.data:
             raise Exception("持仓不存在")
 
         # 验证账户属于该用户的连接
-        account = (
-            (await asyncio.to_thread(self.supabase.table("portfolio_accounts")
+        account = await asyncio.to_thread(
+            self.supabase.table("portfolio_accounts")
             .select("connection_id")
             .eq("id", position.data["account_id"])
             .single()
-            .execute))
+            .execute
         )
 
-        if not account.data or account.data["connection_id"] != connection["id"]:
+        if not account.data or account.data["connection_id"] not in {c["id"] for c in connections}:
             raise Exception("无权修改此持仓")
 
         # 更新持仓隐藏状态
-        result = (
-            (await asyncio.to_thread(self.supabase.table("portfolio_positions")
+        result = await asyncio.to_thread(
+            self.supabase.table("portfolio_positions")
             .update({"is_hidden": is_hidden})
             .eq("id", position_id)
-            .execute))
+            .execute
         )
 
         return bool(result.data)
@@ -346,16 +343,16 @@ class PortfolioService:
         Returns:
             成功更新的数量
         """
-        connection = await self._get_connection(user_id)
-        if not connection:
+        connections = await self._get_connections(user_id)
+        if not connections:
             raise Exception("用户未连接 Portfolio")
 
         # 获取用户所有账户 ID
-        accounts = (
-            (await asyncio.to_thread(self.supabase.table("portfolio_accounts")
+        accounts = await asyncio.to_thread(
+            self.supabase.table("portfolio_accounts")
             .select("id")
-            .eq("connection_id", connection["id"])
-            .execute))
+            .in_("connection_id", [c["id"] for c in connections])
+            .execute
         )
 
         if not accounts.data:
@@ -364,12 +361,12 @@ class PortfolioService:
         account_ids = [a["id"] for a in accounts.data]
 
         # 批量更新属于用户的持仓
-        result = (
-            (await asyncio.to_thread(self.supabase.table("portfolio_positions")
+        result = await asyncio.to_thread(
+            self.supabase.table("portfolio_positions")
             .update({"is_hidden": is_hidden})
             .in_("id", position_ids)
             .in_("account_id", account_ids)
-            .execute))
+            .execute
         )
 
         return len(result.data) if result.data else 0
@@ -431,11 +428,11 @@ class PortfolioService:
         updated_settings = {**current_settings, **settings}
 
         # 更新数据库
-        result = (
-            (await asyncio.to_thread(self.supabase.table("portfolio_connections")
+        result = await asyncio.to_thread(
+            self.supabase.table("portfolio_connections")
             .update({"privacy_settings": updated_settings})
-            .eq("id", connection["id"])
-            .execute))
+            .eq("user_id", user_id)
+            .execute
         )
 
         if not result.data:
@@ -453,9 +450,9 @@ class PortfolioService:
         Returns:
             连接状态信息
         """
-        connection = await self._get_connection(user_id)
+        connections = await self._get_connections(user_id)
 
-        if not connection:
+        if not connections:
             return {
                 "is_registered": False,
                 "is_connected": False,
@@ -464,34 +461,51 @@ class PortfolioService:
             }
 
         # 统计账户数量
-        accounts = (
-            (await asyncio.to_thread(self.supabase.table("portfolio_accounts")
+        accounts = await asyncio.to_thread(
+            self.supabase.table("portfolio_accounts")
             .select("id", count="exact")
-            .eq("connection_id", connection["id"])
-            .execute))
+            .in_("connection_id", [c["id"] for c in connections])
+            .execute
         )
 
         return {
             "is_registered": True,
-            "is_connected": connection.get("is_connected", False),
-            "is_public": connection.get("is_public", False),
-            "last_synced_at": connection.get("last_synced_at"),
+            "is_connected": any(c.get("is_connected") for c in connections),
+            "is_public": connections[0].get("is_public", False),
+            "last_synced_at": _latest_sync(connections),
             "accounts_count": accounts.count or 0,
         }
 
-    async def _get_connection(self, user_id: str) -> Optional[Dict[str, Any]]:
-        """获取用户的 Portfolio 连接"""
-        result = (
-            (await asyncio.to_thread(self.supabase.table("portfolio_connections")
-            .select("*")
-            .eq("user_id", user_id)
-            .execute))
+    async def _get_connections(self, user_id: str) -> List[Dict[str, Any]]:
+        """获取用户全部 Portfolio 连接（Plaid 在前，手动导入在后）"""
+        result = await asyncio.to_thread(
+            self.supabase.table("portfolio_connections").select("*").eq("user_id", user_id).execute
         )
-        logger.info(f"Portfolio connection result: {result.data}")
+        return _order_connections(result.data or [])
 
-        if result.data and len(result.data) > 0:
-            return result.data[0]
-        return None
+    async def _get_connection(self, user_id: str) -> Optional[Dict[str, Any]]:
+        """获取主连接：分享开关和隐私设置以它为准（写入时同步到全部连接）"""
+        connections = await self._get_connections(user_id)
+        return connections[0] if connections else None
+
+
+def _order_connections(connections: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    return sorted(connections, key=lambda c: (c.get("provider") == "manual", str(c.get("id"))))
+
+
+def _latest_sync(connections: List[Dict[str, Any]]) -> Optional[str]:
+    stamps = [c["last_synced_at"] for c in connections if c.get("last_synced_at")]
+    return max(stamps) if stamps else None
+
+
+def _tag_sources(
+    accounts: List[Dict[str, Any]], connections: List[Dict[str, Any]]
+) -> List[Dict[str, Any]]:
+    """Mark each account with where it came from so the UI can label manual imports."""
+    providers = {c["id"]: c.get("provider") for c in connections}
+    for account in accounts:
+        account["source"] = providers.get(account.get("connection_id"), "plaid")
+    return accounts
 
 
 def get_portfolio_service() -> PortfolioService:

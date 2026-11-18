@@ -97,6 +97,8 @@ async def trigger_portfolio_snapshot(
             supabase.table("portfolio_connections")
             .select("id, user_id, provider, created_at")
             .eq("is_connected", True)
+            # Manual imports are static snapshots, not live valuations.
+            .neq("provider", "manual")
             .execute
         )
 

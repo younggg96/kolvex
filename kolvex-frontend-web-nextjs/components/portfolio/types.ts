@@ -11,14 +11,7 @@ export type { PortfolioHeaderActionsProps } from "./PortfolioHeaderActions";
 
 // Sort key types
 export type EquitySortKey =
-  | "symbol"
-  | "price"
-  | "cost"
-  | "units"
-  | "value"
-  | "pnl"
-  | "pnl_per_share"
-  | "weight";
+  "symbol" | "price" | "cost" | "units" | "value" | "pnl" | "pnl_per_share" | "weight";
 
 export type OptionSortKey =
   | "symbol"
@@ -44,6 +37,7 @@ export interface PortfolioHoldingsProps {
 
 export interface ConnectionStateProps {
   onConnectPlaid: () => Promise<void>;
+  onManualImport: () => void;
   connecting: boolean;
 }
 
@@ -61,11 +55,7 @@ export interface EquityPositionsTableProps {
   sortDir: "asc" | "desc";
   onSort: (key: EquitySortKey) => void;
   sparklineDataMap: Map<string, number[]>;
-  onToggleVisibility: (
-    e: React.MouseEvent,
-    positionId: string,
-    currentlyHidden: boolean
-  ) => void;
+  onToggleVisibility: (e: React.MouseEvent, positionId: string, currentlyHidden: boolean) => void;
 }
 
 export interface OptionPositionsTableProps {
@@ -77,11 +67,7 @@ export interface OptionPositionsTableProps {
   sortDir: "asc" | "desc";
   onSort: (key: OptionSortKey) => void;
   sparklineDataMap: Map<string, number[]>;
-  onToggleVisibility: (
-    e: React.MouseEvent,
-    positionId: string,
-    currentlyHidden: boolean
-  ) => void;
+  onToggleVisibility: (e: React.MouseEvent, positionId: string, currentlyHidden: boolean) => void;
 }
 
 export interface DisconnectDialogProps {
