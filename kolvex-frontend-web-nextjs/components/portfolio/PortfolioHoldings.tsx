@@ -14,6 +14,7 @@ import { NotConnectedState, InitialSyncState } from "./ConnectionStates";
 import { AccountCard } from "./AccountCard";
 import { DisconnectDialog } from "./DisconnectDialog";
 import { ClearManualDialog } from "./ClearManualDialog";
+import { RemoveAccountDialog } from "./RemoveAccountDialog";
 import { ManualImportDialog } from "./ManualImportDialog";
 import { PortfolioAIAnalysis } from "./PortfolioAIAnalysis";
 import { InvestmentTransactionsTable } from "./InvestmentTransactionsTable";
@@ -35,6 +36,12 @@ export default function PortfolioHoldings({
   const [manualImportOpen, setManualImportOpen] = useState(false);
   const [clearManualOpen, setClearManualOpen] = useState(false);
   const [clearingManual, setClearingManual] = useState(false);
+  const [accountToRemove, setAccountToRemove] = useState<{
+    id: string;
+    name: string;
+    source?: string;
+  } | null>(null);
+  const [removingAccount, setRemovingAccount] = useState(false);
   const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<"holdings" | "transactions" | "ai-insights">(
     "holdings",
@@ -66,6 +73,7 @@ export default function PortfolioHoldings({
     handleTogglePositionVisibility,
     handleManualImported,
     handleClearManual,
+    handleRemoveAccount,
   } = usePortfolioData({ userId, isOwner });
   const hasPlaid = Boolean(plaidStatus?.is_connected);
   const hasManual = Boolean(holdings?.accounts?.some((account) => account.source === "manual"));
@@ -104,6 +112,14 @@ export default function PortfolioHoldings({
     setClearingManual(false);
     if (success) setClearManualOpen(false);
   }, [handleClearManual]);
+
+  const handleRemoveAccountAndClose = useCallback(async () => {
+    if (!accountToRemove) return;
+    setRemovingAccount(true);
+    const success = await handleRemoveAccount(accountToRemove.id);
+    setRemovingAccount(false);
+    if (success) setAccountToRemove(null);
+  }, [accountToRemove, handleRemoveAccount]);
 
   const manualImportDialog = isOwner ? (
     <ManualImportDialog
@@ -315,6 +331,16 @@ export default function PortfolioHoldings({
                   sortOptionPositions={optionSort.sortPositions}
                   sparklineDataMap={sparklineDataMap}
                   onToggleVisibility={handleTogglePositionVisibility}
+                  onRemove={
+                    isOwner
+                      ? () =>
+                          setAccountToRemove({
+                            id: account.id,
+                            name: account.account_name || t("portfolio.holdings.brokerageAccount"),
+                            source: account.source,
+                          })
+                      : undefined
+                  }
                 />
               ))}
             </div>
@@ -368,6 +394,16 @@ export default function PortfolioHoldings({
           onOpenChange={setClearManualOpen}
           onConfirm={handleClearManualAndClose}
           clearing={clearingManual}
+        />
+      )}
+      {isOwner && (
+        <RemoveAccountDialog
+          account={accountToRemove}
+          onOpenChange={(open) => {
+            if (!open && !removingAccount) setAccountToRemove(null);
+          }}
+          onConfirm={handleRemoveAccountAndClose}
+          removing={removingAccount}
         />
       )}
       {manualImportDialog}

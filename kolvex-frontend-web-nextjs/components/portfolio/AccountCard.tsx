@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { ChevronRight, Briefcase } from "lucide-react";
+import { ChevronRight, Briefcase, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ListCard } from "@/components/ui/list-card";
@@ -43,6 +44,8 @@ interface AccountCardProps {
   sparklineDataMap: Map<string, number[]>;
   // Visibility toggle
   onToggleVisibility: (e: React.MouseEvent, positionId: string, currentlyHidden: boolean) => void;
+  // Owner-only: ask to remove this account
+  onRemove?: () => void;
 }
 
 export function AccountCard({
@@ -62,6 +65,7 @@ export function AccountCard({
   sortOptionPositions,
   sparklineDataMap,
   onToggleVisibility,
+  onRemove,
 }: AccountCardProps) {
   const { t } = useTranslation();
   const equityPositions =
@@ -108,6 +112,22 @@ export function AccountCard({
                   <Badge variant="outline" className="text-xs border-primary/30 text-primary">
                     {t("portfolio.holdings.options", { count: String(optionPositions.length) })}
                   </Badge>
+                )}
+                {isOwner && onRemove && (
+                  <Button
+                    type="button"
+                    variant="toolbar"
+                    size="toolbar"
+                    aria-label={t("portfolio.holdings.removeAccount")}
+                    title={t("portfolio.holdings.removeAccount")}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRemove();
+                    }}
+                    onKeyDown={(e) => e.stopPropagation()}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 )}
               </div>
             </div>

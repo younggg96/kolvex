@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter
 
+from .account_routes import router as account_router
 from .analysis_routes import router as analysis_router
 from .connection_routes import router as connection_router
 from .history_routes import router as history_router
@@ -17,5 +18,6 @@ router.include_router(holdings_router)
 router.include_router(history_router)
 router.include_router(analysis_router)
 router.include_router(manual_router)
+router.include_router(account_router)
 
 __all__ = ["router"]

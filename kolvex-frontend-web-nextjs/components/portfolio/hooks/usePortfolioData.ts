@@ -10,6 +10,7 @@ import {
   togglePositionVisibility,
   getShareUrl,
   clearManualHoldings,
+  removePortfolioAccount,
 } from "@/lib/portfolioApi";
 import {
   createPlaidLinkToken,
@@ -453,6 +454,21 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     }
   }, [cacheUserId, loadData]);
 
+  const handleRemoveAccount = useCallback(
+    async (accountId: string) => {
+      try {
+        await removePortfolioAccount(accountId);
+        clearPortfolioCache(cacheUserId);
+        await loadData(true);
+        return true;
+      } catch (error: any) {
+        toast.error(error.message || "Failed to remove account");
+        return false;
+      }
+    },
+    [cacheUserId, loadData],
+  );
+
   const handleSyncTransactions = useCallback(async () => {
     setSyncing(true);
     try {
@@ -571,5 +587,6 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     handleTogglePositionVisibility,
     handleManualImported,
     handleClearManual,
+    handleRemoveAccount,
   };
 }

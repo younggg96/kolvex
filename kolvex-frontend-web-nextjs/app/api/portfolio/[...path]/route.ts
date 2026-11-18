@@ -203,6 +203,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 /**
  * DELETE handler
  * - /api/portfolio/manual-import -> DELETE /manual-import
+ * - /api/portfolio/accounts/:id -> DELETE /accounts/:id
  */
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   const { path } = await params;
@@ -210,6 +211,14 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   switch (path[0]) {
     case "manual-import":
       return proxyRequest(request, "/manual-import", { method: "DELETE" });
+
+    case "accounts":
+      if (path.length === 2) {
+        return proxyRequest(request, `/accounts/${encodeURIComponent(path[1])}`, {
+          method: "DELETE",
+        });
+      }
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     default:
       return NextResponse.json({ error: "Not found" }, { status: 404 });

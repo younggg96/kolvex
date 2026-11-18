@@ -122,6 +122,16 @@ export async function clearManualHoldings(): Promise<{ success: boolean; removed
   });
 }
 
+/** Remove one account and its positions. Plaid syncs skip it afterwards. */
+export async function removePortfolioAccount(
+  accountId: string,
+): Promise<{ success: boolean; account_id: string }> {
+  return apiRequest<{ success: boolean; account_id: string }>(
+    `/accounts/${encodeURIComponent(accountId)}`,
+    { method: "DELETE" },
+  );
+}
+
 // ========== Position Visibility ==========
 
 /**

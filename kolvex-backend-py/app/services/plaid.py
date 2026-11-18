@@ -53,6 +53,23 @@ def _safe_float(value: Any) -> Optional[float]:
         return None
 
 
+def _removed_ids(connection: Optional[Dict[str, Any]]) -> set:
+    return set((connection or {}).get("removed_account_ids") or [])
+
+
+def _without_removed(payload: Dict[str, Any], removed: set) -> Dict[str, Any]:
+    """Drop accounts the user removed, plus their holdings and transactions."""
+    if not removed:
+        return payload
+    filtered = dict(payload)
+    for key in ("accounts", "holdings", "investment_transactions"):
+        if key in payload:
+            filtered[key] = [
+                row for row in payload.get(key) or [] if row.get("account_id") not in removed
+            ]
+    return filtered
+
+
 def _first_present(*values: Any) -> Optional[str]:
     for value in values:
         if value is None:
@@ -224,19 +241,23 @@ class PlaidService:
         transactions_count = 0
         last_error = None
         snapshot_holdings = {}
+        removed = _removed_ids(connection)
 
         for item in active_items:
             try:
                 access_token = self._decrypt(item["access_token_encrypted"])
-                holdings = await self._post(
-                    "/investments/holdings/get",
-                    {"access_token": access_token},
+                holdings = _without_removed(
+                    await self._post(
+                        "/investments/holdings/get",
+                        {"access_token": access_token},
+                    ),
+                    removed,
                 )
                 synced_account_ids = await self._sync_holdings(connection["id"], item, holdings)
                 snapshot_holdings[item["id"]] = holdings
                 accounts_count += len(synced_account_ids)
                 holdings_count += len(holdings.get("holdings", []))
-                tx_count = await self._sync_transactions(user_id, item, access_token)
+                tx_count = await self._sync_transactions(user_id, item, access_token, removed)
                 transactions_count += tx_count
                 now = datetime.now(timezone.utc).isoformat()
                 (
@@ -380,14 +401,24 @@ class PlaidService:
         self, connection: dict, session: date, holdings: dict[str, dict]
     ) -> bool:
         user_id = connection["user_id"]
-        snapshot = await calculate_snapshot(holdings.values(), session)
+        current = await self._get_portfolio_connection(user_id)
+        if not current or current["id"] != connection["id"] or not current["is_connected"]:
+            return False
+        removed = _removed_ids(current)
+        # An item whose accounts were all removed contributes nothing to the snapshot.
+        payloads = [
+            filtered
+            for payload in holdings.values()
+            if (filtered := _without_removed(payload, removed)).get("accounts")
+            or not payload.get("accounts")
+        ]
+        if not payloads:
+            return False
+        snapshot = await calculate_snapshot(payloads, session)
         if snapshot is None:
             logger.info(
                 "Plaid snapshot for %s on %s awaits complete valuation", user_id[:8], session
             )
-            return False
-        current = await self._get_portfolio_connection(user_id)
-        if not current or current["id"] != connection["id"] or not current["is_connected"]:
             return False
         current_items = await self._get_items(user_id)
         if {item["id"] for item in current_items if item["is_connected"]} != holdings.keys():
@@ -579,17 +610,21 @@ class PlaidService:
         user_id: str,
         item: Dict[str, Any],
         access_token: str,
+        removed: Optional[set] = None,
     ) -> int:
         end_date = date.today()
         start_date = end_date - timedelta(days=730)
-        data = await self._post(
-            "/investments/transactions/get",
-            {
-                "access_token": access_token,
-                "start_date": start_date.isoformat(),
-                "end_date": end_date.isoformat(),
-                "options": {"count": 500, "offset": 0},
-            },
+        data = _without_removed(
+            await self._post(
+                "/investments/transactions/get",
+                {
+                    "access_token": access_token,
+                    "start_date": start_date.isoformat(),
+                    "end_date": end_date.isoformat(),
+                    "options": {"count": 500, "offset": 0},
+                },
+            ),
+            removed or set(),
         )
         securities = {
             security.get("security_id"): security
