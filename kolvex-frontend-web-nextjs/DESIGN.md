@@ -1807,10 +1807,11 @@ meaning and reporting periods.
 Person Updates / 人物动态 appears in the workspace's Read group (and its mobile
 More menu) at `/dashboard/person-updates`. It shares the timeline with public
 `/tracker`. One shared ListCard contains the feed. A row opens with the
-person's circular avatar, name and impact badge. The three timestamps share a
-wrapping line and preserve their local dates, with PT first. The title and
-summary are followed by an optional full-aspect event image, topic and ticker
-badges, and an external source link with its hostname. A missing or failed
+person's circular avatar, localized name and impact badge. The PT timestamp
+sits beneath the name and opens a shared Popover with the full dates in PT, ET
+and Beijing time. The title and summary sit together above the optional
+full-aspect event image. Linked StockBadge pills wrap in their own row. Topics, the source link and
+its hostname share the following row. A missing or failed
 avatar uses the first character of the name. Missing or failed event images
 leave the remaining row intact. The horizontal avatar rail offers an All
 people item and one circular portrait per person. A primary ring identifies

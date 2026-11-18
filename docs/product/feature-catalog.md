@@ -76,7 +76,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 | 登录注册、OAuth、找回密码 | — | `/auth/*` | `/sign-in`、`/auth/*` | `auth/` | — | ✅（App 必须登录） |
 | 个人资料、头像、主题、语言、模型 API Key | `settings` | `/dashboard/settings`、`/config` | `/account`、`/preferences`、`(more)/settings` | `users.py`、`upload/`、`user_api_keys/` | — | ✅ |
 | 管理后台（用户、日报、事件、YouTube、X、期权异动、邮件设置、超级投资者名单） | `admin` | `/dashboard/admin` | `(more)/admin` | `admin/` 等 | [mcp-content-admin.md](../mcp-content-admin.md) | ◐ |
-| 人物动态（大头像横滑栏、近 24 小时动态提示圈与筛选面板；JSON 导入支持头像和配图） | `personUpdates` | `/dashboard/person-updates`、`/tracker`、`/dashboard/admin?tab=person-updates` | — | `person_updates.py` | [人物动态](../person-updates.md) | — |
+| 人物动态（横滑头像与近 24 小时动态提示圈；紧凑时间线支持时区展开、独立股票行情行和筛选；JSON 导入支持头像和配图） | `personUpdates` | `/dashboard/person-updates`、`/tracker`、`/dashboard/admin?tab=person-updates` | — | `person_updates.py` | [人物动态](../person-updates.md) | — |
 | YouTube 自动导入（本地 Mac worker 每天 21:00 获取未追踪视频字幕 → 后端 DeepSeek 分析 → 导入观点；管理后台「YouTube 导入」可立即运行并查看结果） | `admin` | `/dashboard/admin?tab=youtube` | — | `youtube_auto_import.py`（`/admin/youtube-auto-import/*`、`/youtube-auto-import/worker/*`） | [youtube-auto-import.md](../youtube-auto-import.md)；需迁移 `20261116150000_youtube_auto_import.sql` | — |
 | 公开阅读页与 SEO | — | `app/(public)/`：`/stocks`、`/creators`、`/research`（中文缓存首屏，进入后沿用全站语言偏好；ISR 缓存 600 秒，分页用 `/page/N` 路径；`/llms.txt`、观点结构化数据） | —（App 无访客模式） | — | [public-reading.md](../public-reading.md) | — |
 | 隐私政策、条款、联系 | — | `/privacy`、`/terms`、`/contact` | 打开网页 | Web 双语，联系页使用支持邮箱 | — | ✅ |

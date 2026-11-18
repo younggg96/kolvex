@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowUpRight, Clock3 } from "lucide-react";
+import { ArrowUpRight, ChevronDown } from "lucide-react";
 import { useCopy } from "@/components/decision/shared";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ListCard, listFeedStaticRowClass } from "@/components/ui/list-card";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import StockBadge from "@/components/ui/stock-badge";
 import { PERSON_UPDATE_ZONES, personUpdateTime, type PersonUpdate } from "@/lib/personUpdates";
+import { normalizeStockSymbol } from "@/lib/stockLinks";
 import { cn } from "@/lib/utils";
 
 function UpdateImage({ src, alt }: { src: string; alt: string }) {
@@ -35,6 +38,47 @@ function sourceHost(href: string) {
   }
 }
 
+function UpdateTime({ person, publishedAt }: { person: string; publishedAt: string }) {
+  const c = useCopy();
+  const locale = c("en-US", "zh-CN");
+  const label = c("Publication time zones", "发布时间与时区");
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="group min-h-[44px] min-w-0 cursor-pointer rounded-md text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+        >
+          <span className="block truncate text-sm font-semibold leading-5">{person}</span>
+          <span className="flex items-center gap-1 text-xs tabular-nums text-muted-foreground group-hover:text-foreground">
+            <time dateTime={publishedAt}>
+              {personUpdateTime(publishedAt, locale, PERSON_UPDATE_ZONES[0][0])} PT
+            </time>
+            <ChevronDown aria-hidden="true" className="size-3 shrink-0" />
+          </span>
+          <span className="sr-only">{label}</span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        aria-label={label}
+        className="max-w-[calc(100vw-2rem)] rounded-xl px-3 py-2 motion-reduce:animate-none"
+      >
+        <dl className="grid grid-cols-[auto_1fr] items-baseline gap-x-4 gap-y-1.5 text-xs leading-5">
+          {PERSON_UPDATE_ZONES.map(([zone, en, zh]) => (
+            <div key={zone} className="contents">
+              <dt className="text-muted-foreground">{c(en, zh)}</dt>
+              <dd className="text-right tabular-nums">
+                <time dateTime={publishedAt}>{personUpdateTime(publishedAt, locale, zone)}</time>
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export function PersonUpdateTimeline({ items }: { items: PersonUpdate[] }) {
   const c = useCopy();
   const impactLabels = {
@@ -49,11 +93,11 @@ export function PersonUpdateTimeline({ items }: { items: PersonUpdate[] }) {
         {items.map((item) => (
           <li
             key={item.id}
-            className={cn(listFeedStaticRowClass, "py-5 first:pt-1 last:pb-1 sm:px-2")}
+            className={cn(listFeedStaticRowClass, "py-3 first:pt-0 last:pb-0 sm:px-2")}
           >
-            <article className="space-y-3">
-              <header className="flex items-start gap-3">
-                <Avatar aria-hidden="true" className="size-10">
+            <article className="space-y-2">
+              <header className="flex min-w-0 items-center gap-2.5">
+                <Avatar aria-hidden="true" className="size-9">
                   {item.avatar_url && (
                     <AvatarImage
                       src={item.avatar_url}
@@ -66,44 +110,44 @@ export function PersonUpdateTimeline({ items }: { items: PersonUpdate[] }) {
                     {Array.from(item.person_cn)[0]}
                   </AvatarFallback>
                 </Avatar>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold leading-5">{item.person_cn}</p>
-                  {item.person !== item.person_cn && (
-                    <p className="text-xs leading-5 text-muted-foreground">{item.person}</p>
-                  )}
-                </div>
-                <Badge variant={item.impact === "high" ? "warning" : "outline"} size="sm">
+                <UpdateTime
+                  person={c(item.person, item.person_cn)}
+                  publishedAt={item.published_at}
+                />
+                <Badge
+                  variant={item.impact === "high" ? "warning" : "outline"}
+                  size="sm"
+                  className="ml-auto shrink-0"
+                >
                   {impactLabels[item.impact]}
                 </Badge>
               </header>
 
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs leading-5 tabular-nums text-muted-foreground">
-                {PERSON_UPDATE_ZONES.map(([zone, en, zh], index) => (
-                  <time
-                    key={zone}
-                    dateTime={item.published_at}
-                    className={cn(
-                      "inline-flex items-center gap-1 whitespace-nowrap",
-                      index === 0 && "font-medium text-foreground",
-                    )}
-                  >
-                    {index === 0 && <Clock3 aria-hidden="true" className="size-3 shrink-0" />}
-                    {personUpdateTime(item.published_at, c("en-US", "zh-CN"), zone)} {c(en, zh)}
-                  </time>
-                ))}
+              <div className="space-y-1">
+                <h2 className="text-base font-semibold leading-snug sm:text-lg">{item.title}</h2>
+                <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
+                  {item.summary}
+                </p>
               </div>
-
-              <h2 className="text-base font-semibold leading-snug sm:text-lg">{item.title}</h2>
-              <p className="whitespace-pre-line text-sm leading-6 text-muted-foreground">
-                {item.summary}
-              </p>
               {item.image_url && item.image_alt && (
                 <UpdateImage key={item.image_url} src={item.image_url} alt={item.image_alt} />
               )}
-              {(item.tags.length > 0 || item.tickers.length > 0) && (
+              <footer className="space-y-0.5">
+                {item.tickers.length > 0 && (
+                  <ul
+                    className="flex min-w-0 flex-wrap items-center gap-1.5"
+                    aria-label={c("Stocks", "相关股票")}
+                  >
+                    {[...new Set(item.tickers.map(normalizeStockSymbol))].map((ticker) => (
+                      <li key={ticker} className="min-w-0">
+                        <StockBadge symbol={ticker} />
+                      </li>
+                    ))}
+                  </ul>
+                )}
                 <ul
-                  className="flex flex-wrap gap-1.5"
-                  aria-label={c("Topics and tickers", "主题和股票代码")}
+                  className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5"
+                  aria-label={c("Topics and source", "主题与原文")}
                 >
                   {[...new Set(item.tags)].map((tag) => (
                     <li key={`tag:${tag}`} className="min-w-0">
@@ -116,27 +160,22 @@ export function PersonUpdateTimeline({ items }: { items: PersonUpdate[] }) {
                       </Badge>
                     </li>
                   ))}
-                  {[...new Set(item.tickers)].map((ticker) => (
-                    <li key={`ticker:${ticker}`} className="min-w-0">
-                      <Badge variant="outline" size="sm" className="block max-w-full font-mono">
-                        {ticker}
-                      </Badge>
-                    </li>
-                  ))}
+                  <li className="min-w-0">
+                    <a
+                      href={item.source_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex min-h-[44px] max-w-full items-center gap-1.5 rounded-sm text-xs font-medium underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                    >
+                      <span className="shrink-0">{c("Original source", "查看原文")}</span>
+                      <span className="min-w-0 truncate text-xs font-normal text-muted-foreground">
+                        {sourceHost(item.source_url)}
+                      </span>
+                      <ArrowUpRight aria-hidden="true" className="size-4 shrink-0" />
+                    </a>
+                  </li>
                 </ul>
-              )}
-              <a
-                href={item.source_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex min-h-11 max-w-full items-center gap-2 rounded-sm text-sm font-medium underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-              >
-                <span className="shrink-0">{c("Original source", "查看原文")}</span>
-                <span className="min-w-0 truncate text-xs font-normal text-muted-foreground">
-                  {sourceHost(item.source_url)}
-                </span>
-                <ArrowUpRight aria-hidden="true" className="size-4 shrink-0" />
-              </a>
+              </footer>
             </article>
           </li>
         ))}
