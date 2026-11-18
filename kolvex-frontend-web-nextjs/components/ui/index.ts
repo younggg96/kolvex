@@ -62,6 +62,7 @@ export {
   ListColumnHeader,
   ListRows,
   ListRow,
+  ListReveal,
   ListLoadMore,
   ListFooterLink,
   listRowTargetClass,
@@ -69,4 +70,5 @@ export {
   listFeedGroupRowClass,
   listFeedStaticRowClass,
   listCompactRowClass,
+  listRevealClass,
 } from "./list-card";

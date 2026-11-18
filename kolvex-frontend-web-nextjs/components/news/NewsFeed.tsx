@@ -49,6 +49,7 @@ export default function NewsFeed() {
             <FloatingBar className="justify-between gap-x-3 text-xs leading-5 text-muted-foreground lg:min-h-0 lg:border-b lg:border-border lg:px-0 lg:pb-3">
               <SearchInput
                 size="sm"
+                shortcut="mod+k"
                 containerClassName="min-w-0 flex-1 md:max-w-sm"
                 className="w-full"
                 aria-label={c("Search headlines", "搜索快讯")}

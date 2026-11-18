@@ -7,7 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ContentLoading } from "@/components/ui/content-loading";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ListEmptyState, ListFooterLink } from "@/components/ui/list-card";
+import {
+  ListEmptyState,
+  ListFooterLink,
+  ListReveal,
+  listRevealClass,
+} from "@/components/ui/list-card";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { SourceNote } from "@/components/decision/SecData";
 import { useFinancialFormat } from "@/components/decision/StockFinancialData";
@@ -230,13 +235,15 @@ export default function SuperinvestorsDirectory() {
                     </span>
                   </h3>
                 )}
-                <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-                  {group.items.map((entry) => (
-                    <li key={entry.manager.id} className="min-w-0">
-                      <InvestorCard entry={entry} />
-                    </li>
-                  ))}
-                </ul>
+                <ListReveal trigger={sort}>
+                  <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    {group.items.map((entry) => (
+                      <li key={entry.manager.id} className={cn("min-w-0", listRevealClass)}>
+                        <InvestorCard entry={entry} />
+                      </li>
+                    ))}
+                  </ul>
+                </ListReveal>
               </div>
             ))}
 
@@ -354,7 +361,10 @@ function LeadCard({ entry }: { entry: Loaded }) {
             {summary.top.map((row, index) => (
               <li
                 key={`${row.cusip}-${row.class}-${row.put_call}`}
-                className="grid min-h-12 grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 border-b border-border py-2 text-sm last:border-0"
+                className={cn(
+                  "grid min-h-12 grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 border-b border-border py-2 text-sm last:border-0",
+                  listRevealClass,
+                )}
               >
                 <span className="flex items-center gap-1.5">
                   <span

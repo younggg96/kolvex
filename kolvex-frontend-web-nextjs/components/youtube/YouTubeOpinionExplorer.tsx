@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/list-card";
 import { Input } from "@/components/ui/input";
 import { SearchFieldIcon } from "@/components/ui/search-input";
+import { CommandSearch } from "@/components/ui/command-search";
 import CompanyLogo, { phoneListLogoClass } from "@/components/ui/company-logo";
 import { marketStockHref } from "@/lib/stockLinks";
 import {
@@ -1347,37 +1348,45 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                             />
                           </ListToolbar>
                           <div className="contents lg:flex lg:min-w-0 lg:flex-1 lg:flex-nowrap lg:items-center lg:gap-2">
-                            <div className="relative hidden min-w-0 shrink lg:block lg:w-64 xl:w-72">
-                              <SearchFieldIcon className="left-3.5 h-4 w-4" />
-                              <Input
-                                ref={searchInput}
-                                aria-label={t("common.search")}
-                                placeholder={
-                                  route.tab === "stocks"
-                                    ? t("youtubeOpinions.searchTicker")
-                                    : t("youtubeOpinions.searchCreator")
-                                }
-                                value={search}
-                                onChange={(event) => setSearch(event.target.value)}
-                                onKeyDown={(event) => {
-                                  if (event.key === "Escape") setSearch("");
-                                }}
-                                className="h-11 rounded-full pl-10 pr-10 text-base sm:text-sm"
-                              />
-                              {search && (
-                                <button
-                                  type="button"
-                                  aria-label={t("common.clearFilters")}
-                                  className="absolute right-1 top-1.5 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-none"
-                                  onClick={() => {
-                                    setSearch("");
-                                    searchInput.current?.focus();
+                            <CommandSearch
+                              className="hidden shrink lg:block lg:w-64 xl:w-72"
+                              label={t("common.search")}
+                              hasValue={!!search}
+                              heightClassName="h-11"
+                              shortcut="mod+k"
+                            >
+                              <div className="relative">
+                                <SearchFieldIcon className="left-3.5 h-4 w-4" />
+                                <Input
+                                  ref={searchInput}
+                                  aria-label={t("common.search")}
+                                  placeholder={
+                                    route.tab === "stocks"
+                                      ? t("youtubeOpinions.searchTicker")
+                                      : t("youtubeOpinions.searchCreator")
+                                  }
+                                  value={search}
+                                  onChange={(event) => setSearch(event.target.value)}
+                                  onKeyDown={(event) => {
+                                    if (event.key === "Escape") setSearch("");
                                   }}
-                                >
-                                  <X className="h-4 w-4" aria-hidden="true" />
-                                </button>
-                              )}
-                            </div>
+                                  className="h-11 rounded-full pl-10 pr-10 text-base sm:text-sm"
+                                />
+                                {search && (
+                                  <button
+                                    type="button"
+                                    aria-label={t("common.clearFilters")}
+                                    className="absolute right-1 top-1.5 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-none"
+                                    onClick={() => {
+                                      setSearch("");
+                                      searchInput.current?.focus();
+                                    }}
+                                  >
+                                    <X className="h-4 w-4" aria-hidden="true" />
+                                  </button>
+                                )}
+                              </div>
+                            </CommandSearch>
                             {route.tab === "stocks" && isProductFeatureEnabled("portfolio") && (
                               <div className="order-last flex w-full shrink-0 items-center gap-1 lg:order-none lg:w-auto">
                                 {stockScope === "holdings" && held.error && (
@@ -2090,16 +2099,23 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                         </h2>
                         <ListCard>
                           {showAllCreatorStocks && (
-                            <div className="relative mb-3 hidden lg:block">
-                              <SearchFieldIcon className="left-3.5 h-4 w-4" />
-                              <Input
-                                aria-label={t("youtubeOpinions.searchStocks")}
-                                value={search}
-                                onChange={(event) => setSearch(event.target.value)}
-                                placeholder={t("youtubeOpinions.searchTicker")}
-                                className="h-10 rounded-full pl-10 text-base sm:text-sm"
-                              />
-                            </div>
+                            <CommandSearch
+                              className="mb-3 hidden lg:block"
+                              label={t("common.search")}
+                              hasValue={!!search}
+                              heightClassName="h-10"
+                            >
+                              <div className="relative">
+                                <SearchFieldIcon className="left-3.5 h-4 w-4" />
+                                <Input
+                                  aria-label={t("youtubeOpinions.searchStocks")}
+                                  value={search}
+                                  onChange={(event) => setSearch(event.target.value)}
+                                  placeholder={t("youtubeOpinions.searchTicker")}
+                                  className="h-10 rounded-full pl-10 text-base sm:text-sm"
+                                />
+                              </div>
+                            </CommandSearch>
                           )}
                           <div id="creator-discussed-stocks">
                             {contextError ? (

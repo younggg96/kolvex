@@ -2,16 +2,17 @@
 
 import * as React from "react";
 
+import { StretchPill } from "@/lib/motion/stretchPill";
 import { cn } from "@/lib/utils";
 
 /**
  * iOS-style segmented control.
  *
  * Instead of each segment fading its own background in and out, one thumb
- * glides between segments. As in UISegmentedControl the thumb keeps the pill's
- * radius, so it grows or shrinks when the neighbouring option changes width
- * rather than only sliding; the labels stay put and the thumb springs back
- * under the finger after a selection.
+ * moves between segments. Each edge of the thumb rides its own spring (see
+ * lib/motion/stretchPill.ts): the edge facing the move leads and the far edge
+ * trails, so the thumb stretches toward the new option and then pulls its
+ * tail in. The labels stay put.
  *
  * The thumb is an `aria-hidden` span inside the group, so assistive tech still
  * sees plain buttons with their pressed/selected state.
@@ -24,14 +25,14 @@ const SIZES: Record<Size, { item: string; gap: string; pad: string; thumbPress: 
     item: "min-h-8 px-3 text-[0.8125rem]",
     gap: "gap-0.5",
     pad: "p-1",
-    thumbPress: "scale-y-[0.88]",
+    thumbPress: "[scale:1_0.88]",
   },
   md: {
     item: "min-h-8 px-3 text-sm sm:min-h-10 sm:px-4",
     // Same track as TabsList pills, so every switcher looks alike.
     gap: "gap-0.5 sm:gap-1",
     pad: "p-0.5 sm:p-1",
-    thumbPress: "scale-y-[0.9]",
+    thumbPress: "[scale:1_0.9]",
   },
 };
 
@@ -48,8 +49,10 @@ export interface SegmentedOption<T extends string> {
   disabled?: boolean;
 }
 
-export interface SegmentedControlProps<T extends string>
-  extends Omit<React.HTMLAttributes<HTMLDivElement>, "onChange" | "children"> {
+export interface SegmentedControlProps<T extends string> extends Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  "onChange" | "children"
+> {
   options: readonly SegmentedOption<T>[];
   value: T | null | undefined;
   onChange: (value: T) => void;
@@ -72,8 +75,6 @@ export interface SegmentedControlProps<T extends string>
   wrap?: boolean;
 }
 
-/** Critically damped spring from app/globals.css (`--spring`). */
-const EASE = "var(--spring)";
 /** Longer than the glide so a fast tap still reads as a distinct press. */
 const PRESS_MS = 320;
 
@@ -120,8 +121,14 @@ export function SegmentedControl<T extends string>({
   const controlRef = React.useRef<HTMLDivElement>(null);
   const itemRefs = React.useRef(new Map<T, HTMLButtonElement>());
   const settle = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const thumbRef = React.useRef<HTMLSpanElement>(null);
+  const pillRef = React.useRef<{ pill: StretchPill; wrap: boolean } | null>(null);
+  // The value the pill last sat under: re-measuring the same value (resize,
+  // fonts, scroll) snaps, and only a new value animates.
+  const placedValue = React.useRef<T | null | undefined>(undefined);
+  // Armed one frame after mount so the first placement never animates in.
+  const ready = React.useRef(false);
   const [thumb, setThumb] = React.useState<Thumb | null>(null);
-  const [ready, setReady] = React.useState(false);
   const [pressed, setPressed] = React.useState(false);
 
   const measure = React.useCallback(() => {
@@ -136,6 +143,16 @@ export function SegmentedControl<T extends string>({
       width: target.offsetWidth,
       height: target.offsetHeight,
     };
+    const element = thumbRef.current;
+    if (element && next.width > 0 && next.height > 0) {
+      if (!pillRef.current || pillRef.current.wrap !== wrap) {
+        pillRef.current?.pill.destroy();
+        pillRef.current = { pill: new StretchPill(element, { centerY: !wrap }), wrap };
+      }
+      const { pill } = pillRef.current;
+      pill.moveTo(next, !ready.current || !pill.hasPosition || placedValue.current === value);
+      placedValue.current = value;
+    }
     setThumb((current) =>
       current &&
       current.left === next.left &&
@@ -145,17 +162,22 @@ export function SegmentedControl<T extends string>({
         ? current
         : next,
     );
-  }, [value]);
+  }, [value, wrap]);
 
-  // Measure before paint so the thumb is already in place on first render;
-  // transitions are armed one frame later to suppress an entry animation.
+  // Measure before paint so the thumb is already in place on first render.
   React.useLayoutEffect(() => {
     measure();
   }, [measure, options.length, size, wrap]);
 
   React.useEffect(() => {
-    const frame = requestAnimationFrame(() => setReady(true));
-    return () => cancelAnimationFrame(frame);
+    const frame = requestAnimationFrame(() => {
+      ready.current = true;
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      pillRef.current?.pill.destroy();
+      pillRef.current = null;
+    };
   }, []);
 
   // A control wider than its screen scrolls so the chosen option is never clipped.
@@ -203,7 +225,9 @@ export function SegmentedControl<T extends string>({
   React.useEffect(() => {
     const changed = centeredValue.current !== value;
     centeredValue.current = value;
-    center(changed && !window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "smooth" : "auto");
+    center(
+      changed && !window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "smooth" : "auto",
+    );
   }, [center, value]);
 
   React.useEffect(
@@ -274,30 +298,21 @@ export function SegmentedControl<T extends string>({
         move(handled);
       }}
     >
+      {/* Position, width and height are written by StretchPill every frame. */}
       <span
+        ref={thumbRef}
         aria-hidden="true"
         className={cn(
-          "pointer-events-none absolute left-0 top-0 z-0 rounded-full glass-thumb",
-          "transition-[transform,width,height] duration-300 ease-out motion-reduce:!transition-none",
+          "pointer-events-none absolute left-0 top-0 z-0 rounded-full glass-thumb will-change-[transform,width]",
+          // Press squash only; movement is spring-driven, not a CSS transition.
+          "transition-[scale] duration-[var(--spring-standard)] ease-[var(--spring)] motion-reduce:!transition-none",
           hasThumb ? "opacity-100" : "opacity-0",
           pressed && config.thumbPress,
           thumbClassName,
         )}
-        style={{
-          width: thumb ? `${thumb.width}px` : 0,
-          height: thumb ? `${thumb.height}px` : 0,
-          transitionProperty: "transform, width, height, opacity",
-          transitionDuration: ready ? `340ms, 340ms, 340ms, 0ms` : "0ms",
-          transitionTimingFunction: ready
-            ? `${EASE}, ${EASE}, ${EASE}, ${EASE}`
-            : "linear",
-          // A single row centres the thumb with CSS: offsetTop rounds to whole
-          // pixels, which sat it visibly low against fractional rem padding.
-          ...(wrap ? {} : { top: "50%" }),
-          transform: wrap
-            ? `translate3d(${thumb?.left ?? 0}px, ${thumb?.top ?? 0}px, 0)`
-            : `translate3d(${thumb?.left ?? 0}px, -50%, 0)`,
-        }}
+        // A single row centres the thumb with CSS: offsetTop rounds to whole
+        // pixels, which sat it visibly low against fractional rem padding.
+        style={wrap ? undefined : { top: "50%" }}
       />
       {options.map((option) => {
         const active = option.value === value;

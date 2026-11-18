@@ -370,7 +370,8 @@
       "planning": "正在规划分析步骤",
       "writing": "正在整理回答",
       "working": "正在分析",
-      "interrupted": "回答已中断"
+      "interrupted": "回答已中断",
+      "toggleSteps": "展开或收起分析步骤"
     },
     "tools": {
       "get_user_watchlist": "读取你的自选股",

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Clock, FileText, Newspaper, X } from "lucide-react";
 import { useBriefData } from "@/components/briefs/useBriefData";
 import { RedditIcon, XIcon, YouTubeIcon } from "@/components/common/PlatformIcons";
@@ -45,8 +45,6 @@ type Remember = (item: SearchHistoryItem) => void;
 const panelClass = "flex flex-1 flex-col animate-results-enter motion-reduce:animate-none";
 const fillRowsClass = "flex-1 auto-rows-fr";
 const stockListClass = "grid grid-cols-2 gap-x-2 gap-y-1 max-lg:gap-y-0 max-[360px]:grid-cols-1";
-const stockItemClass =
-  "animate-stock-arrive [animation-delay:calc(var(--search-row,0)*28ms)] motion-reduce:animate-none";
 const stockLinkClass =
   "group w-full !min-h-12 !gap-2.5 max-lg:!min-h-[44px] max-lg:!gap-1.5 max-lg:px-0.5";
 const rankClass =
@@ -249,11 +247,7 @@ function TrendingStocks({
           {stocks.length ? (
             <ol className={cn(stockListClass, fillRowsClass)}>
               {stocks.map((stock, index) => (
-                <ListRow
-                  key={stock.ticker}
-                  className={cn("pr-0", stockItemClass)}
-                  style={{ "--search-row": index } as CSSProperties}
-                >
+                <ListRow key={stock.ticker} className="pr-0">
                   <Link
                     href={marketStockHref(stock.ticker)}
                     title={stock.name}
@@ -300,7 +294,7 @@ function TrendingStocks({
               skeleton={
                 <ol className={stockListClass}>
                   {Array.from({ length: TRENDING_STOCK_COUNT }, (_, i) => (
-                    <li key={i} className={cn("flex min-w-0 pr-0", stockItemClass)}>
+                    <li key={i} className="flex min-w-0 pr-0">
                       <div
                         className={cn(listCompactRowClass, stockLinkClass, "hover:bg-transparent")}
                       >

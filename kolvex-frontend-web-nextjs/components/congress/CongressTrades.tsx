@@ -191,7 +191,7 @@ export default function CongressTrades({
             className="divide-y divide-border"
           >
             {rows.map((row) => (
-              <li key={row.id} className="py-3 text-sm">
+              <li key={row.id} className="list-reveal py-3 text-sm">
                 <div className="flex items-center gap-3">
                   {row.ticker && validTicker(row.ticker) ? (
                     <span aria-hidden>
@@ -312,7 +312,7 @@ export default function CongressTrades({
                 {rows.map((row) => (
                   <tr
                     key={row.id}
-                    className="border-b border-border transition-colors last:border-0 hover:bg-foreground/[0.04] motion-reduce:transition-none"
+                    className="list-reveal border-b border-border transition-colors last:border-0 hover:bg-foreground/[0.04] motion-reduce:transition-none"
                   >
                     <th scope="row" className="max-w-[18rem] py-3 pl-4 pr-3 text-left font-normal">
                       <div className="flex min-w-0 items-center gap-3">

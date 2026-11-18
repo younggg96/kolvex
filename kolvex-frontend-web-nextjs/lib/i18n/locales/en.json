@@ -387,7 +387,8 @@
       "planning": "Planning the analysis",
       "writing": "Writing the response",
       "working": "Working on the analysis",
-      "interrupted": "Response interrupted"
+      "interrupted": "Response interrupted",
+      "toggleSteps": "Show or hide analysis steps"
     },
     "tools": {
       "get_user_watchlist": "Loading your watchlist",

@@ -8,6 +8,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SearchFieldIcon } from "@/components/ui/search-input";
+import { CommandSearch } from "@/components/ui/command-search";
 import { ListCard, ListRows, listFeedRowClass } from "@/components/ui/list-card";
 import StockBadge from "@/components/ui/stock-badge";
 import { useTranslation } from "@/lib/i18n";
@@ -263,56 +264,64 @@ function XPosts({
             router.push(href({ ticker: value }), { scroll: false });
           }}
         >
-          <div className="relative min-w-0 flex-1 sm:max-w-xs">
-            <label htmlFor="x-ticker" className="sr-only">
-              {c("Stock ticker", "股票代码")}
-            </label>
-            <SearchFieldIcon />
-            <Input
-              ref={tickerRef}
-              id="x-ticker"
-              className="h-10 pl-10 pr-12 text-sm"
-              value={draftTicker}
-              maxLength={16}
-              autoComplete="off"
-              spellCheck={false}
-              placeholder={c("Stock ticker, e.g. NVDA", "股票代码，例如 NVDA")}
-              aria-invalid={filterError}
-              aria-describedby={filterError ? "x-ticker-error" : undefined}
-              onCompositionStart={() => {
-                composing.current = true;
-              }}
-              onCompositionEnd={() => {
-                composing.current = false;
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && (event.nativeEvent.isComposing || composing.current))
-                  event.preventDefault();
-              }}
-              onChange={(event) => {
-                setDraftTicker(event.target.value);
-                setFilterError(false);
-              }}
-            />
-            {(draftTicker || ticker) && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute inset-y-0 right-0 z-10 my-auto h-10 w-10"
-                aria-label={c("Clear ticker", "清除股票代码")}
-                title={c("Clear ticker", "清除股票代码")}
-                onClick={() => {
-                  setDraftTicker("");
-                  setFilterError(false);
-                  if (ticker) router.push(href({ ticker: "" }), { scroll: false });
-                  tickerRef.current?.focus();
+          <CommandSearch
+            className="flex-1 sm:max-w-xs"
+            label={c("Ticker", "股票代码")}
+            hasValue={!!(draftTicker || ticker)}
+            heightClassName="h-10"
+            shortcut="mod+k"
+          >
+            <div className="relative">
+              <label htmlFor="x-ticker" className="sr-only">
+                {c("Stock ticker", "股票代码")}
+              </label>
+              <SearchFieldIcon />
+              <Input
+                ref={tickerRef}
+                id="x-ticker"
+                className="h-10 pl-10 pr-12 text-sm"
+                value={draftTicker}
+                maxLength={16}
+                autoComplete="off"
+                spellCheck={false}
+                placeholder={c("Stock ticker, e.g. NVDA", "股票代码，例如 NVDA")}
+                aria-invalid={filterError}
+                aria-describedby={filterError ? "x-ticker-error" : undefined}
+                onCompositionStart={() => {
+                  composing.current = true;
                 }}
-              >
-                <X className="h-4 w-4" aria-hidden="true" />
-              </Button>
-            )}
-          </div>
+                onCompositionEnd={() => {
+                  composing.current = false;
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && (event.nativeEvent.isComposing || composing.current))
+                    event.preventDefault();
+                }}
+                onChange={(event) => {
+                  setDraftTicker(event.target.value);
+                  setFilterError(false);
+                }}
+              />
+              {(draftTicker || ticker) && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute inset-y-0 right-0 z-10 my-auto h-10 w-10"
+                  aria-label={c("Clear ticker", "清除股票代码")}
+                  title={c("Clear ticker", "清除股票代码")}
+                  onClick={() => {
+                    setDraftTicker("");
+                    setFilterError(false);
+                    if (ticker) router.push(href({ ticker: "" }), { scroll: false });
+                    tickerRef.current?.focus();
+                  }}
+                >
+                  <X className="h-4 w-4" aria-hidden="true" />
+                </Button>
+              )}
+            </div>
+          </CommandSearch>
           <Button type="submit" variant="outline">
             {c("Search", "搜索")}
           </Button>

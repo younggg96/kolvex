@@ -1617,10 +1617,20 @@ X and Reddit use the same `bg-background` page ground as the rest of the
 workspace. Their collections sit in the shared list card; feed rows keep hairline
 separators and muted hover feedback inside that card instead of adding a second
 page-level border. X creator filters use pill geometry and 150ms color feedback.
-Result changes use a 180ms fade and rows arrive over 220ms with at most 120ms
-stagger, including mobile rows. Animations start from visible content, never
+Result changes use a 180ms fade and rows use the shared list reveal below. Animations start from visible content, never
 gate interaction, and stop under `prefers-reduced-motion`. Refresh and loading
 controls use existing spinners.
+
+### List reveal
+
+Every list row rises 8px and fades up from 55% opacity over 400ms on the
+spring curve, staggered 28ms by position and capped at the 13th row (336ms), so
+long lists and new pages never make rows wait. `ListRow` and the feed row
+classes (`listFeedRowClass` and its variants) carry it; custom `<li>` / `<tr>`
+rows add `listRevealClass` (`.list-reveal` in `app/globals.css`). Rows animate
+when they mount, so a tab, segment or sort switch that keeps the same row keys
+wraps the list in `<ListReveal trigger={tab}>` to replay it. Polling refreshes
+keep their keys and do not replay. Stops under `prefers-reduced-motion`.
 
 ### Weekend brief reader
 

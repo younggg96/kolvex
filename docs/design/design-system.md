@@ -64,7 +64,7 @@
 | 说明气泡 | `info-tip` | 信息按钮 |
 | 股票标识 | `stock-badge`、`company-logo` | `StockBadge`、`CompanyLogo` |
 | 情绪 / 方向 | `components/decision/shared.tsx` 的 `DirectionBadge`；强度用 `weight-indicator` | `OpinionStrength` |
-| 搜索 | `search-input` | `UI.Search`、原生搜索栏 |
+| 搜索 | `search-input`（外壳 `command-search`：空且未聚焦时收成「搜索」药丸，点击 / 聚焦 / 快捷键弹开，Esc 先清空再收起；每页最多一个 `shortcut="mod+k"`） | `UI.Search`、原生搜索栏 |
 | 玻璃材质 | `--card-glass` | `Glass`（iOS 26+ 用 SwiftUI Liquid Glass，只用于外框） |
 
 **列表规则（Web）**：所有集合列表都是一个 `ListCard`。分区标题和数量 / 刷新 / 查看全部放在卡片外面上方；卡片内不再嵌套卡片，行不做成独立方框。

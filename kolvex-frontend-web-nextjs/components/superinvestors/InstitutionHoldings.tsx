@@ -169,7 +169,10 @@ function Allocation({ held }: { held: Holding[] }) {
       />
       <ol className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
         {top.map((row, index) => (
-          <li key={rowKey(row)} className="flex min-h-9 min-w-0 items-center gap-2 text-xs">
+          <li
+            key={rowKey(row)}
+            className="list-reveal flex min-h-9 min-w-0 items-center gap-2 text-xs"
+          >
             <span
               aria-hidden="true"
               className={cn("h-2 w-2 shrink-0 rounded-full", ALLOCATION_SHADES[index])}
@@ -264,7 +267,7 @@ function MoveList({ title, rows, empty }: { title: string; rows: Holding[]; empt
           {rows.map((row) => (
             <li
               key={rowKey(row)}
-              className="flex min-h-11 min-w-0 items-center gap-2 border-b border-border py-1.5 text-xs last:border-0"
+              className="list-reveal flex min-h-11 min-w-0 items-center gap-2 border-b border-border py-1.5 text-xs last:border-0"
             >
               <HoldingName row={row} size="xs" className="flex-1" />
               <ActivityBadge kind={row.activity} />
@@ -423,6 +426,8 @@ function HoldingsTable({ data }: { data: Institution }) {
           </div>
           <SearchInput
             type="search"
+            label={c("Filter", "筛选")}
+            shortcut="mod+k"
             containerClassName="w-full md:w-64"
             value={query}
             onChange={(event) => {
@@ -464,7 +469,7 @@ function HoldingsTable({ data }: { data: Institution }) {
               {rows.map((row) => (
                 <tr
                   key={rowKey(row)}
-                  className="border-b border-border transition-colors last:border-0 hover:bg-foreground/[0.04] motion-reduce:transition-none"
+                  className="list-reveal border-b border-border transition-colors last:border-0 hover:bg-foreground/[0.04] motion-reduce:transition-none"
                 >
                   <td className="figure py-3 pl-4 pr-1 text-xs text-muted-foreground">
                     {ranks.get(rowKey(row)) ?? "—"}

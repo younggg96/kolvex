@@ -76,6 +76,29 @@ export function ListColumnHeader({
   );
 }
 
+/**
+ * Entrance for list rows: each row rises 8px and fades up, staggered by its
+ * position (see `.list-reveal` in app/globals.css). ListRow and the feed row
+ * classes already include it; add it to custom rows (`<li>`, `<tr>`).
+ */
+export const listRevealClass = "list-reveal";
+
+/**
+ * Replays the row entrance when `trigger` changes, e.g. the active tab or
+ * segment. Rows animate when they mount, so a list whose rows keep their keys
+ * across a switch (the same ticker in two sources) would otherwise sit still.
+ * Renders no element of its own.
+ */
+export function ListReveal({
+  trigger,
+  children,
+}: {
+  trigger: React.Key;
+  children: React.ReactNode;
+}) {
+  return <React.Fragment key={trigger}>{children}</React.Fragment>;
+}
+
 /** The list body. Rows control their own dividers; the canonical card keeps none. */
 export function ListRows({ className, ...props }: React.ComponentProps<"ul">) {
   return <ul className={cn("min-w-0", className)} {...props} />;
@@ -94,7 +117,7 @@ export const ListRow = React.forwardRef<HTMLLIElement, React.LiHTMLAttributes<HT
     <li
       ref={ref}
       className={cn(
-        "flex items-center gap-3 rounded-2xl pr-2 max-md:pr-0 max-md:[&>*]:!px-0 transition-colors hover:bg-foreground/[0.06] motion-reduce:transition-none [&>a]:!bg-transparent",
+        "list-reveal flex items-center gap-3 rounded-2xl pr-2 max-md:pr-0 max-md:[&>*]:!px-0 transition-colors hover:bg-foreground/[0.06] motion-reduce:transition-none [&>a]:!bg-transparent",
         className,
       )}
       {...props}
@@ -117,7 +140,7 @@ export const listRowTargetClass =
  * keyboard focus, matching the compact list rows.
  */
 export const listFeedRowClass =
-  "list-row-interactive min-w-0 py-2.5 first:pt-2 last:border-0 [overflow-wrap:anywhere]";
+  "list-reveal list-row-interactive min-w-0 py-2.5 first:pt-2 last:border-0 [overflow-wrap:anywhere]";
 
 /**
  * Feed row that holds its own hoverable rows (e.g. a video with one row per

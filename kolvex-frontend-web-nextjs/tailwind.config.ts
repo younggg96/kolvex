@@ -131,10 +131,6 @@ const config: Config = {
           from: { opacity: "0.65" },
           to: { opacity: "1" },
         },
-        "stock-arrive": {
-          from: { opacity: "0.55", transform: "translateY(8px)" },
-          to: { opacity: "1", transform: "translateY(0)" },
-        },
         "results-enter": {
           from: { opacity: "0.6", transform: "translateY(4px)" },
           to: { opacity: "1", transform: "translateY(0)" },
@@ -142,6 +138,10 @@ const config: Config = {
         "typewriter-blink": {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0" },
+        },
+        // Agent step label: a soft brightness wave through the running step's letters.
+        "ai-wave": {
+          "50%": { opacity: "0.3" },
         },
       },
       // Every easing utility is the critically damped spring from lib/motion/spring.ts, so
@@ -169,9 +169,9 @@ const config: Config = {
         "fade-in": "fade-in 0.2s var(--spring)",
         "fade-out": "fade-out 0.15s var(--spring)",
         "discovery-enter": "discovery-enter 360ms var(--ease-out-quint) both",
-        "stock-arrive": "stock-arrive 400ms var(--ease-out-quint) both",
         "results-enter": "results-enter 200ms var(--ease-out-quint) both",
         "typewriter-blink": "typewriter-blink 900ms step-end infinite",
+        "ai-wave": "ai-wave 1.6s ease-in-out infinite both",
       },
     },
   },

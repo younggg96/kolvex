@@ -6,11 +6,12 @@ import { FilterSheet, FilterSheetGroup } from "@/components/ui/filter-sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { SearchFieldIcon } from "@/components/ui/search-input";
+import { CommandSearch } from "@/components/ui/command-search";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import CompanyLogo from "@/components/ui/company-logo";
-import { ListColumnHeader, ListLoadMore, ListRow, ListRows, listRowTargetClass } from "@/components/ui/list-card";
+import { ListColumnHeader, ListLoadMore, ListReveal, ListRow, ListRows, listRowTargetClass } from "@/components/ui/list-card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PendingValue } from "@/components/ui/content-loading";
 import { StockRowsSkeleton } from "@/components/decision/StockRowsSkeleton";
@@ -224,8 +225,7 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
       <div id="stock-filters" className={cn("mb-3 grid grid-cols-2 items-end gap-3", state.scope === "core" ? "lg:grid-cols-[minmax(0,1fr)_9rem_9rem]" : creatorScope ? "lg:grid-cols-[minmax(0,1fr)_9rem_11rem]" : "lg:grid-cols-[minmax(0,1fr)_10rem]", "max-lg:hidden")}>
         <div className="hidden min-w-0 lg:block">
           <label htmlFor="stock-search" className="sr-only">{c("Search this list", "搜索当前名单")}</label>
-          <div className="relative">
-            <SearchFieldIcon />
+          <CommandSearch className="w-full" label={c("Search", "搜索")} hasValue={!!searchDraft} heightClassName="h-11" shortcut="mod+k"><div className="relative">
             <Input shape="pill" ref={searchRef} id="stock-search" type="text" autoComplete="off" maxLength={100} placeholder={c("Ticker or company name", "股票代码或公司名称")} value={searchDraft}
               className="h-11 pl-10 pr-12" onChange={event => { setSearchDraft(event.target.value); if (!composing.current) commitSearch(event.target.value); }}
               onCompositionStart={() => { composing.current = true; }} onCompositionEnd={event => { composing.current = false; commitSearch(event.currentTarget.value); }}
@@ -233,7 +233,7 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
               onKeyDown={event => { if (event.key === "Escape" && !composing.current) { setSuggestOpen(false); clearSearch(); } }} />
             {suggestOpen && <StockSearchSuggestions query={searchDraft} onPick={() => setSuggestOpen(false)} />}
             {searchDraft && <Button type="button" variant="icon" size="icon" onClick={clearSearch} aria-label={c("Clear stock search", "清除股票搜索")} className="absolute right-1 top-1 h-9 w-9 shadow-sm"><X className="h-4 w-4" aria-hidden="true" /></Button>}
-          </div>
+          </div></CommandSearch>
         </div>
         {state.scope === "core" && <div className="min-w-0">
           <label htmlFor="stock-sector" className="sr-only">{c("Sector", "行业")}</label>
@@ -288,7 +288,7 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
           </div>
           <span className="w-11 shrink-0 text-center max-md:hidden">{c("Watch", "自选")}</span>
         </ListColumnHeader>
-        {blocking ? <StockRowsSkeleton grid={ROW_GRID} trendClass="hidden min-[360px]:block" watchClass="max-md:hidden" reason label={c("Loading stocks", "正在加载股票")} /> : <ListRows aria-label={c("Stock watch", "股票观察")}>
+        {blocking ? <StockRowsSkeleton grid={ROW_GRID} trendClass="hidden min-[360px]:block" watchClass="max-md:hidden" reason label={c("Loading stocks", "正在加载股票")} /> : <ListReveal trigger={`${state.scope}:${state.sector}:${state.source}:${state.sort}`}><ListRows aria-label={c("Stock watch", "股票观察")}>
           {visible.map(symbol => {
             const stock = coverage.get(symbol);
             const detailParams = new URLSearchParams({ from: returnHref });
@@ -306,7 +306,7 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
               <div className="shrink-0 max-md:hidden"><WatchlistButton ticker={symbol} /></div>
             </ListRow>;
           })}
-        </ListRows>}
+        </ListRows></ListReveal>}
         {!blocking && !symbols.length && !sourceError && <Empty action={hasFilters ? <Button variant="outline" size="sm" onClick={resetFilters}>{c("Reset filters", "重置筛选")}</Button> : state.scope === "creators" ? <Button variant="outline" size="sm" onClick={() => state.sort === "latest" ? changeScope("core") : update({ ...state, sort: "latest", rows: STOCK_PAGE_SIZE })}>{state.sort === "latest" ? c("Browse core stocks", "查看常看美股") : c("View historical opinions", "查看历史观点")}</Button> : state.scope === "holdings" ? <TextLink href="/dashboard/portfolio">{c("Connect an account", "连接账户")}</TextLink> : undefined}>
           {hasFilters ? c("No stocks match. Try another search or reset filters.", "没有符合条件的股票，试试其他关键词或重置筛选。") : state.scope === "active" ? c("No active candidates have reached 1.5× full-day average volume this session. Check again later.", "本交易日活跃候选中，暂无成交量达到全天日均1.5倍的股票，可稍后刷新。") : state.scope === "movers" ? c("No qualifying movers in the source lists yet.", "来源榜单中暂时没有符合条件的异动股票。") : state.scope === "creators" ? state.sort === "latest" ? c("No source-dated creator opinions yet.", "暂时没有带原文日期的博主观点。") : state.source === "reddit" ? c("No Reddit stock mentions in the latest ranking.", "最新 Reddit 榜单暂时没有股票提及。") : state.source === "x" ? c("No cashtags in tracked X posts from the past 7 days.", "近 7 天收录的 X 帖子中暂时没有股票代码。") : c("No creator opinions published in the past 7 days.", "近 7 天暂时没有博主观点更新。") : c("No stocks in this list yet.", "这个列表暂时没有股票。")}
         </Empty>}

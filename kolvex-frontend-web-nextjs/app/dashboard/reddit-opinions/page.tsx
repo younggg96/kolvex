@@ -9,6 +9,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SearchFieldIcon } from "@/components/ui/search-input";
+import { CommandSearch } from "@/components/ui/command-search";
 import { InfoTip } from "@/components/ui/info-tip";
 import {
   Select,
@@ -208,33 +209,41 @@ export default function RedditOpinionsPage() {
           <section aria-label={t("redditOpinions.title")} className="mt-3 md:mt-4">
             <ListCard>
               <div className="hidden items-center gap-3 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] xl:grid-cols-[minmax(0,1fr)_11rem_11rem_auto]">
-                <div className="relative lg:col-span-3 xl:col-span-1">
-                  <SearchFieldIcon />
-                  <Input
-                    ref={searchInput}
-                    type="search"
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                    placeholder={t("redditOpinions.search")}
-                    aria-label={t("redditOpinions.search")}
-                    className="h-11 pl-9 pr-10 [&::-webkit-search-cancel-button]:hidden"
-                  />
-                  {query && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-0 top-0 h-11 w-11"
-                      aria-label={t("redditOpinions.clearSearch")}
-                      title={t("redditOpinions.clearSearch")}
-                      onClick={() => {
-                        setQuery("");
-                        searchInput.current?.focus();
-                      }}
-                    >
-                      <X className="h-4 w-4" aria-hidden="true" />
-                    </Button>
-                  )}
-                </div>
+                <CommandSearch
+                  className="lg:col-span-3 xl:col-span-1"
+                  label={t("common.search")}
+                  hasValue={!!query}
+                  heightClassName="h-11"
+                  shortcut="mod+k"
+                >
+                  <div className="relative">
+                    <SearchFieldIcon />
+                    <Input
+                      ref={searchInput}
+                      type="search"
+                      value={query}
+                      onChange={(event) => setQuery(event.target.value)}
+                      placeholder={t("redditOpinions.search")}
+                      aria-label={t("redditOpinions.search")}
+                      className="h-11 pl-9 pr-10 [&::-webkit-search-cancel-button]:hidden"
+                    />
+                    {query && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-0 top-0 h-11 w-11"
+                        aria-label={t("redditOpinions.clearSearch")}
+                        title={t("redditOpinions.clearSearch")}
+                        onClick={() => {
+                          setQuery("");
+                          searchInput.current?.focus();
+                        }}
+                      >
+                        <X className="h-4 w-4" aria-hidden="true" />
+                      </Button>
+                    )}
+                  </div>
+                </CommandSearch>
                 <div className="min-w-0">
                   <Select
                     value={community}
@@ -373,11 +382,7 @@ export default function RedditOpinionsPage() {
                           rows stay an <ol> rather than the default <ul> ListRows. */}
                       <ol aria-label={t("redditOpinions.title")} className="min-w-0">
                         {rows.map((row, index) => (
-                          <ListRow
-                            key={row.ticker}
-                            className="opinion-result-row"
-                            style={{ animationDelay: `${Math.min(index, 6) * 20}ms` }}
-                          >
+                          <ListRow key={row.ticker} className="opinion-result-row">
                             <details className="group min-w-0 flex-1 rounded-2xl">
                               <summary
                                 className={cn(
@@ -504,8 +509,7 @@ export default function RedditOpinionsPage() {
                           {rows.map((row, index) => (
                             <TableRow
                               key={row.ticker}
-                              className="opinion-result-row group h-20 border-0 hover:!bg-transparent"
-                              style={{ animationDelay: `${Math.min(index, 6) * 20}ms` }}
+                              className="list-reveal opinion-result-row group h-20 border-0 hover:!bg-transparent"
                             >
                               <TableCell className={cn(HOVER_CELL, "text-muted-foreground")}>
                                 {row.rank}

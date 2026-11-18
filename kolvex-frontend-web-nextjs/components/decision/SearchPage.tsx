@@ -1,6 +1,7 @@
 "use client";
 
 import { SearchFieldIcon } from "@/components/ui/search-input";
+import { CommandSearch } from "@/components/ui/command-search";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
@@ -361,69 +362,76 @@ export default function SearchPage() {
     <div className="mb-6 max-lg:m-0 max-lg:px-1 max-lg:pt-1">
       <div className="flex items-center gap-1 lg:gap-3">
         <form role="search" noValidate onSubmit={submit} className="min-w-0 flex-1">
-          <div
-            className={cn(
-              "glass-field relative flex h-[44px] items-center rounded-3xl bg-foreground/[0.06] lg:h-14",
-              "[transition:background-color_180ms_var(--spring),border-color_180ms_var(--spring)] motion-reduce:transition-none",
-              "focus-within:border-foreground/40 focus-within:bg-foreground/10",
-              // Phone dock: `!` beats the global light-theme control radius and glass shadow on .glass-field.
-              "max-lg:!rounded-[1.25rem] max-lg:border-transparent max-lg:!shadow-none max-lg:focus-within:border-foreground/25 max-lg:focus-within:bg-foreground/[0.09]",
-            )}
+          <CommandSearch
+            label={c("Search", "搜索")}
+            hasValue={!!value}
+            heightClassName="h-[44px] lg:h-14"
+            shortcut="mod+k"
           >
-            <SearchFieldIcon className="left-3.5 h-4 w-4 lg:left-5 lg:h-5 lg:w-5" />
-            <input
-              ref={input}
-              value={value}
-              onChange={(event) => changeValue(event.target.value)}
-              onCompositionStart={() => {
-                composition.current = true;
-                setComposing(true);
-              }}
-              onCompositionEnd={(event) => {
-                composition.current = false;
-                setComposing(false);
-                changeValue(event.currentTarget.value);
-              }}
-              onKeyDown={(event) => {
-                if (
-                  event.nativeEvent.isComposing ||
-                  event.nativeEvent.keyCode === 229 ||
-                  composition.current
-                ) {
-                  if (event.key === "Enter") event.preventDefault();
-                  return;
-                }
-                if (event.key === "Escape") {
-                  event.preventDefault();
-                  if (value) clearSearch();
-                  else router.back();
-                }
-              }}
-              aria-label={c("Search stocks and creators", "搜索股票和创作者")}
-              aria-invalid={submitFailed || undefined}
-              aria-describedby={submitFailed ? "search-error" : undefined}
-              placeholder={c("Search stocks, companies, creators", "搜索股票、公司、创作者")}
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="off"
-              spellCheck={false}
-              enterKeyHint="search"
-              maxLength={40}
-              className="h-full w-full rounded-full bg-transparent pl-10 pr-11 text-base lg:pl-14 lg:pr-12 text-foreground outline-none placeholder:text-muted-foreground focus-visible:bg-transparent focus-visible:no-underline focus-visible:outline-none"
-            />
-            {value && (
-              <Button
-                type="button"
-                variant="icon"
-                size="icon"
-                aria-label={c("Clear search", "清空搜索")}
-                onClick={clearSearch}
-                className="absolute right-1 shadow-sm max-lg:h-[36px] max-lg:w-[36px]"
-              >
-                <X aria-hidden className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
+            <div
+              className={cn(
+                "glass-field relative flex h-[44px] items-center rounded-3xl bg-foreground/[0.06] lg:h-14",
+                "[transition:background-color_180ms_var(--spring),border-color_180ms_var(--spring)] motion-reduce:transition-none",
+                "focus-within:border-foreground/40 focus-within:bg-foreground/10",
+                // Phone dock: `!` beats the global light-theme control radius and glass shadow on .glass-field.
+                "max-lg:!rounded-[1.25rem] max-lg:border-transparent max-lg:!shadow-none max-lg:focus-within:border-foreground/25 max-lg:focus-within:bg-foreground/[0.09]",
+              )}
+            >
+              <SearchFieldIcon className="left-3.5 h-4 w-4 lg:left-5 lg:h-5 lg:w-5" />
+              <input
+                ref={input}
+                value={value}
+                onChange={(event) => changeValue(event.target.value)}
+                onCompositionStart={() => {
+                  composition.current = true;
+                  setComposing(true);
+                }}
+                onCompositionEnd={(event) => {
+                  composition.current = false;
+                  setComposing(false);
+                  changeValue(event.currentTarget.value);
+                }}
+                onKeyDown={(event) => {
+                  if (
+                    event.nativeEvent.isComposing ||
+                    event.nativeEvent.keyCode === 229 ||
+                    composition.current
+                  ) {
+                    if (event.key === "Enter") event.preventDefault();
+                    return;
+                  }
+                  if (event.key === "Escape") {
+                    event.preventDefault();
+                    if (value) clearSearch();
+                    else router.back();
+                  }
+                }}
+                aria-label={c("Search stocks and creators", "搜索股票和创作者")}
+                aria-invalid={submitFailed || undefined}
+                aria-describedby={submitFailed ? "search-error" : undefined}
+                placeholder={c("Search stocks, companies, creators", "搜索股票、公司、创作者")}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                enterKeyHint="search"
+                maxLength={40}
+                className="h-full w-full rounded-full bg-transparent pl-10 pr-11 text-base lg:pl-14 lg:pr-12 text-foreground outline-none placeholder:text-muted-foreground focus-visible:bg-transparent focus-visible:no-underline focus-visible:outline-none"
+              />
+              {value && (
+                <Button
+                  type="button"
+                  variant="icon"
+                  size="icon"
+                  aria-label={c("Clear search", "清空搜索")}
+                  onClick={clearSearch}
+                  className="absolute right-1 shadow-sm max-lg:h-[36px] max-lg:w-[36px]"
+                >
+                  <X aria-hidden className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </CommandSearch>
         </form>
       </div>
       {submitFailed && (

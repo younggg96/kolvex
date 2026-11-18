@@ -209,7 +209,7 @@ export default function SearchWithAutocomplete<T extends SearchItem>({
         placeholder={placeholder}
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
-        onClick={handleInputClick}
+        onFocus={handleInputClick}
         containerClassName="flex-none w-full"
         className={cn("h-9", inputClassName)}
       />

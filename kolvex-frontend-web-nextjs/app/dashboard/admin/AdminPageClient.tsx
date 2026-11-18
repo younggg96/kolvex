@@ -202,6 +202,7 @@ export default function AdminPageClient({ initialTab }: { initialTab?: string })
 
           <TabsContent value="users" className="mt-6 space-y-4">
             <SearchInput
+              shortcut="mod+k"
               aria-label="搜索用户"
               placeholder="搜索邮箱或用户名"
               value={search}

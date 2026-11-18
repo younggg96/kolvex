@@ -14,7 +14,7 @@ import { groupResearchByStock, loadResearchCatalog, RESEARCH_GROUPS_KEY, STOCKS_
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FilterSheet, FilterSheetGroup } from "@/components/ui/filter-sheet";
 import { ArrowUpDown } from "lucide-react";
-import { ListCard, ListEmptyState, ListRows, ListToolbar } from "@/components/ui/list-card";
+import { ListCard, ListEmptyState, ListReveal, ListRows, ListToolbar } from "@/components/ui/list-card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getStockAnalysisIndex } from "@/lib/stockAnalysisHistory";
 import { ResearchStockGroup } from "./ResearchStockGroup";
@@ -134,7 +134,7 @@ export default function PublishedResearch({ page }: { page?: string }) {
               ) : (
                 <>
                   <ResearchColumnHeader mode={tab} t={t} />
-                  <ListRows className="pt-1">
+                  <ListReveal trigger={`${tab}:${sort}`}><ListRows className="pt-1">
                     {tab === "all"
                       ? visibleGroups.map((group) => (
                         <ResearchStockGroup key={`${currentPage}-${group.ticker}`} {...group} page={currentPage} locale={dateLocale} t={t} />
@@ -142,7 +142,7 @@ export default function PublishedResearch({ page }: { page?: string }) {
                       : visibleAnalysis.map((item) => (
                         <AnalysisStockGroup key={`${tab}-${currentPage}-${item.ticker}`} item={item} mode={tab} locale={dateLocale} t={t} />
                       ))}
-                  </ListRows>
+                  </ListRows></ListReveal>
                 </>
               )}
               {!error && total > STOCKS_PER_PAGE && (

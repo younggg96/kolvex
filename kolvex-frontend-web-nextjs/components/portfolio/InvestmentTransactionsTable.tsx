@@ -145,6 +145,7 @@ export function InvestmentTransactionsTable({
         <div className="flex flex-wrap items-center gap-2">
           <form onSubmit={applySymbolFilter} className="flex items-center gap-2">
             <SearchInput
+              label={t("portfolio.transactions.symbol")}
               aria-label={t("portfolio.transactions.filterBySymbol")}
               value={symbolInput}
               onChange={(event) => setSymbolInput(event.target.value)}
@@ -198,7 +199,10 @@ export function InvestmentTransactionsTable({
               </TableRow>
             ) : (
               transactions.map((transaction) => (
-                <TableRow key={transaction.id || transaction.investment_transaction_id}>
+                <TableRow
+                  key={transaction.id || transaction.investment_transaction_id}
+                  className="list-reveal"
+                >
                   <TableCell className="whitespace-nowrap text-xs">
                     {formatDate(transaction.date, dateLocale)}
                   </TableCell>

@@ -1,131 +1,15 @@
 "use client";
 
 import { useRef, useEffect, useState, useCallback } from "react";
-import {
-  AlertCircle,
-  BarChart3,
-  BookOpen,
-  Briefcase,
-  CheckCircle2,
-  ChevronDown,
-  Globe,
-  Loader2,
-  Newspaper,
-  RotateCcw,
-  Search,
-} from "lucide-react";
+import { AlertCircle, ChevronDown, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ChatBubble } from "./ChatBubble";
-import type { ChatMessageListProps, ToolStatus } from "./types";
+import { AgentSteps } from "./AgentSteps";
+import type { ChatMessageListProps } from "./types";
 import { Button } from "../ui/button";
 import { useTranslation } from "@/lib/i18n";
 
 const USER_SCROLL_THRESHOLD_PX = 12;
-
-// Tool category icons
-function getToolIcon(toolName: string) {
-  if (
-    toolName === "get_user_watchlist" ||
-    toolName.includes("stock") ||
-    toolName.includes("quote") ||
-    toolName.includes("financials") ||
-    toolName === "get_reported_revenue" ||
-    toolName.includes("history") ||
-    toolName.includes("company") ||
-    toolName.includes("analyst")
-  ) {
-    return <BarChart3 className="w-3 h-3" />;
-  }
-  if (
-    toolName === "get_daily_brief" ||
-    toolName.includes("news") ||
-    toolName.includes("trending")
-  ) {
-    return <Newspaper className="w-3 h-3" />;
-  }
-  if (toolName.includes("portfolio") || toolName.includes("plaid")) {
-    return <Briefcase className="w-3 h-3" />;
-  }
-  if (toolName.includes("knowledge") || toolName.includes("superinvestor")) {
-    return <BookOpen className="w-3 h-3" />;
-  }
-  if (toolName.includes("web_search")) {
-    return <Globe className="w-3 h-3" />;
-  }
-  return <Search className="w-3 h-3" />;
-}
-
-/**
- * Compact agent activity indicator — shows thinking + tool calls in a
- * single inline block below the user's message, above the AI response.
- */
-function AgentActivityIndicator({
-  tools,
-  isThinking,
-  modelName,
-  statusMessage,
-}: {
-  tools: ToolStatus[];
-  isThinking: boolean;
-  modelName?: string;
-  statusMessage?: string;
-}) {
-  const { t } = useTranslation();
-  if (!isThinking && tools.length === 0) return null;
-
-  return (
-    <div className="flex w-full justify-start animate-fade-in" aria-live="polite">
-      <div className="w-full max-w-[45rem]">
-        <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="font-semibold text-foreground">{t("chat.assistantName")}</span>
-          {modelName && <span>{modelName}</span>}
-        </div>
-        <div>
-          <div className="flex flex-col gap-1.5">
-            {/* Tool items */}
-            {tools.map((tool) => (
-              <div key={tool.name} className="flex items-center gap-2 text-xs">
-                {tool.status === "running" ? (
-                  <Loader2 className="w-3 h-3 text-muted-foreground animate-spin flex-shrink-0" />
-                ) : (
-                  <CheckCircle2 className="w-3 h-3 text-positive flex-shrink-0" />
-                )}
-                <span
-                  className={cn(
-                    "flex items-center gap-1.5",
-                    tool.status === "done" ? "text-muted-foreground" : "text-foreground",
-                  )}
-                >
-                  {getToolIcon(tool.name)}
-                  {tool.label}
-                </span>
-              </div>
-            ))}
-
-            {/* Current agent stage */}
-            {isThinking && (
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <div className="flex gap-0.5">
-                  {[0, 1, 2].map((i) => (
-                    <span
-                      key={i}
-                      className="h-1 w-1 rounded-full bg-foreground/60"
-                      style={{
-                        animation: "pulse 1.4s ease-in-out infinite",
-                        animationDelay: `${i * 0.2}s`,
-                      }}
-                    />
-                  ))}
-                </div>
-                <span className="ml-0.5">{statusMessage || t("chat.activity.working")}</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export function ChatMessageList({
   messages,
@@ -264,7 +148,7 @@ export function ChatMessageList({
 
           {/* Agent activity: tools + thinking indicator (compact, single block) */}
           {(activeTools.length > 0 || showThinking) && (
-            <AgentActivityIndicator
+            <AgentSteps
               tools={activeTools}
               isThinking={showThinking}
               modelName={modelName}

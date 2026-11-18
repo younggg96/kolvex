@@ -7,11 +7,31 @@ const ts = require("typescript");
 const React = require("react");
 const { renderToStaticMarkup } = require("react-dom/server");
 
+function transpile(file, context) {
+  vm.runInNewContext(
+    ts.transpileModule(fs.readFileSync(file, "utf8"), {
+      compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
+    }).outputText,
+    context,
+  );
+}
+
+function loadStretchPill() {
+  const module = { exports: {} };
+  transpile(path.join(__dirname, "../lib/motion/stretchPill.ts"), {
+    module,
+    exports: module.exports,
+    performance,
+  });
+  return module.exports;
+}
+
 function load(file, overrides = {}) {
   const module = { exports: {} };
   const modules = {
     react: { ...React, useLayoutEffect() {} },
     "@/lib/utils": { cn: require("clsx") },
+    "@/lib/motion/stretchPill": loadStretchPill(),
     ...overrides,
   };
   vm.runInNewContext(

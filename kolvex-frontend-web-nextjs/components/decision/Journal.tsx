@@ -11,7 +11,7 @@ import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Skeleton } from "@/components/ui/skeleton";
 import CreatorAvatar from "@/components/youtube/CreatorAvatar";
 import OpinionStrength from "@/components/youtube/OpinionStrength";
-import { ListColumnHeader, ListRow, ListRows, listFeedRowClass } from "@/components/ui/list-card";
+import { ListColumnHeader, ListReveal, ListRow, ListRows, listFeedRowClass } from "@/components/ui/list-card";
 import { cn } from "@/lib/utils";
 import { Empty, HeldMark, Panel, TextLink, WorkspaceLink, useCopy, useCreatorCatalogue, useDayLabel, useHeldTickers } from "./shared";
 
@@ -59,12 +59,12 @@ export default function Journal() {
                 <ListColumnHeader>
                   <div className="flex w-full items-center justify-between gap-4 px-1 py-3"><span>{c("Stock", "股票")}</span><span>{c("Opinion change", "观点变化")}</span></div>
                 </ListColumnHeader>
-                <ListRows>{changes.map((item) => <ListRow key={`${item.current_date}-${item.ticker}`}>
+                <ListReveal trigger={scope}><ListRows>{changes.map((item) => <ListRow key={`${item.current_date}-${item.ticker}`}>
                   <div className="flex w-full flex-wrap items-center justify-between gap-4 px-1 py-4">
                     <div><WorkspaceLink ticker={item.ticker} held={heldSet.has(item.ticker)} /><p className="mt-1 text-xs text-muted-foreground">{dayLabel(item.current_date)} · {c(`${item.opinion_count} opinions`, `${item.opinion_count} 条观点`)}</p></div>
                     <div className="flex flex-col items-end gap-1">{item.change == null ? <><OpinionStrength value={item.current_score} /><span className="text-xs text-muted-foreground">{c("First opinion in range", "首次出现观点")}</span></> : <><OpinionStrength value={item.change} change /><div className="flex flex-wrap items-center justify-end gap-2 text-xs text-muted-foreground"><span>{dayLabel(item.previous_date || item.current_date)}</span><OpinionStrength value={item.previous_score} className="text-xs" /><span aria-hidden>→</span><OpinionStrength value={item.current_score} className="text-xs" /></div></>}</div>
                   </div>
-                </ListRow>)}</ListRows>
+                </ListRow>)}</ListRows></ListReveal>
               </> : <Empty>{c("No opinion changes in the available data.", "现有数据中暂无观点变化。")}</Empty>}
             </Panel>
             <Panel surface="card" title={c("Latest opinions", "最新观点")} action={<TextLink href="/dashboard/youtube-opinions?tab=stocks">{c("Full opinion history", "完整观点历史")}</TextLink>}>

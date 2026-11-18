@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
+import { StretchPill } from "@/lib/motion/stretchPill";
 import { cn } from "@/lib/utils";
 
 const Tabs = TabsPrimitive.Root;
@@ -21,58 +22,55 @@ type TabsListProps = React.ComponentPropsWithoutRef<typeof TabsPrimitive.List> &
   variant?: "default" | "auth" | "pill" | "pill-solid";
 };
 
-const TabsList = React.forwardRef<
-  React.ElementRef<typeof TabsPrimitive.List>,
-  TabsListProps
->(({ className, variant = "pill", children, ...props }, ref) => {
-  const pill = variant === "pill" || variant === "pill-solid" || variant === "auth";
-  // A single animated pill sits under the active trigger in the pill variants,
-  // matching `SegmentedControl`; the underline variant stays per-trigger.
-  if (!pill) {
+const TabsList = React.forwardRef<React.ElementRef<typeof TabsPrimitive.List>, TabsListProps>(
+  ({ className, variant = "pill", children, ...props }, ref) => {
+    const pill = variant === "pill" || variant === "pill-solid" || variant === "auth";
+    // A single animated pill sits under the active trigger in the pill variants,
+    // matching `SegmentedControl`; the underline variant stays per-trigger.
+    if (!pill) {
+      return (
+        <TabsVariantContext.Provider value="default">
+          <TabsPrimitive.List
+            ref={ref}
+            className={cn(
+              "min-h-11 items-center justify-start text-muted-foreground",
+              "inline-flex w-full gap-1 overflow-x-auto border-b border-border scrollbar-hide",
+              className,
+            )}
+            {...props}
+          >
+            {children}
+          </TabsPrimitive.List>
+        </TabsVariantContext.Provider>
+      );
+    }
     return (
-      <TabsVariantContext.Provider value="default">
+      <TabsVariantContext.Provider value="pill">
         <TabsPrimitive.List
           ref={ref}
+          data-variant={variant}
           className={cn(
-            "min-h-11 items-center justify-start text-muted-foreground",
-            "inline-flex w-full gap-1 overflow-x-auto border-b border-border scrollbar-hide",
+            // Phones use a segmented-control height so the track does not eat a row of content.
+            "group/tabs relative isolate min-h-9 items-center justify-start gap-0.5 rounded-full p-0.5 text-foreground/70 sm:min-h-11 sm:gap-1 sm:p-1",
+            variant === "auth"
+              ? "grid w-full grid-cols-2"
+              : "inline-flex w-fit max-w-full overflow-x-auto scrollbar-hide",
+            "glass-track",
+            variant === "pill-solid" && "glass-track-strong",
             className,
           )}
           {...props}
         >
+          <PillIndicator />
           {children}
         </TabsPrimitive.List>
       </TabsVariantContext.Provider>
     );
-  }
-  return (
-    <TabsVariantContext.Provider value="pill">
-      <TabsPrimitive.List
-        ref={ref}
-        data-variant={variant}
-        className={cn(
-          // Phones use a segmented-control height so the track does not eat a row of content.
-          "group/tabs relative isolate min-h-9 items-center justify-start gap-0.5 rounded-full p-0.5 text-foreground/70 sm:min-h-11 sm:gap-1 sm:p-1",
-          variant === "auth"
-            ? "grid w-full grid-cols-2"
-            : "inline-flex w-fit max-w-full overflow-x-auto scrollbar-hide",
-          "glass-track",
-          variant === "pill-solid" && "glass-track-strong",
-          className,
-        )}
-        {...props}
-      >
-        <PillIndicator />
-        {children}
-      </TabsPrimitive.List>
-    </TabsVariantContext.Provider>
-  );
-});
+  },
+);
 TabsList.displayName = TabsPrimitive.List.displayName;
 
-type TabsTriggerProps = React.ComponentPropsWithoutRef<
-  typeof TabsPrimitive.Trigger
-> & {
+type TabsTriggerProps = React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger> & {
   variant?: "default" | "pill";
 };
 
@@ -107,9 +105,6 @@ const TabsTrigger = React.forwardRef<
 });
 TabsTrigger.displayName = TabsPrimitive.Trigger.displayName;
 
-/** Critically damped spring from app/globals.css (`--spring`). */
-const EASE = "var(--spring)";
-
 /** A list wider than its screen scrolls so the chosen tab is never left clipped. */
 function centerActive(list: HTMLElement, behavior?: ScrollBehavior) {
   const active = list.querySelector<HTMLElement>('[role="tab"][data-state="active"]');
@@ -122,18 +117,22 @@ function centerActive(list: HTMLElement, behavior?: ScrollBehavior) {
 }
 
 /**
- * The sliding active pill for pill lists. It is measured from the active
- * trigger, so it works no matter how the triggers are rendered or filtered.
+ * The active pill for pill lists. It is measured from the active trigger, so
+ * it works no matter how the triggers are rendered or filtered. Its edges ride
+ * two springs (lib/motion/stretchPill.ts), so it stretches toward the new tab
+ * and then pulls its tail in.
  */
 function PillIndicator() {
   const indicatorRef = React.useRef<HTMLSpanElement>(null);
   const armed = useArmedAfterFirstFrame();
+  const pillRef = React.useRef<StretchPill | null>(null);
+  // The trigger the pill last sat under: re-measuring it (resize, scroll,
+  // reflow) snaps, and only a newly active trigger animates.
+  const placedOn = React.useRef<HTMLElement | null>(null);
 
   const measure = React.useCallback(() => {
     const list = indicatorRef.current?.closest<HTMLElement>('[role="tablist"]');
-    const active = list?.querySelector<HTMLElement>(
-      '[role="tab"][data-state="active"]',
-    );
+    const active = list?.querySelector<HTMLElement>('[role="tab"][data-state="active"]');
     const indicator = indicatorRef.current;
     if (!list || !active || !indicator) {
       if (list) delete list.dataset.pillReady;
@@ -147,16 +146,19 @@ function PillIndicator() {
       indicator.style.opacity = "0";
       return;
     }
-    indicator.style.transitionDuration = armed ? "420ms, 420ms, 420ms" : "0ms";
-    indicator.style.transitionTimingFunction = armed
-      ? `${EASE}, ${EASE}, ${EASE}`
-      : "linear";
     indicator.style.opacity = "1";
-    indicator.style.width = `${rect.width}px`;
-    indicator.style.height = `${rect.height}px`;
-    indicator.style.transform = `translate3d(${
-      rect.left - listRect.left + list.scrollLeft
-    }px, ${rect.top - listRect.top + list.scrollTop}px, 0)`;
+    pillRef.current ??= new StretchPill(indicator);
+    const pill = pillRef.current;
+    pill.moveTo(
+      {
+        left: rect.left - listRect.left + list.scrollLeft,
+        top: rect.top - listRect.top + list.scrollTop,
+        width: rect.width,
+        height: rect.height,
+      },
+      !armed || !pill.hasPosition || placedOn.current === active,
+    );
+    placedOn.current = active;
     list.dataset.pillReady = "true";
   }, [armed]);
 
@@ -190,15 +192,20 @@ function PillIndicator() {
     };
   }, [measure]);
 
+  React.useEffect(
+    () => () => {
+      pillRef.current?.destroy();
+      pillRef.current = null;
+    },
+    [],
+  );
+
   return (
     <span
       ref={indicatorRef}
       aria-hidden="true"
       data-slot="tabs-pill-indicator"
-      className="pointer-events-none absolute left-0 top-0 z-0 rounded-full glass-thumb opacity-0 motion-reduce:!transition-none"
-      style={{
-        transitionProperty: "transform, width, height",
-      }}
+      className="pointer-events-none absolute left-0 top-0 z-0 rounded-full glass-thumb opacity-0 will-change-[transform,width]"
     />
   );
 }

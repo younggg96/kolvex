@@ -10,12 +10,13 @@ import CompanyLogo from "@/components/ui/company-logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SearchFieldIcon } from "@/components/ui/search-input";
+import { CommandSearch } from "@/components/ui/command-search";
 import { PendingValue } from "@/components/ui/content-loading";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StockRowsSkeleton } from "@/components/decision/StockRowsSkeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FilterSheet, FilterSheetGroup } from "@/components/ui/filter-sheet";
-import { ListCard, ListColumnHeader, ListLoadMore, ListRow, ListRows, listRowTargetClass } from "@/components/ui/list-card";
+import { ListCard, ListColumnHeader, ListLoadMore, ListReveal, ListRow, ListRows, listRowTargetClass } from "@/components/ui/list-card";
 import { useWatchlist } from "@/hooks/useWatchlist";
 import { groupBySector, sectorLabel, useStockSectors } from "@/hooks/useStockSectors";
 import { MARKET_RANGES } from "@/lib/marketObservations";
@@ -122,7 +123,7 @@ export default function Watchlist() {
             <div className="flex items-center justify-between gap-3 lg:block">
               <h2 className="text-lg font-semibold lg:hidden">{c("Watchlist", "自选股")}</h2>
               <div className="flex items-center justify-end gap-3 lg:grid lg:grid-cols-[minmax(0,1fr)_12rem] lg:items-end">
-                <div className="hidden lg:block"><label htmlFor="watchlist-search" className="mb-2 block text-xs text-muted-foreground">{c("Search Watchlist", "搜索自选股")}</label><div className="relative"><SearchFieldIcon /><Input id="watchlist-search" ref={search} value={draft} placeholder={c("Ticker or company name", "股票代码或公司名称")} className="h-11 pl-10 pr-11" maxLength={100} onChange={event => { setDraft(event.target.value); if (!composing.current) update(event.target.value); }} onCompositionStart={() => { composing.current = true; }} onCompositionEnd={event => { composing.current = false; update(event.currentTarget.value); }} onKeyDown={event => { if (event.key === "Escape" && !composing.current) clear(); }} />{draft && <Button type="button" variant="ghost" size="icon" className="absolute right-0 top-0 h-11 w-11" aria-label={c("Clear Watchlist search", "清除自选股搜索")} onClick={clear}><X className="h-4 w-4" aria-hidden="true" /></Button>}</div></div>
+                <div className="hidden lg:block"><label htmlFor="watchlist-search" className="mb-2 block text-xs text-muted-foreground">{c("Search Watchlist", "搜索自选股")}</label><CommandSearch label={c("Search", "搜索")} hasValue={!!draft} heightClassName="h-11" shortcut="mod+k"><div className="relative"><SearchFieldIcon /><Input id="watchlist-search" ref={search} value={draft} placeholder={c("Ticker or company name", "股票代码或公司名称")} className="h-11 pl-10 pr-11" maxLength={100} onChange={event => { setDraft(event.target.value); if (!composing.current) update(event.target.value); }} onCompositionStart={() => { composing.current = true; }} onCompositionEnd={event => { composing.current = false; update(event.currentTarget.value); }} onKeyDown={event => { if (event.key === "Escape" && !composing.current) clear(); }} />{draft && <Button type="button" variant="ghost" size="icon" className="absolute right-0 top-0 h-11 w-11" aria-label={c("Clear Watchlist search", "清除自选股搜索")} onClick={clear}><X className="h-4 w-4" aria-hidden="true" /></Button>}</div></CommandSearch></div>
                 <FilterSheet title={c("Sort", "排序")} summary={sortOptions.find(option => option.value === sort)?.label} active={sort !== "added"} onReset={() => update(query, "added")} triggerClassName="shrink-0"><FilterSheetGroup label={c("Sort", "排序")} options={sortOptions} value={sort} onChange={value => update(query, value)} /></FilterSheet>
                 <div className="hidden lg:block"><label htmlFor="watchlist-sort" className="mb-2 block text-xs text-muted-foreground">{c("Sort", "排序")}</label><Select value={sort} onValueChange={value => update(query, value)}><SelectTrigger id="watchlist-sort" className="h-11"><SelectValue /></SelectTrigger><SelectContent align="end">{sortOptions.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select></div>
               </div>
@@ -139,7 +140,7 @@ export default function Watchlist() {
               </ListColumnHeader>
               {groups.map(([sector, symbols]) => {
                 const label = sectorLabel(sector);
-                const list = <ListRows aria-label={sector === "pending" ? c("Saved stocks", "已添加的股票") : c(label.en, label.zh)}>
+                const list = <ListReveal trigger={sort}><ListRows aria-label={sector === "pending" ? c("Saved stocks", "已添加的股票") : c(label.en, label.zh)}>
                   {symbols.map(symbol => <ListRow key={symbol}>
                     <Link href={stockHref(symbol)} className={cn(ROW_GRID, listRowTargetClass, "gap-y-1.5")} onClick={event => {
                     // Phones preview the stock in a sheet; larger screens (and modified clicks) open the stock page.
@@ -158,7 +159,7 @@ export default function Watchlist() {
                     </Link>
                     <WatchlistButton ticker={symbol} onRemoved={() => tickerInput.current?.focus()} />
                   </ListRow>)}
-                </ListRows>;
+                </ListRows></ListReveal>;
                 return sector === "pending" ? <div key={sector}>{list}</div> : <details key={sector} open className="group mt-2 first:mt-0">
                   <summary className="flex min-h-10 cursor-pointer list-none items-center gap-2 rounded-2xl px-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
                     <ChevronDown className="h-3.5 w-3.5 shrink-0 -rotate-90 transition-transform group-open:rotate-0" aria-hidden="true" />{c(label.en, label.zh)}
