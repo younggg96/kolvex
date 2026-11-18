@@ -89,10 +89,7 @@ export default function SearchWithAutocomplete<T extends SearchItem>({
   // 点击外部关闭下拉框
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        searchRef.current &&
-        !searchRef.current.contains(event.target as Node)
-      ) {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setShowDropdown(false);
       }
     };
@@ -138,10 +135,7 @@ export default function SearchWithAutocomplete<T extends SearchItem>({
           setSearchResults([]);
         }
       } else if (filterFunctionRef.current) {
-        const filtered = filterFunctionRef.current(
-          itemsRef.current,
-          searchTerm
-        );
+        const filtered = filterFunctionRef.current(itemsRef.current, searchTerm);
         setSearchResults(filtered.slice(0, maxResults));
       }
       setIsLoading(false);
@@ -165,11 +159,8 @@ export default function SearchWithAutocomplete<T extends SearchItem>({
   const displayList = searchTerm
     ? searchResults
     : showPopularOnFocus
-    ? (popularResults.length > 0 ? popularResults : stablePopularItems).slice(
-        0,
-        maxResults
-      )
-    : [];
+      ? (popularResults.length > 0 ? popularResults : stablePopularItems).slice(0, maxResults)
+      : [];
 
   const handleSelectItem = (item: T) => {
     onSelect(item);
@@ -219,7 +210,7 @@ export default function SearchWithAutocomplete<T extends SearchItem>({
         <div
           className={cn(
             "absolute top-full left-0 right-0 mt-1 surface-overlay rounded-2xl max-h-[18.75rem] overflow-y-auto z-50",
-            dropdownClassName
+            dropdownClassName,
           )}
         >
           {!searchTerm && popularLabel && (
@@ -228,7 +219,13 @@ export default function SearchWithAutocomplete<T extends SearchItem>({
             </div>
           )}
           {isLoading ? (
-            <ContentLoading className="min-h-0">{[0, 1, 2].map(i => <div key={i} className="px-3 py-2.5"><Skeleton className={i % 2 ? "h-4 w-1/3 rounded-md" : "h-4 w-1/2 rounded-md"} /></div>)}</ContentLoading>
+            <ContentLoading className="min-h-0">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="px-3 py-2.5">
+                  <Skeleton className={i % 2 ? "h-4 w-1/3 rounded-md" : "h-4 w-1/2 rounded-md"} />
+                </div>
+              ))}
+            </ContentLoading>
           ) : displayList.length > 0 ? (
             displayList.map((item) => (
               <div

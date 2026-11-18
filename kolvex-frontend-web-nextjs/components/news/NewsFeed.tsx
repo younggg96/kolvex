@@ -25,25 +25,43 @@ export default function NewsFeed() {
   const scrollArea = useRef<HTMLDivElement>(null);
   const title = c("News terminal", "新闻终端");
 
-  useEffect(() => { document.title = `${title} | Kolvex`; }, [title]);
+  useEffect(() => {
+    document.title = `${title} | Kolvex`;
+  }, [title]);
   const articles = terminal.feed.articles;
   const needle = query.trim().toLowerCase();
   // While searching, translate every loaded headline so Chinese keywords can match too.
   const translation = useNewsTranslations(needle ? articles : articles.slice(0, limit), locale);
   const matches = needle
-    ? articles.filter(article => [article.title, translation.translations[article.title] ?? "", ...(article.symbols ?? [])]
-      .some(text => text.toLowerCase().includes(needle.replace(/^\$/, ""))))
+    ? articles.filter((article) =>
+        [
+          article.title,
+          translation.translations[article.title] ?? "",
+          ...(article.symbols ?? []),
+        ].some((text) => text.toLowerCase().includes(needle.replace(/^\$/, ""))),
+      )
     : articles;
   const visibleArticles = matches.slice(0, limit);
-  const status = terminal.error || terminal.meta?.stale
-    ? c("Update unavailable", "更新异常")
-    : terminal.paused ? c("Paused", "已暂停") : c("Auto · 60s", "自动更新 · 60秒");
+  const status =
+    terminal.error || terminal.meta?.stale
+      ? c("Update unavailable", "更新异常")
+      : terminal.paused
+        ? c("Paused", "已暂停")
+        : c("Auto · 60s", "自动更新 · 60秒");
   const time = terminal.meta
-    ? new Date(terminal.meta.fetched_at).toLocaleTimeString(locale === "zh" ? "zh-CN" : "en-US", { hour: "2-digit", minute: "2-digit", hour12: false })
+    ? new Date(terminal.meta.fetched_at).toLocaleTimeString(locale === "zh" ? "zh-CN" : "en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      })
     : "—";
 
-  return <DashboardLayout title={title} noTransition>
-      <section className="relative flex min-h-0 flex-1 flex-col bg-background dark:bg-transparent" aria-label={c("Headlines", "快讯列表")}>
+  return (
+    <DashboardLayout title={title} noTransition>
+      <section
+        className="relative flex min-h-0 flex-1 flex-col bg-background dark:bg-transparent"
+        aria-label={c("Headlines", "快讯列表")}
+      >
         <div className="flex min-h-0 flex-1 flex-col md:px-8 md:pb-6 md:pt-6 max-lg:md:pb-0 max-lg:md:pt-0">
           <ListCard className="flex min-h-0 flex-1 flex-col overflow-hidden max-lg:pt-0 max-lg:md:rounded-none">
             <FloatingBar className="justify-between gap-x-3 text-xs leading-5 text-muted-foreground lg:min-h-0 lg:border-b lg:border-border lg:px-0 lg:pb-3">
@@ -55,53 +73,168 @@ export default function NewsFeed() {
                 aria-label={c("Search headlines", "搜索快讯")}
                 placeholder={c("Search headlines or tickers", "搜索快讯关键词或股票代码")}
                 value={query}
-                onChange={event => { setQuery(event.target.value); setLimit(40); }}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  setLimit(40);
+                }}
               />
               <div className="ml-auto flex shrink-0 items-center gap-2">
-                <span className="max-md:hidden">{terminal.loading && !terminal.meta ? <Skeleton className="inline-block h-3 w-28" /> : c(`${articles.length} headlines · ${time}`, `${articles.length} 条快讯 · ${time}`)}</span>
-                <span role="status" className="max-lg:sr-only">{translation.pending > 0 ? c("Translating…", "正在切换为中文…") : status}</span>
-                <InfoTip label={c("About these headlines", "关于快讯")}>{c(`Delayed headlines. Updated at ${time}, local time.`, `延迟快讯。更新于 ${time}，本地时间。`)}</InfoTip>
-                <Button variant="outline" size="sm" className="max-md:!w-9 max-md:!p-0" aria-pressed={terminal.paused} onClick={terminal.togglePause}>
-                  {terminal.paused ? <Play aria-hidden className="h-3.5 w-3.5" /> : <Pause aria-hidden className="h-3.5 w-3.5" />}
-                  <span className="max-md:sr-only">{terminal.paused ? c("Resume", "继续") : c("Pause", "暂停")}</span>
+                <span className="max-md:hidden">
+                  {terminal.loading && !terminal.meta ? (
+                    <Skeleton className="inline-block h-3 w-28" />
+                  ) : (
+                    c(
+                      `${articles.length} headlines · ${time}`,
+                      `${articles.length} 条快讯 · ${time}`,
+                    )
+                  )}
+                </span>
+                <span role="status" className="max-lg:sr-only">
+                  {translation.pending > 0 ? c("Translating…", "正在切换为中文…") : status}
+                </span>
+                <InfoTip label={c("About these headlines", "关于快讯")}>
+                  {c(
+                    `Delayed headlines. Updated at ${time}, local time.`,
+                    `延迟快讯。更新于 ${time}，本地时间。`,
+                  )}
+                </InfoTip>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="max-md:!w-9 max-md:!p-0"
+                  aria-pressed={terminal.paused}
+                  onClick={terminal.togglePause}
+                >
+                  {terminal.paused ? (
+                    <Play aria-hidden className="h-3.5 w-3.5" />
+                  ) : (
+                    <Pause aria-hidden className="h-3.5 w-3.5" />
+                  )}
+                  <span className="max-md:sr-only">
+                    {terminal.paused ? c("Resume", "继续") : c("Pause", "暂停")}
+                  </span>
                 </Button>
-                <Button variant="ghost" size="icon" aria-label={c("Refresh headlines", "刷新新闻")} disabled={terminal.loading} onClick={terminal.refresh}>
-                  <RefreshCw aria-hidden className={cn("h-4 w-4", terminal.loading && "animate-spin motion-reduce:animate-none")} />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label={c("Refresh headlines", "刷新新闻")}
+                  disabled={terminal.loading}
+                  onClick={terminal.refresh}
+                >
+                  <RefreshCw
+                    aria-hidden
+                    className={cn(
+                      "h-4 w-4",
+                      terminal.loading && "animate-spin motion-reduce:animate-none",
+                    )}
+                  />
                 </Button>
               </div>
             </FloatingBar>
-            <div ref={scrollArea} data-nav-underlay className={cn("min-h-0 flex-1 overflow-y-auto overscroll-contain", floatingBarInset)}>
-            {needle && <p role="status" className="shrink-0 border-b border-border/70 py-2 text-xs text-muted-foreground max-md:px-[16px]">
-              {c(`${matches.length} of ${articles.length} headlines match`, `${articles.length} 条中匹配 ${matches.length} 条`)}
-              {translation.pending > 0 && c(" · translating, results may grow", " · 正在翻译，结果可能增加")}
-            </p>}
-            {(terminal.error || terminal.meta?.stale) && <p role="alert" className="shrink-0 border-b border-border/70 py-2 text-sm max-md:px-[16px]">
-              {c("Refresh failed. Showing the last available headlines.", "更新失败，正在显示最近可用的快讯。")}
-            </p>}
-            {(translation.failed > 0 && translation.pending === 0) && <div role="status" className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border/70 py-2 text-xs text-muted-foreground max-md:px-[16px]">
-              <span>{c("Some translations are unavailable; showing the original text.", "部分快讯暂未翻译，已保留原文。")}</span>
-              <Button variant="ghost" size="xs" onClick={translation.retry}>{c("Retry", "重试")}</Button>
-            </div>}
-            {terminal.feed.pending.length > 0 && <div aria-live="polite" className="shrink-0 border-b border-border/70 py-2 max-md:px-[16px]">
-              <Button variant="secondary" size="sm" className="w-full" onClick={() => { terminal.reveal(); setLimit(40); scrollArea.current?.scrollTo({ top: 0 }); }}>
-                <ArrowUp aria-hidden className="h-4 w-4" />{c(`Show ${terminal.feed.pending.length} new headlines`, `查看 ${terminal.feed.pending.length} 条新消息`)}
-              </Button>
-            </div>}
-              {!terminal.feed.initialized && terminal.loading ? <NewsRowsSkeleton label={c("Loading headlines…", "正在加载快讯…")} /> : articles.length === 0 ? <div className="px-6 py-16 text-center">
-                <Newspaper aria-hidden className="mx-auto mb-3 h-6 w-6 text-muted-foreground" />
-                <h2 className="text-sm font-medium">{terminal.error ? c("News unavailable", "新闻暂不可用") : c("No headlines yet", "暂无快讯")}</h2>
-                <Button variant="outline" size="sm" className="mt-4" onClick={terminal.refresh}>
-                  {c("Retry", "重试")}
-                </Button>
-              </div> : needle && matches.length === 0 ? <p className="px-6 py-16 text-center text-sm text-muted-foreground">
-                {c("No headlines match this search.", "没有匹配的快讯。")}
-              </p> : <>
-                <NewsRows articles={visibleArticles} translations={translation.translations} locale={locale} />
-                {matches.length > limit && <ListLoadMore onClick={() => setLimit(value => value + 40)}>{c("Show more headlines", "显示更多快讯")}</ListLoadMore>}
-              </>}
+            <div
+              ref={scrollArea}
+              data-nav-underlay
+              className={cn("min-h-0 flex-1 overflow-y-auto overscroll-contain", floatingBarInset)}
+            >
+              {needle && (
+                <p
+                  role="status"
+                  className="shrink-0 border-b border-border/70 py-2 text-xs text-muted-foreground max-md:px-[16px]"
+                >
+                  {c(
+                    `${matches.length} of ${articles.length} headlines match`,
+                    `${articles.length} 条中匹配 ${matches.length} 条`,
+                  )}
+                  {translation.pending > 0 &&
+                    c(" · translating, results may grow", " · 正在翻译，结果可能增加")}
+                </p>
+              )}
+              {(terminal.error || terminal.meta?.stale) && (
+                <p
+                  role="alert"
+                  className="shrink-0 border-b border-border/70 py-2 text-sm max-md:px-[16px]"
+                >
+                  {c(
+                    "Refresh failed. Showing the last available headlines.",
+                    "更新失败，正在显示最近可用的快讯。",
+                  )}
+                </p>
+              )}
+              {translation.failed > 0 && translation.pending === 0 && (
+                <div
+                  role="status"
+                  className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border/70 py-2 text-xs text-muted-foreground max-md:px-[16px]"
+                >
+                  <span>
+                    {c(
+                      "Some translations are unavailable; showing the original text.",
+                      "部分快讯暂未翻译，已保留原文。",
+                    )}
+                  </span>
+                  <Button variant="ghost" size="xs" onClick={translation.retry}>
+                    {c("Retry", "重试")}
+                  </Button>
+                </div>
+              )}
+              {terminal.feed.pending.length > 0 && (
+                <div
+                  aria-live="polite"
+                  className="shrink-0 border-b border-border/70 py-2 max-md:px-[16px]"
+                >
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => {
+                      terminal.reveal();
+                      setLimit(40);
+                      scrollArea.current?.scrollTo({ top: 0 });
+                    }}
+                  >
+                    <ArrowUp aria-hidden className="h-4 w-4" />
+                    {c(
+                      `Show ${terminal.feed.pending.length} new headlines`,
+                      `查看 ${terminal.feed.pending.length} 条新消息`,
+                    )}
+                  </Button>
+                </div>
+              )}
+              {!terminal.feed.initialized && terminal.loading ? (
+                <NewsRowsSkeleton label={c("Loading headlines…", "正在加载快讯…")} />
+              ) : articles.length === 0 ? (
+                <div className="px-6 py-16 text-center">
+                  <Newspaper aria-hidden className="mx-auto mb-3 h-6 w-6 text-muted-foreground" />
+                  <h2 className="text-sm font-medium">
+                    {terminal.error
+                      ? c("News unavailable", "新闻暂不可用")
+                      : c("No headlines yet", "暂无快讯")}
+                  </h2>
+                  <Button variant="outline" size="sm" className="mt-4" onClick={terminal.refresh}>
+                    {c("Retry", "重试")}
+                  </Button>
+                </div>
+              ) : needle && matches.length === 0 ? (
+                <p className="px-6 py-16 text-center text-sm text-muted-foreground">
+                  {c("No headlines match this search.", "没有匹配的快讯。")}
+                </p>
+              ) : (
+                <>
+                  <NewsRows
+                    articles={visibleArticles}
+                    translations={translation.translations}
+                    locale={locale}
+                  />
+                  {matches.length > limit && (
+                    <ListLoadMore onClick={() => setLimit((value) => value + 40)}>
+                      {c("Show more headlines", "显示更多快讯")}
+                    </ListLoadMore>
+                  )}
+                </>
+              )}
             </div>
           </ListCard>
         </div>
       </section>
-  </DashboardLayout>;
+    </DashboardLayout>
+  );
 }
