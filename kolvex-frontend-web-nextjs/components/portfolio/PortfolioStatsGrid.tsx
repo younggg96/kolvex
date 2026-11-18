@@ -32,11 +32,11 @@ function Stat({
   tone?: "positive" | "negative";
 }) {
   return (
-    <div className="min-w-0 py-4 pr-4 sm:pr-6">
+    <div className="min-w-0 py-3 pr-4 sm:pr-6">
       <dt className="text-[0.8125rem] text-muted-foreground">{label}</dt>
       <dd
         className={cn(
-          "figure mt-1 truncate text-xl font-semibold",
+          "figure mt-0.5 truncate text-lg font-semibold",
           tone === "positive" && "text-positive",
           tone === "negative" && "text-negative",
         )}

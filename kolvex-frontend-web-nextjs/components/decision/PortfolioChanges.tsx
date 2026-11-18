@@ -2,13 +2,16 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
-import CompanyLogo, { phoneListLogoClass } from "@/components/ui/company-logo";
+import CompanyLogo from "@/components/ui/company-logo";
 import { Skeleton } from "@/components/ui/skeleton";
 import OpinionStrength from "@/components/youtube/OpinionStrength";
 import { ListColumnHeader, ListRow, ListRows, listRowTargetClass } from "@/components/ui/list-card";
 import { marketStockHref } from "@/lib/stockLinks";
 import { Empty, Panel, TextLink, useCopy, useCreatorCatalogue, useDayLabel } from "./shared";
 import { useDecisionCommand } from "./CommandLayer";
+
+// Compact density for the portfolio page: shorter rows, smaller logos and heading.
+const compactRowClass = `${listRowTargetClass} !min-h-14 !py-1.5`;
 
 /** Creator opinion updates matched automatically to linked equity holdings. */
 export default function PortfolioChanges({ tickers }: { tickers: string[] }) {
@@ -37,54 +40,85 @@ export default function PortfolioChanges({ tickers }: { tickers: string[] }) {
   return (
     <Panel
       surface="card"
+      className="[&>header]:!mb-2 [&>header]:!min-h-0 [&>header_h2]:!text-lg [&>header+*]:!p-2 sm:[&>header+*]:!p-3"
       title={c("What changed in your holdings", "你的持仓有什么变化")}
       action={<TextLink href="/dashboard/journal">{c("Updates", "变化动态")}</TextLink>}
     >
       {loading ? (
         <div role="status" aria-label={c("Loading creator updates", "正在加载博主动态")}>
-          <div className="border-b border-border px-1 py-3"><Skeleton className="h-3.5 w-full rounded-md" /></div>
-          {[0, 1, 2].map((row) => <div key={row} className={`flex items-center justify-between gap-4 ${listRowTargetClass}`}>
-            <span className="flex min-w-0 items-center gap-3"><Skeleton className="h-10 w-10 shrink-0 rounded-full max-md:h-8 max-md:w-8" /><span className="flex flex-col gap-1.5"><Skeleton className="h-4 w-14 rounded-md" /><Skeleton className="h-3.5 w-28 rounded-md" /></span></span>
-            <span className="flex flex-col items-end gap-1.5"><Skeleton className="h-4 w-16 rounded-md" /><Skeleton className="h-3 w-20 rounded-md" /></span>
-          </div>)}
+          <div className="border-b border-border px-1 py-2">
+            <Skeleton className="h-3.5 w-full rounded-md" />
+          </div>
+          {[0, 1, 2].map((row) => (
+            <div key={row} className={`flex items-center justify-between gap-4 ${compactRowClass}`}>
+              <span className="flex min-w-0 items-center gap-3">
+                <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
+                <span className="flex flex-col gap-1.5">
+                  <Skeleton className="h-4 w-14 rounded-md" />
+                  <Skeleton className="h-3.5 w-28 rounded-md" />
+                </span>
+              </span>
+              <span className="flex flex-col items-end gap-1.5">
+                <Skeleton className="h-4 w-16 rounded-md" />
+                <Skeleton className="h-3 w-20 rounded-md" />
+              </span>
+            </div>
+          ))}
         </div>
       ) : catalogue.error ? (
-        <p role="alert" className="py-4 text-sm text-muted-foreground">{c("Creator updates are temporarily unavailable.", "博主动态暂时无法加载。")}</p>
+        <p role="alert" className="py-4 text-sm text-muted-foreground">
+          {c("Creator updates are temporarily unavailable.", "博主动态暂时无法加载。")}
+        </p>
       ) : !shifts.length ? (
-        <Empty>{c("No creator updates on your holdings in the available data.", "现有数据中暂无与你持仓相关的博主动态。")}</Empty>
+        <Empty>
+          {c(
+            "No creator updates on your holdings in the available data.",
+            "现有数据中暂无与你持仓相关的博主动态。",
+          )}
+        </Empty>
       ) : (
         <>
           <ListColumnHeader>
-            <div className="flex w-full items-center justify-between gap-4 px-1 py-3"><span>{c("Stock", "股票")}</span><span>{c("Opinion change", "观点变化")}</span></div>
+            <div className="flex w-full items-center justify-between gap-4 px-1 py-2">
+              <span>{c("Stock", "股票")}</span>
+              <span>{c("Opinion change", "观点变化")}</span>
+            </div>
           </ListColumnHeader>
           <ListRows aria-label={c("Holdings changes", "持仓变化")}>
-          {shifts.map((shift) => (
-            <ListRow key={`${shift.current_date}-${shift.ticker}`}>
-              <Link href={marketStockHref(shift.ticker)} className={`flex items-center justify-between gap-4 ${listRowTargetClass}`}>
-                <span className="flex min-w-0 items-center gap-3">
-                  <span aria-hidden><CompanyLogo symbol={shift.ticker} size="md" className={phoneListLogoClass} /></span>
-                  <span className="min-w-0">
-                    <span className="block text-[0.9375rem] font-semibold">{shift.ticker}</span>
-                    <span className="block text-[0.8125rem] text-muted-foreground">
-                      {c("Creators", "博主观点")}
-                      {c(", ", "，")}
-                      {dayLabel(shift.current_date)}
+            {shifts.map((shift) => (
+              <ListRow key={`${shift.current_date}-${shift.ticker}`}>
+                <Link
+                  href={marketStockHref(shift.ticker)}
+                  className={`flex items-center justify-between gap-4 ${compactRowClass}`}
+                >
+                  <span className="flex min-w-0 items-center gap-3">
+                    <span aria-hidden>
+                      <CompanyLogo symbol={shift.ticker} size="sm" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-semibold">{shift.ticker}</span>
+                      <span className="block text-xs text-muted-foreground">
+                        {c("Creators", "博主观点")}
+                        {c(", ", "，")}
+                        {dayLabel(shift.current_date)}
+                      </span>
                     </span>
                   </span>
-                </span>
-                <span className="flex shrink-0 flex-col items-end gap-0.5">
-                  {shift.change == null ? (
-                    <>
-                      <OpinionStrength value={shift.current_score} className="text-[0.8125rem]" />
-                      <span className="text-xs text-muted-foreground">{c("New opinion", "新观点")}</span>
-                    </>
-                  ) : (
-                    <OpinionStrength value={shift.change} change className="text-[0.8125rem]" />
-                  )}
-                </span>
-              </Link>
-            </ListRow>
-          ))}
+                  <span className="flex shrink-0 flex-col items-end gap-0.5">
+                    {shift.change == null ? (
+                      <>
+                        <OpinionStrength value={shift.current_score} className="text-[0.8125rem]" />
+                        <span className="text-xs text-muted-foreground">
+                          {c("New opinion", "新观点")}
+                        </span>
+                      </>
+                    ) : (
+                      <OpinionStrength value={shift.change} change className="text-[0.8125rem]" />
+                    )}
+                  </span>
+                </Link>
+              </ListRow>
+            ))}
           </ListRows>
         </>
       )}

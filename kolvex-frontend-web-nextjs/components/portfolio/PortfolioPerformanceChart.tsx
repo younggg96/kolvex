@@ -129,7 +129,7 @@ export function PortfolioPerformanceChart({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0" aria-live="polite">
           {isOwner ? (
-            <p className="figure text-[2.125rem] font-semibold leading-tight sm:text-[2.5rem]">
+            <p className="figure text-[1.75rem] font-semibold leading-tight sm:text-[2rem]">
               {liveValue === "***"
                 ? "***"
                 : isNumber(headlineValue)
@@ -139,7 +139,7 @@ export function PortfolioPerformanceChart({
           ) : (
             <p
               className={cn(
-                "figure text-[2.125rem] font-semibold leading-tight sm:text-[2.5rem]",
+                "figure text-[1.75rem] font-semibold leading-tight sm:text-[2rem]",
                 changePositive ? "text-positive" : "text-negative",
               )}
             >
@@ -147,7 +147,7 @@ export function PortfolioPerformanceChart({
             </p>
           )}
           {headlineChange && (
-            <p className="mt-1 flex flex-wrap items-baseline gap-x-2 text-sm">
+            <p className="mt-0.5 flex flex-wrap items-baseline gap-x-2 text-sm">
               <span
                 className={cn(
                   "figure font-semibold",
@@ -177,7 +177,7 @@ export function PortfolioPerformanceChart({
         )}
       </div>
 
-      <div className="relative mt-5" style={{ height }}>
+      <div className="relative mt-3" style={{ height }}>
         {loading && data.length === 0 ? (
           <Skeleton className="h-full w-full" />
         ) : error ? (
@@ -261,7 +261,7 @@ export function PortfolioPerformanceChart({
         )}
       </div>
 
-      <div className="mt-3 flex items-center justify-between gap-3 border-b border-border pb-4">
+      <div className="mt-2 flex items-center justify-between gap-3 border-b border-border pb-3">
         <div
           role="radiogroup"
           aria-label={t("portfolio.performance.period")}

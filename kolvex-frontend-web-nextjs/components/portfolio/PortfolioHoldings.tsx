@@ -217,7 +217,7 @@ export default function PortfolioHoldings({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {isOwner && status?.is_connected && (
         <div className="flex items-center justify-between gap-3">
           <h2 className="min-w-0 truncate text-lg font-semibold text-foreground">
@@ -243,6 +243,7 @@ export default function PortfolioHoldings({
 
       {holdings?.accounts && holdings.accounts.length > 0 && userId && (
         <PortfolioPerformanceChart
+          height={180}
           userId={userId}
           isOwner={isOwner}
           liveValue={totalValue}

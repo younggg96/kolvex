@@ -63,6 +63,6 @@
 | 清除确认 | `components/portfolio/ClearManualDialog.tsx` |
 | 入口 | 未连接页「手动导入持仓」按钮；持仓页「设置」菜单「手动导入 / 重新导入持仓」「清除手动导入」 |
 
-用户复制提示词，连同券商截图或导出文件发给 Codex、Muse 等外部助手，再把返回的 JSON 粘贴进弹窗。前端先校验并预览，再调用 `POST /api/v1/portfolio/manual-import`；`DELETE` 同一路径清除。数据存为 `portfolio_connections.provider = 'manual'` 的连接，每次导入整体替换上一次手动导入，但账户和持仓行 id 保持不变，所以公开隐藏设置不会丢。没写价格的股票由后端取 Finnhub 实时报价，取不到就留空（市值不计入），不估算。期权按 OCC 合约代码存储，价格和成本按每股计、市值乘 100。
+用户复制提示词，连同券商截图或导出文件发给 Codex、Muse 等外部助手，再把返回的 JSON 粘贴进弹窗。前端先校验并预览，再调用 `POST /api/v1/portfolio/manual-import`；`DELETE` 同一路径清除。数据存为 `portfolio_connections.provider = 'manual'` 的连接（需先执行迁移 `kolvex-backend-py/migrations/20261118000000_portfolio_manual_provider.sql`，否则接口返回 503），每次导入整体替换上一次手动导入，但账户和持仓行 id 保持不变，所以公开隐藏设置不会丢。没写价格的股票由后端取 Finnhub 实时报价，取不到就留空（市值不计入），不估算。期权按 OCC 合约代码存储，价格和成本按每股计、市值乘 100。
 
 持仓、公开页、状态和 AI 持仓工具都会合并 Plaid 与手动导入的账户；公开开关和隐私设置对用户的所有连接同时生效。手动导入是静态快照，不参与每日收益快照采集，也没有交易记录（「交易」标签只在连接 Plaid 时显示）。断开 Plaid 不会删除手动导入的持仓。

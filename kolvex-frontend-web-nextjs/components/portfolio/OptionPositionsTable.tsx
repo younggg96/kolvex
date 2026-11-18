@@ -2,13 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import {
-  ArrowUpRight,
-  ArrowDownRight,
-  Lock,
-  Eye,
-  EyeOff,
-} from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Lock, Eye, EyeOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -42,8 +36,7 @@ function normalizeOptionCost(rawAveragePrice: number, currentPremium: number) {
   // (average option premium * 100). Portfolio-style payloads can be
   // per-share premium, so normalize before calculating P&L.
   const looksLikeContractCost =
-    rawAveragePrice > 50 ||
-    (currentPremium > 0 && rawAveragePrice > currentPremium * 10);
+    rawAveragePrice > 50 || (currentPremium > 0 && rawAveragePrice > currentPremium * 10);
   const premiumPerShare = looksLikeContractCost
     ? rawAveragePrice / OPTION_CONTRACT_MULTIPLIER
     : rawAveragePrice;
@@ -75,7 +68,7 @@ export function OptionPositionsTable({
         {t("portfolio.table.optionsContracts")}
       </div>
       <div className="overflow-x-auto">
-        <Table className="min-w-[68.75rem]">
+        <Table className="min-w-[68.75rem] [&_td]:py-2 [&_th]:h-9">
           <TableHeader>
             <TableRow>
               <SortableHeader
@@ -99,7 +92,9 @@ export function OptionPositionsTable({
                 className="w-[5.625rem] min-w-[5.625rem]"
               />
               <TableHead className="w-[5rem] min-w-[5rem] hidden sm:table-cell text-center">
-                <span className="text-xs text-muted-foreground whitespace-nowrap">{t("portfolio.table.chart")}</span>
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  {t("portfolio.table.chart")}
+                </span>
               </TableHead>
               <SortableHeader
                 label={t("portfolio.table.strike")}
@@ -183,7 +178,9 @@ export function OptionPositionsTable({
               />
               {isOwner && isPublic && (
                 <TableHead className="w-[3.125rem] min-w-[3.125rem] pr-4">
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">{t("portfolio.table.public")}</span>
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">
+                    {t("portfolio.table.public")}
+                  </span>
                 </TableHead>
               )}
             </TableRow>
@@ -193,22 +190,19 @@ export function OptionPositionsTable({
               const isHiddenPosition = pos.is_hidden || pos.units == null;
 
               // Safely get numeric values, handling hidden values "***"
-              const safePrice = isHiddenValue(pos.price)
-                ? 0
-                : (pos.price as number);
+              const safePrice = isHiddenValue(pos.price) ? 0 : (pos.price as number);
               const safeAvgPrice = isHiddenValue(pos.average_purchase_price)
                 ? 0
                 : (pos.average_purchase_price as number);
 
-              const signedContracts = isHiddenValue(pos.units)
-                ? 0
-                : Number(pos.units || 0);
+              const signedContracts = isHiddenValue(pos.units) ? 0 : Number(pos.units || 0);
               const contracts = Math.abs(signedContracts);
               const currentPremium = Math.abs(Number(safePrice || 0));
-              const { costPerContract } =
-                normalizeOptionCost(Math.abs(Number(safeAvgPrice || 0)), currentPremium);
-              const computedMarketValue =
-                currentPremium * contracts * OPTION_CONTRACT_MULTIPLIER;
+              const { costPerContract } = normalizeOptionCost(
+                Math.abs(Number(safeAvgPrice || 0)),
+                currentPremium,
+              );
+              const computedMarketValue = currentPremium * contracts * OPTION_CONTRACT_MULTIPLIER;
               const storedMarketValue = isHiddenValue(pos.market_value)
                 ? 0
                 : Math.abs(Number(pos.market_value || 0));
@@ -222,12 +216,11 @@ export function OptionPositionsTable({
               const pnl = isShort ? totalCost - marketValue : marketValue - totalCost;
               const profit = pnl >= 0;
               const pnlPerShare =
-                contracts > 0
-                  ? pnl / (contracts * OPTION_CONTRACT_MULTIPLIER)
-                  : 0;
+                contracts > 0 ? pnl / (contracts * OPTION_CONTRACT_MULTIPLIER) : 0;
               const pnlPerShareProfit = pnlPerShare >= 0;
               // Privacy: per-share PnL visibility (owner always sees, public checks setting)
-              const showPnlPerShare = isOwner || privacySettings?.show_position_pnl_per_share !== false;
+              const showPnlPerShare =
+                isOwner || privacySettings?.show_position_pnl_per_share !== false;
               const showPnl = isOwner || privacySettings?.show_position_pnl !== false;
 
               // Whether to completely hide (secret option)
@@ -236,10 +229,11 @@ export function OptionPositionsTable({
               return (
                 <TableRow
                   key={pos.id}
-                  className={`${isSecretOption ? "opacity-70" : "hover:bg-foreground/[0.06]"
-                    } transition-colors`}
+                  className={`${
+                    isSecretOption ? "opacity-70" : "hover:bg-foreground/[0.06]"
+                  } transition-colors`}
                 >
-                  <TableCell className="pl-4 py-3">
+                  <TableCell className="pl-4">
                     <div className="flex items-center gap-2.5">
                       {isSecretOption ? (
                         <div className="w-8 h-8 rounded-2xl bg-muted/80 flex items-center justify-center">
@@ -253,11 +247,7 @@ export function OptionPositionsTable({
                         >
                           <CompanyLogo
                             symbol={pos.underlying_symbol || pos.symbol}
-                            name={
-                              pos.security_name ||
-                              pos.underlying_symbol ||
-                              pos.symbol
-                            }
+                            name={pos.security_name || pos.underlying_symbol || pos.symbol}
                             size="sm"
                             border="light"
                           />
@@ -297,11 +287,7 @@ export function OptionPositionsTable({
                         <div className="w-20 h-5 bg-muted/50 rounded" />
                       ) : (
                         <MiniSparkline
-                          data={
-                            sparklineDataMap.get(
-                              pos.underlying_symbol || pos.symbol
-                            ) || []
-                          }
+                          data={sparklineDataMap.get(pos.underlying_symbol || pos.symbol) || []}
                           width={80}
                           height={20}
                           strokeWidth={1.2}
@@ -316,17 +302,12 @@ export function OptionPositionsTable({
                       ) : pos.strike_price ? (
                         <div className="flex items-center gap-1 text-[0.875rem]">
                           <Badge
-                            variant={
-                              isShort
-                                ? "destructive"
-                                : "default"
-                            }
+                            variant={isShort ? "destructive" : "default"}
                             className="!text-[0.75rem] shrink-0"
                           >
                             {isShort ? t("portfolio.table.short") : t("portfolio.table.long")}
                           </Badge>
-                          {formatCurrency(pos.strike_price, "USD", 0, 0)}{" "}
-                          {pos.option_type || "-"}
+                          {formatCurrency(pos.strike_price, "USD", 0, 0)} {pos.option_type || "-"}
                         </div>
                       ) : (
                         "-"
@@ -362,12 +343,16 @@ export function OptionPositionsTable({
                     )}
                   </TableCell>
                   <TableCell className="text-right">
-                    {isSecretOption || !showPnl || isHiddenValue(pos.average_purchase_price) || isHiddenValue(pos.price) ? (
+                    {isSecretOption ||
+                    !showPnl ||
+                    isHiddenValue(pos.average_purchase_price) ||
+                    isHiddenValue(pos.price) ? (
                       <span className="text-muted-foreground">***</span>
                     ) : (
                       <span
-                        className={`inline-flex items-center gap-0.5 tabular-nums font-medium ${profit ? "text-positive" : "text-negative"
-                          }`}
+                        className={`inline-flex items-center gap-0.5 tabular-nums font-medium ${
+                          profit ? "text-positive" : "text-negative"
+                        }`}
                       >
                         {profit ? (
                           <ArrowUpRight className="w-3 h-3" />
@@ -379,12 +364,16 @@ export function OptionPositionsTable({
                     )}
                   </TableCell>
                   <TableCell className="text-right">
-                    {isSecretOption || !showPnlPerShare || isHiddenValue(pos.price) || isHiddenValue(pos.average_purchase_price) ? (
+                    {isSecretOption ||
+                    !showPnlPerShare ||
+                    isHiddenValue(pos.price) ||
+                    isHiddenValue(pos.average_purchase_price) ? (
                       <span className="text-muted-foreground">***</span>
                     ) : (
                       <span
-                        className={`inline-flex items-center gap-0.5 tabular-nums font-medium ${pnlPerShareProfit ? "text-positive" : "text-negative"
-                          }`}
+                        className={`inline-flex items-center gap-0.5 tabular-nums font-medium ${
+                          pnlPerShareProfit ? "text-positive" : "text-negative"
+                        }`}
                       >
                         {pnlPerShareProfit ? (
                           <ArrowUpRight className="w-3 h-3" />
@@ -395,27 +384,22 @@ export function OptionPositionsTable({
                       </span>
                     )}
                   </TableCell>
-                  <TableCell
-                    className={`text-right ${isOwner && isPublic ? "" : "pr-4"}`}
-                  >
+                  <TableCell className={`text-right ${isOwner && isPublic ? "" : "pr-4"}`}>
                     {isSecretOption || isHiddenValue(pos.weight_percent) ? (
                       <span className="text-muted-foreground">***</span>
                     ) : (
-                      <WeightIndicator
-                        percent={Math.abs(pos.weight_percent || 0)}
-                      />
+                      <WeightIndicator percent={Math.abs(pos.weight_percent || 0)} />
                     )}
                   </TableCell>
                   {isOwner && isPublic && (
                     <TableCell className="text-center pr-4">
                       <button
-                        onClick={(e) =>
-                          onToggleVisibility(e, pos.id, pos.is_hidden || false)
-                        }
-                        className={`p-1.5 rounded-full transition-colors ${pos.is_hidden
-                          ? "text-muted-foreground transition-colors hover:bg-foreground/[0.08] hover:text-foreground"
-                          : "text-positive hover:text-positive hover:bg-positive/10"
-                          }`}
+                        onClick={(e) => onToggleVisibility(e, pos.id, pos.is_hidden || false)}
+                        className={`p-1.5 rounded-full transition-colors ${
+                          pos.is_hidden
+                            ? "text-muted-foreground transition-colors hover:bg-foreground/[0.08] hover:text-foreground"
+                            : "text-positive hover:text-positive hover:bg-positive/10"
+                        }`}
                         title={
                           pos.is_hidden
                             ? t("portfolio.table.hiddenFromPublic")

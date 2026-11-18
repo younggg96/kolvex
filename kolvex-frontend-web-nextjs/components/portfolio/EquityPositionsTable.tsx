@@ -2,13 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import {
-  ArrowUpRight,
-  ArrowDownRight,
-  Lock,
-  Eye,
-  EyeOff,
-} from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Lock, Eye, EyeOff } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -48,7 +42,7 @@ export function EquityPositionsTable({
 
   return (
     <div className="overflow-x-auto">
-      <Table>
+      <Table className="[&_td]:py-2 [&_th]:h-9">
         <TableHeader>
           <TableRow>
             <SortableHeader
@@ -143,22 +137,24 @@ export function EquityPositionsTable({
             const isShort = !isHiddenValue(pos.units) && (pos.units as number) < 0;
             // P&L per share = current price - average purchase price
             const safePrice = isHiddenValue(pos.price) ? 0 : (pos.price as number);
-            const safeAvgPrice = isHiddenValue(pos.average_purchase_price) ? 0 : (pos.average_purchase_price as number);
+            const safeAvgPrice = isHiddenValue(pos.average_purchase_price)
+              ? 0
+              : (pos.average_purchase_price as number);
             const pnlPerShare = isShort ? safeAvgPrice - safePrice : safePrice - safeAvgPrice;
             const pnlPerShareProfit = pnlPerShare >= 0;
             // Privacy: per-share PnL visibility (owner always sees, public checks setting)
-            const showPnlPerShare = isOwner || privacySettings?.show_position_pnl_per_share !== false;
+            const showPnlPerShare =
+              isOwner || privacySettings?.show_position_pnl_per_share !== false;
             const isSecretStock = isHiddenPosition && !isOwner;
 
             return (
               <TableRow
                 key={pos.id}
-                className={`${isSecretStock
-                  ? "opacity-70"
-                  : "hover:bg-foreground/[0.06]"
-                  } transition-colors`}
+                className={`${
+                  isSecretStock ? "opacity-70" : "hover:bg-foreground/[0.06]"
+                } transition-colors`}
               >
-                <TableCell className="pl-4 py-3">
+                <TableCell className="pl-4">
                   <div className="flex items-center gap-2.5">
                     {isSecretStock ? (
                       <div className="w-8 h-8 rounded-2xl bg-muted/80 flex items-center justify-center">
@@ -183,7 +179,10 @@ export function EquityPositionsTable({
                         {isSecretStock ? (
                           <span className="text-muted-foreground">****</span>
                         ) : (
-                          <Link href={marketStockHref(pos.symbol)} className="rounded-sm underline-offset-4 hover:underline focus-visible:outline-none ">
+                          <Link
+                            href={marketStockHref(pos.symbol)}
+                            className="rounded-sm underline-offset-4 hover:underline focus-visible:outline-none "
+                          >
                             {pos.symbol}
                           </Link>
                         )}
@@ -253,8 +252,9 @@ export function EquityPositionsTable({
                     <span className="text-muted-foreground">—</span>
                   ) : (
                     <span
-                      className={`inline-flex items-center gap-0.5 tabular-nums font-medium ${profit ? "text-positive" : "text-negative"
-                        }`}
+                      className={`inline-flex items-center gap-0.5 tabular-nums font-medium ${
+                        profit ? "text-positive" : "text-negative"
+                      }`}
                     >
                       {profit ? (
                         <ArrowUpRight className="w-3 h-3" />
@@ -266,12 +266,16 @@ export function EquityPositionsTable({
                   )}
                 </TableCell>
                 <TableCell className="text-right">
-                  {isSecretStock || !showPnlPerShare || isHiddenValue(pos.price) || isHiddenValue(pos.average_purchase_price) ? (
+                  {isSecretStock ||
+                  !showPnlPerShare ||
+                  isHiddenValue(pos.price) ||
+                  isHiddenValue(pos.average_purchase_price) ? (
                     <span className="text-muted-foreground">***</span>
                   ) : (
                     <span
-                      className={`inline-flex items-center gap-0.5 tabular-nums font-medium ${pnlPerShareProfit ? "text-positive" : "text-negative"
-                        }`}
+                      className={`inline-flex items-center gap-0.5 tabular-nums font-medium ${
+                        pnlPerShareProfit ? "text-positive" : "text-negative"
+                      }`}
                     >
                       {pnlPerShareProfit ? (
                         <ArrowUpRight className="w-3 h-3" />
@@ -282,9 +286,7 @@ export function EquityPositionsTable({
                     </span>
                   )}
                 </TableCell>
-                <TableCell
-                  className={`text-right ${isOwner && isPublic ? "" : "pr-4"}`}
-                >
+                <TableCell className={`text-right ${isOwner && isPublic ? "" : "pr-4"}`}>
                   {isSecretStock || isHiddenValue(pos.weight_percent) ? (
                     <span className="text-muted-foreground">***</span>
                   ) : (
@@ -294,24 +296,19 @@ export function EquityPositionsTable({
                 {isOwner && isPublic && (
                   <TableCell className="text-center pr-4">
                     <button
-                      onClick={(e) =>
-                        onToggleVisibility(e, pos.id, pos.is_hidden || false)
-                      }
-                      className={`p-1.5 rounded-full transition-colors ${pos.is_hidden
-                        ? "text-muted-foreground transition-colors hover:bg-foreground/[0.08] hover:text-foreground"
-                        : "text-positive hover:text-positive hover:bg-positive/10"
-                        }`}
+                      onClick={(e) => onToggleVisibility(e, pos.id, pos.is_hidden || false)}
+                      className={`p-1.5 rounded-full transition-colors ${
+                        pos.is_hidden
+                          ? "text-muted-foreground transition-colors hover:bg-foreground/[0.08] hover:text-foreground"
+                          : "text-positive hover:text-positive hover:bg-positive/10"
+                      }`}
                       title={
                         pos.is_hidden
                           ? t("portfolio.table.hiddenFromPublic")
                           : t("portfolio.table.visibleToPublic")
                       }
                     >
-                      {pos.is_hidden ? (
-                        <EyeOff className="w-4 h-4" />
-                      ) : (
-                        <Eye className="w-4 h-4" />
-                      )}
+                      {pos.is_hidden ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </TableCell>
                 )}

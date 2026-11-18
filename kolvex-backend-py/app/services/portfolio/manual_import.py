@@ -30,6 +30,13 @@ OPTION_MULTIPLIER = 100
 _EQUITY_SYMBOL = re.compile(r"^[A-Z0-9][A-Z0-9.\-/]{0,15}$")
 
 
+class ManualImportUnavailable(RuntimeError):
+    """The database does not accept manual connections yet (migration not applied)."""
+
+
+MIGRATION_HINT = "20261118000000_portfolio_manual_provider.sql"
+
+
 class ManualPosition(BaseModel):
     symbol: str = Field(..., min_length=1, max_length=40)
     name: Optional[str] = Field(None, max_length=200)
@@ -225,7 +232,14 @@ class ManualImportService:
         }
         if template.get("privacy_settings"):
             data["privacy_settings"] = template["privacy_settings"]
-        created = self.supabase.table("portfolio_connections").insert(data).execute()
+        try:
+            created = self.supabase.table("portfolio_connections").insert(data).execute()
+        except Exception as error:
+            if getattr(error, "code", None) == "23514":
+                raise ManualImportUnavailable(
+                    f"portfolio_connections does not allow provider 'manual'; apply {MIGRATION_HINT}"
+                ) from error
+            raise
         if not created.data:
             raise RuntimeError("Failed to create manual portfolio connection")
         return created.data[0]

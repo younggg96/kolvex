@@ -9,6 +9,7 @@ from app.api.dependencies.auth import get_current_user_id
 from app.services.portfolio.manual_import import (
     ManualImportRequest,
     ManualImportService,
+    ManualImportUnavailable,
     get_manual_import_service,
 )
 
@@ -26,6 +27,12 @@ async def import_manual_holdings(
     """Replace the user's manually imported holdings with this snapshot."""
     try:
         return await service.import_holdings(user_id, request)
+    except ManualImportUnavailable as error:
+        logger.error("Manual portfolio import unavailable: %s", error)
+        raise HTTPException(
+            status_code=http_status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Manual import is not enabled on the server yet (database migration pending)",
+        )
     except Exception as error:
         logger.exception("Manual portfolio import failed")
         raise HTTPException(

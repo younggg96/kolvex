@@ -449,9 +449,16 @@ a {
 }
 
 @layer utilities {
-  /* Visible keyboard focus without a surrounding ring. */
+  /* Visible keyboard focus without a surrounding ring. Menus and listboxes
+     are excluded: Radix moves focus onto the open menu and onto each row as
+     the pointer moves, so the wash would flash across the whole overlay.
+     Their rows signal the highlight with text colour instead. */
   :focus-visible:not(
     :where(
+      [role="menu"],
+      [role="listbox"],
+      [role="option"],
+      [role^="menuitem"],
       [aria-selected="true"],
       [aria-pressed="true"],
       [aria-checked="true"],
@@ -479,6 +486,8 @@ a {
       [role="alertdialog"],
       [role="menu"],
       [role="listbox"],
+      [role="option"],
+      [role^="menuitem"],
       [tabindex="-1"]
     )
   ) {
@@ -2010,8 +2019,8 @@ html[data-chat-history-open] .app-workbench .app-sidebar {
     :focus-visible,
     :hover
   ) {
-  background: rgb(var(--interaction-hover));
-  color: rgb(var(--secondary-foreground));
+  background: transparent;
+  color: rgb(var(--foreground));
 }
 
 :root:not(.dark)

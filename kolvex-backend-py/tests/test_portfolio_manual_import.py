@@ -7,6 +7,7 @@ from pydantic import ValidationError
 from app.services.portfolio.manual_import import (
     ManualImportRequest,
     ManualImportService,
+    ManualImportUnavailable,
     manual_account_key,
 )
 from app.services.portfolio.service import PortfolioService
@@ -276,6 +277,34 @@ class ImportTests(unittest.TestCase):
             [c["provider"] for c in self.supabase.db["portfolio_connections"]], ["plaid"]
         )
         self.assertEqual(self.supabase.db["portfolio_positions"], [])
+
+
+class ConstraintError(Exception):
+    code = "23514"
+
+
+class MissingMigrationTests(unittest.TestCase):
+    def test_check_violation_becomes_clear_error(self):
+        supabase = FakeSupabase()
+        original = supabase.table
+
+        def table(name):
+            query = original(name)
+            if name == "portfolio_connections":
+                insert = query.insert
+
+                def failing_insert(data):
+                    insert(data)
+                    query.execute = lambda: (_ for _ in ()).throw(ConstraintError())
+                    return query
+
+                query.insert = failing_insert
+            return query
+
+        supabase.table = table
+        service = ManualImportService(supabase, quote_fetcher=quote)
+        with self.assertRaises(ManualImportUnavailable):
+            run(service.import_holdings("u1", payload()))
 
 
 class MergedHoldingsTests(unittest.TestCase):

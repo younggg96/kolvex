@@ -35,7 +35,7 @@ export const MultiSelect = React.forwardRef<HTMLDivElement, MultiSelectProps>(
       size = "md",
       maxVisibleTags = 3,
     },
-    ref
+    ref,
   ) => {
     const [isOpen, setIsOpen] = React.useState(false);
     const triggerRef = React.useRef<HTMLButtonElement>(null);
@@ -49,10 +49,10 @@ export const MultiSelect = React.forwardRef<HTMLDivElement, MultiSelectProps>(
       };
 
       updateWidth();
-      
+
       // Update width when window resizes
-      window.addEventListener('resize', updateWidth);
-      return () => window.removeEventListener('resize', updateWidth);
+      window.addEventListener("resize", updateWidth);
+      return () => window.removeEventListener("resize", updateWidth);
     }, []);
 
     React.useEffect(() => {
@@ -74,9 +74,7 @@ export const MultiSelect = React.forwardRef<HTMLDivElement, MultiSelectProps>(
       onChange(newValue);
     };
 
-    const selectedOptions = options.filter((opt) =>
-      value.includes(opt.value)
-    );
+    const selectedOptions = options.filter((opt) => value.includes(opt.value));
 
     // Define min heights based on size
     const minHeightClasses = {
@@ -94,10 +92,7 @@ export const MultiSelect = React.forwardRef<HTMLDivElement, MultiSelectProps>(
               disabled={disabled}
               selected={selectedOptions.length > 0}
               size={size}
-              className={cn(
-                "w-full justify-between h-auto py-1.5",
-                minHeightClasses[size]
-              )}
+              className={cn("w-full justify-between h-auto py-1.5", minHeightClasses[size])}
               aria-haspopup="listbox"
               aria-expanded={isOpen}
             >
@@ -133,17 +128,17 @@ export const MultiSelect = React.forwardRef<HTMLDivElement, MultiSelectProps>(
                 )}
               </div>
               <div className="flex items-center gap-1 ml-2 flex-shrink-0">
-                <ChevronDown 
+                <ChevronDown
                   className={cn(
                     "h-4 w-4 opacity-50 transition-transform duration-200",
-                    isOpen && "transform rotate-180"
-                  )} 
+                    isOpen && "transform rotate-180",
+                  )}
                 />
               </div>
             </TriggerButton>
           </PopoverTrigger>
-          <PopoverContent 
-            className="p-0" 
+          <PopoverContent
+            className="p-0"
             style={{ width: triggerWidth ? `${triggerWidth}px` : undefined }}
             align="start"
             sideOffset={4}
@@ -168,20 +163,16 @@ export const MultiSelect = React.forwardRef<HTMLDivElement, MultiSelectProps>(
                           // instead of the brand green wash it used to carry.
                           isSelected
                             ? "bg-secondary text-foreground font-medium"
-                            : "text-foreground hover:bg-foreground/[0.06] hover:text-foreground"
+                            : "text-foreground/70 hover:text-foreground",
                         )}
                         role="option"
                         aria-selected={isSelected}
                       >
                         <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
-                          {isSelected && (
-                            <Check className="h-4 w-4" />
-                          )}
+                          {isSelected && <Check className="h-4 w-4" />}
                         </span>
                         <div className="flex items-center gap-2">
-                          {option.icon && (
-                            <span className="flex items-center">{option.icon}</span>
-                          )}
+                          {option.icon && <span className="flex items-center">{option.icon}</span>}
                           <span>{option.label}</span>
                         </div>
                       </div>
@@ -194,8 +185,7 @@ export const MultiSelect = React.forwardRef<HTMLDivElement, MultiSelectProps>(
         </Popover>
       </div>
     );
-  }
+  },
 );
 
 MultiSelect.displayName = "MultiSelect";
-
