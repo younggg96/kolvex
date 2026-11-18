@@ -1,0 +1,233 @@
+{
+ "markets": {
+  "dir": "out/capture-tiles",
+  "out": "public/textures/dashboard/markets.png",
+  "aurora": "mcp-Claude_Browser-blob-1794909286390-whk705.png",
+  "tiles": [
+   [
+    "mcp-Claude_Browser-blob-1794909286390-v0ji0u.png",
+    "mcp-Claude_Browser-blob-1794909286390-kxvp95.png",
+    "mcp-Claude_Browser-blob-1794909286390-fue9jk.png",
+    "mcp-Claude_Browser-blob-1794909286390-bb0qog.png"
+   ],
+   [
+    "mcp-Claude_Browser-blob-1794909300052-lvhj0u.png",
+    "mcp-Claude_Browser-blob-1794909300052-hn7ytz.png",
+    "mcp-Claude_Browser-blob-1794909300052-7ykj6n.png",
+    "mcp-Claude_Browser-blob-1794909300052-915vu6.png"
+   ],
+   [
+    "mcp-Claude_Browser-blob-1794909300052-jtyupe.png",
+    "mcp-Claude_Browser-blob-1794909300052-hddk7d.png",
+    "mcp-Claude_Browser-blob-1794909318361-63oczn.png",
+    "mcp-Claude_Browser-blob-1794909318361-21g4kz.png"
+   ],
+   [
+    "mcp-Claude_Browser-blob-1794909318361-lpva2y.png",
+    "mcp-Claude_Browser-blob-1794909318361-ejn7v9.png",
+    "mcp-Claude_Browser-blob-1794909318361-ug3whi.png",
+    "mcp-Claude_Browser-blob-1794909318361-6a8ukt.png"
+   ]
+  ],
+  "redact": [
+   [
+    0,
+    920,
+    244,
+    46,
+    [
+     10,
+     11,
+     13
+    ]
+   ],
+   [
+    0,
+    1018,
+    256,
+    62,
+    [
+     10,
+     11,
+     13
+    ]
+   ]
+  ]
+ },
+ "opinions": {
+  "dir": "out/capture-tiles",
+  "out": "public/textures/dashboard/opinions.png",
+  "aurora": "mcp-Claude_Browser-blob-1794909385728-fqud1j.png",
+  "tiles": [
+   [
+    "mcp-Claude_Browser-blob-1794909385728-n57yip.png",
+    "mcp-Claude_Browser-blob-1794909385728-kj94u3.png",
+    "mcp-Claude_Browser-blob-1794909385729-1ubwqv.png",
+    "mcp-Claude_Browser-blob-1794909385729-eqxfhu.png"
+   ],
+   [
+    "mcp-Claude_Browser-blob-1794909385729-sl5upt.png",
+    "mcp-Claude_Browser-blob-1794909385729-8ndpt1.png",
+    "mcp-Claude_Browser-blob-1794909385729-4u7w48.png",
+    "mcp-Claude_Browser-blob-1794909403149-jcmbop.png"
+   ],
+   [
+    "mcp-Claude_Browser-blob-1794909403149-knvpkl.png",
+    "mcp-Claude_Browser-blob-1794909403149-3vrbhk.png",
+    "mcp-Claude_Browser-blob-1794909403149-ia4mjm.png",
+    "mcp-Claude_Browser-blob-1794909403149-e8x0no.png"
+   ],
+   [
+    "mcp-Claude_Browser-blob-1794909403149-mep1d5.png",
+    "mcp-Claude_Browser-blob-1794909403149-npoyjm.png",
+    "mcp-Claude_Browser-blob-1794909403149-8ig2py.png",
+    "mcp-Claude_Browser-blob-1794909418729-2owtqx.png"
+   ]
+  ],
+  "redact": [
+   [
+    0,
+    920,
+    244,
+    46,
+    [
+     10,
+     11,
+     13
+    ]
+   ],
+   [
+    0,
+    1018,
+    256,
+    62,
+    [
+     10,
+     11,
+     13
+    ]
+   ],
+   [
+    1525,
+    555,
+    330,
+    215,
+    [
+     0,
+     0,
+     0
+    ]
+   ]
+  ]
+ },
+ "nvda": {
+  "dir": "out/capture-tiles",
+  "out": "public/textures/dashboard/nvda-creators.png",
+  "aurora": "mcp-Claude_Browser-blob-1794909463568-myeqac.png",
+  "tiles": [
+   [
+    "mcp-Claude_Browser-blob-1794909463568-8rgxm3.png",
+    "mcp-Claude_Browser-blob-1794909463568-3nq3z0.png",
+    "mcp-Claude_Browser-blob-1794909463568-9d1emo.png",
+    "mcp-Claude_Browser-blob-1794909463568-1d3ccw.png"
+   ],
+   [
+    "mcp-Claude_Browser-blob-1794909463568-vgosb8.png",
+    "mcp-Claude_Browser-blob-1794909463568-urjs3x.png",
+    "mcp-Claude_Browser-blob-1794909463568-m9bq7c.png",
+    "mcp-Claude_Browser-blob-1794909480471-qf5mm6.png"
+   ],
+   [
+    "mcp-Claude_Browser-blob-1794909480471-tjrs4d.png",
+    "mcp-Claude_Browser-blob-1794909480471-nyi5s9.png",
+    "mcp-Claude_Browser-blob-1794909480471-pu0okh.png",
+    "mcp-Claude_Browser-blob-1794909480471-dai87c.png"
+   ],
+   [
+    "mcp-Claude_Browser-blob-1794909480471-87skib.png",
+    "mcp-Claude_Browser-blob-1794909480471-klzu3r.png",
+    "mcp-Claude_Browser-blob-1794909480471-nsgicl.png",
+    "mcp-Claude_Browser-blob-1794909496180-qxjtdk.png"
+   ]
+  ],
+  "redact": [
+   [
+    0,
+    920,
+    244,
+    46,
+    [
+     10,
+     11,
+     13
+    ]
+   ],
+   [
+    0,
+    1018,
+    256,
+    62,
+    [
+     10,
+     11,
+     13
+    ]
+   ]
+  ]
+ },
+ "chat": {
+  "dir": "out/capture-tiles",
+  "out": "public/textures/dashboard/chat.png",
+  "aurora": "mcp-Claude_Browser-blob-1794909521196-p75584.png",
+  "tiles": [
+   [
+    "mcp-Claude_Browser-blob-1794909521196-p3eyei.png",
+    "mcp-Claude_Browser-blob-1794909521196-wdlwfd.png",
+    "mcp-Claude_Browser-blob-1794909521196-zmul5m.png",
+    null
+   ],
+   [
+    "mcp-Claude_Browser-blob-1794909521196-ppxdoq.png",
+    null,
+    null,
+    null
+   ],
+   [
+    "mcp-Claude_Browser-blob-1794909521196-m9oixn.png",
+    null,
+    null,
+    null
+   ],
+   [
+    "mcp-Claude_Browser-blob-1794909521196-2m774p.png",
+    "mcp-Claude_Browser-blob-1794909521196-va1xlz.png",
+    "mcp-Claude_Browser-blob-1794909526955-c7z98h.png",
+    null
+   ]
+  ],
+  "redact": [
+   [
+    0,
+    920,
+    244,
+    46,
+    [
+     10,
+     11,
+     13
+    ]
+   ],
+   [
+    0,
+    1018,
+    256,
+    62,
+    [
+     10,
+     11,
+     13
+    ]
+   ]
+  ]
+ }
+}

@@ -38,6 +38,15 @@
       "port": 3230
     },
     {
+      "name": "motion-workbench",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "cd \"$HOME/.claude/skills/video-shotcraft/workbench\" && exec node node_modules/vite/bin/vite.js --port 5198 --strictPort"
+      ],
+      "port": 5198
+    },
+    {
       "name": "backend-8080",
       "runtimeExecutable": "sh",
       "runtimeArgs": [

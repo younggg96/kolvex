@@ -1,0 +1,34 @@
+{
+  "provider": "freesound",
+  "query": "scan sweep",
+  "license_policy": "cc0",
+  "ordering": "relevance; popularity is supporting evidence only",
+  "results": [
+    {
+      "id": "fs:859535",
+      "title": "Alien Bio Scan - Scanner UI SFX - Short",
+      "author": "TommasoMotteran",
+      "duration_seconds": 3.0,
+      "preview_url": "https://cdn.freesound.org/previews/859/859535_18681946-hq.mp3",
+      "downloads": 209,
+      "page_url": "https://freesound.org/people/TommasoMotteran/sounds/859535/",
+      "license_label": "Creative Commons 0",
+      "description": "Advanced alien biological scanning sound effect / interface cue, designed for UFO interiors, abduction scenes, sci-fi labs, lifeform detection systems and extraterrestrial medical scanners. Cold, eerie and synthetic with a mysterious high-tech feel.",
+      "rating": 5.0,
+      "rating_count": 5
+    },
+    {
+      "id": "fs:620531",
+      "title": "Quét 1",
+      "author": "SieuAmThanh",
+      "duration_seconds": 1.0,
+      "preview_url": "https://cdn.freesound.org/previews/620/620531_7554526-hq.mp3",
+      "downloads": 67,
+      "page_url": "https://freesound.org/people/SieuAmThanh/sounds/620531/",
+      "license_label": "Creative Commons 0",
+      "description": "Create Quét 1 from pencilina’s &quot;industrial-3d-cutter-acoustic&quot; sound. Audacity: • Copy from 12.152s to 13.955s • File→New • Paste • Effect→Amplify… Amplification (dB): 20.0 • Effect→Sliding Time Scale/Pitch Shift… Initial Tempo Change (%): 500 Final Tempo Change (%): -90 Initial Pitch Shift (%): 12 Final Pitch Shift (%): -12 • Cut/delete from 0.500s to 0.591 (end) • Paste at end • Effect→Reverse (from 0.500s to 1.000s; new copy)",
+      "rating": null,
+      "rating_count": null
+    }
+  ]
+}

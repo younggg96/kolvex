@@ -1,0 +1,60 @@
+{
+  "provider": "freesound",
+  "query": "shimmer chime",
+  "license_policy": "cc0",
+  "ordering": "relevance; popularity is supporting evidence only",
+  "results": [
+    {
+      "id": "fs:879797",
+      "title": "Shine Chime",
+      "author": "Qvantor",
+      "duration_seconds": 2.36729,
+      "preview_url": "https://cdn.freesound.org/previews/879/879797_19512113-hq.mp3",
+      "downloads": 17,
+      "page_url": "https://freesound.org/people/Qvantor/sounds/879797/",
+      "license_label": "Creative Commons 0",
+      "description": "Shine: a fast glittering run of high chimes sweeping up, with bright echoes. For shine, sparkle, highlights, reveals and magic. Open its preset in Chisper, a free browser synth, play it and tweak it to your needs: https://chisper.qvantor.org/?preset=121e2961-d1f6-42fb-bea2-600db6d2317a",
+      "rating": null,
+      "rating_count": null
+    },
+    {
+      "id": "fs:562196",
+      "title": "snd_fragment_retrieve.wav",
+      "author": "gristi",
+      "duration_seconds": 1.7015,
+      "preview_url": "https://cdn.freesound.org/previews/562/562196_12618935-hq.mp3",
+      "downloads": 2422,
+      "page_url": "https://freesound.org/people/gristi/sounds/562196/",
+      "license_label": "Creative Commons 0",
+      "description": "A light glassy \"ping\", like a crystal object hitting the ground.",
+      "rating": 4.9,
+      "rating_count": 42
+    },
+    {
+      "id": "fs:878604",
+      "title": "Achievement Unlocked",
+      "author": "Qvantor",
+      "duration_seconds": 2.91683,
+      "preview_url": "https://cdn.freesound.org/previews/878/878604_19512113-hq.mp3",
+      "downloads": 12,
+      "page_url": "https://freesound.org/people/Qvantor/sounds/878604/",
+      "license_label": "Creative Commons 0",
+      "description": "Achievement unlocked: a short whoosh up into a bright, shimmering chord of chimes with echo. For achievements, trophies and badges. Open its preset in Chisper, a free browser synth, play it and tweak it to your needs: https://chisper.qvantor.org/?preset=26b80f40-5d23-4a13-9e4d-f935bd238282",
+      "rating": null,
+      "rating_count": null
+    },
+    {
+      "id": "fs:878249",
+      "title": "UI Modal Open Chime",
+      "author": "Qvantor",
+      "duration_seconds": 0.992313,
+      "preview_url": "https://cdn.freesound.org/previews/878/878249_19512113-hq.mp3",
+      "downloads": 33,
+      "page_url": "https://freesound.org/people/Qvantor/sounds/878249/",
+      "license_label": "Creative Commons 0",
+      "description": "Two mallet notes a fifth apart with a glassy shimmer, for a modal or a dialog opening and for soft notifications. Open its preset in Chisper, a free browser synth, and tweak it to your needs: https://chisper.qvantor.org/?preset=d2181c07-accc-452c-b3a8-1ceb89ceb4c4",
+      "rating": null,
+      "rating_count": null
+    }
+  ]
+}

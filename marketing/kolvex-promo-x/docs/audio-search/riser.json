@@ -1,0 +1,47 @@
+{
+  "provider": "freesound",
+  "query": "riser swell",
+  "license_policy": "cc0",
+  "ordering": "relevance; popularity is supporting evidence only",
+  "results": [
+    {
+      "id": "fs:877966",
+      "title": "Reverse Swell 2.5s",
+      "author": "Qvantor",
+      "duration_seconds": 3.34285,
+      "preview_url": "https://cdn.freesound.org/previews/877/877966_19512113-hq.mp3",
+      "downloads": 42,
+      "page_url": "https://freesound.org/people/Qvantor/sounds/877966/",
+      "license_label": "Creative Commons 0",
+      "description": "2.5-second reverse swell, like a reversed cymbal, cut off at its peak, for transitions into a hit, a drop or a cut. Open its preset in Chisper, a free browser synth, and tweak it to your needs: https://chisper.qvantor.org/?preset=fe75a6d2-e94d-49e6-a3db-6557338df548",
+      "rating": null,
+      "rating_count": null
+    },
+    {
+      "id": "fs:503815",
+      "title": "sweep.wav",
+      "author": "reathance",
+      "duration_seconds": 3.04687,
+      "preview_url": "https://cdn.freesound.org/previews/503/503815_9637845-hq.mp3",
+      "downloads": 2983,
+      "page_url": "https://freesound.org/people/reathance/sounds/503815/",
+      "license_label": "Creative Commons 0",
+      "description": "just a sweep",
+      "rating": 4.5,
+      "rating_count": 32
+    },
+    {
+      "id": "fs:564442",
+      "title": "Guitar Swell.wav",
+      "author": "Fester993",
+      "duration_seconds": 3.0625,
+      "preview_url": "https://cdn.freesound.org/previews/564/564442_5456250-hq.mp3",
+      "downloads": 756,
+      "page_url": "https://freesound.org/people/Fester993/sounds/564442/",
+      "license_label": "Creative Commons 0",
+      "description": "A reversed Maj7 chord with \"shell voicing\" (no third). Recorded with an sm57 in front of a Fender Blues Junior.",
+      "rating": 4.9,
+      "rating_count": 15
+    }
+  ]
+}

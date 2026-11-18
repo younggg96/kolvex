@@ -1,0 +1,112 @@
+{
+  "provider": "freesound",
+  "query": "keyboard typing",
+  "license_policy": "cc0",
+  "ordering": "relevance; popularity is supporting evidence only",
+  "results": [
+    {
+      "id": "fs:713960",
+      "title": "Keyboard Typing Sound",
+      "author": "metehanyengil",
+      "duration_seconds": 4.34213,
+      "preview_url": "https://cdn.freesound.org/previews/713/713960_3899117-hq.mp3",
+      "downloads": 181,
+      "page_url": "https://freesound.org/people/metehanyengil/sounds/713960/",
+      "license_label": "Creative Commons 0",
+      "description": "It is a red switch keyboard typing sound. You can use it however you want.",
+      "rating": 4.6,
+      "rating_count": 7
+    },
+    {
+      "id": "fs:527726",
+      "title": "Typing On A Keyboard",
+      "author": "lnab",
+      "duration_seconds": 1.45125,
+      "preview_url": "https://cdn.freesound.org/previews/527/527726_11672333-hq.mp3",
+      "downloads": 496,
+      "page_url": "https://freesound.org/people/lnab/sounds/527726/",
+      "license_label": "Creative Commons 0",
+      "description": "Quick typing on a keyboard followed by enter",
+      "rating": 5.0,
+      "rating_count": 5
+    },
+    {
+      "id": "fs:690655",
+      "title": "Mechanical Keyboard Typing",
+      "author": "BetaFruit",
+      "duration_seconds": 1.76825,
+      "preview_url": "https://cdn.freesound.org/previews/690/690655_13812760-hq.mp3",
+      "downloads": 100,
+      "page_url": "https://freesound.org/people/BetaFruit/sounds/690655/",
+      "license_label": "Creative Commons 0",
+      "description": "Typing random characters on a mechanical keyboard, made as a sound effect for YouTube videos",
+      "rating": null,
+      "rating_count": null
+    },
+    {
+      "id": "fs:380066",
+      "title": "Keyboard typing on Windows PC",
+      "author": "praxis_bard",
+      "duration_seconds": 3.87773,
+      "preview_url": "https://cdn.freesound.org/previews/380/380066_7022976-hq.mp3",
+      "downloads": 290,
+      "page_url": "https://freesound.org/people/praxis_bard/sounds/380066/",
+      "license_label": "Creative Commons 0",
+      "description": "Windows PC keyboard being typed on in New Henderson.",
+      "rating": 3.7,
+      "rating_count": 3
+    },
+    {
+      "id": "fs:786019",
+      "title": "keyboard typing",
+      "author": "miyuki.y",
+      "duration_seconds": 3.67377,
+      "preview_url": "https://cdn.freesound.org/previews/786/786019_16811179-hq.mp3",
+      "downloads": 54,
+      "page_url": "https://freesound.org/people/miyuki.y/sounds/786019/",
+      "license_label": "Creative Commons 0",
+      "description": "Macbook keyboard typing",
+      "rating": null,
+      "rating_count": null
+    },
+    {
+      "id": "fs:539146",
+      "title": "Keyboard Typing 001.wav",
+      "author": "ristooooo1",
+      "duration_seconds": 3.64762,
+      "preview_url": "https://cdn.freesound.org/previews/539/539146_6205597-hq.mp3",
+      "downloads": 786,
+      "page_url": "https://freesound.org/people/ristooooo1/sounds/539146/",
+      "license_label": "Creative Commons 0",
+      "description": "Typing of a PC keyboard",
+      "rating": 4.0,
+      "rating_count": 5
+    },
+    {
+      "id": "fs:813214",
+      "title": "Very_Fast_Typing_Short",
+      "author": "Capt.Jack",
+      "duration_seconds": 2.12463,
+      "preview_url": "https://cdn.freesound.org/previews/813/813214_7987620-hq.mp3",
+      "downloads": 88,
+      "page_url": "https://freesound.org/people/Capt.Jack/sounds/813214/",
+      "license_label": "Creative Commons 0",
+      "description": "Very fast typing on a mechanical keyboard. Recorded using a Pyle PDMIC-78",
+      "rating": null,
+      "rating_count": null
+    },
+    {
+      "id": "fs:580870",
+      "title": "Keyboard typing.wav",
+      "author": "Physon712",
+      "duration_seconds": 5.42186,
+      "preview_url": "https://cdn.freesound.org/previews/580/580870_12681134-hq.mp3",
+      "downloads": 149,
+      "page_url": "https://freesound.org/people/Physon712/sounds/580870/",
+      "license_label": "Creative Commons 0",
+      "description": "Typing on a mechanical keyboard.",
+      "rating": null,
+      "rating_count": null
+    }
+  ]
+}

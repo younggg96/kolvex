@@ -12,6 +12,13 @@
       "sourceType": "github",
       "skillPath": "skills/supabase-postgres-best-practices/SKILL.md",
       "computedHash": "3eb972c2d7c818e544e35cc33ea8d7147d4d78ae08142ef40037b0fbac7a2505"
+    },
+    "video-shotcraft": {
+      "source": "Vincentwei1021/video-shotcraft",
+      "commit": "42f922fe076f6428814d10f6184caf22a8b2adc2",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "e6b9cc44199902074f5bbfb3946459e9dadac1e0bd0cbafbb8b8f364617887d7"
     }
   }
 }

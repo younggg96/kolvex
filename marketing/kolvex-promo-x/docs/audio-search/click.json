@@ -1,0 +1,112 @@
+{
+  "provider": "freesound",
+  "query": "mechanical click",
+  "license_policy": "cc0",
+  "ordering": "relevance; popularity is supporting evidence only",
+  "results": [
+    {
+      "id": "fs:872341",
+      "title": "Click_9",
+      "author": "SignatureSoundsOrg",
+      "duration_seconds": 0.4735,
+      "preview_url": "https://cdn.freesound.org/previews/872/872341_19205925-hq.mp3",
+      "downloads": 389,
+      "page_url": "https://freesound.org/people/SignatureSoundsOrg/sounds/872341/",
+      "license_label": "Creative Commons 0",
+      "description": "Short click sound effect, with a mix of sharp, mechanical, digital and subtle clicks. Useful for games, UI sounds, buttons, switches, menus, Foley and general sound design. Find more sound effects, loops and samples at signaturesounds.org.",
+      "rating": 5.0,
+      "rating_count": 6
+    },
+    {
+      "id": "fs:878241",
+      "title": "UI Keyboard Key Click",
+      "author": "Qvantor",
+      "duration_seconds": 0.185,
+      "preview_url": "https://cdn.freesound.org/previews/878/878241_19512113-hq.mp3",
+      "downloads": 31,
+      "page_url": "https://freesound.org/people/Qvantor/sounds/878241/",
+      "license_label": "Creative Commons 0",
+      "description": "One key of a mechanical keyboard: the click of its switch and its bottom-out, for typing, input fields and text. Open its preset in Chisper, a free browser synth, and tweak it to your needs: https://chisper.qvantor.org/?preset=df656bf6-f376-4537-9c7e-20cb3874b97f",
+      "rating": null,
+      "rating_count": null
+    },
+    {
+      "id": "fs:778444",
+      "title": "Metallic_Click",
+      "author": "BlondPanda",
+      "duration_seconds": 0.606604,
+      "preview_url": "https://cdn.freesound.org/previews/778/778444_8927049-hq.mp3",
+      "downloads": 800,
+      "page_url": "https://freesound.org/people/BlondPanda/sounds/778444/",
+      "license_label": "Creative Commons 0",
+      "description": "The sound of a small mechanical button or switch being operated, leading to a high-pitched click.",
+      "rating": 4.5,
+      "rating_count": 13
+    },
+    {
+      "id": "fs:555059",
+      "title": "Chik-Chak 2",
+      "author": "magnuswaker",
+      "duration_seconds": 0.971646,
+      "preview_url": "https://cdn.freesound.org/previews/555/555059_11537497-hq.mp3",
+      "downloads": 158,
+      "page_url": "https://freesound.org/people/magnuswaker/sounds/555059/",
+      "license_label": "Creative Commons 0",
+      "description": "Mechanical sounding clicks and clacks. Intended as a homage to gun sound effects made with common household articles.",
+      "rating": 4.0,
+      "rating_count": 3
+    },
+    {
+      "id": "fs:476017",
+      "title": "Press with clicks.mp3",
+      "author": "Rvgerxini",
+      "duration_seconds": 0.298889,
+      "preview_url": "https://cdn.freesound.org/previews/476/476017_9453283-hq.mp3",
+      "downloads": 1089,
+      "page_url": "https://freesound.org/people/Rvgerxini/sounds/476017/",
+      "license_label": "Creative Commons 0",
+      "description": "Pressing a mechanical pencil button, Recorded & Processed in Audacity.",
+      "rating": 4.8,
+      "rating_count": 13
+    },
+    {
+      "id": "fs:678458",
+      "title": "tripod mechanical sound 04",
+      "author": "rubberduck9999",
+      "duration_seconds": 0.870748,
+      "preview_url": "https://cdn.freesound.org/previews/678/678458_14687392-hq.mp3",
+      "downloads": 175,
+      "page_url": "https://freesound.org/people/rubberduck9999/sounds/678458/",
+      "license_label": "Creative Commons 0",
+      "description": "a sound made with my tripod, using various mechanical components, could be used for a range of different sci-fi settings. recorded with a tascam DR-22WL",
+      "rating": 5.0,
+      "rating_count": 3
+    },
+    {
+      "id": "fs:788609",
+      "title": "Menu Scroll Mechanical Variation 04 - Games",
+      "author": "el_boss",
+      "duration_seconds": 0.985079,
+      "preview_url": "https://cdn.freesound.org/previews/788/788609_9129912-hq.mp3",
+      "downloads": 137,
+      "page_url": "https://freesound.org/people/el_boss/sounds/788609/",
+      "license_label": "Creative Commons 0",
+      "description": "A mechanical scroll sfx for screen wipe on game. LMK if you find it useful in your projects!!",
+      "rating": null,
+      "rating_count": null
+    },
+    {
+      "id": "fs:788933",
+      "title": "Mouse_Click_1",
+      "author": "Mediasaur",
+      "duration_seconds": 0.126259,
+      "preview_url": "https://cdn.freesound.org/previews/788/788933_10164671-hq.mp3",
+      "downloads": 301,
+      "page_url": "https://freesound.org/people/Mediasaur/sounds/788933/",
+      "license_label": "Creative Commons 0",
+      "description": "Somewhat rattle-y mouse click SFX.",
+      "rating": 4.9,
+      "rating_count": 8
+    }
+  ]
+}
