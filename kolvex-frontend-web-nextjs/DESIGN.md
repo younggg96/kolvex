@@ -1796,8 +1796,13 @@ wrapping line and preserve their local dates, with PT first. The title and
 summary are followed by an optional full-aspect event image, topic and ticker
 badges, and an external source link with its hostname. A missing or failed
 avatar uses the first character of the name. Missing or failed event images
-leave the remaining row intact. Visible person and topic labels accompany the
-standard Select controls, and each selected filter is reflected in the URL.
+leave the remaining row intact. The horizontal avatar rail offers an All
+people item and one circular portrait per person. A primary outline and count
+identify updates published in the past 24 hours, while a neutral tile marks
+the selected person. Touch scrolling, keyboard focus and desktop overflow
+buttons reach additional people. The labeled shared FilterSheet opens from the
+bottom on phones and centers on desktop. Person and topic changes apply
+immediately and are reflected in the URL.
 
 The Admin 人物动态 tab uses the shared Textarea and three text buttons for paste,
 validate and preview, save, and clearing the editor. Preview reuses the reader's

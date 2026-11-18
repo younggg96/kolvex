@@ -1,71 +1,29 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useState } from "react";
+import { X } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useCopy } from "@/components/decision/shared";
 import { Button } from "@/components/ui/button";
 import { ContentLoading } from "@/components/ui/content-loading";
 import { ListCard, ListEmptyState } from "@/components/ui/list-card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { FilterSheet, FilterSheetGroup } from "@/components/ui/filter-sheet";
 import { useTranslation } from "@/lib/i18n";
-import type { PersonUpdate } from "@/lib/personUpdates";
+import { personUpdatePeople, type PersonUpdate } from "@/lib/personUpdates";
+import { PersonUpdatesPeopleRail } from "./PersonUpdatesPeopleRail";
 import { PersonUpdateTimeline } from "./PersonUpdateTimeline";
 
-const ALL = "";
-const ALL_OPTION = "all";
-const option = (value: string) => (value ? `filter:${value}` : ALL_OPTION);
+function updateFilters(filters: Partial<Record<"person" | "tag", string>>) {
+  const url = new URL(window.location.href);
+  for (const [key, value] of Object.entries(filters)) {
+    if (value) url.searchParams.set(key, value);
+    else url.searchParams.delete(key);
+  }
+  window.history.replaceState(null, "", url);
+}
 
-function TrackerFilter({
-  label,
-  allLabel,
-  choices,
-  name,
-}: {
-  label: string;
-  allLabel: string;
-  choices: [string, string][];
-  name: "person" | "tag";
-}) {
-  const id = useId();
-  const params = useSearchParams();
-  const selection = params.get(name) || ALL;
-  return (
-    <div className="min-w-0 space-y-1.5">
-      <label htmlFor={id} className="block text-xs font-medium text-muted-foreground">
-        {label}
-      </label>
-      <Select
-        value={option(selection)}
-        onValueChange={(value) => {
-          const url = new URL(window.location.href);
-          if (value === ALL_OPTION) url.searchParams.delete(name);
-          else url.searchParams.set(name, value.slice("filter:".length));
-          window.history.replaceState(null, "", url);
-        }}
-      >
-        <SelectTrigger id={id} className="min-h-11">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={ALL_OPTION}>{allLabel}</SelectItem>
-          {selection && !choices.some(([value]) => value === selection) && (
-            <SelectItem value={option(selection)}>{selection}</SelectItem>
-          )}
-          {choices.map(([value, title]) => (
-            <SelectItem key={value} value={option(value)}>
-              {title}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  );
+function clearFilters() {
+  updateFilters({ person: "", tag: "" });
 }
 
 export function PersonUpdatesTitle() {
@@ -135,40 +93,80 @@ export function PersonUpdatesReader() {
       </ListCard>
     );
 
-  const people = new Map<string, string>();
-  const tags = new Set<string>();
-  for (const item of items) {
-    if (!people.has(item.person)) people.set(item.person, item.person_cn);
-    for (const tag of item.tags) tags.add(tag);
-  }
-  const person = search.get("person");
-  const tag = search.get("tag");
+  const people = personUpdatePeople(items, Date.now());
+  const tags = Array.from(new Set(items.flatMap((item) => item.tags))).sort((a, b) =>
+    a.localeCompare(b),
+  );
+  const person = search.get("person") || "";
+  const tag = search.get("tag") || "";
   const filtered = items.filter(
     (item) => (!person || item.person === person) && (!tag || item.tags.includes(tag)),
   );
+  const personLabel = people.find((entry) => entry.name === person)?.label || person;
+  const summary = [personLabel, tag].filter(Boolean).join(" · ");
+  const personOptions = [
+    { value: "", label: c("All people", "全部人物") },
+    ...people.map((entry) => ({ value: entry.name, label: entry.label })),
+  ];
+  if (person && !personOptions.some((entry) => entry.value === person)) {
+    personOptions.push({ value: person, label: person });
+  }
+  const topicOptions = [
+    { value: "", label: c("All topics", "全部主题") },
+    ...tags.map((value) => ({ value, label: value })),
+  ];
+  if (tag && !tags.includes(tag)) topicOptions.push({ value: tag, label: tag });
+
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
-        <div className="grid w-full max-w-lg grid-cols-2 gap-3">
-          <TrackerFilter
-            name="person"
-            label={c("Person", "人物")}
-            allLabel={c("All people", "全部人物")}
-            choices={[...people].sort((a, b) => a[1].localeCompare(b[1]))}
-          />
-          <TrackerFilter
-            name="tag"
-            label={c("Topic", "主题")}
-            allLabel={c("All topics", "全部主题")}
-            choices={[...tags].sort((a, b) => a.localeCompare(b)).map((value) => [value, value])}
-          />
-        </div>
-        <p role="status" className="text-xs tabular-nums text-muted-foreground">
-          {c(
-            `${filtered.length} ${filtered.length === 1 ? "update" : "updates"}`,
-            `${filtered.length} 条动态`,
+    <div className="min-w-0 space-y-4">
+      <PersonUpdatesPeopleRail
+        people={people}
+        selected={person}
+        onSelect={(value) => updateFilters({ person: value })}
+      />
+      <div className="flex min-w-0 items-center justify-between gap-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+          <p role="status" className="shrink-0 text-xs tabular-nums text-muted-foreground">
+            {c(
+              `${filtered.length} ${filtered.length === 1 ? "update" : "updates"}`,
+              `${filtered.length} 条动态`,
+            )}
+          </p>
+          {tag && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="min-h-11 min-w-0 gap-1.5 rounded-full"
+              aria-label={c(`Remove topic ${tag}`, `移除主题 ${tag}`)}
+              onClick={() => updateFilters({ tag: "" })}
+            >
+              <span className="min-w-0 truncate">{tag}</span>
+              <X aria-hidden="true" className="size-3.5 shrink-0" />
+            </Button>
           )}
-        </p>
+        </div>
+        <FilterSheet
+          allScreens
+          title={c("Filter updates", "筛选动态")}
+          triggerLabel={c("Filters", "筛选")}
+          summary={summary || undefined}
+          active={Boolean(person || tag)}
+          onReset={clearFilters}
+        >
+          <FilterSheetGroup
+            label={c("Person", "人物")}
+            options={personOptions}
+            value={person}
+            onChange={(value) => updateFilters({ person: value })}
+          />
+          <FilterSheetGroup
+            label={c("Topic", "主题")}
+            options={topicOptions}
+            value={tag}
+            onChange={(value) => updateFilters({ tag: value })}
+          />
+        </FilterSheet>
       </div>
       {filtered.length ? (
         <PersonUpdateTimeline items={filtered} />
@@ -177,15 +175,7 @@ export function PersonUpdatesReader() {
           <ListEmptyState
             title={c("No updates match these filters.", "没有符合筛选条件的动态。")}
             action={
-              <Button
-                variant="outline"
-                onClick={() => {
-                  const url = new URL(window.location.href);
-                  url.searchParams.delete("person");
-                  url.searchParams.delete("tag");
-                  window.history.replaceState(null, "", url);
-                }}
-              >
+              <Button variant="outline" onClick={clearFilters}>
                 {c("Clear filters", "清除筛选")}
               </Button>
             }
