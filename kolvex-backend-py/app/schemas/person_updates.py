@@ -46,6 +46,7 @@ class PersonUpdate(BaseModel):
     impact: Literal["high", "medium", "low"]
     tags: list[NonEmpty] = Field(default_factory=list)
     tickers: list[NonEmpty] = Field(default_factory=list)
+    avatar_url: NonEmpty | None = None
     image_url: NonEmpty | None = None
     image_alt: NonEmpty | None = None
 
@@ -62,7 +63,7 @@ class PersonUpdate(BaseModel):
                 pass
         raise PydanticCustomError("zoned_time", "Use a valid ISO 8601 timestamp with a timezone")
 
-    @field_validator("source_url", "image_url")
+    @field_validator("source_url", "avatar_url", "image_url")
     @classmethod
     def validate_url(cls, value: str | None) -> str | None:
         if value is None:

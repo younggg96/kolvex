@@ -19,7 +19,7 @@
 | `/chart-drawings` | 按股票读取和保存用户图表画线 |
 | `/paper-trading` | 虚拟账户、报价校验、下单命令、交易复盘的发布与撤回 |
 | `/research-workspaces` | 研究工作区、关联聊天、研究运行记录 |
-| `/person-updates`、`/admin/person-updates` | 人物动态公开时间线、管理员 JSON 校验与批量覆盖写入 |
+| `/person-updates`、`/admin/person-updates` | 人物动态公开时间线、管理员 JSON 校验与批量覆盖写入，支持头像和事件配图链接 |
 | `/briefs` | 早晚报列表、日历、详情（管理员增删改） |
 | `/news` | 新闻终端的标题流，可附带后台准备的中文译文 |
 | `/reddit-opinions` | ApeWisdom Reddit 股票讨论热度榜 |

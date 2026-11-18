@@ -1790,12 +1790,14 @@ meaning and reporting periods.
 
 Person Updates / 人物动态 appears in the workspace's Read group (and its mobile
 More menu) at `/dashboard/person-updates`. It shares the timeline with public
-`/tracker`. The timeline uses separate time and content columns on wide screens
-and stacks them on narrow screens. PT is primary and ET and Beijing
-time remain visible, including their local dates. Person and tag share the
-standard Select and each selected filter is reflected in the URL. Entries show
-the original content, text impact labels, a source link, and an optional image
-with alt text. A failed image leaves the entry readable.
+`/tracker`. One shared ListCard contains the feed. A row opens with the
+person's circular avatar, name and impact badge. The three timestamps share a
+wrapping line and preserve their local dates, with PT first. The title and
+summary are followed by an optional full-aspect event image, topic and ticker
+badges, and an external source link with its hostname. A missing or failed
+avatar uses the first character of the name. Missing or failed event images
+leave the remaining row intact. Visible person and topic labels accompany the
+standard Select controls, and each selected filter is reflected in the URL.
 
 The Admin 人物动态 tab uses the shared Textarea and three text buttons for paste,
 validate and preview, save, and clearing the editor. Preview reuses the reader's

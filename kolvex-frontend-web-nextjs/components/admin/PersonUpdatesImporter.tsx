@@ -108,7 +108,11 @@ export default function PersonUpdatesImporter() {
         aria-label={c("Import result", "导入结果")}
       >
         <p role="status" className="m-0 whitespace-pre-wrap break-words text-sm">
-          {result || c("Waiting for validation or save.", "等待校验或保存。")}
+          {result ||
+            c(
+              "Use avatar_url for a portrait and image_url with image_alt for an event photo. Use HTTPS image links.",
+              "头像填写 avatar_url，事件配图填写 image_url 和 image_alt。图片链接使用 HTTPS。",
+            )}
         </p>
         {preview.length > 0 && <PersonUpdateTimeline items={preview} />}
       </div>

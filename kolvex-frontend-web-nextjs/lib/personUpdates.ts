@@ -9,6 +9,7 @@ export interface PersonUpdate {
   impact: "high" | "medium" | "low";
   tags: string[];
   tickers: string[];
+  avatar_url?: string | null;
   image_url: string | null;
   image_alt: string | null;
 }

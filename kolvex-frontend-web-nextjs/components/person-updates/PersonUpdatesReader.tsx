@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useCopy } from "@/components/decision/shared";
 import { Button } from "@/components/ui/button";
 import { ContentLoading } from "@/components/ui/content-loading";
+import { ListCard, ListEmptyState } from "@/components/ui/list-card";
 import {
   Select,
   SelectContent,
@@ -31,33 +32,39 @@ function TrackerFilter({
   choices: [string, string][];
   name: "person" | "tag";
 }) {
+  const id = useId();
   const params = useSearchParams();
   const selection = params.get(name) || ALL;
   return (
-    <Select
-      value={option(selection)}
-      onValueChange={(value) => {
-        const url = new URL(window.location.href);
-        if (value === ALL_OPTION) url.searchParams.delete(name);
-        else url.searchParams.set(name, value.slice("filter:".length));
-        window.history.replaceState(null, "", url);
-      }}
-    >
-      <SelectTrigger aria-label={label} className="min-h-11">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value={ALL_OPTION}>{allLabel}</SelectItem>
-        {selection && !choices.some(([value]) => value === selection) && (
-          <SelectItem value={option(selection)}>{selection}</SelectItem>
-        )}
-        {choices.map(([value, title]) => (
-          <SelectItem key={value} value={option(value)}>
-            {title}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <div className="min-w-0 space-y-1.5">
+      <label htmlFor={id} className="block text-xs font-medium text-muted-foreground">
+        {label}
+      </label>
+      <Select
+        value={option(selection)}
+        onValueChange={(value) => {
+          const url = new URL(window.location.href);
+          if (value === ALL_OPTION) url.searchParams.delete(name);
+          else url.searchParams.set(name, value.slice("filter:".length));
+          window.history.replaceState(null, "", url);
+        }}
+      >
+        <SelectTrigger id={id} className="min-h-11">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ALL_OPTION}>{allLabel}</SelectItem>
+          {selection && !choices.some(([value]) => value === selection) && (
+            <SelectItem value={option(selection)}>{selection}</SelectItem>
+          )}
+          {choices.map(([value, title]) => (
+            <SelectItem key={value} value={option(value)}>
+              {title}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }
 
@@ -101,24 +108,31 @@ export function PersonUpdatesReader() {
 
   if (failed)
     return (
-      <div role="alert" className="flex flex-wrap items-center gap-3 text-sm">
-        <p>{c("The timeline could not be loaded.", "暂时无法加载人物动态。")}</p>
-        <Button
-          variant="outline"
-          onClick={() => {
-            setFailed(false);
-            setAttempt((current) => current + 1);
-          }}
-        >
-          {c("Retry", "重试")}
-        </Button>
-      </div>
+      <ListCard>
+        <ListEmptyState
+          alert
+          title={c("The timeline could not be loaded.", "暂时无法加载人物动态。")}
+          action={
+            <Button
+              variant="outline"
+              onClick={() => {
+                setFailed(false);
+                setAttempt((current) => current + 1);
+              }}
+            >
+              {c("Retry", "重试")}
+            </Button>
+          }
+        />
+      </ListCard>
     );
 
   if (!items) return <PersonUpdatesLoading />;
   if (!items.length)
     return (
-      <p className="text-sm text-muted-foreground">{c("No updates yet.", "暂无人物动态。")}</p>
+      <ListCard>
+        <ListEmptyState title={c("No updates yet.", "暂无人物动态。")} />
+      </ListCard>
     );
 
   const people = new Map<string, string>();
@@ -134,37 +148,49 @@ export function PersonUpdatesReader() {
   );
   return (
     <div className="space-y-5">
-      <div className="grid max-w-lg grid-cols-2 gap-3">
-        <TrackerFilter
-          name="person"
-          label={c("Filter by person", "按人物筛选")}
-          allLabel={c("All people", "全部人物")}
-          choices={[...people].sort((a, b) => a[1].localeCompare(b[1]))}
-        />
-        <TrackerFilter
-          name="tag"
-          label={c("Filter by tag", "按标签筛选")}
-          allLabel={c("All tags", "全部标签")}
-          choices={[...tags].sort((a, b) => a.localeCompare(b)).map((value) => [value, value])}
-        />
+      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+        <div className="grid w-full max-w-lg grid-cols-2 gap-3">
+          <TrackerFilter
+            name="person"
+            label={c("Person", "人物")}
+            allLabel={c("All people", "全部人物")}
+            choices={[...people].sort((a, b) => a[1].localeCompare(b[1]))}
+          />
+          <TrackerFilter
+            name="tag"
+            label={c("Topic", "主题")}
+            allLabel={c("All topics", "全部主题")}
+            choices={[...tags].sort((a, b) => a.localeCompare(b)).map((value) => [value, value])}
+          />
+        </div>
+        <p role="status" className="text-xs tabular-nums text-muted-foreground">
+          {c(
+            `${filtered.length} ${filtered.length === 1 ? "update" : "updates"}`,
+            `${filtered.length} 条动态`,
+          )}
+        </p>
       </div>
       {filtered.length ? (
         <PersonUpdateTimeline items={filtered} />
       ) : (
-        <div className="flex flex-wrap items-center gap-3 text-sm">
-          <p>{c("No updates match these filters.", "没有符合筛选条件的动态。")}</p>
-          <Button
-            variant="outline"
-            onClick={() => {
-              const url = new URL(window.location.href);
-              url.searchParams.delete("person");
-              url.searchParams.delete("tag");
-              window.history.replaceState(null, "", url);
-            }}
-          >
-            {c("Clear filters", "清除筛选")}
-          </Button>
-        </div>
+        <ListCard>
+          <ListEmptyState
+            title={c("No updates match these filters.", "没有符合筛选条件的动态。")}
+            action={
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const url = new URL(window.location.href);
+                  url.searchParams.delete("person");
+                  url.searchParams.delete("tag");
+                  window.history.replaceState(null, "", url);
+                }}
+              >
+                {c("Clear filters", "清除筛选")}
+              </Button>
+            }
+          />
+        </ListCard>
       )}
     </div>
   );

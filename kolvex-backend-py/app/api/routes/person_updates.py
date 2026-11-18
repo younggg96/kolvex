@@ -68,7 +68,7 @@ def timeline(db: Client = Depends(get_supabase_service)):
             response = (
                 db.table("person_updates")
                 .select(
-                    "id,person,person_cn,published_at,title,summary,source_url,impact,tags,tickers,image_url,image_alt"
+                    "id,person,person_cn,published_at,title,summary,source_url,impact,tags,tickers,avatar_url,image_url,image_alt"
                 )
                 .order("published_at", desc=True)
                 .order("id", desc=True)

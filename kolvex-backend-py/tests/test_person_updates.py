@@ -28,13 +28,21 @@ def test_plain_and_illustrated_items():
         "published_at": "2026-11-18T07:44:00+00:00",
         "tags": [],
         "tickers": [],
+        "avatar_url": None,
         "image_url": None,
         "image_alt": None,
     }
     illustrated, errors = validate(
-        {**ENTRY, "image_url": "https://example.com/image.png", "image_alt": "配图说明"}
+        {
+            **ENTRY,
+            "avatar_url": "https://example.com/avatar.png",
+            "image_url": "https://example.com/image.png",
+            "image_alt": "配图说明",
+        }
     )
     assert not errors
+    assert illustrated[0]["avatar_url"] == "https://example.com/avatar.png"
+    assert illustrated[0]["image_url"] == "https://example.com/image.png"
     assert illustrated[0]["image_alt"] == "配图说明"
 
 
@@ -70,6 +78,8 @@ def test_json_syntax_reports_position():
         ({"source_url": "https:///example.com"}, "source_url"),
         ({"image_url": "https://example.com/image.png"}, "image_alt"),
         ({"image_alt": "Photo"}, "image_alt"),
+        ({"avatar_url": "http://example.com/avatar.png"}, "avatar_url"),
+        ({"avatar_url": "data:image/png;base64,AAAA"}, "avatar_url"),
         ({"image_url": "https://example.com:99999/a", "image_alt": "Photo"}, "image_url"),
         ({"tags": ["tag", 1]}, "tags.1"),
     ],
