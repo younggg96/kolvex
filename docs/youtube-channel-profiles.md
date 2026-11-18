@@ -4,6 +4,10 @@ The creator name in the YouTube opinions page opens a public channel profile.
 The profile includes avatar/name, description, public subscriber count, public
 video count, view count, channel link and the creator's imported stock opinions.
 
+## Web creator directory
+
+On the YouTube opinions page, the By Creator tab opens as a horizontal avatar rail. Select an avatar to visit that creator’s existing detail page. A New badge marks the latest opinion on the current New York calendar day. View all opens the detailed list with channel handles, update dates and opinion counts. Avatar view switches back. Search, sentiment filters and sorting apply to both views.
+
 ## Automatic lookup
 
 Enable **YouTube Data API v3** in a Google Cloud project. Configure its API key as

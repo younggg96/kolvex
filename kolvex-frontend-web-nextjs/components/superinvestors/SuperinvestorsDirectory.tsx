@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ChevronRight, RefreshCw } from "lucide-react";
+import { ChevronRight, Landmark, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ContentLoading } from "@/components/ui/content-loading";
@@ -13,7 +13,7 @@ import {
   ListReveal,
   listRevealClass,
 } from "@/components/ui/list-card";
-import { SegmentedControl } from "@/components/ui/segmented-control";
+import { FilterSheet, FilterSheetGroup } from "@/components/ui/filter-sheet";
 import { SourceNote } from "@/components/decision/SecData";
 import { useFinancialFormat } from "@/components/decision/StockFinancialData";
 import { useCopy } from "@/components/decision/shared";
@@ -103,6 +103,11 @@ export default function SuperinvestorsDirectory() {
     void loadManagers(undefined, true).catch(() => {});
     refreshDirectory();
   };
+  const sortOptions: { value: Sort; label: string }[] = [
+    { value: "latest", label: c("Latest filing", "最新申报") },
+    { value: "size", label: c("Size", "规模") },
+    { value: "activity", label: c("Most active", "调仓最多") },
+  ];
   const entries = data ?? [];
   const loaded = entries.filter((entry): entry is Loaded => Boolean(entry.summary?.filing));
   const failed = entries.filter((entry) => !entry.summary);
@@ -146,7 +151,21 @@ export default function SuperinvestorsDirectory() {
   })();
 
   return (
-    <div className="space-y-8 md:space-y-10">
+    <section
+      aria-labelledby="superinvestors-list-title"
+      className="mt-10 min-w-0 space-y-6 border-t border-border pt-8 md:mt-12 md:space-y-8 md:pt-10"
+    >
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <Landmark aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
+        <h2 id="superinvestors-list-title" className="text-xl font-semibold">
+          {c("13F institution directory", "13F 机构目录")}
+        </h2>
+        {data && (
+          <span className="text-xs tabular-nums text-muted-foreground">
+            {c(`${entries.length} institutions`, `${entries.length} 家机构`)}
+          </span>
+        )}
+      </div>
       {loading && !data ? (
         <div className="space-y-6">
           <ContentLoading
@@ -172,12 +191,9 @@ export default function SuperinvestorsDirectory() {
         <>
           {lead && <LeadCard entry={lead} />}
 
-          <section aria-labelledby="superinvestors-list-title" className="space-y-6">
+          <div className="space-y-6">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div className="min-w-0">
-                <h2 id="superinvestors-list-title" className="text-lg font-semibold md:text-xl">
-                  {c(`${entries.length} investors`, `${entries.length} 位投资者`)}
-                </h2>
                 {loaded.length > 0 && (
                   <p className="mt-1 text-xs text-muted-foreground">
                     {c("Combined reported value", "合计申报市值")}{" "}
@@ -194,17 +210,21 @@ export default function SuperinvestorsDirectory() {
                 )}
               </div>
               <div className="flex items-center gap-1">
-                <SegmentedControl
-                  size="sm"
-                  label={c("Sort investors", "投资者排序")}
-                  value={sort}
-                  onChange={setSort}
-                  options={[
-                    { value: "latest", label: c("Latest filing", "最新申报") },
-                    { value: "size", label: c("Size", "规模") },
-                    { value: "activity", label: c("Most active", "调仓最多") },
-                  ]}
-                />
+                <FilterSheet
+                  allScreens
+                  title={c("Sort institution filings", "机构申报排序")}
+                  triggerLabel={c("Sort", "排序")}
+                  summary={sortOptions.find((option) => option.value === sort)?.label}
+                  active={sort !== "latest"}
+                  onReset={() => setSort("latest")}
+                >
+                  <FilterSheetGroup
+                    label={c("Sort by", "排序方式")}
+                    value={sort}
+                    onChange={setSort}
+                    options={sortOptions}
+                  />
+                </FilterSheet>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -263,10 +283,10 @@ export default function SuperinvestorsDirectory() {
                 </Button>
               </div>
             )}
-          </section>
+          </div>
         </>
       )}
-    </div>
+    </section>
   );
 }
 
@@ -297,14 +317,14 @@ function LeadCard({ entry }: { entry: Loaded }) {
               <p className="text-xs font-medium text-muted-foreground">
                 {c("Largest reported value", "申报市值最大")}
               </p>
-              <h2 id="superinvestor-lead-title" className="mt-1 truncate text-xl font-semibold">
+              <h3 id="superinvestor-lead-title" className="mt-1 truncate text-xl font-semibold">
                 <Link
                   href={superinvestorHref(entry.manager.id)}
                   className="underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none"
                 >
                   {entry.manager.name}
                 </Link>
-              </h2>
+              </h3>
               {byline(entry.manager.id, true, entry.manager.profile) && (
                 <p className="mt-0.5 truncate text-sm text-muted-foreground">
                   {byline(entry.manager.id, true, entry.manager.profile)}

@@ -1026,13 +1026,17 @@ retry buttons remain separate from the link, with independent keyboard focus.
 
 ### Featured investors
 
-The Superinvestors directory starts with one selector for the nine featured names.
-The active institution uses a single card with its largest disclosed share positions
-on the left and the selected stock's return curve on the right. On phones the
-positions precede the chart. A row selects its curve and visibly retains its state.
-Chart totals include signs and the actual date range. The 13F simulation toggle
-uses the same chart space, with SPY as a dashed comparison. Pelosi uses the same
-layout with disclosed trades and amount ranges in the list.
+The featured spotlight uses a horizontal AvatarRail with portraits or name
+monograms. Choosing a tile switches the spotlight card below it. For 13F
+filings, the card displays the person and the reporting institution. Portrait
+credits appear after the spotlight. The card places
+the five largest disclosed share positions before the 13F simulated return
+chart, with SPY as a comparison. Pelosi uses the same card structure for
+disclosed trades and the selected stock's return.
+
+The separate 13F institution directory has a divider, section heading, firm
+marks, and a Sort button using the shared FilterSheet. Directory sorting never
+changes the active spotlight.
 
 ### Market activity lists
 
@@ -1300,7 +1304,9 @@ Browser database access remains denied; verify_admin owns all write operations.
 `/dashboard/x-opinions` uses DashboardLayout and OpinionSourceNav, with the
 existing semantic tokens and shared Button/Input controls. Desktop places the creator directory in a 300px right rail beside a single
 chronological feed, matching the YouTube overview. Mobile stacks the directory
-above it. Posts use hairline-separated rows on the page background, with the shared
+above it. The shared AvatarRail filters the feed by author and swaps the analysis
+spotlight in the same card. Its AI badge appears only for an available summary.
+All creators restores the unfiltered feed and shows an available analysis. Posts use hairline-separated rows on the page background, with the shared
 Avatar and initial fallback. Public profile facts include biography, website, location
 and known follower/following counts; absent facts are omitted. Profile administration
 can load and edit these fields. Post text, quotes and biographies translate automatically to the saved user
@@ -1711,6 +1717,15 @@ core opinion data is available. Do not render empty subsection cards or repeated
 spinners during that initial read. Cached content stays readable during background
 refresh. Upload coverage starts after core content, and detail pages do not fetch
 the global catalogue just to populate their header.
+
+The By Creator directory starts with the shared horizontal AvatarRail. Selecting
+an avatar opens the existing creator detail, with native link behavior for
+modified clicks. View all switches to the detailed rows and Avatar view returns
+to the rail. Both use the same searched, filtered and sorted creator set. The
+shared filter sheet owns sentiment and sort on this tab at every breakpoint.
+New marks opinion activity on the current New York calendar day. AvatarRail
+uses the canonical staggered list entrance and a small press/selection
+transition. Reduced motion disables those animations and smooth scrolling.
 
 ### Virtual trading after-hours valuation
 

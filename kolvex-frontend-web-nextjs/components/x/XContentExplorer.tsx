@@ -111,6 +111,10 @@ export default function XContentExplorer() {
                 creatorError={creatorError}
                 retryCreators={() => setCreatorAttempt((value) => value + 1)}
                 creatorPostsHref={(username) => href({ author: username })}
+                selectCreator={(username) => {
+                  if (username !== author)
+                    router.push(href({ author: username }), { scroll: false });
+                }}
               />
             </aside>
             <div className="order-2 min-w-0 space-y-4 xl:order-1">

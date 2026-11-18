@@ -89,6 +89,7 @@ test("video card renders macro analysis with attribution and no stock row", () =
   );
   const module = { exports: {} };
   const stub = () => null;
+  const contentLanguage = loadHelper("contentLanguage");
   const deps = {
     react: React,
     "react/jsx-runtime": require("react/jsx-runtime"),
@@ -98,7 +99,16 @@ test("video card renders macro analysis with attribution and no stock row", () =
     "@/lib/utils": { cn: (...args) => args.filter(Boolean).join(" "), proxyImageUrl: (url) => url },
     "./OpinionStrength": { default: stub },
     "@/lib/opinionDates": loadHelper("opinionDates"),
-    "@/lib/contentLanguage": loadHelper("contentLanguage"),
+    "@/lib/contentLanguage": contentLanguage,
+    "@/components/common/TranslatedText": {
+      default: ({ as = "span", text, className }) =>
+        React.createElement(
+          as,
+          { lang: contentLanguage.chineseTextLanguage(text), className },
+          text,
+        ),
+      useEnglishTranslation: (text) => ({ text, translated: false }),
+    },
     "./CreatorAvatar": { default: stub },
   };
   vm.runInNewContext(

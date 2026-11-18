@@ -6,6 +6,7 @@ import { ChevronRight } from "lucide-react";
 import { SecLink, useFreeResearch } from "@/components/decision/SecData";
 import { useFinancialFormat } from "@/components/decision/StockFinancialData";
 import { useCopy } from "@/components/decision/shared";
+import { AvatarRail } from "@/components/ui/avatar-rail";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import CompanyLogo from "@/components/ui/company-logo";
@@ -27,9 +28,17 @@ import {
 } from "@/lib/freeResearch";
 import { cn } from "@/lib/utils";
 import { PortfolioReturnChart, SpotlightStatus, StockReturnChart } from "./InvestorReturnChart";
-import { InvestorAvatar, superinvestorHref } from "./shared";
+import {
+  FeaturedInvestorPortrait,
+  FeaturedInvestorPortraitCredits,
+} from "./FeaturedInvestorPortrait";
+import { superinvestorHref } from "./shared";
 
 const PELOSI = "pelosi";
+const FEATURED_PERSON_NAMES: Partial<Record<number, { en: string; zh: string }>> = {
+  1350694: { en: "Ray Dalio", zh: "达利欧" },
+  1065521: { en: "Masayoshi Son", zh: "孙正义" },
+};
 
 export default function FeaturedInvestors() {
   const c = useCopy();
@@ -38,54 +47,34 @@ export default function FeaturedInvestors() {
   const manager = list.data?.managers.find(({ cik }) => String(cik) === selected);
   const choices = [
     ...FEATURED_INSTITUTIONS.map(({ cik, en, zh }) => {
-      const match = list.data?.managers.find((row) => row.cik === cik);
-      return {
-        id: String(cik),
-        label: c(en, zh),
-        avatar: match ? <InvestorAvatar id={match.id} name={match.name} size="xs" /> : null,
-      };
+      const name = FEATURED_PERSON_NAMES[cik] ?? { en, zh };
+      const id = String(cik);
+      return { id, label: c(name.en, name.zh), monogramName: name.en };
     }),
-    {
-      id: PELOSI,
-      label: c("Pelosi", "佩洛西"),
-      avatar: <InvestorAvatar id={PELOSI} name="Nancy Pelosi" size="xs" />,
-    },
+    { id: PELOSI, label: c("Pelosi", "佩洛西"), monogramName: "Nancy Pelosi" },
   ];
+  const choice = choices.find(({ id }) => id === selected);
 
   return (
-    <section aria-labelledby="featured-investors-heading" className="mb-8 space-y-4 md:mb-10">
+    <section aria-labelledby="featured-investors-heading" className="min-w-0 space-y-4">
       <h2 id="featured-investors-heading" className="text-xl font-semibold">
         {c("Featured investors", "明星投资者")}
       </h2>
-      <div
-        role="group"
-        aria-label={c("Choose an investor", "选择明星投资者")}
-        className="flex flex-wrap gap-2"
-      >
-        {choices.map(({ id, label, avatar }) => (
-          <Button
-            key={id}
-            type="button"
-            size="chip"
-            variant="chip"
-            selected={id === selected}
-            className={cn(
-              "min-h-11 gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary",
-              avatar && "pl-1.5",
-            )}
-            aria-pressed={id === selected}
-            onClick={() => setSelected(id)}
-          >
-            {avatar}
-            {label}
-          </Button>
-        ))}
-      </div>
+      <AvatarRail
+        items={choices.map(({ id, label, monogramName }) => ({
+          id,
+          label,
+          avatar: <FeaturedInvestorPortrait id={id} name={monogramName} />,
+        }))}
+        label={c("Choose a featured investor", "选择明星投资者")}
+        selected={selected}
+        onSelect={setSelected}
+      />
       <Card className="min-w-0 p-4 md:p-6">
         {selected === PELOSI ? (
           <PelosiSpotlight />
-        ) : manager ? (
-          <InstitutionSpotlight key={manager.id} manager={manager} />
+        ) : manager && choice ? (
+          <InstitutionSpotlight key={manager.id} manager={manager} person={choice} />
         ) : list.loading || list.error ? (
           <SpotlightStatus
             loading={list.loading}
@@ -105,6 +94,7 @@ export default function FeaturedInvestors() {
           />
         )}
       </Card>
+      <FeaturedInvestorPortraitCredits />
     </section>
   );
 }
@@ -134,22 +124,32 @@ function SpotlightHeader({
   );
 }
 
-function InstitutionSpotlight({ manager }: { manager: InstitutionManager }) {
+function InstitutionSpotlight({
+  manager,
+  person,
+}: {
+  manager: InstitutionManager;
+  person: { id: string; label: string; monogramName: string };
+}) {
   const c = useCopy();
   const f = useFinancialFormat();
   const resource = useFreeResearch<Institution>(institutionKey(manager.id));
   const data = resource.error ? undefined : resource.data;
   const rows = data?.filing ? featuredHoldings(data.holdings) : [];
   const filing = data?.filing;
+  const institutionName = c(manager.name, manager.profile?.zhName ?? manager.name);
 
   return (
     <div className="space-y-4">
       <SpotlightHeader
-        title={c(manager.name, manager.profile?.zhName ?? manager.name)}
+        title={person.label}
         detail={
           filing
-            ? c(`13F as of ${f.date(filing.period)}`, `13F 持仓截至 ${f.date(filing.period)}`)
-            : undefined
+            ? c(
+                `${institutionName} · 13F as of ${f.date(filing.period)}`,
+                `${institutionName} · 13F 持仓截至 ${f.date(filing.period)}`,
+              )
+            : institutionName
         }
         action={
           <Button variant="outline" size="sm" asChild>
@@ -160,7 +160,7 @@ function InstitutionSpotlight({ manager }: { manager: InstitutionManager }) {
           </Button>
         }
       >
-        <InvestorAvatar id={manager.id} name={manager.name} />
+        <FeaturedInvestorPortrait id={person.id} name={person.monogramName} />
       </SpotlightHeader>
       <div className="grid min-w-0 gap-5 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
         <div className="min-w-0">
@@ -288,7 +288,7 @@ function PelosiSpotlight() {
         title={c("Nancy Pelosi", "南希·佩洛西")}
         detail={c("U.S. House transaction disclosures", "美国众议院交易披露")}
       >
-        <InvestorAvatar id={PELOSI} name="Nancy Pelosi" />
+        <FeaturedInvestorPortrait id={PELOSI} name="Nancy Pelosi" />
       </SpotlightHeader>
       <div className="grid min-w-0 gap-5 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
         <div className="min-w-0 space-y-2">

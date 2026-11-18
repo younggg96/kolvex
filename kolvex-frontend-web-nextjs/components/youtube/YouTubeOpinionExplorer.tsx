@@ -12,17 +12,18 @@ import {
 import { isProductFeatureEnabled } from "@/lib/productFeatures";
 
 import Link from "next/link";
-import { formatOpinionDate, formatOpinionDateShort } from "@/lib/opinionDates";
+import { formatOpinionDate, formatOpinionDateShort, opinionDay } from "@/lib/opinionDates";
 import { useRouter } from "next/navigation";
 import PageBreadcrumb, { type BreadcrumbItem } from "@/components/layout/PageBreadcrumb";
 import { useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
-import { LineChart, Loader2, X } from "lucide-react";
+import { GalleryHorizontalEnd, LineChart, List, Loader2, X } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
   opinionHeaderActionClass,
   useOpinionHeaderActionsSlot,
 } from "@/components/layout/OpinionSourceNav";
 import { createPortal } from "react-dom";
+import { AvatarRail } from "@/components/ui/avatar-rail";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -191,6 +192,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   const [detailError, setDetailError] = useState("");
   const [search, setSearch] = useState("");
   const [showAllCreatorStocks, setShowAllCreatorStocks] = useState(false);
+  const [showCreatorList, setShowCreatorList] = useState(false);
   const creatorOverview = Boolean(route.creator && !route.ticker);
   const [toneFilter, setToneFilter] = useState<DirectoryTone>("all");
   const [sortBy, setSortBy] = useState<DirectorySort>("latest");
@@ -934,6 +936,54 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
       <EmptyLine text={t("youtubeOpinions.noCreatorsDiscussing")} />
     );
 
+  function creatorDirectory() {
+    const today = opinionDay(new Date().toISOString());
+    return (
+      <>
+        <div className="mb-1 flex justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="min-h-11 gap-2"
+            aria-controls="youtube-creator-directory-view"
+            onClick={() => setShowCreatorList((value) => !value)}
+          >
+            {showCreatorList ? (
+              <GalleryHorizontalEnd className="size-4" aria-hidden="true" />
+            ) : (
+              <List className="size-4" aria-hidden="true" />
+            )}
+            {showCreatorList ? c("Avatar view", "头像视图") : c("View all", "查看全部")}
+          </Button>
+        </div>
+        <div id="youtube-creator-directory-view">
+          {showCreatorList ? (
+            creatorRows(visibleCreators, true)
+          ) : (
+            <AvatarRail
+              items={visibleCreators.map((item) => ({
+                id: item.channel_id,
+                label: item.channel_title || item.channel_id,
+                href: routeHref({ tab: "creators", creator: item.channel_id }),
+                avatar: <Avatar creator={item} />,
+                badge:
+                  opinionDay(item.latest_opinion_at) === today
+                    ? {
+                        text: c("New", "新"),
+                        label: c("Updated today (ET)", "今日更新（美东时间）"),
+                      }
+                    : undefined,
+              }))}
+              label={t("youtubeOpinions.trackedCreators")}
+              onSelect={(creator) => void navigate({ tab: "creators", creator })}
+            />
+          )}
+        </div>
+      </>
+    );
+  }
+
   const initialLoading =
     !ready ||
     (!inDetail ? !catalogue && !catalogueError : !context && !contextError && !detailError);
@@ -1282,6 +1332,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                       <div className="flex shrink-0 items-center gap-2">
                         {!allStocks && tabSwitcher}
                         <FilterSheet
+                          allScreens={route.tab === "creators"}
                           title={t("common.filter")}
                           active={
                             toneFilter !== "all" || sortBy !== "latest" || stockScope !== "all"
@@ -1334,19 +1385,21 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                       <ListCard>
                         {/* Below lg the dock's search replaces the field and every filter and sort lives in one sheet. */}
                         <div className="flex min-w-0 flex-wrap items-center gap-x-2 mb-2 lg:flex-nowrap lg:gap-x-3">
-                          <ListToolbar className="min-w-0 flex-1 flex-nowrap max-lg:hidden lg:flex-none">
-                            <SegmentedControl
-                              label={t("youtubeOpinions.filterBySentiment")}
-                              semantics="radio"
-                              bare
-                              value={toneFilter}
-                              onChange={setToneFilter}
-                              options={toneOptions}
-                              className="min-w-0 shrink scrollbar-hide overflow-x-auto lg:shrink-0 lg:gap-1 lg:overflow-visible"
-                              size="sm"
-                              itemClassName="font-medium max-lg:!px-2 max-lg:!text-xs lg:min-h-10 lg:px-4 lg:text-sm"
-                            />
-                          </ListToolbar>
+                          {route.tab === "stocks" && (
+                            <ListToolbar className="min-w-0 flex-1 flex-nowrap max-lg:hidden lg:flex-none">
+                              <SegmentedControl
+                                label={t("youtubeOpinions.filterBySentiment")}
+                                semantics="radio"
+                                bare
+                                value={toneFilter}
+                                onChange={setToneFilter}
+                                options={toneOptions}
+                                className="min-w-0 shrink scrollbar-hide overflow-x-auto lg:shrink-0 lg:gap-1 lg:overflow-visible"
+                                size="sm"
+                                itemClassName="font-medium max-lg:!px-2 max-lg:!text-xs lg:min-h-10 lg:px-4 lg:text-sm"
+                              />
+                            </ListToolbar>
+                          )}
                           <div className="contents lg:flex lg:min-w-0 lg:flex-1 lg:flex-nowrap lg:items-center lg:gap-2">
                             <CommandSearch
                               className="hidden shrink lg:block lg:w-64 xl:w-72"
@@ -1400,26 +1453,28 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                                 )}
                               </div>
                             )}
-                            <div className="ml-auto flex shrink-0 items-center justify-end max-lg:hidden">
-                              <Select
-                                value={sortBy}
-                                onValueChange={(value) => setSortBy(value as DirectorySort)}
-                              >
-                                <SelectTrigger
-                                  aria-label={t("common.sort")}
-                                  className="h-11 w-auto"
+                            {route.tab === "stocks" && (
+                              <div className="ml-auto flex shrink-0 items-center justify-end max-lg:hidden">
+                                <Select
+                                  value={sortBy}
+                                  onValueChange={(value) => setSortBy(value as DirectorySort)}
                                 >
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent align="end">
-                                  {sortOptions.map((option) => (
-                                    <SelectItem key={option.value} value={option.value}>
-                                      {option.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
+                                  <SelectTrigger
+                                    aria-label={t("common.sort")}
+                                    className="h-11 w-auto"
+                                  >
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent align="end">
+                                    {sortOptions.map((option) => (
+                                      <SelectItem key={option.value} value={option.value}>
+                                        {option.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            )}
                           </div>
                         </div>
                         {catalogueError ? (
@@ -1440,8 +1495,9 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                               {stockRows(true)}
                             </TabsContent>
                             <TabsContent value="creators" className="mt-0">
-                              {creatorRows(visibleCreators, true)}
-                              {!visibleCreators.length && (
+                              {visibleCreators.length ? (
+                                creatorDirectory()
+                              ) : (
                                 <EmptyLine
                                   text={
                                     filtering
