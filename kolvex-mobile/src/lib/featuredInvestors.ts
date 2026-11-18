@@ -12,13 +12,25 @@ export const FEATURED_INSTITUTIONS = [
   { cik: 1029160, en: "Soros", zh: "索罗斯" },
 ] as const;
 
-export const RETURN_RANGES = ["3m", "6m", "1y"] as const;
+export const RETURN_RANGES = ["1m", "3m", "6m", "ytd"] as const;
 export type ReturnRange = (typeof RETURN_RANGES)[number];
-const RANGE_DAYS: Record<ReturnRange, number> = {
-  "3m": 90,
-  "6m": 182,
-  "1y": 365,
+const RANGE_MONTHS: Record<Exclude<ReturnRange, "ytd">, number> = {
+  "1m": 1,
+  "3m": 3,
+  "6m": 6,
 };
+
+/** First day of the window that ends on `end` (YYYY-MM-DD): calendar months back, or Jan 1 for YTD. */
+export function rangeStart(end: string, range: ReturnRange) {
+  const [year, month, day] = end.split("-").map(Number);
+  if (range === "ytd") return `${year}-01-01`;
+  const back = new Date(Date.UTC(year, month - 1 - RANGE_MONTHS[range], 1));
+  const last = new Date(
+    Date.UTC(back.getUTCFullYear(), back.getUTCMonth() + 1, 0),
+  ).getUTCDate();
+  back.setUTCDate(Math.min(day, last));
+  return back.toISOString().slice(0, 10);
+}
 
 export type ReturnPoint = { date: string; value: number; benchmark?: number };
 export type AdjustedHistory = {
@@ -29,6 +41,8 @@ export type PortfolioPerformance =
   | {
       status: "ready";
       points: { date: string; value: number; benchmark: number }[];
+      /** Same curve at daily closes for roughly the last 400 days. */
+      daily?: { date: string; value: number; benchmark: number }[];
       coverage_min: number;
     };
 
@@ -128,12 +142,51 @@ export function stockReturnPoints(
   const dates = [...prices.keys()].sort();
   const end = dates.at(-1);
   if (!end) return [];
-  const cutoff = Date.parse(end) - RANGE_DAYS[range] * 86_400_000;
-  const window = dates.filter((day) => Date.parse(day) >= cutoff);
+  const window = windowFrom(dates, rangeStart(end, range));
   const first = prices.get(window[0]);
   if (!first || window.length < 2) return [];
   return window.map((date) => ({
     date,
     value: (prices.get(date)! / first - 1) * 100,
+  }));
+}
+
+/** Sorted dates from the last one before `start` (the base close) through the end. */
+function windowFrom(dates: string[], start: string) {
+  const first = dates.findIndex((day) => day >= start);
+  if (first < 0) return [];
+  return dates.slice(Math.max(first - 1, 0));
+}
+
+/**
+ * The daily 13F model curve for one window, rebased so the base close is 0%.
+ * Values come in as fractions since the curve start and go out as percents.
+ */
+export function portfolioReturnPoints(
+  daily: { date: string; value: number; benchmark: number }[],
+  range: ReturnRange,
+): ReturnPoint[] {
+  const rows = daily
+    .filter(
+      (row) =>
+        /^\d{4}-\d{2}-\d{2}$/.test(row.date) &&
+        Number.isFinite(row.value) &&
+        Number.isFinite(row.benchmark) &&
+        row.value > -1 &&
+        row.benchmark > -1,
+    )
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const end = rows.at(-1)?.date;
+  if (!end) return [];
+  const start = rangeStart(end, range);
+  const firstIn = rows.findIndex((row) => row.date >= start);
+  // Without a close before the window, the curve does not reach back far enough to cover it.
+  if (firstIn < 1) return [];
+  const window = rows.slice(firstIn - 1);
+  const base = window[0];
+  return window.map((row) => ({
+    date: row.date,
+    value: ((1 + row.value) / (1 + base.value) - 1) * 100,
+    benchmark: ((1 + row.benchmark) / (1 + base.benchmark) - 1) * 100,
   }));
 }

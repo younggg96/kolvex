@@ -4,26 +4,24 @@
 
 ## 依赖
 
-工作目录为本仓库；Python 使用 `kolvex-backend-py/venv/bin/python`。数据库连接从后端 `.env` 读取，禁止打印密钥。浏览器仅使用 `mcp__cua_repl` 的受支持 API，不导出或读取 Cookie、登录 Token、Local Storage 或隐藏 React 状态，不使用独立 Playwright/CDP 驱动。
+工作目录为本仓库；Python 使用 `kolvex-backend-py/venv/bin/python`。数据库连接从后端 `.env` 读取，禁止打印密钥。
+
+用户已明确授权切换到本机 Playwright 无 AI 采集。默认使用 `run.sh`、`workflow.py` 和 `browser.mjs`，专用 Chrome 配置目录由用户手动登录。程序不读取或导出 Cookie、登录 Token、Local Storage 或隐藏 React 状态，不复制用户日常 Chrome 配置。原 Codex 桌面任务暂停。
 
 ## 每轮流程
 
-定时任务和手动运行使用同一套入口。从仓库根目录运行 `sync.py prepare <新的运行目录>`，它先重试已持久化批次，再保存本轮 `plan.json`。建议把每轮目录放在 `side-projects/x-posts/data/incoming/`，使用唯一的 UTC 时间作为目录名。初始化 cua_repl 后，在本轮新建的 Chrome 临时页上运行以下代码，把路径替换为绝对路径。每次工具调用可处理一个或几个账号，较长的时间线单独调用。
+从仓库根目录执行 `./side-projects/x-posts/run.sh run`。编排器恢复未提交导出，调用现有准备流程重试已保存批次，并在唯一运行目录保存 `plan.json`。之后运行 Playwright 浏览器适配器，逐个处理本轮名单。适配器调用 `createXCollector`，复用同一提取器和去重规则。
 
-```js
-const { createXCollector } = await import(root + "/collect-in-cua.mjs");
-const collector = await createXCollector(tab, root, runDirectory);
-nodeRepl.write(await collector.collect(handle));
-```
+完成后关闭本轮专用浏览器，再通过 `finish_run` 调用 `ingest` 和逐批 `sync_file` 持久化及入库。运行目录位于 `data/incoming/`，摘要为各账号的 `*-summary.json`。浏览器失败仍处理已经完成的导出；缺少摘要时标记部分完成。
 
-`root` 是本目录，`tab` 是本轮创建的 Chrome 临时页，`runDirectory` 是刚才生成的目录，`handle` 来自 `collector.sources`。依次处理本轮名单后，关闭临时页并结束 CUA 操作，再执行 `sync.py finish <运行目录>`。该命令先持久化本轮导出，再逐批同步。若同步中断，下次 `prepare` 会重试已持久化的批次。若中断发生在 `finish` 前，可对原运行目录补跑 `finish`，已确认入库的导出会跳过。每轮的 `*-summary.json` 记录新增数、缺口及原因，可与上轮对比避免重复提醒。
+`run.sh install` 安装每 30 分钟执行一次的 macOS LaunchAgent；`run.sh login` 等待用户登录，成功后恢复已安装调度并立即运行一轮；`run.sh pause` 暂停调度。完整命令见 [README.md](./README.md)。
 
 以下是采集脚本和手动恢复共同遵循的规则。
 
 1. 执行 `kolvex-backend-py/venv/bin/python side-projects/x-posts/sync.py sync`，先重试已保存但未提交的文件。任一文件失败则保留现场，按错误处理，不推进检查点。
 2. 执行 `kolvex-backend-py/venv/bin/python side-projects/x-posts/sync.py plan`，取得每位博主的 URL、stop_ids、max_posts 和 max_scrolls。此名单合并本地配置与数据库博主；查库失败不得静默缩减为本地名单。
-3. 初始化/恢复 cua_repl，遵守它返回的文档。先按工具要求选定 Chrome；为新采集任务命名。优先新建临时 Chrome 页以免改变用户阅读位置。加载目标公开 Posts 时间线，确认所选 tab 是 Posts、用户名一致且登录仍有效。若页面出现登录、验证、限流或不可访问，停止该博主，保留检查点并报告用户需要处理的事项；不绕过登录或挑战。
-4. 用文件工具在 cua_repl 中读取 `extract-posts.js`，然后通过 `tab.playwright.evaluate` 执行其函数表达式 `(<文件内容>)(<username字符串>)`。该函数只读渲染 DOM，无网络调用，不访问隐藏应用状态。输出包含 posts、rejected 和 ready；ready=false 表示页面尚未加载出已知结构，不能视为无新帖。先等待已知 article 和目标时间链接，再观察 DOM；若仍未就绪，按页面变化或登录失效处理。任何 rejected 都需要检查，不能悄悄当作无新内容。
+3. 通过 Playwright 启动专用 Chrome 配置目录，先验证公开界面的账号菜单可见，再依次加载目标 Posts 时间线。确认所选 tab 是 Posts、用户名一致且登录仍有效。若出现登录、验证、限流或不可访问，停止该博主，保留检查点。不绕过登录、挑战或订阅限制。
+4. 读取 `extract-posts.js`，仅对渲染 DOM 执行其函数表达式，不调用页面内部 API、不访问隐藏应用状态。输出包含 posts、rejected 和 ready。ready=false 不能视为无新帖。先等待已知 article 和目标时间链接，再观察 DOM；仍未就绪则标记页面变化或登录失效。任何 rejected 都必须保留为缺口。
 5. 维护以字符串 ID 为键的 Map；保存每个已加载片段再滚动。已补全的正文不得被重新渲染的截断版覆盖。以同一 ID 的非截断版本优先。通过受支持的 PageDown/End/scroll 操作加载下一段，每次滚动后重新观察 DOM，不能以固定延时假定加载完成。只采集目标用户名的原创帖，跳过转发归属的内容。置顶帖可以收录，但不能用它触发停止条件。
 6. 新博主尚无 stop_ids、但已有部分入库记录时，先读取 `data/incoming/new-creators-progress.json` 以及对应 `<username>-working.json`，复用已保存的完整正文，按 expected_ids 与已完成 posts 计算待补 ID；不要依赖旧 queue 字段判断完成状态。逐条补采后立即保存 working 文件，避免会话重置丢失进度。首批仍不足安全窗口时保持 scan_complete=false，不推进边界。遇到非置顶的 stop_ids 时，保留该条作为衔接证据，标记 scan_complete=true、stop_reason=checkpoint，然后停止回溯。没有旧 stop_ids 的首次采集只取最近 50 条非置顶帖，标记 initial_window，明确不是完整历史。达到已有 stop_ids 前碰到 max_posts/max_scrolls 上限，标记 scan_complete=false、stop_reason=limit，不得把这次窗口当作新边界；需告知存在待补缺口。只有页面明确显示时间线结束时才能使用 end_of_timeline。连续加载无进展不能自行认定已结束。
 7. 若帖子有 truncated=true，在临时详情页打开采集得到的该帖 URL，等待包含该原帖 ID 的时间链接（`article a[href$="/status/<ID>"] time, article a[href$="/status/<ID>/history"] time`）出现后再运行相同提取器，不以任意 article 已出现作为详情页就绪依据，并严格按原 ID 选回记录。详情页中其他帖子、回复和推荐不加入本次。若页面自动翻译，先通过该帖的真实 Show original 控件恢复原文；必要时通过真实 Show more 控件展开；如无法取得完整原文，保留原始捕获供排查，但不要提交截断版本或推进边界。不要通过回复数缺失推断为零，也不要推断情绪。图片仅保留 X 媒体来源页面链接。
@@ -37,4 +35,4 @@ nodeRepl.write(await collector.collect(handle));
 
 ## 已知边界
 
-这是运行在 Codex 桌面本地的定时浏览器工作流，依赖本机、Codex、Chrome 与浏览器扩展可用。不是云端常驻爬虫；关机、休眠、未登录或浏览器自动化不可用时不能保证按小时采集。文本、数据-testid 或 X 界面变化可能需要修复提取器；不将“任务计划存在”描述为每轮运行必然成功。
+这是本机 launchd 调度的 Playwright 工作流，依赖本机、Node.js、Python 和专用 Chrome 会话。关机、休眠、未登录或页面不可访问时无法保证采集。文本、数据-testid 或 X 界面变化可能需要修复提取器；不将“任务计划存在”描述为每轮运行必然成功。

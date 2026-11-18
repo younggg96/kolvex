@@ -20,7 +20,6 @@
   "13F 模拟组合": "13F model",
   "13F 模拟收益对比 SPY": "Simulated 13F return vs. SPY",
   "正在等待首次计算。": "The first calculation is pending.",
-  "有可用行情的季度不足。": "Too few quarters have usable price data.",
   "按季度末披露持仓回看，申报晚于季度末。模拟不计期权和费用，结果可能与基金实际业绩不同。": "Retrospective model based on quarter-end holdings, which were disclosed later. Excludes options and fees and can differ from actual fund performance.",
   "美国众议院交易披露": "U.S. House transaction disclosures",
   "近期披露交易": "Recent disclosed trades",
@@ -28,7 +27,6 @@
   "披露仅提供交易金额区间，无法计算持仓占比或交易收益。": "Amounts are disclosed in ranges. Portfolio weights and trade returns are unavailable.",
   "暂无可查询历史行情的股票代码。": "No ticker with price history is available.",
   "该区间的行情数据不足。": "Too few prices in this period.",
-  "来源为 Yahoo Finance 复权日收盘价，区间内首个可用收盘价记为 0%。": "Yahoo Finance adjusted daily closes. The first available close in the period is 0%.",
   "3个月": "3M",
   "6个月": "6M",
   "1年": "1Y",
@@ -1870,5 +1868,7 @@
   "无法加载 AI 聊天记忆": "Could not load AI chat memory",
   "无法清除 AI 聊天记忆": "Could not clear AI chat memory",
   "你的对话不会被删除。此操作无法撤销。": "Your conversations are not deleted. This cannot be undone.",
-  "AI 聊天会跨对话记住你常用的语言和它帮你查过的股票，这样只发一个股票代码之类的简短问题也能看懂。它不会记住价格或其他数字，这些每次都会重新查。": "Across conversations, the AI chat remembers the language you usually write in and the stocks it looked up for you, so short questions like just a ticker are easier to understand. It does not remember prices or other figures; those are fetched again each time."
+  "AI 聊天会跨对话记住你常用的语言和它帮你查过的股票，这样只发一个股票代码之类的简短问题也能看懂。它不会记住价格或其他数字，这些每次都会重新查。": "Across conversations, the AI chat remembers the language you usually write in and the stocks it looked up for you, so short questions like just a ticker are easier to understand. It does not remember prices or other figures; those are fetched again each time.",
+  "来源为 Yahoo Finance 复权日收盘价，以区间开始前最后一个收盘价为 0%。": "Yahoo Finance adjusted daily closes. The last close before the period is 0%.",
+  "该区间暂无足够的行情数据。": "Not enough priced data for this period."
 }

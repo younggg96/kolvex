@@ -21,6 +21,8 @@ vm.runInNewContext(js, { module: module_, exports: module_.exports });
 const {
   featuredHoldings,
   stockReturnPoints,
+  portfolioReturnPoints,
+  rangeStart,
   stockReturnPath,
   pelosiDisclosures,
   houseDisclosureUrl,
@@ -54,7 +56,7 @@ test("featured holdings merge duplicate CUSIPs and retain the full share-only de
   assert.ok(rows.every(({ cusip }) => cusip.length === 1));
 });
 
-test("returns use sorted adjusted closes and a zero baseline within the chosen period", () => {
+test("returns use sorted adjusted closes and the last close before the period as 0%", () => {
   const points = stockReturnPoints(
     {
       prices: [
@@ -62,17 +64,43 @@ test("returns use sorted adjusted closes and a zero baseline within the chosen p
         { date: "2026-10-01", adjusted_close: 100 },
         { date: "2026-10-02", adjusted_close: 0 },
         { date: "2026-06-01", adjusted_close: 80 },
+        { date: "2026-08-12", adjusted_close: 100 },
       ],
     },
     "3m",
   );
-  assert.equal(points.length, 2);
-  assert.equal(points[0].date, "2026-10-01");
+  assert.equal(points.map(({ date }) => date).join(","), "2026-08-12,2026-10-01,2026-11-13");
   assert.equal(points[0].value, 0);
-  assert.ok(Math.abs(points[1].value - 10) < 1e-9);
+  assert.ok(Math.abs(points[2].value - 10) < 1e-9);
   assert.equal(stockReturnPoints({ prices: [] }, "6m").length, 0);
   assert.equal(stockReturnPath("BRK.B"), "/market/free-research/BRK-B/stock-returns");
   assert.equal(stockReturnPath("../V"), null);
+});
+
+test("ranges count calendar months back, clamp month ends, and YTD starts on Jan 1", () => {
+  assert.equal(rangeStart("2026-11-16", "1m"), "2026-10-16");
+  assert.equal(rangeStart("2026-11-16", "6m"), "2026-05-16");
+  assert.equal(rangeStart("2026-03-31", "1m"), "2026-02-28");
+  assert.equal(rangeStart("2026-02-15", "3m"), "2025-11-15");
+  assert.equal(rangeStart("2026-11-16", "ytd"), "2026-01-01");
+});
+
+test("13F model windows rebase both curves to the last close before the period", () => {
+  const daily = [
+    { date: "2026-12-31", value: 0.32, benchmark: 0.1 },
+    { date: "2025-12-31", value: 0.1, benchmark: 0.0 },
+    { date: "2026-01-02", value: 0.21, benchmark: 0.05 },
+    { date: "2026-06-30", value: Number.NaN, benchmark: 0.1 },
+  ];
+  const points = portfolioReturnPoints(daily, "ytd");
+  assert.equal(points.map(({ date }) => date).join(","), "2025-12-31,2026-01-02,2026-12-31");
+  assert.equal(points[0].value, 0);
+  assert.ok(Math.abs(points[1].value - 10) < 1e-9);
+  assert.ok(Math.abs(points[2].value - 20) < 1e-9);
+  assert.ok(Math.abs(points[2].benchmark - 10) < 1e-9);
+  // A curve that starts inside the window cannot be rebased to its start.
+  assert.equal(portfolioReturnPoints(daily.slice(2, 3).concat(daily[0]), "ytd").length, 0);
+  assert.equal(portfolioReturnPoints([], "1m").length, 0);
 });
 
 test("Pelosi selections use Nancy's filings by either name order and link only to House originals", () => {

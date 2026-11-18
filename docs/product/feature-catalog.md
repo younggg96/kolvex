@@ -40,7 +40,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 | 功能 | ID | Web 入口 | App 入口 | 后端 | 文档 | App |
 | --- | --- | --- | --- | --- | --- | --- |
 | YouTube 博主观点、博主 / 股票目录（英文界面自动翻译中文观点） | `youtubeOpinions` | `/dashboard/youtube-opinions` | `(tabs)/opinions`、`/creators`、`/creator/youtube/[id]` | `youtube_opinions.py` | [youtube-channel-profiles.md](../youtube-channel-profiles.md)、[内容翻译](../content-translation.md) | ◐ |
-| X 博主内容与翻译（每 6 小时采集并自动入库，Web 优先读取后台中文译文） | `youtubeOpinions` | `/dashboard/x-opinions` | `opinions` 的 X tab、`/creator/x/[id]` | `x_content.py` | [x-content.md](../x-content.md)、[内容翻译](../content-translation.md) | ◐ |
+| X 博主内容与翻译（本机 Playwright 每 30 分钟无 AI 采集入库，Web 优先读取后台中文译文） | `youtubeOpinions` | `/dashboard/x-opinions` | `opinions` 的 X tab、`/creator/x/[id]` | `x_content.py` | [x-content.md](../x-content.md)、[内容翻译](../content-translation.md) | ◐ |
 | Reddit 热度榜 | `youtubeOpinions` | `/dashboard/reddit-opinions` | `opinions` 的 Reddit tab | `reddit_opinions.py` | `PRODUCT.md` | ✅ |
 | 观点事后表现（发布后 5 / 20 个交易日股价，对比 SPY；只陈述事实，不判对错） | `youtubeOpinions` | 股票页和博主 × 股票页的观点卡片（含「其他博主的看法」） | — | `youtube_opinions.py`（`/stocks/{ticker}/outcomes`） | [opinion-backtest.md](../opinion-backtest.md) | — |
 | 观点回看（全部看多 / 看空观点之后股价相对 SPY 的整体表现，可点进具体观点；「单个博主」先列全部博主，选中后按股票看这位博主说过的每只股票、说完至今涨跌以及与观点方向是否一致；博主主页的个人卡片有样本和跨度门槛；不按博主排名） | `youtubeOpinions` | 博主观点「回看」（`/dashboard/youtube-opinions/review`）；博主主页侧栏 | — | `youtube_opinions.py`（`/review`、`/review/opinions`、`/review/creators`、`/review/creators/{id}`、`/creators/{id}/review`） | [opinion-backtest.md](../opinion-backtest.md) | — |
@@ -65,7 +65,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 | 自选股 | `watchlist` | `/dashboard/watchlist` | `(more)/watchlist` | Supabase 直连 + RLS | [watchlist-sync.md](../watchlist-sync.md) | ✅ |
 | 投资组合（Plaid） | `portfolio` | `/dashboard/portfolio`、公开页 `/portfolio/[userId]` | `/portfolio`（只读持仓快照） | `portfolio/`、`plaid.py` | `kolvex-frontend-web-nextjs/FEATURE_INVENTORY.md`「Plaid」 | ◐（Web 收盘后自动采集交易日收益快照；App 缺 Plaid 授权、交易、配置、收益图、AI 分析、股票观察「我的持仓」） |
 | 虚拟交易 | `paperTrading` | `/dashboard/paper-trading`、个股 `?tab=paper-trading` | `(more)/paper-trading`、个股 tab | `paper_trading.py` | [paper-trading/PLAN.md](../paper-trading/PLAN.md)、[README.md](../paper-trading/README.md)、Web `UX-CONTRACT.md` | ✅ |
-| 超级投资者（明星专区展示前五大 13F 持仓占比、个股曲线和 13F 模拟收益；佩洛西展示交易披露与标的走势） | `superinvestors` | `/dashboard/superinvestors`、`/dashboard/superinvestors/[manager]`；管理 `/dashboard/admin?tab=institutions` | `(more)/superinvestors`、`/superinvestor/[manager]` | `free_research.py`、`congress_trades.py`、`admin/institutions.py` | [名单、收益口径与上线步骤](../superinvestors-coverage.md) | ✅ |
+| 超级投资者（明星专区展示头像、前五大 13F 持仓占比和 1月/3月/6月/今年 的 13F 模拟收益；佩洛西展示交易披露与标的走势） | `superinvestors` | `/dashboard/superinvestors`、`/dashboard/superinvestors/[manager]`；管理 `/dashboard/admin?tab=institutions` | `(more)/superinvestors`、`/superinvestor/[manager]` | `free_research.py`、`congress_trades.py`、`admin/institutions.py` | [名单、收益口径与上线步骤](../superinvestors-coverage.md) | ✅ |
 | 国会交易 | `congressTrades` | `/dashboard/congress-trades` | `(more)/congress-trades` | `congress_trades.py` | — | ✅ |
 | 期权异动 | `optionsActivity` | `/dashboard/options-activity` | `(more)/options-activity` | `options_activity.py` | — | ✅ |
 

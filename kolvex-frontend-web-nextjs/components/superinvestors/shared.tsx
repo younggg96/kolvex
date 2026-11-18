@@ -350,6 +350,18 @@ export function useInvestorByline() {
   };
 }
 
+/**
+ * Vendored marks for managers added after the bundled profiles (admin-added or featured-only).
+ * `pelosi` is her public-domain official portrait (Wikimedia Commons, 2019).
+ */
+const EXTRA_LOGOS: Record<string, string> = {
+  ark: "ark",
+  soros: "soros",
+  softbank: "softbank",
+  situational_awareness: "situational_awareness",
+  pelosi: "pelosi",
+};
+
 /** Firm mark when one is vendored, otherwise a neutral monogram. */
 export function InvestorAvatar({
   id,
@@ -358,9 +370,9 @@ export function InvestorAvatar({
 }: {
   id: string;
   name: string;
-  size?: "md" | "lg" | "xl";
+  size?: AvatarSize;
 }) {
-  const logo = INVESTOR_PROFILES[id]?.logo;
+  const logo = INVESTOR_PROFILES[id]?.logo ?? EXTRA_LOGOS[id];
   const [failed, setFailed] = useState(false);
   if (!logo || failed) return <Monogram name={name} size={size} />;
   return (
@@ -368,7 +380,7 @@ export function InvestorAvatar({
       aria-hidden="true"
       className={cn(
         "flex shrink-0 overflow-hidden rounded-full border border-foreground/10 bg-white",
-        size === "xl" ? "h-14 w-14" : size === "lg" ? "h-12 w-12" : "h-10 w-10",
+        AVATAR_BOX[size],
       )}
     >
       {/* eslint-disable-next-line @next/next/no-img-element -- tiny vendored static mark */}
@@ -383,7 +395,21 @@ export function InvestorAvatar({
 }
 
 /** Firms have no logo source here, so a neutral monogram keeps the cards scannable. */
-export function Monogram({ name, size = "md" }: { name: string; size?: "md" | "lg" | "xl" }) {
+type AvatarSize = "xs" | "md" | "lg" | "xl";
+const AVATAR_BOX: Record<AvatarSize, string> = {
+  xs: "h-6 w-6",
+  md: "h-10 w-10",
+  lg: "h-12 w-12",
+  xl: "h-14 w-14",
+};
+const MONOGRAM_TEXT: Record<AvatarSize, string> = {
+  xs: "text-[10px]",
+  md: "text-sm",
+  lg: "text-base",
+  xl: "text-lg",
+};
+
+export function Monogram({ name, size = "md" }: { name: string; size?: AvatarSize }) {
   const letters = name
     .split(/\s+/)
     .filter((word) => /^[A-Za-z]/.test(word))
@@ -395,11 +421,8 @@ export function Monogram({ name, size = "md" }: { name: string; size?: "md" | "l
       aria-hidden="true"
       className={cn(
         "flex shrink-0 items-center justify-center rounded-full bg-foreground/[0.07] font-semibold tracking-tight text-foreground/80",
-        size === "xl"
-          ? "h-14 w-14 text-lg"
-          : size === "lg"
-            ? "h-12 w-12 text-base"
-            : "h-10 w-10 text-sm",
+        AVATAR_BOX[size],
+        MONOGRAM_TEXT[size],
       )}
     >
       {letters || "·"}

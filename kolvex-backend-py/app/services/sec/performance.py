@@ -8,7 +8,9 @@ are reinvested.
 
 This is not the manager's actual return. 13F leaves out shorts, cash, bonds,
 non-US listings and trades within the quarter, and is filed up to 45 days after
-the quarter end. Positions without a ticker or price (often delisted or acquired
+the quarter end. For the last DAILY_DAYS the same holdings are also marked to each
+daily close, so the page can show 1M / 3M / 6M / YTD windows of one curve.
+Positions without a ticker or price (often delisted or acquired
 companies) are dropped and the rest re-weighted; every quarter records the share
 of its value that was priced, and the curve starts after the last quarter that
 priced less than MIN_COVERAGE.
@@ -40,7 +42,8 @@ MIN_COVERAGE = 0.5
 MAX_QUARTER_DAYS = 92
 MAX_LATEST_DAYS = MAX_QUARTER_DAYS + 46  # allow for disclosure lag after the next quarter ends
 STALE_PRICE_DAYS = 7
-METHOD_VERSION = 2
+METHOD_VERSION = 3
+DAILY_DAYS = 400  # covers YTD on Dec 31 plus the quarter that runs into it
 BENCHMARK = "SPY"
 PRICE_CHUNK = 50
 REFRESH_AFTER = timedelta(hours=20)
@@ -145,6 +148,7 @@ def simulate(quarters, tickers, prices):
             continue
         priced_value = weighted = 0.0
         priced = 0
+        held = []
         for position in quarter["positions"]:
             symbol = tickers.get(position["cusip"])
             first, last = (
@@ -154,6 +158,7 @@ def simulate(quarters, tickers, prices):
                 priced_value += position["value"]
                 weighted += position["value"] * (last / first - 1)
                 priced += 1
+                held.append((symbol, position["value"], first))
         b0, b1 = close(BENCHMARK, start, False), close(BENCHMARK, end, final)
         coverage = priced_value / quarter["equity_value"] if quarter["equity_value"] else 0.0
         segments.append(
@@ -169,6 +174,8 @@ def simulate(quarters, tickers, prices):
                 and priced_value > 0
                 and bool(b0 and b1)
                 and coverage >= MIN_COVERAGE,
+                "held": held,
+                "bench_start": b0,
             }
         )
 
@@ -189,7 +196,11 @@ def simulate(quarters, tickers, prices):
 
     value = bench_value = 1.0
     points = [{"date": used[0]["start"], "value": 0.0, "benchmark": 0.0}]
+    cutoff = (date.fromisoformat(end_date) - timedelta(days=DAILY_DAYS)).isoformat()
+    daily = []
     for segment in used:
+        if segment["end"] >= cutoff:
+            daily.extend(daily_points(segment, value, bench_value, prices, daily))
         value *= 1 + segment["return"]
         bench_value *= 1 + segment["benchmark_return"]
         points.append({"date": segment["end"], "value": value - 1, "benchmark": bench_value - 1})
@@ -201,7 +212,10 @@ def simulate(quarters, tickers, prices):
         "start": start,
         "end": end,
         "points": points,
-        "quarters": [{k: v for k, v in s.items() if k != "valid"} for s in used],
+        "daily": daily,
+        "quarters": [
+            {k: v for k, v in s.items() if k not in ("valid", "held", "bench_start")} for s in used
+        ],
         "total_return": total,
         "benchmark_return": bench_total,
         "annualized_return": annualized(total, start, end),
@@ -209,6 +223,46 @@ def simulate(quarters, tickers, prices):
         "coverage_min": min(s["coverage"] for s in used),
         "dropped_quarters": len(segments) - len(used),
     }
+
+
+def close_on(book, day):
+    """Last daily close on or before `day`, or None."""
+    bars = (book or {}).get("daily")
+    if not bars:
+        return None
+    i = bisect.bisect_right(bars[0], day) - 1
+    return bars[1][i] if i >= 0 else None
+
+
+def daily_points(segment, value, bench_value, prices, earlier):
+    """The segment's holdings marked to every SPY trading day in it, chained from the curve values
+    at its start. Positions without a close yet that day hold their starting price."""
+    bench = prices(BENCHMARK)
+    days = (bench or {}).get("daily")
+    if not days:
+        return []
+    start, end = segment["start"], segment["end"]
+    total = sum(v for _, v, _ in segment["held"])
+    books = {symbol: prices(symbol) for symbol, _, _ in segment["held"]}
+    result = [] if earlier else [{"date": start, "value": value - 1, "benchmark": bench_value - 1}]
+    for day in days[0]:
+        if day <= start or day > end:
+            continue
+        mark = sum(
+            v * ((close_on(books[symbol], day) or first) / first - 1)
+            for symbol, v, first in segment["held"]
+        )
+        b = close_on(bench, day)
+        if not b:
+            continue
+        result.append(
+            {
+                "date": day,
+                "value": value * (1 + mark / total) - 1,
+                "benchmark": bench_value * (b / segment["bench_start"]) - 1,
+            }
+        )
+    return result
 
 
 def yahoo_closes(symbols, start, end):
@@ -262,7 +316,13 @@ class PriceBook:
                 <= STALE_PRICE_DAYS
             ):
                 closes[target] = bars[i][1]
-        return {"closes": closes, "latest": bars[-1]}
+        since = (self.today - timedelta(days=DAILY_DAYS + 100)).isoformat()
+        recent = [(d, c) for d, c in bars if d >= since]
+        return {
+            "closes": closes,
+            "latest": bars[-1],
+            "daily": ([d for d, _ in recent], [c for _, c in recent]),
+        }
 
     async def load(self, symbols):
         missing = sorted(s for s in symbols if s not in self._data)

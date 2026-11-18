@@ -202,6 +202,12 @@ const LOGOS: Record<string, ImageSourcePropType> = {
   tiger: require("../../assets/superinvestors/tiger.png"),
   oaktree: require("../../assets/superinvestors/oaktree.png"),
   renaissance: require("../../assets/superinvestors/renaissance.png"),
+  ark: require("../../assets/superinvestors/ark.png"),
+  soros: require("../../assets/superinvestors/soros.png"),
+  softbank: require("../../assets/superinvestors/softbank.png"),
+  situational_awareness: require("../../assets/superinvestors/situational_awareness.png"),
+  // Public-domain official portrait (Wikimedia Commons, 2019).
+  pelosi: require("../../assets/superinvestors/pelosi.png"),
 };
 /** Secondary identity line: Chinese firm name (zh only) and the investor behind it. */
 export function useInvestorByline() {

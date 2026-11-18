@@ -127,6 +127,40 @@ class SimulateTests(unittest.TestCase):
         )
         self.assertIsNone(result["annualized_return"])  # under a year
 
+    def test_daily_points_mark_holdings_and_join_the_quarter_ends(self):
+        daily = {
+            "AAA": (["2025-03-31", "2025-05-15", "2025-06-30", "2025-07-15", "2025-08-01"],
+                    [10.0, 10.5, 11.0, 11.0, 12.1]),
+            "BBB": (["2025-03-31", "2025-06-30", "2025-08-01"], [20.0, 18.0, 18.0]),
+            BENCHMARK: (["2025-03-31", "2025-05-15", "2025-06-30", "2025-07-15", "2025-08-01"],
+                        [100.0, 110.0, 105.0, 105.0, 105.0]),
+        }  # fmt: skip
+        plain = book(self.table, self.latest)
+        result = simulate(
+            [quarter("2025-03-31", [("A1", 75), ("B1", 25)]), quarter("2025-06-30", [("A1", 100)])],
+            self.tickers,
+            lambda s: {**plain(s), "daily": daily[s]} if plain(s) else None,
+        )
+        points = {p["date"]: p for p in result["daily"]}
+        self.assertEqual(
+            list(points), ["2025-03-31", "2025-05-15", "2025-06-30", "2025-07-15", "2025-08-01"]
+        )
+        # 2025-05-15: AAA +5%, BBB holds its start price (no close yet) -> 0.75 * 5%.
+        self.assertAlmostEqual(points["2025-05-15"]["value"], 0.0375)
+        self.assertAlmostEqual(points["2025-05-15"]["benchmark"], 0.10)
+        for quarterly in result["points"]:
+            self.assertAlmostEqual(points[quarterly["date"]]["value"], quarterly["value"])
+            self.assertAlmostEqual(points[quarterly["date"]]["benchmark"], quarterly["benchmark"])
+        self.assertNotIn("held", result["quarters"][0])
+
+    def test_no_daily_bars_leaves_daily_empty(self):
+        result = simulate(
+            [quarter("2025-03-31", [("A1", 100)]), quarter("2025-06-30", [("A1", 100)])],
+            self.tickers,
+            book(self.table, self.latest),
+        )
+        self.assertEqual(result["daily"], [])
+
     def test_unpriced_value_lowers_coverage_and_reweights(self):
         result = simulate(
             [quarter("2025-03-31", [("A1", 60), ("ZZ", 40)]), quarter("2025-06-30", [("A1", 100)])],

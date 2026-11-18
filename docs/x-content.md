@@ -48,7 +48,11 @@
 
 ## 当前边界
 
-没有接入 X API。现已启用 Codex 本地每 6 小时浏览器采集，复用已登录 Chrome，并合并 `side-projects/x-posts/sources.json` 与数据库博主名单。通过校验的公开帖子自动导入生产数据库，数据库确认后才更新采集检查点。工作流详见 [采集规程](../side-projects/x-posts/COLLECTOR.md)。管理员保存的博主会在下一轮纳入。也可以在本地终端使用 `sync.py add` 添加采集来源。它依赖本机、Codex、Chrome 及扩展可用，不能保证关机或休眠期间采集。互动数是采集时快照；缺失的数值保持 null。导入不会推断情绪、总结投资观点或分析图片。媒体展示为来源链接；内容覆盖范围仍由导出文件决定，不能视为完整历史。
+本机无 AI 工作流入口为 `side-projects/x-posts/run.sh`，Python 编排本机 Playwright 采集与生产入库。`install` 安装每 30 分钟执行一次的 macOS LaunchAgent，`login` 等待用户在专用 Chrome 手动登录，成功后恢复调度并立即同步。`run` 执行一轮，`status` 查看持久化结果，`add` 添加来源，`pause` 暂停调度。原 Codex 桌面自动化已暂停。macOS 后台运行文件位于用户的 `Library/Application Support/Kolvex/x-worker/`，仓库 shell 入口自动转发，避免后台任务读取 Documents 被系统拦截。首次登录遇到 X 临时限制，调度保持暂停，待用户登录成功后恢复。命令及依赖见 [本地工作流](../side-projects/x-posts/README.md#无-ai-的自动同步)。
+
+名单合并 `sources.json` 和数据库 `x_creators`。通过校验的公开帖子自动导入生产数据库，数据库确认后才更新检查点。采集失败仍处理已完成导出；登录失效、正文缺失和未达到旧边界都保留旧检查点。工作流详见 [采集规程](../side-projects/x-posts/COLLECTOR.md)。
+
+运行依赖本机、已登录的专用 Chrome 和网络。关机、休眠、登录限制或页面变化可能中断采集。互动数是采集时快照，缺失值保持 null。导入不调用模型，原始正文保持不变。覆盖范围由导出决定，无法视为完整历史。
 
 ## 验证
 

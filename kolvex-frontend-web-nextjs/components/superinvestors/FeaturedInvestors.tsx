@@ -8,7 +8,8 @@ import { useFinancialFormat } from "@/components/decision/StockFinancialData";
 import { useCopy } from "@/components/decision/shared";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { SegmentedControl } from "@/components/ui/segmented-control";
+import CompanyLogo from "@/components/ui/company-logo";
+import { InfoTip } from "@/components/ui/info-tip";
 import {
   FEATURED_INSTITUTIONS,
   PELOSI_TRADES_PATH,
@@ -36,8 +37,19 @@ export default function FeaturedInvestors() {
   const list = useFreeResearch<{ managers: InstitutionManager[] }>(INSTITUTIONS_KEY);
   const manager = list.data?.managers.find(({ cik }) => String(cik) === selected);
   const choices = [
-    ...FEATURED_INSTITUTIONS.map(({ cik, en, zh }) => ({ id: String(cik), label: c(en, zh) })),
-    { id: PELOSI, label: c("Pelosi", "佩洛西") },
+    ...FEATURED_INSTITUTIONS.map(({ cik, en, zh }) => {
+      const match = list.data?.managers.find((row) => row.cik === cik);
+      return {
+        id: String(cik),
+        label: c(en, zh),
+        avatar: match ? <InvestorAvatar id={match.id} name={match.name} size="xs" /> : null,
+      };
+    }),
+    {
+      id: PELOSI,
+      label: c("Pelosi", "佩洛西"),
+      avatar: <InvestorAvatar id={PELOSI} name="Nancy Pelosi" size="xs" />,
+    },
   ];
 
   return (
@@ -50,17 +62,21 @@ export default function FeaturedInvestors() {
         aria-label={c("Choose an investor", "选择明星投资者")}
         className="flex flex-wrap gap-2"
       >
-        {choices.map(({ id, label }) => (
+        {choices.map(({ id, label, avatar }) => (
           <Button
             key={id}
             type="button"
             size="chip"
             variant="chip"
             selected={id === selected}
-            className="min-h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            className={cn(
+              "min-h-11 gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary",
+              avatar && "pl-1.5",
+            )}
             aria-pressed={id === selected}
             onClick={() => setSelected(id)}
           >
+            {avatar}
             {label}
           </Button>
         ))}
@@ -121,15 +137,9 @@ function SpotlightHeader({
 function InstitutionSpotlight({ manager }: { manager: InstitutionManager }) {
   const c = useCopy();
   const f = useFinancialFormat();
-  const [selected, setSelected] = useState<string>();
-  const [mode, setMode] = useState<"stock" | "portfolio">("stock");
   const resource = useFreeResearch<Institution>(institutionKey(manager.id));
   const data = resource.error ? undefined : resource.data;
   const rows = data?.filing ? featuredHoldings(data.holdings) : [];
-  const chartable = rows.filter((row) => stockReturnPath(row.ticker));
-  const active = chartable.find((row) => row.cusip === selected) ?? chartable[0];
-  const ticker = active?.ticker;
-  const path = stockReturnPath(ticker);
   const filing = data?.filing;
 
   return (
@@ -155,8 +165,14 @@ function InstitutionSpotlight({ manager }: { manager: InstitutionManager }) {
       <div className="grid min-w-0 gap-5 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
         <div className="min-w-0">
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-            <h4 className="text-sm font-semibold">
+            <h4 className="flex items-center gap-1.5 text-sm font-semibold">
               {c("Top 5 disclosed holdings", "前五大披露持仓")}
+              <InfoTip label={c("How weights are calculated", "占比计算方式")}>
+                {c(
+                  "Weights use all reported share positions excluding options, including ETFs.",
+                  "占比以该份 13F 中非期权的股份类持仓总市值为基准，含 ETF。",
+                )}
+              </InfoTip>
             </h4>
             {filing && (
               <span className="text-xs text-muted-foreground">
@@ -177,18 +193,17 @@ function InstitutionSpotlight({ manager }: { manager: InstitutionManager }) {
           ) : rows.length ? (
             <ul className="divide-y divide-border">
               {rows.map((row) => (
-                <li key={row.cusip}>
-                  <HoldingRow
-                    active={mode === "stock" && row.cusip === active?.cusip}
-                    select={
-                      stockReturnPath(row.ticker)
-                        ? () => {
-                            setSelected(row.cusip);
-                            setMode("stock");
-                          }
-                        : undefined
-                    }
-                  >
+                <li
+                  key={row.cusip}
+                  className="flex min-h-12 items-center justify-between gap-3 px-2 py-2"
+                >
+                  <span className="flex min-w-0 items-center gap-3">
+                    <CompanyLogo
+                      symbol={row.ticker ?? row.issuer}
+                      name={row.issuer}
+                      size="sm"
+                      className="shrink-0"
+                    />
                     <span className="min-w-0">
                       <span className="figure block text-sm font-medium">
                         {row.ticker ?? row.cusip}
@@ -197,19 +212,19 @@ function InstitutionSpotlight({ manager }: { manager: InstitutionManager }) {
                         {row.issuer}
                       </span>
                     </span>
-                    <span className="figure shrink-0 text-right text-sm font-semibold">
-                      {f.percent(row.weight)}
+                  </span>
+                  <span className="figure shrink-0 text-right text-sm font-semibold">
+                    {f.percent(row.weight)}
+                    <span
+                      className="ml-auto mt-1 block h-1 w-16 overflow-hidden rounded-full bg-muted"
+                      aria-hidden
+                    >
                       <span
-                        className="ml-auto mt-1 block h-1 w-16 overflow-hidden rounded-full bg-muted"
-                        aria-hidden
-                      >
-                        <span
-                          className="block h-full rounded-full bg-primary/60"
-                          style={{ width: `${row.weight * 100}%` }}
-                        />
-                      </span>
+                        className="block h-full rounded-full bg-primary/60"
+                        style={{ width: `${row.weight * 100}%` }}
+                      />
                     </span>
-                  </HoldingRow>
+                  </span>
                 </li>
               ))}
             </ul>
@@ -218,29 +233,9 @@ function InstitutionSpotlight({ manager }: { manager: InstitutionManager }) {
               text={c("No stock positions in the available filing.", "当前申报暂无股票持仓数据。")}
             />
           )}
-          <p className="mt-3 text-xs leading-5 text-muted-foreground">
-            {c(
-              "Weights use all reported share positions excluding options, including ETFs.",
-              "占比以该份 13F 中非期权的股份类持仓总市值为基准，含 ETF。",
-            )}
-          </p>
         </div>
-        <div className="min-w-0 space-y-3 md:border-l md:border-border md:pl-5">
-          <SegmentedControl
-            size="sm"
-            label={c("Return type", "收益类型")}
-            value={mode}
-            onChange={setMode}
-            options={[
-              { value: "stock", label: c("Stock", "个股") },
-              { value: "portfolio", label: c("13F model", "13F 模拟组合") },
-            ]}
-          />
-          {mode === "portfolio" ? (
-            <PortfolioReturnChart manager={manager.id} />
-          ) : data && !resource.loading ? (
-            <StockReturnChart stock={ticker && path ? { ticker, path } : undefined} />
-          ) : null}
+        <div className="min-w-0 md:border-l md:border-border md:pl-5">
+          <PortfolioReturnChart manager={manager.id} />
         </div>
       </div>
     </div>
@@ -292,10 +287,20 @@ function PelosiSpotlight() {
       <SpotlightHeader
         title={c("Nancy Pelosi", "南希·佩洛西")}
         detail={c("U.S. House transaction disclosures", "美国众议院交易披露")}
-      />
+      >
+        <InvestorAvatar id={PELOSI} name="Nancy Pelosi" />
+      </SpotlightHeader>
       <div className="grid min-w-0 gap-5 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
         <div className="min-w-0 space-y-2">
-          <h4 className="text-sm font-semibold">{c("Recent disclosed trades", "近期披露交易")}</h4>
+          <h4 className="flex items-center gap-1.5 text-sm font-semibold">
+            {c("Recent disclosed trades", "近期披露交易")}
+            <InfoTip label={c("About these disclosures", "披露说明")}>
+              {c(
+                "Amounts are disclosed in ranges. Portfolio weights and trade returns are unavailable.",
+                "披露仅提供交易金额区间，无法计算持仓占比或交易收益。",
+              )}
+            </InfoTip>
+          </h4>
           {resource.loading || resource.error ? (
             <SpotlightStatus
               loading={resource.loading}
@@ -316,12 +321,17 @@ function PelosiSpotlight() {
                       active={row.id === active?.id}
                       select={stockReturnPath(row.ticker) ? () => setSelected(row.id) : undefined}
                     >
-                      <span className="min-w-0">
-                        <span className="figure block text-sm font-medium">
-                          {row.ticker || "—"} · {directions[row.direction]}
-                        </span>
-                        <span className="block text-xs text-muted-foreground">
-                          {f.date(row.trade_date)}
+                      <span className="flex min-w-0 items-center gap-3">
+                        {row.ticker && (
+                          <CompanyLogo symbol={row.ticker} size="sm" className="shrink-0" />
+                        )}
+                        <span className="min-w-0">
+                          <span className="figure block text-sm font-medium">
+                            {row.ticker || "—"} · {directions[row.direction]}
+                          </span>
+                          <span className="block text-xs text-muted-foreground">
+                            {f.date(row.trade_date)}
+                          </span>
                         </span>
                       </span>
                       <span className="figure text-right text-xs">{row.amount_range ?? "—"}</span>
@@ -349,12 +359,6 @@ function PelosiSpotlight() {
               text={c("No matching House disclosures are available.", "暂无可用的众议院交易披露。")}
             />
           )}
-          <p className="text-xs leading-5 text-muted-foreground">
-            {c(
-              "Amounts are disclosed in ranges. Portfolio weights and trade returns are unavailable.",
-              "披露仅提供交易金额区间，无法计算持仓占比或交易收益。",
-            )}
-          </p>
         </div>
         <div className="min-w-0 md:border-l md:border-border md:pl-5">
           {resource.data && !resource.loading && !resource.error && (

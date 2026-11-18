@@ -14,10 +14,12 @@ import { useFreeResearch } from "@/components/decision/SecData";
 import { useFinancialFormat } from "@/components/decision/StockFinancialData";
 import { useCopy } from "@/components/decision/shared";
 import { Button } from "@/components/ui/button";
+import { InfoTip } from "@/components/ui/info-tip";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   RETURN_RANGES,
+  portfolioReturnPoints,
   stockReturnPoints,
   type AdjustedHistory,
   type PortfolioPerformance,
@@ -67,22 +69,41 @@ export function StockReturnChart({ stock }: { stock?: { ticker: string; path: st
   return <StockHistory ticker={stock.ticker} path={stock.path} />;
 }
 
+function useRangeOptions() {
+  const c = useCopy();
+  const labels: Record<ReturnRange, string> = {
+    "1m": c("1M", "1月"),
+    "3m": c("3M", "3月"),
+    "6m": c("6M", "6月"),
+    ytd: c("YTD", "今年"),
+  };
+  return RETURN_RANGES.map((value) => ({ value, label: labels[value] }));
+}
+
 function StockHistory({ ticker, path }: { ticker: string; path: string }) {
   const c = useCopy();
-  const [range, setRange] = useState<ReturnRange>("6m");
+  const options = useRangeOptions();
+  const [range, setRange] = useState<ReturnRange>("ytd");
   const resource = useFreeResearch<AdjustedHistory>(`/api${path}`);
-  const labels = { "3m": c("3M", "3个月"), "6m": c("6M", "6个月"), "1y": c("1Y", "1年") };
   const points = resource.data ? stockReturnPoints(resource.data, range) : [];
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="figure text-base font-semibold">
-          {ticker} {c("stock return", "个股收益")}
+        <h3 className="flex items-center gap-1.5 text-base font-semibold">
+          <span className="figure">
+            {ticker} {c("stock return", "个股收益")}
+          </span>
+          <InfoTip label={c("About this return", "收益说明")}>
+            {c(
+              "Yahoo Finance adjusted daily closes. The last close before the period is 0%.",
+              "来源为 Yahoo Finance 复权日收盘价，以区间开始前最后一个收盘价为 0%。",
+            )}
+          </InfoTip>
         </h3>
         <SegmentedControl
           size="sm"
           label={c("Stock return period", "个股收益区间")}
-          options={RETURN_RANGES.map((value) => ({ value, label: labels[value] }))}
+          options={options}
           value={range}
           onChange={setRange}
         />
@@ -102,35 +123,40 @@ function StockHistory({ ticker, path }: { ticker: string; path: string }) {
       ) : (
         <ReturnPlot points={points} name={ticker} />
       )}
-      <p className="text-xs text-muted-foreground">
-        {c(
-          "Yahoo Finance adjusted daily closes. The first available close in the period is 0%.",
-          "来源为 Yahoo Finance 复权日收盘价，区间内首个可用收盘价记为 0%。",
-        )}
-      </p>
     </div>
   );
 }
 
 export function PortfolioReturnChart({ manager }: { manager: string }) {
   const c = useCopy();
+  const options = useRangeOptions();
+  const [range, setRange] = useState<ReturnRange>("ytd");
   const resource = useFreeResearch<PortfolioPerformance>(`${institutionKey(manager)}/performance`);
   const performance = resource.data;
   const points =
-    performance?.status === "ready"
-      ? performance.points.map((point) => ({
-          date: point.date,
-          value: point.value * 100,
-          benchmark: point.benchmark * 100,
-        }))
-      : [];
+    performance?.status === "ready" ? portfolioReturnPoints(performance.daily ?? [], range) : [];
   const name = c("13F model", "13F 模拟");
 
   return (
     <div className="space-y-3">
-      <h3 className="text-base font-semibold">
-        {c("Simulated 13F return vs. SPY", "13F 模拟收益对比 SPY")}
-      </h3>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="flex items-center gap-1.5 text-base font-semibold">
+          {c("Simulated 13F return vs. SPY", "13F 模拟收益对比 SPY")}
+          <InfoTip label={c("About the 13F model", "13F 模拟说明")}>
+            {c(
+              "Retrospective model based on quarter-end holdings, which were disclosed later. Excludes options and fees and can differ from actual fund performance.",
+              "按季度末披露持仓回看，申报晚于季度末。模拟不计期权和费用，结果可能与基金实际业绩不同。",
+            )}
+          </InfoTip>
+        </h3>
+        <SegmentedControl
+          size="sm"
+          label={c("Return period", "收益区间")}
+          options={options}
+          value={range}
+          onChange={setRange}
+        />
+      </div>
       {resource.loading || resource.error ? (
         <SpotlightStatus
           loading={resource.loading}
@@ -145,17 +171,11 @@ export function PortfolioReturnChart({ manager }: { manager: string }) {
         <SpotlightStatus text={c("The first calculation is pending.", "正在等待首次计算。")} />
       ) : points.length < 2 ? (
         <SpotlightStatus
-          text={c("Too few quarters have usable price data.", "有可用行情的季度不足。")}
+          text={c("Not enough priced data for this period.", "该区间暂无足够的行情数据。")}
         />
       ) : (
         <ReturnPlot points={points} name={name} benchmark />
       )}
-      <p className="text-xs leading-5 text-muted-foreground">
-        {c(
-          "Retrospective model based on quarter-end holdings, which were disclosed later. Excludes options and fees and can differ from actual fund performance.",
-          "按季度末披露持仓回看，申报晚于季度末。模拟不计期权和费用，结果可能与基金实际业绩不同。",
-        )}
-      </p>
     </div>
   );
 }

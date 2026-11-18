@@ -2,7 +2,7 @@
 
 首批目标：`https://x.com/MentoviaX`。
 
-通过已登录 Chrome 的公开 Posts 时间线采集原文。Codex 本地任务每 6 小时调用一次仓库中的采集和同步流程。操作规程见 [COLLECTOR.md](./COLLECTOR.md)。
+通过专用 Chrome 的公开 Posts 时间线采集原文。本机 shell 和 Playwright 工作流每 30 分钟采集并同步，无需 AI。操作规程见 [COLLECTOR.md](./COLLECTOR.md)。
 
 ## 最初手工导出
 
@@ -18,42 +18,69 @@
 
 原始数据和检查点被本目录 `.gitignore` 排除，不包含登录 Cookie、Token 或其他账号凭证。
 
-## 自动同步
+## 无 AI 的自动同步
 
-在 Kolvex「管理员 → X 内容」保存博主后，下一轮会自动从数据库 `x_creators` 纳入该账号。也可以从仓库根目录把用户名或主页链接添加到本地 `sources.json`，支持一次添加多个。
+入口为 `run.sh`，由 Python 编排 Playwright 采集和生产入库，不调用 Codex 或其他模型。浏览器使用独立 Chrome 配置目录，由用户首次手动登录 X。脚本只读取公开时间线和详情页的渲染 DOM。
 
-```bash
-kolvex-backend-py/venv/bin/python side-projects/x-posts/sync.py add @username https://x.com/another_user
-```
+### 首次设置
 
-定时任务已在 Codex 桌面端启用。想立即运行时，在本地 Codex 对话发送「按 `side-projects/x-posts/COLLECTOR.md` 运行一次 X 博主同步」。运行时需要保持本机唤醒、Codex 和 Chrome 可用，且 Chrome 已登录 X。
-
-终端也可单独启动准备和入库阶段。在两条命令之间，按操作规程在 Codex 的 cua_repl 中运行浏览器采集。
+在仓库根目录执行以下命令。后端虚拟环境与 `kolvex-backend-py/.env` 需要已有有效数据库连接，Node.js 版本至少为 20，并安装 Google Chrome。
 
 ```bash
-run_dir="side-projects/x-posts/data/incoming/run-$(date -u +%Y%m%dT%H%M%SZ)"
-kolvex-backend-py/venv/bin/python side-projects/x-posts/sync.py prepare "$run_dir"
-# 完成浏览器采集后
-kolvex-backend-py/venv/bin/python side-projects/x-posts/sync.py finish "$run_dir"
+npm --prefix side-projects/x-posts ci --ignore-scripts
+./side-projects/x-posts/run.sh install
+./side-projects/x-posts/run.sh login
 ```
+
+`login` 打开专用 Chrome，等待用户手动完成登录。确认登录成功后自动关闭登录窗口，恢复已安装的定时任务并立即开始首轮同步。登录等待最多 15 分钟。若 X 限制登录或要求验证，由用户在浏览器里处理；脚本不会自动提交账号密码或绕过验证。
+
+`install` 创建当前 macOS 用户的 LaunchAgent，每 30 分钟运行一次，时间间隔为 1800 秒。首次安装本身不会立即采集。登录成功会开始首轮；以后由系统调度。无需保持终端打开，但需要本机开机、用户会话与网络可用。机器休眠或用户退出登录期间不能保证采集。专用配置目录可能在运行时打开 Chrome 窗口。
+
+### 日常命令
 
 ```bash
-# 查看名单与安全停止边界
-kolvex-backend-py/venv/bin/python side-projects/x-posts/sync.py plan
-# 先校验浏览器采集的一个博主导出
-kolvex-backend-py/venv/bin/python side-projects/x-posts/sync.py ingest /absolute/path/to/export.json
-# 提交保存的批次；失败不会删除原始数据
-kolvex-backend-py/venv/bin/python side-projects/x-posts/sync.py sync
-# 运行增量与失败恢复测试
-kolvex-backend-py/venv/bin/python -m unittest discover -s side-projects/x-posts -p test_sync.py -q
+# 立即采集、去重并写入生产数据库
+./side-projects/x-posts/run.sh run
+
+# 查看最近一次结果
+./side-projects/x-posts/run.sh status
+
+# 查看系统定时任务状态
+./side-projects/x-posts/run.sh schedule-status
+
+# 添加账号，下一轮自动纳入
+./side-projects/x-posts/run.sh add @unusual_whales https://x.com/pelositracker
+
+# 暂停调度，保留配置；再次 install 可恢复
+./side-projects/x-posts/run.sh pause
+
+# 卸载调度
+./side-projects/x-posts/run.sh uninstall
 ```
 
-`sync.py` 不驱动浏览器。浏览器采集由 Codex 定时工作流按 COLLECTOR.md 完成，再调用此脚本入库。脚本仅从后端 `.env` 读取数据库服务密钥，不读取 X 登录凭证。命令使用文件锁避免重叠写入，文件通过临时文件原子替换；检查点只在数据库提交后推进。
+名单来自 `sources.json` 与生产数据库 `x_creators` 的合并结果。已安装的 Codex 桌面自动化 `x-kolvex` 在切换时暂停，避免两个调度入口并发采集。终端另有 `watch` 命令，可前台每 30 分钟循环，使用时应暂停 LaunchAgent。
 
-限量扫描遇到缺口时可以保存已采集原文，但不推进回溯边界。长文未展开时禁止提交。置顶旧帖不作为停止依据。旧手工快照的 seen_post_ids 仅作为初始回溯边界，synced_post_ids 独立记录数据库确认成功的 ID，避免“采集过但没入库”的内容被漏掉。
+### 数据与恢复
 
-## 当前运行状态
+每轮先恢复以前的导出并重试已保存批次，再生成 `plan.json`。Playwright 调用共享采集器 `collect-in-cua.mjs`，按帖子 ID 去重、展开长文、验证非置顶检查点。所有导出先经过 `sync.py ingest` 的相同校验逻辑，再使用已有原子导入流程入库。数据库确认后才更新本地检查点。
 
-「同步 X 博主推文到 Kolvex」（自动化 ID `x-kolvex`）每 6 小时在本地执行，有新增、失败或采集缺口变化时提醒。
+采集异常、缺少账号摘要或扫描未完成时，结果标记 `partial`，可入库完整正文并保留旧边界。数据库失败记录为 `failed`，数据留在本地，下轮重试。整轮文件锁防止同一终端工作流重叠。
 
-数据表迁移已应用到项目 Supabase。线上展示需要同时发布前端 X 页面与后端 API；本地采集不依赖页面服务运行。
+`run` 返回 0 表示全部来源完成安全扫描，返回 1 表示部分完成、失败或已有任务运行。安装后脚本运行目录为 `~/Library/Application Support/Kolvex/x-worker/side-projects/x-posts/`，用于避开 macOS 对 Documents 的后台访问限制。仓库中的 `run.sh` 会自动转发到该目录。首次安装复制已有公开数据和检查点，专用浏览器需要重新手动登录；后续 `install` 更新代码及数据库连接配置，保留运行数据。
+
+结果位于运行目录的 `state/workflow.json` 和每轮目录的 `workflow-result.json`；浏览器日志为 `browser.log`。系统日志为 `state/scheduler.log` 与 `state/scheduler-error.log`。
+
+Chrome 自行保存在运行目录下的专用目录 `state/chrome-profile/` 的登录状态。程序不读取或导出 Cookie、Token、Local Storage，不复制日常 Chrome 配置。该目录及原始数据均被 gitignore 排除。日志也不记录账号密码或数据库密钥。
+
+### 本机设置状态
+
+2026-11-17 已安装无 AI 运行环境及每 30 分钟配置，原 Codex 自动化已暂停。X 在首次登录时提示临时限制，定时任务因此保持暂停。限制解除后运行 `run.sh login`，成功后自动恢复调度。后台 launchd 到 shell 和 Python 的调用已实测，真实登录后的完整采集尚待验证。
+
+### 验证
+
+```bash
+kolvex-backend-py/venv/bin/python -m unittest discover -s side-projects/x-posts -p 'test_*.py' -q
+node --test side-projects/x-posts/extract-posts.test.cjs side-projects/x-posts/browser.test.mjs
+```
+
+详细停止规则见 [COLLECTOR.md](./COLLECTOR.md)。Web 和 App 继续读取现有生产数据库，无需客户端改动。

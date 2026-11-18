@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { Linking, Pressable, View } from "react-native";
 import { router } from "expo-router";
+import { SymbolView } from "expo-symbols";
 import Svg, { Line, Polyline } from "react-native-svg";
 import {
   FEATURED_INSTITUTIONS,
@@ -9,6 +10,7 @@ import {
   featuredHoldings,
   houseDisclosureUrl,
   pelosiDisclosures,
+  portfolioReturnPoints,
   stockReturnPath,
   stockReturnPoints,
   type AdjustedHistory,
@@ -25,6 +27,7 @@ import { useTheme } from "../lib/theme";
 import { useResource } from "../lib/useResource";
 import { useAuth } from "../state/Auth";
 import { usePreferences } from "../state/Preferences";
+import { CompanyLogo } from "./CompanyLogo";
 import { Filters } from "./Content";
 import { Note, SecLink, useFormat } from "./SecResearch";
 import { InvestorAvatar } from "./Superinvestors";
@@ -54,22 +57,31 @@ export default function FeaturedInvestors() {
     <View style={{ gap: phone(16) }}>
       <Section title="明星投资者" />
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: phone(8) }}>
-        {FEATURED_INSTITUTIONS.map(({ cik, en, zh }) => (
-          <Button
-            key={cik}
-            size="sm"
-            selected={selected === String(cik)}
-            onPress={() => setSelected(String(cik))}
-          >
-            <Copy bold localize={false}>
-              {locale === "zh" ? zh : en}
-            </Copy>
-          </Button>
-        ))}
+        {FEATURED_INSTITUTIONS.map(({ cik, en, zh }) => {
+          const match = list.data?.managers.find((row) => row.cik === cik);
+          return (
+            <Button
+              key={cik}
+              size="sm"
+              selected={selected === String(cik)}
+              onPress={() => setSelected(String(cik))}
+              icon={
+                match ? (
+                  <InvestorAvatar id={match.id} name={match.name} size={22} />
+                ) : undefined
+              }
+            >
+              <Copy bold localize={false}>
+                {locale === "zh" ? zh : en}
+              </Copy>
+            </Button>
+          );
+        })}
         <Button
           size="sm"
           selected={selected === PELOSI}
           onPress={() => setSelected(PELOSI)}
+          icon={<InvestorAvatar id={PELOSI} name="Nancy Pelosi" size={22} />}
         >
           佩洛西
         </Button>
@@ -118,8 +130,6 @@ function InstitutionPanel({ manager }: { manager: InstitutionManager }) {
   const t = useTheme();
   const f = useFormat();
   const { locale } = usePreferences();
-  const [selected, setSelected] = useState<string>();
-  const [mode, setMode] = useState("stock");
   const resource = useResource(
     `featured-holdings:${manager.id}`,
     (signal) => institution(manager.id, signal),
@@ -128,9 +138,6 @@ function InstitutionPanel({ manager }: { manager: InstitutionManager }) {
   const data = resource.error ? undefined : resource.data;
   const filing = data?.filing;
   const rows = data && filing ? featuredHoldings(data.holdings) : [];
-  const chartable = rows.filter((row) => stockReturnPath(row.ticker));
-  const active =
-    chartable.find((row) => row.cusip === selected) ?? chartable[0];
   return (
     <>
       <View
@@ -175,23 +182,16 @@ function InstitutionPanel({ manager }: { manager: InstitutionManager }) {
             gap: phone(8),
           }}
         >
-          <Copy bold>前五大披露持仓</Copy>
+          <InfoTitle
+            title="前五大披露持仓"
+            note="占比以该份 13F 中非期权的股份类持仓总市值为基准，含 ETF。"
+          />
           {!!filing && <SecLink href={filing.source_url} label="SEC 原文" />}
         </View>
         {rows.length && !resource.loading ? (
           rows.map((row) => (
-            <SelectionRow
-              key={row.cusip}
-              selected={mode === "stock" && row.cusip === active?.cusip}
-              onPress={
-                stockReturnPath(row.ticker)
-                  ? () => {
-                      setSelected(row.cusip);
-                      setMode("stock");
-                    }
-                  : undefined
-              }
-            >
+            <SelectionRow key={row.cusip} selected={false}>
+              <CompanyLogo symbol={row.ticker ?? row.issuer} />
               <View style={{ flex: 1, gap: phone(4) }}>
                 <Copy bold localize={false}>
                   {row.ticker ?? row.cusip}
@@ -230,22 +230,8 @@ function InstitutionPanel({ manager }: { manager: InstitutionManager }) {
             unavailable="当前申报暂无股票持仓数据。"
           />
         )}
-        <Note>占比以该份 13F 中非期权的股份类持仓总市值为基准，含 ETF。</Note>
       </View>
-      <Filters
-        size="sm"
-        value={mode}
-        onChange={setMode}
-        values={[
-          ["stock", "个股"],
-          ["portfolio", "13F 模拟组合"],
-        ]}
-      />
-      {mode === "portfolio" ? (
-        <PortfolioCurve manager={manager.id} />
-      ) : data && !resource.loading ? (
-        <StockCurve ticker={active?.ticker} />
-      ) : null}
+      <PortfolioCurve manager={manager.id} />
     </>
   );
 }
@@ -315,11 +301,21 @@ function PelosiPanel() {
   };
   return (
     <>
-      <Copy size={18} bold>
-        南希·佩洛西
-      </Copy>
-      <Note>美国众议院交易披露</Note>
-      <Copy bold>近期披露交易</Copy>
+      <View
+        style={{ flexDirection: "row", alignItems: "center", gap: phone(12) }}
+      >
+        <InvestorAvatar id={PELOSI} name="Nancy Pelosi" />
+        <View style={{ flex: 1, gap: phone(4) }}>
+          <Copy size={18} bold>
+            南希·佩洛西
+          </Copy>
+          <Note>美国众议院交易披露</Note>
+        </View>
+      </View>
+      <InfoTitle
+        title="近期披露交易"
+        note="披露仅提供交易金额区间，无法计算持仓占比或交易收益。"
+      />
       {rows.length && !resource.loading ? (
         rows.map((row) => {
           const source = houseDisclosureUrl(row.source_url);
@@ -340,6 +336,7 @@ function PelosiPanel() {
                     : undefined
                 }
               >
+                {!!row.ticker && <CompanyLogo symbol={row.ticker} />}
                 <View style={{ flex: 1, gap: phone(4) }}>
                   <Copy bold localize={false}>
                     {row.ticker || "—"}
@@ -380,7 +377,6 @@ function PelosiPanel() {
       {failedSource !== undefined && (
         <Failure message="无法打开链接，请稍后重试。" />
       )}
-      <Note>披露仅提供交易金额区间，无法计算持仓占比或交易收益。</Note>
       {!!resource.data && !resource.loading && !resource.error && (
         <StockCurve ticker={active?.ticker} />
       )}
@@ -395,39 +391,32 @@ function StockCurve({ ticker }: { ticker?: string | null }) {
 }
 
 function StockHistory({ ticker, path }: { ticker: string; path: string }) {
-  const [range, setRange] = useState<ReturnRange>("6m");
+  const [range, setRange] = useState<ReturnRange>("ytd");
   const resource = useResource(
     path,
     (signal) => apiRequest<AdjustedHistory>(path, { signal }),
     25_000,
   );
   const points = resource.data ? stockReturnPoints(resource.data, range) : [];
-  const labels = { "3m": "3个月", "6m": "6个月", "1y": "1年" };
   return (
     <View style={{ gap: phone(12) }}>
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: phone(8) }}>
-        <Copy bold localize={false}>
-          {ticker}
-        </Copy>
-        <Copy bold>个股收益</Copy>
-      </View>
-      <Filters
-        size="sm"
-        value={range}
-        values={RETURN_RANGES.map((value) => [value, labels[value]])}
-        onChange={(value) => {
-          const range = RETURN_RANGES.find((option) => option === value);
-          if (range) setRange(range);
-        }}
+      <InfoTitle
+        title={
+          <View style={{ flexDirection: "row", gap: phone(8) }}>
+            <Copy bold localize={false}>
+              {ticker}
+            </Copy>
+            <Copy bold>个股收益</Copy>
+          </View>
+        }
+        note="来源为 Yahoo Finance 复权日收盘价，以区间开始前最后一个收盘价为 0%。"
       />
+      <RangeFilter value={range} onChange={setRange} />
       {resource.loading || resource.error || points.length < 2 ? (
         <FeaturedStatus {...resource} unavailable="该区间的行情数据不足。" />
       ) : (
         <ReturnPlot points={points} />
       )}
-      <Note>
-        来源为 Yahoo Finance 复权日收盘价，区间内首个可用收盘价记为 0%。
-      </Note>
     </View>
   );
 }
@@ -438,33 +427,88 @@ export function PortfolioCurve({ manager }: { manager: string }) {
   const resource = useResource(path, (signal) =>
     apiRequest<PortfolioPerformance>(path, { signal }),
   );
+  const [range, setRange] = useState<ReturnRange>("ytd");
   const performance = resource.data;
   const points =
     performance?.status === "ready"
-      ? performance.points.map((point) => ({
-          date: point.date,
-          value: point.value * 100,
-          benchmark: point.benchmark * 100,
-        }))
+      ? portfolioReturnPoints(performance.daily ?? [], range)
       : [];
   return (
     <View style={{ gap: phone(12) }}>
-      <Copy bold>13F 模拟收益对比 SPY</Copy>
+      <InfoTitle
+        title="13F 模拟收益对比 SPY"
+        note="按季度末披露持仓回看，申报晚于季度末。模拟不计期权和费用，结果可能与基金实际业绩不同。"
+      />
+      <RangeFilter value={range} onChange={setRange} />
       {resource.loading || resource.error || points.length < 2 ? (
         <FeaturedStatus
           {...resource}
           unavailable={
             performance?.status === "pending"
               ? "正在等待首次计算。"
-              : "有可用行情的季度不足。"
+              : "该区间暂无足够的行情数据。"
           }
         />
       ) : (
         <ReturnPlot points={points} benchmark />
       )}
-      <Note>
-        按季度末披露持仓回看，申报晚于季度末。模拟不计期权和费用，结果可能与基金实际业绩不同。
-      </Note>
+    </View>
+  );
+}
+
+const RANGE_LABELS: Record<ReturnRange, string> = {
+  "1m": "1月",
+  "3m": "3月",
+  "6m": "6月",
+  ytd: "今年",
+};
+
+function RangeFilter({
+  value,
+  onChange,
+}: {
+  value: ReturnRange;
+  onChange: (range: ReturnRange) => void;
+}) {
+  return (
+    <Filters
+      size="sm"
+      value={value}
+      values={RETURN_RANGES.map((range) => [range, RANGE_LABELS[range]])}
+      onChange={(next) => {
+        const range = RETURN_RANGES.find((option) => option === next);
+        if (range) onChange(range);
+      }}
+    />
+  );
+}
+
+/** Heading with the Web's ⓘ: the note stays hidden until the icon is tapped. */
+function InfoTitle({ title, note }: { title: ReactNode; note: string }) {
+  const t = useTheme();
+  const [open, setOpen] = useState(false);
+  return (
+    <View style={{ flexShrink: 1, gap: phone(6) }}>
+      <View
+        style={{ flexDirection: "row", alignItems: "center", gap: phone(6) }}
+      >
+        {typeof title === "string" ? <Copy bold>{title}</Copy> : title}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="说明"
+          accessibilityState={{ expanded: open }}
+          hitSlop={12}
+          onPress={() => setOpen((value) => !value)}
+          style={{ padding: 2 }}
+        >
+          <SymbolView
+            name={{ ios: "info.circle", android: "info", web: "info" }}
+            size={14}
+            tintColor={t.secondary}
+          />
+        </Pressable>
+      </View>
+      {open && <Note>{note}</Note>}
     </View>
   );
 }
