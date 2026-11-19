@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Image, Linking, Pressable, View } from "react-native";
 import { router } from "expo-router";
 import { SymbolView } from "expo-symbols";
+import type { XPostAnalysis } from "../lib/contentTypes";
 import { apiRequest } from "../lib/http";
 import { safeExternal } from "../lib/links";
 import { useTheme } from "../lib/theme";
@@ -13,6 +14,7 @@ import { CompanyLogo } from "./CompanyLogo";
 import { Field, Pager } from "./Content";
 import { TranslatableText } from "./Translate";
 import { Button, Chip, Copy, Failure, Glass, Skeleton, styles } from "./UI";
+import { XPostAnalysisNote } from "./XPostAnalysisNote";
 
 type Creator = {
   username: string;
@@ -34,6 +36,7 @@ type Post = {
   published_at: string;
   text: string;
   quoted_texts?: string[];
+  ai_analysis?: XPostAnalysis | null;
   truncated?: boolean;
   cashtags: string[];
   url: string;
@@ -465,6 +468,7 @@ function Posts({ revision, author }: { revision: number; author: string }) {
                     正文不完整，请前往 X 阅读全文。
                   </Copy>
                 )}
+                <XPostAnalysisNote analysis={post.ai_analysis} />
                 {post.cashtags.length > 0 && (
                   <View
                     style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}

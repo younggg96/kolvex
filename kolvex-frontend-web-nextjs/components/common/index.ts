@@ -2,7 +2,7 @@ export * from "./EmptyState";
 export { default as ExpandableText } from "./ExpandableText";
 export * from "./FilterSheet";
 export { default as ImageGallery } from "./ImageGallery";
-export { default as LogoIcon } from "./LogoIcon";
+export { default as KolvexWordmark } from "./KolvexWordmark";
 export * from "./PageTransition";
 export { default as SearchWithAutocomplete } from "./SearchWithAutocomplete";
 export { StatCard } from "./StatCard";

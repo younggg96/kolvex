@@ -9,6 +9,7 @@ import {
 } from "../../../lib/featureApi";
 import { useResource } from "../../../lib/useResource";
 import { XInsights } from "../../../components/XInsights";
+import { XPostAnalysisNote } from "../../../components/XPostAnalysisNote";
 import { isSymbol, number } from "../../../lib/models";
 import { View } from "react-native";
 import { Page, Glass, Copy, Button, Chip } from "../../../components/UI";
@@ -181,6 +182,7 @@ function XProfile({ id }: { id: string }) {
               {text}
             </Copy>
           ))}
+          <XPostAnalysisNote analysis={p.ai_analysis} />
           {p.cashtags.map((t) => (
             <Button
               key={t}

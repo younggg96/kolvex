@@ -2321,8 +2321,6 @@
     "sameDateIssues": "Other briefs on this date"
   },
   "redditOpinions": {
-    "mobileMentions": "Mentions / 24h",
-    "details": "View details and follow actions",
     "header": "Creator Opinions · Reddit",
     "title": "Reddit trending stocks",
     "description": "The most discussed tickers across stock-focused Reddit communities over the past 24 hours. Compare mentions and rankings with the previous period.",
@@ -2374,7 +2372,10 @@
     "storageUnavailable": "Browser storage is unavailable. Follows will only last for this page session.",
     "clearFilters": "Clear search and follow filter",
     "dataNotes": "About this data",
-    "clearSearch": "Clear search"
+    "clearSearch": "Clear search",
+    "mentionsUnit": "mentions",
+    "changeShort": "vs 24h ago",
+    "upvotesCount": "{count} upvotes"
   },
   "contact": {
     "title": "Contact Kolvex",

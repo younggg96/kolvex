@@ -184,7 +184,7 @@ export default function XTranslatedText({
     <div ref={root} className="w-full min-w-0 max-w-none">
       <p
         lang={showingTranslation ? (locale === "zh" ? "zh-CN" : "en") : undefined}
-        className={`${!compact && text.length > 600 && !expanded ? "line-clamp-6" : ""} whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${compact ? "text-sm leading-6 text-muted-foreground" : "text-base leading-7"}`}
+        className={`${!compact && text.length > 600 && !expanded ? "line-clamp-6" : ""} whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${compact ? "text-sm leading-6 text-muted-foreground" : "text-[0.9375rem] leading-6"}`}
       >
         {content[0]}
       </p>
@@ -195,7 +195,7 @@ export default function XTranslatedText({
           size="sm"
           aria-expanded={expanded}
           onClick={() => setExpanded((value) => !value)}
-          className="mt-1 min-h-10 px-2 text-xs"
+          className="-ml-2 min-h-[44px] px-2 text-xs"
         >
           {expanded ? c("Show less", "收起全文") : c("Read full post", "展开全文")}
         </Button>
@@ -203,12 +203,12 @@ export default function XTranslatedText({
       {content.slice(1).map((quote, index) => (
         <blockquote
           key={index}
-          className="mt-3 whitespace-pre-wrap break-words rounded-3xl bg-muted p-4 text-sm leading-6 [overflow-wrap:anywhere]"
+          className="mt-2 whitespace-pre-wrap break-words rounded-2xl bg-muted px-3 py-2.5 text-sm leading-6 [overflow-wrap:anywhere]"
         >
           {quote}
         </blockquote>
       ))}
-      <div className="mt-1 flex flex-wrap items-center gap-x-3" aria-live="polite">
+      <div className="flex flex-wrap items-center gap-x-3" aria-live="polite">
         <Button
           type="button"
           variant="ghost"
@@ -217,7 +217,7 @@ export default function XTranslatedText({
           disabled={isBusy}
           aria-pressed={showingTranslation}
           aria-busy={isBusy}
-          className="min-h-10 gap-1.5 px-2 text-xs text-muted-foreground"
+          className="-ml-2 min-h-[44px] gap-1.5 px-2 text-xs text-muted-foreground"
         >
           {isBusy ? (
             <Loader2

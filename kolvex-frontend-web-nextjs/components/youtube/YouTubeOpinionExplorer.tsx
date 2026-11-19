@@ -16,7 +16,7 @@ import { formatOpinionDate, formatOpinionDateShort } from "@/lib/opinionDates";
 import { useRouter } from "next/navigation";
 import PageBreadcrumb, { type BreadcrumbItem } from "@/components/layout/PageBreadcrumb";
 import { useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
-import { LineChart, Loader2, X } from "lucide-react";
+import { GalleryHorizontal, LineChart, List, Loader2, X } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
   opinionHeaderActionClass,
@@ -1306,6 +1306,32 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
                         {!allStocks && tabSwitcher}
+                        {route.tab === "creators" && visibleCreators.length > 0 && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-[44px] w-[44px] shrink-0 rounded-full"
+                            aria-controls="youtube-creator-directory-view"
+                            aria-label={
+                              showCreatorList
+                                ? c("Avatar view", "头像视图")
+                                : c("View all", "查看全部")
+                            }
+                            title={
+                              showCreatorList
+                                ? c("Avatar view", "头像视图")
+                                : c("View all", "查看全部")
+                            }
+                            onClick={() => setShowCreatorList((value) => !value)}
+                          >
+                            {showCreatorList ? (
+                              <GalleryHorizontal className="h-4 w-4" aria-hidden="true" />
+                            ) : (
+                              <List className="h-4 w-4" aria-hidden="true" />
+                            )}
+                          </Button>
+                        )}
                         <FilterSheet
                           allScreens={route.tab === "creators"}
                           title={t("common.filter")}
@@ -1413,20 +1439,6 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                                 )}
                               </div>
                             </CommandSearch>
-                            {route.tab === "creators" && visibleCreators.length > 0 && (
-                              <Button
-                                type="button"
-                                variant="link"
-                                size="sm"
-                                className="ml-auto min-h-[44px] px-2 font-medium text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary"
-                                aria-controls="youtube-creator-directory-view"
-                                onClick={() => setShowCreatorList((value) => !value)}
-                              >
-                                {showCreatorList
-                                  ? c("Avatar view", "头像视图")
-                                  : c("View all", "查看全部")}
-                              </Button>
-                            )}
                             {route.tab === "stocks" && isProductFeatureEnabled("portfolio") && (
                               <div className="order-last flex w-full shrink-0 items-center gap-1 lg:order-none lg:w-auto">
                                 {stockScope === "holdings" && held.error && (

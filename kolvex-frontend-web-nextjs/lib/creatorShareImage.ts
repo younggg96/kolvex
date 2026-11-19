@@ -1,7 +1,7 @@
 import type { CreatorLatestVideo, OpinionSentiment } from "./youtubeOpinionsApi";
 import { formatOpinionDate } from "./opinionDates";
 import { sourceVideoUrl } from "./creatorSharing";
-import { KOLVEX_LOGO_COLOR, KOLVEX_LOGO_PATH } from "./brandAssets";
+import { KOLVEX_ACCENT_COLOR, KOLVEX_WORDMARK } from "./brandAssets";
 import { describeStrength, type StrengthDescription } from "../components/youtube/strength";
 
 export const SHARE_WIDTH = 1080;
@@ -36,21 +36,34 @@ export function readCreatorShareAppearance(element: HTMLElement): ShareAppearanc
   const style = getComputedStyle(element);
   const color = (token: string, alpha?: number) => {
     const channels = style.getPropertyValue(`--${token}`).trim().split(/\s+/).map(Number);
-    if (channels.length !== 3 || channels.some((channel) => !Number.isFinite(channel) || channel < 0 || channel > 255)) {
+    if (
+      channels.length !== 3 ||
+      channels.some((channel) => !Number.isFinite(channel) || channel < 0 || channel > 255)
+    ) {
       throw new Error(`Missing website color token: ${token}`);
     }
-    return alpha === undefined ? `rgb(${channels.join(", ")})` : `rgba(${channels.join(", ")}, ${alpha})`;
+    return alpha === undefined
+      ? `rgb(${channels.join(", ")})`
+      : `rgba(${channels.join(", ")}, ${alpha})`;
   };
   return {
     mode: style.colorScheme.includes("dark") ? "dark" : "light",
     fontFamily: style.fontFamily,
     radius: parseFloat(style.borderTopLeftRadius) * 3,
-    background: color("background"), foreground: color("foreground"),
-    card: color("card"), cardForeground: color("card-foreground"),
-    muted: color("muted"), mutedForeground: color("muted-foreground"), border: color("border"),
-    positive: color("positive"), positiveFill: color("positive-fill"),
-    negative: color("negative"), negativeFill: color("negative-fill"),
-    warning: color("warning"), inactiveStrength: color("foreground", 0.15), neutralStrength: color("foreground", 0.75),
+    background: color("background"),
+    foreground: color("foreground"),
+    card: color("card"),
+    cardForeground: color("card-foreground"),
+    muted: color("muted"),
+    mutedForeground: color("muted-foreground"),
+    border: color("border"),
+    positive: color("positive"),
+    positiveFill: color("positive-fill"),
+    negative: color("negative"),
+    negativeFill: color("negative-fill"),
+    warning: color("warning"),
+    inactiveStrength: color("foreground", 0.15),
+    neutralStrength: color("foreground", 0.75),
   };
 }
 
@@ -103,20 +116,31 @@ export function wrapShareText(ctx: MeasureContext, text: string, width: number):
 function clipShareText(ctx: MeasureContext, text: string, width: number): string {
   if (ctx.measureText(text).width <= width) return text;
   const characters = Array.from(text);
-  while (characters.length && ctx.measureText(characters.join("") + "…").width > width) characters.pop();
+  while (characters.length && ctx.measureText(characters.join("") + "…").width > width)
+    characters.pop();
   return characters.join("") + "…";
 }
 
-export function planCreatorShare(data: CreatorLatestVideo, locale: "zh" | "en", ctx: MeasureContext,
-  appearance: ShareAppearance, t: (key: string, params?: Record<string, string>) => string): CreatorShareDocument {
+export function planCreatorShare(
+  data: CreatorLatestVideo,
+  locale: "zh" | "en",
+  ctx: MeasureContext,
+  appearance: ShareAppearance,
+  t: (key: string, params?: Record<string, string>) => string,
+): CreatorShareDocument {
   if (!data.creator || !data.video || !data.opinions.length) throw new Error("No creator opinions");
   const pages: ShareFragment[][] = [[]];
   let y = TOP;
   ctx.font = `400 34px ${appearance.fontFamily}`;
   // Preserve the API's complete video set; do not inherit screen filters or pagination.
   for (const opinion of data.opinions) {
-    const text = opinion.summary?.trim() || opinion.thesis?.trim() || opinion.key_points?.join("\n") ||
-      (locale === "zh" ? "暂无文字摘要，请查看原视频。" : "No written summary. See the source video.");
+    const text =
+      opinion.summary?.trim() ||
+      opinion.thesis?.trim() ||
+      opinion.key_points?.join("\n") ||
+      (locale === "zh"
+        ? "暂无文字摘要，请查看原视频。"
+        : "No written summary. See the source video.");
     const lines = wrapShareText(ctx, text, TEXT_WIDTH);
     let cursor = 0;
     while (cursor < lines.length) {
@@ -130,9 +154,14 @@ export function planCreatorShare(data: CreatorLatestVideo, locale: "zh" | "en", 
         room = Math.floor((BOTTOM - y - ROW_PADDING) / LINE_HEIGHT);
       }
       const count = Math.min(room, lines.length - cursor);
-      pages[pages.length - 1].push({ ticker: opinion.ticker, sentiment: opinion.sentiment,
-        lines: lines.slice(cursor, cursor + count), continued: cursor > 0, y,
-        strength: describeStrength(opinion.direction_score, { t }) });
+      pages[pages.length - 1].push({
+        ticker: opinion.ticker,
+        sentiment: opinion.sentiment,
+        lines: lines.slice(cursor, cursor + count),
+        continued: cursor > 0,
+        y,
+        strength: describeStrength(opinion.direction_score, { t }),
+      });
       y += ROW_PADDING + count * LINE_HEIGHT;
       cursor += count;
     }
@@ -140,11 +169,17 @@ export function planCreatorShare(data: CreatorLatestVideo, locale: "zh" | "en", 
   return {
     creator: data.creator.channel_title || data.creator.channel_handle || data.creator.channel_id,
     avatarUrl: data.creator.channel_avatar_url,
-    date: formatOpinionDate(data.video.opinion_date || data.video.video_published_at, locale === "zh" ? "zh-CN" : "en-US"),
+    date: formatOpinionDate(
+      data.video.opinion_date || data.video.video_published_at,
+      locale === "zh" ? "zh-CN" : "en-US",
+    ),
     title: data.video.video_title || (locale === "zh" ? "最新视频观点" : "Latest video opinions"),
     source: sourceVideoUrl(data.video),
     videoId: data.video.video_id,
-    locale, pages, appearance, mixedLabel: t("youtubeOpinions.mixed"),
+    locale,
+    pages,
+    appearance,
+    mixedLabel: t("youtubeOpinions.mixed"),
   };
 }
 
@@ -155,7 +190,13 @@ export function creatorSharePageHeight(doc: CreatorShareDocument, index: number)
   return last.y + ROW_PADDING + last.lines.length * LINE_HEIGHT + 176;
 }
 
-export function drawCreatorSharePage(ctx: CanvasRenderingContext2D, doc: CreatorShareDocument, index: number, avatar?: HTMLImageElement | null): void {
+export function drawCreatorSharePage(
+  ctx: CanvasRenderingContext2D,
+  doc: CreatorShareDocument,
+  index: number,
+  avatar?: HTMLImageElement | null,
+  wordmark?: HTMLImageElement | null,
+): void {
   const page = doc.pages[index];
   if (!page) throw new Error("Invalid share page");
   const height = creatorSharePageHeight(doc, index);
@@ -173,23 +214,50 @@ export function drawCreatorSharePage(ctx: CanvasRenderingContext2D, doc: Creator
   ctx.strokeStyle = appearance.border;
   ctx.lineWidth = 3;
   ctx.stroke();
-  const text = (value: string, x: number, y: number, size: number, color = appearance.foreground, weight = 400) => {
+  const text = (
+    value: string,
+    x: number,
+    y: number,
+    size: number,
+    color = appearance.foreground,
+    weight = 400,
+  ) => {
     ctx.font = `${weight} ${size}px ${appearance.fontFamily}`;
     ctx.fillStyle = color;
     ctx.fillText(value, x, y);
   };
-  const rule = (y: number) => { ctx.fillStyle = appearance.border; ctx.fillRect(84, y, TEXT_WIDTH, 3); };
+  const rule = (y: number) => {
+    ctx.fillStyle = appearance.border;
+    ctx.fillRect(84, y, TEXT_WIDTH, 3);
+  };
 
-  // The existing Kolvex candlestick mark, drawn directly to avoid image/CORS failures.
-  ctx.save();
-  ctx.translate(60, 112);
-  ctx.scale(0.075, 0.075);
-  ctx.fillStyle = KOLVEX_LOGO_COLOR;
-  ctx.fill(new Path2D(KOLVEX_LOGO_PATH));
-  ctx.restore();
-  text("Kolvex", 144, 91, 51, appearance.foreground, 700);
+  // The "kolvex." wordmark; fall back to drawn text when the image could not load.
+  if (wordmark) {
+    const markHeight = 52;
+    ctx.drawImage(
+      wordmark,
+      84,
+      44,
+      (markHeight * KOLVEX_WORDMARK.width) / KOLVEX_WORDMARK.height,
+      markHeight,
+    );
+  } else {
+    text("kolvex", 84, 91, 51, appearance.foreground, 700);
+    const dotX = 84 + ctx.measureText("kolvex").width + 9;
+    ctx.beginPath();
+    ctx.arc(dotX, 84, 7, 0, Math.PI * 2);
+    ctx.fillStyle = KOLVEX_ACCENT_COLOR;
+    ctx.fill();
+  }
   ctx.textAlign = "right";
-  text(zh ? "博主最新观点" : "Latest creator opinions", 996, 83, 26, appearance.mutedForeground, 500);
+  text(
+    zh ? "博主最新观点" : "Latest creator opinions",
+    996,
+    83,
+    26,
+    appearance.mutedForeground,
+    500,
+  );
   ctx.textAlign = "left";
   rule(128);
   // Keep attribution beside the creator name on every exported page.
@@ -201,26 +269,74 @@ export function drawCreatorSharePage(ctx: CanvasRenderingContext2D, doc: Creator
   if (avatar) {
     ctx.clip();
     const side = Math.min(avatar.naturalWidth, avatar.naturalHeight);
-    ctx.drawImage(avatar, (avatar.naturalWidth - side) / 2, (avatar.naturalHeight - side) / 2, side, side, 84, 164, 88, 88);
+    ctx.drawImage(
+      avatar,
+      (avatar.naturalWidth - side) / 2,
+      (avatar.naturalHeight - side) / 2,
+      side,
+      side,
+      84,
+      164,
+      88,
+      88,
+    );
   } else {
     ctx.textAlign = "center";
-    text(Array.from(doc.creator.trim().replace(/^@/, ""))[0]?.toUpperCase() || "?", 128, 221, 40, appearance.foreground, 600);
+    text(
+      Array.from(doc.creator.trim().replace(/^@/, ""))[0]?.toUpperCase() || "?",
+      128,
+      221,
+      40,
+      appearance.foreground,
+      600,
+    );
   }
   ctx.restore();
   ctx.textAlign = "left";
   ctx.font = `600 54px ${appearance.fontFamily}`;
   text(clipShareText(ctx, doc.creator, TEXT_WIDTH - 116), 200, 205, 54, appearance.foreground, 600);
-  text(`${doc.date}  ·  ${zh ? "美东日期" : "New York date"}`, 200, 248, 28, appearance.mutedForeground);
+  text(
+    `${doc.date}  ·  ${zh ? "美东日期" : "New York date"}`,
+    200,
+    248,
+    28,
+    appearance.mutedForeground,
+  );
   ctx.font = `400 26px ${appearance.fontFamily}`;
   const title = wrapShareText(ctx, doc.title, TEXT_WIDTH);
   text(title[0] || "", 84, 300, 26, appearance.mutedForeground);
-  if (title[1]) text(title.length > 2 ? clipShareText(ctx, title[1] + "…", TEXT_WIDTH) : title[1], 84, 336, 26, appearance.mutedForeground);
+  if (title[1])
+    text(
+      title.length > 2 ? clipShareText(ctx, title[1] + "…", TEXT_WIDTH) : title[1],
+      84,
+      336,
+      26,
+      appearance.mutedForeground,
+    );
   for (const fragment of page) {
-    const color = fragment.strength.tone === "positive" ? appearance.positive : fragment.strength.tone === "negative" ? appearance.negative : appearance.neutralStrength;
-    const fill = fragment.strength.tone === "positive" ? appearance.positiveFill : fragment.strength.tone === "negative" ? appearance.negativeFill : appearance.mutedForeground;
-    const ticker = fragment.ticker + (fragment.continued ? zh ? "（续）" : " (continued)" : "");
+    const color =
+      fragment.strength.tone === "positive"
+        ? appearance.positive
+        : fragment.strength.tone === "negative"
+          ? appearance.negative
+          : appearance.neutralStrength;
+    const fill =
+      fragment.strength.tone === "positive"
+        ? appearance.positiveFill
+        : fragment.strength.tone === "negative"
+          ? appearance.negativeFill
+          : appearance.mutedForeground;
+    const ticker = fragment.ticker + (fragment.continued ? (zh ? "（续）" : " (continued)") : "");
     text(ticker, 84, fragment.y + 40, 38, appearance.cardForeground, 600);
-    if (fragment.sentiment === "mixed") text(doc.mixedLabel, 84 + ctx.measureText(ticker).width + 24, fragment.y + 38, 26, appearance.warning, 600);
+    if (fragment.sentiment === "mixed")
+      text(
+        doc.mixedLabel,
+        84 + ctx.measureText(ticker).width + 24,
+        fragment.y + 38,
+        26,
+        appearance.warning,
+        600,
+      );
     ctx.font = `600 30px ${appearance.fontFamily}`;
     const meterX = 996 - ctx.measureText(fragment.strength.label).width - 72;
     for (let step = 1; step <= 3; step++) {
@@ -233,19 +349,45 @@ export function drawCreatorSharePage(ctx: CanvasRenderingContext2D, doc: Creator
     ctx.textAlign = "right";
     text(fragment.strength.label, 996, fragment.y + 38, 30, color, 600);
     ctx.textAlign = "left";
-    fragment.lines.forEach((line, i) => text(line, 84, fragment.y + 86 + i * LINE_HEIGHT, 34, appearance.mutedForeground));
-    if (fragment !== page[page.length - 1]) rule(fragment.y + ROW_PADDING + fragment.lines.length * LINE_HEIGHT - 12);
+    fragment.lines.forEach((line, i) =>
+      text(line, 84, fragment.y + 86 + i * LINE_HEIGHT, 34, appearance.mutedForeground),
+    );
+    if (fragment !== page[page.length - 1])
+      rule(fragment.y + ROW_PADDING + fragment.lines.length * LINE_HEIGHT - 12);
   }
   rule(height - 132);
   ctx.font = `400 21px ${appearance.fontFamily}`;
-  text(clipShareText(ctx, doc.source.replace(/^https:\/\/(www\.)?/, ""), 740), 84, height - 90, 21, appearance.mutedForeground);
+  text(
+    clipShareText(ctx, doc.source.replace(/^https:\/\/(www\.)?/, ""), 740),
+    84,
+    height - 90,
+    21,
+    appearance.mutedForeground,
+  );
   ctx.textAlign = "right";
   text(`${index + 1} / ${doc.pages.length}`, 996, height - 90, 22, appearance.mutedForeground);
   ctx.textAlign = "left";
-  text(zh ? "观点摘要 · 完整内容见原视频" : "Opinion summaries · See the source video for full context", 84, height - 42, 21, appearance.mutedForeground);
+  text(
+    zh
+      ? "观点摘要 · 完整内容见原视频"
+      : "Opinion summaries · See the source video for full context",
+    84,
+    height - 42,
+    21,
+    appearance.mutedForeground,
+  );
   ctx.textAlign = "right";
   text("kolvex.app", 996, height - 42, 21, appearance.foreground, 500);
   ctx.textAlign = "left";
+}
+
+function loadKolvexWordmark(mode: "light" | "dark"): Promise<HTMLImageElement | null> {
+  return new Promise((resolve) => {
+    const mark = new Image();
+    mark.onload = () => resolve(mark);
+    mark.onerror = () => resolve(null);
+    mark.src = mode === "dark" ? KOLVEX_WORDMARK.onDark : KOLVEX_WORDMARK.onLight;
+  });
 }
 
 async function loadCreatorAvatar(url?: string | null): Promise<HTMLImageElement | null> {
@@ -267,20 +409,29 @@ async function loadCreatorAvatar(url?: string | null): Promise<HTMLImageElement 
   });
 }
 
-export async function renderCreatorSharePage(doc: CreatorShareDocument, index: number): Promise<Blob> {
+export async function renderCreatorSharePage(
+  doc: CreatorShareDocument,
+  index: number,
+): Promise<Blob> {
   const canvas = document.createElement("canvas");
   canvas.width = SHARE_WIDTH;
   canvas.height = creatorSharePageHeight(doc, index);
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas is unavailable");
-  drawCreatorSharePage(ctx, doc, index, await loadCreatorAvatar(doc.avatarUrl));
-  return new Promise((resolve, reject) => canvas.toBlob((blob) => {
-    if (blob) resolve(blob);
-    else reject(new Error("Image export failed"));
-    // Release the backing bitmap once PNG encoding is complete.
-    canvas.width = 0;
-    canvas.height = 0;
-  }, "image/png"));
+  const [avatar, wordmark] = await Promise.all([
+    loadCreatorAvatar(doc.avatarUrl),
+    loadKolvexWordmark(doc.appearance.mode),
+  ]);
+  drawCreatorSharePage(ctx, doc, index, avatar, wordmark);
+  return new Promise((resolve, reject) =>
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error("Image export failed"));
+      // Release the backing bitmap once PNG encoding is complete.
+      canvas.width = 0;
+      canvas.height = 0;
+    }, "image/png"),
+  );
 }
 
 export function creatorShareFilename(doc: CreatorShareDocument, index: number): string {

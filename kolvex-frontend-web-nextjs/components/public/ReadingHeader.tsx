@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import LogoIcon from "@/components/common/LogoIcon";
+import KolvexWordmark from "@/components/common/KolvexWordmark";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/theme/ThemeToggle";
 import { useCopy } from "@/components/decision/shared";
@@ -32,8 +32,7 @@ export function ReadingHeader() {
           href="/"
           className="inline-flex shrink-0 items-center gap-2 rounded-sm text-xl font-extrabold focus-visible:outline-none"
         >
-          <LogoIcon size={26} />
-          Kolvex
+          <KolvexWordmark height={19} />
         </Link>
         <div className="flex flex-wrap items-center justify-end gap-1 sm:gap-2">
           <div

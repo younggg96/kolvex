@@ -6,12 +6,11 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import urlparse
 
-
 HANDLE = re.compile(r"[A-Za-z0-9_]{1,15}")
 POST_ID = re.compile(r"[1-9][0-9]{0,24}")
 TICKER = re.compile(r"[A-Z][A-Z0-9.\-]{0,14}")
 CREATOR_FIELDS = "username,display_name,bio,avatar_url,location,website,followers_count,following_count,created_at"
-POST_FIELDS = "id,author_username,url,published_at,text,cashtags,metrics,quoted_texts,media_links,truncated,pinned,imported_at"
+POST_FIELDS = "id,author_username,url,published_at,text,cashtags,metrics,quoted_texts,media_links,truncated,pinned,imported_at,ai_analysis"
 METRICS = ("replies", "reposts", "likes", "bookmarks", "views")
 
 
@@ -57,8 +56,12 @@ def normalize_import(payload):
             if not isinstance(supplied_url, str):
                 raise ValueError("url must be an X post URL")
             parsed = urlparse(supplied_url)
-            if (parsed.scheme != "https" or parsed.netloc.lower() not in ("x.com", "www.x.com", "twitter.com", "www.twitter.com")
-                    or parsed.path.lower().rstrip("/") != f"/{author}/status/{post_id}"):
+            if (
+                parsed.scheme != "https"
+                or parsed.netloc.lower()
+                not in ("x.com", "www.x.com", "twitter.com", "www.twitter.com")
+                or parsed.path.lower().rstrip("/") != f"/{author}/status/{post_id}"
+            ):
                 raise ValueError("url must match the post author and ID")
             tags = post.get("cashtags", re.findall(r"\$([A-Za-z][A-Za-z0-9.\-]{0,14})\b", text))
             if not isinstance(tags, list) or len(tags) > 100:
@@ -80,22 +83,39 @@ def normalize_import(payload):
                     raise ValueError(f"metrics.{key} must be a nonnegative safe integer or null")
                 clean_metrics[key] = value
             quoted = post.get("quoted_texts", [])
-            if not isinstance(quoted, list) or len(quoted) > 20 or any(not isinstance(q, str) or len(q) > 50000 for q in quoted):
+            if (
+                not isinstance(quoted, list)
+                or len(quoted) > 20
+                or any(not isinstance(q, str) or len(q) > 50000 for q in quoted)
+            ):
                 raise ValueError("quoted_texts must contain at most 20 text strings")
             links = post.get("media_links", [])
             if not isinstance(links, list) or len(links) > 20:
                 raise ValueError("media_links must contain at most 20 X photo/video links")
             for link in links:
-                if not isinstance(link, str) or not re.fullmatch(r"https://(?:www\.)?(?:x|twitter)\.com/[A-Za-z0-9_]{1,15}/status/[1-9][0-9]{0,24}/(?:photo|video)/[1-9][0-9]?", link):
+                if not isinstance(link, str) or not re.fullmatch(
+                    r"https://(?:www\.)?(?:x|twitter)\.com/[A-Za-z0-9_]{1,15}/status/[1-9][0-9]{0,24}/(?:photo|video)/[1-9][0-9]?",
+                    link,
+                ):
                     raise ValueError("Invalid X media page link")
             for flag in ("truncated", "pinned"):
                 if flag in post and type(post[flag]) is not bool:
                     raise ValueError(f"{flag} must be boolean")
-            result.append({"id": post_id, "author_username": author, "url": url,
-                           "published_at": dt.astimezone(timezone.utc).isoformat(), "text": text,
-                           "cashtags": sorted(set(normalized_tags)), "metrics": clean_metrics,
-                           "quoted_texts": quoted, "media_links": links,
-                           "truncated": post.get("truncated", False), "pinned": post.get("pinned", False)})
+            result.append(
+                {
+                    "id": post_id,
+                    "author_username": author,
+                    "url": url,
+                    "published_at": dt.astimezone(timezone.utc).isoformat(),
+                    "text": text,
+                    "cashtags": sorted(set(normalized_tags)),
+                    "metrics": clean_metrics,
+                    "quoted_texts": quoted,
+                    "media_links": links,
+                    "truncated": post.get("truncated", False),
+                    "pinned": post.get("pinned", False),
+                }
+            )
         except (ValueError, TypeError) as exc:
             raise ValueError(f"Post {index}: {exc}") from exc
     return result
@@ -106,8 +126,13 @@ class XContentService:
         self.db = db
 
     def creators(self, limit=1000, offset=0):
-        rows = (self.db.table("x_creators").select(CREATOR_FIELDS)
-                .order("username").range(offset, offset + limit - 1).execute())
+        rows = (
+            self.db.table("x_creators")
+            .select(CREATOR_FIELDS)
+            .order("username")
+            .range(offset, offset + limit - 1)
+            .execute()
+        )
         return {"creators": rows.data or [], "limit": limit, "offset": offset}
 
     def summaries(self, author=None):
@@ -118,35 +143,75 @@ class XContentService:
         records = [row for row in snapshot["summaries"] if not author or row["username"] == author]
         ids = [post_id for row in records for post_id in row["source_ids"]]
         if not ids:
-            return {"generated_at": snapshot["generated_at"], "coverage": "partial", "summaries": []}
-        rows = self.db.table("x_posts").select("id,author_username,url,published_at").in_("id", ids).execute().data or []
+            return {
+                "generated_at": snapshot["generated_at"],
+                "coverage": "partial",
+                "summaries": [],
+            }
+        rows = (
+            self.db.table("x_posts")
+            .select("id,author_username,url,published_at")
+            .in_("id", ids)
+            .execute()
+            .data
+            or []
+        )
         posts = {row["id"]: row for row in rows}
         result = []
         for record in records:
             sources = [posts.get(post_id) for post_id in record["source_ids"]]
             # Never display an insight without all of its original evidence.
-            if not all(source and source["author_username"].lower() == record["username"] for source in sources):
+            if not all(
+                source and source["author_username"].lower() == record["username"]
+                for source in sources
+            ):
                 continue
-            result.append({"username": record["username"], "content": record["content"],
-                           "sources": sources,
-                           "coverage_start": min(source["published_at"] for source in sources),
-                           "coverage_end": max(source["published_at"] for source in sources)})
-        return {"generated_at": snapshot["generated_at"], "coverage": "partial", "summaries": result}
+            result.append(
+                {
+                    "username": record["username"],
+                    "content": record["content"],
+                    "sources": sources,
+                    "coverage_start": min(source["published_at"] for source in sources),
+                    "coverage_end": max(source["published_at"] for source in sources),
+                }
+            )
+        return {
+            "generated_at": snapshot["generated_at"],
+            "coverage": "partial",
+            "summaries": result,
+        }
 
     def save_creator(self, handle, display_name, bio, **profile):
         handle = username(handle)
         for field in ("avatar_url", "website"):
             if profile.get(field):
                 parsed = urlparse(profile[field])
-                if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
+                if (
+                    parsed.scheme != "https"
+                    or not parsed.hostname
+                    or parsed.username
+                    or parsed.password
+                ):
                     raise ValueError(f"{field} must be a public HTTPS URL")
-        return {"creator": self.db.table("x_creators").upsert({
-            "username": handle, "display_name": display_name.strip() or handle,
-            "bio": bio.strip(), **profile,
-        }, on_conflict="username").execute().data[0]}
+        return {
+            "creator": self.db.table("x_creators")
+            .upsert(
+                {
+                    "username": handle,
+                    "display_name": display_name.strip() or handle,
+                    "bio": bio.strip(),
+                    **profile,
+                },
+                on_conflict="username",
+            )
+            .execute()
+            .data[0]
+        }
 
     def posts(self, author=None, ticker=None, limit=20, offset=0):
-        query = self.db.table("x_posts").select(f"{POST_FIELDS},creator:x_creators({CREATOR_FIELDS})", count="exact")
+        query = self.db.table("x_posts").select(
+            f"{POST_FIELDS},creator:x_creators({CREATOR_FIELDS})", count="exact"
+        )
         if author:
             query = query.eq("author_username", username(author))
         if ticker:
@@ -154,8 +219,18 @@ class XContentService:
             if not TICKER.fullmatch(ticker):
                 raise ValueError("Invalid ticker")
             query = query.contains("cashtags", [ticker])
-        response = query.order("published_at", desc=True).order("id", desc=True).range(offset, offset + limit - 1).execute()
-        return {"posts": response.data or [], "total": response.count or 0, "limit": limit, "offset": offset}
+        response = (
+            query.order("published_at", desc=True)
+            .order("id", desc=True)
+            .range(offset, offset + limit - 1)
+            .execute()
+        )
+        return {
+            "posts": response.data or [],
+            "total": response.count or 0,
+            "limit": limit,
+            "offset": offset,
+        }
 
     def ticker_heat(self, days=7, now=None):
         """Cashtag counts by source publication date for this window and the one before it."""
@@ -163,10 +238,18 @@ class XContentService:
         start, previous_start = now - timedelta(days=days), now - timedelta(days=2 * days)
         rows, offset = [], 0
         while offset < 10000:
-            page = (self.db.table("x_posts").select("author_username,published_at,cashtags")
-                    .gte("published_at", previous_start.isoformat()).lte("published_at", now.isoformat())
-                    .order("published_at", desc=True).order("id", desc=True)
-                    .range(offset, offset + 999).execute().data or [])
+            page = (
+                self.db.table("x_posts")
+                .select("author_username,published_at,cashtags")
+                .gte("published_at", previous_start.isoformat())
+                .lte("published_at", now.isoformat())
+                .order("published_at", desc=True)
+                .order("id", desc=True)
+                .range(offset, offset + 999)
+                .execute()
+                .data
+                or []
+            )
             rows += page
             if len(page) < 1000:
                 break
@@ -177,26 +260,43 @@ class XContentService:
             for ticker in set(row.get("cashtags") or []):
                 if not TICKER.fullmatch(ticker):
                     continue
-                entry = heat.setdefault(ticker, {"ticker": ticker, "posts": 0, "previous": 0, "authors": set(), "latest": None})
+                entry = heat.setdefault(
+                    ticker,
+                    {"ticker": ticker, "posts": 0, "previous": 0, "authors": set(), "latest": None},
+                )
                 if published >= start:
                     entry["posts"] += 1
                     entry["authors"].add(row["author_username"])
-                    entry["latest"] = max(entry["latest"] or row["published_at"], row["published_at"])
+                    entry["latest"] = max(
+                        entry["latest"] or row["published_at"], row["published_at"]
+                    )
                 else:
                     entry["previous"] += 1
-        tickers = sorted((
-            {**entry, "authors": len(entry["authors"])} for entry in heat.values() if entry["posts"] > 0
-        ), key=lambda entry: (-entry["posts"], -entry["authors"], entry["ticker"]))
+        tickers = sorted(
+            (
+                {**entry, "authors": len(entry["authors"])}
+                for entry in heat.values()
+                if entry["posts"] > 0
+            ),
+            key=lambda entry: (-entry["posts"], -entry["authors"], entry["ticker"]),
+        )
         return {"tickers": tickers, "days": days, "from": start.isoformat(), "to": now.isoformat()}
 
     def validate(self, payload):
         posts = normalize_import(payload)
-        return {"total": len(posts), "authors": sorted({p["author_username"] for p in posts}),
-                "tickers": sorted({t for p in posts for t in p["cashtags"]}),
-                "truncated": sum(p["truncated"] for p in posts)}
+        return {
+            "total": len(posts),
+            "authors": sorted({p["author_username"] for p in posts}),
+            "tickers": sorted({t for p in posts for t in p["cashtags"]}),
+            "truncated": sum(p["truncated"] for p in posts),
+        }
 
     def upload(self, payload):
         posts = normalize_import(payload)
         # One transaction: creators and posts either both commit or both roll back.
         result = self.db.rpc("import_x_posts", {"posts": posts}).execute().data
-        return {"total": len(posts), "inserted": result["inserted"], "skipped": len(posts) - result["inserted"]}
+        return {
+            "total": len(posts),
+            "inserted": result["inserted"],
+            "skipped": len(posts) - result["inserted"],
+        }

@@ -154,7 +154,9 @@ html {
   --primary-hover: 22 101 52;
   --primary-accent: 34 197 94;
   --primary-soft: 220 252 231;
-  --primary-foreground: var(--foreground);
+  --primary-foreground: var(--surface);
+  /* Solid green fills (bg-primary) stay deep in both themes so white text reads at 5:1. */
+  --primary-fill: var(--button-primary);
   --background: 247 250 246;
   --sidebar: 255 255 255;
   --surface: 255 255 255;
@@ -291,7 +293,7 @@ html {
   --focus: var(--primary);
   --primary: 0 200 5;
   --primary-accent: var(--primary);
-  --primary-foreground: 0 0 0;
+  --primary-foreground: 255 255 255;
   --positive: 0 200 5;
   --negative: 255 80 0;
   --warning: 255 176 32;
@@ -1262,13 +1264,13 @@ html[data-chat-history-open] .app-workbench .app-sidebar {
 /* Upgrade stays visible in the footer as the one solid brand action. */
 .app-workbench [data-sidebar="menu-button"][data-variant="upgrade"],
 .app-workbench [data-sidebar="menu-button"][data-variant="upgrade"]:hover {
-  background: rgb(var(--primary));
+  background: rgb(var(--primary-fill));
   color: rgb(var(--primary-foreground));
   font-weight: 600;
 }
 
 .app-workbench [data-sidebar="menu-button"][data-variant="upgrade"]:hover {
-  background: rgb(var(--primary) / 0.88);
+  background: rgb(var(--primary-fill) / 0.88);
 }
 
 .app-workbench [data-sidebar="menu-button"] svg {
@@ -1459,7 +1461,7 @@ html[data-chat-history-open] .app-workbench .app-sidebar {
   }
 
   .glass-button-primary:not(:disabled) {
-    background: rgb(var(--primary));
+    background: rgb(var(--primary-fill));
   }
 
   .glass-button-destructive:not(:disabled) {
@@ -2165,8 +2167,8 @@ html[data-chat-history-open] .app-workbench .app-sidebar {
 }
 
 .dark .sidebar-chat-cta {
-  --cta-from: rgb(var(--primary));
-  --cta-to: color-mix(in srgb, rgb(var(--primary)), black 18%);
+  --cta-from: rgb(var(--primary-fill));
+  --cta-to: color-mix(in srgb, rgb(var(--primary-fill)), black 18%);
   color: rgb(var(--primary-foreground));
 }
 

@@ -73,7 +73,7 @@ export function AvatarRail({
       <div
         ref={rail}
         onScroll={updateEdges}
-        className="overflow-x-auto overscroll-x-contain px-1 py-1"
+        className="scrollbar-hide overflow-x-auto overscroll-x-contain px-1"
       >
         <ul className="flex w-max min-w-full items-start gap-2 md:gap-3" aria-label={label}>
           {items.map((item) => {
@@ -83,7 +83,7 @@ export function AvatarRail({
               "aria-label": item.updateLabel ? `${item.label} · ${item.updateLabel}` : item.label,
               title: item.updateLabel ? `${item.label} · ${item.updateLabel}` : item.label,
               className: cn(
-                "group/avatar flex w-[82px] cursor-pointer flex-col items-center gap-1.5 rounded-xl px-1 pb-2 pt-1.5 text-center text-[12px] leading-5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary md:w-[96px] md:text-sm",
+                "group/avatar flex w-[82px] cursor-pointer flex-col items-center gap-1 rounded-xl px-1 pb-1 pt-1 text-center text-[12px] leading-5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary md:w-[96px] md:text-sm",
                 isSelected
                   ? "font-semibold text-foreground"
                   : "text-muted-foreground hover:text-foreground",
@@ -145,7 +145,7 @@ export function AvatarRail({
           type="button"
           variant="outline"
           size="icon"
-          className="absolute left-0 top-9 z-10 hidden rounded-full bg-background lg:inline-flex"
+          className="absolute left-0 top-8 z-10 hidden rounded-full bg-background [@media(hover:hover)]:inline-flex"
           aria-label={c("Scroll left", "向左浏览")}
           onClick={() => scroll(-1)}
         >
@@ -157,7 +157,7 @@ export function AvatarRail({
           type="button"
           variant="outline"
           size="icon"
-          className="absolute right-0 top-9 z-10 hidden rounded-full bg-background lg:inline-flex"
+          className="absolute right-0 top-8 z-10 hidden rounded-full bg-background [@media(hover:hover)]:inline-flex"
           aria-label={c("Scroll right", "向右浏览")}
           onClick={() => scroll(1)}
         >

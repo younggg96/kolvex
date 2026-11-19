@@ -3,12 +3,11 @@
 import Link from "next/link";
 import Image from "next/image";
 import ThemeToggle from "@/components/theme/ThemeToggle";
-import LogoIcon from "@/components/common/LogoIcon";
+import KolvexWordmark from "@/components/common/KolvexWordmark";
 import { usePathname, useRouter } from "next/navigation";
-import { useTheme } from "next-themes";
 import { useAuth, useUserProfile } from "@/hooks";
 import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ArrowUpRight, Menu } from "lucide-react";
 import {
   DropdownMenu,
@@ -23,21 +22,12 @@ import { landingNavigation } from "@/components/landing/landingNavigation";
 export default function LandingHeader() {
   const { t, locale, setLocale } = useTranslation();
   const c = useCopy();
-  const { theme } = useTheme();
   const { user, isAuthenticated, isLoading } = useAuth();
   const { profile } = useUserProfile();
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const isAuthRoute = pathname === "/auth" || pathname.startsWith("/auth/");
   const [navigationOpen, setNavigationOpen] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const textColorClass =
-    mounted && theme === "dark" ? "text-white" : "text-gray-900 dark:text-white";
 
   // Get initials for avatar fallback
   const getInitials = () => {
@@ -58,11 +48,10 @@ export default function LandingHeader() {
     <header className="glass-header sticky top-0 z-40 border-b">
       <div className="landing-width flex min-h-[4.5rem] items-center justify-between gap-2 py-3 sm:gap-4">
         <Link href="/" className="group flex shrink-0 items-center gap-1.5 transition-all sm:gap-2">
-          <LogoIcon
-            size={24}
-            className="h-7 w-7 text-primary transition-transform duration-200 group-hover:scale-110 motion-reduce:transform-none"
+          <KolvexWordmark
+            height={20}
+            className="transition-transform duration-200 group-hover:scale-105 motion-reduce:transform-none"
           />
-          <span className={`${textColorClass} text-xl font-extrabold`}>Kolvex</span>
         </Link>
         <div className="flex items-center gap-1 sm:gap-4">
           <DropdownMenu open={navigationOpen} onOpenChange={setNavigationOpen}>

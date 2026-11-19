@@ -115,7 +115,7 @@ If you need to regenerate PWA icons:
 npm run generate-icons
 ```
 
-This will create all required icon sizes from `public/icon.svg`.
+This will create all required icon sizes from `public/brand/kolvex-app-icon.png` (1024×1024).
 
 ### Build
 

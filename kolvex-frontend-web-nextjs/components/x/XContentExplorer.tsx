@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ExternalLink, Loader2, RefreshCw, X } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { SearchFieldIcon } from "@/components/ui/search-input";
 import { CommandSearch } from "@/components/ui/command-search";
@@ -89,19 +90,21 @@ export default function XContentExplorer() {
         className="min-h-0 flex-1 overflow-y-auto bg-background px-4 pb-10 pt-4 md:px-8 md:pt-8 dark:bg-transparent"
       >
         <div className="mx-auto w-full max-w-[1440px] space-y-6">
-          <header>
-            <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{title}</h1>
-          </header>
-          <XCreatorSummaries
-            author={author}
-            creators={creators}
-            creatorError={creatorError}
-            retryCreators={() => setCreatorAttempt((value) => value + 1)}
-            creatorPostsHref={(username) => href({ author: username })}
-            selectCreator={(username) => {
-              if (username !== author) router.push(href({ author: username }), { scroll: false });
-            }}
-          />
+          <div className="space-y-3">
+            <header>
+              <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{title}</h1>
+            </header>
+            <XCreatorSummaries
+              author={author}
+              creators={creators}
+              creatorError={creatorError}
+              retryCreators={() => setCreatorAttempt((value) => value + 1)}
+              creatorPostsHref={(username) => href({ author: username })}
+              selectCreator={(username) => {
+                if (username !== author) router.push(href({ author: username }), { scroll: false });
+              }}
+            />
+          </div>
           <div className="min-w-0 space-y-4">
             {selected && (
               <details key={author} className="group">
@@ -381,7 +384,7 @@ function XPosts({
                 >
                   <article className="min-w-0">
                     <div className="flex flex-wrap items-start justify-between gap-2">
-                      <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex min-w-0 items-center gap-2.5">
                         <CreatorAvatar creator={post.creator} username={post.author_username} />
                         <div className="min-w-0">
                           <Link
@@ -392,7 +395,7 @@ function XPosts({
                           >
                             {post.creator?.display_name || post.author_username}
                           </Link>
-                          <p className="mt-1 text-xs text-muted-foreground">
+                          <p className="text-xs text-muted-foreground">
                             @{post.author_username} ·{" "}
                             <time dateTime={post.published_at}>
                               {postDate.format(new Date(post.published_at))}
@@ -401,7 +404,7 @@ function XPosts({
                         </div>
                       </div>
                       <a
-                        className={`${focusClass} inline-flex min-h-9 items-center gap-1 text-xs underline-offset-4 hover:underline`}
+                        className={`${focusClass} inline-flex min-h-[44px] items-center gap-1 text-xs underline-offset-4 hover:underline`}
                         href={post.url}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -410,7 +413,7 @@ function XPosts({
                         <ExternalLink className="h-3 w-3" aria-hidden />
                       </a>
                     </div>
-                    <div className="mt-4">
+                    <div className="mt-1.5">
                       <XTranslatedText
                         text={post.text}
                         quotes={post.quoted_texts}
@@ -425,8 +428,30 @@ function XPosts({
                         )}
                       </p>
                     )}
+                    {post.ai_analysis?.status === "complete" && (
+                      <div className="mt-2.5 space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs font-medium text-muted-foreground">
+                            {c("AI summary", "AI 摘要")}
+                          </span>
+                          {post.ai_analysis.stock_relevance === "low" && (
+                            <Badge variant="outline" size="sm">
+                              {c("Low stock relevance", "股票相关性低")}
+                            </Badge>
+                          )}
+                          {post.ai_analysis.stock_relevance === "uncertain" && (
+                            <Badge variant="outline" size="sm">
+                              {c("Stock relevance unclear", "股票相关性不明确")}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="break-words text-sm text-muted-foreground">
+                          {c(post.ai_analysis.summary_en, post.ai_analysis.summary_zh)}
+                        </p>
+                      </div>
+                    )}
                     {post.cashtags.length > 0 && (
-                      <div className="mt-4 flex flex-wrap gap-2">
+                      <div className="mt-1 flex flex-wrap gap-2">
                         {post.cashtags.map((tag) => {
                           // One chip, one destination: the stock identity itself is the
                           // link to that stock's quotes page. Tapping it must not be
@@ -451,21 +476,21 @@ function XPosts({
                       </div>
                     )}
                     {post.media_links.length > 0 && (
-                      <div className="mt-3 flex flex-wrap gap-3">
+                      <div className="mt-1 flex flex-wrap gap-3">
                         {post.media_links.map((link, index) => (
                           <a
                             key={`${link}-${index}`}
                             href={link}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className={`${focusClass} py-2 text-xs underline underline-offset-4`}
+                            className={`${focusClass} inline-flex min-h-[44px] items-center text-xs underline underline-offset-4`}
                           >
                             {c(`Media ${index + 1} on X`, `在 X 查看媒体 ${index + 1}`)}
                           </a>
                         ))}
                       </div>
                     )}
-                    <dl className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground">
+                    <dl className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                       {Object.entries(metrics).map(
                         ([key, label]) =>
                           post.metrics[key] != null && (

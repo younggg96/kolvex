@@ -160,6 +160,7 @@ test("export uses live website theme tokens and the real font, including custom 
   const draw = {
     ...ctx,
     beginPath() {},
+    arc() {},
     roundRect() {},
     save() {},
     restore() {},

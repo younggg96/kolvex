@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ContentLoading, SkeletonRepeat } from "@/components/ui/content-loading";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMemo, useRef, useState } from "react";
-import { ChevronDown, ExternalLink, Loader2, RefreshCw, Star, X } from "lucide-react";
+import { ExternalLink, Loader2, RefreshCw, Star, X } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,16 +20,8 @@ import {
 } from "@/components/ui/select";
 import { FilterSheet, FilterSheetGroup, FilterSheetToggle } from "@/components/ui/filter-sheet";
 import WatchlistButton from "@/components/decision/WatchlistButton";
-import CompanyLogo from "@/components/ui/company-logo";
-import { ListCard, ListColumnHeader, ListRow } from "@/components/ui/list-card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import CompanyLogo, { phoneListLogoClass } from "@/components/ui/company-logo";
+import { ListCard, ListRow, listRowTargetClass } from "@/components/ui/list-card";
 import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { useCachedResource } from "@/hooks/useCachedResource";
@@ -46,16 +38,13 @@ import {
 } from "@/lib/redditOpinions";
 import { withSign } from "@/lib/format";
 
-// Mobile-only rows use the same compact rhythm as listRowTargetClass on mobile
-// (no min height, py-2), matching the YouTube opinions stock list.
-const MOBILE_GRID = "grid grid-cols-[minmax(0,1fr)_5.5rem_1rem] items-center gap-2 py-2";
+// Same column rhythm as the YouTube opinions stock rows: identity, then two
+// right-aligned stat columns that keep fixed widths from sm up.
+const ROW_GRID =
+  "grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 sm:grid-cols-[minmax(0,1fr)_120px_120px] sm:gap-x-4";
 const STOCK_IDENTITY = "flex min-w-0 items-center gap-3";
 const STOCK_TICKER = "block text-[0.9375rem] font-semibold";
 const STOCK_NAME = "mt-0.5 block text-[0.8125rem] text-muted-foreground";
-/** Cells carry the hover band so the table row keeps rounded ends inside the card. The
- *  wash is neutral so green keeps signalling direction rather than interaction. */
-const HOVER_CELL =
-  "transition-colors group-hover:bg-foreground/[0.06] first:rounded-l-2xl last:rounded-r-2xl";
 
 export default function RedditOpinionsPage() {
   const { t, locale } = useTranslation();
@@ -313,253 +302,100 @@ export default function RedditOpinionsPage() {
               >
                 {loading && !data ? (
                   <ContentLoading label={t("redditOpinions.loading")} className="min-h-0">
-                    <div className="md:hidden">
-                      <div className="border-b border-border px-2 py-3">
-                        <Skeleton className="h-3.5 w-1/2 rounded-md" />
-                      </div>
-                      <SkeletonRepeat count={8}>
-                        {(i) => (
-                          <div className={MOBILE_GRID}>
-                            <span className={STOCK_IDENTITY}>
-                              <Skeleton className="h-3 w-5 shrink-0 rounded" />
-                              <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
-                              <span className="flex min-w-0 flex-1 flex-col gap-2">
-                                <Skeleton className="h-4 w-12 rounded-md" />
-                                <Skeleton
-                                  className={cn("h-3 rounded-md", i % 2 ? "w-20" : "w-28")}
-                                />
-                              </span>
+                    <SkeletonRepeat count={8}>
+                      {(i) => (
+                        <div className={cn(ROW_GRID, "min-h-16 py-2 pl-2 pr-12 max-md:pl-0")}>
+                          <span className={STOCK_IDENTITY}>
+                            <Skeleton className="h-3 w-4 shrink-0 rounded" />
+                            <Skeleton className="h-8 w-8 shrink-0 rounded-full md:h-10 md:w-10" />
+                            <span className="flex min-w-0 flex-1 flex-col gap-2">
+                              <Skeleton className="h-4 w-12 rounded-md" />
+                              <Skeleton className={cn("h-3 rounded-md", i % 2 ? "w-20" : "w-28")} />
                             </span>
-                            <span className="flex flex-col items-end gap-2">
-                              <Skeleton className="h-4 w-10 rounded-md" />
-                              <Skeleton className="h-3 w-12 rounded-md" />
-                            </span>
-                            <Skeleton className="h-3.5 w-3.5 rounded" />
-                          </div>
-                        )}
-                      </SkeletonRepeat>
-                    </div>
-                    <div className="hidden md:block">
-                      <div className="flex h-10 items-center gap-4 border-b border-border px-2">
-                        <Skeleton className="h-3.5 w-full rounded-md" />
-                      </div>
-                      <SkeletonRepeat count={8}>
-                        {(i) => (
-                          <div className="grid h-20 grid-cols-[3.5rem_minmax(12rem,1fr)_repeat(4,5rem)_3.5rem] items-center gap-4 px-2">
-                            <Skeleton className="h-3.5 w-5 rounded" />
-                            <span className={STOCK_IDENTITY}>
-                              <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
-                              <span className="flex flex-1 flex-col gap-2">
-                                <Skeleton className="h-4 w-14 rounded-md" />
-                                <Skeleton
-                                  className={cn("h-3 rounded-md", i % 2 ? "w-28" : "w-40")}
-                                />
-                              </span>
-                            </span>
-                            <Skeleton className="ml-auto h-4 w-10 rounded-md" />
-                            <Skeleton className="ml-auto h-4 w-12 rounded-md" />
-                            <Skeleton className="ml-auto h-4 w-8 rounded-md" />
-                            <Skeleton className="ml-auto h-4 w-12 rounded-md" />
-                            <Skeleton className="mx-auto h-5 w-5 rounded-full" />
-                          </div>
-                        )}
-                      </SkeletonRepeat>
-                    </div>
+                          </span>
+                          <span className="flex flex-col items-end gap-2">
+                            <Skeleton className="h-4 w-10 rounded-md" />
+                            <Skeleton className="h-3 w-16 rounded-md" />
+                          </span>
+                          <span className="flex flex-col items-end gap-2">
+                            <Skeleton className="h-4 w-12 rounded-md" />
+                            <Skeleton className="h-3 w-14 rounded-md" />
+                          </span>
+                        </div>
+                      )}
+                    </SkeletonRepeat>
                   </ContentLoading>
                 ) : data && rows.length > 0 ? (
-                  <>
-                    <div className="md:hidden">
-                      <ListColumnHeader>
-                        <div className="grid w-full grid-cols-[minmax(0,1fr)_5.5rem_1rem] items-center gap-2 px-2 pb-3 md:py-3">
-                          <span>{t("redditOpinions.stock")}</span>
-                          <span className="text-right">{t("redditOpinions.mobileMentions")}</span>
-                          <span />
-                        </div>
-                      </ListColumnHeader>
-                      {/* Ordered list: ranks are meaningful, so the mobile disclosure
-                          rows stay an <ol> rather than the default <ul> ListRows. */}
-                      <ol aria-label={t("redditOpinions.title")} className="min-w-0">
-                        {rows.map((row, index) => (
-                          <ListRow key={row.ticker} className="opinion-result-row">
-                            <details className="group min-w-0 flex-1 rounded-2xl">
-                              <summary
-                                className={cn(
-                                  MOBILE_GRID,
-                                  "cursor-pointer list-none outline-none [&::-webkit-details-marker]:hidden",
-                                )}
-                              >
-                                <span className={STOCK_IDENTITY}>
-                                  <span className="w-5 shrink-0 text-center text-xs tabular-nums text-muted-foreground">
-                                    <span className="sr-only">{t("redditOpinions.rank")} </span>
-                                    {row.rank}
-                                  </span>
-                                  <span aria-hidden="true">
-                                    <CompanyLogo symbol={row.ticker} name={row.name} size="sm" />
-                                  </span>
-                                  <Link
-                                    href={marketStockHref(row.ticker)}
-                                    className="-m-1 min-w-0 rounded-xl p-1 transition-colors duration-150 hover:text-foreground focus-visible:outline-none"
-                                    aria-label={t("redditOpinions.openStock", {
-                                      ticker: row.ticker,
-                                    })}
-                                  >
-                                    <span className={STOCK_TICKER}>{row.ticker}</span>
-                                    <span className={cn(STOCK_NAME, "truncate")} title={row.name}>
-                                      {row.name}
-                                    </span>
-                                  </Link>
-                                </span>
-                                <span className="text-right tabular-nums">
-                                  <span className="block text-sm font-semibold">
-                                    <span className="sr-only">{t("redditOpinions.mentions")} </span>
-                                    {number.format(row.mentions)}
-                                  </span>
-                                  <span className="mt-1 block text-xs text-muted-foreground">
-                                    <span className="sr-only">{t("redditOpinions.change")} </span>
-                                    {changeLabel(row)}
-                                  </span>
-                                </span>
-                                <ChevronDown
-                                  className="h-3.5 w-3.5 text-muted-foreground transition-transform group-open:rotate-180 motion-reduce:transition-none"
-                                  aria-hidden="true"
-                                />
-                                <span className="sr-only">{t("redditOpinions.details")}</span>
-                              </summary>
-                              <div className="pb-4 pl-8 pr-2 text-xs">
-                                <Link
-                                  href={marketStockHref(row.ticker)}
-                                  aria-label={t("redditOpinions.openStock", { ticker: row.ticker })}
-                                  className="mb-3 inline-flex min-h-11 items-center gap-2 rounded-xl text-xs font-medium underline-offset-4 hover:underline focus-visible:outline-none "
-                                >
-                                  <CompanyLogo symbol={row.ticker} name={row.name} size="sm" />
-                                  <span>
-                                    {t("redditOpinions.openStock", { ticker: row.ticker })}
-                                  </span>
-                                </Link>
-                                <p className="mb-3 break-words text-muted-foreground">{row.name}</p>
-                                <dl className="flex flex-wrap gap-x-6 gap-y-2">
-                                  <div>
-                                    <dt className="text-muted-foreground">
-                                      {t("redditOpinions.change")}
-                                    </dt>
-                                    <dd className="mt-1 tabular-nums">
-                                      {mentionChange(row) === null
-                                        ? t("redditOpinions.noBaseline")
-                                        : changeLabel(row)}
-                                    </dd>
-                                  </div>
-                                  <div>
-                                    <dt className="text-muted-foreground">
-                                      {t("redditOpinions.rankChange")}
-                                    </dt>
-                                    <dd className="mt-1 tabular-nums">{rankLabel(row)}</dd>
-                                  </div>
-                                  <div>
-                                    <dt className="text-muted-foreground">
-                                      {t("redditOpinions.upvotes")}
-                                    </dt>
-                                    <dd className="mt-1 tabular-nums">
-                                      {number.format(row.upvotes)}
-                                    </dd>
-                                  </div>
-                                </dl>
-                                {watchButton(row)}
-                              </div>
-                            </details>
-                          </ListRow>
-                        ))}
-                      </ol>
-                    </div>
-                    <div
-                      role="region"
-                      aria-label={t("redditOpinions.title")}
-                      tabIndex={0}
-                      className="hidden overflow-x-auto rounded-2xl focus-visible:outline-none md:block"
-                    >
-                      <Table>
-                        <caption className="sr-only">
-                          {t("redditOpinions.title")} · {t("redditOpinions.mobileMentions")}
-                        </caption>
-                        <TableHeader className="!bg-transparent">
-                          <TableRow>
-                            <TableHead scope="col" className="w-14">
-                              {t("redditOpinions.rank")}
-                            </TableHead>
-                            <TableHead scope="col">{t("redditOpinions.stock")}</TableHead>
-                            <TableHead scope="col" className="whitespace-nowrap text-right">
-                              {t("redditOpinions.mobileMentions")}
-                            </TableHead>
-                            <TableHead scope="col" className="whitespace-nowrap text-right">
-                              {t("redditOpinions.change")}
-                            </TableHead>
-                            <TableHead scope="col" className="whitespace-nowrap text-right">
-                              {t("redditOpinions.rankChange")}
-                            </TableHead>
-                            <TableHead scope="col" className="text-right">
-                              {t("redditOpinions.upvotes")}
-                            </TableHead>
-                            <TableHead scope="col" className="w-14">
-                              <span className="sr-only">{t("redditOpinions.followAction")}</span>
-                            </TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {rows.map((row, index) => (
-                            <TableRow
-                              key={row.ticker}
-                              className="list-reveal opinion-result-row group h-20 border-0 hover:!bg-transparent"
-                            >
-                              <TableCell className={cn(HOVER_CELL, "text-muted-foreground")}>
+                  /* Ordered list: ranks are meaningful. Rows share the stock-row
+                     shape of the YouTube opinions directory (ListRow + row target). */
+                  <ol aria-label={t("redditOpinions.title")} className="min-w-0">
+                    {rows.map((row) => {
+                      const change = changeLabel(row);
+                      return (
+                        <ListRow key={row.ticker} className="opinion-result-row gap-1">
+                          <Link
+                            href={marketStockHref(row.ticker)}
+                            aria-label={t("redditOpinions.openStock", { ticker: row.ticker })}
+                            className={cn(ROW_GRID, listRowTargetClass, "group min-h-0")}
+                          >
+                            <span className={STOCK_IDENTITY}>
+                              <span className="w-5 shrink-0 text-center text-xs tabular-nums text-muted-foreground">
+                                <span className="sr-only">{t("redditOpinions.rank")} </span>
                                 {row.rank}
-                              </TableCell>
-                              <TableCell className={cn(HOVER_CELL, "min-w-48 max-w-72")}>
-                                <Link
-                                  href={marketStockHref(row.ticker)}
-                                  className={cn(
-                                    STOCK_IDENTITY,
-                                    "-m-1 min-h-11 p-1 transition-colors duration-150 hover:text-foreground focus-visible:outline-none",
-                                  )}
-                                  aria-label={t("redditOpinions.openStock", { ticker: row.ticker })}
-                                >
-                                  <span aria-hidden="true">
-                                    <CompanyLogo symbol={row.ticker} name={row.name} size="md" />
-                                  </span>
-                                  <div className="min-w-0 flex-1">
-                                    <span className={STOCK_TICKER}>{row.ticker}</span>
-                                    <span className={cn(STOCK_NAME, "break-words")}>
-                                      {row.name}
-                                    </span>
-                                  </div>
-                                </Link>
-                              </TableCell>
-                              <TableCell className={cn(HOVER_CELL, "text-right font-medium")}>
+                              </span>
+                              <span aria-hidden="true" className="shrink-0">
+                                <CompanyLogo
+                                  symbol={row.ticker}
+                                  name={row.name}
+                                  size="md"
+                                  className={phoneListLogoClass}
+                                />
+                              </span>
+                              <span className="min-w-0">
+                                <span className={STOCK_TICKER}>{row.ticker}</span>
+                                <span className={cn(STOCK_NAME, "truncate")} title={row.name}>
+                                  {row.name}
+                                </span>
+                              </span>
+                            </span>
+                            <span className="text-right tabular-nums">
+                              <span className="block text-[0.9375rem] font-semibold">
                                 {number.format(row.mentions)}
-                              </TableCell>
-                              <TableCell
-                                className={cn(HOVER_CELL, "text-right")}
+                                <span className="ml-1 text-xs font-normal text-muted-foreground">
+                                  {t("redditOpinions.mentionsUnit")}
+                                </span>
+                              </span>
+                              <span
+                                className="mt-0.5 block whitespace-nowrap text-xs text-muted-foreground"
                                 title={
                                   mentionChange(row) === null
                                     ? t("redditOpinions.noBaseline")
                                     : undefined
                                 }
                               >
-                                {changeLabel(row)}
-                              </TableCell>
-                              <TableCell className={cn(HOVER_CELL, "text-right")}>
+                                <span className="max-sm:sr-only">
+                                  {t("redditOpinions.changeShort")}{" "}
+                                </span>
+                                <span className="font-medium text-foreground">{change}</span>
+                              </span>
+                            </span>
+                            <span className="text-right tabular-nums">
+                              <span className="block whitespace-nowrap text-sm font-medium">
+                                <span className="sr-only">{t("redditOpinions.rankChange")} </span>
                                 {rankLabel(row)}
-                              </TableCell>
-                              <TableCell className={cn(HOVER_CELL, "text-right")}>
-                                {number.format(row.upvotes)}
-                              </TableCell>
-                              <TableCell className={cn(HOVER_CELL, "px-1")}>
-                                {watchButton(row, true)}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </>
+                              </span>
+                              <span className="mt-0.5 block whitespace-nowrap text-xs text-muted-foreground">
+                                {t("redditOpinions.upvotesCount", {
+                                  count: number.format(row.upvotes),
+                                })}
+                              </span>
+                            </span>
+                          </Link>
+                          <span className="shrink-0">{watchButton(row, true)}</span>
+                        </ListRow>
+                      );
+                    })}
+                  </ol>
                 ) : (
                   data && (
                     <div role="status" className="py-12 text-center text-sm text-muted-foreground">

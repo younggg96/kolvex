@@ -8,6 +8,15 @@ export interface XCreator {
   followers_count?: number | null;
   following_count?: number | null;
 }
+type XPostAnalysis =
+  | { status: "pending" }
+  | {
+      status: "complete";
+      stock_relevance: "related" | "low" | "uncertain";
+      summary_zh: string;
+      summary_en: string;
+    };
+
 export interface XPost {
   id: string;
   author_username: string;
@@ -18,6 +27,7 @@ export interface XPost {
   metrics: Record<string, number | null>;
   quoted_texts: string[];
   translation_zh?: { text: string; quoted_texts: string[] };
+  ai_analysis?: XPostAnalysis | null;
   media_links: string[];
   truncated: boolean;
   pinned: boolean;

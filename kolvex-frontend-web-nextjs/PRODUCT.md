@@ -55,7 +55,7 @@ Kolvex tracks what specific Chinese-language finance creators said about specifi
 
 ## Brand Commitments
 
-- Name: Kolvex. Existing logo (`components/common/LogoIcon.tsx`, `public/icon.svg`) stays.
+- Name: Kolvex. Logo is the "kolvex." wordmark (`components/common/KolvexWordmark.tsx`, `public/brand/`); app icons come from `public/brand/kolvex-app-icon.png`.
 - Primary green `#00C805` stays as the brand color.
 - Both light and dark mode are required.
 - Visual direction: the category standard for retail investing apps, executed at full craft. Robinhood is the quality bar; the app should sit alongside it without looking out of place.

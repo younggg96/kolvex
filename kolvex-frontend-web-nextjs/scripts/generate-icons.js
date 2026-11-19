@@ -3,7 +3,7 @@ const fs = require("fs");
 const path = require("path");
 
 const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
-const inputSvg = path.join(__dirname, "../public/icon.svg");
+const inputSvg = path.join(__dirname, "../public/brand/kolvex-app-icon.png");
 const outputDir = path.join(__dirname, "../public/icons");
 
 // 确保输出目录存在
@@ -21,7 +21,7 @@ async function generateIcons() {
       await sharp(inputSvg)
         .resize(size, size, {
           fit: "contain",
-          background: { r: 10, g: 10, b: 10, alpha: 1 },
+          background: { r: 3, g: 53, b: 41, alpha: 1 },
         })
         .png()
         .toFile(outputPath);

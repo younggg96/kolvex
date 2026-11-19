@@ -24,11 +24,11 @@ export const metadata: Metadata = {
   alternates: {},
   metadataBase: new URL(SITE_URL),
   icons: {
-    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
-    apple: [
-      { url: "/icons/icon-152x152.png", sizes: "152x152", type: "image/png" },
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
       { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
     ],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
   manifest: "/manifest.json",
   appleWebApp: {
@@ -56,24 +56,9 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <link
-          rel="apple-touch-icon"
-          sizes="152x152"
-          href="/icons/icon-152x152.png"
-        />
-        <link
-          rel="apple-touch-icon"
-          sizes="192x192"
-          href="/icons/icon-192x192.png"
-        />
       </head>
       <body className={`${inter.variable} font-sans`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem
-          disableTransitionOnChange
-        >
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           <SiteBackground />
           <LanguageProvider>
             <UserProfileProvider>

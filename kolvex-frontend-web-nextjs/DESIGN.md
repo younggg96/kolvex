@@ -100,7 +100,7 @@ text on #15803D, with a darker green on hover and press. Tinted surfaces use
 #475569 for muted text.
 
 Dark mode uses black ground, #0E0F10 cards, #FFFFFF foreground,
-#9BA0A6 muted text, #282A2D borders and #00C805 primary actions.
+#9BA0A6 muted text, #282A2D borders and #00C805 green text and accents; solid green fills use the deeper #15803D with white text.
 Direction always pairs color with a sign, a written label or an icon.
 
 ## Typography

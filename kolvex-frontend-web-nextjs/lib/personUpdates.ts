@@ -79,6 +79,9 @@ const PERSON_AVATARS: Record<string, string> = {
   "jensen huang": "/person-updates/jensen-huang.jpg",
   "xi jinping": "/person-updates/xi-jinping.jpg",
   习近平: "/person-updates/xi-jinping.jpg",
+  "vladimir putin": "/person-updates/vladimir-putin.jpg",
+  普京: "/person-updates/vladimir-putin.jpg",
+  "弗拉基米尔·普京": "/person-updates/vladimir-putin.jpg",
 };
 export const FED_SEAL_AVATAR = "/person-updates/fed-seal.jpg";
 

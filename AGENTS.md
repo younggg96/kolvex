@@ -58,6 +58,7 @@ cd kolvex-backend-py && python -m pytest tests/<相关测试>.py
 ```
 
 同时要做到：
+- 界面改动需在 390px 和桌面宽度下截图确认（App 在模拟器里截图）。
 - 功能行为有变化时，**同一个改动里**更新对应功能文档和 [docs/product/feature-catalog.md](docs/product/feature-catalog.md)。
 - 涉及两端的功能，在汇报里写明另一端是否需要跟进；需要跟进就更新 `kolvex-mobile/MIGRATION.md`。
 - 汇报里如实写出**哪些没有验证**（比如没在模拟器 / 真机上看过、没走登录后的写操作）。

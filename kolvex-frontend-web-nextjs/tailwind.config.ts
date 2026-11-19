@@ -56,6 +56,10 @@ const config: Config = {
         "border-light": "rgb(var(--border) / <alpha-value>)",
         "border-dark": "rgb(var(--border) / <alpha-value>)",
       },
+      // Solid green fills use the deeper fill token; text-primary keeps the brighter accent.
+      backgroundColor: {
+        primary: "rgb(var(--primary-fill) / <alpha-value>)",
+      },
       fontFamily: {
         sans: [
           "var(--font-inter)",

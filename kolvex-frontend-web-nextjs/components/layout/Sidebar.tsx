@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import LogoIcon from "@/components/common/LogoIcon";
+import KolvexWordmark from "@/components/common/KolvexWordmark";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import {
@@ -112,12 +112,15 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
             className="flex items-center gap-2 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-full"
             onClick={handleNavigate}
           >
-            <div className="flex aspect-square size-8 items-center justify-center">
-              <LogoIcon size={22} />
-            </div>
-            <span className="text-[1.0625rem] font-bold tracking-[-0.02em] group-data-[collapsible=icon]:hidden">
-              Kolvex
-            </span>
+            <KolvexWordmark height={18} className="group-data-[collapsible=icon]:hidden" />
+            {/* eslint-disable-next-line @next/next/no-img-element -- static square app icon for the collapsed rail */}
+            <img
+              src="/brand/kolvex-icon-small.png"
+              alt="Kolvex"
+              width={32}
+              height={32}
+              className="hidden size-8 rounded-md group-data-[collapsible=icon]:block"
+            />
           </Link>
           <Button
             variant="ghost"
