@@ -9,6 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import StockBadge from "@/components/ui/stock-badge";
 import {
   isFedOfficial,
+  personAvatar,
   PERSON_UPDATE_ZONES,
   personUpdateTime,
   type PersonUpdate,
@@ -104,7 +105,7 @@ export function PersonUpdateTimeline({ items }: { items: PersonUpdate[] }) {
               <header className="flex min-w-0 items-center gap-2.5">
                 <PersonUpdateAvatar
                   label={item.person_cn}
-                  src={item.avatar_url}
+                  src={personAvatar(item)}
                   fedOfficial={isFedOfficial(item)}
                   className="size-9"
                 />

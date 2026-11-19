@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useTranslation } from "@/lib/i18n";
 import {
@@ -20,7 +20,10 @@ import {
   Info,
   Gauge,
   PieChart,
+  History,
 } from "lucide-react";
+import { AiModelSelect, aiModelName, useAiModelChoice } from "@/components/ai/AiModelSelect";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import CompanyLogo, { phoneListLogoClass } from "@/components/ui/company-logo";
 import { marketStockHref } from "@/lib/stockLinks";
@@ -38,6 +41,9 @@ import { DirectionBadge } from "@/components/decision/shared";
 import type { Direction } from "@/lib/decision";
 import {
   analyzePortfolio,
+  getPortfolioAnalysis,
+  listPortfolioAnalyses,
+  type PortfolioAnalysisRunItem,
   type PortfolioAnalysisResponse,
   type StockAnalysis,
   type OverallAnalysis,
@@ -528,19 +534,31 @@ function AnalysisLoadingState({ t }: { t: TFunction }) {
 
 function EmptyAnalysisState({
   onAnalyze,
-  loading,
+  canRun,
+  noApiKey,
   t,
 }: {
   onAnalyze: () => void;
-  loading: boolean;
+  canRun: boolean;
+  noApiKey: boolean;
   t: TFunction;
 }) {
+  if (noApiKey) {
+    return (
+      <div className="text-center py-10">
+        <p className="text-sm text-muted-foreground mb-4">{t("portfolio.ai.noApiKey")}</p>
+        <Button asChild size="sm" variant="outline">
+          <Link href="/dashboard/settings?tab=api-keys">{t("portfolio.ai.openSettings")}</Link>
+        </Button>
+      </div>
+    );
+  }
   return (
     <div className="text-center py-10">
-      <h3 className="text-lg font-semibold mb-6">{t("portfolio.ai.emptyTitle")}</h3>
-      <Button onClick={onAnalyze} disabled={loading} size="sm" className="gap-2">
+      <p className="text-sm text-muted-foreground mb-4">{t("portfolio.ai.emptyHint")}</p>
+      <Button onClick={onAnalyze} disabled={!canRun} size="sm" className="gap-2">
         <Zap className="w-4 h-4" />
-        {loading ? t("portfolio.ai.analyzing") : t("portfolio.ai.startAnalysis")}
+        {t("portfolio.ai.startAnalysis")}
       </Button>
     </div>
   );
@@ -550,9 +568,23 @@ function EmptyAnalysisState({
 // Error State
 // ============================================================
 
+const ERROR_CODES = new Set([
+  "ai_not_configured",
+  "ai_key_rejected",
+  "ai_rate_limited",
+  "ai_analysis_invalid",
+  "ai_analysis_timeout",
+  "no_positions",
+  "Unauthorized",
+]);
+
+function errorMessage(code: string, t: TFunction) {
+  return t(`portfolio.ai.errors.${ERROR_CODES.has(code) ? code : "ai_unavailable"}`);
+}
+
 function ErrorState({ error, onRetry, t }: { error: string; onRetry: () => void; t: TFunction }) {
   return (
-    <div className="text-center py-10">
+    <div className="text-center py-10" role="alert">
       <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-negative/10 flex items-center justify-center">
         <AlertTriangle className="w-7 h-7 text-negative" />
       </div>
@@ -567,29 +599,163 @@ function ErrorState({ error, onRetry, t }: { error: string; onRetry: () => void;
 }
 
 // ============================================================
+// History
+// ============================================================
+
+function formatRunTime(iso: string, t: TFunction) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return date.toLocaleString(t("common.intlLocale"), {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function AnalysisHistory({
+  runs,
+  failed,
+  selectedId,
+  openingId,
+  disabled,
+  onOpen,
+  t,
+}: {
+  runs: PortfolioAnalysisRunItem[];
+  failed: boolean;
+  selectedId: string | null;
+  openingId: string | null;
+  disabled: boolean;
+  onOpen: (id: string) => void;
+  t: TFunction;
+}) {
+  return (
+    <section aria-labelledby="portfolio-ai-history" className="min-w-0">
+      <h3 id="portfolio-ai-history" className="text-sm font-semibold mb-3 flex items-center gap-2">
+        <History className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+        {t("portfolio.ai.history")}
+      </h3>
+      {failed ? (
+        <p className="text-sm text-muted-foreground">{t("portfolio.ai.historyUnavailable")}</p>
+      ) : (
+        <ul className="space-y-1.5">
+          {runs.map((run) => {
+            const active = run.id === selectedId;
+            return (
+              <li key={run.id}>
+                <button
+                  type="button"
+                  onClick={() => onOpen(run.id)}
+                  disabled={disabled || active}
+                  aria-current={active ? "true" : undefined}
+                  className={cn(
+                    "w-full rounded-xl px-3 py-2.5 text-left transition-colors",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    active ? "bg-accent" : "hover:bg-foreground/[0.04] disabled:opacity-60",
+                  )}
+                >
+                  <span className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                    <span className="tabular-nums">{formatRunTime(run.created_at, t)}</span>
+                    <span className="truncate">{aiModelName(run.model_id)}</span>
+                  </span>
+                  <span className="mt-1 block text-sm leading-5 line-clamp-2 break-words">
+                    {openingId === run.id ? t("portfolio.ai.opening") : run.summary}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+// ============================================================
 // Main Component
 // ============================================================
 
 export function PortfolioAIAnalysis({ className }: PortfolioAIAnalysisProps) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const modelChoice = useAiModelChoice();
   const [analysis, setAnalysis] = useState<PortfolioAnalysisResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAllStocks, setShowAllStocks] = useState(false);
+  const [runs, setRuns] = useState<PortfolioAnalysisRunItem[]>([]);
+  const [historyFailed, setHistoryFailed] = useState(false);
+  const [openingId, setOpeningId] = useState<string | null>(null);
+  const [openError, setOpenError] = useState(false);
+  const openRequest = useRef(0);
+
+  const openRun = useCallback(async (id: string) => {
+    const request = ++openRequest.current;
+    setOpeningId(id);
+    setOpenError(false);
+    try {
+      const run = await getPortfolioAnalysis(id);
+      if (request !== openRequest.current) return;
+      setAnalysis(run);
+      setShowAllStocks(false);
+      setError(null);
+    } catch {
+      if (request === openRequest.current) setOpenError(true);
+    } finally {
+      if (request === openRequest.current) setOpeningId(null);
+    }
+  }, []);
+
+  // Load history once; reopen the latest saved analysis so returning users see it.
+  useEffect(() => {
+    let cancelled = false;
+    listPortfolioAnalyses()
+      .then((items) => {
+        if (cancelled) return;
+        setRuns(items);
+        if (items[0]) void openRun(items[0].id);
+      })
+      .catch(() => {
+        if (!cancelled) setHistoryFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [openRun]);
+
+  const model = modelChoice.model;
+  const noApiKey = !modelChoice.loading && modelChoice.eligibleModels.length === 0;
 
   const handleAnalyze = useCallback(async () => {
+    if (!model) return;
+    openRequest.current += 1; // a newer run wins over a history item still opening
+    setOpeningId(null);
+    setOpenError(false);
     setLoading(true);
     setError(null);
 
     try {
-      const result = await analyzePortfolio();
+      const result = await analyzePortfolio({ model, locale });
       setAnalysis(result);
+      setShowAllStocks(false);
+      if (result.saved && result.id && result.created_at) {
+        const item: PortfolioAnalysisRunItem = {
+          id: result.id,
+          created_at: result.created_at,
+          model_id: result.model,
+          locale: result.locale,
+          summary: result.overall_analysis.summary,
+          risk_level: result.overall_analysis.risk_level,
+          positions_analyzed: result.positions_analyzed,
+        };
+        setRuns((prev) => [item, ...prev.filter((run) => run.id !== item.id)]);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("portfolio.ai.analysisFailed"));
+      setError(errorMessage(err instanceof Error ? err.message : "", t));
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [model, locale, t]);
 
   const displayedStocks = showAllStocks
     ? analysis?.stock_analyses || []
@@ -597,96 +763,156 @@ export function PortfolioAIAnalysis({ className }: PortfolioAIAnalysisProps) {
 
   const hasMoreStocks = (analysis?.stock_analyses?.length || 0) > 5;
   const hiddenCount = (analysis?.stock_analyses?.length || 0) - 5;
+  const showHistory = runs.length > 0 || historyFailed;
+  const busy = loading || openingId !== null;
+  const firstLoad = !analysis && !error && (loading || openingId !== null);
 
   return (
     <Card className={cn("overflow-hidden", className)}>
-      <CardHeader className="pb-4">
-        <CardTitle className="text-lg">{t("portfolio.ai.title")}</CardTitle>
+      <CardHeader className="pb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+        <CardTitle className="text-lg flex items-center gap-1.5">
+          {t("portfolio.ai.title")}
+          <InfoTip label={t("portfolio.ai.aboutLabel")}>{t("portfolio.ai.about")}</InfoTip>
+        </CardTitle>
+        {!noApiKey && (
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
+            <AiModelSelect
+              choice={modelChoice}
+              disabled={loading}
+              className="flex-1 sm:flex-none"
+            />
+            {(analysis || error) && (
+              <Button
+                size="sm"
+                className="h-9 gap-2"
+                onClick={handleAnalyze}
+                disabled={!model || loading}
+              >
+                <Zap className="w-4 h-4" />
+                {loading ? t("portfolio.ai.analyzing") : t("portfolio.ai.regenerate")}
+              </Button>
+            )}
+          </div>
+        )}
       </CardHeader>
 
       <CardContent>
-        {/* Initial Empty State */}
-        {!analysis && !loading && !error && (
-          <EmptyAnalysisState onAnalyze={handleAnalyze} loading={loading} t={t} />
-        )}
-
-        {/* Loading State */}
-        {loading && !analysis && <AnalysisLoadingState t={t} />}
-
-        {/* Error State */}
-        {error && !loading && <ErrorState error={error} onRetry={handleAnalyze} t={t} />}
-
-        {/* Analysis Results */}
-        {analysis && !loading && (
-          <div className="space-y-6">
-            {/* Overall Analysis */}
-            <section>
-              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                {t("portfolio.ai.portfolioOverview")}
-              </h3>
-              <OverallAnalysisSection analysis={analysis.overall_analysis} t={t} />
-            </section>
-
-            {/* Stock Analysis */}
-            {analysis.stock_analyses && analysis.stock_analyses.length > 0 && (
-              <section>
-                <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                  {t("portfolio.ai.stockAnalysis")}
-                  <Badge variant="default" className="ml-1">
-                    {analysis.stock_analyses.length}
-                  </Badge>
-                </h3>
-                <Accordion
-                  type="multiple"
-                  defaultValue={analysis.stock_analyses.slice(0, 2).map((s) => s.symbol)}
-                >
-                  {displayedStocks.map((stock) => (
-                    <StockAnalysisItem key={stock.symbol} stock={stock} t={t} />
-                  ))}
-                </Accordion>
-                {hasMoreStocks && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="mt-2 w-full text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground"
-                    onClick={() => setShowAllStocks(!showAllStocks)}
-                  >
-                    <ChevronDown
-                      className={cn(
-                        "w-4 h-4 mr-1 transition-transform",
-                        showAllStocks && "rotate-180",
-                      )}
-                    />
-                    {showAllStocks
-                      ? t("portfolio.ai.showLess")
-                      : t("portfolio.ai.showMore", { count: String(hiddenCount) })}
-                  </Button>
-                )}
-              </section>
+        <div className={cn(showHistory && "lg:grid lg:grid-cols-[minmax(0,1fr)_16rem] lg:gap-8")}>
+          <div className="min-w-0">
+            {openError && (
+              <p role="alert" className="mb-4 text-sm text-negative">
+                {t("portfolio.ai.openFailed")}
+              </p>
+            )}
+            {analysis && analysis.saved === false && !loading && (
+              <p role="status" className="mb-4 text-sm text-muted-foreground">
+                {t("portfolio.ai.notSaved")}
+              </p>
             )}
 
-            {/* Suggestions */}
-            <section>
-              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                {t("portfolio.ai.recommendations")}
-              </h3>
-              <SuggestionsSection suggestions={analysis.portfolio_suggestions} t={t} />
-            </section>
+            {/* Initial Empty State */}
+            {!analysis && !error && !busy && (
+              <EmptyAnalysisState
+                onAnalyze={handleAnalyze}
+                canRun={Boolean(model)}
+                noApiKey={noApiKey}
+                t={t}
+              />
+            )}
 
-            {/* Footer */}
-            <footer className="pt-4 border-t border-border">
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>
-                  {t("portfolio.ai.positionsAnalyzed", {
-                    count: String(analysis.positions_analyzed),
-                  })}{" "}
-                  • {t("portfolio.aiAnalysis.model")} {analysis.model}
-                </span>
-                <span>{new Date(analysis.analyzed_at).toLocaleString()}</span>
+            {/* Loading State */}
+            {(loading || firstLoad) && <AnalysisLoadingState t={t} />}
+
+            {/* Error State */}
+            {error && !loading && <ErrorState error={error} onRetry={handleAnalyze} t={t} />}
+
+            {/* Analysis Results */}
+            {analysis && !loading && !error && (
+              <div className={cn("space-y-6 transition-opacity", openingId && "opacity-50")}>
+                {/* Overall Analysis */}
+                <section>
+                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                    {t("portfolio.ai.portfolioOverview")}
+                  </h3>
+                  <OverallAnalysisSection analysis={analysis.overall_analysis} t={t} />
+                </section>
+
+                {/* Stock Analysis */}
+                {analysis.stock_analyses && analysis.stock_analyses.length > 0 && (
+                  <section>
+                    <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                      {t("portfolio.ai.stockAnalysis")}
+                      <Badge variant="default" className="ml-1">
+                        {analysis.stock_analyses.length}
+                      </Badge>
+                    </h3>
+                    <Accordion
+                      type="multiple"
+                      defaultValue={analysis.stock_analyses.slice(0, 2).map((s) => s.symbol)}
+                    >
+                      {displayedStocks.map((stock) => (
+                        <StockAnalysisItem key={stock.symbol} stock={stock} t={t} />
+                      ))}
+                    </Accordion>
+                    {hasMoreStocks && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="mt-2 w-full text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground"
+                        onClick={() => setShowAllStocks(!showAllStocks)}
+                      >
+                        <ChevronDown
+                          className={cn(
+                            "w-4 h-4 mr-1 transition-transform",
+                            showAllStocks && "rotate-180",
+                          )}
+                        />
+                        {showAllStocks
+                          ? t("portfolio.ai.showLess")
+                          : t("portfolio.ai.showMore", { count: String(hiddenCount) })}
+                      </Button>
+                    )}
+                  </section>
+                )}
+
+                {/* Suggestions */}
+                <section>
+                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                    {t("portfolio.ai.recommendations")}
+                  </h3>
+                  <SuggestionsSection suggestions={analysis.portfolio_suggestions} t={t} />
+                </section>
+
+                {/* Footer */}
+                <footer className="pt-4 border-t border-border">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>
+                      {t("portfolio.ai.positionsAnalyzed", {
+                        count: String(analysis.positions_analyzed),
+                      })}{" "}
+                      • {t("portfolio.aiAnalysis.model")} {aiModelName(analysis.model)}
+                    </span>
+                    <span>{formatRunTime(analysis.created_at || analysis.analyzed_at, t)}</span>
+                  </div>
+                </footer>
               </div>
-            </footer>
+            )}
           </div>
-        )}
+
+          {showHistory && (
+            <div className="mt-8 border-t border-border pt-6 lg:mt-0 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-6">
+              <AnalysisHistory
+                runs={runs}
+                failed={historyFailed}
+                selectedId={analysis?.id ?? null}
+                openingId={openingId}
+                disabled={loading}
+                onOpen={openRun}
+                t={t}
+              />
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

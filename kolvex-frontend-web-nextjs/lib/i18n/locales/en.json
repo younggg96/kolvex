@@ -46,7 +46,10 @@
     "previous": "Previous",
     "pageNotFound": "Page not found",
     "backHome": "Back to home",
-    "machineTranslatedOriginal": "Machine translated · Original"
+    "machineTranslatedOriginal": "Machine translated · Original",
+    "aiModel": {
+      "select": "Select a model"
+    }
   },
   "sidebar": {
     "paperTrading": "Paper trading",
@@ -957,6 +960,27 @@
         "hold": "Hold",
         "reduce": "Reduce",
         "sell": "Sell"
+      },
+      "emptyHint": "Pick a model to analyze your current holdings.",
+      "regenerate": "Run again",
+      "noApiKey": "No API key is set up for any model yet.",
+      "openSettings": "Add one in Settings",
+      "aboutLabel": "About AI portfolio analysis",
+      "about": "The model you pick reads your current holdings (hidden positions excluded) and assesses them. Calls are billed to your own API key. Every analysis is saved to your history.",
+      "history": "History",
+      "historyUnavailable": "History couldn't be loaded right now.",
+      "opening": "Opening…",
+      "openFailed": "Couldn't open this analysis. Try again shortly.",
+      "notSaved": "This result couldn't be saved to history.",
+      "errors": {
+        "ai_not_configured": "Pick a model and add an API key for it first.",
+        "ai_key_rejected": "The provider rejected this API key. Check it in Settings.",
+        "ai_rate_limited": "The provider is rate-limiting this key. Try again in a few minutes.",
+        "ai_analysis_invalid": "The model returned an incomplete analysis. Try again or choose another model.",
+        "ai_analysis_timeout": "The model took too long. Try again or choose a faster model.",
+        "no_positions": "There are no holdings to analyze.",
+        "Unauthorized": "Sign in to use AI analysis.",
+        "ai_unavailable": "AI analysis is unavailable right now. Try again shortly."
       }
     },
     "loadingPortfolio": "Loading portfolio",

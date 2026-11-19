@@ -11,8 +11,14 @@ vm.runInNewContext(
   ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText,
   context,
 );
-const { PERSON_UPDATE_ZONES, personUpdateTime, personUpdatePeople, isFedOfficial } =
-  context.exports;
+const {
+  PERSON_UPDATE_ZONES,
+  personUpdateTime,
+  personUpdatePeople,
+  isFedOfficial,
+  personAvatar,
+  FED_SEAL_AVATAR,
+} = context.exports;
 
 test("the same instant keeps each market's local date", () => {
   const winter = "2026-11-18T02:44:00-05:00";
@@ -95,4 +101,24 @@ test("only recognized officials and explicit role labels opt into the Fed avatar
     },
   ];
   assert.equal(personUpdatePeople(items, Date.parse(items[0].published_at))[0].fedOfficial, true);
+});
+
+test("local portraits win, other Fed officials get the Board seal", () => {
+  const feed = "https://example.test/feed.jpg";
+  assert.equal(
+    personAvatar({ person: "Kevin M. Warsh", tags: [], avatar_url: feed }),
+    "/person-updates/kevin-warsh.jpg",
+  );
+  assert.equal(
+    personAvatar({ person: "Jensen Huang", tags: [], avatar_url: feed }),
+    "/person-updates/jensen-huang.jpg",
+  );
+  assert.equal(personAvatar({ person: "Xi Jinping", tags: [] }), "/person-updates/xi-jinping.jpg");
+  assert.equal(
+    personAvatar({ person: "John Williams", tags: [], avatar_url: feed }),
+    FED_SEAL_AVATAR,
+  );
+  assert.equal(personAvatar({ person: "Someone", tags: ["美联储官员"] }), FED_SEAL_AVATAR);
+  assert.equal(personAvatar({ person: "Elon Musk", tags: [], avatar_url: feed }), feed);
+  assert.equal(personAvatar({ person: "Elon Musk", tags: [] }), null);
 });

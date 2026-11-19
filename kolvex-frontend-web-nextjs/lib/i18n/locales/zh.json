@@ -46,7 +46,10 @@
     "previous": "上一页",
     "pageNotFound": "找不到页面",
     "backHome": "返回首页",
-    "machineTranslatedOriginal": "机器翻译 · 原文"
+    "machineTranslatedOriginal": "机器翻译 · 原文",
+    "aiModel": {
+      "select": "选择模型"
+    }
   },
   "sidebar": {
     "paperTrading": "虚拟交易",
@@ -940,6 +943,27 @@
         "hold": "持有",
         "reduce": "减仓",
         "sell": "卖出"
+      },
+      "emptyHint": "选择模型，分析你当前的持仓。",
+      "regenerate": "重新分析",
+      "noApiKey": "还没有为任何模型配置 API Key。",
+      "openSettings": "前往设置添加",
+      "aboutLabel": "关于 AI 投资组合分析",
+      "about": "由你选择的模型读取当前持仓（隐藏的持仓除外）给出评估，调用使用你自己的 API Key 计费。每次分析都会保存到历史记录。",
+      "history": "历史分析",
+      "historyUnavailable": "历史记录暂时无法加载。",
+      "opening": "打开中…",
+      "openFailed": "无法打开这次分析，请稍后重试。",
+      "notSaved": "本次结果未能保存到历史记录。",
+      "errors": {
+        "ai_not_configured": "请先选择模型，并为它配置 API Key。",
+        "ai_key_rejected": "服务商拒绝了这个 API Key，请到设置中检查。",
+        "ai_rate_limited": "服务商限制了调用频率，请几分钟后再试。",
+        "ai_analysis_invalid": "模型返回的分析不完整，请重试或换一个模型。",
+        "ai_analysis_timeout": "模型响应超时，请重试或换一个更快的模型。",
+        "no_positions": "没有可分析的持仓。",
+        "Unauthorized": "请登录后使用 AI 分析。",
+        "ai_unavailable": "AI 分析暂时不可用，请稍后重试。"
       }
     },
     "loadingPortfolio": "正在加载投资组合",

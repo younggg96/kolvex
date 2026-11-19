@@ -14,7 +14,7 @@ export function PersonUpdateAvatar({
 }) {
   return (
     <Avatar aria-hidden="true" className={className}>
-      {!fedOfficial && src && (
+      {src && (
         <AvatarImage src={src} alt="" referrerPolicy="no-referrer" className="object-cover" />
       )}
       <AvatarFallback

@@ -65,12 +65,36 @@ const FED_OFFICIALS = new Set([
   "jeffrey schmid",
 ]);
 
-export function isFedOfficial({ person, tags }: Pick<PersonUpdate, "person" | "tags">) {
-  const name = person
+function personKey(person: string) {
+  return person
     .trim()
     .toLowerCase()
     .replace(/\s+/g, " ")
     .replace(/ [a-z]\.?(?= )/g, "");
+}
+
+// Local portraits take priority over the feed's avatar_url.
+const PERSON_AVATARS: Record<string, string> = {
+  "kevin warsh": "/person-updates/kevin-warsh.jpg",
+  "jensen huang": "/person-updates/jensen-huang.jpg",
+  "xi jinping": "/person-updates/xi-jinping.jpg",
+};
+export const FED_SEAL_AVATAR = "/person-updates/fed-seal.jpg";
+
+/** Local portrait, else the feed's avatar; Fed officials without a portrait get the Board seal. */
+export function personAvatar({
+  person,
+  tags,
+  avatar_url,
+}: Pick<PersonUpdate, "person" | "tags" | "avatar_url">): string | null {
+  const local = PERSON_AVATARS[personKey(person)];
+  if (local) return local;
+  if (isFedOfficial({ person, tags })) return FED_SEAL_AVATAR;
+  return avatar_url || null;
+}
+
+export function isFedOfficial({ person, tags }: Pick<PersonUpdate, "person" | "tags">) {
+  const name = personKey(person);
   return (
     FED_OFFICIALS.has(name) ||
     tags.some((tag) => ["美联储官员", "fed official"].includes(tag.trim().toLowerCase()))
@@ -94,7 +118,7 @@ export function personUpdatePeople(items: readonly PersonUpdate[], now: number) 
       };
       people.set(item.person, person);
     }
-    person.avatar ||= item.avatar_url || null;
+    person.avatar ||= personAvatar(item);
     const age = now - Date.parse(item.published_at);
     if (age >= 0 && age < ONE_DAY_MS) person.newCount += 1;
   }

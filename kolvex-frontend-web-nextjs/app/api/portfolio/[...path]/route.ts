@@ -69,6 +69,8 @@ async function proxyRequest(
  * - /api/portfolio/history -> GET /history (with period query param)
  * - /api/portfolio/history/status -> GET /history/status
  * - /api/portfolio/analysis/health -> GET /analysis/health
+ * - /api/portfolio/analysis/runs -> GET /analysis/runs (saved analyses, newest first)
+ * - /api/portfolio/analysis/runs/:id -> GET /analysis/runs/:id (one saved analysis)
  */
 export async function GET(request: NextRequest, { params }: RouteParams) {
   const { path } = await params;
@@ -115,6 +117,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       // /api/portfolio/analysis/health -> GET /analysis/health
       if (path[1] === "health") {
         return proxyRequest(request, "/analysis/health", { method: "GET" });
+      }
+      if (path[1] === "runs" && path.length === 2) {
+        const limit = Number(searchParams.get("limit") || "20");
+        const safeLimit = Number.isInteger(limit) && limit > 0 && limit <= 50 ? limit : 20;
+        return proxyRequest(request, `/analysis/runs?limit=${safeLimit}`, { method: "GET" });
+      }
+      if (path[1] === "runs" && path.length === 3) {
+        return proxyRequest(request, `/analysis/runs/${encodeURIComponent(path[2])}`, {
+          method: "GET",
+        });
       }
       return NextResponse.json({ error: "Not found" }, { status: 404 });
 

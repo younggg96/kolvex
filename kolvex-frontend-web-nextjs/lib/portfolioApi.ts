@@ -274,6 +274,22 @@ export interface PortfolioAnalysisResponse {
   analyzed_at: string;
   model: string;
   positions_analyzed: number;
+  /** Saved run id; null when the result could not be saved to history. */
+  id?: string | null;
+  saved?: boolean;
+  created_at?: string | null;
+  locale?: string | null;
+}
+
+/** One saved analysis in the history list (summary only). */
+export interface PortfolioAnalysisRunItem {
+  id: string;
+  created_at: string;
+  model_id: string;
+  locale?: string | null;
+  summary: string;
+  risk_level?: string | null;
+  positions_analyzed: number;
 }
 
 export interface SingleStockAnalysisResponse {
@@ -300,13 +316,38 @@ export interface AnalysisHealthResponse {
 }
 
 /**
- * Analyze portfolio using AI
- * @param userContext Optional user-provided context (investment goals, risk tolerance, etc.)
+ * Analyze the portfolio with the chosen model (runs on the user's own API key).
+ * Each successful run is saved to the user's analysis history.
+ * Errors carry stable codes such as `ai_not_configured` or `ai_key_rejected`.
  */
-export async function analyzePortfolio(userContext?: string): Promise<PortfolioAnalysisResponse> {
+export async function analyzePortfolio(options: {
+  model: string;
+  locale: "zh" | "en";
+  userContext?: string;
+}): Promise<PortfolioAnalysisResponse> {
   return apiRequest<PortfolioAnalysisResponse>("/analysis", {
     method: "POST",
-    body: JSON.stringify({ user_context: userContext }),
+    body: JSON.stringify({
+      model: options.model,
+      locale: options.locale,
+      user_context: options.userContext,
+    }),
+  });
+}
+
+/** The user's saved analyses, newest first. */
+export async function listPortfolioAnalyses(limit = 20): Promise<PortfolioAnalysisRunItem[]> {
+  const data = await apiRequest<{ items: PortfolioAnalysisRunItem[] }>(
+    `/analysis/runs?limit=${limit}`,
+    { cache: "no-store" },
+  );
+  return data.items;
+}
+
+/** One saved analysis in full. */
+export async function getPortfolioAnalysis(id: string): Promise<PortfolioAnalysisResponse> {
+  return apiRequest<PortfolioAnalysisResponse>(`/analysis/runs/${encodeURIComponent(id)}`, {
+    cache: "no-store",
   });
 }
 

@@ -85,3 +85,15 @@
 | 接口 | `DELETE /api/v1/portfolio/accounts/{id}`（`app/api/routes/portfolio/account_routes.py`、`app/services/portfolio/account_removal.py`） |
 
 删除账户行及其持仓，并从公开隐私设置的隐藏账户列表里去掉它。Plaid 会在每次同步时返回该机构下的所有账户（支票、信用卡、车贷等），所以移除 Plaid 账户时还会把它的 Plaid `account_id` 记到 `portfolio_connections.removed_account_ids`，并删掉该账户的投资交易；之后的同步、交易拉取和每日收益快照都会跳过它。需先执行迁移 `kolvex-backend-py/migrations/20261118010000_portfolio_removed_accounts.sql`，否则移除 Plaid 账户返回 503（手动导入账户不受影响）。断开 Plaid 会删除整个连接，重新连接后被移除的账户会回来。手动导入账户直接删除，下次导入若仍包含它会重新出现。
+
+## AI 洞察（投资组合分析）
+
+| 项 | 位置 |
+| --- | --- |
+| 界面 | 持仓页「AI 洞察」标签，`components/portfolio/PortfolioAIAnalysis.tsx`；模型选择 `components/ai/AiModelSelect.tsx`（共用 `lib/aiModels.ts` 模型列表和 `/api/user-api-keys` 可用服务商） |
+| 接口 | `POST /api/v1/portfolio/analysis`（body `model`、`locale`）；历史 `GET /api/v1/portfolio/analysis/runs?limit=`、`GET /api/v1/portfolio/analysis/runs/{id}`（`app/api/routes/portfolio/analysis_routes.py`、`app/services/portfolio_ai_analysis.py`），Web 经 `/api/portfolio/[...path]` 代理 |
+| 存储 | `portfolio_ai_analyses`（迁移 `kolvex-backend-py/migrations/20261119000000_portfolio_ai_analyses.sql`，RLS 只允许本人读取，只有服务端写入，行不可修改） |
+
+用户先选模型，只有已配置自己 API Key 的服务商的模型可选；没有任何 Key 时显示一句话和「前往设置添加」。分析只用用户自己的 Key，不回退到服务器模型。模型读取当前持仓（隐藏持仓除外），按界面语言（中 / 英）写分析；失败返回固定错误码（`ai_not_configured`、`ai_key_rejected`、`ai_rate_limited`、`ai_analysis_invalid`、`ai_analysis_timeout`、`no_positions`、`ai_unavailable`），界面显示对应文案，不显示占位结果。
+
+每次成功的分析都会保存，右侧（窄屏在下方）「历史分析」按时间倒序列出日期、模型和摘要，点一条即可打开当时的完整结果；进入页面时自动打开最近一次。保存失败时仍显示本次结果，并提示「未能保存到历史记录」。迁移未执行时历史接口返回 503，界面显示「历史记录暂时无法加载」，分析本身照常可用。单股分析 `POST /analysis/stock` 仍走服务器 Ollama，未改动。

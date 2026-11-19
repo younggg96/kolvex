@@ -4,13 +4,13 @@ import { useCopy } from "@/components/decision/shared";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Monogram } from "./shared";
 
-type Portrait = {
-  name: string;
-  path: string;
+type Credit = {
   source: string;
   author: string;
   license?: { name: string; href: string };
 };
+// Portraits without a credit were supplied in-house and are left out of the credits list.
+type Portrait = { name: string; path: string } & (Credit | { source?: undefined });
 
 const commons = "https://commons.wikimedia.org/wiki/File:";
 const ccBy = (version: string) => ({
@@ -52,6 +52,14 @@ const portraits: Record<string, Portrait> = {
     source: `${commons}Masayoshi_Son_(P066533-522034,_cropped).jpg`,
     author: "European Communities, 2025 / EC – Audiovisual Service",
     license: ccBy("4.0"),
+  },
+  "2045724": {
+    name: "Leopold Aschenbrenner",
+    path: "portraits/leopold-aschenbrenner.jpg",
+  },
+  "1759760": {
+    name: "Duan Yongping",
+    path: "portraits/duan-yongping.jpg",
   },
   "1029160": {
     name: "George Soros",
@@ -99,33 +107,35 @@ export function FeaturedInvestorPortraitCredits() {
         )}
       </p>
       <ul className="mt-2 space-y-1.5">
-        {Object.values(portraits).map(({ name, author, source, license }) => (
-          <li key={source}>
-            <a
-              href={source}
-              target="_blank"
-              rel="noreferrer"
-              className="underline underline-offset-4"
-            >
-              {name}
-            </a>
-            {" · "}
-            {author}
-            {" · "}
-            {license ? (
+        {Object.values(portraits)
+          .filter((portrait): portrait is Portrait & Credit => Boolean(portrait.source))
+          .map(({ name, author, source, license }) => (
+            <li key={source}>
               <a
-                href={license.href}
+                href={source}
                 target="_blank"
                 rel="noreferrer"
                 className="underline underline-offset-4"
               >
-                {license.name}
+                {name}
               </a>
-            ) : (
-              c("Public domain", "公有领域")
-            )}
-          </li>
-        ))}
+              {" · "}
+              {author}
+              {" · "}
+              {license ? (
+                <a
+                  href={license.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline underline-offset-4"
+                >
+                  {license.name}
+                </a>
+              ) : (
+                c("Public domain", "公有领域")
+              )}
+            </li>
+          ))}
       </ul>
     </details>
   );
