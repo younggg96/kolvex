@@ -3,10 +3,8 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { Globe2, LogOut, Menu, Search, Settings, ShieldCheck } from "lucide-react";
+import { Globe2, Menu, Search, Settings } from "lucide-react";
 import { useCopy } from "@/components/decision/shared";
-import { useUserProfileContext } from "@/components/user/UserProfileProvider";
-import { useAuth } from "@/hooks";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslation } from "@/lib/i18n";
 import { isProductFeatureEnabled } from "@/lib/productFeatures";
@@ -42,7 +40,12 @@ function useIsMidScroll(pathname: string, onScroll: () => void) {
     const handleScroll = (event: Event) => {
       // Document scrolls and portaled popups are excluded: iOS pans the document when
       // the keyboard opens, and a closed popup could never report reaching its end.
-      if (!(event.target instanceof Element) || !event.target.closest(".mobile-nav-inset") || event.target.closest("[data-mobile-dock]")) return;
+      if (
+        !(event.target instanceof Element) ||
+        !event.target.closest(".mobile-nav-inset") ||
+        event.target.closest("[data-mobile-dock]")
+      )
+        return;
       const { scrollTop, scrollHeight, clientHeight } = event.target;
       const moved = scrollTop !== (positions.get(event.target) ?? 0);
       positions.set(event.target, scrollTop);
@@ -79,8 +82,6 @@ export default function MobileTabBar({ compact = false }: MobileTabBarProps) {
   const router = useRouter();
   const { t } = useTranslation();
   const c = useCopy();
-  const { signOut } = useAuth();
-  const { profile } = useUserProfileContext();
   const [menuOpen, setMenuOpen] = useState(false);
   const dock = useRef<HTMLDivElement>(null);
   const panelContent = useRef<HTMLDivElement>(null);
@@ -89,15 +90,17 @@ export default function MobileTabBar({ compact = false }: MobileTabBarProps) {
 
   const enabledItems = MAIN_NAV_ITEMS.filter((item) => isProductFeatureEnabled(item.featureId));
   const tabs = DOCK_TAB_HREFS.flatMap((href) => enabledItems.filter((item) => item.href === href));
-  const activeDockHref = tabs.find((item) => isMainNavItemActive(pathname, item))?.href ?? (searchActive ? SEARCH_HREF : null);
+  const activeDockHref =
+    tabs.find((item) => isMainNavItemActive(pathname, item))?.href ??
+    (searchActive ? SEARCH_HREF : null);
   // An open menu is the dock's selected control; otherwise the current page is.
   const dockValue = menuOpen ? MENU_VALUE : activeDockHref;
   const menuLinks = [
     ...enabledItems
       .filter((item) => !DOCK_TAB_HREFS.includes(item.href))
       .map((item) => ({ href: item.href, title: t(item.shortTitleKey), icon: item.icon })),
+    // Admin and log out live on the settings page.
     { href: "/dashboard/settings", title: t("sidebar.settings"), icon: Settings },
-    ...(profile?.is_admin ? [{ href: "/dashboard/admin", title: t("sidebar.admin"), icon: ShieldCheck }] : []),
   ];
 
   useEffect(() => {
@@ -112,7 +115,9 @@ export default function MobileTabBar({ compact = false }: MobileTabBarProps) {
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       setMenuOpen(false);
-      dock.current?.querySelector<HTMLElement>("[data-slot=segmented-control] button:last-child")?.focus({ preventScroll: true });
+      dock.current
+        ?.querySelector<HTMLElement>("[data-slot=segmented-control] button:last-child")
+        ?.focus({ preventScroll: true });
     };
     document.addEventListener("pointerdown", closeOnOutsidePress);
     document.addEventListener("keydown", closeOnEscape);
@@ -134,15 +139,11 @@ export default function MobileTabBar({ compact = false }: MobileTabBarProps) {
     panelContent.current?.querySelector<HTMLElement>("a, button")?.focus({ preventScroll: true });
   }
 
-  async function handleLogout() {
-    await signOut();
-    router.push("/auth");
-  }
-
   /* Dock affordances are neutral: hover/press use a grey wash and the current
      page simply goes full-contrast. Green stays reserved for direction data. */
   const iconClass = "h-[1.375rem] w-[1.375rem]";
-  const menuItemClass = "mobile-nav-item flex min-h-[60px] w-full flex-col items-center justify-center gap-1 rounded-3xl px-1 text-[12px] font-medium text-foreground/70 transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:bg-foreground/[0.06] focus-visible:text-foreground focus-visible:no-underline focus-visible:outline-none active:bg-foreground/[0.1] motion-reduce:transition-none";
+  const menuItemClass =
+    "mobile-nav-item flex min-h-[60px] w-full flex-col items-center justify-center gap-1 rounded-3xl px-1 text-[12px] font-medium text-foreground/70 transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:bg-foreground/[0.06] focus-visible:text-foreground focus-visible:no-underline focus-visible:outline-none active:bg-foreground/[0.1] motion-reduce:transition-none";
 
   return (
     <nav
@@ -152,9 +153,7 @@ export default function MobileTabBar({ compact = false }: MobileTabBarProps) {
       <div
         ref={dock}
         data-mobile-dock
-        className={cn(
-          floatingSurfaceClass, "pointer-events-auto mx-auto w-full max-w-md p-1",
-        )}
+        className={cn(floatingSurfaceClass, "pointer-events-auto mx-auto w-full max-w-md p-1")}
       >
         <div
           className={cn(
@@ -166,7 +165,10 @@ export default function MobileTabBar({ compact = false }: MobileTabBarProps) {
             <div
               ref={panelContent}
               id="mobile-dock-panel"
-              className={cn("p-1 pb-2", menuOpen ? "visible" : "invisible [transition:visibility_0s_200ms]")}
+              className={cn(
+                "p-1 pb-2",
+                menuOpen ? "visible" : "invisible [transition:visibility_0s_200ms]",
+              )}
             >
               <ul className="grid grid-cols-3 gap-1">
                 {menuLinks.map((item) => {
@@ -177,20 +179,22 @@ export default function MobileTabBar({ compact = false }: MobileTabBarProps) {
                         href={item.href}
                         aria-current={active ? "page" : undefined}
                         onClick={() => setMenuOpen(false)}
-                        className={cn(menuItemClass, active && "glass-thumb text-glass-thumb-foreground hover:text-glass-thumb-foreground")}
+                        className={cn(
+                          menuItemClass,
+                          active &&
+                            "glass-thumb text-glass-thumb-foreground hover:text-glass-thumb-foreground",
+                        )}
                       >
-                        <item.icon aria-hidden className="h-[20px] w-[20px]" strokeWidth={active ? 2 : 1.75} />
+                        <item.icon
+                          aria-hidden
+                          className="h-[20px] w-[20px]"
+                          strokeWidth={active ? 2 : 1.75}
+                        />
                         <span className="max-w-full truncate">{item.title}</span>
                       </Link>
                     </li>
                   );
                 })}
-                <li>
-                  <button type="button" onClick={handleLogout} className={cn(menuItemClass, "text-negative hover:text-negative focus-visible:text-negative")}>
-                    <LogOut aria-hidden className="h-[20px] w-[20px]" strokeWidth={1.75} />
-                    <span className="max-w-full truncate">{t("userMenu.logOut")}</span>
-                  </button>
-                </li>
               </ul>
             </div>
           </div>
@@ -229,7 +233,13 @@ export default function MobileTabBar({ compact = false }: MobileTabBarProps) {
               value: SEARCH_HREF,
               ariaLabel: c("Search", "探索"),
               title: c("Search", "探索"),
-              label: <Search aria-hidden className={iconClass} strokeWidth={dockValue === SEARCH_HREF ? 2 : 1.75} />,
+              label: (
+                <Search
+                  aria-hidden
+                  className={iconClass}
+                  strokeWidth={dockValue === SEARCH_HREF ? 2 : 1.75}
+                />
+              ),
             },
             {
               value: MENU_VALUE,

@@ -7,6 +7,7 @@ import { useEffect, useState, Suspense, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from "next-themes";
 import Image from "next/image";
+import Link from "next/link";
 import Cropper from "react-easy-crop";
 import type { Area, Point } from "react-easy-crop";
 import {
@@ -37,6 +38,9 @@ import {
   ExternalLink,
   Trash2,
   Loader2,
+  ChevronRight,
+  LogOut,
+  ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -182,7 +186,7 @@ function SettingsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { theme, setTheme } = useTheme();
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, signOut } = useAuth();
   const { t, locale, setLocale } = useTranslation();
   const {
     profile,
@@ -935,6 +939,32 @@ function SettingsContent() {
                                 aria-label={t("settings.account.briefEmail")}
                               />
                             </FieldRow>
+                          </SettingsGroup>
+
+                          <SettingsGroup>
+                            {profile?.is_admin && (
+                              <Link
+                                href="/dashboard/admin"
+                                className="flex min-h-[3.25rem] items-center justify-between gap-3 px-4 py-2.5 text-[0.9375rem] font-medium text-foreground transition-colors hover:bg-foreground/[0.04] focus-visible:bg-foreground/[0.06] focus-visible:outline-none active:bg-foreground/[0.08]"
+                              >
+                                <span className="flex items-center gap-2">
+                                  <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+                                  {t("sidebar.admin")}
+                                </span>
+                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                              </Link>
+                            )}
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                await signOut();
+                                router.push("/auth");
+                              }}
+                              className="flex min-h-[3.25rem] w-full items-center gap-2 px-4 py-2.5 text-left text-[0.9375rem] font-medium text-negative transition-colors hover:bg-foreground/[0.04] focus-visible:bg-foreground/[0.06] focus-visible:outline-none active:bg-foreground/[0.08]"
+                            >
+                              <LogOut className="h-4 w-4" />
+                              {t("userMenu.logOut")}
+                            </button>
                           </SettingsGroup>
                         </div>
 
