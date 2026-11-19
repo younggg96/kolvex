@@ -8,6 +8,7 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from app.core.supabase import get_supabase_service
+from app.services.portfolio.live_prices import QuoteProvider, mark_to_market
 from supabase import Client
 
 logger = logging.getLogger(__name__)
@@ -16,8 +17,11 @@ logger = logging.getLogger(__name__)
 class PortfolioService:
     """Broker-neutral portfolio cache and sharing service."""
 
-    def __init__(self, supabase: Optional[Client] = None):
+    def __init__(
+        self, supabase: Optional[Client] = None, quote_provider: Optional[QuoteProvider] = None
+    ):
         self.supabase = supabase or get_supabase_service()
+        self.quote_provider = quote_provider
 
     async def get_user_holdings(self, user_id: str) -> Dict[str, Any]:
         """
@@ -48,6 +52,7 @@ class PortfolioService:
         )
 
         accounts_data = _tag_sources(accounts.data or [], connections)
+        await mark_to_market(accounts_data, self.quote_provider)
 
         # 计算总市值
         total_portfolio_value = 0.0
@@ -145,6 +150,8 @@ class PortfolioService:
         accounts_data = [
             acc for acc in (accounts.data or []) if acc.get("id") not in hidden_account_ids
         ]
+        _tag_sources(accounts_data, public_connections)
+        await mark_to_market(accounts_data, self.quote_provider)
 
         # 计算总市值和盈亏（仅计算可见持仓用于统计）
         total_portfolio_value = 0.0
@@ -211,7 +218,7 @@ class PortfolioService:
             "is_connected": True,  # 公开持仓必然已连接
             "is_public": True,  # 公开持仓必然已公开
             "last_synced_at": _latest_sync(public_connections),
-            "accounts": _tag_sources(accounts_data, public_connections),
+            "accounts": accounts_data,
             "privacy_settings": privacy_settings,
         }
 
@@ -501,10 +508,12 @@ def _latest_sync(connections: List[Dict[str, Any]]) -> Optional[str]:
 def _tag_sources(
     accounts: List[Dict[str, Any]], connections: List[Dict[str, Any]]
 ) -> List[Dict[str, Any]]:
-    """Mark each account with where it came from so the UI can label manual imports."""
-    providers = {c["id"]: c.get("provider") for c in connections}
+    """Mark each account with its source (to label manual imports) and last broker sync."""
+    by_id = {c["id"]: c for c in connections}
     for account in accounts:
-        account["source"] = providers.get(account.get("connection_id"), "plaid")
+        connection = by_id.get(account.get("connection_id"), {})
+        account["source"] = connection.get("provider", "plaid")
+        account["synced_at"] = connection.get("last_synced_at")
     return accounts
 
 

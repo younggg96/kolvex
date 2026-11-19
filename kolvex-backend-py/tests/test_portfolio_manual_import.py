@@ -339,7 +339,10 @@ class MergedHoldingsTests(unittest.TestCase):
         # The manual connection inherits the existing sharing choice.
         self.assertTrue(all(c["is_public"] for c in db["portfolio_connections"]))
 
-        service = PortfolioService(supabase)
+        def no_quote(symbol):
+            raise RuntimeError("offline")
+
+        service = PortfolioService(supabase, quote_provider=no_quote)
         holdings = run(service.get_user_holdings("u1"))
         self.assertEqual(sorted(a["source"] for a in holdings["accounts"]), ["manual", "plaid"])
         self.assertEqual(holdings["total_value"], 100 + 1500 + 1050 + 2400)

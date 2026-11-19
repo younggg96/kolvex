@@ -43,11 +43,44 @@ export interface UsePortfolioHistoryResult {
   hasRealData: boolean;
   /** Date of first available real snapshot */
   firstSnapshotDate: string | null;
+  /** True when the series values today's holdings at past closes instead of saved snapshots */
+  isEstimate: boolean;
+  /** Holdings held at today's value because they have no daily close (options, cash, …) */
+  unpricedSymbols: string[];
 }
 
 interface UsePortfolioHistoryOptions {
   /** User ID to fetch history for. If not provided, fetches current user's history */
   userId?: string;
+  /** Owner view: estimate from the current holdings and daily closes */
+  estimated?: boolean;
+}
+
+interface EstimatedHistoryResponse {
+  data: { date: string; value: number; pnl: number; pnl_percent: number }[];
+  unpriced_symbols: string[];
+}
+
+async function fetchEstimatedRows(
+  period: PerformancePeriod,
+): Promise<{ rows: SnapshotRow[]; unpriced: string[] }> {
+  const response = await fetch(`/api/portfolio/history/estimated?period=${period}`);
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new Error(body.error || body.detail || `Request failed: ${response.status}`);
+  }
+  const body = (await response.json()) as EstimatedHistoryResponse;
+  return {
+    rows: body.data.map((point) => ({
+      snapshot_date: point.date,
+      total_value: point.value,
+      unrealized_pnl: point.pnl,
+      unrealized_pnl_percent: point.pnl_percent,
+      positions_count: null,
+      calculation_version: null,
+    })),
+    unpriced: body.unpriced_symbols || [],
+  };
 }
 
 interface SnapshotRow {
@@ -64,10 +97,12 @@ const SNAPSHOT_COLUMNS =
 const LEGACY_SNAPSHOT_COLUMNS =
   "snapshot_date, total_value, unrealized_pnl, unrealized_pnl_percent, positions_count";
 
-function isMissingCalculationVersionError(error: {
-  code?: string;
-  message?: string;
-} | null): boolean {
+function isMissingCalculationVersionError(
+  error: {
+    code?: string;
+    message?: string;
+  } | null,
+): boolean {
   if (!error) return false;
   const message = (error.message || "").toLowerCase();
   return (
@@ -77,10 +112,7 @@ function isMissingCalculationVersionError(error: {
   );
 }
 
-async function fetchSnapshotRows(
-  userId: string,
-  startDate: string,
-): Promise<SnapshotRow[]> {
+async function fetchSnapshotRows(userId: string, startDate: string): Promise<SnapshotRow[]> {
   const supabase = createClient();
   const currentSchemaResult = await supabase
     .from("portfolio_snapshots")
@@ -127,25 +159,28 @@ const CACHE_TTL_MS = 5 * 60 * 1000;
 
 interface CacheEntry {
   snapshots: SnapshotRow[];
+  unpriced: string[];
   timestamp: number;
 }
 
 /** Global cache map: keyed by "userId-period" */
 const globalCache = new Map<string, CacheEntry>();
-subscribeClientCache(prefix => { if (!prefix || prefix.startsWith("/api/portfolio")) globalCache.clear(); });
+subscribeClientCache((prefix) => {
+  if (!prefix || prefix.startsWith("/api/portfolio")) globalCache.clear();
+});
 
-function getCachedSnapshots(key: string): SnapshotRow[] | null {
+function getCachedSnapshots(key: string): CacheEntry | null {
   const entry = globalCache.get(key);
   if (!entry) return null;
   if (Date.now() - entry.timestamp > CACHE_TTL_MS) {
     globalCache.delete(key);
     return null;
   }
-  return entry.snapshots;
+  return entry;
 }
 
-function setCachedSnapshots(key: string, snapshots: SnapshotRow[]): void {
-  globalCache.set(key, { snapshots, timestamp: Date.now() });
+function setCachedSnapshots(key: string, snapshots: SnapshotRow[], unpriced: string[] = []): void {
+  globalCache.set(key, { snapshots, unpriced, timestamp: Date.now() });
 }
 
 function invalidateCache(key: string): void {
@@ -161,7 +196,7 @@ function invalidateCache(key: string): void {
  */
 function formatDisplayDate(dateStr: string, period: PerformancePeriod): string {
   const date = new Date(dateStr);
-  
+
   switch (period) {
     case "1D":
       return date.toLocaleTimeString("en-US", {
@@ -199,7 +234,7 @@ function formatDisplayDate(dateStr: string, period: PerformancePeriod): string {
  */
 function getStartDate(period: PerformancePeriod): Date {
   const now = new Date();
-  
+
   switch (period) {
     case "1D":
       return new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -222,10 +257,10 @@ function getStartDate(period: PerformancePeriod): Date {
 // ============================================================
 
 export function usePortfolioHistory(
-  options: UsePortfolioHistoryOptions = {}
+  options: UsePortfolioHistoryOptions = {},
 ): UsePortfolioHistoryResult {
-  const { userId } = options;
-  
+  const { userId, estimated = false } = options;
+
   const [period, setPeriod] = useState<PerformancePeriod>("1W");
   const [data, setData] = useState<PerformanceDataPoint[]>([]);
   const [summary, setSummary] = useState<PerformanceSummary | null>(null);
@@ -233,57 +268,69 @@ export function usePortfolioHistory(
   const [error, setError] = useState<string | null>(null);
   const [hasRealData, setHasRealData] = useState(false);
   const [firstSnapshotDate, setFirstSnapshotDate] = useState<string | null>(null);
+  const [unpricedSymbols, setUnpricedSymbols] = useState<string[]>([]);
 
   // Use ref to track firstSnapshotDate without adding it to callback deps
   const firstSnapshotDateRef = useRef<string | null>(null);
-  
+
   // Process snapshots into display data and summary
-  const processSnapshots = useCallback((snapshots: SnapshotRow[], currentPeriod: PerformancePeriod) => {
-    // Track first snapshot date
-    if (!firstSnapshotDateRef.current && snapshots.length > 0) {
-      firstSnapshotDateRef.current = snapshots[0].snapshot_date;
-      setFirstSnapshotDate(snapshots[0].snapshot_date);
-    }
+  const processSnapshots = useCallback(
+    (snapshots: SnapshotRow[], currentPeriod: PerformancePeriod) => {
+      // Track first snapshot date (saved snapshots only; an estimate has none)
+      if (!estimated && !firstSnapshotDateRef.current && snapshots.length > 0) {
+        firstSnapshotDateRef.current = snapshots[0].snapshot_date;
+        setFirstSnapshotDate(snapshots[0].snapshot_date);
+      }
 
-    if (snapshots.length > 0) {
-      const dataPoints = snapshots.map((s) => ({
-        date: s.snapshot_date,
-        displayDate: formatDisplayDate(s.snapshot_date, currentPeriod),
-        value: Number(s.total_value) || 0,
-        pnl: Number(s.unrealized_pnl) || 0,
-        pnlPercent: Number(s.unrealized_pnl_percent) || 0,
-      }));
+      if (snapshots.length > 0) {
+        const dataPoints = snapshots.map((s) => ({
+          date: s.snapshot_date,
+          displayDate: formatDisplayDate(s.snapshot_date, currentPeriod),
+          value: Number(s.total_value) || 0,
+          pnl: Number(s.unrealized_pnl) || 0,
+          pnlPercent: Number(s.unrealized_pnl_percent) || 0,
+        }));
 
-      const values = dataPoints.map((d) => d.value);
-      const first = dataPoints[0];
-      const last = dataPoints[dataPoints.length - 1];
-      const summaryData: PerformanceSummary = {
-        startValue: first.value,
-        endValue: last.value,
-        valueChange: last.value - first.value,
-        valueChangePercent:
-          first.value > 0
-            ? ((last.value - first.value) / first.value) * 100
-            : 0,
-        startPnL: first.pnl,
-        endPnL: last.pnl,
-        pnlChange: last.pnl - first.pnl,
-        totalPnL: last.pnl,
-        totalPnLPercent: last.pnlPercent,
-        highValue: Math.max(...values),
-        lowValue: Math.min(...values),
-        dataPoints: values.length,
-      };
+        const values = dataPoints.map((d) => d.value);
+        const first = dataPoints[0];
+        const last = dataPoints[dataPoints.length - 1];
+        const summaryData: PerformanceSummary = {
+          startValue: first.value,
+          endValue: last.value,
+          valueChange: last.value - first.value,
+          valueChangePercent:
+            first.value > 0 ? ((last.value - first.value) / first.value) * 100 : 0,
+          startPnL: first.pnl,
+          endPnL: last.pnl,
+          pnlChange: last.pnl - first.pnl,
+          totalPnL: last.pnl,
+          totalPnLPercent: last.pnlPercent,
+          highValue: Math.max(...values),
+          lowValue: Math.min(...values),
+          dataPoints: values.length,
+        };
 
-      setData(dataPoints);
-      setSummary(summaryData);
-      setHasRealData(true);
-    } else {
-      setData([]);
-      setSummary(null);
-      setHasRealData(false);
-    }
-  }, []);
+        setData(dataPoints);
+        setSummary(summaryData);
+        setHasRealData(true);
+      } else {
+        setData([]);
+        setSummary(null);
+        setHasRealData(false);
+      }
+    },
+    [estimated],
+  );
+
+  const loadRows = useCallback(
+    async (currentPeriod: PerformancePeriod) => {
+      if (estimated) return fetchEstimatedRows(currentPeriod);
+      const startDate = getStartDate(currentPeriod);
+      const rows = await fetchSnapshotRows(userId as string, startDate.toISOString().split("T")[0]);
+      return { rows, unpriced: [] as string[] };
+    },
+    [estimated, userId],
+  );
 
   // Fetch history data directly from Supabase
   const fetchHistory = useCallback(async () => {
@@ -295,12 +342,13 @@ export function usePortfolioHistory(
       return;
     }
 
-    const cacheKey = `${userId}-${period}`;
+    const cacheKey = `${userId}-${estimated ? "estimate" : "snapshots"}-${period}`;
 
     // Check global cache first — if hit, restore data synchronously (no loading flash)
     const cached = getCachedSnapshots(cacheKey);
     if (cached) {
-      processSnapshots(cached, period);
+      setUnpricedSymbols(cached.unpriced);
+      processSnapshots(cached.snapshots, period);
       setLoading(false);
       return;
     }
@@ -309,16 +357,10 @@ export function usePortfolioHistory(
     setError(null);
 
     try {
-      const startDate = getStartDate(period);
-      const snapshots = await fetchSnapshotRows(
-        userId,
-        startDate.toISOString().split("T")[0],
-      );
-      
-      // Store in global cache
-      setCachedSnapshots(cacheKey, snapshots);
-
-      processSnapshots(snapshots, period);
+      const { rows, unpriced } = await loadRows(period);
+      setCachedSnapshots(cacheKey, rows, unpriced);
+      setUnpricedSymbols(unpriced);
+      processSnapshots(rows, period);
     } catch (err) {
       console.error("Failed to fetch portfolio history:", err);
       setError(err instanceof Error ? err.message : "Failed to load history");
@@ -328,7 +370,7 @@ export function usePortfolioHistory(
     } finally {
       setLoading(false);
     }
-  }, [userId, period, processSnapshots]);
+  }, [userId, estimated, period, processSnapshots, loadRows]);
 
   // Fetch data when userId or period changes
   useEffect(() => {
@@ -336,37 +378,37 @@ export function usePortfolioHistory(
   }, [fetchHistory]);
 
   // Handle period change
-  const handleSetPeriod = useCallback((newPeriod: PerformancePeriod) => {
-    if (newPeriod === period) return;
-    setLoading(Boolean(userId));
-    setPeriod(newPeriod);
-  }, [period, userId]);
+  const handleSetPeriod = useCallback(
+    (newPeriod: PerformancePeriod) => {
+      if (newPeriod === period) return;
+      setLoading(Boolean(userId));
+      setPeriod(newPeriod);
+    },
+    [period, userId],
+  );
 
   // Refresh data (bypasses global cache)
   const refresh = useCallback(async () => {
     if (!userId) return;
-    
-    // Invalidate global cache for current period
-    invalidateCache(`${userId}-${period}`);
+
+    const cacheKey = `${userId}-${estimated ? "estimate" : "snapshots"}-${period}`;
+    invalidateCache(cacheKey);
 
     setLoading(true);
     setError(null);
 
     try {
-      const startDate = getStartDate(period);
-      const snapshots = await fetchSnapshotRows(
-        userId,
-        startDate.toISOString().split("T")[0],
-      );
-      setCachedSnapshots(`${userId}-${period}`, snapshots);
-      processSnapshots(snapshots, period);
+      const { rows, unpriced } = await loadRows(period);
+      setCachedSnapshots(cacheKey, rows, unpriced);
+      setUnpricedSymbols(unpriced);
+      processSnapshots(rows, period);
     } catch (err) {
       console.error("Failed to refresh portfolio history:", err);
       setError(err instanceof Error ? err.message : "Failed to refresh history");
     } finally {
       setLoading(false);
     }
-  }, [userId, period, processSnapshots]);
+  }, [userId, estimated, period, processSnapshots, loadRows]);
 
   return {
     data,
@@ -378,5 +420,7 @@ export function usePortfolioHistory(
     refresh,
     hasRealData,
     firstSnapshotDate,
+    isEstimate: estimated,
+    unpricedSymbols,
   };
 }

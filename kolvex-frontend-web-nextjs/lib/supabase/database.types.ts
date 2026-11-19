@@ -83,6 +83,12 @@ export interface PortfolioPosition {
   // Calculated fields from API
   weight_percent?: number; // Portfolio weight percentage (0-100)
   market_value?: number; // Current market value
+  /** "market": price is the latest exchange quote; "broker": the price the broker last reported. */
+  price_source?: "market" | "broker" | null;
+  /** When the shown price was observed (quote time, or the last broker sync). */
+  price_as_of?: string | null;
+  /** The broker-reported price, kept when a market quote replaced it. */
+  broker_price?: number | null;
   // Visibility control
   is_hidden?: boolean; // Whether position is hidden from public view
   created_at: string;

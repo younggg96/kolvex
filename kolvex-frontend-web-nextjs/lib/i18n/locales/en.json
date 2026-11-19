@@ -843,7 +843,10 @@
       "strike": "Strike",
       "contracts": "Contracts",
       "short": "Short",
-      "long": "Long"
+      "long": "Long",
+      "brokerPrice": "Broker · {date}",
+      "brokerPriceHint": "Live quote unavailable; showing the price from the broker's last sync ({date})",
+      "marketPriceHint": "Yahoo Finance quote, {date} (may be delayed)"
     },
     "privacy": {
       "title": "Privacy Settings",
@@ -882,6 +885,9 @@
       "ownerNoDataStarted": "Data recording started on {date}. Keep syncing to build your performance history.",
       "publicNoData": "This user doesn't have any historical performance data yet.",
       "dataSince": "Data since {date}",
+      "estimateLabel": "Estimated from current holdings",
+      "estimateTooltip": "Your current share counts valued at each trading day's close, ending at the latest quote. Trades during the period aren't reflected.",
+      "estimateFlat": "{symbols} have no daily close and are counted at today's price.",
       "ownerDataTooltip": "This chart shows your actual portfolio performance recorded since {date}. Data is recorded automatically when you sync your portfolio.",
       "publicDataTooltip": "This chart shows portfolio performance recorded since {date}.",
       "both": "Both",

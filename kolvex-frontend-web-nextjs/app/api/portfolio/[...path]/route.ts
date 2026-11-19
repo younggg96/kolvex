@@ -102,6 +102,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         return proxyRequest(request, "/history/status", { method: "GET" });
       }
       const period = searchParams.get("period") || "1M";
+      if (path[1] === "estimated") {
+        // /api/portfolio/history/estimated -> today's holdings valued at past closes
+        return proxyRequest(request, `/history/estimated?period=${encodeURIComponent(period)}`, {
+          method: "GET",
+        });
+      }
       return proxyRequest(request, `/history?period=${period}`, { method: "GET" });
     }
 

@@ -69,7 +69,9 @@ export function PortfolioPerformanceChart({
     refresh,
     hasRealData,
     firstSnapshotDate,
-  } = usePortfolioHistory({ userId });
+    isEstimate,
+    unpricedSymbols,
+  } = usePortfolioHistory({ userId, estimated: isOwner });
 
   const [chartView, setChartView] = useState<ChartView>(isOwner ? "value" : "pnl");
   const [active, setActive] = useState<PerformanceDataPoint | null>(null);
@@ -286,28 +288,42 @@ export function PortfolioPerformanceChart({
             </button>
           ))}
         </div>
-        {hasRealData && firstSnapshotDate && (
+        {hasRealData && (isEstimate || firstSnapshotDate) && (
           <TooltipProvider>
             <UITooltip>
               <TooltipTrigger asChild>
                 <button
                   type="button"
                   className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
-                  aria-label={t("portfolio.performance.dataSince", {
-                    date: new Date(firstSnapshotDate).toLocaleDateString(),
-                  })}
+                  aria-label={
+                    isEstimate
+                      ? t("portfolio.performance.estimateLabel")
+                      : t("portfolio.performance.dataSince", {
+                          date: new Date(firstSnapshotDate as string).toLocaleDateString(),
+                        })
+                  }
                 >
                   <Info className="h-4 w-4" />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="top" className="max-w-xs">
-                {isOwner
-                  ? t("portfolio.performance.ownerDataTooltip", {
-                      date: new Date(firstSnapshotDate).toLocaleDateString(),
-                    })
-                  : t("portfolio.performance.publicDataTooltip", {
-                      date: new Date(firstSnapshotDate).toLocaleDateString(),
-                    })}
+                {isEstimate ? (
+                  <>
+                    {t("portfolio.performance.estimateTooltip")}
+                    {unpricedSymbols.length > 0 &&
+                      ` ${t("portfolio.performance.estimateFlat", {
+                        symbols: unpricedSymbols.join(", "),
+                      })}`}
+                  </>
+                ) : isOwner ? (
+                  t("portfolio.performance.ownerDataTooltip", {
+                    date: new Date(firstSnapshotDate as string).toLocaleDateString(),
+                  })
+                ) : (
+                  t("portfolio.performance.publicDataTooltip", {
+                    date: new Date(firstSnapshotDate as string).toLocaleDateString(),
+                  })
+                )}
               </TooltipContent>
             </UITooltip>
           </TooltipProvider>

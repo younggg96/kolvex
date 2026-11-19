@@ -25,6 +25,31 @@ import type { EquityPositionsTableProps, PortfolioPosition } from "./types";
 const isHiddenValue = (val: any): val is string =>
   val === "***" || val === null || val === undefined;
 
+function usePriceSource() {
+  const { t, locale } = useTranslation();
+  return (pos: PortfolioPosition) => {
+    if (!pos.price_source || !pos.price_as_of) return null;
+    const at = new Date(pos.price_as_of);
+    if (Number.isNaN(at.getTime())) return null;
+    const lang = locale === "zh" ? "zh-CN" : "en-US";
+    const full = at.toLocaleString(lang, {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    if (pos.price_source === "market") {
+      return { stale: false, hint: t("portfolio.table.marketPriceHint", { date: full }) };
+    }
+    const day = at.toLocaleDateString(lang, { month: "numeric", day: "numeric" });
+    return {
+      stale: true,
+      label: t("portfolio.table.brokerPrice", { date: day }),
+      hint: t("portfolio.table.brokerPriceHint", { date: full }),
+    };
+  };
+}
+
 export function EquityPositionsTable({
   positions,
   isOwner,
@@ -37,6 +62,7 @@ export function EquityPositionsTable({
   onToggleVisibility,
 }: EquityPositionsTableProps) {
   const { t } = useTranslation();
+  const priceSource = usePriceSource();
 
   if (positions.length === 0) return null;
 
@@ -223,7 +249,19 @@ export function EquityPositionsTable({
                     {isSecretStock || isHiddenValue(pos.price) ? (
                       <span className="text-muted-foreground">***</span>
                     ) : (
-                      formatCurrency(pos.price as number)
+                      (() => {
+                        const source = priceSource(pos);
+                        return (
+                          <span title={source?.hint} className="inline-flex flex-col items-end">
+                            {formatCurrency(pos.price as number)}
+                            {source?.stale && (
+                              <span className="text-[11px] font-normal text-muted-foreground">
+                                {source.label}
+                              </span>
+                            )}
+                          </span>
+                        );
+                      })()
                     )}
                   </TableCell>
                   <TableCell className="text-right tabular-nums text-muted-foreground">
@@ -343,6 +381,7 @@ function EquityPositionsCards({
   onToggleVisibility,
 }: Pick<EquityPositionsTableProps, "positions" | "isOwner" | "isPublic" | "onToggleVisibility">) {
   const { t } = useTranslation();
+  const priceSource = usePriceSource();
 
   return (
     <ul className="divide-y divide-border sm:hidden">
@@ -421,8 +460,9 @@ function EquityPositionsCards({
                   {t("portfolio.table.shares")}{" "}
                   {isSecretStock || isHiddenValue(pos.units) ? "***" : Math.abs(pos.units)}
                 </span>
-                <span>
+                <span title={priceSource(pos)?.hint}>
                   {t("portfolio.table.price")} {money(pos.price)}
+                  {!isSecretStock && priceSource(pos)?.stale && ` · ${priceSource(pos)?.label}`}
                 </span>
                 <span>
                   {t("portfolio.table.cost")} {money(pos.average_purchase_price)}

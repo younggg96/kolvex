@@ -3,17 +3,18 @@ Portfolio Portfolio History Routes
 Endpoints for portfolio historical data
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from starlette import status as http_status
-from typing import Optional, List
-from datetime import date
-from pydantic import BaseModel
 import logging
+from typing import List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
+from starlette import status as http_status
 
 from app.api.dependencies.auth import get_current_user_id
+from app.services.portfolio import PortfolioService, get_portfolio_service
+from app.services.portfolio.estimated_history import PERIODS, estimate_history
 from app.services.portfolio_snapshot_service import (
     get_portfolio_snapshot_service,
-    PortfolioSnapshotService,
 )
 
 logger = logging.getLogger(__name__)
@@ -105,6 +106,45 @@ async def get_portfolio_history(
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get portfolio history: {str(e)}",
+        )
+
+
+class EstimatedHistoryPoint(BaseModel):
+    date: str
+    value: float
+    pnl: float
+    pnl_percent: float
+
+
+class EstimatedHistoryResponse(BaseModel):
+    """Today's holdings valued at each past close; not a record of past balances."""
+
+    period: str
+    method: str
+    data: List[EstimatedHistoryPoint]
+    fixed_value: float = 0
+    unpriced_symbols: List[str] = []
+
+
+@router.get("/history/estimated", response_model=EstimatedHistoryResponse)
+async def get_estimated_portfolio_history(
+    period: str = Query("1W", description="Period: 1W, 1M, 3M, YTD, ALL"),
+    current_user_id: str = Depends(get_current_user_id),
+    service: PortfolioService = Depends(get_portfolio_service),
+):
+    """Estimate the current holdings' value over the period from daily closes."""
+    if period not in PERIODS:
+        raise HTTPException(
+            status_code=http_status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Bad period"
+        )
+    try:
+        holdings = await service.get_user_holdings(current_user_id)
+        return await estimate_history(holdings.get("accounts") or [], period)
+    except Exception as e:
+        logger.error(f"Failed to estimate portfolio history: {e}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to estimate portfolio history",
         )
 
 

@@ -826,7 +826,10 @@
       "strike": "行权价",
       "contracts": "合约数",
       "short": "做空",
-      "long": "做多"
+      "long": "做多",
+      "brokerPrice": "券商价 · {date}",
+      "brokerPriceHint": "实时行情暂不可用，显示券商最近一次同步的价格（{date}）",
+      "marketPriceHint": "Yahoo Finance 行情，{date}（可能有延迟）"
     },
     "privacy": {
       "title": "隐私设置",
@@ -865,6 +868,9 @@
       "ownerNoDataStarted": "数据记录始于 {date}。继续同步以建立您的表现历史。",
       "publicNoData": "该用户暂无历史表现数据。",
       "dataSince": "数据始于 {date}",
+      "estimateLabel": "按当前持仓估算",
+      "estimateTooltip": "按你现在的持仓股数 × 每个交易日收盘价估算，最后一个点用最新行情；没有计入期间的买卖。",
+      "estimateFlat": "{symbols} 没有日收盘价，按当前价格计入。",
       "ownerDataTooltip": "此图表显示您自 {date} 以来记录的实际投资组合表现。数据在您同步投资组合时自动记录。",
       "publicDataTooltip": "此图表显示自 {date} 以来记录的投资组合表现。",
       "both": "综合",
