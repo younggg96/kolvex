@@ -39,11 +39,18 @@ function usePriceSource() {
       minute: "2-digit",
     });
     if (pos.price_source === "market") {
-      return { stale: false, hint: t("portfolio.table.marketPriceHint", { date: full }) };
+      const session = pos.price_session;
+      return {
+        // Pre-market and after-hours prices are labelled; regular-session ones are not.
+        label:
+          session === "pre" || session === "post"
+            ? t(`portfolio.table.${session}MarketPrice`)
+            : undefined,
+        hint: t("portfolio.table.marketPriceHint", { date: full }),
+      };
     }
     const day = at.toLocaleDateString(lang, { month: "numeric", day: "numeric" });
     return {
-      stale: true,
       label: t("portfolio.table.brokerPrice", { date: day }),
       hint: t("portfolio.table.brokerPriceHint", { date: full }),
     };
@@ -254,7 +261,7 @@ export function EquityPositionsTable({
                         return (
                           <span title={source?.hint} className="inline-flex flex-col items-end">
                             {formatCurrency(pos.price as number)}
-                            {source?.stale && (
+                            {source?.label && (
                               <span className="text-[11px] font-normal text-muted-foreground">
                                 {source.label}
                               </span>
@@ -462,7 +469,7 @@ function EquityPositionsCards({
                 </span>
                 <span title={priceSource(pos)?.hint}>
                   {t("portfolio.table.price")} {money(pos.price)}
-                  {!isSecretStock && priceSource(pos)?.stale && ` · ${priceSource(pos)?.label}`}
+                  {!isSecretStock && priceSource(pos)?.label && ` · ${priceSource(pos)?.label}`}
                 </span>
                 <span>
                   {t("portfolio.table.cost")} {money(pos.average_purchase_price)}

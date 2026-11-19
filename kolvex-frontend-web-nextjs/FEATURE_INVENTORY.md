@@ -54,11 +54,11 @@
 
 ### 实时价格
 
-`GET /api/v1/portfolio/holdings`（含公开页）返回前，会把美国上市、美元计价的股票和 ETF 的价格换成 Yahoo Finance 最新常规交易时段报价（`app/services/portfolio/live_prices.py`），并按价差同步调整 `open_pnl`。原券商价格保留在 `broker_price`，`price_source` 标 `market` 或 `broker`，`price_as_of` 是报价时间或券商最近同步时间。期权、非美元持仓和报价失败的股票保持券商价格，持仓表在价格下方标「券商价 · 日期」。
+`GET /api/v1/portfolio/holdings`（含公开页）返回前，会把美国上市、美元计价的股票和 ETF 的价格换成 Yahoo Finance 最新报价（常规、盘前、盘后三者中时间最新的一个，`price_session` 标 `regular` / `pre` / `post`，持仓表在价格下方标「盘前」「盘后」）（`app/services/portfolio/live_prices.py`），并按价差同步调整 `open_pnl`。原券商价格保留在 `broker_price`，`price_source` 标 `market` 或 `broker`，`price_as_of` 是报价时间或券商最近同步时间。期权、非美元持仓和报价失败的股票保持券商价格，持仓表在价格下方标「券商价 · 日期」。
 
 ### 组合价值曲线
 
-本人查看时，曲线来自 `GET /api/v1/portfolio/history/estimated?period=`（`app/services/portfolio/estimated_history.py`）：用当前持仓股数乘每个交易日收盘价估算，最后一点用最新报价、日期取报价所在交易日；没有实时报价时止于最近收盘。期权、现金等没有日收盘价的持仓按当前价值计为常数，并在 ⓘ 提示里列出。不考虑期间买卖，ⓘ 里注明「按当前持仓估算」。公开页访客仍看下面的估值快照。
+本人查看时，曲线来自 `GET /api/v1/portfolio/history/estimated?period=`（`app/services/portfolio/estimated_history.py`）：用当前持仓股数乘每根 K 线的收盘价估算，K 线粒度与个股走势图一致：4小时用 1 分钟线（最近交易日的最后 4 小时）、1日用 5 分钟线、1周用 15 分钟线，1月及以上用日线。最后一点用最新报价，排在报价时间之前的 K 线之后；没有实时报价时止于最后一根 K 线。分时 K 线包含盘前盘后（美东 4:00–20:00）；20:00 到次日 4:00 的隔夜交易 Yahoo 不提供，不在图上。分时点按纽约时间显示。4小时和1日只对本人显示。期权、现金等没有日收盘价的持仓按当前价值计为常数，并在 ⓘ 提示里列出。不考虑期间买卖，ⓘ 里注明「按当前持仓估算」。公开页访客仍看下面的估值快照。
 
 ### 每日估值快照
 

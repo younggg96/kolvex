@@ -1,8 +1,9 @@
-"""Estimate portfolio value over time from the current holdings and daily closes.
+"""Estimate portfolio value over time from the current holdings and price bars.
 
 Saved snapshots only exist for days a sync completed, so a new connection has a
 few points joined by straight lines. This series instead values *today's*
-quantities at each trading day's close. It does not know about past trades, so
+quantities at each bar's close, using the same bar sizes as the stock chart
+(1-minute for 4H, 5-minute for 1D, 15-minute for 1W, daily beyond that). It does not know about past trades, so
 callers must label it as an estimate. Positions without a daily close (options,
 cash, non-US listings, failed lookups) are held at today's value and reported in
 ``fixed_value`` / ``unpriced_symbols`` rather than guessed.
@@ -10,8 +11,8 @@ cash, non-US listings, failed lookups) are held at today's value and reported in
 
 import asyncio
 import logging
-from datetime import date, datetime, timedelta
-from typing import Any, Callable, Dict, List, Optional
+from datetime import datetime, timedelta
+from typing import Any, Callable, Dict, List, Optional, Tuple
 from zoneinfo import ZoneInfo
 
 from app.services.portfolio.live_prices import quote_symbol
@@ -20,8 +21,18 @@ logger = logging.getLogger(__name__)
 
 NEW_YORK = ZoneInfo("America/New_York")
 HISTORY_TIMEOUT_SECONDS = 15
-PERIOD_DAYS = {"1W": 7, "1M": 31, "3M": 92, "ALL": 365 * 5}
-PERIODS = ("1W", "1M", "3M", "YTD", "ALL")
+# period -> (yfinance period, bar interval). "1d" covers the latest session even overnight.
+PERIOD_BARS: Dict[str, Tuple[str, str]] = {
+    "4H": ("1d", "1m"),
+    "1D": ("1d", "5m"),
+    "1W": ("5d", "15m"),
+    "1M": ("1mo", "1d"),
+    "3M": ("3mo", "1d"),
+    "YTD": ("ytd", "1d"),
+    "ALL": ("5y", "1d"),
+}
+PERIODS = tuple(PERIOD_BARS)
+WINDOW = {"4H": timedelta(hours=4)}
 
 HistoryProvider = Callable[[str, str, str], List[Dict[str, Any]]]
 
@@ -30,42 +41,53 @@ def default_history_provider() -> HistoryProvider:
     from app.services.yfinance.client import get_yfinance_service
 
     service = get_yfinance_service()
-    return lambda symbol, start, end: service.get_history(symbol, start=start, end=end)
+    # Intraday bars include pre- and after-hours trading (04:00–20:00 ET).
+    return lambda symbol, period, interval: service.get_history(
+        symbol, period=period, interval=interval, prepost=interval.endswith("m")
+    )
 
 
-def period_start(period: str, today: date) -> date:
-    if period == "YTD":
-        return date(today.year, 1, 1)
-    return today - timedelta(days=PERIOD_DAYS.get(period, 31))
+def is_intraday(period: str) -> bool:
+    return PERIOD_BARS[period][1].endswith("m")
 
 
 def _number(value: Any) -> Optional[float]:
     return float(value) if isinstance(value, (int, float)) and not isinstance(value, bool) else None
 
 
-def _closes(bars: List[Dict[str, Any]]) -> Dict[str, float]:
+def _bar_key(raw: Any, intraday: bool) -> Optional[str]:
+    """Daily bars key on the NY date; intraday bars on the bar's NY start time."""
+    text = str(raw or "")
+    if not intraday:
+        return text[:10] if len(text) >= 10 else None
+    try:
+        stamp = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if stamp.tzinfo is None:
+        return None
+    return stamp.astimezone(NEW_YORK).isoformat()
+
+
+def _closes(bars: List[Dict[str, Any]], intraday: bool) -> Dict[str, float]:
     out: Dict[str, float] = {}
     for bar in bars or []:
         close = _number(bar.get("close"))
-        day = str(bar.get("date") or "")[:10]
-        if close is not None and close > 0 and len(day) == 10:
-            out[day] = close
+        key = _bar_key(bar.get("date"), intraday)
+        if close is not None and close > 0 and key:
+            out[key] = close
     return out
 
 
-def _market_day(position: Dict[str, Any]) -> Optional[str]:
-    """New York trading day of a live market price, if the holding has one."""
+def _market_time(position: Dict[str, Any]) -> Optional[datetime]:
+    """When the holding's live market price was observed, if it has one."""
     if position.get("price_source") != "market":
         return None
     try:
-        return (
-            datetime.fromisoformat(str(position.get("price_as_of")))
-            .astimezone(NEW_YORK)
-            .date()
-            .isoformat()
-        )
+        stamp = datetime.fromisoformat(str(position.get("price_as_of")))
     except ValueError:
         return None
+    return stamp.astimezone(NEW_YORK) if stamp.tzinfo else None
 
 
 def _position_rows(accounts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -93,24 +115,25 @@ def _position_rows(accounts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                     "units": units,
                     "value": value,
                     "cost": cost,
-                    "as_of": _market_day(position),
+                    "as_of": _market_time(position),
                 }
             )
     return rows
 
 
 async def _load_closes(
-    symbols: List[str], start: date, end: date, provider: HistoryProvider
+    symbols: List[str], period: str, provider: HistoryProvider
 ) -> Dict[str, Dict[str, float]]:
     found: Dict[str, Dict[str, float]] = {}
+    yf_period, interval = PERIOD_BARS[period]
 
     async def one(symbol: str) -> None:
         try:
-            bars = await asyncio.to_thread(provider, symbol, start.isoformat(), end.isoformat())
+            bars = await asyncio.to_thread(provider, symbol, yf_period, interval)
         except Exception:
             logger.warning("Portfolio history closes failed for %s", symbol)
             return
-        closes = _closes(bars)
+        closes = _closes(bars, is_intraday(period))
         if closes:
             found[symbol] = closes
 
@@ -129,16 +152,13 @@ async def estimate_history(
     provider: Optional[HistoryProvider] = None,
     now: Optional[datetime] = None,
 ) -> Dict[str, Any]:
-    """Daily value and open P&L of today's holdings over ``period``, ending at today's prices."""
-    now = now or datetime.now(NEW_YORK)
-    today = now.astimezone(NEW_YORK).date()
-    start = period_start(period, today)
+    """Value and open P&L of today's holdings over ``period``, ending at today's prices."""
+    now = (now or datetime.now(NEW_YORK)).astimezone(NEW_YORK)
+    intraday = is_intraday(period)
     rows = _position_rows(accounts)
     symbols = sorted({row["symbol"] for row in rows if row["symbol"]})
     closes = (
-        await _load_closes(
-            symbols, start, today + timedelta(days=1), provider or default_history_provider()
-        )
+        await _load_closes(symbols, period, provider or default_history_provider())
         if symbols
         else {}
     )
@@ -151,16 +171,20 @@ async def estimate_history(
 
     # Start once every tracked symbol has a close, so no value is invented before a listing.
     first_common = max((min(closes[row["symbol"]]) for row in tracked), default=None)
-    # The live point replaces the close of the day its quote belongs to. Without any
-    # live quote the series ends at the last close instead of reusing a stale price.
-    live_day = max((row["as_of"] for row in tracked if row["as_of"]), default=None)
+    # The live point follows the bars it belongs after (intraday: earlier bar starts;
+    # daily: earlier days). Without any live quote the series ends at the last bar
+    # instead of reusing a stale broker price.
+    live_at = max((row["as_of"] for row in tracked if row["as_of"]), default=None)
     if not tracked:
-        live_day = today.isoformat()
+        live_at = now
+    live_key = None
+    if live_at:
+        live_key = live_at.isoformat() if intraday else live_at.date().isoformat()
     days = sorted({day for row in tracked for day in closes[row["symbol"]]})
     days = [
         day
         for day in days
-        if first_common and day >= first_common and (live_day is None or day < live_day)
+        if first_common and day >= first_common and (live_key is None or day < live_key)
     ]
 
     def point(day: str, values: List[float]) -> Dict[str, Any]:
@@ -184,8 +208,13 @@ async def estimate_history(
                 last_close[row["symbol"]] = close
         data.append(point(day, [row["units"] * last_close[row["symbol"]] for row in tracked]))
 
-    if rows and live_day:
-        data.append(point(live_day, [row["value"] for row in tracked]))
+    if rows and live_key:
+        data.append(point(live_key, [row["value"] for row in tracked]))
+
+    window = WINDOW.get(period)
+    if window and data:
+        end = datetime.fromisoformat(data[-1]["date"])
+        data = [p for p in data if datetime.fromisoformat(p["date"]) >= end - window]
 
     return {
         "period": period,

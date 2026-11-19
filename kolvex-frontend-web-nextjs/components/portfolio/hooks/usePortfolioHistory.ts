@@ -1,12 +1,13 @@
 import { subscribeClientCache } from "@/lib/clientCache";
 import { useState, useCallback, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useTranslation } from "@/lib/i18n";
 
 // ============================================================
 // Types
 // ============================================================
 
-export type PerformancePeriod = "1D" | "1W" | "1M" | "3M" | "YTD" | "ALL";
+export type PerformancePeriod = "4H" | "1D" | "1W" | "1M" | "3M" | "YTD" | "ALL";
 
 export interface PerformanceDataPoint {
   date: string;
@@ -192,41 +193,34 @@ function invalidateCache(key: string): void {
 // ============================================================
 
 /**
- * Format date for display based on period
+ * Format a point's date for the scrub caption. Date-only values ("2026-11-18") are
+ * calendar days, so they are read as local dates; parsing them with `new Date()`
+ * would treat them as UTC midnight and show the previous day west of UTC.
+ * Intraday points carry an offset and are shown in market (New York) time.
  */
-function formatDisplayDate(dateStr: string, period: PerformancePeriod): string {
-  const date = new Date(dateStr);
-
-  switch (period) {
-    case "1D":
-      return date.toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    case "1W":
-      return date.toLocaleDateString("en-US", {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-      });
-    case "1M":
-    case "3M":
-      return date.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      });
-    case "YTD":
-    case "ALL":
-      return date.toLocaleDateString("en-US", {
-        month: "short",
-        year: "2-digit",
-      });
-    default:
-      return date.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      });
+function formatDisplayDate(dateStr: string, period: PerformancePeriod, locale: string): string {
+  const lang = locale === "zh" ? "zh-CN" : "en-US";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    const [year, month, day] = dateStr.split("-").map(Number);
+    return new Date(year, month - 1, day).toLocaleDateString(lang, {
+      weekday: period === "1M" ? "short" : undefined,
+      year: period === "YTD" || period === "ALL" ? "numeric" : undefined,
+      month: "short",
+      day: "numeric",
+    });
   }
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return dateStr;
+  const showDay = period === "1W";
+  const time = date.toLocaleString(lang, {
+    timeZone: "America/New_York",
+    weekday: showDay ? "short" : undefined,
+    month: showDay ? "short" : undefined,
+    day: showDay ? "numeric" : undefined,
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  return `${time} ET`;
 }
 
 /**
@@ -236,6 +230,7 @@ function getStartDate(period: PerformancePeriod): Date {
   const now = new Date();
 
   switch (period) {
+    case "4H":
     case "1D":
       return new Date(now.getTime() - 24 * 60 * 60 * 1000);
     case "1W":
@@ -260,6 +255,7 @@ export function usePortfolioHistory(
   options: UsePortfolioHistoryOptions = {},
 ): UsePortfolioHistoryResult {
   const { userId, estimated = false } = options;
+  const { locale } = useTranslation();
 
   const [period, setPeriod] = useState<PerformancePeriod>("1W");
   const [data, setData] = useState<PerformanceDataPoint[]>([]);
@@ -285,7 +281,7 @@ export function usePortfolioHistory(
       if (snapshots.length > 0) {
         const dataPoints = snapshots.map((s) => ({
           date: s.snapshot_date,
-          displayDate: formatDisplayDate(s.snapshot_date, currentPeriod),
+          displayDate: formatDisplayDate(s.snapshot_date, currentPeriod, locale),
           value: Number(s.total_value) || 0,
           pnl: Number(s.unrealized_pnl) || 0,
           pnlPercent: Number(s.unrealized_pnl_percent) || 0,
@@ -319,7 +315,7 @@ export function usePortfolioHistory(
         setHasRealData(false);
       }
     },
-    [estimated],
+    [estimated, locale],
   );
 
   const loadRows = useCallback(

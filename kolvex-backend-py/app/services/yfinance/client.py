@@ -444,9 +444,10 @@ class YFinanceService:
         interval: str = "1d",
         start: Optional[str] = None,
         end: Optional[str] = None,
+        prepost: bool = False,
     ) -> List[Dict[str, Any]]:
         """
-        获取历史行情数据
+        获取历史行情数据（prepost=True 时日内 K 线包含盘前盘后）
 
         Args:
             symbol: 股票代码
@@ -463,11 +464,11 @@ class YFinanceService:
 
         if start and end:
             df = ticker.history(
-                start=start, end=end, interval=source_interval, auto_adjust=False, prepost=False
+                start=start, end=end, interval=source_interval, auto_adjust=False, prepost=prepost
             )
         else:
             df = ticker.history(
-                period=period, interval=source_interval, auto_adjust=False, prepost=False
+                period=period, interval=source_interval, auto_adjust=False, prepost=prepost
             )
 
         if df.empty:

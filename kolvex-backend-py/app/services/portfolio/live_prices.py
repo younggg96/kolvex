@@ -2,7 +2,7 @@
 
 Broker prices (Plaid ``institution_price`` or a manual import) are stored at sync
 time and can be a day or more old. When a holding is a plain US-listed USD equity
-or ETF, we replace its price with the latest regular-session quote and keep the
+or ETF, we replace its price with the latest quote, pre- and after-hours included, and keep the
 broker price alongside it. Anything we cannot price reliably keeps the broker
 price, labelled as such, so the UI never shows a made-up value.
 """
@@ -10,8 +10,8 @@ price, labelled as such, so the UI never shows a made-up value.
 import asyncio
 import logging
 import re
-from datetime import datetime, timezone
-from typing import Any, Callable, Dict, Iterable, List, Optional
+from datetime import datetime, timedelta, timezone
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -49,20 +49,42 @@ def _positive(value: Any) -> Optional[float]:
     return number if number > 0 and number != float("inf") else None
 
 
-def normalize_quote(raw: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    """Accept only a timestamped regular-session USD price for a stock or ETF."""
+def _observed(price: Any, stamp: Any) -> Optional[Tuple[float, datetime]]:
+    value = _positive(price)
+    try:
+        at = datetime.fromtimestamp(float(stamp), timezone.utc)
+    except (TypeError, ValueError, OverflowError, OSError):
+        return None
+    return (value, at) if value is not None else None
+
+
+def normalize_quote(
+    raw: Dict[str, Any], now: Optional[datetime] = None
+) -> Optional[Dict[str, Any]]:
+    """The most recent timestamped USD price for a stock or ETF, including pre/after hours.
+
+    Yahoo keeps the previous session's after-hours price around until the next one,
+    so each candidate is judged by its own timestamp and the newest one wins.
+    """
     if not isinstance(raw, dict):
         return None
     if raw.get("currency") != "USD" or raw.get("quote_type") not in ("EQUITY", "ETF"):
         return None
-    price = _positive(raw.get("current_price"))
-    try:
-        at = datetime.fromtimestamp(float(raw.get("market_time")), timezone.utc)
-    except (TypeError, ValueError, OverflowError, OSError):
+    now = now or datetime.now(timezone.utc)
+    candidates = [
+        (session, observed)
+        for session, observed in (
+            ("regular", _observed(raw.get("current_price"), raw.get("market_time"))),
+            ("pre", _observed(raw.get("pre_market_price"), raw.get("pre_market_time"))),
+            ("post", _observed(raw.get("post_market_price"), raw.get("post_market_time"))),
+        )
+        # A small allowance for clock skew; anything further ahead is bad data.
+        if observed and observed[1] <= now + timedelta(minutes=5)
+    ]
+    if not candidates:
         return None
-    if price is None:
-        return None
-    return {"price": price, "at": at.isoformat()}
+    session, (price, at) = max(candidates, key=lambda item: item[1][1])
+    return {"price": round(price, 4), "at": at.isoformat(), "session": session}
 
 
 async def fetch_quotes(
@@ -102,6 +124,7 @@ def apply_quote(position: Dict[str, Any], quote: Optional[Dict[str, Any]], broke
     if not quote:
         position["price_source"] = "broker" if broker_price is not None else None
         position["price_as_of"] = broker_as_of if broker_price is not None else None
+        position["price_session"] = None
         return
 
     price = quote["price"]
@@ -116,6 +139,7 @@ def apply_quote(position: Dict[str, Any], quote: Optional[Dict[str, Any]], broke
     position["price"] = price
     position["price_source"] = "market"
     position["price_as_of"] = quote["at"]
+    position["price_session"] = quote.get("session", "regular")
 
 
 async def mark_to_market(

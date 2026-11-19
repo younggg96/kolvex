@@ -71,6 +71,33 @@ class LivePricesTest(unittest.TestCase):
         self.assertIsNone(normalize_quote({**QUOTE, "quote_type": "MUTUALFUND"}))
         self.assertIsNone(normalize_quote({**QUOTE, "current_price": 0}))
 
+    def test_after_hours_price_wins_when_newer(self):
+        quote = normalize_quote(
+            {**QUOTE, "post_market_price": 370.78, "post_market_time": 1700010000}
+        )
+        self.assertEqual(quote["price"], 370.78)
+        self.assertEqual(quote["session"], "post")
+
+    def test_previous_after_hours_loses_to_newer_regular_price(self):
+        quote = normalize_quote(
+            {**QUOTE, "post_market_price": 370.78, "post_market_time": 1699990000}
+        )
+        self.assertEqual(quote["price"], 330.0)
+        self.assertEqual(quote["session"], "regular")
+
+    def test_pre_market_price_used_and_session_recorded(self):
+        pos = {"symbol": "PANW", "units": 1, "price": 320.0}
+        pre = {**QUOTE, "pre_market_price": 333.0, "pre_market_time": 1700020000}
+        run([account(pos)], lambda s: pre)
+        self.assertEqual(pos["price"], 333.0)
+        self.assertEqual(pos["price_session"], "pre")
+
+    def test_future_timestamps_are_ignored(self):
+        quote = normalize_quote(
+            {**QUOTE, "post_market_price": 999.0, "post_market_time": 4102444800}
+        )
+        self.assertEqual(quote["price"], 330.0)
+
     def test_one_quote_per_symbol(self):
         calls = []
         a = {"symbol": "PANW", "units": 1, "price": 320.0}

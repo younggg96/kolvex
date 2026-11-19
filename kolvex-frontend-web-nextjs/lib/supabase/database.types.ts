@@ -87,6 +87,8 @@ export interface PortfolioPosition {
   price_source?: "market" | "broker" | null;
   /** When the shown price was observed (quote time, or the last broker sync). */
   price_as_of?: string | null;
+  /** Trading session of a market price: "regular", "pre" (pre-market) or "post" (after hours). */
+  price_session?: "regular" | "pre" | "post" | null;
   /** The broker-reported price, kept when a market quote replaced it. */
   broker_price?: number | null;
   // Visibility control

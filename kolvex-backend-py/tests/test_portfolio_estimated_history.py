@@ -17,15 +17,28 @@ BARS = {
 }
 
 
-def provider(symbol, start, end):
-    return BARS.get(symbol, [])
+INTRADAY = {
+    "PANW": [
+        {"date": "2026-11-18T09:30:00-05:00", "close": 336.0},
+        {"date": "2026-11-18T11:00:00-05:00", "close": 334.0},
+        {"date": "2026-11-18T13:00:00-05:00", "close": 338.0},
+        {"date": "2026-11-18T14:55:00-05:00", "close": 339.5},
+        {"date": "2026-11-18T15:00:00-05:00", "close": 341.0},  # starts after the quote
+    ]
+}
+CALLS = []
+
+
+def provider(symbol, period, interval):
+    CALLS.append((period, interval))
+    return (INTRADAY if interval.endswith("m") else BARS).get(symbol, [])
 
 
 def live(**position):
     return {"price_source": "market", "price_as_of": "2026-11-18T19:55:00+00:00", **position}
 
 
-def run(positions, period="1W", history=provider):
+def run(positions, period="1M", history=provider):
     accounts = [{"portfolio_positions": positions}]
     return asyncio.run(estimate_history(accounts, period, history, now=NOW))
 
@@ -69,7 +82,7 @@ class EstimatedHistoryTest(unittest.TestCase):
         self.assertEqual(out["data"][0]["value"], 340.0)
 
     def test_failed_history_falls_back_to_flat(self):
-        def boom(symbol, start, end):
+        def boom(symbol, period, interval):
             raise RuntimeError("down")
 
         out = run([{"symbol": "PANW", "units": 1, "price": 340.0}], history=boom)
@@ -82,7 +95,7 @@ class EstimatedHistoryTest(unittest.TestCase):
         # After midnight in New York the latest quote still belongs to the 18th.
         late = datetime(2026, 11, 19, 1, 0, tzinfo=ZoneInfo("America/New_York"))
         accounts = [{"portfolio_positions": [live(symbol="PANW", units=1, price=340.0)]}]
-        out = asyncio.run(estimate_history(accounts, "1W", provider, now=late))
+        out = asyncio.run(estimate_history(accounts, "1M", provider, now=late))
         self.assertEqual([p["date"] for p in out["data"]][-2:], ["2026-11-17", "2026-11-18"])
         self.assertEqual(out["data"][-1]["value"], 340.0)
 
@@ -91,6 +104,34 @@ class EstimatedHistoryTest(unittest.TestCase):
         self.assertEqual(
             out["data"][-1], {"date": "2026-11-18", "value": 339.0, "pnl": 0.0, "pnl_percent": 0.0}
         )
+
+    def test_one_day_uses_five_minute_bars_and_ends_at_the_quote(self):
+        CALLS.clear()
+        quote = live(symbol="PANW", units=1, price=340.0, price_as_of="2026-11-18T19:58:00+00:00")
+        out = run([quote], period="1D")
+        self.assertEqual(CALLS, [("1d", "5m")])
+        self.assertEqual(
+            [(p["date"], p["value"]) for p in out["data"]],
+            [
+                ("2026-11-18T09:30:00-05:00", 336.0),
+                ("2026-11-18T11:00:00-05:00", 334.0),
+                ("2026-11-18T13:00:00-05:00", 338.0),
+                ("2026-11-18T14:55:00-05:00", 339.5),
+                ("2026-11-18T14:58:00-05:00", 340.0),
+            ],
+        )
+
+    def test_four_hours_keeps_the_last_four_hours(self):
+        CALLS.clear()
+        quote = live(symbol="PANW", units=1, price=340.0, price_as_of="2026-11-18T19:58:00+00:00")
+        out = run([quote], period="4H")
+        self.assertEqual(CALLS, [("1d", "1m")])
+        self.assertEqual(out["data"][0]["date"], "2026-11-18T11:00:00-05:00")
+
+    def test_week_uses_fifteen_minute_bars(self):
+        CALLS.clear()
+        run([live(symbol="PANW", units=1, price=340.0)], period="1W")
+        self.assertEqual(CALLS, [("5d", "15m")])
 
     def test_empty_portfolio(self):
         self.assertEqual(run([])["data"], [])

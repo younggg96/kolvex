@@ -37,7 +37,9 @@ interface PortfolioPerformanceChartProps {
 
 type ChartView = "value" | "pnl";
 
-const PERIOD_OPTIONS: PerformancePeriod[] = ["1W", "1M", "3M", "YTD", "ALL"];
+// Intraday views only exist for the owner's estimate; saved snapshots are one per day.
+const OWNER_PERIODS: PerformancePeriod[] = ["4H", "1D", "1W", "1M", "3M", "YTD", "ALL"];
+const SNAPSHOT_PERIODS: PerformancePeriod[] = ["1W", "1M", "3M", "YTD", "ALL"];
 
 const POSITIVE = "rgb(var(--positive-fill))";
 const NEGATIVE = "rgb(var(--negative-fill))";
@@ -269,7 +271,7 @@ export function PortfolioPerformanceChart({
           aria-label={t("portfolio.performance.period")}
           className="flex min-w-0 items-center gap-1 overflow-x-auto rounded-full p-1 glass-track scrollbar-hide"
         >
-          {PERIOD_OPTIONS.map((value) => (
+          {(isEstimate ? OWNER_PERIODS : SNAPSHOT_PERIODS).map((value) => (
             <button
               key={value}
               type="button"
