@@ -3,9 +3,13 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCopy } from "@/components/decision/shared";
-import { Button } from "@/components/ui/button";
 import { listRevealClass } from "@/components/ui/list-card";
 import { cn } from "@/lib/utils";
+
+// Solid, raised and centred on the avatar row so the control reads clearly
+// over photos; only pointer devices with hover get it (touch scrolls natively).
+const scrollButtonClass =
+  "absolute top-[21px] z-10 hidden size-10 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-md transition-colors hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary md:top-[28px] [@media(hover:hover)]:inline-flex";
 
 export interface AvatarRailItem {
   id: string;
@@ -141,28 +145,24 @@ export function AvatarRail({
         </ul>
       </div>
       {left && (
-        <Button
+        <button
           type="button"
-          variant="outline"
-          size="icon"
-          className="absolute left-0 top-8 z-10 hidden rounded-full bg-background [@media(hover:hover)]:inline-flex"
+          className={cn(scrollButtonClass, "left-0")}
           aria-label={c("Scroll left", "向左浏览")}
           onClick={() => scroll(-1)}
         >
-          <ChevronLeft aria-hidden="true" className="size-4" />
-        </Button>
+          <ChevronLeft aria-hidden="true" className="size-5" />
+        </button>
       )}
       {right && (
-        <Button
+        <button
           type="button"
-          variant="outline"
-          size="icon"
-          className="absolute right-0 top-8 z-10 hidden rounded-full bg-background [@media(hover:hover)]:inline-flex"
+          className={cn(scrollButtonClass, "right-0")}
           aria-label={c("Scroll right", "向右浏览")}
           onClick={() => scroll(1)}
         >
-          <ChevronRight aria-hidden="true" className="size-4" />
-        </Button>
+          <ChevronRight aria-hidden="true" className="size-5" />
+        </button>
       )}
     </div>
   );

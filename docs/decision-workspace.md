@@ -152,8 +152,19 @@ renumbering the rows. Missing comparison baselines sort after every numeric
 comparison, including declines. Mention change compares current and previous
 24-hour counts; zero or missing prior mentions have no percentage baseline.
 Missing prior rank is labelled new, and rank movement compares the previous rank
-with today's. Upvotes remain a separate provider count. These snapshots do not
-provide a historical time series.
+with today's. Upvotes remain a separate provider count.
+
+The 30-day trend column (md and wider) comes from ApeWisdom's HTML ranking page
+(`https://apewisdom.io/{community}/`), the only place the provider publishes it,
+as an SVG sparkline per ticker. The route fetches it alongside the API page;
+`parseRedditTrends` reads the plotted points and rescales each row to 0–1, so it
+is a per-ticker relative shape, not counts, and heights are not comparable across
+rows. If that page fails or changes shape, rows get `trend: null` and show "—";
+the ranking itself is unaffected.
+
+On desktop (lg+) the toolbar holds only search, the community select and the
+following-only toggle; sorting moves to clickable column headings (提及 · 较前日 ·
+排名 · 获赞). Below lg the filter sheet still carries community, sort and following.
 
 `hooks/useRedditWatchlist.ts` saves followed tickers in browser localStorage under
 `kolvex:reddit-watchlist`, validates stored values and syncs storage events across

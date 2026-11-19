@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ContentLoading, SkeletonRepeat } from "@/components/ui/content-loading";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMemo, useRef, useState } from "react";
-import { ExternalLink, Loader2, RefreshCw, Star, X } from "lucide-react";
+import { ArrowDown, ExternalLink, Loader2, RefreshCw, Star, X } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,10 +41,46 @@ import { withSign } from "@/lib/format";
 // Same column rhythm as the YouTube opinions stock rows: identity, then two
 // right-aligned stat columns that keep fixed widths from sm up.
 const ROW_GRID =
-  "grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 sm:grid-cols-[minmax(0,1fr)_120px_120px] sm:gap-x-4";
+  "grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 sm:grid-cols-[minmax(0,1fr)_120px_120px] sm:gap-x-4 md:grid-cols-[minmax(0,1fr)_120px_120px_120px]";
 const STOCK_IDENTITY = "flex min-w-0 items-center gap-3";
 const STOCK_TICKER = "block text-[0.9375rem] font-semibold";
 const STOCK_NAME = "mt-0.5 block text-[0.8125rem] text-muted-foreground";
+
+/** Relative 30-day mention shape; decorative next to the row's own numbers. */
+function TrendSparkline({ points }: { points: number[] }) {
+  const width = 120;
+  const height = 32;
+  const step = width / (points.length - 1);
+  const line = points
+    .map(
+      (value, index) =>
+        `${(index * step).toFixed(1)},${(2 + (1 - value) * (height - 4)).toFixed(1)}`,
+    )
+    .join(" ");
+  return (
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      width={width}
+      height={height}
+      className="ml-auto block text-primary"
+      aria-hidden="true"
+    >
+      <polygon
+        points={`0,${height} ${line} ${width},${height}`}
+        fill="currentColor"
+        opacity="0.14"
+      />
+      <polyline
+        points={line}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
 
 export default function RedditOpinionsPage() {
   const { t, locale } = useTranslation();
@@ -112,6 +148,22 @@ export default function RedditOpinionsPage() {
   };
   const watchButton = (row: RedditStock, compact = false) => (
     <WatchlistButton ticker={row.ticker} showLabel={!compact} />
+  );
+
+  const sortButton = (value: RedditSort, label: string) => (
+    <button
+      type="button"
+      onClick={() => setSort(value)}
+      aria-pressed={sort === value}
+      title={t(`redditOpinions.sortOptions.${value}`)}
+      className={cn(
+        "list-control inline-flex min-h-8 items-center gap-0.5 rounded-full px-2 hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary",
+        sort === value && "font-medium text-foreground",
+      )}
+    >
+      {label}
+      {sort === value && <ArrowDown className="h-3 w-3" aria-hidden="true" />}
+    </button>
   );
 
   const resultCount = t("redditOpinions.resultCount", {
@@ -197,12 +249,8 @@ export default function RedditOpinionsPage() {
 
           <section aria-label={t("redditOpinions.title")} className="mt-3 md:mt-4">
             <ListCard>
-              <div className="hidden items-center gap-3 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] xl:grid-cols-[minmax(0,1fr)_11rem_11rem_auto]">
-                <CommandSearch
-                  className="lg:col-span-3 xl:col-span-1"
-                  hasValue={!!query}
-                  shortcut="mod+k"
-                >
+              <div className="hidden items-center gap-3 lg:grid lg:grid-cols-[minmax(0,1fr)_12rem_auto]">
+                <CommandSearch hasValue={!!query} shortcut="mod+k">
                   <div className="relative">
                     <SearchFieldIcon />
                     <Input
@@ -248,20 +296,6 @@ export default function RedditOpinionsPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="min-w-0">
-                  <Select value={sort} onValueChange={(value) => setSort(value as RedditSort)}>
-                    <SelectTrigger aria-label={t("redditOpinions.sort")} className="h-11">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {sortOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
                 <Button
                   variant="secondary"
                   className={`justify-self-start !px-3.5 !font-normal ${onlyWatchlist ? "" : "!bg-muted hover:!bg-foreground/[0.04]"}`}
@@ -295,10 +329,26 @@ export default function RedditOpinionsPage() {
                 </div>
               )}
 
+              <div className="mt-3 hidden items-center gap-1 border-b border-border pb-1 text-xs text-muted-foreground lg:flex">
+                <div className={cn(ROW_GRID, "px-2")}>
+                  <span className="pl-8">{t("redditOpinions.stock")}</span>
+                  <span className="flex justify-end gap-0.5">
+                    {sortButton("mentions", t("redditOpinions.mentionsUnit"))}
+                    {sortButton("mentionChange", t("redditOpinions.changeShort"))}
+                  </span>
+                  <span className="text-right">{t("redditOpinions.trend")}</span>
+                  <span className="flex justify-end gap-0.5">
+                    {sortButton("rankChange", t("redditOpinions.rankShort"))}
+                    {sortButton("upvotes", t("redditOpinions.upvotesShort"))}
+                  </span>
+                </div>
+                <span className="w-10 shrink-0" aria-hidden="true" />
+              </div>
+
               <div
                 key={`${community}:${sort}:${query}:${onlyWatchlist}:${data?.fetchedAt ?? "loading"}`}
                 aria-busy={busy}
-                className="opinion-results mt-3"
+                className="opinion-results mt-3 lg:mt-1"
               >
                 {loading && !data ? (
                   <ContentLoading label={t("redditOpinions.loading")} className="min-h-0">
@@ -317,6 +367,7 @@ export default function RedditOpinionsPage() {
                             <Skeleton className="h-4 w-10 rounded-md" />
                             <Skeleton className="h-3 w-16 rounded-md" />
                           </span>
+                          <Skeleton className="ml-auto hidden h-8 w-[120px] rounded-md md:block" />
                           <span className="flex flex-col items-end gap-2">
                             <Skeleton className="h-4 w-12 rounded-md" />
                             <Skeleton className="h-3 w-14 rounded-md" />
@@ -378,6 +429,16 @@ export default function RedditOpinionsPage() {
                                 </span>
                                 <span className="font-medium text-foreground">{change}</span>
                               </span>
+                            </span>
+                            <span className="hidden md:block">
+                              <span className="sr-only">{t("redditOpinions.trend")} </span>
+                              {row.trend ? (
+                                <TrendSparkline points={row.trend} />
+                              ) : (
+                                <span className="block text-right text-xs text-muted-foreground">
+                                  —<span className="sr-only">{t("redditOpinions.noTrend")}</span>
+                                </span>
+                              )}
                             </span>
                             <span className="text-right tabular-nums">
                               <span className="block whitespace-nowrap text-sm font-medium">

@@ -2346,7 +2346,7 @@
     "unchanged": "Unchanged",
     "noResults": "No matching tickers. Try another ticker or company name.",
     "empty": "No rankings are available right now. Try refreshing later.",
-    "note": "ApeWisdom aggregates discussion in the selected Reddit community. This list shows up to 100 provider-ranked tickers; search, sorting and follows cover this list only. Data is cached for 5 minutes. Changes compare with the provider’s 24h-ago fields. Missing or zero mention baselines have no percentage change; missing comparison values sort last. Names and tickers are supplied by the source and are not independently verified. Discussion activity does not measure bullish or bearish sentiment.",
+    "note": "ApeWisdom aggregates discussion in the selected Reddit community. This list shows up to 100 provider-ranked tickers; search, sorting and follows cover this list only. Data is cached for 5 minutes. Changes compare with the provider’s 24h-ago fields. Missing or zero mention baselines have no percentage change; missing comparison values sort last. Names and tickers are supplied by the source and are not independently verified. The 30-day trend is read from the provider’s ranking-page sparkline and shows each ticker’s own relative shape; heights are not comparable across tickers. Discussion activity does not measure bullish or bearish sentiment.",
     "methodology": "Read methodology",
     "allCommunities": "All stock communities",
     "scope": "Scope",
@@ -2375,7 +2375,11 @@
     "clearSearch": "Clear search",
     "mentionsUnit": "mentions",
     "changeShort": "vs 24h ago",
-    "upvotesCount": "{count} upvotes"
+    "upvotesCount": "{count} upvotes",
+    "trend": "30-day trend",
+    "noTrend": "No trend data",
+    "rankShort": "Rank",
+    "upvotesShort": "Upvotes"
   },
   "contact": {
     "title": "Contact Kolvex",

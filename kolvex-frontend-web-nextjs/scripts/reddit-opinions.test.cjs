@@ -227,3 +227,39 @@ test("Reddit keeps the creator parent active without claiming the YouTube child"
   );
   assert.equal(nav.isMainNavItemActive("/dashboard/youtube-opinions/creators/id", parent), true);
 });
+
+test("30-day trend reads the provider sparkline as a per-row relative shape", () => {
+  const html = `<table><tr><td><a href="/stocks/NVDA/">x</a></td>
+    <td class="p-0 sparkline-td green"><svg><path d="M-1,60 0,40 5,20 10,0 165,50"></path></svg></td></tr>
+    <tr><td><a href="/stocks/FLAT/">y</a></td><td class="sparkline-td red"><svg><path d="M-1,60 0,30 5,30 165,50"></path></svg></td></tr>
+    <tr><td><a href="/stocks/BAD/">z</a></td><td class="sparkline-td"><svg><path d="M-1,60 165,50"></path></svg></td></tr></table>`;
+  const trends = data.parseRedditTrends(html);
+  assert.deepEqual([...trends.get("NVDA")], [0, 0.5, 1]);
+  assert.deepEqual([...trends.get("FLAT")], [0.5, 0.5]);
+  assert.equal(trends.has("BAD"), false);
+  const [stock] = data.attachRedditTrends(data.parseRedditStocks({ results: [row] }), trends);
+  assert.equal(stock.trend, null);
+});
+test("trend page failure keeps the ranking and leaves trends empty", async () => {
+  const api = route(async (url) => {
+    if (!url.includes("/api/")) throw new Error("html offline");
+    return { ok: true, json: async () => ({ results: [{ ...row, ticker: "NVDA" }] }) };
+  });
+  const response = await api.GET({ url: "http://localhost/api/reddit-opinions" });
+  assert.equal(response.status, 200);
+  assert.equal(response.body.results[0].trend, null);
+});
+test("trend page attaches shapes by ticker", async () => {
+  const api = route(async (url) => {
+    if (url === "https://apewisdom.io/all-stocks/") {
+      return {
+        ok: true,
+        text: async () =>
+          `<tr><a href="/stocks/NVDA/"></a><td class="sparkline-td green"><svg><path d="M-1,60 0,10 5,0 165,50"></path></svg></td></tr>`,
+      };
+    }
+    return { ok: true, json: async () => ({ results: [{ ...row, ticker: "NVDA" }] }) };
+  });
+  const response = await api.GET({ url: "http://localhost/api/reddit-opinions" });
+  assert.deepEqual([...response.body.results[0].trend], [0, 1]);
+});

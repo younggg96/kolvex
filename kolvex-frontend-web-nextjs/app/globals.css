@@ -2046,8 +2046,13 @@ html[data-chat-history-open] .app-workbench .app-sidebar {
     0 2px 8px rgb(0 0 0 / 0.1);
 }
 
+/* Light mode draws the focus edge with the border alone; the composer's inset
+   focus ring (used in dark mode) would stack on it and read as a 2px line. */
 :root:not(.dark) :focus-within > .chat-composer-surface {
   border-color: rgb(var(--foreground) / 0.35);
+  box-shadow:
+    0 10px 30px -6px rgb(0 0 0 / 0.3),
+    0 2px 8px rgb(0 0 0 / 0.1);
 }
 
 @media (prefers-contrast: more) {

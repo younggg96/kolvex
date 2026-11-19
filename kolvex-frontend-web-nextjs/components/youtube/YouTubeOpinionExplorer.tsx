@@ -16,7 +16,7 @@ import { formatOpinionDate, formatOpinionDateShort } from "@/lib/opinionDates";
 import { useRouter } from "next/navigation";
 import PageBreadcrumb, { type BreadcrumbItem } from "@/components/layout/PageBreadcrumb";
 import { useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
-import { GalleryHorizontal, LineChart, List, Loader2, X } from "lucide-react";
+import { LayoutGrid, LineChart, Loader2, X } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
   opinionHeaderActionClass,
@@ -1309,31 +1309,24 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                         {route.tab === "creators" && visibleCreators.length > 0 && (
                           <Button
                             type="button"
-                            variant="outline"
+                            // A toggle with one fixed icon: the pressed fill shows the
+                            // state, and the grid shape stays distinct from the
+                            // filter's sliders beside it.
+                            variant={showCreatorList ? "secondary" : "outline"}
                             size="icon"
                             className="h-[44px] w-[44px] shrink-0 rounded-full"
                             aria-controls="youtube-creator-directory-view"
-                            aria-label={
-                              showCreatorList
-                                ? c("Avatar view", "头像视图")
-                                : c("View all", "查看全部")
-                            }
-                            title={
-                              showCreatorList
-                                ? c("Avatar view", "头像视图")
-                                : c("View all", "查看全部")
-                            }
+                            aria-pressed={showCreatorList}
+                            aria-label={c("All creators", "全部博主")}
+                            title={c("All creators", "全部博主")}
                             onClick={() => setShowCreatorList((value) => !value)}
                           >
-                            {showCreatorList ? (
-                              <GalleryHorizontal className="h-4 w-4" aria-hidden="true" />
-                            ) : (
-                              <List className="h-4 w-4" aria-hidden="true" />
-                            )}
+                            <LayoutGrid className="h-4 w-4" aria-hidden="true" />
                           </Button>
                         )}
                         <FilterSheet
                           allScreens={route.tab === "creators"}
+                          triggerClassName="h-[44px] w-[44px]"
                           title={t("common.filter")}
                           active={
                             toneFilter !== "all" || sortBy !== "latest" || stockScope !== "all"
