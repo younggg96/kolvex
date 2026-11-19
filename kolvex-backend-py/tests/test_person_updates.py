@@ -88,3 +88,55 @@ def test_invalid_fields(changes, field):
     items, errors = validate({**ENTRY, **changes}, chinese=False)
     assert not items
     assert field in errors[0]
+
+
+class _Query:
+    def __init__(self, rows):
+        self.rows = rows
+        self.calls = []
+
+    def table(self, name):
+        self.calls.append(("table", name))
+        return self
+
+    def delete(self):
+        self.calls.append(("delete",))
+        return self
+
+    def eq(self, column, value):
+        self.calls.append(("eq", column, value))
+        return self
+
+    def execute(self):
+        return type("Response", (), {"data": self.rows})()
+
+
+def _admin_client(db):
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    from app.api.dependencies.auth import verify_admin
+    from app.api.routes.person_updates import admin_router
+    from app.core.supabase import get_supabase_service
+
+    app = FastAPI()
+    app.include_router(admin_router)
+    app.dependency_overrides[verify_admin] = lambda: "admin"
+    app.dependency_overrides[get_supabase_service] = lambda: db
+    return TestClient(app)
+
+
+def test_admin_delete_removes_one_update():
+    db = _Query([{"id": ENTRY["id"]}])
+    response = _admin_client(db).delete(f"/person-updates/{ENTRY['id']}")
+    assert response.status_code == 200
+    assert response.json() == {"id": ENTRY["id"]}
+    assert ("eq", "id", ENTRY["id"]) in db.calls
+
+
+def test_admin_delete_reports_missing_and_rejects_bad_ids():
+    client = _admin_client(_Query([]))
+    missing = client.delete("/person-updates/gone", headers={"Accept-Language": "zh"})
+    assert missing.status_code == 404
+    assert missing.json()["detail"] == "这条动态不存在或已删除。"
+    assert client.delete("/person-updates/Bad_ID").status_code == 422

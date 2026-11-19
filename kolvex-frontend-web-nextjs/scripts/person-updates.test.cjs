@@ -115,6 +115,10 @@ test("local portraits win, other Fed officials get the Board seal", () => {
   );
   assert.equal(personAvatar({ person: "Xi Jinping", tags: [] }), "/person-updates/xi-jinping.jpg");
   assert.equal(
+    personAvatar({ person: "习近平", person_cn: "习近平", tags: [] }),
+    "/person-updates/xi-jinping.jpg",
+  );
+  assert.equal(
     personAvatar({ person: "John Williams", tags: [], avatar_url: feed }),
     FED_SEAL_AVATAR,
   );

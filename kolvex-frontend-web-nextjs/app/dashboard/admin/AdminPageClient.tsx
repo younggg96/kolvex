@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import MarketEventManager from "@/components/admin/MarketEventManager";
 import PersonUpdatesImporter from "@/components/admin/PersonUpdatesImporter";
+import PersonUpdatesManager from "@/components/admin/PersonUpdatesManager";
 import { useCopy } from "@/components/decision/shared";
 import DailyBriefImporter from "@/components/admin/DailyBriefImporter";
 import YouTubeOpinionImporter from "@/components/admin/YouTubeOpinionImporter";
@@ -180,9 +181,7 @@ export default function AdminPageClient({ initialTab }: { initialTab?: string })
             <TabsTrigger value="x">X 内容</TabsTrigger>
             <TabsTrigger value="events">重大事件</TabsTrigger>
             <TabsTrigger value="briefs">日报管理</TabsTrigger>
-            <TabsTrigger value="person-updates">
-              {c("人物动态 · Person Updates", "人物动态")}
-            </TabsTrigger>
+            <TabsTrigger value="person-updates">{c("动态 · Updates", "动态")}</TabsTrigger>
             <TabsTrigger value="options">期权异动</TabsTrigger>
             <TabsTrigger value="email">邮件设置</TabsTrigger>
             <TabsTrigger value="institutions">超级投资者</TabsTrigger>
@@ -284,7 +283,13 @@ export default function AdminPageClient({ initialTab }: { initialTab?: string })
             forceMount
             className="mt-6 data-[state=inactive]:hidden"
           >
-            <PersonUpdatesImporter />
+            <div className="space-y-10">
+              <PersonUpdatesManager />
+              <section className="space-y-4">
+                <h3 className="text-lg font-semibold">{c("Bulk import JSON", "批量导入 JSON")}</h3>
+                <PersonUpdatesImporter />
+              </section>
+            </div>
           </TabsContent>
           <TabsContent value="options" className="mt-6">
             <OptionsActivityManager />

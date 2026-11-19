@@ -117,7 +117,7 @@ export const PRODUCT_FEATURES = [
   },
   {
     id: "personUpdates",
-    label: "Person Updates",
+    label: "Updates",
     enabled: true,
     routePrefixes: ["/tracker", "/dashboard/person-updates"],
     apiPrefixes: ["/api/person-updates", "/api/admin/person-updates"],

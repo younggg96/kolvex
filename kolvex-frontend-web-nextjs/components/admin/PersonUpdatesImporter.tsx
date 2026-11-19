@@ -70,7 +70,7 @@ export default function PersonUpdatesImporter() {
     <div className="space-y-4">
       <Textarea
         ref={textarea}
-        aria-label={c("Person updates JSON", "人物动态 JSON")}
+        aria-label={c("Updates JSON", "动态 JSON")}
         placeholder={c("Paste JSON", "粘贴 JSON")}
         spellCheck={false}
         value={input}

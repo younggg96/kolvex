@@ -73,21 +73,25 @@ function personKey(person: string) {
     .replace(/ [a-z]\.?(?= )/g, "");
 }
 
-// Local portraits take priority over the feed's avatar_url.
+// Matched by English or Chinese name. Local portraits take priority over the feed's avatar_url.
 const PERSON_AVATARS: Record<string, string> = {
   "kevin warsh": "/person-updates/kevin-warsh.jpg",
   "jensen huang": "/person-updates/jensen-huang.jpg",
   "xi jinping": "/person-updates/xi-jinping.jpg",
+  习近平: "/person-updates/xi-jinping.jpg",
 };
 export const FED_SEAL_AVATAR = "/person-updates/fed-seal.jpg";
 
 /** Local portrait, else the feed's avatar; Fed officials without a portrait get the Board seal. */
 export function personAvatar({
   person,
+  person_cn,
   tags,
   avatar_url,
-}: Pick<PersonUpdate, "person" | "tags" | "avatar_url">): string | null {
-  const local = PERSON_AVATARS[personKey(person)];
+}: Pick<PersonUpdate, "person" | "tags" | "avatar_url"> & { person_cn?: string }): string | null {
+  const local =
+    PERSON_AVATARS[personKey(person)] ??
+    (person_cn ? PERSON_AVATARS[personKey(person_cn)] : undefined);
   if (local) return local;
   if (isFedOfficial({ person, tags })) return FED_SEAL_AVATAR;
   return avatar_url || null;

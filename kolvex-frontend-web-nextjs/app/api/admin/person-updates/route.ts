@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     });
   } catch {
     return NextResponse.json(
-      { detail: english ? "Could not reach the import service." : "无法连接人物动态导入服务。" },
+      { detail: english ? "Could not reach the import service." : "无法连接动态导入服务。" },
       { status: 503 },
     );
   }

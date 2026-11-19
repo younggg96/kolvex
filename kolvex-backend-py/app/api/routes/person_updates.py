@@ -1,15 +1,15 @@
-"""Public timeline and admin-only manual import for key-person updates."""
+"""Public timeline and admin-only import, edit and delete for key-person updates."""
 
 import asyncio
 import logging
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Path, Request
 from postgrest.exceptions import APIError
 
 from app.api.dependencies.auth import verify_admin
 from app.core.supabase import get_supabase_service
-from app.schemas.person_updates import validate_import
+from app.schemas.person_updates import ID_PATTERN, validate_import
 from supabase import Client
 
 router = APIRouter(prefix="/person-updates", tags=["Person updates"])
@@ -57,6 +57,26 @@ async def save(
         logger.exception("Person updates import failed")
         raise HTTPException(503, detail=exc.message) from exc
     return {"count": len(items), "ids": [item["id"] for item in items]}
+
+
+@admin_router.delete("/{item_id}")
+async def delete(
+    request: Request,
+    item_id: str = Path(max_length=128, pattern=ID_PATTERN),
+    _admin: str = Depends(verify_admin),
+    db: Client = Depends(get_supabase_service),
+):
+    chinese = not request.headers.get("accept-language", "").lower().startswith("en")
+    try:
+        response = await asyncio.to_thread(
+            db.table("person_updates").delete().eq("id", item_id).execute
+        )
+    except APIError as exc:
+        logger.exception("Person update delete failed")
+        raise HTTPException(503, detail=exc.message) from exc
+    if not response.data:
+        raise HTTPException(404, "这条动态不存在或已删除。" if chinese else "Update not found.")
+    return {"id": item_id}
 
 
 @router.get("")

@@ -35,7 +35,7 @@ export function PersonUpdatesTitle() {
 
 export function PersonUpdatesLoading() {
   const c = useCopy();
-  const label = c("Loading person updates…", "正在加载人物动态…");
+  const label = c("Loading updates…", "正在加载动态…");
   return (
     <ContentLoading label={label}>
       <span className="text-sm text-muted-foreground">{label}</span>
@@ -69,7 +69,7 @@ export function PersonUpdatesReader() {
       <ListCard>
         <ListEmptyState
           alert
-          title={c("The timeline could not be loaded.", "暂时无法加载人物动态。")}
+          title={c("The timeline could not be loaded.", "暂时无法加载动态。")}
           action={
             <Button
               variant="outline"
@@ -89,7 +89,7 @@ export function PersonUpdatesReader() {
   if (!items.length)
     return (
       <ListCard>
-        <ListEmptyState title={c("No updates yet.", "暂无人物动态。")} />
+        <ListEmptyState title={c("No updates yet.", "暂无动态。")} />
       </ListCard>
     );
 

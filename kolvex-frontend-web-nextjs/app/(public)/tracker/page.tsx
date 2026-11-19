@@ -7,7 +7,7 @@ import {
 } from "@/components/person-updates/PersonUpdatesReader";
 
 export const metadata: Metadata = {
-  title: "人物动态 | Kolvex",
+  title: "动态 | Kolvex",
 };
 
 export default function TrackerPage() {
