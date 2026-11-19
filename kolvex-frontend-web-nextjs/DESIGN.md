@@ -1811,7 +1811,8 @@ person's circular avatar, localized name and impact badge. The PT timestamp
 sits beneath the name and opens a shared Popover with the full dates in PT, ET
 and Beijing time. The title and summary sit together above the optional
 full-aspect event image. Linked StockBadge pills wrap in their own row. Topics, the source link and
-its hostname share the following row. A missing or failed
+its hostname share the following row. A Federal Reserve official uses a
+plain FED wordmark in the timeline, preview and avatar rail. A missing or failed
 avatar uses the first character of the name. Missing or failed event images
 leave the remaining row intact. The horizontal avatar rail offers an All
 people item and one circular portrait per person. A primary ring identifies

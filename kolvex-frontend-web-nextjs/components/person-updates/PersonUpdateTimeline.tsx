@@ -3,14 +3,19 @@
 import { useState } from "react";
 import { ArrowUpRight, ChevronDown } from "lucide-react";
 import { useCopy } from "@/components/decision/shared";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ListCard, listFeedStaticRowClass } from "@/components/ui/list-card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import StockBadge from "@/components/ui/stock-badge";
-import { PERSON_UPDATE_ZONES, personUpdateTime, type PersonUpdate } from "@/lib/personUpdates";
+import {
+  isFedOfficial,
+  PERSON_UPDATE_ZONES,
+  personUpdateTime,
+  type PersonUpdate,
+} from "@/lib/personUpdates";
 import { normalizeStockSymbol } from "@/lib/stockLinks";
 import { cn } from "@/lib/utils";
+import { PersonUpdateAvatar } from "./PersonUpdateAvatar";
 
 function UpdateImage({ src, alt }: { src: string; alt: string }) {
   const [failed, setFailed] = useState(false);
@@ -97,19 +102,12 @@ export function PersonUpdateTimeline({ items }: { items: PersonUpdate[] }) {
           >
             <article className="space-y-2">
               <header className="flex min-w-0 items-center gap-2.5">
-                <Avatar aria-hidden="true" className="size-9">
-                  {item.avatar_url && (
-                    <AvatarImage
-                      src={item.avatar_url}
-                      alt=""
-                      referrerPolicy="no-referrer"
-                      className="object-cover"
-                    />
-                  )}
-                  <AvatarFallback className="text-sm font-semibold text-foreground">
-                    {Array.from(item.person_cn)[0]}
-                  </AvatarFallback>
-                </Avatar>
+                <PersonUpdateAvatar
+                  label={item.person_cn}
+                  src={item.avatar_url}
+                  fedOfficial={isFedOfficial(item)}
+                  className="size-9"
+                />
                 <UpdateTime
                   person={c(item.person, item.person_cn)}
                   publishedAt={item.published_at}

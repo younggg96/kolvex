@@ -11,7 +11,8 @@ vm.runInNewContext(
   ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText,
   context,
 );
-const { PERSON_UPDATE_ZONES, personUpdateTime, personUpdatePeople } = context.exports;
+const { PERSON_UPDATE_ZONES, personUpdateTime, personUpdatePeople, isFedOfficial } =
+  context.exports;
 
 test("the same instant keeps each market's local date", () => {
   const winter = "2026-11-18T02:44:00-05:00";
@@ -48,9 +49,50 @@ test("groups the avatar rail by person and counts only updates from the last 24 
     },
     { person: "Gamma", person_cn: "丙", published_at: "invalid" },
   ];
-  assert.deepEqual(JSON.parse(JSON.stringify(personUpdatePeople(items, now))), [
-    { name: "Alpha", label: "甲", avatar: "https://example.test/alpha.jpg", newCount: 2 },
-    { name: "Beta", label: "乙", avatar: "https://example.test/beta.jpg", newCount: 1 },
-    { name: "Gamma", label: "丙", avatar: null, newCount: 0 },
-  ]);
+  assert.deepEqual(
+    JSON.parse(
+      JSON.stringify(
+        personUpdatePeople(
+          items.map((item) => ({ ...item, tags: [] })),
+          now,
+        ),
+      ),
+    ),
+    [
+      {
+        name: "Alpha",
+        label: "甲",
+        avatar: "https://example.test/alpha.jpg",
+        fedOfficial: false,
+        newCount: 2,
+      },
+      {
+        name: "Beta",
+        label: "乙",
+        avatar: "https://example.test/beta.jpg",
+        fedOfficial: false,
+        newCount: 1,
+      },
+      { name: "Gamma", label: "丙", avatar: null, fedOfficial: false, newCount: 0 },
+    ],
+  );
+});
+
+test("only recognized officials and explicit role labels opt into the Fed avatar", () => {
+  assert.equal(isFedOfficial({ person: " Jerome H. Powell ", tags: [] }), true);
+  assert.equal(isFedOfficial({ person: "Kevin Warsh", tags: [] }), true);
+  assert.equal(isFedOfficial({ person: "Someone Unlisted", tags: ["美联储官员"] }), true);
+  assert.equal(isFedOfficial({ person: "Someone Unlisted", tags: ["  Fed Official "] }), true);
+  assert.equal(isFedOfficial({ person: "Donald Trump", tags: ["美联储", "FOMC"] }), false);
+  assert.equal(isFedOfficial({ person: "Mary Daly Jr.", tags: [] }), false);
+  const items = [
+    {
+      person: "Christopher J. Waller",
+      person_cn: "沃勒",
+      tags: [],
+      avatar_url: "https://example.test/headshot.jpg",
+      published_at: "2026-11-18T10:00:00Z",
+    },
+  ];
+  assert.equal(personUpdatePeople(items, Date.parse(items[0].published_at))[0].fedOfficial, true);
 });
