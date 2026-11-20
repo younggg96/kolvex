@@ -120,7 +120,7 @@ they act on: report actions sit on the ticker row, the AI Research management
 action beside its content heading, news controls in the list-card toolbar,
 portfolio account actions above the portfolio content and New chat above the
 message input. Mobile navigation includes a menu button that expands the dock to
-keep other routes, settings and log out reachable. Pages retain their established content scroller and use 16px
+keep other routes and settings reachable. The sidebar footer holds only the account card (avatar, name, email), which opens Settings; administrator access and log out live once, on the Settings account tab, and are not repeated in the sidebar. Pages retain their established content scroller and use 16px
 horizontal padding on mobile and 32px from the medium breakpoint. The root font size is 16px at every width, so
 `text-xs` is 12px and `text-sm` is 14px on phones as well. Do not shrink the root to gain density: when a
 layout does not fit a phone, change that layout with breakpoints (fewer columns, smaller padding, a stacked row).

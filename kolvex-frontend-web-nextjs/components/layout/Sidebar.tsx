@@ -4,15 +4,7 @@ import Link from "next/link";
 import KolvexWordmark from "@/components/common/KolvexWordmark";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import {
-  ArrowRight,
-  Settings,
-  PanelLeftClose,
-  PanelLeft,
-  Search,
-  ShieldCheck,
-  MessageSquareText,
-} from "lucide-react";
+import { ArrowRight, PanelLeftClose, PanelLeft, Search, MessageSquareText } from "lucide-react";
 import { useDecisionCommand } from "@/components/decision/CommandLayer";
 import { useCopy } from "@/components/decision/shared";
 import {
@@ -41,7 +33,6 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useBreakpoints } from "@/hooks";
-import { useUserProfileContext } from "@/components/user/UserProfileProvider";
 import { useTranslation } from "@/lib/i18n";
 import { isProductFeatureEnabled } from "@/lib/productFeatures";
 
@@ -54,14 +45,11 @@ interface AppSidebarProps {
 function AppSidebar({ onNavigate }: AppSidebarProps) {
   const pathname = usePathname();
   const { state, toggleSidebar, isInitialized, setOpenMobile } = useSidebar();
-  const { profile } = useUserProfileContext();
   const { t } = useTranslation();
   const c = useCopy();
   const { openAsk, canAsk } = useDecisionCommand();
   const [isMounted, setIsMounted] = useState(false);
   const { isMobile, isTablet } = useBreakpoints();
-
-  const isAdmin = profile?.is_admin ?? false;
 
   const enabledItems = MAIN_NAV_ITEMS.filter((item) => isProductFeatureEnabled(item.featureId));
   const chat = enabledItems.find((item) => item.href === CHAT_HREF);
@@ -75,13 +63,6 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
       .filter((item) => item.group === group.id && item.href !== CHAT_HREF)
       .map((item) => ({ ...item, title: t(item.titleKey) })),
   })).filter((group) => group.items.length > 0);
-
-  const footerLinks = [
-    ...(isAdmin
-      ? [{ icon: ShieldCheck, title: t("sidebar.admin"), href: "/dashboard/admin" }]
-      : []),
-    { icon: Settings, title: t("sidebar.settings"), href: "/dashboard/settings" },
-  ];
 
   const handleNavigate = () => {
     setOpenMobile(false);
@@ -270,27 +251,13 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
         ))}
       </SidebarContent>
 
-      {/* Fixed bottom: utilities, then the account menu. Upgrade and Help
-          (UPGRADE_HREF / HELP_HREF) are hidden until pricing and a help centre exist. */}
-      <SidebarFooter className="gap-3 border-t border-border/40 pt-3">
-        <SidebarMenu>
-          {footerLinks.map((item) => (
-            <SidebarMenuItem key={item.href}>
-              <SidebarMenuButton
-                asChild
-                isActive={isActive(item.href)}
-                onClick={handleNavigate}
-                tooltip={item.title}
-              >
-                <Link href={item.href} aria-current={isActive(item.href) ? "page" : undefined}>
-                  <item.icon aria-hidden="true" />
-                  <span>{item.title}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
+      {/* Fixed bottom: the account card, which is also the way into Settings.
+          Admin and sign-out live on the Settings page, so they are not repeated here.
+          Upgrade and Help (UPGRADE_HREF / HELP_HREF) are hidden until pricing and a
+          help centre exist. */}
+      <SidebarFooter className="border-t border-border/40 pt-3">
         <UserMenu
+          onNavigate={handleNavigate}
           isCollapsed={
             isMounted && isInitialized && state === "collapsed" && !isMobile && !isTablet
           }

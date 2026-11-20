@@ -1,114 +1,79 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Image from "next/image";
-import { ChevronDown, User, Bell, LogOut } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { usePathname } from "next/navigation";
+import { ChevronRight } from "lucide-react";
 import { useAuth, useUserProfile } from "@/hooks";
 import { useTranslation } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
+
+const SETTINGS_HREF = "/dashboard/settings";
 
 interface UserMenuProps {
   isCollapsed?: boolean;
+  onNavigate?: () => void;
 }
 
-export default function UserMenu({ isCollapsed = false }: UserMenuProps) {
-  const router = useRouter();
+/**
+ * Sidebar account card. It is the single desktop entry to Settings; admin and
+ * sign-out live on the Settings page (which phones reach from the tab bar), so
+ * the sidebar does not repeat them.
+ */
+export default function UserMenu({ isCollapsed = false, onNavigate }: UserMenuProps) {
+  const pathname = usePathname();
   const { t } = useTranslation();
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const { profile } = useUserProfile();
 
-  // Get display name (full name or email)
   const displayName = profile?.full_name || "User";
   const displayEmail = user?.email || "";
+  const active = pathname === SETTINGS_HREF || pathname.startsWith(`${SETTINGS_HREF}/`);
+  const label = t("sidebar.settings");
 
-  // Get initials for avatar
-  const getInitials = () => {
-    if (profile?.full_name) {
-      return profile.full_name.substring(0, 2).toUpperCase();
-    }
-    if (user?.email) {
-      return user.email.substring(0, 2).toUpperCase();
-    }
-    return "U";
-  };
-
-  const handleLogout = async () => {
-    await signOut();
-    router.push("/auth");
-  };
+  const initials = profile?.full_name
+    ? profile.full_name.substring(0, 2).toUpperCase()
+    : user?.email
+      ? user.email.substring(0, 2).toUpperCase()
+      : "U";
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          className={`flex w-full items-center gap-2.5 rounded-full py-1.5 transition-colors hover:bg-foreground/[0.06] focus-visible:outline-none   ${
-            isCollapsed ? "justify-center" : "pl-1.5 pr-3"
-          }`}
-        >
-          {/* Avatar */}
-          <div className="relative flex-shrink-0">
-            {profile?.avatar_url ? (
-              <div className="relative h-8 w-8 overflow-hidden rounded-full">
-                <Image
-                  src={profile.avatar_url}
-                  alt={t("settings.account.profileImage")}
-                  fill
-                  className="object-cover"
-                  sizes="32px"
-                />
-              </div>
-            ) : (
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-                {getInitials()}
-              </div>
-            )}
+    <Link
+      href={SETTINGS_HREF}
+      onClick={onNavigate}
+      aria-current={active ? "page" : undefined}
+      aria-label={isCollapsed ? label : undefined}
+      title={isCollapsed ? label : undefined}
+      className={cn(
+        "flex w-full items-center gap-2.5 rounded-full py-1.5 transition-colors hover:bg-foreground/[0.06] focus-visible:outline-2 focus-visible:outline-primary",
+        isCollapsed ? "justify-center" : "pl-1.5 pr-3",
+        active && "bg-foreground/[0.06]",
+      )}
+    >
+      <div className="relative flex-shrink-0">
+        {profile?.avatar_url ? (
+          <div className="relative h-8 w-8 overflow-hidden rounded-full">
+            <Image src={profile.avatar_url} alt="" fill className="object-cover" sizes="32px" />
           </div>
-
-          {/* User Details */}
-          {!isCollapsed && (
-            <div className="flex flex-col overflow-hidden text-left flex-1">
-              <span className="truncate text-sm font-semibold text-foreground">{displayName}</span>
-              <span className="truncate text-xs text-muted-foreground">{displayEmail}</span>
-            </div>
-          )}
-
-          {/* Dropdown Icon */}
-          {!isCollapsed && <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-        </button>
-      </DropdownMenuTrigger>
-
-      <DropdownMenuContent align={"start"} className="w-48">
-        <DropdownMenuLabel>
-          <div className="flex flex-col space-y-0.5">
-            <p className="text-sm font-semibold text-foreground">{displayName}</p>
-            <p className="truncate text-xs text-muted-foreground">{displayEmail}</p>
+        ) : (
+          <div
+            aria-hidden="true"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground"
+          >
+            {initials}
           </div>
-        </DropdownMenuLabel>
+        )}
+      </div>
 
-        <DropdownMenuSeparator />
-
-        <DropdownMenuItem onClick={() => router.push("/dashboard/settings?tab=account")}>
-          <User className="h-4 w-4" />
-          <span>{t("userMenu.account")}</span>
-        </DropdownMenuItem>
-
-        <DropdownMenuSeparator />
-
-        <DropdownMenuItem
-          onClick={handleLogout}
-          className="text-negative hover:text-negative focus:text-negative"
-        >
-          <LogOut className="h-4 w-4" />
-          <span>{t("userMenu.logOut")}</span>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+      {!isCollapsed && (
+        <>
+          <div className="flex flex-1 flex-col overflow-hidden text-left">
+            <span className="truncate text-sm font-semibold text-foreground">{displayName}</span>
+            <span className="truncate text-xs text-muted-foreground">{displayEmail}</span>
+          </div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+        </>
+      )}
+    </Link>
   );
 }
