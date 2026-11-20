@@ -329,20 +329,23 @@ export default function RedditOpinionsPage() {
                 </div>
               )}
 
-              <div className="mt-3 hidden items-center gap-1 border-b border-border pb-1 text-xs text-muted-foreground lg:flex">
+              {/* Mirrors ListRow geometry (gap-1, pr-2, 36px icon button) so each
+                  label sits over its column; -mr-2 cancels the sort buttons'
+                  own px-2 so label text ends on the column edge like the values. */}
+              <div className="mt-3 hidden items-center gap-1 border-b border-border pb-1 pr-2 text-xs text-muted-foreground lg:flex">
                 <div className={cn(ROW_GRID, "px-2")}>
                   <span className="pl-8">{t("redditOpinions.stock")}</span>
-                  <span className="flex justify-end gap-0.5">
+                  <span className="-mr-2 flex justify-end gap-0.5">
                     {sortButton("mentions", t("redditOpinions.mentionsUnit"))}
                     {sortButton("mentionChange", t("redditOpinions.changeShort"))}
                   </span>
                   <span className="text-right">{t("redditOpinions.trend")}</span>
-                  <span className="flex justify-end gap-0.5">
+                  <span className="-mr-2 flex justify-end gap-0.5">
                     {sortButton("rankChange", t("redditOpinions.rankShort"))}
                     {sortButton("upvotes", t("redditOpinions.upvotesShort"))}
                   </span>
                 </div>
-                <span className="w-10 shrink-0" aria-hidden="true" />
+                <span className="w-9 shrink-0" aria-hidden="true" />
               </div>
 
               <div
