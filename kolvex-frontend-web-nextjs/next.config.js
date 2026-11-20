@@ -135,6 +135,11 @@ const nextConfig = {
         https:
       ;
 
+      media-src
+        'self'
+        https://*.supabase.co/storage/v1/object/public/x-post-media/
+      ;
+
       font-src
         'self'
         data:

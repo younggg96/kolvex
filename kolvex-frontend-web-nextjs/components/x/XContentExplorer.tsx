@@ -19,6 +19,7 @@ import { xRequest, type XCreator, type XFeed } from "@/lib/xContentApi";
 import XCreatorProfile, { CreatorAvatar } from "./XCreatorProfile";
 import XCreatorSummaries from "./XCreatorSummaries";
 import XTranslatedText from "./XTranslatedText";
+import { XPostMedia } from "./XPostMedia";
 
 type Location = {
   author?: string;
@@ -420,6 +421,7 @@ function XPosts({
                         preparedChinese={post.translation_zh}
                       />
                     </div>
+                    <XPostMedia assets={post.media_assets} sourceLinks={post.media_links} />
                     {post.truncated && (
                       <p className="mt-2 text-xs text-muted-foreground">
                         {c(
@@ -475,21 +477,6 @@ function XPosts({
                         })}
                       </div>
                     )}
-                    {post.media_links.length > 0 && (
-                      <div className="mt-1 flex flex-wrap gap-3">
-                        {post.media_links.map((link, index) => (
-                          <a
-                            key={`${link}-${index}`}
-                            href={link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={`${focusClass} inline-flex min-h-[44px] items-center text-xs underline underline-offset-4`}
-                          >
-                            {c(`Media ${index + 1} on X`, `在 X 查看媒体 ${index + 1}`)}
-                          </a>
-                        ))}
-                      </div>
-                    )}
                     <dl className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                       {Object.entries(metrics).map(
                         ([key, label]) =>
@@ -541,10 +528,7 @@ function XPosts({
         )}
       </ListCard>
       <p className="text-xs leading-5 text-muted-foreground">
-        {c(
-          "Engagement counts reflect when posts were collected. Images and charts are available through their source links.",
-          "互动数为采集时的记录，图片和图表可通过原帖链接查看。",
-        )}
+        {c("Engagement counts reflect when posts were collected.", "互动数为采集时的记录。")}
       </p>
     </section>
   );

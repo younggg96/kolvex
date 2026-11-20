@@ -27,7 +27,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 | 宏观指标 | `/dashboard?tab=macro` | `/macro` | `economic_indicators.py`、`market_observations.py` | `kolvex-backend-py/docs/macro-data.md` | ✅ |
 | 重大事件日历 | `/dashboard?tab=calendar` | `/calendar` | `market_events.py` | [market-events.md](../market-events.md) | ✅ |
 | 个股工作台（概览、财报、盈利、指标趋势、同行、持股、分析师、简介） | `/dashboard/market/[ticker]?tab=…` | `/stock/[symbol]?tab=…` | `market_data.py` | [decision-workspace.md](../decision-workspace.md) | ✅ |
-| 技术图表、画线、AI 技术分析（Web 已存结论和条件计划可按需翻译） | 个股 `?tab=technical` | `/technical/[symbol]` | `chart_drawings.py`、`market_data.py`（ai-technical、chart-jobs） | [technical-analysis-focus.md](../technical-analysis-focus.md) | ◐ |
+| 技术图表、画线、AI 技术分析（Web 已存结论和条件计划可按需翻译；高级图表有十字线、默认拖动平移、⚙ 图表设置：缩放锚点、十字线吸附、盘前盘后与时段高亮、K 线颜色） | 个股 `?tab=technical` | `/technical/[symbol]` | `chart_drawings.py`、`market_data.py`（ai-technical、chart-jobs） | [technical-analysis-focus.md](../technical-analysis-focus.md) | ◐ |
 | 估值（PE 区间、情景模拟、公司估值计算器） | 个股 `?tab=valuation` | 个股 `valuation` tab | `valuation.py` | [stock-valuation/PRD.md](../stock-valuation/PRD.md)、[README.md](../stock-valuation/README.md) | ◐ |
 | 期权链 | 个股 `?tab=options` | 个股 `options` tab | `options.py` | `PRODUCT.md` | ✅ |
 | AI 基本面分析 | 个股概览 | 个股 `summary` tab | `market_data.py`（ai-fundamentals） | — | ✅ |
@@ -40,7 +40,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 | 功能 | ID | Web 入口 | App 入口 | 后端 | 文档 | App |
 | --- | --- | --- | --- | --- | --- | --- |
 | YouTube 博主观点、博主 / 股票目录（Web 博主大头像栏标记近 24 小时新视频，可切换为完整列表，英文界面自动翻译中文观点） | `youtubeOpinions` | `/dashboard/youtube-opinions` | `(tabs)/opinions`、`/creators`、`/creator/youtube/[id]` | `youtube_opinions.py` | [youtube-channel-profiles.md](../youtube-channel-profiles.md)、[内容翻译](../content-translation.md) | ◐ |
-| X 博主内容与翻译（每 3 小时采集入库，逐帖生成 DeepSeek V4.1 Flash 摘要并标注股票低相关，优先读取后台中文译文） | `youtubeOpinions` | `/dashboard/x-opinions` | `opinions` 的 X tab、`/creator/x/[id]` | `x_content.py` | [x-content.md](../x-content.md)、[内容翻译](../content-translation.md) | ◐ |
+| X 博主内容与翻译（每 3 小时采集入库，逐帖生成 DeepSeek 摘要并标注股票低相关，Web 展示已归档的原帖媒体，优先读取后台中文译文） | `youtubeOpinions` | `/dashboard/x-opinions` | `opinions` 的 X tab、`/creator/x/[id]` | `x_content.py` | [x-content.md](../x-content.md)、[内容翻译](../content-translation.md) | ◐ |
 | Reddit 热度榜（含 30 日相对趋势，App 未跟进趋势） | `youtubeOpinions` | `/dashboard/reddit-opinions` | `opinions` 的 Reddit tab | `reddit_opinions.py` | `PRODUCT.md` | ✅ |
 | 观点事后表现（发布后 5 / 20 个交易日股价，对比 SPY；只陈述事实，不判对错） | `youtubeOpinions` | 股票页和博主 × 股票页的观点卡片（含「其他博主的看法」） | — | `youtube_opinions.py`（`/stocks/{ticker}/outcomes`） | [opinion-backtest.md](../opinion-backtest.md) | — |
 | 观点回看（全部看多 / 看空观点之后股价相对 SPY 的整体表现，可点进具体观点；「单个博主」先列全部博主，选中后按股票看这位博主说过的每只股票、说完至今涨跌以及与观点方向是否一致；博主主页的个人卡片有样本和跨度门槛；不按博主排名） | `youtubeOpinions` | 博主观点「回看」（`/dashboard/youtube-opinions/review`）；博主主页侧栏 | — | `youtube_opinions.py`（`/review`、`/review/opinions`、`/review/creators`、`/review/creators/{id}`、`/creators/{id}/review`） | [opinion-backtest.md](../opinion-backtest.md) | — |

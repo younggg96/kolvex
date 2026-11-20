@@ -3,21 +3,21 @@
 基于 yfinance 提供股票市场行情、基本面、交易持仓、分析师与新闻数据
 """
 
-import logging
-from fastapi import APIRouter, Depends, Query, HTTPException, Path
-from typing import Optional, List, Any, Literal
-from pydantic import BaseModel, Field
-from datetime import datetime
-from enum import Enum
 import asyncio
+import logging
+from enum import Enum
+from typing import Any, List, Literal, Optional
 from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
+from pydantic import BaseModel, Field
 
 from app.api.dependencies.auth import get_current_user_id
 from app.core.supabase import get_supabase_service
 from app.services.market_performance import TooManySymbolsError, get_stock_performance
-from app.services.stock_discovery import DiscoveryUnavailable, get_stock_discovery
 from app.services.stock_analysis_history import StockAnalysisHistory
 from app.services.stock_chart_jobs import StockChartJobs
+from app.services.stock_discovery import DiscoveryUnavailable, get_stock_discovery
 from app.services.technical_analysis import AiNotConfigured, analyze_chart
 from app.services.technical_focus import TechnicalFocus
 from app.services.user_api_keys_service import UserApiKeysService, get_user_api_keys_service
@@ -37,6 +37,7 @@ router = APIRouter(prefix="/market", tags=["Market Data"])
 
 class HistoryPeriod(str, Enum):
     """历史数据时间范围"""
+
     ONE_DAY = "1d"
     FIVE_DAYS = "5d"
     ONE_MONTH = "1mo"
@@ -52,6 +53,7 @@ class HistoryPeriod(str, Enum):
 
 class HistoryInterval(str, Enum):
     """K线间隔"""
+
     ONE_MIN = "1m"
     TWO_MIN = "2m"
     FIVE_MIN = "5m"
@@ -75,6 +77,7 @@ class HistoryInterval(str, Enum):
 
 class QuoteResponse(BaseModel):
     """实时报价响应"""
+
     symbol: str
     name: Optional[str] = None
     exchange: Optional[str] = None
@@ -109,6 +112,7 @@ class QuoteResponse(BaseModel):
 
 class HistoryDataPoint(BaseModel):
     """历史数据点"""
+
     date: str
     open: Optional[float] = None
     high: Optional[float] = None
@@ -121,6 +125,7 @@ class HistoryDataPoint(BaseModel):
 
 class HistoryResponse(BaseModel):
     """历史数据响应"""
+
     symbol: str
     period: str
     interval: str
@@ -135,6 +140,7 @@ class HistoryResponse(BaseModel):
 
 class CompanyInfoResponse(BaseModel):
     """公司信息响应"""
+
     symbol: str
     name: Optional[str] = None
     long_name: Optional[str] = None
@@ -153,6 +159,7 @@ class CompanyInfoResponse(BaseModel):
 
 class FinancialsResponse(BaseModel):
     """财务指标响应"""
+
     symbol: str
     # 估值
     pe_ratio: Optional[float] = None
@@ -190,12 +197,14 @@ class FinancialsResponse(BaseModel):
 
 class DividendHistory(BaseModel):
     """股息历史"""
+
     date: str
     amount: float
 
 
 class DividendsResponse(BaseModel):
     """股息信息响应"""
+
     symbol: str
     dividend_rate: Optional[float] = None
     dividend_yield: Optional[float] = None
@@ -216,6 +225,7 @@ class DividendsResponse(BaseModel):
 
 class OptionContract(BaseModel):
     """期权合约"""
+
     contract_symbol: Optional[str] = None
     strike: Optional[float] = None
     last_price: Optional[float] = None
@@ -231,6 +241,7 @@ class OptionContract(BaseModel):
 
 class OptionsChain(BaseModel):
     """期权链"""
+
     expiration: str
     calls: List[OptionContract] = []
     puts: List[OptionContract] = []
@@ -238,6 +249,7 @@ class OptionsChain(BaseModel):
 
 class OptionsResponse(BaseModel):
     """期权数据响应"""
+
     symbol: str
     expirations: List[str] = []
     options_chain: Optional[OptionsChain] = None
@@ -246,6 +258,7 @@ class OptionsResponse(BaseModel):
 
 class InstitutionalHolder(BaseModel):
     """机构持有人"""
+
     holder: Optional[str] = None
     shares: Optional[int] = None
     date_reported: Optional[str] = None
@@ -255,12 +268,14 @@ class InstitutionalHolder(BaseModel):
 
 class MajorHolder(BaseModel):
     """主要持有人"""
+
     value: Optional[str] = None
     description: Optional[str] = None
 
 
 class InsiderTransaction(BaseModel):
     """内部人交易"""
+
     insider: Optional[str] = None
     relation: Optional[str] = None
     shares: Optional[int] = None
@@ -271,6 +286,7 @@ class InsiderTransaction(BaseModel):
 
 class HoldersResponse(BaseModel):
     """持仓数据响应"""
+
     symbol: str
     held_percent_insiders: Optional[float] = None
     held_percent_institutions: Optional[float] = None
@@ -292,6 +308,7 @@ class HoldersResponse(BaseModel):
 
 class AnalystRecommendation(BaseModel):
     """分析师评级"""
+
     date: Optional[str] = None
     firm: Optional[str] = None
     to_grade: Optional[str] = None
@@ -301,6 +318,7 @@ class AnalystRecommendation(BaseModel):
 
 class RecommendationSummary(BaseModel):
     """评级摘要"""
+
     period: Optional[str] = None
     strong_buy: Optional[int] = None
     buy: Optional[int] = None
@@ -311,6 +329,7 @@ class RecommendationSummary(BaseModel):
 
 class AnalystResponse(BaseModel):
     """分析师数据响应"""
+
     symbol: str
     recommendation_key: Optional[str] = None
     recommendation_mean: Optional[float] = None
@@ -326,6 +345,7 @@ class AnalystResponse(BaseModel):
 
 class EarningsHistory(BaseModel):
     """盈利历史"""
+
     quarter: Optional[str] = None
     eps_actual: Optional[float] = None
     eps_estimate: Optional[float] = None
@@ -334,6 +354,7 @@ class EarningsHistory(BaseModel):
 
 class EarningsDate(BaseModel):
     """盈利日期"""
+
     date: Optional[str] = None
     eps_estimate: Optional[float] = None
     reported_eps: Optional[float] = None
@@ -342,6 +363,7 @@ class EarningsDate(BaseModel):
 
 class EarningsResponse(BaseModel):
     """盈利数据响应"""
+
     symbol: str
     earnings_date: Optional[Any] = None
     earnings_quarterly_growth: Optional[float] = None
@@ -352,6 +374,7 @@ class EarningsResponse(BaseModel):
 
 class NewsItem(BaseModel):
     """新闻条目"""
+
     uuid: Optional[str] = None
     title: Optional[str] = None
     summary: Optional[str] = None
@@ -365,6 +388,7 @@ class NewsItem(BaseModel):
 
 class NewsResponse(BaseModel):
     """新闻响应"""
+
     symbol: str
     news: List[NewsItem]
     count: int
@@ -374,7 +398,9 @@ class NewsResponse(BaseModel):
 async def get_stock_news(symbol: str = Path(..., description="股票代码")):
     try:
         items = await asyncio.to_thread(get_yfinance_service().get_news, symbol)
-        return NewsResponse(symbol=symbol.upper(), news=[NewsItem(**item) for item in items], count=len(items))
+        return NewsResponse(
+            symbol=symbol.upper(), news=[NewsItem(**item) for item in items], count=len(items)
+        )
     except Exception as error:
         logger.exception("Failed to fetch news for %s", symbol)
         raise HTTPException(status_code=502, detail="News unavailable") from error
@@ -389,11 +415,9 @@ async def get_stock_news(symbol: str = Path(..., description="股票代码")):
     "/quote/{symbol}",
     response_model=QuoteResponse,
     summary="获取实时报价",
-    description="获取股票的实时报价信息，包含当前价格、涨跌幅、成交量、市值等"
+    description="获取股票的实时报价信息，包含当前价格、涨跌幅、成交量、市值等",
 )
-def get_quote(
-    symbol: str = Path(..., description="股票代码 (如 AAPL, NVDA, TSLA)")
-):
+def get_quote(symbol: str = Path(..., description="股票代码 (如 AAPL, NVDA, TSLA)")):
     """获取股票实时报价"""
     try:
         service = get_yfinance_service()
@@ -403,14 +427,8 @@ def get_quote(
         raise HTTPException(status_code=500, detail=f"获取报价失败: {str(e)}")
 
 
-@router.post(
-    "/quotes",
-    summary="批量获取报价",
-    description="批量获取多个股票的实时报价"
-)
-def get_multiple_quotes(
-    symbols: List[str] = Query(..., description="股票代码列表")
-):
+@router.post("/quotes", summary="批量获取报价", description="批量获取多个股票的实时报价")
+def get_multiple_quotes(symbols: List[str] = Query(..., description="股票代码列表")):
     """批量获取股票报价"""
     try:
         service = get_yfinance_service()
@@ -422,6 +440,7 @@ def get_multiple_quotes(
 @router.get("/search", summary="按代码或公司名搜索股票")
 async def search_stocks(q: str = Query(..., min_length=1, max_length=50)):
     from app.services.finnhub import get_finnhub_client
+
     try:
         return {"results": await get_finnhub_client().search_symbols(q.strip())}
     except Exception as error:
@@ -459,7 +478,7 @@ async def get_market_performance(
     "/history/{symbol}",
     response_model=HistoryResponse,
     summary="获取历史行情",
-    description="获取股票的历史K线数据"
+    description="获取股票的历史K线数据",
 )
 def get_history(
     symbol: str = Path(..., description="股票代码"),
@@ -485,7 +504,7 @@ def get_history(
             period=period.value,
             interval=interval.value,
             data=[HistoryDataPoint(**d) for d in data],
-            count=len(data)
+            count=len(data),
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取历史数据失败: {str(e)}")
@@ -493,6 +512,7 @@ def get_history(
 
 class AiTechnicalRequest(TechnicalFocus):
     """AI 技术分析请求：与图表相同的取数参数，加上当前可见区间"""
+
     interval: HistoryInterval = HistoryInterval.ONE_DAY
     period: Optional[HistoryPeriod] = None
     start: Optional[str] = Field(None, pattern=r"^\d{4}-\d{2}-\d{2}$")
@@ -526,7 +546,9 @@ async def ai_technical_analysis(
         )
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"获取历史数据失败: {str(e)}")
-    history = [bar for bar in history if None not in (bar["open"], bar["high"], bar["low"], bar["close"])]
+    history = [
+        bar for bar in history if None not in (bar["open"], bar["high"], bar["low"], bar["close"])
+    ]
 
     try:
         result = await analyze_chart(
@@ -544,7 +566,11 @@ async def ai_technical_analysis(
             user_id=user_id,
         )
         saved = StockAnalysisHistory(get_supabase_service()).save(
-            user_id, symbol.upper(), result, body.model_dump(mode="json"), history,
+            user_id,
+            symbol.upper(),
+            result,
+            body.model_dump(mode="json"),
+            history,
             kind="drawings" if body.operation == "drawings" else "technical",
         )
         return {**result, "version_id": saved["id"], "saved_at": saved["created_at"]}
@@ -558,7 +584,10 @@ async def ai_technical_analysis(
 
 
 class ActivateAnalysisRequest(BaseModel):
-    expected_current_id: Optional[str] = Field(None, pattern=r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+    expected_current_id: Optional[str] = Field(
+        None,
+        pattern=r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+    )
 
 
 class AiChartJobRequest(AiTechnicalRequest):
@@ -574,10 +603,13 @@ async def submit_chart_job(
     api_keys: UserApiKeysService = Depends(get_user_api_keys_service),
 ):
     from app.services.technical_analysis import _choose_user_model
+
     try:
         _choose_user_model(body.model, await api_keys.get_keys_dict(user_id))
         jobs = StockChartJobs(get_supabase_service())
-        return await asyncio.to_thread(jobs.enqueue, user_id, symbol.upper(), body.model_dump(mode="json"))
+        return await asyncio.to_thread(
+            jobs.enqueue, user_id, symbol.upper(), body.model_dump(mode="json")
+        )
     except AiNotConfigured:
         raise HTTPException(503, "ai_not_configured")
     except Exception as exc:
@@ -593,7 +625,9 @@ async def latest_chart_jobs(
     user_id: str = Depends(get_current_user_id),
 ):
     try:
-        return await asyncio.to_thread(StockChartJobs(get_supabase_service()).latest, user_id, symbol.upper())
+        return await asyncio.to_thread(
+            StockChartJobs(get_supabase_service()).latest, user_id, symbol.upper()
+        )
     except Exception:
         raise HTTPException(503, "ai_jobs_unavailable")
 
@@ -605,7 +639,9 @@ async def chart_job_status(
     user_id: str = Depends(get_current_user_id),
 ):
     try:
-        job = await asyncio.to_thread(StockChartJobs(get_supabase_service()).get, user_id, symbol.upper(), str(job_id))
+        job = await asyncio.to_thread(
+            StockChartJobs(get_supabase_service()).get, user_id, symbol.upper(), str(job_id)
+        )
     except Exception:
         raise HTTPException(503, "ai_jobs_unavailable")
     if not job:
@@ -616,21 +652,35 @@ async def chart_job_status(
 @router.get("/analysis-history/_index")
 async def stock_analysis_index(user_id: str = Depends(get_current_user_id)):
     """Tickers that have AI technical analysis, and those with a conditional trade plan."""
+
     def load():
         db = get_supabase_service()
         technical: dict[str, dict] = {}
         planned: dict[str, dict] = {}
         offset, size = 0, 500
         while True:
-            rows = (db.table("stock_analysis_versions")
-                    .select("id,ticker,kind,created_at,bias:payload->bias,summary:payload->summary,signals:payload->signals,setup:payload->setup")
-                    .in_("kind", ["technical", "drawings"])
-                    .order("created_at", desc=True).order("id", desc=True)
-                    .range(offset, offset + size - 1).execute()).data or []
+            rows = (
+                db.table("stock_analysis_versions")
+                .select(
+                    "id,ticker,kind,created_at,bias:payload->bias,summary:payload->summary,signals:payload->signals,setup:payload->setup"
+                )
+                .in_("kind", ["technical", "drawings"])
+                .order("created_at", desc=True)
+                .order("id", desc=True)
+                .range(offset, offset + size - 1)
+                .execute()
+            ).data or []
             for row in rows:  # newest first: first hit per ticker is the latest
                 ticker = str(row["ticker"]).upper()
-                item = {"id": row["id"], "ticker": ticker, "created_at": row["created_at"], "bias": row.get("bias"),
-                        "summary": row.get("summary"), "signals": row.get("signals") or [], "setup": row.get("setup")}
+                item = {
+                    "id": row["id"],
+                    "ticker": ticker,
+                    "created_at": row["created_at"],
+                    "bias": row.get("bias"),
+                    "summary": row.get("summary"),
+                    "signals": row.get("signals") or [],
+                    "setup": row.get("setup"),
+                }
                 if ticker not in technical:
                     technical[ticker] = item
                 if row.get("setup") and ticker not in planned:
@@ -639,6 +689,7 @@ async def stock_analysis_index(user_id: str = Depends(get_current_user_id)):
                 break
             offset += size
         return {"technical": list(technical.values()), "planned": list(planned.values())}
+
     try:
         return await asyncio.to_thread(load)
     except Exception:
@@ -656,7 +707,9 @@ def stock_analysis_history(
     user_id: str = Depends(get_current_user_id),
 ):
     try:
-        return StockAnalysisHistory(get_supabase_service()).list(user_id, symbol.upper(), kind, limit, offset, scope)
+        return StockAnalysisHistory(get_supabase_service()).list(
+            user_id, symbol.upper(), kind, limit, offset, scope
+        )
     except Exception:
         logger.exception("Stock analysis history unavailable")
         raise HTTPException(503, "analysis_history_unavailable")
@@ -669,7 +722,9 @@ def get_stock_analysis_version(
     user_id: str = Depends(get_current_user_id),
 ):
     try:
-        record = StockAnalysisHistory(get_supabase_service()).get(user_id, symbol.upper(), version_id)
+        record = StockAnalysisHistory(get_supabase_service()).get(
+            user_id, symbol.upper(), version_id
+        )
     except Exception:
         raise HTTPException(503, "analysis_history_unavailable")
     if not record:
@@ -685,7 +740,9 @@ def activate_stock_analysis(
     user_id: str = Depends(get_current_user_id),
 ):
     try:
-        return StockAnalysisHistory(get_supabase_service()).activate(user_id, symbol.upper(), version_id, body.expected_current_id)
+        return StockAnalysisHistory(get_supabase_service()).activate(
+            user_id, symbol.upper(), version_id, body.expected_current_id
+        )
     except Exception as exc:
         if "analysis_not_found" in str(exc):
             raise HTTPException(404, "analysis_not_found")
@@ -699,7 +756,7 @@ def activate_stock_analysis(
     "/intraday/{symbol}",
     response_model=HistoryResponse,
     summary="获取日内行情",
-    description="获取股票的日内分时数据"
+    description="获取股票的日内分时数据",
 )
 def get_intraday(
     symbol: str = Path(..., description="股票代码"),
@@ -714,7 +771,7 @@ def get_intraday(
             period="1d",
             interval=interval,
             data=[HistoryDataPoint(**d) for d in data],
-            count=len(data)
+            count=len(data),
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取日内数据失败: {str(e)}")
@@ -729,11 +786,9 @@ def get_intraday(
     "/company/{symbol}",
     response_model=CompanyInfoResponse,
     summary="获取公司信息",
-    description="获取公司基本信息，包含行业、地址、员工数、业务描述等"
+    description="获取公司基本信息，包含行业、地址、员工数、业务描述等",
 )
-def get_company_info(
-    symbol: str = Path(..., description="股票代码")
-):
+def get_company_info(symbol: str = Path(..., description="股票代码")):
     """获取公司基本信息"""
     try:
         service = get_yfinance_service()
@@ -760,7 +815,7 @@ class FundHoldingsResponse(BaseModel):
     summary="获取 ETF 前十大持仓",
 )
 def get_fund_holdings(
-    symbol: str = Path(..., pattern=r"^[A-Za-z0-9.\-]{1,12}$", description="ETF 代码")
+    symbol: str = Path(..., pattern=r"^[A-Za-z0-9.\-]{1,12}$", description="ETF 代码"),
 ):
     try:
         return FundHoldingsResponse(**get_yfinance_service().get_fund_holdings(symbol))
@@ -773,11 +828,9 @@ def get_fund_holdings(
     "/financials/{symbol}",
     response_model=FinancialsResponse,
     summary="获取财务指标",
-    description="获取关键财务指标，包含估值、盈利能力、资产负债等"
+    description="获取关键财务指标，包含估值、盈利能力、资产负债等",
 )
-def get_financials(
-    symbol: str = Path(..., description="股票代码")
-):
+def get_financials(symbol: str = Path(..., description="股票代码")):
     """获取财务指标"""
     try:
         service = get_yfinance_service()
@@ -787,11 +840,7 @@ def get_financials(
         raise HTTPException(status_code=500, detail=f"获取财务指标失败: {str(e)}")
 
 
-@router.get(
-    "/income-statement/{symbol}",
-    summary="获取利润表",
-    description="获取利润表详细数据"
-)
+@router.get("/income-statement/{symbol}", summary="获取利润表", description="获取利润表详细数据")
 def get_income_statement(
     symbol: str = Path(..., description="股票代码"),
     quarterly: bool = Query(False, description="是否获取季度数据"),
@@ -800,20 +849,13 @@ def get_income_statement(
     try:
         service = get_yfinance_service()
         data = service.get_income_statement(symbol, quarterly=quarterly)
-        return {
-            "symbol": symbol.upper(),
-            "quarterly": quarterly,
-            "data": data,
-            "count": len(data)
-        }
+        return {"symbol": symbol.upper(), "quarterly": quarterly, "data": data, "count": len(data)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取利润表失败: {str(e)}")
 
 
 @router.get(
-    "/balance-sheet/{symbol}",
-    summary="获取资产负债表",
-    description="获取资产负债表详细数据"
+    "/balance-sheet/{symbol}", summary="获取资产负债表", description="获取资产负债表详细数据"
 )
 def get_balance_sheet(
     symbol: str = Path(..., description="股票代码"),
@@ -823,21 +865,12 @@ def get_balance_sheet(
     try:
         service = get_yfinance_service()
         data = service.get_balance_sheet(symbol, quarterly=quarterly)
-        return {
-            "symbol": symbol.upper(),
-            "quarterly": quarterly,
-            "data": data,
-            "count": len(data)
-        }
+        return {"symbol": symbol.upper(), "quarterly": quarterly, "data": data, "count": len(data)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取资产负债表失败: {str(e)}")
 
 
-@router.get(
-    "/cash-flow/{symbol}",
-    summary="获取现金流量表",
-    description="获取现金流量表详细数据"
-)
+@router.get("/cash-flow/{symbol}", summary="获取现金流量表", description="获取现金流量表详细数据")
 def get_cash_flow(
     symbol: str = Path(..., description="股票代码"),
     quarterly: bool = Query(False, description="是否获取季度数据"),
@@ -846,12 +879,7 @@ def get_cash_flow(
     try:
         service = get_yfinance_service()
         data = service.get_cash_flow(symbol, quarterly=quarterly)
-        return {
-            "symbol": symbol.upper(),
-            "quarterly": quarterly,
-            "data": data,
-            "count": len(data)
-        }
+        return {"symbol": symbol.upper(), "quarterly": quarterly, "data": data, "count": len(data)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取现金流量表失败: {str(e)}")
 
@@ -860,11 +888,9 @@ def get_cash_flow(
     "/dividends/{symbol}",
     response_model=DividendsResponse,
     summary="获取股息信息",
-    description="获取股息相关信息，包含股息率、派息历史等"
+    description="获取股息相关信息，包含股息率、派息历史等",
 )
-def get_dividends(
-    symbol: str = Path(..., description="股票代码")
-):
+def get_dividends(symbol: str = Path(..., description="股票代码")):
     """获取股息信息"""
     try:
         service = get_yfinance_service()
@@ -880,7 +906,7 @@ def get_dividends(
             ex_dividend_date=data.get("ex_dividend_date"),
             last_dividend_date=data.get("last_dividend_date"),
             last_dividend_value=data.get("last_dividend_value"),
-            history=[DividendHistory(**h) for h in data.get("history", [])]
+            history=[DividendHistory(**h) for h in data.get("history", [])],
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取股息信息失败: {str(e)}")
@@ -895,11 +921,9 @@ def get_dividends(
     "/options/{symbol}",
     response_model=OptionsResponse,
     summary="获取期权数据",
-    description="获取期权到期日列表和最近到期日的期权链"
+    description="获取期权到期日列表和最近到期日的期权链",
 )
-def get_options(
-    symbol: str = Path(..., description="股票代码")
-):
+def get_options(symbol: str = Path(..., description="股票代码")):
     """获取期权数据"""
     try:
         service = get_yfinance_service()
@@ -907,8 +931,10 @@ def get_options(
         return OptionsResponse(
             symbol=data["symbol"],
             expirations=data.get("expirations", []),
-            options_chain=OptionsChain(**data["options_chain"]) if data.get("options_chain") else None,
-            error=data.get("error")
+            options_chain=OptionsChain(**data["options_chain"])
+            if data.get("options_chain")
+            else None,
+            error=data.get("error"),
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取期权数据失败: {str(e)}")
@@ -917,11 +943,11 @@ def get_options(
 @router.get(
     "/options/{symbol}/{expiration}",
     summary="获取指定到期日期权链",
-    description="获取指定到期日的完整期权链数据"
+    description="获取指定到期日的完整期权链数据",
 )
 def get_options_chain(
     symbol: str = Path(..., description="股票代码"),
-    expiration: str = Path(..., description="到期日 (YYYY-MM-DD)")
+    expiration: str = Path(..., description="到期日 (YYYY-MM-DD)"),
 ):
     """获取指定到期日的期权链"""
     try:
@@ -930,10 +956,6 @@ def get_options_chain(
         return data
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取期权链失败: {str(e)}")
-
-
-
-
 
 
 # ============================================================
@@ -945,11 +967,9 @@ def get_options_chain(
     "/analyst/{symbol}",
     response_model=AnalystResponse,
     summary="获取分析师评级",
-    description="获取分析师评级、目标价格和评级历史"
+    description="获取分析师评级、目标价格和评级历史",
 )
-def get_analyst_recommendations(
-    symbol: str = Path(..., description="股票代码")
-):
+def get_analyst_recommendations(symbol: str = Path(..., description="股票代码")):
     """获取分析师评级"""
     try:
         service = get_yfinance_service()
@@ -965,7 +985,9 @@ def get_analyst_recommendations(
             target_median_price=data.get("target_median_price"),
             current_price=data.get("current_price"),
             recommendations=[AnalystRecommendation(**r) for r in data.get("recommendations", [])],
-            recommendations_summary=[RecommendationSummary(**s) for s in data.get("recommendations_summary", [])]
+            recommendations_summary=[
+                RecommendationSummary(**s) for s in data.get("recommendations_summary", [])
+            ],
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取分析师评级失败: {str(e)}")
@@ -975,11 +997,9 @@ def get_analyst_recommendations(
     "/earnings/{symbol}",
     response_model=EarningsResponse,
     summary="获取盈利数据",
-    description="获取盈利历史、盈利预期和盈利日期"
+    description="获取盈利历史、盈利预期和盈利日期",
 )
-def get_earnings(
-    symbol: str = Path(..., description="股票代码")
-):
+def get_earnings(symbol: str = Path(..., description="股票代码")):
     """获取盈利数据"""
     try:
         service = get_yfinance_service()
@@ -990,12 +1010,10 @@ def get_earnings(
             earnings_quarterly_growth=data.get("earnings_quarterly_growth"),
             revenue_quarterly_growth=data.get("revenue_quarterly_growth"),
             earnings_history=[EarningsHistory(**h) for h in data.get("earnings_history", [])],
-            earnings_dates=[EarningsDate(**d) for d in data.get("earnings_dates", [])]
+            earnings_dates=[EarningsDate(**d) for d in data.get("earnings_dates", [])],
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取盈利数据失败: {str(e)}")
-
-
 
 
 # ============================================================
@@ -1006,11 +1024,9 @@ def get_earnings(
 @router.get(
     "/overview/{symbol}",
     summary="获取股票综合概览",
-    description="一次性获取股票的报价、公司信息和关键财务指标"
+    description="一次性获取股票的报价、公司信息和关键财务指标",
 )
-def get_stock_overview(
-    symbol: str = Path(..., description="股票代码")
-):
+def get_stock_overview(symbol: str = Path(..., description="股票代码")):
     """获取股票综合概览"""
     try:
         service = get_yfinance_service()
@@ -1055,12 +1071,20 @@ async def ai_fundamentals(
 ):
     """The user's own model interprets the overview fundamentals; no buy/sell view."""
     from app.services.fundamental_analysis import (
-        FundamentalsDataUnavailable, FundamentalsInvalid, FundamentalsKeyRejected,
-        FundamentalsRateLimited, fundamental_analysis_service,
+        FundamentalsDataUnavailable,
+        FundamentalsInvalid,
+        FundamentalsKeyRejected,
+        FundamentalsRateLimited,
+        fundamental_analysis_service,
     )
+
     try:
         return await fundamental_analysis_service.generate(
-            symbol, user_id=user_id, model_id=body.model, locale=body.locale, regenerate=body.regenerate,
+            symbol,
+            user_id=user_id,
+            model_id=body.model,
+            locale=body.locale,
+            regenerate=body.regenerate,
             user_api_keys=await api_keys.get_keys_dict(user_id),
         )
     except AiNotConfigured as exc:
@@ -1077,7 +1101,7 @@ async def ai_fundamentals(
         raise HTTPException(504, "ai_analysis_timeout") from exc
     except Exception as exc:
         # Provider errors can echo request details; clients get a stable code.
-        logger.warning("AI fundamentals unavailable for %s (%s)", symbol.upper(), type(exc).__name__)
+        logger.warning(
+            "AI fundamentals unavailable for %s (%s)", symbol.upper(), type(exc).__name__
+        )
         raise HTTPException(503, "ai_unavailable") from exc
-
-

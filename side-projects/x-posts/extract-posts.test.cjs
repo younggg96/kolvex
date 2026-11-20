@@ -87,3 +87,32 @@ test('subscription previews are rejected even without a show-more control', () =
   assert.equal(result.posts.length, 0);
   assert.match(result.rejected[0].reason, /Subscribers-only/);
 });
+
+test('captures only the original image and exposes a public poster for an in-browser video', () => {
+  const original = article();
+  const all = original.querySelectorAll.bind(original);
+  const nodes = {
+    'a[href]': [
+      { getAttribute: () => '/TestUser/status/2115976928918139192/photo/1',
+        querySelector: () => ({ getAttribute: name => name === 'alt' ? 'Chip revenue comparison' :
+          'https://pbs.twimg.com/media/Chart?format=png&name=small&token=ignored' }) },
+      { getAttribute: () => '/other/status/10/photo/1' },
+    ],
+    video: [
+      { closest: () => ({}), getAttribute: () => 'https://video.twimg.com/quoted.mp4' },
+      { closest: () => null, currentSrc: 'blob:https://x.com/private-player-id', querySelectorAll: () => [],
+        getAttribute: name => name === 'poster' ? 'https://pbs.twimg.com/ext_tw_video_thumb/123/pu/img/frame.jpg' : null },
+    ],
+  };
+  original.querySelectorAll = selector => nodes[selector] || all(selector);
+  const result = extract([original]).posts[0];
+  assert.deepEqual(result.media_links, [
+    'https://x.com/TestUser/status/2115976928918139192/photo/1',
+    'https://x.com/TestUser/status/2115976928918139192/video/1',
+  ]);
+  assert.deepEqual(result.media_sources.map(({kind, url}) => ({kind, url})), [
+    {kind: 'image', url: 'https://pbs.twimg.com/media/Chart?format=png'},
+    {kind: 'video_poster', url: 'https://pbs.twimg.com/ext_tw_video_thumb/123/pu/img/frame.jpg'},
+  ]);
+  assert.equal(result.media_sources[0].alt, 'Chip revenue comparison');
+});

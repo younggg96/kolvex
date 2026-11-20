@@ -199,7 +199,7 @@ def main():
     commands.add_parser("plan")
     start = commands.add_parser("prepare", help="Retry saved batches and write a new browser run plan")
     start.add_argument("directory", type=Path)
-    finish = commands.add_parser("finish", help="Sync browser exports and analyze committed posts")
+    finish = commands.add_parser("finish", help="Sync posts, archive media and analyze committed posts")
     finish.add_argument("directory", type=Path)
     add = commands.add_parser("add", help="Track X profiles on this machine")
     add.add_argument("profiles", nargs="+")
@@ -224,9 +224,11 @@ def main():
                     atomic_json(args.directory / "plan.json", result)
                 elif args.command == "finish":
                     from app.services.x_post_analysis import analyze_pending
+                    from app.services.x_post_media import archive_media
 
                     result = finish_run(ROOT, args.directory, service)
                     result["analysis"] = analyze_pending(service.db, os.getenv("DEEPSEEK_API_KEY"))
+                    result["media"] = archive_media(service.db, ROOT / "data" / "incoming")
                 else:
                     files = [sync_file(ROOT, args.file.resolve(), service)] if args.file else sync_saved(ROOT, service)
                     result = {"files": files}

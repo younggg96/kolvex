@@ -17,6 +17,14 @@ type XPostAnalysis =
       summary_en: string;
     };
 
+export interface XMediaAsset {
+  key: string;
+  kind: "image" | "video" | "video_poster";
+  url: string;
+  source_url: string;
+  alt: string;
+}
+
 export interface XPost {
   id: string;
   author_username: string;
@@ -29,6 +37,7 @@ export interface XPost {
   translation_zh?: { text: string; quoted_texts: string[] };
   ai_analysis?: XPostAnalysis | null;
   media_links: string[];
+  media_assets?: XMediaAsset[];
   truncated: boolean;
   pinned: boolean;
   creator: XCreator | null;

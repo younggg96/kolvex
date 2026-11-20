@@ -809,6 +809,17 @@ export default function PriceGraph({
     if (advanced) setPointer({ x: px, y: py });
   };
 
+  // The crosshair stays under a resting pointer while a pan settles or the view zooms.
+  useEffect(() => {
+    if (!pointer || !count) return;
+    const slot = geometry.plotWidth / Math.max(current.end - current.start, 1e-6);
+    const index = Math.round(pointer.x / slot + current.start - 0.5);
+    const next = index >= 0 && index < count ? index : null;
+    if (next !== activeIndex) onActiveChange(next);
+    // Only a view change moves the bar under the pointer; pointer moves already scrub.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current, geometry.plotWidth]);
+
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (!loaded || drawingPointer.current !== null || axisGesture.current) return;
     const axis = scaleAxisAt(event.target);

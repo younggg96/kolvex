@@ -379,12 +379,13 @@ export default function ChartView({
     !snapshotBars &&
     chartSettings.extendedHours &&
     intervalMinutes(effectiveInterval) !== null;
-  const params = advanced && !snapshotBars
-    ? {
-        ...advancedHistoryParams(range, effectiveInterval),
-        ...(extendedHours ? { prepost: "true" } : {}),
-      }
-    : compactParams;
+  const params =
+    advanced && !snapshotBars
+      ? {
+          ...advancedHistoryParams(range, effectiveInterval),
+          ...(extendedHours ? { prepost: "true" } : {}),
+        }
+      : compactParams;
   const paramsKey = JSON.stringify(params);
   const chartCacheKey = stockHistoryKey(symbol, params);
   const quoteResource = useStockQuote(symbol, 15_000, !snapshotBars);
@@ -1692,14 +1693,7 @@ export default function ChartView({
                   opacity={0.28}
                 />
               )}
-              <line
-                x1={cx}
-                x2={cx}
-                y1={y(bar.high)}
-                y2={top}
-                stroke={paint.wick}
-                strokeWidth={1}
-              />
+              <line x1={cx} x2={cx} y1={y(bar.high)} y2={top} stroke={paint.wick} strokeWidth={1} />
               <line
                 x1={cx}
                 x2={cx}

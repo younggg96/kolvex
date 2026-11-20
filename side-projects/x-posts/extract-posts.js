@@ -39,13 +39,49 @@ function extractXPosts(expectedUsername) {
       const key = count[2].toLowerCase().startsWith("repl") ? "replies" : count[2].toLowerCase().replace(/s?$/, "s");
       metrics[key] = Number(count[1].replaceAll(",", ""));
     }
-    const media = [...article.querySelectorAll('a[href]')].map(el => el.getAttribute("href"))
-      .filter(value => /^\/[A-Za-z0-9_]+\/status\/\d+\/(photo|video)\/\d+$/.test(value));
+    const isOwnMedia = value =>
+      new RegExp("^/" + match[1] + "/status/" + match[2] + "/(photo|video)/[1-9][0-9]?$", "i").test(value);
+    const media = new Set();
+    const media_sources = [];
+    for (const link of article.querySelectorAll('a[href]')) {
+      const path = link.getAttribute("href");
+      if (!isOwnMedia(path)) continue;
+      const source_url = "https://x.com" + path;
+      media.add(source_url);
+      const img = link.querySelector?.('img[src^="https://pbs.twimg.com/media/"]');
+      if (img && path.includes("/photo/")) {
+        const alt = img.getAttribute("alt")?.trim();
+        const original = img.getAttribute("src");
+        const format = original.match(/[?&]format=(jpg|jpeg|png|gif|webp)(?:&|$)/)?.[1];
+        const url = original.split(/[?#]/)[0] + (format ? "?format=" + format : "");
+        media_sources.push({
+          kind: "image", url, source_url,
+          alt: /^(image|photo|图片|照片)$/i.test(alt || "") ? "" : alt || "",
+        });
+      }
+    }
+    for (const [index, video] of [...article.querySelectorAll("video")]
+      .filter(el => !el.closest('[role="link"]')).entries()) {
+      const source_url = `https://x.com/${match[1]}/status/${match[2]}/video/${index + 1}`;
+      media.add(source_url);
+      const file = [video.currentSrc, video.getAttribute("src"),
+        ...[...video.querySelectorAll("source[src]")].map(el => el.getAttribute("src"))]
+        .find(url => /^https:\/\/video\.twimg\.com\/[^?#]+\.mp4(?:\?|$)/i.test(url || ""));
+      const poster = video.getAttribute("poster");
+      if (file) {
+        const tag = file.match(/[?&]tag=(\d{1,3})(?:&|$)/)?.[1];
+        const url = file.split(/[?#]/)[0] + (tag ? "?tag=" + tag : "");
+        media_sources.push({ kind: "video", url, source_url });
+      }
+      if (poster?.startsWith("https://pbs.twimg.com/")) {
+        media_sources.push({ kind: "video_poster", url: poster.split(/[?#]/)[0], source_url });
+      }
+    }
     posts.push({ id: match[2], author_username: match[1], url: `https://x.com/${match[1]}/status/${match[2]}`,
       published_at: time.getAttribute("datetime"), text,
       cashtags: [...new Set([...text.matchAll(/\$([A-Za-z][A-Za-z0-9.\-]{0,14})\b/g)].map(value => value[1].toUpperCase()))],
       metrics, metrics_label: label, quoted_texts: texts.filter(el => !own.includes(el)).map(el => el.innerText),
-      media_links: [...new Set(media)].map(value => `https://x.com${value}`),
+      media_links: [...media], media_sources,
       pinned, truncated: Boolean(article.querySelector('[data-testid="tweet-text-show-more-link"]')),
     });
   }

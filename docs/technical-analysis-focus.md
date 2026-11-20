@@ -32,6 +32,32 @@ saved version restores those choices for the next generation. Old snapshots with
 focus fields still render and use the default selection. Unsaved choices are scoped to
 the current stock chart; they are not stored in browser storage or sent to analytics.
 
+## Advanced chart interaction and settings
+
+In the advanced chart (Web `ChartView` → `PriceGraph`), hovering shows a crosshair: a
+vertical rule on the bar under the pointer, a horizontal rule at the pointer with its
+price tagged on the right axis, and the bar's date tagged on the time axis. A plain
+drag on empty plot area pans (with release momentum); drawing tools and existing
+drawings still claim their own drags first. The former **拖动平移 / Drag to pan**
+toggle is gone.
+
+The ⚙ **图表设置 / Chart settings** button in the top toolbar opens a dialog. Choices are
+saved per browser under `kolvex:chart-settings` (`lib/chart/settings.ts`), are never
+sent to the server, and **恢复默认 / Reset** restores the defaults:
+
+- Zoom anchor: cursor (default) or right edge — wheel and toolbar zoom.
+- Crosshair snap: off (default), close, or nearest of open/high/low/close.
+- Extended hours (default off): minute and hour intervals request `prepost=true` from
+  `GET /api/v1/market/history/{symbol}` and include pre-market (4:00–9:30 ET) and
+  after-hours (16:00–20:00 ET) bars. Daily and longer intervals are unaffected.
+  AI analysis requests never send `prepost`, so it always reads regular-session bars.
+- Highlight trading session (default on, needs extended hours): shades pre-market and
+  after-hours bars. A bar that overlaps the regular session counts as regular.
+- Candle colours: body, border and wick each have an on/off switch and up/down colours
+  chosen from design tokens (`--chart-up`, `--chart-down`, `--compare-1…6`,
+  `--foreground`, `--muted-foreground`), plus 绿涨红跌 / 红涨绿跌 presets. Turning a part
+  off keeps candles visible (hollow body, neutral wick or outline).
+
 ## Reading saved analysis in another language
 
 Saved results retain their generation language. If it differs from the Web

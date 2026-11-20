@@ -58,13 +58,14 @@ export function parseChartSettings(raw: unknown): ChartSettings {
   const base = DEFAULT_CHART_SETTINGS;
   if (!raw || typeof raw !== "object") return base;
   const value = raw as Record<string, unknown>;
-  const candlesRaw = (value.candles && typeof value.candles === "object" ? value.candles : {}) as
-    Record<string, unknown>;
+  const candlesRaw = (
+    value.candles && typeof value.candles === "object" ? value.candles : {}
+  ) as Record<string, unknown>;
   const candles = {} as Record<CandlePart, CandlePaint>;
   for (const part of CANDLE_PARTS) {
-    const item = (candlesRaw[part] && typeof candlesRaw[part] === "object"
-      ? candlesRaw[part]
-      : {}) as Record<string, unknown>;
+    const item = (
+      candlesRaw[part] && typeof candlesRaw[part] === "object" ? candlesRaw[part] : {}
+    ) as Record<string, unknown>;
     candles[part] = {
       enabled: typeof item.enabled === "boolean" ? item.enabled : base.candles[part].enabled,
       up: isToken(item.up) ? item.up : base.candles[part].up,
@@ -92,7 +93,9 @@ export function parseChartSettings(raw: unknown): ChartSettings {
 
 export function readChartSettings(): ChartSettings {
   try {
-    return parseChartSettings(JSON.parse(window.localStorage.getItem(CHART_SETTINGS_KEY) || "null"));
+    return parseChartSettings(
+      JSON.parse(window.localStorage.getItem(CHART_SETTINGS_KEY) || "null"),
+    );
   } catch {
     return DEFAULT_CHART_SETTINGS;
   }

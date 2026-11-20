@@ -10,7 +10,7 @@ HANDLE = re.compile(r"[A-Za-z0-9_]{1,15}")
 POST_ID = re.compile(r"[1-9][0-9]{0,24}")
 TICKER = re.compile(r"[A-Z][A-Z0-9.\-]{0,14}")
 CREATOR_FIELDS = "username,display_name,bio,avatar_url,location,website,followers_count,following_count,created_at"
-POST_FIELDS = "id,author_username,url,published_at,text,cashtags,metrics,quoted_texts,media_links,truncated,pinned,imported_at,ai_analysis"
+POST_FIELDS = "id,author_username,url,published_at,text,cashtags,metrics,quoted_texts,media_links,truncated,pinned,imported_at,ai_analysis,media_assets"
 METRICS = ("replies", "reposts", "likes", "bookmarks", "views")
 
 

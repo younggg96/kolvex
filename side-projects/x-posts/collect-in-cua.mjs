@@ -153,6 +153,14 @@ export async function createXCollector(tab, root, runDirectory) {
     );
     const stopReason = !complete && ["checkpoint", "initial_window"].includes(reason) ? "missing_original" : reason;
     const eligible = new Set([...order.keys(), ...recovered]);
+    const media = [...eligible].flatMap(id => {
+      const timeline = capture.get(id);
+      const original = full.get(id);
+      if (!original) return [];
+      const sources = [...(timeline?.media_sources || []), ...(original.media_sources || [])];
+      return sources.length ? [{ id, media_sources: sources }] : [];
+    });
+    if (media.length) await write(prefix + "-media.json", { handle, posts: media });
     const fresh = [...eligible].filter(id => full.has(id) && !seen.has(id));
     if (fresh.length) {
       const ids = new Set(fresh);
@@ -165,7 +173,10 @@ export async function createXCollector(tab, root, runDirectory) {
         scope: stops.size ? "Incremental public Posts" : "Initial public Posts window",
         scan_complete: complete,
         stop_reason: stopReason,
-        posts: [...ids].map(id => full.get(id)),
+        posts: [...ids].map(id => {
+          const { media_sources, ...post } = full.get(id);
+          return post;
+        }),
       });
     }
     const summary = { handle, new_posts: fresh.length, complete, reason: stopReason, missing };
