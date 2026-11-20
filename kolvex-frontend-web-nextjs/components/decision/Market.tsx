@@ -664,7 +664,6 @@ function MarketOverview({
         />
       </div>
       <div className="min-w-0 space-y-10">
-        <FearGreedCard />
         <StockObservationList
           range={range}
           catalogue={catalogue}
@@ -675,6 +674,7 @@ function MarketOverview({
       </div>
 
       <aside className="min-w-0 space-y-8 xl:sticky xl:top-8 xl:self-start">
+        <FearGreedCard />
         <MarketWatchlistCard />
         <section aria-labelledby="market-creator-updates-title" className="min-w-0">
           <header className="mb-3 flex min-h-14 max-md:min-h-0 items-center gap-2">

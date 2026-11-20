@@ -32,24 +32,26 @@ export default function FearGreedCard() {
   const score = current?.score.toLocaleString(c("en-US", "zh-CN"), { maximumFractionDigits: 2 });
 
   return (
-    <section className="space-y-3" aria-labelledby="market-fear-greed-title">
-      <header className="flex min-h-11 items-center justify-between gap-3">
-        <h2 id="market-fear-greed-title" className="text-xl font-semibold tracking-tight">
+    <section className="min-w-0" aria-labelledby="market-fear-greed-title">
+      <header className="mb-3 flex min-h-14 max-md:min-h-0 items-center gap-2">
+        <h2 id="market-fear-greed-title" className="text-lg font-semibold">
           {title}
         </h2>
-        <Button asChild size="sm" variant="ghost" className="shrink-0 gap-1">
-          <a
-            href={CNN_SOURCE}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={c("View original CNN index", "查看 CNN 原始指数")}
-          >
-            CNN
-            <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
-          </a>
-        </Button>
+        <div className="ml-auto flex items-center">
+          <Button asChild variant="outline" size="icon" className="h-11 w-11">
+            <a
+              href={CNN_SOURCE}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={c("View original CNN index", "查看 CNN 原始指数")}
+              title={c("View on CNN", "在 CNN 查看")}
+            >
+              <ArrowUpRight className="h-4 w-4" aria-hidden />
+            </a>
+          </Button>
+        </div>
       </header>
-      <Card className="p-4 sm:p-5">
+      <Card className="p-4">
         {loading && !data ? (
           <ContentLoading label={c("Loading the Fear & Greed Index", "正在加载恐慌与贪婪指数")}>
             <Skeleton className="h-10 w-24" />
@@ -76,7 +78,7 @@ export default function FearGreedCard() {
               </div>
             )}
             {current ? (
-              <div className="grid items-center gap-5 sm:grid-cols-[minmax(10rem,0.8fr)_minmax(0,1.2fr)]">
+              <div className="grid gap-4">
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                     <p className="figure leading-none">
@@ -115,7 +117,7 @@ export default function FearGreedCard() {
                       data={points}
                       positive
                       tone="neutral"
-                      height={80}
+                      height={64}
                       onScrub={setScrub}
                       label={c("CNN Fear & Greed score history", "CNN 恐慌与贪婪指数历史走势")}
                     />
