@@ -33,19 +33,19 @@ export default function DashboardBackground() {
 
   return (
     <>
-      {isMobile ? (
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[rgb(2,6,7)] bg-[url('/media/dashboard-backdrop.webp')] bg-cover bg-center"
-        />
-      ) : (
-        <WaylumeBackground />
-      )}
-      {/* Keeps data text readable where it crosses the bright core of the light. */}
+      {/* The art is green; dark palettes turn its hue in app/globals.css. */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-black/70"
-      />
+        className="dashboard-backdrop-art pointer-events-none absolute inset-0"
+      >
+        {isMobile ? (
+          <div className="absolute inset-0 bg-[rgb(2,6,7)] bg-[url('/media/dashboard-backdrop.webp')] bg-cover bg-center" />
+        ) : (
+          <WaylumeBackground />
+        )}
+      </div>
+      {/* Keeps data text readable where it crosses the bright core of the light. */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-black/70" />
     </>
   );
 }

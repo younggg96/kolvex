@@ -34,6 +34,8 @@
 - **正负号统一**：Web 端正数前加「+」，负数前用排版减号「−」（U+2212），不用连字符「-」；0 和四舍五入后为 0 的值不带符号。统一用 `lib/format.ts` 的 `withSign` / `signedPercent`。
 - **选中态用中性填充，不用绿色铺底**（绿色留给品牌操作）。
 - 浅色和深色两套都必须支持，改了颜色两种模式都要看。
+- 分段切换器 `SegmentedControl` 永远只占一行：选项放不下时在轨道内横向滚动（隐藏滚动条），选中项自动滚到可见位置；不再提供换行选项。
+- Web 浅色模式另有可选配色（翠绿默认 / 黑白 / 蓝宝石 / 薰衣草 / 焦糖 / 藏青，来源 bairesdev.com/tools/ai-colors 的浅色调色板）：设置 → 偏好设置 → 浅色配色（设置页只显示当前生效主题的那一行配色，跟随系统时按系统当前模式），存在本机 `localStorage`（`kolvex-light-palette`），不写账户。token 在 `globals.css` 的 `:root:not(.dark)[data-light-palette]` 块里，只换品牌、表面和控件色；`--market-up` / `--positive` 固定为默认绿，涨跌色不随配色变化。新增或修改配色要通过 `scripts/theme-palettes.test.cjs` 的对比度检查。深色模式同样有「深色配色」（翠绿默认 / 黑白 / 电光蓝 / 午夜蓝 / 霓虹紫 / 暗金 / 星夜，取自该站的深底调色板，背景保持接近纯黑），token 在 `.dark[data-dark-palette]`，存 `kolvex-dark-palette`；深色下跌色是橙色，所以深色配色不用橙、红做品牌色，`--market-up` 固定为 `0 200 5`。深色「黑白」的实心填充是白底黑字（`--primary-foreground` 改为黑），所以实心 `bg-primary` 上的文字必须用 `text-primary-foreground`，不要写死 `text-white`；开关拇指选中时同理。两组配色 id 和 key 在 `lib/themePalettes.ts`。App 暂无此设置。
 
 ## 3. 字体、形状、间距
 

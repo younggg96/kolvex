@@ -309,6 +309,286 @@ html {
   color-scheme: dark;
 }
 
+/* ========================================
+   LIGHT PALETTES (settings → preferences)
+   Derived from light palettes on bairesdev.com/tools/ai-colors.
+   They recolour brand, surfaces and controls only: --market-up and --positive
+   are pinned to the default green so 涨/跌 colours never change.
+   scripts/theme-palettes.test.cjs checks every block's contrast.
+   ======================================== */
+
+:root:not(.dark)[data-light-palette] {
+  --market-up: 22 163 74;
+  --positive: 22 101 52;
+}
+
+/* 黑白 · Mono — the site's grey palette (#F0F5F9 #1E2022 #34373B #788189) */
+:root:not(.dark)[data-light-palette="mono"] {
+  --primary: 30 32 34;
+  --button-primary: 30 32 34;
+  --primary-hover: 17 18 19;
+  --primary-accent: 120 129 137;
+  --primary-soft: 235 237 239;
+  --background: 250 250 250;
+  --surface-hover: 242 243 244;
+  --border: 228 229 231;
+  --secondary: 230 231 233;
+  --secondary-foreground: 30 32 34;
+  --field-edge: 120 124 130;
+}
+
+/* 蓝宝石 · Sapphire — "a banking website" / "white with blue" */
+:root:not(.dark)[data-light-palette="sapphire"] {
+  --primary: 0 112 192;
+  --button-primary: 0 92 158;
+  --primary-hover: 0 78 134;
+  --primary-accent: 89 165 245;
+  --primary-soft: 219 236 250;
+  --background: 248 250 252;
+  --surface-hover: 239 244 250;
+  --border: 223 230 239;
+  --secondary: 210 230 248;
+  --secondary-foreground: 0 63 112;
+  --field-edge: 110 127 148;
+}
+
+/* 薰衣草 · Lavender — "lavendar" */
+:root:not(.dark)[data-light-palette="lavender"] {
+  --primary: 139 95 191;
+  --button-primary: 116 74 168;
+  --primary-hover: 97 57 143;
+  --primary-accent: 163 128 214;
+  --primary-soft: 237 229 246;
+  --background: 250 249 252;
+  --surface-hover: 243 239 248;
+  --border: 231 225 238;
+  --secondary: 230 219 244;
+  --secondary-foreground: 81 45 122;
+  --field-edge: 128 116 142;
+}
+
+/* 焦糖 · Caramel — "caramel sage green" */
+:root:not(.dark)[data-light-palette="caramel"] {
+  --primary: 156 120 60;
+  --button-primary: 128 95 40;
+  --primary-hover: 100 72 22;
+  --primary-accent: 199 160 98;
+  --primary-soft: 245 236 220;
+  --background: 251 249 246;
+  --surface-hover: 245 240 232;
+  --border: 232 223 210;
+  --secondary: 238 225 204;
+  --secondary-foreground: 90 64 18;
+  --field-edge: 140 126 108;
+}
+
+/* 藏青 · Navy — "navy and blush" */
+:root:not(.dark)[data-light-palette="navy"] {
+  --primary: 44 62 80;
+  --button-primary: 44 62 80;
+  --primary-hover: 30 44 58;
+  --primary-accent: 87 104 124;
+  --primary-soft: 247 228 228;
+  --background: 249 249 249;
+  --surface-hover: 243 241 241;
+  --border: 229 226 226;
+  --secondary: 247 222 221;
+  --secondary-foreground: 120 62 61;
+  --field-edge: 120 120 128;
+}
+
+/* The Wayglim background art is green; turn it toward each palette's hue. */
+:root:not(.dark)[data-light-palette="mono"] .site-background {
+  filter: grayscale(1);
+}
+:root:not(.dark)[data-light-palette="sapphire"] .site-background {
+  filter: hue-rotate(63deg);
+}
+:root:not(.dark)[data-light-palette="lavender"] .site-background {
+  filter: hue-rotate(126deg);
+}
+:root:not(.dark)[data-light-palette="caramel"] .site-background {
+  filter: hue-rotate(-104deg) saturate(0.7);
+}
+:root:not(.dark)[data-light-palette="navy"] .site-background {
+  filter: grayscale(0.85) hue-rotate(68deg);
+}
+
+/* ========================================
+   DARK PALETTES (settings → preferences)
+   Dark-background palettes from bairesdev.com/tools/ai-colors, kept near black.
+   --market-up and the direction colours stay at the dark defaults (green up,
+   orange down), so palettes avoid orange and red brand hues.
+   ======================================== */
+
+.dark[data-dark-palette] {
+  --market-up: 0 200 5;
+}
+
+/* 黑白 · Mono — pure black and white; solid fills turn white with black text */
+.dark[data-dark-palette="mono"] {
+  --primary: 245 245 245;
+  --button-primary: 245 245 245;
+  --primary-foreground: 10 10 10;
+  --primary-hover: 255 255 255;
+  --primary-accent: 160 160 160;
+  --primary-soft: 38 38 38;
+  --background: 0 0 0;
+  --sidebar: 0 0 0;
+  --card: 14 14 14;
+  --muted: 24 24 24;
+  --secondary: 30 30 30;
+  --border: 44 44 44;
+}
+
+/* 电光蓝 · Electric — "Electric City Nights" */
+.dark[data-dark-palette="electric"] {
+  --primary: 41 151 255;
+  --button-primary: 0 102 214;
+  --primary-hover: 105 180 255;
+  --primary-soft: 12 34 64;
+  --background: 8 10 14;
+  --sidebar: 8 10 14;
+  --card: 18 21 27;
+  --muted: 26 30 38;
+  --secondary: 30 35 45;
+  --border: 44 50 62;
+}
+
+/* 午夜蓝 · Midnight — "Dark Sapphire Blue" */
+.dark[data-dark-palette="midnight"] {
+  --primary: 140 190 245;
+  --button-primary: 45 88 150;
+  --primary-hover: 206 232 255;
+  --primary-soft: 20 40 66;
+  --background: 9 17 29;
+  --sidebar: 9 17 29;
+  --card: 15 28 46;
+  --muted: 22 38 60;
+  --secondary: 31 50 80;
+  --border: 45 66 98;
+}
+
+/* 霓虹紫 · Neon — "neon" */
+.dark[data-dark-palette="neon"] {
+  --primary: 176 125 255;
+  --button-primary: 108 53 222;
+  --primary-hover: 203 128 255;
+  --primary-soft: 40 22 76;
+  --background: 12 8 20;
+  --sidebar: 12 8 20;
+  --card: 24 18 37;
+  --muted: 32 25 49;
+  --secondary: 40 31 62;
+  --border: 55 44 82;
+}
+
+/* 暗金 · Gold — "gold dark" */
+.dark[data-dark-palette="gold"] {
+  --primary: 240 200 40;
+  --button-primary: 133 99 0;
+  --primary-hover: 255 215 0;
+  --primary-soft: 48 38 6;
+  --background: 6 6 4;
+  --sidebar: 6 6 4;
+  --card: 20 19 15;
+  --muted: 28 27 21;
+  --secondary: 34 32 25;
+  --border: 52 49 38;
+}
+
+/* 星夜 · Starry — "starry night" */
+.dark[data-dark-palette="starry"] {
+  --primary: 0 188 212;
+  --button-primary: 0 116 132;
+  --primary-hover: 72 214 232;
+  --primary-accent: 255 193 7;
+  --primary-soft: 0 50 60;
+  --background: 6 9 26;
+  --sidebar: 6 9 26;
+  --card: 13 18 44;
+  --muted: 20 26 56;
+  --secondary: 26 33 66;
+  --border: 40 48 88;
+}
+
+/* The Waylume workspace backdrop is green; turn it toward each dark palette. */
+.dark[data-dark-palette="mono"] .dashboard-backdrop-art {
+  filter: grayscale(1);
+}
+.dark[data-dark-palette="electric"] .dashboard-backdrop-art {
+  filter: hue-rotate(70deg);
+}
+.dark[data-dark-palette="midnight"] .dashboard-backdrop-art {
+  filter: hue-rotate(75deg) saturate(0.6);
+}
+.dark[data-dark-palette="neon"] .dashboard-backdrop-art {
+  filter: hue-rotate(130deg);
+}
+.dark[data-dark-palette="gold"] .dashboard-backdrop-art {
+  filter: hue-rotate(-95deg) saturate(0.8);
+}
+.dark[data-dark-palette="starry"] .dashboard-backdrop-art {
+  filter: hue-rotate(45deg);
+}
+
+/* Settings swatches show each palette regardless of the active one. */
+.palette-swatch {
+  background: linear-gradient(135deg, rgb(var(--swatch-a)) 0 50%, rgb(var(--swatch-b)) 50% 100%);
+}
+.palette-swatch[data-mode="light"][data-palette="green"] {
+  --swatch-a: 21 128 61;
+  --swatch-b: 198 244 213;
+}
+.palette-swatch[data-mode="light"][data-palette="mono"] {
+  --swatch-a: 30 32 34;
+  --swatch-b: 255 255 255;
+}
+.palette-swatch[data-mode="light"][data-palette="sapphire"] {
+  --swatch-a: 0 92 158;
+  --swatch-b: 210 230 248;
+}
+.palette-swatch[data-mode="light"][data-palette="lavender"] {
+  --swatch-a: 116 74 168;
+  --swatch-b: 230 219 244;
+}
+.palette-swatch[data-mode="light"][data-palette="caramel"] {
+  --swatch-a: 128 95 40;
+  --swatch-b: 238 225 204;
+}
+.palette-swatch[data-mode="light"][data-palette="navy"] {
+  --swatch-a: 44 62 80;
+  --swatch-b: 247 222 221;
+}
+.palette-swatch[data-mode="dark"][data-palette="green"] {
+  --swatch-a: 0 200 5;
+  --swatch-b: 0 0 0;
+}
+.palette-swatch[data-mode="dark"][data-palette="mono"] {
+  --swatch-a: 245 245 245;
+  --swatch-b: 0 0 0;
+}
+.palette-swatch[data-mode="dark"][data-palette="electric"] {
+  --swatch-a: 41 151 255;
+  --swatch-b: 8 10 14;
+}
+.palette-swatch[data-mode="dark"][data-palette="midnight"] {
+  --swatch-a: 140 190 245;
+  --swatch-b: 9 17 29;
+}
+.palette-swatch[data-mode="dark"][data-palette="neon"] {
+  --swatch-a: 176 125 255;
+  --swatch-b: 12 8 20;
+}
+.palette-swatch[data-mode="dark"][data-palette="gold"] {
+  --swatch-a: 240 200 40;
+  --swatch-b: 6 6 4;
+}
+.palette-swatch[data-mode="dark"][data-palette="starry"] {
+  --swatch-a: 0 188 212;
+  --swatch-b: 6 9 26;
+}
+
 body {
   color: rgb(var(--foreground));
   background: rgb(var(--background));

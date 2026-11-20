@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ShareButton } from "@/components/share/ShareButton";
 import { ArrowUpRight, ChevronDown } from "lucide-react";
 import { useCopy } from "@/components/decision/shared";
 import { Badge } from "@/components/ui/badge";
@@ -120,6 +121,11 @@ export function PersonUpdateTimeline({ items }: { items: PersonUpdate[] }) {
                 >
                   {impactLabels[item.impact]}
                 </Badge>
+                <ShareButton
+                  icon
+                  target={{ kind: "person_update", sourceId: item.id }}
+                  className="-mr-2"
+                />
               </header>
 
               <div className="space-y-1">

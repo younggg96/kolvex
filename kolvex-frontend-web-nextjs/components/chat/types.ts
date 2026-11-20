@@ -110,6 +110,10 @@ export interface ChatBubbleProps {
   revenueEvidence?: RevenueEvidence[] | null;
   quoteEvidence?: QuoteEvidence[] | null;
   answerCheck?: AnswerCheck | null;
+  /** Saved message id; enables sharing the answer or a selected passage. */
+  messageId?: string;
+  /** The question this answer replies to, offered (optionally) with the share. */
+  question?: string;
 }
 
 export interface ChatHistorySidebarProps {

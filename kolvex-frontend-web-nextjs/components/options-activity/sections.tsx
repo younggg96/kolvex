@@ -1,6 +1,7 @@
 "use client";
 
 import { InfoTip } from "@/components/ui/info-tip";
+import { ShareButton } from "@/components/share/ShareButton";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
@@ -693,7 +694,15 @@ export function UnusualContracts({
   );
 }
 
-function CandidateCard({ item, sources }: { item: ActivityCandidate; sources?: SymbolSource[] }) {
+function CandidateCard({
+  item,
+  sources,
+  runId,
+}: {
+  item: ActivityCandidate;
+  sources?: SymbolSource[];
+  runId?: string;
+}) {
   const c = useCopy();
   const { locale } = useTranslation();
   const expiry = useExpiryLabel();
@@ -725,8 +734,17 @@ function CandidateCard({ item, sources }: { item: ActivityCandidate; sources?: S
           </Link>
           <SourceTags sources={sources} />
         </span>
-        <span className="shrink-0 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
-          {confidence[item.confidence]}
+        <span className="flex shrink-0 items-center gap-1">
+          <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+            {confidence[item.confidence]}
+          </span>
+          {runId && (
+            <ShareButton
+              icon
+              target={{ kind: "options_candidate", sourceId: `${runId}:${item.symbol}` }}
+              className="-mr-2"
+            />
+          )}
         </span>
       </div>
       <p className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
@@ -779,7 +797,12 @@ export function ResearchCandidates({
       {candidates.status === "ok" && candidates.items.length > 0 ? (
         <ul className="grid gap-4 md:grid-cols-2">
           {candidates.items.map((item) => (
-            <CandidateCard key={item.symbol} item={item} sources={sourcesOf.get(item.underlying)} />
+            <CandidateCard
+              key={item.symbol}
+              item={item}
+              sources={sourcesOf.get(item.underlying)}
+              runId={run?.id}
+            />
           ))}
         </ul>
       ) : (

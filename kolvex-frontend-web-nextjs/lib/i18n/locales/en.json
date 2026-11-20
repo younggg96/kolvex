@@ -1209,6 +1209,26 @@
       "themeLightDesc": "Light theme",
       "themeDarkDesc": "Dark theme",
       "themeSystemDesc": "Follow system",
+      "palette": { "light": "Light palette", "dark": "Dark palette" },
+      "palettes": {
+        "light": {
+          "green": "Green",
+          "mono": "Mono",
+          "sapphire": "Sapphire",
+          "lavender": "Lavender",
+          "caramel": "Caramel",
+          "navy": "Navy"
+        },
+        "dark": {
+          "green": "Green",
+          "mono": "Mono",
+          "electric": "Electric",
+          "midnight": "Midnight",
+          "neon": "Neon",
+          "gold": "Gold",
+          "starry": "Starry"
+        }
+      },
       "failedToUpdateTheme": "Failed to update theme",
       "languageSyncFailed": "Language changed in this browser. Your account preference could not be synced."
     },

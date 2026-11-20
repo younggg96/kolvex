@@ -9,6 +9,7 @@ import { UserProfileProvider } from "@/components/user/UserProfileProvider";
 import { StockDataCacheProvider } from "@/components/portfolio/hooks/useStockDataCache";
 import NavigationProgress from "@/components/layout/NavigationProgress";
 import SiteBackground from "@/components/layout/SiteBackground";
+import { THEME_PALETTE_BOOT_SCRIPT } from "@/lib/themePalettes";
 
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
@@ -56,6 +57,7 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <script dangerouslySetInnerHTML={{ __html: THEME_PALETTE_BOOT_SCRIPT }} />
       </head>
       <body className={`${inter.variable} font-sans`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>

@@ -11,6 +11,7 @@ from app.api.routes.briefs import router as briefs_router
 from app.api.routes.chart_drawings import router as chart_drawings_router
 from app.api.routes.chat import router as chat_router
 from app.api.routes.congress_trades import router as congress_trades_router
+from app.api.routes.content_shares import router as content_shares_router
 from app.api.routes.economic_indicators import router as economic_indicators_router
 from app.api.routes.forecast import router as forecast_router
 from app.api.routes.free_research import router as free_research_router
@@ -66,6 +67,7 @@ api_router.include_router(briefs_router)
 api_router.include_router(person_updates_router)
 api_router.include_router(market_events_router)
 api_router.include_router(market_observations_router)
+api_router.include_router(content_shares_router)
 
 __all__ = ["api_router"]
 api_router.include_router(congress_trades_router)

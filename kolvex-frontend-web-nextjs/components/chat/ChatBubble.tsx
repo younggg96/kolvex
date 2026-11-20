@@ -9,6 +9,9 @@ import { RevenueEvidenceCard } from "./RevenueEvidenceCard";
 import { QuoteEvidenceCard } from "./QuoteEvidenceCard";
 import { AnswerCheckNote } from "./AnswerCheckNote";
 import { DataGapNote } from "./DataGapNote";
+import { ShareButton } from "@/components/share/ShareButton";
+import { SelectionShare } from "@/components/share/SelectionShare";
+import { isSavedMessageId, type ShareCard } from "@/lib/contentShare";
 import type { ChatBubbleProps } from "./types";
 import { Button } from "../ui/button";
 import { useTranslation } from "@/lib/i18n";
@@ -44,6 +47,8 @@ export function ChatBubble({
   quoteEvidence,
   revenueEvidence,
   answerCheck,
+  messageId,
+  question: askedQuestion,
 }: ChatBubbleProps) {
   const { t } = useTranslation();
   const remarkPlugins = richRemarkPlugins(symbols);
@@ -59,6 +64,18 @@ export function ChatBubble({
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  const shareable = !isUser && !isStreaming && isSavedMessageId(messageId);
+  const asked = askedQuestion ? visibleQuestion(askedQuestion) : "";
+  const sharePreview: ShareCard | undefined = shareable
+    ? {
+        v: 1,
+        title: asked,
+        summary: "",
+        tickers: [],
+        data: { question: asked, answer: displayContent, excerpt: false },
+      }
+    : undefined;
 
   const formatTime = (date?: Date) => {
     if (!date) return "";
@@ -99,20 +116,22 @@ export function ChatBubble({
         </div>
 
         <div className="text-foreground">
-          <div className={CHAT_PROSE_CLASSES}>
-            <ReactMarkdown
-              remarkPlugins={remarkPlugins}
-              urlTransform={richUrlTransform}
-              components={RICH_MARKDOWN_COMPONENTS}
-            >
-              {displayContent}
-            </ReactMarkdown>
-            {isStreaming && (
-              <span className="inline-flex ml-0.5 align-middle">
-                <span className="h-[1.125rem] w-[0.1875rem] animate-pulse rounded-sm bg-foreground" />
-              </span>
-            )}
-          </div>
+          <MaybeSelectionShare messageId={shareable ? messageId : undefined} question={asked}>
+            <div className={CHAT_PROSE_CLASSES}>
+              <ReactMarkdown
+                remarkPlugins={remarkPlugins}
+                urlTransform={richUrlTransform}
+                components={RICH_MARKDOWN_COMPONENTS}
+              >
+                {displayContent}
+              </ReactMarkdown>
+              {isStreaming && (
+                <span className="inline-flex ml-0.5 align-middle">
+                  <span className="h-[1.125rem] w-[0.1875rem] animate-pulse rounded-sm bg-foreground" />
+                </span>
+              )}
+            </div>
+          </MaybeSelectionShare>
         </div>
 
         {!isStreaming && answerCheck?.data_gaps && <DataGapNote gaps={answerCheck.data_gaps} />}
@@ -183,6 +202,14 @@ export function ChatBubble({
               )}
             </Button>
 
+            {shareable && (
+              <ShareButton
+                target={{ kind: "chat", sourceId: messageId! }}
+                preview={sharePreview}
+                className="rounded-full px-2.5 py-1 text-xs text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground"
+              />
+            )}
+
             {onRetry && (
               <Button variant="ghost" size="xs" onClick={onRetry}>
                 <RotateCcw className="w-3.5 h-3.5" />
@@ -193,5 +220,22 @@ export function ChatBubble({
         )}
       </div>
     </div>
+  );
+}
+
+function MaybeSelectionShare({
+  messageId,
+  question,
+  children,
+}: {
+  messageId?: string;
+  question: string;
+  children: React.ReactNode;
+}) {
+  if (!messageId) return <>{children}</>;
+  return (
+    <SelectionShare messageId={messageId} question={question}>
+      {children}
+    </SelectionShare>
   );
 }

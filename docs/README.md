@@ -68,6 +68,7 @@
 | [youtube-channel-profiles.md](youtube-channel-profiles.md) | YouTube 博主主页 |
 | [opinion-backtest.md](opinion-backtest.md) | 观点事后表现（卡片上的「发布后股价」）与博主观点回测脚本 |
 | [public-reading.md](public-reading.md) | 未登录公开阅读页与 SEO |
+| [content-sharing.md](content-sharing.md) | 内容分享（AI 回答 / 选段、观点、动态、期权异动、研究的分享链接与分享图） |
 | [paper-trading/PLAN.md](paper-trading/PLAN.md) · [README.md](paper-trading/README.md) | 虚拟交易（规划 + 运行验证） |
 | [model-catalog.md](model-catalog.md) | 可选 AI 模型目录 |
 | [mcp-content-admin.md](mcp-content-admin.md) | 内容管理 MCP 服务 |

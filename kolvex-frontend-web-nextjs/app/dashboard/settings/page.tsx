@@ -18,6 +18,7 @@ import {
   Moon,
   Monitor,
   SunMoon,
+  Palette,
   User,
   Mail,
   Phone,
@@ -57,6 +58,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { SettingsGroup, SettingsRow } from "@/components/ui/settings-group";
 import { ChatMemorySettings } from "@/components/settings/ChatMemorySettings";
+import { ShareLinksSettings } from "@/components/settings/ShareLinksSettings";
 import { AiAssistantSettings } from "@/components/settings/AiAssistantSettings";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -72,6 +74,12 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useCurrentUserProfile, updateUserTheme, type UserProfileUpdate } from "@/lib/api/userApi";
+import {
+  THEME_PALETTES,
+  applyThemePalette,
+  readThemePalette,
+  type PaletteMode,
+} from "@/lib/themePalettes";
 import {
   getUserApiKeys,
   upsertUserApiKey,
@@ -185,7 +193,7 @@ const settingsTabDefs = [
 function SettingsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const { user, isLoading: authLoading, signOut } = useAuth();
   const { t, locale, setLocale } = useTranslation();
   const {
@@ -201,6 +209,7 @@ function SettingsContent() {
   const [savingLanguage, setSavingLanguage] = useState(false);
   const [activeTab, setActiveTab] = useState("account");
   const [mounted, setMounted] = useState(false);
+  const [palettes, setPalettes] = useState<Record<PaletteMode, string> | null>(null);
 
   // Profile editing state
   const [isEditing, setIsEditing] = useState(false);
@@ -303,6 +312,7 @@ function SettingsContent() {
 
   useEffect(() => {
     setMounted(true);
+    setPalettes({ light: readThemePalette("light"), dark: readThemePalette("dark") });
 
     // Get tab from URL
     const tab = searchParams.get("tab");
@@ -313,6 +323,13 @@ function SettingsContent() {
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     router.push(`/dashboard/settings?tab=${value}`, { scroll: false });
+  };
+
+  const paletteMode: PaletteMode = resolvedTheme === "dark" ? "dark" : "light";
+
+  const handlePaletteChange = (mode: PaletteMode, palette: string) => {
+    setPalettes((current) => (current ? { ...current, [mode]: palette } : current));
+    applyThemePalette(mode, palette);
   };
 
   const handleThemeChange = async (newTheme: string) => {
@@ -1199,7 +1216,6 @@ function SettingsContent() {
                           <SegmentedControl
                             label={t("settings.preferences.theme")}
                             semantics="radio"
-                            wrap
                             value={theme}
                             onChange={handleThemeChange}
                             options={[
@@ -1238,9 +1254,40 @@ function SettingsContent() {
                           />
                         )}
                       </FieldRow>
+                      {/* Only the palettes of the theme in effect; "system" follows the OS. */}
+                      <FieldRow
+                        icon={Palette}
+                        label={t(`settings.preferences.palette.${paletteMode}`)}
+                      >
+                        {mounted && palettes && (
+                          <SegmentedControl
+                            key={paletteMode}
+                            label={t(`settings.preferences.palette.${paletteMode}`)}
+                            semantics="radio"
+                            value={palettes[paletteMode]}
+                            onChange={(palette) => handlePaletteChange(paletteMode, palette)}
+                            options={THEME_PALETTES[paletteMode].map((palette) => ({
+                              value: palette,
+                              label: (
+                                <>
+                                  <span
+                                    aria-hidden="true"
+                                    data-mode={paletteMode}
+                                    data-palette={palette}
+                                    className="palette-swatch h-3.5 w-3.5 shrink-0 rounded-full ring-1 ring-inset ring-foreground/15"
+                                  />
+                                  {t(`settings.preferences.palettes.${paletteMode}.${palette}`)}
+                                </>
+                              ),
+                            }))}
+                            itemClassName="min-h-9 gap-1.5 px-3 text-[0.8125rem] sm:px-4"
+                          />
+                        )}
+                      </FieldRow>
                     </SettingsGroup>
                     <AiAssistantSettings className="mt-6" />
                     <ChatMemorySettings className="mt-6" />
+                    <ShareLinksSettings className="mt-6" />
                   </SettingsSection>
                 </TabsContent>
               </div>

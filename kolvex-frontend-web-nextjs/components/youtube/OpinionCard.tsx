@@ -1,6 +1,7 @@
 "use client";
 
 import TranslatedText from "@/components/common/TranslatedText";
+import { ShareButton } from "@/components/share/ShareButton";
 import { PlayCircle } from "lucide-react";
 import CompanyLogo from "@/components/ui/company-logo";
 import CreatorAvatar from "./CreatorAvatar";
@@ -102,6 +103,13 @@ export default function OpinionCard({
             )}
           </div>
         </div>
+        {opinion.id && (
+          <ShareButton
+            icon
+            target={{ kind: "opinion", sourceId: opinion.id }}
+            className="-mr-2 -mt-1"
+          />
+        )}
       </header>
 
       {(opinion.summary || opinion.thesis) && (

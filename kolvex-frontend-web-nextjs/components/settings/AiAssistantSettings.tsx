@@ -146,7 +146,6 @@ export function AiAssistantSettings({ className }: { className?: string }) {
           <SegmentedControl<MultiAgentMode>
             label={c("When a question needs several agents", "需要多个 Agent 时")}
             semantics="radio"
-            wrap
             value={settings.multiAgent}
             onChange={(multiAgent) => save({ multiAgent })}
             options={[

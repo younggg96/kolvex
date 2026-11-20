@@ -1,27 +1,19 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { ShareButton } from "@/components/share/ShareButton";
 import { Download, Copy, Check, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import type {
-  TradingAnalysis,
-  InvestmentDebate,
-  RiskDebate,
-} from "@/lib/tradingAnalysisApi";
+import type { TradingAnalysis, InvestmentDebate, RiskDebate } from "@/lib/tradingAnalysisApi";
 
 function debateToMarkdown(
   debate: InvestmentDebate | RiskDebate | null | undefined,
   bullLabel: string,
   bearLabel: string,
-  judgeLabel: string
+  judgeLabel: string,
 ): string {
   if (!debate) return "";
   const lines: string[] = [];
@@ -53,11 +45,9 @@ export function buildFullReport(
     aggressiveAnalyst: string;
     conservativeAnalyst: string;
     judgeDecision: string;
-  }
+  },
 ): string {
-  const sections: string[] = [
-    `# ${analysis.ticker} — ${analysis.trade_date}\n`,
-  ];
+  const sections: string[] = [`# ${analysis.ticker} — ${analysis.trade_date}\n`];
 
   if (analysis.final_decision) {
     sections.push(`**Decision: ${analysis.final_decision}**\n`);
@@ -80,8 +70,8 @@ export function buildFullReport(
         analysis.investment_debate,
         labels.bullResearcher,
         labels.bearResearcher,
-        labels.judgeDecision
-      )}`
+        labels.judgeDecision,
+      )}`,
     );
   }
 
@@ -99,8 +89,8 @@ export function buildFullReport(
         analysis.risk_debate,
         labels.aggressiveAnalyst,
         labels.conservativeAnalyst,
-        labels.judgeDecision
-      )}`
+        labels.judgeDecision,
+      )}`,
     );
   }
 
@@ -137,13 +127,10 @@ export function FullReportActions({
       conservativeAnalyst: t("tradingAnalysis.debate.conservativeAnalyst"),
       judgeDecision: t("tradingAnalysis.debate.judgeDecision"),
     }),
-    [t]
+    [t],
   );
 
-  const getText = useCallback(
-    () => buildFullReport(analysis, getLabels()),
-    [analysis, getLabels]
-  );
+  const getText = useCallback(() => buildFullReport(analysis, getLabels()), [analysis, getLabels]);
 
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(getText()).then(() => {
@@ -189,20 +176,13 @@ export function FullReportActions({
       <div className="flex items-center gap-2">
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCopy}
-              className="gap-1.5"
-            >
+            <Button variant="outline" size="sm" onClick={handleCopy} className="gap-1.5">
               {copied ? (
                 <Check className="w-3.5 h-3.5 text-positive" />
               ) : (
                 <Copy className="w-3.5 h-3.5" />
               )}
-              <span className="hidden sm:inline">
-                {t("tradingAnalysis.debate.copyAll")}
-              </span>
+              <span className="hidden sm:inline">{t("tradingAnalysis.debate.copyAll")}</span>
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom">
@@ -212,16 +192,9 @@ export function FullReportActions({
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDownload}
-              className="gap-1.5"
-            >
+            <Button variant="outline" size="sm" onClick={handleDownload} className="gap-1.5">
               <Download className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">
-                {t("tradingAnalysis.downloadFullReport")}
-              </span>
+              <span className="hidden sm:inline">{t("tradingAnalysis.downloadFullReport")}</span>
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom">
@@ -229,24 +202,25 @@ export function FullReportActions({
           </TooltipContent>
         </Tooltip>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleShare}
-              className="gap-1.5"
-            >
-              <Share2 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">
-                {t("tradingAnalysis.shareAnalysis")}
-              </span>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            <p className="text-xs">{t("tradingAnalysis.shareAnalysis")}</p>
-          </TooltipContent>
-        </Tooltip>
+        {analysis.is_published && analysis.status === "completed" ? (
+          <ShareButton
+            target={{ kind: "research", sourceId: analysis.id }}
+            variant="outline"
+            size="sm"
+          />
+        ) : (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="outline" size="sm" onClick={handleShare} className="gap-1.5">
+                <Share2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{t("tradingAnalysis.shareAnalysis")}</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              <p className="text-xs">{t("tradingAnalysis.shareAnalysis")}</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
       </div>
     </TooltipProvider>
   );

@@ -16,6 +16,9 @@ import { cn } from "@/lib/utils";
  *
  * The thumb is an `aria-hidden` span inside the group, so assistive tech still
  * sees plain buttons with their pressed/selected state.
+ *
+ * Always one row: when the options are wider than the space, the track
+ * scrolls sideways (scrollbar hidden) and keeps the chosen option in view.
  */
 
 type Size = "sm" | "md";
@@ -69,8 +72,6 @@ export interface SegmentedControlProps<T extends string> extends Omit<
   semantics?: "single" | "tabs" | "radio" | "nav";
   /** Omit the outer glass track and paint only the thumb. */
   bare?: boolean;
-  /** Let the pill wrap instead of forcing one row (wide label sets). */
-  wrap?: boolean;
 }
 
 const BINDS: Record<
@@ -110,13 +111,12 @@ export function SegmentedControl<T extends string>({
   thumbClassName,
   semantics = "single",
   bare = false,
-  wrap = false,
   ...rest
 }: SegmentedControlProps<T>) {
   const controlRef = React.useRef<HTMLDivElement>(null);
   const itemRefs = React.useRef(new Map<T, HTMLButtonElement>());
   const thumbRef = React.useRef<HTMLSpanElement>(null);
-  const pillRef = React.useRef<{ pill: StretchPill; wrap: boolean } | null>(null);
+  const pillRef = React.useRef<StretchPill | null>(null);
   // The value the pill last sat under: re-measuring the same value (resize,
   // fonts, scroll) snaps, and only a new value animates.
   const placedValue = React.useRef<T | null | undefined>(undefined);
@@ -138,11 +138,8 @@ export function SegmentedControl<T extends string>({
     };
     const element = thumbRef.current;
     if (element && next.width > 0 && next.height > 0) {
-      if (!pillRef.current || pillRef.current.wrap !== wrap) {
-        pillRef.current?.pill.destroy();
-        pillRef.current = { pill: new StretchPill(element, { centerY: !wrap }), wrap };
-      }
-      const { pill } = pillRef.current;
+      if (!pillRef.current) pillRef.current = new StretchPill(element, { centerY: true });
+      const pill = pillRef.current;
       pill.moveTo(next, !ready.current || !pill.hasPosition || placedValue.current === value);
       placedValue.current = value;
     }
@@ -155,12 +152,12 @@ export function SegmentedControl<T extends string>({
         ? current
         : next,
     );
-  }, [value, wrap]);
+  }, [value]);
 
   // Measure before paint so the thumb is already in place on first render.
   React.useLayoutEffect(() => {
     measure();
-  }, [measure, options.length, size, wrap]);
+  }, [measure, options.length, size]);
 
   React.useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -171,7 +168,7 @@ export function SegmentedControl<T extends string>({
       // Stop the frame loop but keep the pill and its position: React's dev
       // double-mount runs this cleanup, and a fresh pill would snap on the
       // next selection instead of gliding.
-      pillRef.current?.pill.destroy();
+      pillRef.current?.destroy();
     };
   }, []);
 
@@ -258,8 +255,8 @@ export function SegmentedControl<T extends string>({
       aria-label={pattern.group ? label : undefined}
       data-slot="segmented-control"
       className={cn(
-        "relative isolate inline-flex max-w-full shrink-0 items-center",
-        wrap ? "flex-wrap" : "flex-nowrap",
+        "relative isolate inline-flex max-w-full shrink-0 flex-nowrap items-center",
+        "overflow-x-auto overflow-y-hidden overscroll-x-contain scrollbar-hide",
         config.gap,
         config.pad,
         bare ? "" : "glass-track glass-track-strong rounded-full",
@@ -293,9 +290,9 @@ export function SegmentedControl<T extends string>({
           hasThumb ? "opacity-100" : "opacity-0",
           thumbClassName,
         )}
-        // A single row centres the thumb with CSS: offsetTop rounds to whole
+        // The row centres the thumb with CSS: offsetTop rounds to whole
         // pixels, which sat it visibly low against fractional rem padding.
-        style={wrap ? undefined : { top: "50%" }}
+        style={{ top: "50%" }}
       />
       {options.map((option) => {
         const active = option.value === value;

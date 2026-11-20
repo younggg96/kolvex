@@ -523,7 +523,6 @@ export default function StockObservationList({
                 label={c("Stock list", "股票列表")}
                 value={state.scope}
                 onChange={changeScope}
-                wrap
                 className="max-w-full border border-border"
                 itemClassName="min-h-9 px-3"
                 options={scopeOptions}

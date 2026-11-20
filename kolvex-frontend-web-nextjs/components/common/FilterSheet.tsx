@@ -87,29 +87,19 @@ export function FilterSheet({
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="relative"
-          aria-label="Open filters"
-        >
+        <Button variant="ghost" size="sm" className="relative" aria-label="Open filters">
           <Filter className="w-3 h-3" />
           {activeFilterCount > 0 && (
-            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[0.625rem] font-bold text-primary-foreground dark:text-white">
+            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[0.625rem] font-bold text-primary-foreground">
               {activeFilterCount}
             </span>
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent
-        side="right"
-        className="w-full xs:max-w-md flex flex-col !py-6 !px-4"
-      >
+      <SheetContent side="right" className="w-full xs:max-w-md flex flex-col !py-6 !px-4">
         <SheetHeader>
           <SheetTitle>Filters</SheetTitle>
-          <SheetDescription>
-            Customize what posts you want to see
-          </SheetDescription>
+          <SheetDescription>Customize what posts you want to see</SheetDescription>
         </SheetHeader>
 
         {/* Scrollable content */}
@@ -188,9 +178,7 @@ export function FilterSheet({
                 blurOpacity={80}
               />
             ) : (
-              <p className="text-sm text-muted-foreground">
-                No tags available for this platform
-              </p>
+              <p className="text-sm text-muted-foreground">No tags available for this platform</p>
             )}
           </div>
 
@@ -227,10 +215,7 @@ export function FilterSheet({
             </div>
 
             {/* Custom Date Range Picker */}
-            <DateRangePicker
-              dateRange={dateRange}
-              onDateRangeChange={handleDateRangeChange}
-            />
+            <DateRangePicker dateRange={dateRange} onDateRangeChange={handleDateRangeChange} />
           </div>
         </div>
       </SheetContent>

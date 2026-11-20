@@ -6,7 +6,11 @@ const path = require("node:path");
 const ROOT = path.join(__dirname, "..");
 
 // Rendered outside the page (OG image, brand asset exports), so CSS variables are unavailable.
-const ALLOWED = new Set(["app/opengraph-image.tsx", "lib/brandAssets.ts"]);
+const ALLOWED = new Set([
+  "app/opengraph-image.tsx",
+  "app/share/[id]/opengraph-image.tsx",
+  "lib/brandAssets.ts",
+]);
 
 function sourceFiles(dir) {
   return fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true }).flatMap((entry) => {

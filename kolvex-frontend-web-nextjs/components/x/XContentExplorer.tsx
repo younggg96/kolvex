@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ShareButton } from "@/components/share/ShareButton";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ExternalLink, Loader2, RefreshCw, X } from "lucide-react";
@@ -404,15 +405,22 @@ function XPosts({
                           </p>
                         </div>
                       </div>
-                      <a
-                        className={`${focusClass} inline-flex min-h-[44px] items-center gap-1 text-xs underline-offset-4 hover:underline`}
-                        href={post.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {c("View on X", "查看原帖")}
-                        <ExternalLink className="h-3 w-3" aria-hidden />
-                      </a>
+                      <span className="flex items-start gap-1">
+                        <a
+                          className={`${focusClass} inline-flex min-h-[44px] items-center gap-1 text-xs underline-offset-4 hover:underline`}
+                          href={post.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {c("View on X", "查看原帖")}
+                          <ExternalLink className="h-3 w-3" aria-hidden />
+                        </a>
+                        <ShareButton
+                          icon
+                          target={{ kind: "x_post", sourceId: post.id }}
+                          className="-mr-2 mt-1.5"
+                        />
+                      </span>
                     </div>
                     <div className="mt-1.5">
                       <XTranslatedText

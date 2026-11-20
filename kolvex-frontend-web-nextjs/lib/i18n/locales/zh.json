@@ -1192,6 +1192,26 @@
       "themeLightDesc": "浅色主题",
       "themeDarkDesc": "深色主题",
       "themeSystemDesc": "跟随系统设置",
+      "palette": { "light": "浅色配色", "dark": "深色配色" },
+      "palettes": {
+        "light": {
+          "green": "翠绿",
+          "mono": "黑白",
+          "sapphire": "蓝宝石",
+          "lavender": "薰衣草",
+          "caramel": "焦糖",
+          "navy": "藏青"
+        },
+        "dark": {
+          "green": "翠绿",
+          "mono": "黑白",
+          "electric": "电光蓝",
+          "midnight": "午夜蓝",
+          "neon": "霓虹紫",
+          "gold": "暗金",
+          "starry": "星夜"
+        }
+      },
       "failedToUpdateTheme": "更新主题失败",
       "languageSyncFailed": "当前浏览器已切换语言，但暂时无法同步到账户。"
     },

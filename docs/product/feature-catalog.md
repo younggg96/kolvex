@@ -45,6 +45,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 | 观点事后表现（发布后 5 / 20 个交易日股价，对比 SPY；只陈述事实，不判对错） | `youtubeOpinions` | 股票页和博主 × 股票页的观点卡片（含「其他博主的看法」） | — | `youtube_opinions.py`（`/stocks/{ticker}/outcomes`） | [opinion-backtest.md](../opinion-backtest.md) | — |
 | 观点回看（全部看多 / 看空观点之后股价相对 SPY 的整体表现，可点进具体观点；「单个博主」先列全部博主，选中后按股票看这位博主说过的每只股票、说完至今涨跌以及与观点方向是否一致；博主主页的个人卡片有样本和跨度门槛；不按博主排名） | `youtubeOpinions` | 博主观点「回看」（`/dashboard/youtube-opinions/review`）；博主主页侧栏 | — | `youtube_opinions.py`（`/review`、`/review/opinions`、`/review/creators`、`/review/creators/{id}`、`/creators/{id}/review`） | [opinion-backtest.md](../opinion-backtest.md) | — |
 | 博主分享（图片 / 社交平台） | `youtubeOpinions` | 博主页、`/share/creators/[channelId]` | 博主页 | — | — | ◐ |
+| 内容分享（AI 回答整条或选段、博主观点、X 动态、人物动态、期权异动候选、已发布 AI 研究；链接 / 文案 / 分享图 / 社交平台，可随时停止分享；期权分享需登录查看） | 跟随所在功能 | 各卡片「分享」、`/share/[id]`、设置「我的分享」 | — | `content_shares.py`（需迁移 `20261120090000_content_shares.sql`） | [content-sharing.md](../content-sharing.md) | —（待移植） |
 | 观点更新 | `journal` | `/dashboard/journal` | `/updates` | `youtube_opinions.py` | `PRODUCT.md`「Reader Experience」 | ✅ |
 | 早晚报（Web 优先显示对应语言版本，缺版时标明并显示完整原版） | `briefs` | `/dashboard/briefs`、`/dashboard/briefs/[id]` | `(more)/briefs`、`brief/[id]` | `briefs.py` | [daily-briefs.md](../daily-briefs.md)、[prompts/daily-brief-generator.md](../prompts/daily-brief-generator.md) | ✅ |
 | 新闻终端（Web 优先读取后台中文译文） | `news` | `/dashboard/news` | `(more)/news` | `news_feed.py` | [news-feed.md](../news-feed.md)、[内容翻译](../content-translation.md) | ✅ |
@@ -74,7 +75,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 | 功能 | ID | Web 入口 | App 入口 | 后端 | 文档 | App |
 | --- | --- | --- | --- | --- | --- | --- |
 | 登录注册、OAuth、找回密码 | — | `/auth/*` | `/sign-in`、`/auth/*` | `auth/` | — | ✅（App 必须登录） |
-| 个人资料、头像、主题、语言、模型 API Key | `settings` | `/dashboard/settings`、`/config` | `/account`、`/preferences`、`(more)/settings` | `users.py`、`upload/`、`user_api_keys/` | — | ✅ |
+| 个人资料、头像、主题、语言、模型 API Key（Web 另有浅色 / 深色配色，仅存本机） | `settings` | `/dashboard/settings`、`/config` | `/account`、`/preferences`、`(more)/settings` | `users.py`、`upload/`、`user_api_keys/` | — | ✅ |
 | 管理后台（用户、日报、事件、YouTube、X、期权异动、邮件设置、超级投资者名单） | `admin` | `/dashboard/admin` | `(more)/admin` | `admin/` 等 | [mcp-content-admin.md](../mcp-content-admin.md) | ◐ |
 | 动态（原「人物动态」；横滑头像、美联储官员显示 Fed 徽章、站内固定头像与近 24 小时动态提示圈；紧凑时间线支持时区展开、独立股票行情行和筛选；后台可逐条新增、编辑、删除，也可 JSON 批量导入） | `personUpdates` | `/dashboard/person-updates`、`/tracker`、`/dashboard/admin?tab=person-updates` | — | `person_updates.py` | [动态](../person-updates.md) | — |
 | YouTube 自动导入（本地 Mac worker 每天 21:00 获取未追踪视频字幕 → 后端 DeepSeek 分析 → 导入观点；管理后台「YouTube 导入」可立即运行并查看结果） | `admin` | `/dashboard/admin?tab=youtube` | — | `youtube_auto_import.py`（`/admin/youtube-auto-import/*`、`/youtube-auto-import/worker/*`） | [youtube-auto-import.md](../youtube-auto-import.md)；需迁移 `20261116150000_youtube_auto_import.sql` | — |

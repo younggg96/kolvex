@@ -138,6 +138,15 @@ export function ChatMessageList({
               timestamp={message.timestamp}
               isFirst={index === 0}
               symbols={symbols}
+              messageId={message.id}
+              question={
+                message.role === "assistant"
+                  ? messages
+                      .slice(0, index)
+                      .reverse()
+                      .find((item) => item.role === "user")?.content
+                  : undefined
+              }
             />
           ))}
 

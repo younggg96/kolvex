@@ -1140,10 +1140,9 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
       label={t("common.timeRange")}
       semantics="radio"
       size={compact ? "sm" : "md"}
-      wrap={compact}
       bare={!compact && !inline}
       value={filters.range}
-      className={!compact && !inline ? "mt-3 flex-wrap" : "min-w-0"}
+      className={!compact && !inline ? "mt-3" : "min-w-0"}
       itemClassName={compact ? undefined : "min-h-8 px-3.5 text-[0.8125rem]"}
       options={rangeOptions}
       onChange={(range) =>
