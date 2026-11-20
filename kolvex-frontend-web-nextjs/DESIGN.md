@@ -947,7 +947,11 @@ The landing page is a marketing surface with stronger motion than the workspace.
 The hero is a centered overlay composition. In light mode, stock-research copy
 and links sit over the shared Wayglim background mounted by `SiteBackground`.
 A soft veil follows the center of the viewport to keep the heading legible.
-The dark theme uses the existing Waylume artwork through `LandingBackground`.
+The dark theme uses Waylume artwork through `LandingBackground`. When the
+effective dark palette is Mono, the homepage switches to the monochrome
+Wayglim Prism Flow export. Desktop plays the loop with pointer response and
+uses the opening frame for reduced motion. Narrow and touch screens use a WebP
+of that frame. Higher contrast and reduced transparency hide the Mono artwork.
 The landing shell and its header let the backdrop show through.
 The former closing CTA section is removed, including its accompanying text,
 as requested. The feature links lead directly into the existing footer.
@@ -963,7 +967,7 @@ Logo disc or circular frame. The previous
 NVDA/TSLA/AMD stock reader is removed from the homepage. The signal field is
 abstract brand artwork, not a chart or a representation of market data.
 The Wayglim look (studio settings) is kept in `components/layout/WayglimBackground.tsx`;
-all four Waylume/Wayglim backdrops share one engine in `components/backgrounds/WaylumeCanvas.tsx`.
+the Waylume/Wayglim backdrops share one engine in `components/backgrounds/WaylumeCanvas.tsx`.
 The root layout mounts one decorative background layer in light mode. The
 desktop homepage plays the Wayglim loop, and desktop interior routes pause it.
 Phones load a WebP of the exported opening frame, with portrait and landscape

@@ -40,7 +40,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 | 功能 | ID | Web 入口 | App 入口 | 后端 | 文档 | App |
 | --- | --- | --- | --- | --- | --- | --- |
 | YouTube 博主观点、博主 / 股票目录（Web 博主大头像栏标记近 24 小时新视频，可切换为完整列表，英文界面自动翻译中文观点） | `youtubeOpinions` | `/dashboard/youtube-opinions` | `(tabs)/opinions`、`/creators`、`/creator/youtube/[id]` | `youtube_opinions.py` | [youtube-channel-profiles.md](../youtube-channel-profiles.md)、[内容翻译](../content-translation.md) | ◐ |
-| X 博主内容与翻译（每 3 小时采集入库，逐帖生成 DeepSeek 摘要并标注股票低相关，Web 展示已归档的原帖媒体，优先读取后台中文译文） | `youtubeOpinions` | `/dashboard/x-opinions` | `opinions` 的 X tab、`/creator/x/[id]` | `x_content.py` | [x-content.md](../x-content.md)、[内容翻译](../content-translation.md) | ◐ |
+| X 博主内容与翻译（每 2 小时采集至本地，获准入库后可逐帖生成 DeepSeek 摘要并标注股票低相关，Web 展示已归档的原帖媒体，优先读取后台中文译文） | `youtubeOpinions` | `/dashboard/x-opinions` | `opinions` 的 X tab、`/creator/x/[id]` | `x_content.py` | [x-content.md](../x-content.md)、[内容翻译](../content-translation.md) | ◐ |
 | Reddit 热度榜（含 30 日相对趋势，App 未跟进趋势） | `youtubeOpinions` | `/dashboard/reddit-opinions` | `opinions` 的 Reddit tab | `reddit_opinions.py` | `PRODUCT.md` | ✅ |
 | 观点事后表现（发布后 5 / 20 个交易日股价，对比 SPY；只陈述事实，不判对错） | `youtubeOpinions` | 股票页和博主 × 股票页的观点卡片（含「其他博主的看法」） | — | `youtube_opinions.py`（`/stocks/{ticker}/outcomes`） | [opinion-backtest.md](../opinion-backtest.md) | — |
 | 观点回看（全部看多 / 看空观点之后股价相对 SPY 的整体表现，可点进具体观点；「单个博主」先列全部博主，选中后按股票看这位博主说过的每只股票、说完至今涨跌以及与观点方向是否一致；博主主页的个人卡片有样本和跨度门槛；不按博主排名） | `youtubeOpinions` | 博主观点「回看」（`/dashboard/youtube-opinions/review`）；博主主页侧栏 | — | `youtube_opinions.py`（`/review`、`/review/opinions`、`/review/creators`、`/review/creators/{id}`、`/creators/{id}/review`） | [opinion-backtest.md](../opinion-backtest.md) | — |
@@ -79,7 +79,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 | 管理后台（用户、日报、事件、YouTube、X、期权异动、邮件设置、超级投资者名单） | `admin` | `/dashboard/admin` | `(more)/admin` | `admin/` 等 | [mcp-content-admin.md](../mcp-content-admin.md) | ◐ |
 | 动态（原「人物动态」；横滑头像、美联储官员显示 Fed 徽章、站内固定头像与近 24 小时动态提示圈；紧凑时间线支持时区展开、独立股票行情行和筛选；后台可逐条新增、编辑、删除，也可 JSON 批量导入） | `personUpdates` | `/dashboard/person-updates`、`/tracker`、`/dashboard/admin?tab=person-updates` | — | `person_updates.py` | [动态](../person-updates.md) | — |
 | YouTube 自动导入（本地 Mac worker 每天 21:00 获取未追踪视频字幕 → 后端 DeepSeek 分析 → 导入观点；管理后台「YouTube 导入」可立即运行并查看结果） | `admin` | `/dashboard/admin?tab=youtube` | — | `youtube_auto_import.py`（`/admin/youtube-auto-import/*`、`/youtube-auto-import/worker/*`） | [youtube-auto-import.md](../youtube-auto-import.md)；需迁移 `20261116150000_youtube_auto_import.sql` | — |
-| 公开阅读页与 SEO | — | `app/(public)/`：`/stocks`、`/creators`、`/research`（中文缓存首屏，进入后沿用全站语言偏好；ISR 缓存 600 秒，分页用 `/page/N` 路径；`/llms.txt`、观点结构化数据） | —（App 无访客模式） | — | [public-reading.md](../public-reading.md) | — |
+| Web 首页、公开阅读页与 SEO | — | `/`（深色「黑白」使用 Wayglim Prism Flow 背景）；`app/(public)/`：`/stocks`、`/creators`、`/research`（中文缓存首屏，进入后沿用全站语言偏好；ISR 缓存 600 秒，分页用 `/page/N` 路径；`/llms.txt`、观点结构化数据） | —（App 无访客模式） | — | [public-reading.md](../public-reading.md) | — |
 | 隐私政策、条款、联系 | — | `/privacy`、`/terms`、`/contact` | 打开网页 | Web 双语，联系页使用支持邮箱 | — | ✅ |
 
 ### 已退役（不得恢复）

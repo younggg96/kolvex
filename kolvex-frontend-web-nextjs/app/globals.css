@@ -404,6 +404,7 @@ html {
 
 /* 黑白 · Mono — Pure black and white; solid fills turn white with black text. */
 .dark[data-dark-palette="mono"] {
+  --landing-mono-backdrop: 5 4 10;
   --primary: 245 245 245;
   --button-primary: 245 245 245;
   --primary-foreground: 10 10 10;

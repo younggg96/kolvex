@@ -6,6 +6,11 @@ source-linked creator opinions and related published research. Creator links
 retain `/share/creators/{channelId}`, whose content follows the latest imported
 video; existing shared links keep working.
 
+The Web homepage uses the Wayglim Prism Flow backdrop when dark mode and the
+effective Mono palette are active, including when Follow the market selects Mono.
+Desktop plays the exported animation. Touch and narrow screens use its opening
+frame. Desktop reduced motion also holds that frame.
+
 ## Source and access rules
 
 - The server calls existing public FastAPI routes under `/api/v1`: trading-analysis

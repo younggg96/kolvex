@@ -2,7 +2,7 @@
 
 首批目标：`https://x.com/MentoviaX`。
 
-默认由 AI 通过 cua_repl 操作已登录的日常 Chrome，每 3 小时采集公开 Posts 并同步到生产数据库。操作规程见 [COLLECTOR.md](./COLLECTOR.md)。
+默认由 AI 通过 cua_repl 操作已登录的日常 Chrome，每 2 小时采集公开 Posts 并保存到本地。操作规程见 [COLLECTOR.md](./COLLECTOR.md)。
 
 ## 最初手工导出
 
@@ -20,7 +20,7 @@
 
 ## 默认 AI 定时同步
 
-Codex 自动化 `x-kolvex` 已恢复为每 3 小时执行一次。每轮按 [COLLECTOR.md](./COLLECTOR.md) 准备合并名单、读取公开时间线、展开长文并入库。入库后由 `sync.py finish` 调用 DeepSeek V4.1 Flash，生成逐帖摘要和股票相关性标签。依赖本机、Codex、浏览器扩展、已登录 Chrome、后端 DeepSeek 密钥和逐帖分析迁移。独立 Playwright LaunchAgent 保持暂停。
+Codex 自动化 `x-kolvex` 每 2 小时执行一次。每轮按 [COLLECTOR.md](./COLLECTOR.md) 准备合并名单、读取公开时间线、展开长文并保存在本地。依赖本机、Codex、浏览器扩展和已登录 Chrome 可用。独立 Playwright LaunchAgent 保持暂停。
 
 ## 无 AI 的自动同步
 

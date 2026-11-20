@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
+import { PALETTE_ATTRIBUTE } from "@/lib/themePalettes";
 import LandingWaylumeBackground from "./LandingWaylumeBackground";
 import { useLandingReducedMotion } from "./useLandingReducedMotion";
 
@@ -41,12 +42,25 @@ function LandingVideo({ reduce }: { reduce: boolean }) {
 
 const TOUCH_DEVICE = "(max-width: 767px), (pointer: coarse)";
 
+function subscribeToDarkPalette(callback: () => void) {
+  const observer = new MutationObserver(callback);
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: [PALETTE_ATTRIBUTE.dark],
+  });
+  return () => observer.disconnect();
+}
+
+function isMonoPalette() {
+  return document.documentElement.getAttribute(PALETTE_ATTRIBUTE.dark) === "mono";
+}
+
 export default function LandingBackground() {
   const reduce = useLandingReducedMotion();
+  const mono = useSyncExternalStore(subscribeToDarkPalette, isMonoPalette, () => false);
 
-  // Desktops render the shader at screen resolution (sharp on Retina); phones and
-  // tablets play the pre-rendered video, which their hardware decoder handles cheaply.
-  // null until mounted, so neither the shader nor the video loads on the wrong device.
+  // Touch and narrow screens use prerendered media. Wait for the device check
+  // before loading either the media or the live shader.
   const [touchDevice, setTouchDevice] = useState<boolean | null>(null);
   useEffect(() => {
     const query = window.matchMedia(TOUCH_DEVICE);
@@ -59,12 +73,27 @@ export default function LandingBackground() {
   const { resolvedTheme } = useTheme();
   if (touchDevice === null || resolvedTheme !== "dark") return null;
 
+  if (mono) {
+    return (
+      <div
+        className="pointer-events-none fixed inset-0 z-0 bg-[rgb(var(--landing-mono-backdrop))] contrast-more:hidden [@media(prefers-reduced-transparency:reduce)]:hidden"
+        aria-hidden="true"
+      >
+        {touchDevice ? (
+          <div className="absolute inset-0 bg-[url('/media/landing-mono-still.webp')] bg-cover bg-center" />
+        ) : (
+          <LandingWaylumeBackground mono />
+        )}
+      </div>
+    );
+  }
+
   return (
     <div
       className="pointer-events-none fixed inset-0 z-0 hidden dark:block dark:bg-[rgb(3_8_5)]"
       aria-hidden="true"
     >
-      {touchDevice ? <LandingVideo reduce={reduce} /> : <LandingWaylumeBackground />}
+      {touchDevice ? <LandingVideo reduce={reduce} /> : <LandingWaylumeBackground mono={false} />}
     </div>
   );
 }
