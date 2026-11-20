@@ -4,6 +4,7 @@ import { ContentLoading } from "@/components/ui/content-loading";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCallback, useEffect, useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import FearGreedImporter from "@/components/admin/FearGreedImporter";
 import MarketEventManager from "@/components/admin/MarketEventManager";
 import PersonUpdatesImporter from "@/components/admin/PersonUpdatesImporter";
 import PersonUpdatesManager from "@/components/admin/PersonUpdatesManager";
@@ -25,6 +26,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 const DIRECT_ADMIN_TABS = new Set([
   "x",
   "events",
+  "fear-greed",
   "briefs",
   "options",
   "email",
@@ -180,6 +182,7 @@ export default function AdminPageClient({ initialTab }: { initialTab?: string })
             <TabsTrigger value="youtube">YouTube 导入</TabsTrigger>
             <TabsTrigger value="x">X 内容</TabsTrigger>
             <TabsTrigger value="events">重大事件</TabsTrigger>
+            <TabsTrigger value="fear-greed">{c("Fear & Greed", "恐慌与贪婪")}</TabsTrigger>
             <TabsTrigger value="briefs">日报管理</TabsTrigger>
             <TabsTrigger value="person-updates">{c("动态 · Updates", "动态")}</TabsTrigger>
             <TabsTrigger value="options">期权异动</TabsTrigger>
@@ -275,6 +278,9 @@ export default function AdminPageClient({ initialTab }: { initialTab?: string })
             </div>
           </TabsContent>
 
+          <TabsContent value="fear-greed" forceMount className="mt-6 data-[state=inactive]:hidden">
+            <FearGreedImporter />
+          </TabsContent>
           <TabsContent value="events" forceMount className="mt-6 data-[state=inactive]:hidden">
             <MarketEventManager />
           </TabsContent>

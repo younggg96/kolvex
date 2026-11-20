@@ -90,6 +90,8 @@ The Web video cards also support selecting opinions from one video and exporting
 
 ## Known remaining work
 
+- **CNN Fear & Greed Index.** Add the read-only Markets card using `GET /market/fear-greed`, including the score, optional CNN rating, observation date and empty/error states. See [the feature contract](../docs/fear-greed.md).
+
 Added 2026-11-17: every institution detail page shows the 13F simulated return vs SPY (`/institutions/{manager}/performance`). Ported: `PortfolioCurve` from `src/components/FeaturedInvestors.tsx` on `superinvestor/[manager]`.
 
 Added 2026-11-17: the Superinvestors list now comes from the admin-edited `institution_managers` table; each manager may carry a `profile` (Chinese name, person, role) that the byline prefers over `src/lib/investorProfiles.json`. Ported. Not ported: the Web admin tab 超级投资者 (`/dashboard/admin?tab=institutions`) for adding and enabling managers; native admin has no equivalent yet.

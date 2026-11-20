@@ -13,6 +13,7 @@
 | `/upload` | 文件或 Base64 头像上传、头像删除 |
 | `/market` | 单只及批量报价、批量近期涨跌表现、历史和日内数据、公司信息、财务指标、利润表、资产负债表、现金流、分红、分析师评级、财报信息、期权到期日、股票综合概览、股票观察列表（discovery）、AI 基本面与 AI 技术分析、图表分析任务、基金持仓 |
 | `/market/options-chain`、`/market/indicators`、`/market/observations`、`/market/forecast`、`/market/events` | 完整期权链；宏观指标；宏观序列；Kronos 价格预测（实验）；重大事件日历（管理员增改在 `/admin/market-events`） |
+| `/market/fear-greed`、`/admin/fear-greed` | CNN 恐慌与贪婪指数的历史读数、管理员 CSV 预检和导入，见 [功能文档](../docs/fear-greed.md) |
 | `/market/free-research` | 超级投资者（13F）机构列表、持仓与摘要；个股 SEC 财务等免费研究数据 |
 | `/market/options-activity` | 期权异动每日运行结果、最新一期及单期详情 |
 | `/valuation` | 估值输入、情景计算、AI 估值假设及历史、市销率历史、后台任务 |

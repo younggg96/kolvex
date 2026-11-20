@@ -36,6 +36,7 @@ import MarketEventCalendar from "./MarketEventCalendar";
 import StockObservationList from "./StockObservationList";
 import MarketComparison from "./MarketComparison";
 import MarketCompareDialog from "./MarketCompareChart";
+import FearGreedCard from "./FearGreedCard";
 import MarketWatchlistCard from "./MarketWatchlistCard";
 import FundHoldingsDialog from "./FundHoldingsDialog";
 import { MarketInfoButton } from "./MarketToolbar";
@@ -663,6 +664,7 @@ function MarketOverview({
         />
       </div>
       <div className="min-w-0 space-y-10">
+        <FearGreedCard />
         <StockObservationList
           range={range}
           catalogue={catalogue}

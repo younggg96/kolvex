@@ -23,6 +23,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 | 功能 | Web 入口 | App 入口 | 后端（`app/api/routes/`） | 文档 | App |
 | --- | --- | --- | --- | --- | --- |
 | 行情总览、指数 / 板块 / 跨资产 | `/dashboard` | `(tabs)/index`、`/markets` | `market_data.py` | [decision-workspace.md](../decision-workspace.md) | ✅ |
+| CNN 恐慌与贪婪指数（管理员手动导入） | `/dashboard`、`/dashboard/admin?tab=fear-greed` | 待跟进 | `fear_greed.py` | [fear-greed.md](../fear-greed.md) | ◐ |
 | 股票观察（今日异动 / 放量活跃 / 博主热议…） | `/dashboard` | 首页 | `market_data.py`（`/market/discovery`） | [stock-discovery.md](../stock-discovery.md) | ✅ |
 | 宏观指标 | `/dashboard?tab=macro` | `/macro` | `economic_indicators.py`、`market_observations.py` | `kolvex-backend-py/docs/macro-data.md` | ✅ |
 | 重大事件日历 | `/dashboard?tab=calendar` | `/calendar` | `market_events.py` | [market-events.md](../market-events.md) | ✅ |

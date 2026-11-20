@@ -12,6 +12,12 @@ Kolvex presents creator opinions, market data, AI analysis and linked holdings f
 
 Markets, Creator Opinions, AI Research and Updates do not show personal thesis prompts. Markets offers an optional ticker lookup for direct stock navigation. Ask Kolvex opens from the sidebar, header, or ⌘K. The question is sent as written. Opinions, quotes, and holdings already loaded on the page go to the model as evidence and appear in the composer as a removable label; they are not written into the conversation. Settings, authentication, brokerage linking and admin publishing remain operational controls rather than information-entry requirements for reading research. Existing chat URLs remain accessible.
 
+## CNN Fear & Greed Index
+
+Markets shows the latest imported score and its observation date alongside a
+short history. Administrators validate and import scores in the Web dashboard.
+See [CNN Fear & Greed import and display](fear-greed.md).
+
 ## Markets stock observation
 
 `StockObservationList` replaces the fixed eight-stock Popular section with a
