@@ -175,10 +175,7 @@ export default function FearGreedCard() {
                       tone="neutral"
                       height={56}
                       onScrub={setScrub}
-                      label={c(
-                        "Fear & Greed score, past month",
-                        "恐慌与贪婪指数近一个月走势",
-                      )}
+                      label={c("Fear & Greed score, past month", "恐慌与贪婪指数近一个月走势")}
                     />
                     <div className="figure flex justify-between text-xs text-muted-foreground">
                       <time dateTime={points[0].date}>{points[0].date}</time>
