@@ -43,7 +43,8 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { LocateFixed, Maximize2, MoveHorizontal, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
+import { LocateFixed, Maximize2, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
+import { snapCrosshair, type CrosshairSnap, type ZoomAnchor } from "@/lib/chart/settings";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InfoTip } from "@/components/ui/info-tip";
 import { cn } from "@/lib/utils";
@@ -463,6 +464,10 @@ export interface PriceGraphProps {
   headerLabel?: ReactNode;
   /** Crossfade the line on range change; defaults to on (`prefers-reduced-motion` still wins). */
   animate?: boolean;
+  /** Advanced: wheel / button zoom keeps the cursor or the right edge fixed. */
+  zoomAnchor?: ZoomAnchor;
+  /** Advanced: the crosshair's horizontal line follows the pointer or snaps to the bar. */
+  crosshairSnap?: CrosshairSnap;
 }
 
 /* ---------------------------------------------------------------- component */
@@ -518,6 +523,8 @@ export default function PriceGraph({
   plotAriaLabel,
   headerLabel,
   animate = true,
+  zoomAnchor = "cursor",
+  crosshairSnap = "off",
 }: PriceGraphProps) {
   const advanced = mode === "advanced";
   const clipId = `pricegraph-clip-${useId().replace(/:/g, "")}`;
@@ -535,7 +542,8 @@ export default function PriceGraph({
     referenceSpan: number;
     moved: boolean;
   } | null>(null);
-  const [panMode, setPanMode] = useState(false);
+  /** Advanced crosshair: the pointer inside the plot, in plot pixels. */
+  const [pointer, setPointer] = useState<{ x: number; y: number } | null>(null);
   const [fading, setFading] = useState<{ bars: PriceBar[]; view: GraphView } | null>(null);
   const gesture = useRef<
     | { kind: "pan"; x: number; moved: boolean; view: GraphView; last: number }
@@ -664,7 +672,8 @@ export default function PriceGraph({
   const commit = (next: GraphView) => onViewChange(clampGraphView(next, count));
   const zoomBy = (factor: number, anchorRatio: number) => {
     if (!count) return;
-    commit(zoomGraphView(current, factor, Math.min(Math.max(anchorRatio, 0), 1), count));
+    const anchor = advanced && zoomAnchor === "right" ? 1 : anchorRatio;
+    commit(zoomGraphView(current, factor, Math.min(Math.max(anchor, 0), 1), count));
   };
   const panBy = (bars: number) => {
     if (!count) return;
@@ -723,7 +732,10 @@ export default function PriceGraph({
     if (!box || !loaded) return;
     const onWheel = (event: WheelEvent) => {
       const rect = box.getBoundingClientRect();
-      const ratio = Math.min(Math.max((event.clientX - rect.left) / geometry.plotWidth, 0), 1);
+      const ratio =
+        advanced && zoomAnchor === "right"
+          ? 1
+          : Math.min(Math.max((event.clientX - rect.left) / geometry.plotWidth, 0), 1);
       const axis = scaleAxisAt(event.target);
       if (axis) {
         event.preventDefault();
@@ -790,9 +802,11 @@ export default function PriceGraph({
     const inside = px >= 0 && px <= geometry.plotWidth && py >= 0 && py <= geometry.plotHeight;
     if (!inside || index < 0 || index >= count) {
       if (activeIndex !== null) onActiveChange(null);
+      if (pointer) setPointer(null);
       return;
     }
     if (index !== activeIndex) onActiveChange(index);
+    if (advanced) setPointer({ x: px, y: py });
   };
 
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
@@ -866,11 +880,14 @@ export default function PriceGraph({
     }
     if (scaleAxisAt(event.target) && !gesture.current && drawingPointer.current === null) {
       if (activeIndex !== null) onActiveChange(null);
+      if (pointer) setPointer(null);
       return;
     }
     if (drawingPointer.current !== null) {
-      if (drawingPointer.current === event.pointerId)
+      if (drawingPointer.current === event.pointerId) {
         drawingInteraction?.onPointerMove(event, geometry);
+        scrub(event.clientX, event.clientY);
+      }
       return;
     }
     if (!gesture.current) drawingInteraction?.onPointerMove(event, geometry);
@@ -890,10 +907,8 @@ export default function PriceGraph({
     }
     scrub(event.clientX, event.clientY);
     if (now?.kind !== "pan") return;
-    // Advanced: dragging the plot pans only with the pan tool (leave drags to the drawing layer);
-    // touch and pen always pan there. Compact pans on everything.
-    const mouse = event.pointerType === "mouse";
-    if (advanced && mouse && !panMode) return;
+    // Dragging empty plot pans in every mode; drawing tools and drawings claim their own drags
+    // first through `drawingInteraction.onPointerDown`.
     const dx = event.clientX - now.x;
     if (!now.moved && Math.abs(dx) < DRAG_THRESHOLD) return;
     now.moved = true;
@@ -938,6 +953,7 @@ export default function PriceGraph({
   const onPointerLeave = (event: PointerEvent<HTMLDivElement>) => {
     if (gesture.current || event.buttons) return;
     if (activeIndex !== null) onActiveChange(null);
+    if (pointer) setPointer(null);
   };
 
   const onPlotDoubleClick = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -1165,6 +1181,20 @@ export default function PriceGraph({
 
   const plotTone = toneColor[tone];
 
+  /** Advanced crosshair: a horizontal rule at the pointer (or the snapped price) with axis tags. */
+  const crosshair = (() => {
+    if (!advanced || !pointer || !activeBar || activeIndex === null || !loaded) return null;
+    const snapped = snapCrosshair(crosshairSnap, activeBar, pointer.y, geometry.yOf);
+    const y = snapped === null ? pointer.y : geometry.yOf(snapped);
+    if (y < 0 || y > geometry.plotHeight) return null;
+    return {
+      x: geometry.xOf(activeIndex),
+      y,
+      price: snapped ?? geometry.priceAt(y),
+      label: barLabel(activeBar),
+    };
+  })();
+
   const body = error ? (
     <div
       className={cn(
@@ -1235,6 +1265,7 @@ export default function PriceGraph({
       }
       dragging={dragging}
       draggingAxis={draggingAxis}
+      crosshair={crosshair}
       timeScaleLabel={advanced ? t("youtubeOpinions.timeAxisZoom") : undefined}
       priceScaleLabel={
         advanced && onPriceDomainChange ? t("youtubeOpinions.priceAxisZoom") : undefined
@@ -1404,18 +1435,6 @@ export default function PriceGraph({
             </Button>
             <Button
               type="button"
-              aria-pressed={panMode}
-              aria-label={t("youtubeOpinions.graph.panMode")}
-              title={t("youtubeOpinions.graph.panMode")}
-              onClick={() => setPanMode((value) => !value)}
-              variant="toolbar"
-              size="toolbar"
-              selected={panMode}
-            >
-              <MoveHorizontal className="h-4 w-4" aria-hidden="true" />
-            </Button>
-            <Button
-              type="button"
               aria-label={t("youtubeOpinions.resetZoom")}
               title={t("youtubeOpinions.resetZoom")}
               onClick={resetView}
@@ -1486,6 +1505,7 @@ export function PriceGraphPlot({
   ariaLabel,
   dragging,
   draggingAxis,
+  crosshair = null,
   timeScaleLabel,
   priceScaleLabel,
 }: {
@@ -1530,6 +1550,8 @@ export function PriceGraphPlot({
   ariaLabel: string;
   dragging: boolean;
   draggingAxis?: ScaleAxis | null;
+  /** Advanced crosshair position; the vertical rule is the active bar's own dashed line. */
+  crosshair?: { x: number; y: number; price: number; label: string } | null;
   timeScaleLabel?: string;
   priceScaleLabel?: string;
 }) {
@@ -1559,7 +1581,7 @@ export function PriceGraphPlot({
       className={cn(
         "relative select-none overflow-hidden rounded-2xl focus-visible:outline-none focus-visible:bg-muted/20",
         heightClass,
-        advanced ? "touch-none" : "touch-pan-y",
+        advanced ? "touch-none cursor-crosshair" : "touch-pan-y",
         dragging && "cursor-grabbing",
         draggingAxis === "time" && "cursor-ew-resize",
         draggingAxis === "price" && "cursor-ns-resize",
@@ -1740,6 +1762,34 @@ export function PriceGraphPlot({
             plotTone,
             activeLabel,
             advanced,
+          )}
+
+          {crosshair && (
+            <>
+              <span
+                aria-hidden="true"
+                data-crosshair="horizontal"
+                className="pointer-events-none absolute left-0 h-px border-t border-dashed border-foreground/40"
+                style={{ top: crosshair.y, width: geometry.plotWidth }}
+              />
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute z-20 -translate-y-1/2 whitespace-nowrap rounded-md bg-foreground px-1.5 py-0.5 text-[0.625rem] font-semibold leading-4 tabular-nums text-background"
+                style={{ left: geometry.plotWidth + 2, top: crosshair.y }}
+              >
+                {axisNumber(crosshair.price)}
+              </span>
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute z-20 -translate-x-1/2 whitespace-nowrap rounded-md bg-foreground px-1.5 py-0.5 text-[0.625rem] font-semibold leading-4 tabular-nums text-background"
+                style={{
+                  left: Math.min(Math.max(crosshair.x, 36), geometry.plotWidth - 36),
+                  top: geometry.plotHeight + 3,
+                }}
+              >
+                {crosshair.label}
+              </span>
+            </>
           )}
 
           {/* date labels: three or four, never dense */}

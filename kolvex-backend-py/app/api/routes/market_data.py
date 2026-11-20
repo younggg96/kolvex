@@ -467,6 +467,7 @@ def get_history(
     interval: HistoryInterval = Query(HistoryInterval.ONE_DAY, description="K线间隔"),
     start: Optional[str] = Query(None, description="开始日期 (YYYY-MM-DD)"),
     end: Optional[str] = Query(None, description="结束日期 (YYYY-MM-DD)"),
+    prepost: bool = Query(False, description="日内 K 线是否包含盘前盘后"),
 ):
     """获取历史行情数据"""
     try:
@@ -476,7 +477,8 @@ def get_history(
             period=period.value,
             interval=interval.value,
             start=start,
-            end=end
+            end=end,
+            prepost=prepost,
         )
         return HistoryResponse(
             symbol=symbol.upper(),

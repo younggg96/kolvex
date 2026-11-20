@@ -1658,7 +1658,6 @@
       "rangeLabel": "Time range",
       "customRange": "Custom",
       "resetZoom": "Reset zoom",
-      "panMode": "Drag to pan",
       "plotLabel": "{symbol} price chart, last {price}, {change}"
     },
     "advancedRange": {
@@ -1993,7 +1992,32 @@
       }
     },
     "legendMore": "+{count} more",
-    "legendLess": "Less"
+    "legendLess": "Less",
+    "chartSettings": {
+      "open": "Chart settings",
+      "title": "Chart settings",
+      "zoom": "Zoom",
+      "zoomCursor": "To cursor",
+      "zoomRight": "To right side",
+      "crosshair": "Snap crosshair to price",
+      "snapOff": "Off",
+      "snapClose": "Close",
+      "snapOhlc": "Nearest OHLC",
+      "data": "Data",
+      "extendedHours": "Show extended hours",
+      "extendedHoursHint": "Applies to minute and hour bars only; pre-market 4:00–9:30 and after-hours 16:00–20:00 ET.",
+      "highlightSession": "Highlight trading session",
+      "colors": "Candle colors",
+      "body": "Candle body",
+      "border": "Candle border",
+      "wick": "Candle wicks",
+      "up": "Up color",
+      "down": "Down color",
+      "swatch": "Color {index}",
+      "redUp": "Red up, green down",
+      "greenUp": "Green up, red down",
+      "reset": "Reset"
+    }
   },
   "research": {
     "navigation": "Research views",

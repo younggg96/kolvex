@@ -212,6 +212,8 @@ export interface PriceHistoryParams {
   interval?: string;
   start?: string;
   end?: string;
+  /** "true" adds pre-market / after-hours bars to intraday intervals. */
+  prepost?: string;
 }
 
 /**

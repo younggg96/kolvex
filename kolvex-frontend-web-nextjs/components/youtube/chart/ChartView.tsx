@@ -141,6 +141,16 @@ import {
   type ChartInterval,
 } from "@/lib/chart/range";
 import PriceGraph, { defaultGraphView, type GraphGeometry } from "./PriceGraph";
+import ChartSettingsDialog from "./ChartSettingsDialog";
+import {
+  DEFAULT_CHART_SETTINGS,
+  candlePaint,
+  extendedRuns,
+  intervalMinutes,
+  readChartSettings,
+  writeChartSettings,
+  type ChartSettings,
+} from "@/lib/chart/settings";
 import { ExtremeTag } from "./ChartMarkers";
 import {
   GRAPH_AXIS_WIDTH,
@@ -356,8 +366,25 @@ export default function ChartView({
     : rangeIntervals[range].includes(interval as ChartInterval)
       ? interval
       : defaultInterval[range];
-  const params =
-    advanced && !snapshotBars ? advancedHistoryParams(range, effectiveInterval) : compactParams;
+  const [chartSettings, setChartSettings] = useState<ChartSettings>(DEFAULT_CHART_SETTINGS);
+  useEffect(() => setChartSettings(readChartSettings()), []);
+  const updateChartSettings = useCallback((next: ChartSettings) => {
+    setChartSettings(next);
+    writeChartSettings(next);
+  }, []);
+  const [chartSettingsOpen, setChartSettingsOpen] = useState(false);
+  /** Pre-market / after-hours bars exist only for intraday intervals. */
+  const extendedHours =
+    advanced &&
+    !snapshotBars &&
+    chartSettings.extendedHours &&
+    intervalMinutes(effectiveInterval) !== null;
+  const params = advanced && !snapshotBars
+    ? {
+        ...advancedHistoryParams(range, effectiveInterval),
+        ...(extendedHours ? { prepost: "true" } : {}),
+      }
+    : compactParams;
   const paramsKey = JSON.stringify(params);
   const chartCacheKey = stockHistoryKey(symbol, params);
   const quoteResource = useStockQuote(symbol, 15_000, !snapshotBars);
@@ -973,8 +1000,11 @@ export default function ChartView({
     const to = bars[Math.max(Math.min(lastVisible, count - 1), 0)];
     if (operation === "analysis") setAi({ status: "idle" });
     else setDrawingAi({ status: "idle" });
+    // AI reads the regular-session history; the extended-hours flag is display-only.
+    const { prepost: _prepost, ...historyParams } = params;
+    void _prepost;
     await aiJobs.submit({
-      ...params,
+      ...historyParams,
       ...(operation === "analysis" ? technicalFocus : drawingFocus),
       operation,
       model: selectedModel,
@@ -1592,6 +1622,15 @@ export default function ChartView({
     const lastTone =
       last && last.close >= (bars[count - 2]?.close ?? last.open) ? "positive" : "negative";
     const visibleBars = bars.slice(firstVisible, lastVisible + 1);
+    const sessionRuns =
+      extendedHours && chartSettings.highlightSession
+        ? extendedRuns(
+            bars.map((bar) => bar.date),
+            effectiveInterval,
+            firstVisible - 1,
+            lastVisible + 1,
+          )
+        : [];
     const maxVolume = visibleBars.reduce((maximum, bar) => Math.max(maximum, bar.volume || 0), 1);
     return (
       <>
@@ -1619,9 +1658,23 @@ export default function ChartView({
             />
           </>
         )}
+        {sessionRuns.map((run) => (
+          <rect
+            key={`session-${run.start}`}
+            data-session={run.session}
+            x={x(run.start) - slot / 2}
+            y={0}
+            width={(run.end - run.start + 1) * slot}
+            height={plotH}
+            fill="rgb(var(--foreground))"
+            fillOpacity={run.session === "pre" ? 0.045 : 0.06}
+          />
+        ))}
         {visibleBars.map((bar, offset) => {
           const index = firstVisible + offset;
-          const fill = bar.close >= bar.open ? "rgb(var(--chart-up))" : "rgb(var(--chart-down))";
+          const up = bar.close >= bar.open;
+          const fill = up ? "rgb(var(--chart-up))" : "rgb(var(--chart-down))";
+          const paint = candlePaint(chartSettings, up);
           const top = y(Math.max(bar.open, bar.close));
           const bottom = y(Math.min(bar.open, bar.close));
           const cx = x(index);
@@ -1643,16 +1696,26 @@ export default function ChartView({
                 x1={cx}
                 x2={cx}
                 y1={y(bar.high)}
+                y2={top}
+                stroke={paint.wick}
+                strokeWidth={1}
+              />
+              <line
+                x1={cx}
+                x2={cx}
+                y1={bottom}
                 y2={y(bar.low)}
-                stroke={fill}
+                stroke={paint.wick}
                 strokeWidth={1}
               />
               <rect
-                x={cx - width / 2}
+                x={cx - width / 2 + (paint.stroke === "none" ? 0 : 0.5)}
                 y={top}
-                width={width}
+                width={Math.max(width - (paint.stroke === "none" ? 0 : 1), 1)}
                 height={Math.max(bottom - top, 1)}
-                fill={fill}
+                fill={paint.fill}
+                stroke={paint.stroke}
+                strokeWidth={paint.stroke === "none" ? 0 : 1}
               />
             </g>
           );
@@ -2090,6 +2153,8 @@ export default function ChartView({
           </>
         ) : null
       }
+      zoomAnchor={chartSettings.zoomAnchor}
+      crosshairSnap={chartSettings.crosshairSnap}
       formatDate={formatDate}
       t={t}
       symbol={symbol}
@@ -2525,12 +2590,22 @@ export default function ChartView({
             </PopoverContent>
           </Popover>
           <div className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-1">
+            {advanced && (
+              <ChartSettingsDialog
+                open={chartSettingsOpen}
+                onOpenChange={setChartSettingsOpen}
+                settings={chartSettings}
+                onChange={updateChartSettings}
+                intraday={intervalMinutes(effectiveInterval) !== null}
+                t={t}
+              />
+            )}
             <Button
               type="button"
               title={t("youtubeOpinions.zoomIn")}
               aria-label={t("youtubeOpinions.zoomIn")}
               disabled={!loaded}
-              onClick={() => zoom(0.7, 0.85)}
+              onClick={() => zoom(0.7, chartSettings.zoomAnchor === "right" ? 1 : 0.85)}
               variant="toolbar"
               size="toolbar"
               selected={false}
@@ -2543,7 +2618,7 @@ export default function ChartView({
               title={t("youtubeOpinions.zoomOut")}
               aria-label={t("youtubeOpinions.zoomOut")}
               disabled={!loaded}
-              onClick={() => zoom(1.4, 0.85)}
+              onClick={() => zoom(1.4, chartSettings.zoomAnchor === "right" ? 1 : 0.85)}
               variant="toolbar"
               size="toolbar"
               selected={false}

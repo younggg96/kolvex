@@ -1641,7 +1641,6 @@
       "rangeLabel": "时间范围",
       "customRange": "自定义",
       "resetZoom": "重设缩放",
-      "panMode": "拖动平移",
       "plotLabel": "{symbol} 股价走势图，最新价 {price}，{change}"
     },
     "advancedRange": {
@@ -1976,7 +1975,32 @@
       }
     },
     "legendMore": "+{count} 个",
-    "legendLess": "收起"
+    "legendLess": "收起",
+    "chartSettings": {
+      "open": "图表设置",
+      "title": "图表设置",
+      "zoom": "缩放",
+      "zoomCursor": "以光标为中心",
+      "zoomRight": "以右侧为中心",
+      "crosshair": "十字线吸附",
+      "snapOff": "不吸附",
+      "snapClose": "收盘价",
+      "snapOhlc": "最近的开高低收",
+      "data": "数据",
+      "extendedHours": "显示盘前盘后",
+      "extendedHoursHint": "仅对分钟和小时 K 线生效；盘前 4:00–9:30、盘后 16:00–20:00（美东）。",
+      "highlightSession": "高亮盘前盘后时段",
+      "colors": "K 线颜色",
+      "body": "实体",
+      "border": "边框",
+      "wick": "影线",
+      "up": "上涨颜色",
+      "down": "下跌颜色",
+      "swatch": "颜色 {index}",
+      "redUp": "红涨绿跌",
+      "greenUp": "绿涨红跌",
+      "reset": "恢复默认"
+    }
   },
   "research": {
     "navigation": "研究内容",

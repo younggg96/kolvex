@@ -51,5 +51,31 @@ class HistoryPointTests(unittest.TestCase):
         self.assertEqual(bar["dividends"], 0.25)
 
 
+class HistoryRoutePrepostTests(unittest.TestCase):
+    def _call(self, **kwargs):
+        from unittest.mock import Mock, patch
+
+        from app.api.routes import market_data
+
+        service = Mock()
+        service.get_history.return_value = []
+        with patch.object(market_data, "get_yfinance_service", return_value=service):
+            market_data.get_history(
+                symbol="nvda",
+                period=market_data.HistoryPeriod.ONE_MONTH,
+                interval=market_data.HistoryInterval("5m"),
+                start=None,
+                end=None,
+                **kwargs,
+            )
+        return service.get_history.call_args.kwargs
+
+    def test_extended_hours_forwarded(self):
+        self.assertTrue(self._call(prepost=True)["prepost"])
+
+    def test_regular_session_by_default(self):
+        self.assertFalse(self._call(prepost=False)["prepost"])
+
+
 if __name__ == "__main__":
     unittest.main()
