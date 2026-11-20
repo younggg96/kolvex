@@ -19,3 +19,15 @@ export async function readFearGreed(signal: AbortSignal): Promise<FearGreedObser
   if (!response.ok) throw new Error("Fear & Greed history unavailable");
   return response.json();
 }
+
+/** Observations from the month ending on the latest observation date. */
+export function lastMonth(observations: FearGreedObservation[]): FearGreedObservation[] {
+  const latest = observations.at(-1)?.date;
+  if (!latest) return [];
+  const [year, month, day] = latest.split("-").map(Number);
+  const lastDay = new Date(Date.UTC(year, month - 1, 0)).getUTCDate();
+  const start = new Date(Date.UTC(year, month - 2, Math.min(day, lastDay)))
+    .toISOString()
+    .slice(0, 10);
+  return observations.filter((point) => point.date >= start);
+}

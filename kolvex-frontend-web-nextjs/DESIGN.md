@@ -1041,7 +1041,7 @@ retry buttons remain separate from the link, with independent keyboard focus.
 The CNN Fear & Greed panel sits at the top of the Markets right rail, above
 the Watchlist, and shows the latest
 dated score on a 0–100 scale, the imported CNN rating when available, and
-a neutral line for recent observations. CSV administration uses the shared
+a neutral line for the month ending on the latest observation. CSV administration uses the shared
 Input, Textarea, Card and Button. Preview shows count and dates before import.
 
 ### Featured investors

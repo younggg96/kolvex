@@ -7,7 +7,12 @@ import { Card } from "@/components/ui/card";
 import { ContentLoading } from "@/components/ui/content-loading";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCachedResource } from "@/hooks/useCachedResource";
-import { FEAR_GREED_HISTORY_PATH, FEAR_GREED_RATINGS, readFearGreed } from "@/lib/fearGreed";
+import {
+  FEAR_GREED_HISTORY_PATH,
+  FEAR_GREED_RATINGS,
+  lastMonth,
+  readFearGreed,
+} from "@/lib/fearGreed";
 import ScrubChart, { type ScrubPoint } from "./ScrubChart";
 import { useCopy } from "./shared";
 
@@ -22,7 +27,7 @@ export default function FearGreedCard() {
     { ttl: 60_000, maxAge: 5 * 60_000 },
   );
   const points = useMemo(
-    () => data?.map(({ date, score }) => ({ date, value: score })) ?? [],
+    () => lastMonth(data ?? []).map(({ date, score }) => ({ date, value: score })),
     [data],
   );
   const current = (scrub && data?.find((point) => point.date === scrub.date)) || data?.at(-1);

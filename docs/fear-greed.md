@@ -1,6 +1,6 @@
 # CNN 恐慌与贪婪指数
 
-Web「市场概览」右侧栏顶部（自选股上方）显示管理员导入的最新 CNN Fear & Greed Index 分数、观察日期和最近 90 条历史记录。分数范围为 0 至 100。评级按管理员填写的 CNN 原始评级展示，留空时只显示分数。页面链接至 [CNN 指数原页](https://www.cnn.com/markets/fear-and-greed)。
+Web「市场概览」右侧栏顶部（自选股上方）显示管理员导入的最新 CNN Fear & Greed Index 分数、观察日期和最近一个月的走势（以最新观察日期往前推一个自然月）。分数范围为 0 至 100。评级按管理员填写的 CNN 原始评级展示，留空时只显示分数。页面链接至 [CNN 指数原页](https://www.cnn.com/markets/fear-and-greed)。
 
 市场指数卡片中的 Cboe VIX 沿用原来的自动行情来源。生产库中曾为手动 VIX 方案创建空表 `vix_daily_bars`，对应迁移保留以匹配线上记录。当前应用只有 CNN 指数使用手动导入。
 
