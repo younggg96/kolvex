@@ -97,8 +97,7 @@ export default function FearGreedCard() {
   );
   const current = (scrub && data?.find((point) => point.date === scrub.date)) || data?.at(-1);
   const rating = current?.rating ? FEAR_GREED_RATINGS[current.rating] : null;
-  const title = c("CNN Fear & Greed Index", "CNN 恐慌与贪婪指数");
-  const date = current?.date;
+  const title = c("Fear & Greed Index", "恐慌与贪婪指数");
   const score = current?.score.toLocaleString(c("en-US", "zh-CN"), { maximumFractionDigits: 2 });
 
   return (
@@ -113,8 +112,8 @@ export default function FearGreedCard() {
               href={CNN_SOURCE}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label={c("View original CNN index", "查看 CNN 原始指数")}
-              title={c("View on CNN", "在 CNN 查看")}
+              aria-label={c("View original index", "查看原始指数")}
+              title={c("View", "查看")}
             >
               <ArrowUpRight className="h-4 w-4" aria-hidden />
             </a>
@@ -166,10 +165,6 @@ export default function FearGreedCard() {
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    <time dateTime={date}>{date}</time>
-                    {c(" · Manually imported", " · 手动导入")}
-                  </p>
                   <BandScale score={current.score} label={title} />
                 </div>
                 {points.length > 1 && (
@@ -181,8 +176,8 @@ export default function FearGreedCard() {
                       height={56}
                       onScrub={setScrub}
                       label={c(
-                        "CNN Fear & Greed score, past month",
-                        "CNN 恐慌与贪婪指数近一个月走势",
+                        "Fear & Greed score, past month",
+                        "恐慌与贪婪指数近一个月走势",
                       )}
                     />
                     <div className="figure flex justify-between text-xs text-muted-foreground">
@@ -194,7 +189,7 @@ export default function FearGreedCard() {
               </div>
             ) : !error ? (
               <p className="text-sm text-muted-foreground">
-                {c("No CNN observations have been imported yet.", "尚未导入 CNN 指数数据。")}
+                {c("No observations have been imported yet.", "尚未导入指数数据。")}
               </p>
             ) : null}
           </>
