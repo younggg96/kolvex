@@ -1039,9 +1039,12 @@ retry buttons remain separate from the link, with independent keyboard focus.
 
 
 The CNN Fear & Greed panel sits at the top of the Markets right rail, above
-the Watchlist, and shows the latest
-dated score on a 0–100 scale, the imported CNN rating when available, and
-a neutral line for the month ending on the latest observation. CSV administration uses the shared
+the Watchlist. The large score and the imported rating in words sit above a
+compact horizontal scale split into CNN's five ranges (0–25, 25–45, 45–55,
+55–75, 75–100): fear bands use the market-down token, greed bands the
+market-up token and neutral the muted foreground. The current band is opaque,
+the others drop to 25%, and a foreground marker shows the score. A neutral line
+shows the month ending on the latest observation. CSV administration uses the shared
 Input, Textarea, Card and Button. Preview shows count and dates before import.
 
 ### Featured investors

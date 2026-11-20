@@ -37,3 +37,14 @@ test("crosses the year boundary", () => {
 test("returns an empty list without observations", () => {
   assert.equal(lastMonth([]).length, 0);
 });
+
+const { bandFor } = compile("lib/fearGreed.ts");
+
+test("maps scores to CNN rating bands", () => {
+  assert.equal(bandFor(0).rating, "extreme fear");
+  assert.equal(bandFor(11.18).rating, "extreme fear");
+  assert.equal(bandFor(25).rating, "fear");
+  assert.equal(bandFor(50).rating, "neutral");
+  assert.equal(bandFor(60).rating, "greed");
+  assert.equal(bandFor(100).rating, "extreme greed");
+});
