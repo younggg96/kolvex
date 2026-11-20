@@ -452,6 +452,13 @@ export function getCreatorLatestVideo(channelId: string, signal?: AbortSignal) {
   });
 }
 
+export function getCreatorVideo(channelId: string, videoId: string, signal?: AbortSignal) {
+  return apiRequest<CreatorLatestVideo>(
+    `/creators/${encodeURIComponent(channelId)}/videos/${encodeURIComponent(videoId)}`,
+    { signal },
+  );
+}
+
 export type YouTubeCreatorUpdate = Pick<
   YouTubeCreatorSummary,
   "channel_title" | "channel_handle" | "channel_url" | "channel_avatar_url"

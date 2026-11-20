@@ -137,6 +137,7 @@ test("video card renders macro analysis with attribution and no stock row", () =
       useEnglishTranslation: (text) => ({ text, translated: false }),
     },
     "./CreatorAvatar": { default: stub },
+    "./CreatorShare": { default: stub },
   };
   vm.runInNewContext(
     ts.transpileModule(source, {

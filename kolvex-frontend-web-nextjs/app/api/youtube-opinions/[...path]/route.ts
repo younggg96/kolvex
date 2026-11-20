@@ -41,6 +41,7 @@ async function proxyJson(
       (path.length === 2 && path[0] === "stocks") ||
       (path.length === 2 && path[0] === "review" && ["opinions", "creators"].includes(path[1])) ||
       (path.length === 3 && path[0] === "review" && path[1] === "creators") ||
+      (path.length === 4 && path[0] === "creators" && path[2] === "videos") ||
       (path.length === 3 &&
         path[0] === "creators" &&
         ["profile", "latest-video", "review"].includes(path[2])));

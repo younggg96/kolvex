@@ -12,6 +12,7 @@ import OpinionStrength from "./OpinionStrength";
 import { formatOpinionDate } from "@/lib/opinionDates";
 import type { VideoOpinionGroup } from "@/lib/youtubeVideoHistory";
 import CreatorAvatar from "./CreatorAvatar";
+import CreatorShare from "./CreatorShare";
 
 const tallyOrder: Array<{ sentiment: OpinionSentiment; className: string }> = [
   { sentiment: "bullish", className: "text-positive" },
@@ -185,8 +186,14 @@ export default function VideoOpinionCard({
         />
       )}
 
+      {creator && video.video_id && opinions.length > 0 && (
+        <div className="mb-1 mt-4 flex justify-end">
+          <CreatorShare creator={creator} videoId={video.video_id} />
+        </div>
+      )}
+
       {opinions.length > 0 && (
-        <ul id={opinionsId} className="mt-5 min-w-0">
+        <ul id={opinionsId} className={cn("min-w-0", !(creator && video.video_id) && "mt-5")}>
           {shown.map((opinion) => {
             const confidence =
               opinion.confidence === null || opinion.confidence === undefined

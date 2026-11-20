@@ -86,6 +86,7 @@ export type CreatorShareDocument = {
   pages: ShareFragment[][];
   appearance: ShareAppearance;
   mixedLabel: string;
+  label: string;
 };
 type MeasureContext = Pick<CanvasRenderingContext2D, "font" | "measureText">;
 
@@ -127,12 +128,13 @@ export function planCreatorShare(
   ctx: MeasureContext,
   appearance: ShareAppearance,
   t: (key: string, params?: Record<string, string>) => string,
+  scope: "latest" | "video" = "latest",
 ): CreatorShareDocument {
   if (!data.creator || !data.video || !data.opinions.length) throw new Error("No creator opinions");
   const pages: ShareFragment[][] = [[]];
   let y = TOP;
   ctx.font = `400 34px ${appearance.fontFamily}`;
-  // Preserve the API's complete video set; do not inherit screen filters or pagination.
+  // The caller supplies the selected opinions in display order.
   for (const opinion of data.opinions) {
     const text =
       opinion.summary?.trim() ||
@@ -173,13 +175,27 @@ export function planCreatorShare(
       data.video.opinion_date || data.video.video_published_at,
       locale === "zh" ? "zh-CN" : "en-US",
     ),
-    title: data.video.video_title || (locale === "zh" ? "最新视频观点" : "Latest video opinions"),
+    title:
+      data.video.video_title ||
+      (scope === "video"
+        ? t("youtubeOpinions.untitledVideo")
+        : locale === "zh"
+          ? "最新视频观点"
+          : "Latest video opinions"),
     source: sourceVideoUrl(data.video),
     videoId: data.video.video_id,
     locale,
     pages,
     appearance,
     mixedLabel: t("youtubeOpinions.mixed"),
+    label:
+      scope === "video"
+        ? locale === "zh"
+          ? "视频观点"
+          : "Video opinions"
+        : locale === "zh"
+          ? "博主最新观点"
+          : "Latest creator opinions",
   };
 }
 
@@ -250,14 +266,7 @@ export function drawCreatorSharePage(
     ctx.fill();
   }
   ctx.textAlign = "right";
-  text(
-    zh ? "博主最新观点" : "Latest creator opinions",
-    996,
-    83,
-    26,
-    appearance.mutedForeground,
-    500,
-  );
+  text(doc.label, 996, 83, 26, appearance.mutedForeground, 500);
   ctx.textAlign = "left";
   rule(128);
   // Keep attribution beside the creator name on every exported page.

@@ -2,28 +2,76 @@
 
 import { ContentLoading } from "@/components/ui/content-loading";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTheme } from "next-themes";
-import { ChevronLeft, ChevronRight, Copy, Download, Link2, Loader2, Mail, Share2 } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  Download,
+  Link2,
+  Loader2,
+  Mail,
+  Share2,
+} from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import OpinionStrength from "./OpinionStrength";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { useTranslation } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 import { useCopy } from "@/components/decision/shared";
-import { getCreatorLatestVideo, type CreatorLatestVideo } from "@/lib/youtubeOpinionsApi";
-import { creatorEmailLink, creatorShareContent, creatorSocialLinks, sourceVideoUrl, type CreatorShareIdentity } from "@/lib/creatorSharing";
+import {
+  getCreatorLatestVideo,
+  getCreatorVideo,
+  type CreatorLatestVideo,
+} from "@/lib/youtubeOpinionsApi";
+import {
+  creatorEmailLink,
+  creatorShareContent,
+  creatorSocialLinks,
+  sourceVideoUrl,
+  type CreatorShareIdentity,
+} from "@/lib/creatorSharing";
 import type { CreatorShareDocument } from "@/lib/creatorShareImage";
 
-type Preview = { url: string; file: File; page: number; document: CreatorShareDocument; height: number };
-const canNativeShare = () => typeof navigator !== "undefined" && typeof navigator.share === "function";
+type Preview = {
+  url: string;
+  file: File;
+  page: number;
+  document: CreatorShareDocument;
+  height: number;
+};
+const canNativeShare = () =>
+  typeof navigator !== "undefined" && typeof navigator.share === "function";
 function canShareFile(file?: File) {
-  try { return Boolean(file && canNativeShare() && navigator.canShare?.({ files: [file] })); }
-  catch { return false; }
+  try {
+    return Boolean(file && canNativeShare() && navigator.canShare?.({ files: [file] }));
+  } catch {
+    return false;
+  }
 }
 
-export default function CreatorShare({ creator }: { creator: CreatorShareIdentity }) {
+export default function CreatorShare({
+  creator,
+  videoId,
+}: {
+  creator: CreatorShareIdentity;
+  videoId?: string;
+}) {
+  const scope = videoId ? "video" : "latest";
+  const initialMode = videoId ? "image" : "link";
+  const previewHeight = videoId ? "h-[min(32dvh,20rem)]" : "h-[min(45dvh,27.5rem)]";
   const c = useCopy();
   const { locale, t } = useTranslation();
   const { resolvedTheme } = useTheme();
@@ -32,46 +80,108 @@ export default function CreatorShare({ creator }: { creator: CreatorShareIdentit
   const linkId = useId();
   const textId = useId();
   const [open, setOpen] = useState(false);
-  const [mode, setMode] = useState<"link" | "image">("link");
+  const [mode, setMode] = useState<"link" | "image">(initialMode);
   const [revision, setRevision] = useState(0);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<CreatorLatestVideo | null>(null);
-  const [doc, setDoc] = useState<CreatorShareDocument | null>(null);
+  const [excluded, setExcluded] = useState<ReadonlySet<string>>(() => new Set());
+  const [plan, setPlan] = useState<{
+    doc: CreatorShareDocument;
+    selection: CreatorLatestVideo;
+    revision: number;
+  } | null>(null);
   const [page, setPage] = useState(0);
   const [preview, setPreview] = useState<Preview | null>(null);
-  const [empty, setEmpty] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
   const [sharing, setSharing] = useState(false);
-  const content = creatorShareContent(creator, data, locale === "zh" ? "zh" : "en");
+  const selection = useMemo(
+    () =>
+      data && {
+        ...data,
+        opinions: data.opinions.filter((opinion) => !excluded.has(opinion.id)),
+      },
+    [data, excluded],
+  );
+  const language = locale === "zh" ? "zh" : "en";
+  const content = creatorShareContent(creator, selection, language, scope);
+  const empty = data && !data.opinions.length;
+  const hasSelection = Boolean(selection?.opinions.length);
+  const doc =
+    plan &&
+    plan.selection === selection &&
+    plan.revision === revision &&
+    plan.doc.locale === language &&
+    plan.doc.appearance.mode === (resolvedTheme === "dark" ? "dark" : "light")
+      ? plan.doc
+      : null;
 
   useEffect(() => {
     if (!open) return;
     const controller = new AbortController();
-    setLoading(true); setData(null); setDoc(null); setPreview(null);
-    setEmpty(false); setError(""); setStatus(""); setPage(0);
-    async function load() {
+    setLoading(true);
+    setLoadError(false);
+    const request = videoId
+      ? getCreatorVideo(creator.channel_id, videoId, controller.signal)
+      : getCreatorLatestVideo(creator.channel_id, controller.signal);
+    void request
+      .then((result) => {
+        if (!controller.signal.aborted) setData(result);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setLoadError(true);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => controller.abort();
+  }, [open, creator.channel_id, videoId, revision]);
+
+  useEffect(() => {
+    if (
+      !open ||
+      mode !== "image" ||
+      !selection?.creator ||
+      !selection.video ||
+      !selection.opinions.length
+    )
+      return;
+    let disposed = false;
+    setError("");
+    async function prepare(data: CreatorLatestVideo) {
       try {
-        const result = await getCreatorLatestVideo(creator.channel_id, controller.signal);
-        if (controller.signal.aborted) return;
-        setData(result);
-        if (!result.creator || !result.video || !result.opinions.length) { setEmpty(true); return; }
-        // Link/social sharing never pays the cost of loading fonts and drawing PNGs.
-        if (mode !== "image") return;
-        const [image] = await Promise.all([import("@/lib/creatorShareImage"), document.fonts.ready]);
-        if (controller.signal.aborted) return;
+        const [image] = await Promise.all([
+          import("@/lib/creatorShareImage"),
+          document.fonts.ready,
+        ]);
+        if (disposed) return;
         const ctx = document.createElement("canvas").getContext("2d");
         if (!ctx || !appearanceRef.current) throw new Error("Share preview is unavailable");
-        setDoc(image.planCreatorShare(result, locale === "zh" ? "zh" : "en", ctx, image.readCreatorShareAppearance(appearanceRef.current), t));
+        const doc = image.planCreatorShare(
+          data,
+          language,
+          ctx,
+          image.readCreatorShareAppearance(appearanceRef.current),
+          t,
+          scope,
+        );
+        setPage(0);
+        setPlan({ doc, selection: data, revision });
       } catch {
-        if (!controller.signal.aborted) setError(mode === "image"
-          ? locale === "zh" ? "图片生成失败，请重试。" : "Could not generate the images. Please retry."
-          : locale === "zh" ? "最新观点加载失败，仍可分享链接。" : "Latest opinions could not be loaded. You can still share the link.");
-      } finally { if (!controller.signal.aborted) setLoading(false); }
+        if (!disposed)
+          setError(
+            language === "zh"
+              ? "图片生成失败，请重试。"
+              : "Could not generate the images. Please retry.",
+          );
+      }
     }
-    void load();
-    return () => controller.abort();
-  }, [open, mode, creator.channel_id, locale, revision, resolvedTheme, t]);
+    void prepare(selection);
+    return () => {
+      disposed = true;
+    };
+  }, [open, mode, selection, language, revision, resolvedTheme, scope, t]);
 
   // The displayed preview owns its URL until a replacement is committed or closed.
   useEffect(() => {
@@ -84,7 +194,8 @@ export default function CreatorShare({ creator }: { creator: CreatorShareIdentit
     let disposed = false;
     let url = "";
     let committed = false;
-    setError(""); setStatus("");
+    setError("");
+    setStatus("");
     async function render() {
       try {
         const image = await import("@/lib/creatorShareImage");
@@ -96,79 +207,529 @@ export default function CreatorShare({ creator }: { creator: CreatorShareIdentit
         await decoded.decode();
         if (disposed) return;
         committed = true;
-        setPreview({ url, file: new File([blob], image.creatorShareFilename(doc!, page), { type: "image/png" }), page, document: doc!, height: image.creatorSharePageHeight(doc!, page) });
+        setPreview({
+          url,
+          file: new File([blob], image.creatorShareFilename(doc!, page), { type: "image/png" }),
+          page,
+          document: doc!,
+          height: image.creatorSharePageHeight(doc!, page),
+        });
       } catch {
-        if (!disposed && url && !committed) { URL.revokeObjectURL(url); url = ""; }
-        if (!disposed) setError(locale === "zh" ? "图片导出失败，请重试。" : "Could not export the image. Please retry.");
+        if (!disposed && url && !committed) {
+          URL.revokeObjectURL(url);
+          url = "";
+        }
+        if (!disposed)
+          setError(
+            locale === "zh"
+              ? "图片导出失败，请重试。"
+              : "Could not export the image. Please retry.",
+          );
       }
     }
     void render();
-    return () => { disposed = true; if (url && !committed) URL.revokeObjectURL(url); };
+    return () => {
+      disposed = true;
+      if (url && !committed) URL.revokeObjectURL(url);
+    };
   }, [open, mode, doc, page, locale]);
 
-  const visible = open && mode === "image" && doc && doc.appearance.mode === (resolvedTheme === "dark" ? "dark" : "light") && preview?.document === doc ? preview : null;
+  const visible = open && mode === "image" && doc && preview?.document === doc ? preview : null;
   const ready = visible?.page === page ? visible : null;
   function changeOpen(next: boolean) {
-    setOpen(next); setMode("link"); setData(null); setDoc(null); setPreview(null);
-    setLoading(next); setEmpty(false); setError(""); setStatus(""); setPage(0);
+    setOpen(next);
+    setMode(initialMode);
+    setData(null);
+    setPlan(null);
+    setPreview(null);
+    setExcluded(new Set());
+    setLoading(next);
+    setLoadError(false);
+    setError("");
+    setStatus("");
+    setPage(0);
+  }
+  function changeSelection(next: ReadonlySet<string>) {
+    setExcluded(next);
+    setPlan(null);
+    setPreview(null);
+    setPage(0);
+    setError("");
+    setStatus("");
+  }
+  function retry() {
+    setError("");
+    setPlan(null);
+    setPreview(null);
+    setPage(0);
+    setRevision((value) => value + 1);
   }
   async function copy(value: string) {
     try {
       if (!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
       await navigator.clipboard.writeText(value);
-      setStatus(c("Copied. Paste it into your preferred app.", "已复制，可粘贴到社交媒体或聊天应用。"));
-    } catch { setStatus(c("Select the link or text below and copy it manually.", "请选中下方链接或文案，手动复制。")); }
+      setStatus(
+        c("Copied. Paste it into your preferred app.", "已复制，可粘贴到社交媒体或聊天应用。"),
+      );
+    } catch {
+      setStatus(
+        c(
+          "Select the link or text below and copy it manually.",
+          "请选中下方链接或文案，手动复制。",
+        ),
+      );
+    }
   }
   async function share(asImage: boolean) {
     if (!canNativeShare() || sharing || (asImage && (!ready || !canShareFile(ready.file)))) return;
     try {
-      let payload: ShareData = asImage && ready
-        ? { files: [ready.file], title: content.title, text: content.headline + "\n" + content.url }
-        : { title: content.title, text: content.headline, url: content.url };
+      let payload: ShareData =
+        asImage && ready
+          ? {
+              files: [ready.file],
+              title: content.title,
+              text: [content.headline, content.url].filter(Boolean).join("\n"),
+            }
+          : videoId
+            ? { title: content.title, text: content.text }
+            : { title: content.title, text: content.headline, url: content.url };
       if (asImage && ready && !navigator.canShare?.(payload)) payload = { files: [ready.file] };
       // Call immediately inside the click; PNGs are already prepared.
       const result = navigator.share(payload);
-      setSharing(true); setStatus("");
+      setSharing(true);
+      setStatus("");
       await result;
       setStatus(c("Opened the system share menu.", "已打开系统分享菜单。"));
     } catch (reason) {
       if (!(reason instanceof DOMException && reason.name === "AbortError")) {
-        setStatus(c("Use Copy link, Copy text or Save image to share in another app.", "可使用复制链接、复制文案或保存图片，在其他应用中分享。"));
+        setStatus(
+          c(
+            "Use Copy link, Copy text or Save image to share in another app.",
+            "可使用复制链接、复制文案或保存图片，在其他应用中分享。",
+          ),
+        );
       }
-    } finally { setSharing(false); }
+    } finally {
+      setSharing(false);
+    }
   }
 
-  return <Dialog open={open} onOpenChange={changeOpen}>
-    <DialogTrigger asChild><Button variant="outline" size="sm" className="shrink-0 gap-1.5"><Share2 className="h-4 w-4" aria-hidden="true" />{c("Share", "分享")}</Button></DialogTrigger>
-    <DialogContent className="max-w-xl pb-5 pt-8">
-      <DialogHeader><DialogTitle>{c("Share creator opinions", "分享博主观点")}</DialogTitle><DialogDescription>{c("Share a public link, prepare a social post, or save images of the latest imported opinions.", "通过公开链接、社交媒体或图片，分享最新一期已收录观点。")}</DialogDescription></DialogHeader>
-      <div ref={appearanceRef} className="mt-3 space-y-3 rounded-3xl font-sans">
-        <Tabs value={mode} onValueChange={(value) => { if (!sharing) { setMode(value === "image" ? "image" : "link"); setStatus(""); } }}>
-          <TabsList><TabsTrigger value="link" disabled={sharing}>{c("Link & social", "链接与社交")}</TabsTrigger><TabsTrigger value="image" disabled={sharing}>{c("Image", "图片")}</TabsTrigger></TabsList>
-          <TabsContent value="link" className="mt-5 space-y-5">{mode === "link" && <>
-            <div className="space-y-2"><label htmlFor={linkId} className="text-sm font-medium">{c("Public share link", "公开分享链接")}</label><Input id={linkId} readOnly value={content.url} onFocus={(event) => event.currentTarget.select()} /><p className="text-xs text-muted-foreground">{c("Recipients can read these opinions without signing in.", "接收者无需登录即可查看观点。")}</p></div>
-            <div className="flex flex-wrap gap-2"><Button onClick={() => void copy(content.url)} className="gap-2"><Link2 className="h-4 w-4" aria-hidden="true" />{c("Copy link", "复制链接")}</Button>{canNativeShare() && <Button variant="outline" disabled={sharing} onClick={() => void share(false)} className="gap-2"><Share2 className="h-4 w-4" aria-hidden="true" />{c("More apps", "更多应用")}</Button>}</div>
-            <div className="space-y-3"><p className="text-sm font-medium">{c("Share to", "分享到")}</p><div className="flex flex-wrap gap-2">{creatorSocialLinks(content).map((platform) => <Button key={platform.name} variant="outline" asChild><a href={platform.href} target="_blank" rel="noopener noreferrer">{platform.name}</a></Button>)}<Button variant="outline" asChild><a href={creatorEmailLink(content)} className="gap-2"><Mail className="h-4 w-4" aria-hidden="true" />{c("Email", "邮件")}</a></Button></div></div>
-            <div className="space-y-2"><label htmlFor={textId} className="text-sm font-medium">{c("Share text", "分享文案")}</label>{loading ? <ContentLoading label={c("Loading the latest opinions…", "正在加载最新观点…")} className="min-h-0"><div className="flex h-[7.75rem] flex-col gap-2.5 rounded-xl border border-input px-3 py-2.5"><Skeleton className="h-3.5 w-full rounded-md" /><Skeleton className="h-3.5 w-11/12 rounded-md" /><Skeleton className="h-3.5 w-full rounded-md" /><Skeleton className="h-3.5 w-1/2 rounded-md" /></div></ContentLoading> : <Textarea id={textId} readOnly value={content.text} rows={5} onFocus={(event) => event.currentTarget.select()} />}<Button variant="outline" disabled={loading} onClick={() => void copy(content.text)} className="gap-2"><Copy className="h-4 w-4" aria-hidden="true" />{c("Copy text", "复制文案")}</Button></div>
-            <p className="text-xs leading-relaxed text-muted-foreground">{c("For WeChat, Xiaohongshu and other apps, paste the link or text, or switch to Image and save a share card.", "微信、小红书等应用可粘贴链接或文案，也可切换到「图片」保存分享卡片。")}</p>
-          </>}</TabsContent>
-          <TabsContent value="image" className="mt-3 space-y-3">{mode === "image" && <>
-            {(loading || (doc && !visible && !error)) && <ContentLoading label={c("Generating the image…", "正在生成图片…")} className="mx-auto h-[min(45dvh,27.5rem)] w-full min-h-0 items-center"><Skeleton className="aspect-[4/5] h-full max-w-full rounded-3xl" /></ContentLoading>}
-            {empty && <p className="py-12 text-center text-sm text-muted-foreground">{c("This creator has no imported opinions yet.", "这位博主暂无已收录观点。")}</p>}
-            {visible && doc && <><figure aria-busy={!ready && !error} className="relative mx-auto flex h-[min(45dvh,27.5rem)] w-full items-center justify-center">
-              {!ready && !error && <span role="status" className="absolute right-2 top-2 rounded-full bg-background p-2 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /><span className="sr-only">{c("Generating the image…", "正在生成图片…")}</span></span>}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={visible.url} width={1080} height={visible.height} alt={c(`${doc.creator}, opinions, image ${visible.page + 1} of ${doc.pages.length}`, `${doc.creator}观点，第 ${visible.page + 1} / ${doc.pages.length} 张`)} aria-describedby={transcriptId} className="block max-h-full max-w-full h-auto w-auto rounded-3xl border border-border bg-background" />
-            </figure><div id={transcriptId} className="sr-only">{doc.pages[visible.page].map((fragment, index) => <p key={index}>{fragment.ticker} · {fragment.strength.label} · {fragment.lines.join("")}</p>)}</div></>}
-            {doc && doc.pages.length > 1 && <div className="flex items-center justify-center gap-4"><Button variant="ghost" size="icon" aria-label={c("Previous image", "上一张图片")} disabled={page === 0 || sharing} onClick={() => setPage((value) => value - 1)}><ChevronLeft className="h-4 w-4" /></Button><span role="status" className="text-sm tabular-nums">{page + 1} / {doc.pages.length}</span><Button variant="ghost" size="icon" aria-label={c("Next image", "下一张图片")} disabled={page === doc.pages.length - 1 || sharing} onClick={() => setPage((value) => value + 1)}><ChevronRight className="h-4 w-4" /></Button></div>}
-            {visible && <div className="flex flex-wrap justify-center gap-2"><Button asChild disabled={!ready} className="gap-2"><a href={ready?.url} download={ready?.file.name} aria-disabled={!ready} onClick={(event) => { if (!ready) { event.preventDefault(); return; } setStatus(c("Image download started.", "已开始下载图片。")); }}><Download className="h-4 w-4" aria-hidden="true" />{c("Save image", "保存图片")}</a></Button>{canShareFile(visible.file) && <Button variant="outline" disabled={sharing || !ready} onClick={() => void share(true)} className="gap-2"><Share2 className="h-4 w-4" aria-hidden="true" />{c("Share image", "分享图片")}</Button>}</div>}
-            {visible && <p className="text-center text-xs text-muted-foreground">{c("Save each image or press and hold it, then attach it to your social post.", "可逐张保存或长按图片，添加到社交媒体帖子。")}</p>}
-            {sourceVideoUrl(data?.video) && <p className="text-center text-xs"><a href={sourceVideoUrl(data?.video)} target="_blank" rel="noopener noreferrer" className="text-muted-foreground underline underline-offset-4 hover:text-foreground focus-visible:outline-none ">{c("View source video", "查看原视频")}</a></p>}
-          </>}</TabsContent>
-        </Tabs>
-        {error && <div role="alert" className="space-y-3"><p className="text-sm text-muted-foreground">{error}</p><Button variant="outline" onClick={() => setRevision((value) => value + 1)}>{c("Retry", "重试")}</Button></div>}
-        <p role="status" aria-live="polite" className={status ? "text-center text-xs text-muted-foreground" : "sr-only"}>{status}</p>
-      </div>
-    </DialogContent>
-  </Dialog>;
+  return (
+    <Dialog open={open} onOpenChange={changeOpen}>
+      <DialogTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className={cn("shrink-0 gap-1.5", videoId && "min-h-11 sm:min-h-0")}
+        >
+          <Share2 className="h-4 w-4" aria-hidden="true" />
+          {videoId ? c("Share video opinions", "分享视频观点") : c("Share", "分享")}
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-xl pb-5 pt-8">
+        <DialogHeader>
+          <DialogTitle>
+            {videoId
+              ? c("Share video opinions", "分享视频观点")
+              : c("Share creator opinions", "分享博主观点")}
+          </DialogTitle>
+          <DialogDescription className="break-words">
+            {videoId
+              ? data?.video?.video_title ||
+                c("Choose which opinions to include.", "选择要分享的观点。")
+              : c(
+                  "Share a public link, prepare a social post, or save images of the latest imported opinions.",
+                  "通过公开链接、社交媒体或图片，分享最新一期已收录观点。",
+                )}
+          </DialogDescription>
+        </DialogHeader>
+        <div ref={appearanceRef} className="mt-3 space-y-3 rounded-3xl font-sans">
+          {videoId && data && data.opinions.length > 0 && (
+            <fieldset className="min-w-0 rounded-2xl border border-border px-3 pb-1">
+              <legend className="px-1 text-sm font-medium">
+                {c("Choose opinions", "选择观点")}
+              </legend>
+              <div className="flex flex-wrap items-center justify-between gap-x-1 py-1">
+                <span role="status" className="text-xs tabular-nums text-muted-foreground">
+                  {c(
+                    `${selection?.opinions.length} of ${data.opinions.length} selected`,
+                    `已选 ${selection?.opinions.length} / ${data.opinions.length} 条观点`,
+                  )}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={sharing}
+                  onClick={() =>
+                    changeSelection(
+                      excluded.size ? new Set() : new Set(data.opinions.map(({ id }) => id)),
+                    )
+                  }
+                >
+                  {excluded.size ? c("Select all", "全选") : c("Clear all", "取消全选")}
+                </Button>
+              </div>
+              <ul className="max-h-40 divide-y divide-border overflow-y-auto overscroll-contain sm:max-h-48">
+                {data.opinions.map((opinion, index) => {
+                  const id = `${transcriptId}-option-${index}`;
+                  const summary =
+                    opinion.summary || opinion.thesis || opinion.key_points?.join(" ");
+                  return (
+                    <li key={opinion.id}>
+                      <label
+                        htmlFor={id}
+                        className="flex min-h-12 cursor-pointer items-start gap-3 rounded-lg px-1.5 py-2 focus-within:bg-muted"
+                      >
+                        <Checkbox
+                          id={id}
+                          aria-label={opinion.ticker}
+                          checked={!excluded.has(opinion.id)}
+                          disabled={sharing}
+                          className="mt-0.5 h-5 w-5 focus-visible:ring-2 focus-visible:ring-ring"
+                          onCheckedChange={(checked) => {
+                            const next = new Set(excluded);
+                            if (checked) next.delete(opinion.id);
+                            else next.add(opinion.id);
+                            changeSelection(next);
+                          }}
+                        />
+                        <span className="min-w-0 space-y-0.5">
+                          <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-semibold">
+                            {opinion.ticker}
+                            <OpinionStrength value={opinion.direction_score} />
+                            {opinion.sentiment === "mixed" && (
+                              <span className="text-xs text-warning">
+                                {t("youtubeOpinions.mixed")}
+                              </span>
+                            )}
+                          </span>
+                          {summary && (
+                            <span className="line-clamp-2 break-words text-xs leading-5 text-muted-foreground">
+                              {summary}
+                            </span>
+                          )}
+                        </span>
+                      </label>
+                    </li>
+                  );
+                })}
+              </ul>
+            </fieldset>
+          )}
+          <Tabs
+            value={mode}
+            onValueChange={(value) => {
+              if (!sharing) {
+                setMode(value === "image" ? "image" : "link");
+                setStatus("");
+              }
+            }}
+          >
+            <TabsList>
+              <TabsTrigger value="link" disabled={sharing}>
+                {videoId ? c("Text & source", "文案与来源") : c("Link & social", "链接与社交")}
+              </TabsTrigger>
+              <TabsTrigger value="image" disabled={sharing}>
+                {c("Image", "图片")}
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="link" className="mt-5 space-y-5">
+              {mode === "link" && (
+                <>
+                  {content.url && (
+                    <>
+                      <div className="space-y-2">
+                        <label htmlFor={linkId} className="text-sm font-medium">
+                          {videoId
+                            ? c("Source video link", "原视频链接")
+                            : c("Public share link", "公开分享链接")}
+                        </label>
+                        <Input
+                          id={linkId}
+                          readOnly
+                          value={content.url}
+                          onFocus={(event) => event.currentTarget.select()}
+                        />
+                        {!videoId && (
+                          <p className="text-xs text-muted-foreground">
+                            {c(
+                              "Recipients can read these opinions without signing in.",
+                              "接收者无需登录即可查看观点。",
+                            )}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button onClick={() => void copy(content.url)} className="gap-2">
+                          <Link2 className="h-4 w-4" aria-hidden="true" />
+                          {c("Copy link", "复制链接")}
+                        </Button>
+                        {!videoId && canNativeShare() && (
+                          <Button
+                            variant="outline"
+                            disabled={sharing}
+                            onClick={() => void share(false)}
+                            className="gap-2"
+                          >
+                            <Share2 className="h-4 w-4" aria-hidden="true" />
+                            {c("More apps", "更多应用")}
+                          </Button>
+                        )}
+                      </div>
+                    </>
+                  )}
+                  {!videoId && (
+                    <div className="space-y-3">
+                      <p className="text-sm font-medium">{c("Share to", "分享到")}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {creatorSocialLinks(content).map((platform) => (
+                          <Button key={platform.name} variant="outline" asChild>
+                            <a href={platform.href} target="_blank" rel="noopener noreferrer">
+                              {platform.name}
+                            </a>
+                          </Button>
+                        ))}
+                        <Button variant="outline" asChild>
+                          <a href={creatorEmailLink(content)} className="gap-2">
+                            <Mail className="h-4 w-4" aria-hidden="true" />
+                            {c("Email", "邮件")}
+                          </a>
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  {(!videoId || loading || hasSelection) && (
+                    <div className="space-y-2">
+                      <label htmlFor={textId} className="text-sm font-medium">
+                        {c("Share text", "分享文案")}
+                      </label>
+                      {loading ? (
+                        <ContentLoading
+                          label={c("Loading opinions…", "正在加载观点…")}
+                          className="min-h-0"
+                        >
+                          <div className="flex h-[7.75rem] flex-col gap-2.5 rounded-xl border border-input px-3 py-2.5">
+                            <Skeleton className="h-3.5 w-full rounded-md" />
+                            <Skeleton className="h-3.5 w-11/12 rounded-md" />
+                            <Skeleton className="h-3.5 w-full rounded-md" />
+                            <Skeleton className="h-3.5 w-1/2 rounded-md" />
+                          </div>
+                        </ContentLoading>
+                      ) : (
+                        <Textarea
+                          id={textId}
+                          readOnly
+                          value={content.text}
+                          rows={5}
+                          onFocus={(event) => event.currentTarget.select()}
+                        />
+                      )}
+                      <Button
+                        variant="outline"
+                        disabled={loading}
+                        onClick={() => void copy(content.text)}
+                        className="gap-2"
+                      >
+                        <Copy className="h-4 w-4" aria-hidden="true" />
+                        {c("Copy text", "复制文案")}
+                      </Button>
+                      {videoId && hasSelection && canNativeShare() && (
+                        <Button
+                          variant="outline"
+                          disabled={sharing || loading}
+                          className="ml-2 gap-2"
+                          onClick={() => void share(false)}
+                        >
+                          <Share2 className="h-4 w-4" aria-hidden="true" />
+                          {c("Share text", "分享文案")}
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                  {!videoId && (
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      {c(
+                        "For WeChat, Xiaohongshu and other apps, paste the link or text, or switch to Image and save a share card.",
+                        "微信、小红书等应用可粘贴链接或文案，也可切换到「图片」保存分享卡片。",
+                      )}
+                    </p>
+                  )}
+                </>
+              )}
+            </TabsContent>
+            <TabsContent value="image" className="mt-3 space-y-3">
+              {mode === "image" && (
+                <>
+                  {(loading || (hasSelection && !visible && !error && !loadError)) && (
+                    <ContentLoading
+                      label={c("Generating the image…", "正在生成图片…")}
+                      className={cn("mx-auto w-full min-h-0 items-center", previewHeight)}
+                    >
+                      <Skeleton className="aspect-[4/5] h-full max-w-full rounded-3xl" />
+                    </ContentLoading>
+                  )}
+                  {visible && doc && (
+                    <>
+                      <figure
+                        aria-busy={!ready && !error}
+                        className={cn(
+                          "relative mx-auto flex w-full items-center justify-center",
+                          previewHeight,
+                        )}
+                      >
+                        {!ready && !error && (
+                          <span
+                            role="status"
+                            className="absolute right-2 top-2 rounded-full bg-background p-2 text-muted-foreground"
+                          >
+                            <Loader2
+                              className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                              aria-hidden="true"
+                            />
+                            <span className="sr-only">
+                              {c("Generating the image…", "正在生成图片…")}
+                            </span>
+                          </span>
+                        )}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={visible.url}
+                          width={1080}
+                          height={visible.height}
+                          alt={c(
+                            `${doc.creator}, opinions, image ${visible.page + 1} of ${doc.pages.length}`,
+                            `${doc.creator}观点，第 ${visible.page + 1} / ${doc.pages.length} 张`,
+                          )}
+                          aria-describedby={transcriptId}
+                          className="block max-h-full max-w-full h-auto w-auto rounded-3xl border border-border bg-background"
+                        />
+                      </figure>
+                      <div id={transcriptId} className="sr-only">
+                        {doc.pages[visible.page].map((fragment, index) => (
+                          <p key={index}>
+                            {fragment.ticker} · {fragment.strength.label} ·{" "}
+                            {fragment.lines.join("")}
+                          </p>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                  {doc && doc.pages.length > 1 && (
+                    <div className="flex items-center justify-center gap-4">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={c("Previous image", "上一张图片")}
+                        disabled={page === 0 || sharing}
+                        onClick={() => setPage((value) => value - 1)}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <span role="status" className="text-sm tabular-nums">
+                        {page + 1} / {doc.pages.length}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={c("Next image", "下一张图片")}
+                        disabled={page === doc.pages.length - 1 || sharing}
+                        onClick={() => setPage((value) => value + 1)}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                  {visible && (
+                    <div className="flex flex-wrap justify-center gap-2">
+                      <Button asChild disabled={!ready} className="gap-2">
+                        <a
+                          href={ready?.url}
+                          download={ready?.file.name}
+                          aria-disabled={!ready}
+                          onClick={(event) => {
+                            if (!ready) {
+                              event.preventDefault();
+                              return;
+                            }
+                            setStatus(c("Image download started.", "已开始下载图片。"));
+                          }}
+                        >
+                          <Download className="h-4 w-4" aria-hidden="true" />
+                          {c("Save image", "保存图片")}
+                        </a>
+                      </Button>
+                      {canShareFile(visible.file) && (
+                        <Button
+                          variant="outline"
+                          disabled={sharing || !ready}
+                          onClick={() => void share(true)}
+                          className="gap-2"
+                        >
+                          <Share2 className="h-4 w-4" aria-hidden="true" />
+                          {c("Share image", "分享图片")}
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                  {visible && !videoId && (
+                    <p className="text-center text-xs text-muted-foreground">
+                      {c(
+                        "Save each image or press and hold it, then attach it to your social post.",
+                        "可逐张保存或长按图片，添加到社交媒体帖子。",
+                      )}
+                    </p>
+                  )}
+                  {sourceVideoUrl(data?.video) && (
+                    <p className="text-center text-xs">
+                      <a
+                        href={sourceVideoUrl(data?.video)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-muted-foreground underline underline-offset-4 hover:text-foreground focus-visible:outline-none "
+                      >
+                        {c("View source video", "查看原视频")}
+                      </a>
+                    </p>
+                  )}
+                </>
+              )}
+            </TabsContent>
+          </Tabs>
+          {!loading && !loadError && (empty || (videoId && data && !hasSelection)) && (
+            <p className="py-3 text-sm text-muted-foreground">
+              {empty
+                ? videoId
+                  ? c("This video has no imported opinions.", "这支视频暂无已收录观点。")
+                  : c("This creator has no imported opinions yet.", "这位博主暂无已收录观点。")
+                : c("Select at least one opinion to share.", "请至少选择一条观点。")}
+            </p>
+          )}
+          {(loadError || error) && (
+            <div role="alert" className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                {loadError
+                  ? videoId
+                    ? c("Could not load this video's opinions.", "这支视频的观点加载失败。")
+                    : c(
+                        "Latest opinions could not be loaded. You can still share the link.",
+                        "最新观点加载失败，仍可分享链接。",
+                      )
+                  : error}
+              </p>
+              <Button variant="outline" onClick={retry}>
+                {c("Retry", "重试")}
+              </Button>
+            </div>
+          )}
+          <p
+            role="status"
+            aria-live="polite"
+            className={status ? "text-center text-xs text-muted-foreground" : "sr-only"}
+          >
+            {status}
+          </p>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 }

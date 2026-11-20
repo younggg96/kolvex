@@ -492,7 +492,8 @@ html {
 :root:not(.dark)[data-light-palette="slate"] .site-background {
   filter: hue-rotate(75deg) saturate(0.35);
 }
-.dark[data-dark-palette="mono"] .dashboard-backdrop-art {
+/* Desktop mono has its own grey scene (data-art="mono"); only the green art needs greying. */
+.dark[data-dark-palette="mono"] .dashboard-backdrop-art:not([data-art="mono"]) {
   filter: grayscale(1);
 }
 .dark[data-dark-palette="sunrise"] .dashboard-backdrop-art {

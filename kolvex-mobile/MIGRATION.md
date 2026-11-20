@@ -68,6 +68,8 @@ Per-post X analysis is implemented on both mobile timelines. Its verification is
 | Kronos forecast (experimental)                                     | `/technical/[symbol]`                             | **New.** On-request forecast card: median path, P10–P90 band, summary                                                                                          | Not overlaid on the candle chart; not fed into AI analysis                                                                                                                                                                                         | C, Auth     |
 | Legal and contact                                                  | More → system browser                             | Privacy, terms, contact pages open on the website                                                                                                              | Web's contact form returns 410, so no native form                                                                                                                                                                                                  | C B         |
 
+The Web video cards also support selecting opinions from one video and exporting the selection as text or PNGs. This flow is pending on mobile.
+
 ## Native material and layout
 
 | Requirement                    | State                                                                                                                                                                            |

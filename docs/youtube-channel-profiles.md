@@ -8,6 +8,14 @@ video count, view count, channel link and the creator's imported stock opinions.
 
 On the YouTube opinions page, the By Creator tab opens as a horizontal avatar rail. Select an avatar to visit that creator’s existing detail page. A ring marks creators with a video published in the preceding 24 hours, based on recorded video publication times or available upload coverage. View all opens the detailed list with channel handles, update dates and opinion counts. Avatar view switches back. Search, sentiment filters and sorting apply to both views.
 
+## Share opinions from a video on Web
+
+Use Share video opinions above the stock opinions in a video card, in the video feed or the creator’s video history.
+The selector starts with all recorded opinions from that creator and video,
+independent of the list’s current filters and pagination. The selected
+opinions drive the PNG preview and copyable text, with attribution and a
+link to the original video when available. See [Content sharing](content-sharing.md).
+
 ## Automatic lookup
 
 Enable **YouTube Data API v3** in a Google Cloud project. Configure its API key as

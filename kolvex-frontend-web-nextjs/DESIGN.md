@@ -594,7 +594,13 @@ complete image contained inside it. Card and footer height follow the content so
 short pages do not retain a large blank area. Desktop and mobile readers can save each
 image, while supported devices can explicitly open native file sharing. PNGs
 are prepared before the share click and remain local; object URLs are revoked
-on page changes and close. Empty/error/retry states retain the same dialog.
+on page changes and close. Empty/error/retry states retain the same dialog. The video-card Share video opinions button sits between the analysis summary
+and the first stock opinion. It uses the same dialog with Image selected first and a scrollable checkbox group above the
+tabs. Each choice combines its ticker, opinion strength and summary. The count
+and select-all control apply to all of the selected video's recorded opinions.
+Changing the selection invalidates the PNG preview and updates the copied text.
+The video preview is capped at 32dvh or 320px to keep export actions in view.
+The text tab labels the source URL as the original video link.
 
 `components/decision/AnalysisHistory.tsx` owns the shared dated version list,
 pagination, current marker, historical-view notice, retry and current-version

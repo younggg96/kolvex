@@ -6,7 +6,7 @@ import asyncio
 import logging
 from typing import Any, Dict, List, Optional, Union
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 
 from app.api.dependencies.auth import verify_admin
@@ -276,6 +276,15 @@ def get_creator_latest_video(
     service: YouTubeStockOpinionService = Depends(get_service),
 ):
     return service.get_creator_latest_video(channel_id)
+
+
+@router.get("/creators/{channel_id}/videos/{video_id}")
+def get_creator_video(
+    channel_id: str,
+    video_id: str = Path(pattern=r"^[A-Za-z0-9_-]{1,128}$"),
+    service: YouTubeStockOpinionService = Depends(get_service),
+):
+    return service.get_creator_video(channel_id, video_id)
 
 
 @router.get("/creators/{channel_id}/opinions")

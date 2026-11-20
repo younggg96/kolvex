@@ -181,13 +181,26 @@ class YouTubeStockOpinionService:
             ) or datetime.min.replace(tzinfo=timezone.utc)
 
         newest = max(rows, key=lambda row: (published(row), str(row.get("video_id") or "")))
+        return self._video_share(
+            (row for row in rows if row.get("video_id") == newest.get("video_id")), newest
+        )
+
+    def get_creator_video(self, channel_id: str, video_id: str) -> Dict[str, Any]:
+        """Read the complete opinion set for one video and creator."""
+        rows = self._fetch_rows(channel_id=channel_id, video_id=video_id)
+        if not rows:
+            return {"creator": None, "video": None, "opinions": []}
+        return self._video_share(rows, rows[0])
+
+    @staticmethod
+    def _video_share(rows: Iterable[Dict[str, Any]], video: Dict[str, Any]) -> Dict[str, Any]:
         video_rows = sorted(
-            (row for row in rows if row.get("video_id") == newest.get("video_id")),
+            rows,
             key=lambda row: (str(row.get("ticker") or ""), str(row.get("id") or "")),
         )
         return {
             "creator": {
-                key: newest.get(key)
+                key: video.get(key)
                 for key in (
                     "channel_id",
                     "channel_title",
@@ -197,7 +210,7 @@ class YouTubeStockOpinionService:
                 )
             },
             "video": {
-                key: newest.get(key)
+                key: video.get(key)
                 for key in (
                     "video_id",
                     "video_title",
@@ -1101,8 +1114,16 @@ class YouTubeStockOpinionService:
         sentiment: Optional[str] = None,
         date_from: Optional[str] = None,
         date_to: Optional[str] = None,
+        video_id: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
-        key = (ticker.upper() if ticker else None, channel_id, sentiment, date_from, date_to)
+        key = (
+            ticker.upper() if ticker else None,
+            channel_id,
+            sentiment,
+            date_from,
+            date_to,
+            video_id,
+        )
         cache = _row_cache
         with cache.lock:
             if cache.client is not self.supabase:
@@ -1131,6 +1152,7 @@ class YouTubeStockOpinionService:
             sentiment=sentiment,
             date_from=date_from,
             date_to=date_to,
+            video_id=video_id,
         )
         with cache.lock:
             if cache.client is self.supabase:
@@ -1168,6 +1190,7 @@ class YouTubeStockOpinionService:
         sentiment: Optional[str] = None,
         date_from: Optional[str] = None,
         date_to: Optional[str] = None,
+        video_id: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         normalized_sentiment = _normalize_sentiment(sentiment)
         # Read every page so older stocks and creators are not silently omitted.
@@ -1184,6 +1207,8 @@ class YouTubeStockOpinionService:
                 query = query.eq("ticker", ticker.upper())
             if channel_id:
                 query = query.eq("channel_id", channel_id)
+            if video_id:
+                query = query.eq("video_id", video_id)
             if sentiment and normalized_sentiment:
                 query = query.eq("sentiment", normalized_sentiment).neq(
                     "ticker", VIDEO_ANALYSIS_TICKER

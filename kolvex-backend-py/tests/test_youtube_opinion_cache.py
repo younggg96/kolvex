@@ -4,6 +4,10 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
+from app.api.routes.youtube_opinions import get_service, router
 from app.services import youtube_stock_opinions as module
 from app.services.youtube_stock_opinions import YouTubeStockOpinionService
 
@@ -104,3 +108,32 @@ class OpinionCacheTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class VideoShareReadTest(unittest.TestCase):
+    def test_public_video_share_reads_the_exact_creator_and_video_across_pages(self):
+        query = Mock()
+        for method in ("select", "order", "eq", "range"):
+            getattr(query, method).return_value = query
+        rows = [
+            {**opinion(i), "channel_id": "creator1", "video_id": "older_video"} for i in range(3)
+        ]
+        rows[0]["ticker"] = ""
+        rows[2]["ticker"] = "TSLA"
+        query.execute.side_effect = [
+            SimpleNamespace(data=rows[:2], count=3),
+            SimpleNamespace(data=rows[2:], count=3),
+        ]
+        client = Mock()
+        client.table.return_value = query
+        app = FastAPI()
+        app.include_router(router)
+        app.dependency_overrides[get_service] = lambda: YouTubeStockOpinionService(client)
+        response = TestClient(app).get("/youtube-opinions/creators/creator1/videos/older_video")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["video"]["video_id"], "older_video")
+        self.assertEqual([row["ticker"] for row in response.json()["opinions"]], ["NVDA", "TSLA"])
+        query.eq.assert_any_call("channel_id", "creator1")
+        query.eq.assert_any_call("video_id", "older_video")
+        self.assertEqual(query.execute.call_count, 2)
