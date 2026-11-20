@@ -58,6 +58,33 @@ def _with_gaps(check: Optional[dict], gaps: list) -> Optional[dict]:
     }
 
 
+def log_turn(
+    agent: Optional[str],
+    model: Optional[str],
+    tools: list,
+    seconds: float,
+    usage: Optional[dict],
+    answer_check: Optional[dict],
+    gaps: Optional[list],
+) -> dict:
+    """One JSON line per answered turn, for finding which questions go wrong and what they cost.
+
+    No user id, question or answer text: only the route, tools, time, tokens and check counts."""
+    check = answer_check or {}
+    line = {
+        "agent": agent,
+        "model": model or "default",
+        "tools": [t for t in tools if t],
+        "seconds": round(seconds, 1),
+        **{k: (usage or {}).get(k, 0) for k in ("model_calls", "input_tokens", "output_tokens")},
+        **{k: check.get(k, 0) for k in ("matched", "mismatch", "unverified")},
+        "unit_fixes": len(check.get("unit_fixes") or []),
+        "data_gaps": [g.get("tool") or g.get("source") for g in gaps or [] if isinstance(g, dict)],
+    }
+    logger.info("chat_turn %s", json.dumps(line, ensure_ascii=False))
+    return line
+
+
 def attach_page_evidence(messages: list, context: Optional[str]) -> list:
     """Give the model this turn's page evidence without writing it into the transcript."""
     if not context or not context.strip():
@@ -520,6 +547,9 @@ async def stream_message(
 
         full_response = ""
         tool_inputs: list = []
+        tool_names: list = []
+        routed_agent = None
+        started = asyncio.get_running_loop().time()
         team_run = None
         async for event in stream_agent(
             messages=attach_page_evidence(history, context),
@@ -591,8 +621,11 @@ async def stream_message(
                         else f"Sent to the research team. [View progress and results]({link})"
                     )
                 event_type, event = "done", {}
+            if event_type == "agent":
+                routed_agent = event.get("agent")
             if event_type == "tool_start":
                 tool_inputs.append(event.get("input"))
+                tool_names.append(event.get("tool"))
             if event_type == "token":
                 full_response += event.get("content", "")
             elif event_type == "token_reset":
@@ -643,6 +676,15 @@ async def stream_message(
                         request.content,
                         tickers_from_tool_inputs(tool_inputs),
                         user_api_keys or None,
+                    )
+                    log_turn(
+                        agent=routed_agent,
+                        model=request.model,
+                        tools=tool_names,
+                        seconds=asyncio.get_running_loop().time() - started,
+                        usage=event.get("usage"),
+                        answer_check=answer_check,
+                        gaps=event.get("data_gaps"),
                     )
                     done.update(
                         message_id=ai_msg["id"],

@@ -3,6 +3,8 @@
  * Calls go through the authenticated Next.js proxy at /api/research-workspaces.
  */
 
+import type { AnswerCheck } from "@/lib/chatApi";
+
 const API_PREFIX = "/api/research-workspaces";
 
 export const RESEARCH_AGENTS = ["market", "fundamentals", "news", "creators", "portfolio"] as const;
@@ -61,6 +63,8 @@ export interface AgentResult {
   stance: Stance | null;
   confidence: number | null;
   tools_used: string[];
+  /** Numbers in the note checked against this researcher's tool results; absent before the migration. */
+  answer_check?: AnswerCheck | null;
   error: string | null;
   started_at: string | null;
   completed_at: string | null;
@@ -75,6 +79,8 @@ export interface ResearchRun {
   model_id: string | null;
   synthesis: string | null;
   stance: Stance | null;
+  /** Numbers in the conclusion checked against every researcher's tool results. */
+  answer_check?: AnswerCheck | null;
   error: string | null;
   started_at: string;
   completed_at: string | null;

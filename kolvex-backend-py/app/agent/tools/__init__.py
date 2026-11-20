@@ -5,6 +5,7 @@ Agent Tools
 
 import logging
 
+from app.agent.tool_cache import cached
 from app.agent.tools.brief_tools import get_daily_brief
 from app.agent.tools.buzz_tools import get_market_buzz
 from app.agent.tools.calendar_tools import get_market_events
@@ -49,6 +50,17 @@ from app.agent.tools.web_tools import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Slow-changing data reads through a short in-process cache (app/agent/tool_cache.py).
+get_stock_quote = cached(get_stock_quote)
+get_stock_financials = cached(get_stock_financials)
+get_analyst_recommendations = cached(get_analyst_recommendations)
+get_company_info = cached(get_company_info)
+get_reported_revenue = cached(get_reported_revenue)
+get_macro_indicators = cached(get_macro_indicators)
+get_valuation = cached(get_valuation)
+get_superinvestor_portfolio = cached(get_superinvestor_portfolio)
+get_institutional_holders = cached(get_institutional_holders)
 
 # Every chat agent (see supervisor.AGENT_PROMPTS) shares one tool set; web and portfolio are added only when
 # their data source is on, and skills narrow the set further.

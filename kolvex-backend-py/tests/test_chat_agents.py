@@ -107,6 +107,20 @@ class RoutingTests(unittest.TestCase):
         self.assertEqual(supervisor.route_by_keywords("NVDA 净利率多少"), "financial")
         self.assertEqual(supervisor.route_by_keywords("AAPL 毛利率是多少"), "financial")
 
+    def test_multiple_against_its_history_is_valuation(self):
+        # The guardrail eval found this one going to financial as a short lookup.
+        for text in (
+            "META 的市盈率在历史上算高吗",
+            "NVDA PE 比过去五年高吗",
+            "AAPL 现在是不是偏贵",
+            "Is MSFT's P/E high versus its history?",
+        ):
+            with self.subTest(text=text):
+                self.assertEqual(supervisor.route_by_keywords(text), "valuation")
+        # Looking a multiple up is still a quick answer.
+        self.assertEqual(supervisor.route_by_keywords("TSLA 市盈率多少"), "financial")
+        self.assertEqual(supervisor.route_by_keywords("META 历史最高价是多少"), "financial")
+
     def test_research_ask_beats_portfolio(self):
         self.assertEqual(supervisor.route_by_keywords("我的持仓 NVDA 值不值得继续拿"), "research")
 
@@ -142,7 +156,7 @@ class PromptTests(unittest.TestCase):
                 )
         return out
 
-    def test_each_agent_has_its_own_prompt_and_the_same_tools(self):
+    def test_each_agent_has_its_own_prompt_and_tool_set(self):
         made = self.prompts()
         self.assertEqual(
             set(made),
@@ -150,7 +164,12 @@ class PromptTests(unittest.TestCase):
              "smart_money", "valuation", "buzz", "paper_review"},
         )  # fmt: skip
         tool_sets = {kind: {t.name for t in m["tools"]} for kind, m in made.items()}
-        self.assertEqual(len({frozenset(t) for t in tool_sets.values()}), 1)
+        # financial and research keep every tool; each specialist gets its own narrower set.
+        self.assertEqual(tool_sets["financial"], tool_sets["research"])
+        for kind in supervisor.AGENT_TOOL_NAMES:
+            self.assertLess(tool_sets[kind], tool_sets["financial"])
+        self.assertIn("get_macro_indicators", tool_sets["macro"])
+        self.assertNotIn("get_macro_indicators", tool_sets["paper_review"])
         self.assertIn("Portfolio Agent", made["portfolio"]["prompt"])
         self.assertIn("Creators Agent", made["creators"]["prompt"])
         self.assertIn("Earnings Agent", made["earnings"]["prompt"])
@@ -384,3 +403,90 @@ class MacroToolTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CreatorOpinionScoreTests(unittest.TestCase):
+    def test_stock_opinions_carry_no_numeric_scores(self):
+        # The product shows creator strength in words only; the earnings and research agents
+        # copied "confidence" from this tool into answers (evals/chat_guardrails.py).
+        row = {
+            "ticker": "NVDA",
+            "channel_title": "美股老王",
+            "opinion_date": days_ago(2),
+            "sentiment": "bullish",
+            "confidence": 0.86,
+            "score": 0.8,
+            "time_horizon": "long",
+            "thesis": "数据中心需求扩张",
+            "video_url": "https://www.youtube.com/watch?v=x",
+        }
+        service = MagicMock()
+        service._fetch_rows.return_value = [row]
+        service._build_summary.return_value = {
+            "total_opinions": 1,
+            "total_creators": 1,
+            "bullish_count": 1,
+            "bearish_count": 0,
+            "neutral_count": 0,
+            "avg_score": 0.8,
+            "latest_opinion_at": days_ago(2),
+        }
+        with (
+            patch("app.core.supabase.get_supabase_service"),
+            patch(
+                "app.services.youtube_stock_opinions.YouTubeStockOpinionService",
+                return_value=service,
+            ),
+        ):
+            payload = creator_tools.creator_opinions_payload("NVDA", 30)
+        text = json.dumps(payload, ensure_ascii=False)
+        self.assertNotIn("confidence", text)
+        self.assertNotIn("score", text)
+        self.assertEqual(payload["opinions"][0]["sentiment"], "bullish")
+        self.assertEqual(payload["summary"]["bullish_count"], 1)
+
+
+class AgentToolSetTests(unittest.TestCase):
+    """Specialists get a narrower tool set; nothing their prompt or the guardrail eval needs is dropped."""
+
+    def setUp(self):
+        from app.agent.config import SYSTEM_PROMPT
+
+        self.shared = SYSTEM_PROMPT
+        self.all_tools = get_tools_for_sources(["web", "portfolio"], user_id="u1", skills=None)
+        self.names = {t.name for t in self.all_tools}
+
+    def test_tool_names_are_real(self):
+        for agent, names in supervisor.AGENT_TOOL_NAMES.items():
+            with self.subTest(agent=agent):
+                self.assertLessEqual(names, self.names)
+
+    def test_every_tool_a_prompt_names_is_in_its_set(self):
+        for agent, wanted in supervisor.AGENT_TOOL_NAMES.items():
+            own = supervisor.AGENT_PROMPTS[agent].replace(self.shared, "")
+            named = {n for n in self.names if n in own}
+            with self.subTest(agent=agent):
+                self.assertLessEqual(named, wanted)
+
+    def test_guardrail_eval_cases_keep_their_tools(self):
+        from evals.chat_guardrails import CASES
+
+        for case in CASES:
+            if case.agent in supervisor.AGENT_TOOL_NAMES:
+                with self.subTest(case=case.id):
+                    self.assertLessEqual(
+                        set(case.fixtures), supervisor.AGENT_TOOL_NAMES[case.agent]
+                    )
+
+    def test_fallback_and_research_keep_everything_and_user_switches_still_apply(self):
+        for agent in ("financial", "research"):
+            self.assertEqual(
+                len(supervisor.tools_for_agent(agent, self.all_tools)), len(self.all_tools)
+            )
+        macro = {t.name for t in supervisor.tools_for_agent("macro", self.all_tools)}
+        self.assertIn("get_macro_indicators", macro)
+        self.assertNotIn("get_options_activity", macro)
+        no_news = get_tools_for_sources([], user_id="u1", skills=["market"])
+        self.assertEqual(
+            {t.name for t in supervisor.tools_for_agent("macro", no_news)}, {"get_stock_quote"}
+        )

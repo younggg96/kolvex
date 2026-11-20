@@ -280,7 +280,10 @@ class RunTests(unittest.TestCase):
         deps.agent_factory = Mock(wraps=deps.agent_factory)
         with patch(
             "app.agent.tools.get_tools_for_sources",
-            return_value=[SimpleNamespace(name="get_valuation")],
+            return_value=[
+                SimpleNamespace(name="get_valuation"),
+                SimpleNamespace(name="get_market_events"),
+            ],
         ) as get_tools:
             final = asyncio.run(ws.run_research(self.db, run, "u1", None, None, None, deps))
         self.assertEqual(final["status"], "completed")
@@ -288,6 +291,14 @@ class RunTests(unittest.TestCase):
         prompts = [call.kwargs["prompt"] for call in deps.agent_factory.call_args_list]
         self.assertTrue(any("Earnings Agent" in prompt for prompt in prompts))
         self.assertTrue(any("Valuation Agent" in prompt for prompt in prompts))
+        # Each specialist keeps only its own tools out of the ones the chat allowed.
+        tools = {
+            ("Earnings" if "Earnings Agent" in c.kwargs["prompt"] else "Valuation"): [
+                t.name for t in c.kwargs["tools"]
+            ]
+            for c in deps.agent_factory.call_args_list
+        }
+        self.assertEqual(tools, {"Earnings": ["get_market_events"], "Valuation": ["get_valuation"]})
         self.assertEqual(
             [r["agent"] for r in ws.get_run(self.db, "u1", run["id"])["results"]],
             ["earnings", "valuation"],
@@ -465,3 +476,99 @@ class TurnContextTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+FINANCIALS = '{"symbol": "NVDA", "gross_margins": 0.733}'
+
+
+class FinancialsAgent:
+    """A researcher that reads NVDA's financials and writes a note citing them."""
+
+    def __init__(self, note):
+        self.note = note
+
+    async def ainvoke(self, *_a, **_k):
+        from langchain_core.messages import ToolMessage
+
+        return {
+            "messages": [
+                AIMessage(
+                    content="", tool_calls=[{"name": "get_stock_financials", "args": {}, "id": "f"}]
+                ),
+                ToolMessage(content=FINANCIALS, name="get_stock_financials", tool_call_id="f"),
+                AIMessage(content=self.note),
+            ]
+        }
+
+
+class NumberCheckTests(unittest.TestCase):
+    """Team notes and the conclusion get the chat's number check, against the right evidence."""
+
+    def setUp(self):
+        self.db = FakeDB()
+        self.w = ws.create_workspace(self.db, "u1", "半导体", "", ["NVDA"])
+
+    def run_team(self, notes, synthesis, db=None):
+        db = db or self.db
+        llm = Mock()
+        llm.ainvoke = AsyncMock(return_value=AIMessage(content=synthesis))
+        fast = Mock()
+        fast.ainvoke = AsyncMock(
+            return_value=AIMessage(content='{"summary": "x", "stance": "neutral"}')
+        )
+        agents = iter(notes)
+        deps = ws.RunDeps(
+            lambda **_k: llm, lambda **_k: fast, lambda **_k: FinancialsAgent(next(agents))
+        )
+        run = ws.start_run(db, "u1", self.w["id"], "", ["market", "news"][: len(notes)], None)
+        with patch.object(
+            ws, "tools_for", side_effect=lambda a, u: [SimpleNamespace(name="get_stock_financials")]
+        ):
+            final = asyncio.run(ws.run_research(db, run, "u1", None, None, None, deps))
+        return final, ws.get_run(db, "u1", run["id"])
+
+    def test_conclusion_is_checked_against_every_researchers_evidence(self):
+        # The conclusion miscopies 73.3% as 78.3%: the slip the chat already flags.
+        final, saved = self.run_team(
+            ["NVDA 毛利率 73.3%。", "毛利率 73.3%，暂无新闻。"],
+            "综合：NVDA 毛利率 78.3%，研究员意见一致。",
+        )
+        self.assertEqual(final["status"], "completed")
+        self.assertEqual(saved["answer_check"]["mismatch"], 1)
+        self.assertEqual(saved["answer_check"]["claims"][0]["text"], "78.3%")
+        self.assertEqual([r["answer_check"]["matched"] for r in saved["results"]], [1, 1])
+
+    def test_a_conclusion_without_figures_has_nothing_flagged(self):
+        final, saved = self.run_team(["NVDA 毛利率 73.3%。"], "综合：没有引用数字。")
+        self.assertEqual(saved["results"][0]["answer_check"]["matched"], 1)
+        self.assertEqual(saved["answer_check"]["matched"] + saved["answer_check"]["mismatch"], 0)
+
+    def test_research_is_saved_before_the_migration(self):
+        class OldSchemaDB(FakeDB):
+            def table(self, name):
+                query = super().table(name)
+                update = query.update
+
+                def guarded(payload):
+                    if "answer_check" in payload:
+                        raise RuntimeError("PGRST204: Could not find the 'answer_check' column")
+                    return update(payload)
+
+                query.update = guarded
+                return query
+
+        db = OldSchemaDB()
+        self.w = ws.create_workspace(db, "u1", "半导体", "", ["NVDA"])
+        final, saved = self.run_team(["NVDA 毛利率 73.3%。"], "综合：NVDA 毛利率 73.3%。", db=db)
+        self.assertEqual(saved["status"], "completed")
+        self.assertEqual(saved["synthesis"], "综合：NVDA 毛利率 73.3%。")
+        self.assertNotIn("answer_check", saved)
+        self.assertEqual(saved["results"][0]["status"], "completed")
+
+    def test_unit_slips_are_repaired_before_saving(self):
+        text, check = ws.check_text(
+            "营收 1,270.38 亿美元。",
+            {"outputs": [("get_stock_financials", '{"revenue": "1,270.38 billion"}')]},
+        )
+        self.assertNotIn("1,270.38 亿", text)
+        self.assertTrue(check and check.get("unit_fixes"))

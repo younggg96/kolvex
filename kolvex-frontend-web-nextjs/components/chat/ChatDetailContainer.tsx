@@ -908,7 +908,8 @@ export function ChatDetailContainer({
       {hasWorkspace && panelOpen && (
         <aside
           aria-label={copy("Workspace research", "工作区研究")}
-          className="hidden w-[24rem] shrink-0 overflow-y-auto border-l border-border xl:block 2xl:w-[26rem]"
+          // relative keeps absolutely positioned content (sr-only text, menus) inside this scroller.
+          className="relative hidden w-[24rem] shrink-0 overflow-y-auto border-l border-border xl:block 2xl:w-[26rem]"
         >
           <WorkspacePanel
             workspace={workspace}

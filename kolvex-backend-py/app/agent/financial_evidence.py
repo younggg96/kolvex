@@ -1,4 +1,5 @@
-"""Checkable figures from get_stock_financials and the options summary.
+"""Checkable figures from get_stock_financials and the options summary (macro, valuation, 13F and
+options-flow tools: data_evidence.py).
 
 Each figure becomes an evidence item for answer_check: a value, its kind (percent, multiple,
 money), a readable label, and the words that name it, so a nearby but different number is
@@ -13,16 +14,26 @@ from typing import Any
 
 from langchain_core.messages import ToolMessage
 
+from app.agent import data_evidence
+
 # field: (label, kind, words naming it). Percent fields are fractions in Yahoo's data.
 _FINANCIAL_FIELDS: dict[str, tuple[str, str, str]] = {
     "gross_margins": ("gross margin", "percent", r"gross margin|毛利率"),
-    "operating_margins": ("operating margin", "percent", r"operating margin|营业利润率|营业利益率|经营利润率"),
+    "operating_margins": (
+        "operating margin",
+        "percent",
+        r"operating margin|营业利润率|营业利益率|经营利润率",
+    ),
     "profit_margins": ("net margin", "percent", r"net margin|profit margin|净利率|净利润率"),
     "ebitda_margins": ("EBITDA margin", "percent", r"EBITDA margin|EBITDA 利润率|EBITDA利润率"),
     "return_on_equity": ("return on equity", "percent", r"return on equity|ROE|净资产收益率"),
     "return_on_assets": ("return on assets", "percent", r"return on assets|ROA|资产收益率"),
     "revenue_growth": ("revenue growth", "percent", r"revenue growth|营收增长|收入增长|营收同比"),
-    "earnings_growth": ("earnings growth", "percent", r"earnings growth|盈利增长|利润增长|EPS 增长"),
+    "earnings_growth": (
+        "earnings growth",
+        "percent",
+        r"earnings growth|盈利增长|利润增长|EPS 增长",
+    ),
     "pe_ratio": ("trailing P/E", "multiple", r"P/?E|市盈率"),
     "forward_pe": ("forward P/E", "multiple", r"forward P/?E|远期市盈率|预期市盈率"),
     "peg_ratio": ("PEG", "multiple", r"PEG"),
@@ -45,20 +56,42 @@ _FINANCIAL_FIELDS: dict[str, tuple[str, str, str]] = {
     "book_value": ("book value per share", "money", r"book value|每股净资产"),
 }
 _OPTIONS_FIELDS: dict[str, tuple[str, str, str]] = {
-    "put_call_volume_ratio": ("put/call volume ratio", "multiple", r"put/call|put-call|看跌/看涨|认沽/认购|PCR"),
+    "put_call_volume_ratio": (
+        "put/call volume ratio",
+        "multiple",
+        r"put/call|put-call|看跌/看涨|认沽/认购|PCR",
+    ),
 }
 
 
 def _number(value: Any) -> float | None:
-    return float(value) if isinstance(value, (int, float)) and not isinstance(value, bool) \
-        and math.isfinite(value) else None
+    return (
+        float(value)
+        if isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+        else None
+    )
 
 
 def extract_financial_evidence(output: object) -> list[dict[str, Any]]:
-    """Evidence items from a successful get_stock_financials or options summary result."""
-    if not isinstance(output, ToolMessage) or output.status != "success" or not isinstance(output.content, str):
+    """Evidence items from a successful financials, options, macro, valuation or 13F tool result."""
+    if (
+        not isinstance(output, ToolMessage)
+        or output.status != "success"
+        or not isinstance(output.content, str)
+    ):
         return []
-    fields = {"get_stock_financials": _FINANCIAL_FIELDS, "get_options_chain_summary": _OPTIONS_FIELDS}.get(output.name or "")
+    if output.name in data_evidence.EXTRACTORS:
+        try:
+            data = json.loads(output.content)
+        except ValueError:
+            return []
+        if not isinstance(data, dict) or "error" in data:
+            return []
+        return data_evidence.extract(output.name, data)
+    fields = {
+        "get_stock_financials": _FINANCIAL_FIELDS,
+        "get_options_chain_summary": _OPTIONS_FIELDS,
+    }.get(output.name or "")
     if not fields:
         return []
     try:
@@ -76,8 +109,15 @@ def extract_financial_evidence(output: object) -> list[dict[str, Any]]:
             continue
         if kind == "percent":
             value *= 100
-        items.append({"value": value, "kind": kind, "source": "financials",
-                      "label": f"{symbol} {label} ({source})", "words": words})
+        items.append(
+            {
+                "value": value,
+                "kind": kind,
+                "source": "financials",
+                "label": f"{symbol} {label} ({source})",
+                "words": words,
+            }
+        )
     return items
 
 

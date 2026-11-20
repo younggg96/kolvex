@@ -118,4 +118,6 @@ Added 2026-11-19: the Web Reddit 热度榜 shows a 30-day relative mention trend
 
 10. Team research from chat. Web routes broad questions to several specialists and starts one saved workspace run. Settings support Auto / Ask me / Off and a limit of two to four specialists. App displays the same run and each specialist's result. Global history and the workspace's ordinary chat list hide agent panel chats. Legacy panels remain available on the Web workspace page. App follow-up: port chat routing to team research, stream handoff and preference controls.
 
+11. Number check on team research (added on the Web 2026-11-20). Each researcher's note and the combined conclusion carry `answer_check` (same shape as `chat_messages.answer_check`) on `GET /research-workspaces/runs/{id}` and in `latest_run`; Web shows it with `components/chat/AnswerCheckNote.tsx` under the conclusion and inside each opened note. Not ported: native shows no number check anywhere yet, chat included. Needs migration `20261120213000_team_research_answer_check.sql`; before it the field is absent.
+
 No RLS, administrator grants or OAuth settings were changed.

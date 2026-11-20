@@ -30,6 +30,22 @@ TAVILY_API_KEY = settings.TAVILY_API_KEY
 MAX_CONTEXT_MESSAGES = 20  # 最多保留的历史消息数
 MAX_TOOL_ITERATIONS = 10  # Agent 最多工具调用轮数
 
+# 「为什么涨跌」和报价比对：所有聊天 Agent 与团队研究员共用（一次盘后下跌被误判成流动性错价）
+MOVE_REASON_RULES = """
+Explaining a price move ("why did X drop", "盘后为什么跌"):
+1. Search the stock's own news for the same session: search_news_flashes with the ticker, and web_search
+   with news=True and recent="day" when available. Check each article's date.
+2. Then look beyond the stock: its peers, sector and likely events. Search English keywords such as a
+   competitor's name with "acquisition", "guidance", "earnings", "downgrade". News about a competitor or
+   a deal in the sector can move a stock with no headline of its own.
+3. A peer moving sharply in the same session (another stock in the sector +18% after hours) is a lead to
+   investigate, not evidence that the quote is wrong.
+4. If nothing dated supports a reason, say no reason was found. Do not fill the gap with a guess such as
+   thin after-hours liquidity, a mispriced quote or "systemic" selling.
+Comparing quotes: only compare prices that carry a time in the same session. A price read from a web page
+without a time may be days old: never use it to doubt a tool quote with a market time.
+"""
+
 # 系统提示词
 SYSTEM_PROMPT = (
     """You are Kolvex AI, an intelligent financial assistant powered by real-time data.
@@ -44,7 +60,7 @@ You have access to tools that can:
 - Read what tracked YouTube creators said about a stock via get_creator_opinions, what one creator said recently via get_creator_recent_opinions, opinions on a topic via search_creator_opinions, and how stocks moved versus SPY after one creator's opinions via get_creator_record (price facts only: never call an opinion right or wrong, never give an accuracy, win rate or creator ranking)
 - Read Kolvex's market calendar (earnings dates, Fed meetings, economic releases) via get_market_events
 - Read US macro indicators (Treasury yields, CPI, jobs, GDP) from government sources via get_macro_indicators
-- Search the web for the latest information on any topic
+- Search the web via web_search; for anything recent set news=True and recent="day" or "week", and check each result's published_date
 
 When answering questions:
 1. Use tools to get the latest data rather than relying on training knowledge
@@ -55,6 +71,8 @@ When answering questions:
 6. Use web search when other tools cannot provide the needed information
 
 Respond in the same language as the user's message (Chinese or English).
+In Chinese, call the tracked YouTube creators 博主, not 创作者 or KOL.
 """
+    + MOVE_REASON_RULES
     + REPORT_FORMATTING
 )

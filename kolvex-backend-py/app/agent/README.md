@@ -7,7 +7,7 @@
 
 用户在 Web / App 的 AI 聊天里提问，后端用 LangGraph 的 ReAct Agent 回答：模型自己决定调用哪些工具取实时数据，再组织成回答。
 
-- **路由**：每轮先判断意图，分给十个子 Agent 之一。所有子 Agent 工具相同（仍受数据源和技能开关限制），区别只在提示词（`supervisor.AGENT_PROMPTS`）。
+- **路由**：每轮先判断意图，分给十个子 Agent 之一。financial（兜底）和 research 拿全部工具；八个专项 Agent 只拿自己提示词用到的工具，外加报价、快讯和网页搜索（找涨跌原因要用），见 `supervisor.AGENT_TOOL_NAMES`。在此之上仍受数据源和技能开关限制。提示词在 `supervisor.AGENT_PROMPTS`。从聊天发起的团队研究，每位专项研究员也按这个工具集。
   - `financial`：问答、查数字，也是兜底。提示词要求第一句给答案，查一两个数字时不超过约 150 词。
   - `research`：深度分析、多空、「该不该买」，提示词要求多步取数、写结构化报告。
   - `portfolio`：用户自己的持仓 / 自选股整体情况。先读持仓（Portfolio 数据源关着就用自选股），按权重取最多 8 只，对上事件日历、近 30 天博主观点和快讯；不给买卖、调仓建议，不给组合打分。
@@ -28,8 +28,8 @@
 1. 保存用户消息（重试同一问题时复用上一条未回答的消息，`memory.save_user_message_once`）。
 2. 加载本对话摘要之后的消息（`memory.load_conversation_history`），以及对话摘要和跨对话记忆（`chat_memory.load_memory_note`，拼进系统提示词末尾），见第 7 节。
 3. 读用户自己的 API key。
-4. `_classify_intent`：先用关键词正则（`route_by_keywords`），按顺序判断：「研报 / 深度 / 该不该买」→ research；「模拟交易 / 模拟盘 / paper trading」→ paper_review；「我的持仓 / 我的自选 / my portfolio」→ portfolio；「13F / 巴菲特 / 段永平 / 国会 / 议员 / 期权异动」→ smart_money；「财报 / earnings」→ earnings；「博主 / KOL / 谁提到过」→ creators；「CPI / 降息 / 美联储 / 利率（不含净利率、毛利率）」→ macro；「估值 / 贵不贵 / overvalued」→ valuation；「异动 / 放量 / Reddit / trending」→ buzz；80 字以内的查数问题 → financial。判断不出来才调一次快模型，模型答出的名字不合法时回到 financial。快模型回答里没有 `research` 一律按 financial。
-5. `_create_agent_for_request`：按用户选的模型、数据源、技能拼出工具集和提示词，`create_react_agent` 每轮新建。最多 `MAX_TOOL_ITERATIONS`（10）轮工具调用。
+4. `_classify_intent`：先用关键词正则（`route_by_keywords`），按顺序判断：「研报 / 深度 / 该不该买」→ research；「模拟交易 / 模拟盘 / paper trading」→ paper_review；「我的持仓 / 我的自选 / my portfolio」→ portfolio；「13F / 巴菲特 / 段永平 / 国会 / 议员 / 期权异动」→ smart_money；「财报 / earnings」→ earnings；「博主 / KOL / 谁提到过」→ creators；「CPI / 降息 / 美联储 / 利率（不含净利率、毛利率）」→ macro；「估值 / 贵不贵 / 偏贵 / overvalued」或市盈率和自身历史比（「市盈率在历史上算高吗」）→ valuation；「异动 / 放量 / Reddit / trending」→ buzz；80 字以内的查数问题 → financial。判断不出来才调一次快模型，模型答出的名字不合法时回到 financial。快模型回答里没有 `research` 一律按 financial。
+5. `_create_agent_for_request`：按用户选的模型、数据源、技能拼出工具集，再用 `tools_for_agent` 收窄到这个子 Agent 的工具，加上提示词，`create_react_agent` 每轮新建。最多 `MAX_TOOL_ITERATIONS`（10）轮工具调用。
 6. 跑 Agent，收集 evidence，修单位错误，核对数字，保存助手消息。
 7. 回复保存后在后台更新记忆（`chat_memory.remember_turn_later`），不拖慢回复；回复失败的轮次不记。
 
@@ -77,11 +77,11 @@ Web 流式请求发送 `team_research`（`auto` / `ask` / `off`）、`max_team_a
 | `get_analyst_recommendations` | stock_tools.py | yfinance | fundamentals | 分析师评级、目标价 |
 | `get_company_info` | stock_tools.py | yfinance | fundamentals | 公司概况、行业 |
 | `get_options_chain_summary` | options_tools.py | 期权链服务 | options | 期权链摘要 |
-| `get_creator_opinions` | creator_tools.py | `youtube_stock_opinions` | creators | 某只股票最近的博主观点（带视频链接） |
+| `get_creator_opinions` | creator_tools.py | `youtube_stock_opinions` | creators | 某只股票最近的博主观点（带视频链接）；不返回 `confidence` / `avg_score` 等数字分数 |
 | `get_creator_record` | creator_tools.py | `youtube_stock_opinions` + yfinance 复权日线 | creators | 某位博主观点发布后股价相对 SPY 的表现，见下 |
 | `get_daily_brief` | brief_tools.py | Kolvex 日报 | news | 最新日报 |
 | `search_news_flashes` | news_flash_tools.py | 快讯 | news | 按关键词 / 股票搜快讯 |
-| `web_search` | web_tools.py | Tavily | news（且开启 Web 数据源） | 网页搜索 |
+| `web_search` | web_tools.py | Tavily | news（且开启 Web 数据源） | 网页搜索；`news=True` 搜新闻并返回 `published_date`，`recent`（day / week / month / year）限定时间。默认是按相关度排序的普通搜索，可能返回几个月前的文章 |
 | `get_user_portfolio` | portfolio_tools.py | 用户持仓 | portfolio（且开启 Portfolio 数据源） | 持仓、权重、盈亏（按当前用户绑定） |
 | `get_user_watchlist` | watchlist_tools.py | 用户自选股 | market（仅登录用户） | 自选股列表（按当前用户绑定） |
 | `get_creator_recent_opinions` | creator_tools.py | `youtube_stock_opinions` | creators | 某位博主近 N 天（7–365，默认 30）说过的观点，可按股票过滤；博主名匹配规则同 `get_creator_record`，多人匹配返回 `ambiguous` |
@@ -122,6 +122,8 @@ Web 流式请求发送 `team_research`（`auto` / `ask` / `off`）、`max_team_a
 
 `app/services/research_workspace.py` 的 `tools_for` 给每个研究员一小组工具（market：报价、K 线、技术指标、期权；creators：两个博主工具；等等），复用这里的工具函数，但有自己的提示词和流程。
 
+团队研究也做第 5 节的数字核对（`research_workspace.check_text`）：每位研究员的笔记对照它自己调用的工具结果，综合结论对照全部研究员的工具结果，先修单位错误再核对，结果存在 `research_agent_results.answer_check` 和 `research_workspace_runs.answer_check`，Web 工作区用 `AnswerCheckNote` 显示。需要迁移 `20261120213000_team_research_answer_check.sql`；没跑迁移时照常保存研究，只是不存核对结果。
+
 ### 加一个新工具要改的地方
 
 1. `tools/<name>_tools.py` 里写 `@tool`，docstring 写清楚何时用、返回什么、回答规则。失败时返回 `{"error": ...}`：以 `no ` / `not found` 开头会被记为「没有数据」，其他记为「暂时不可用」（`data_gaps.py`）。
@@ -134,9 +136,10 @@ Web 流式请求发送 `team_research`（`auto` / `ask` / `off`）、`max_team_a
 
 | 位置 | 内容 |
 | --- | --- |
-| `config.py` `SYSTEM_PROMPT` | 所有子 Agent 共用：可用工具、回答原则、跟随用户语言，加上 `app/core/report_format.py` 的排版规则 |
+| `config.py` `SYSTEM_PROMPT` | 所有子 Agent 共用：可用工具、回答原则、跟随用户语言、`MOVE_REASON_RULES`，加上 `app/core/report_format.py` 的排版规则 |
+| `config.py` `MOVE_REASON_RULES` | 「为什么涨跌」：先查本股票当天新闻（快讯 + `web_search(news=True, recent="day")`），再查同行、板块和交易事件；同时段同行大幅异动是线索，不是报价错误；没证据就说没找到，不用「盘后流动性错价」之类猜测补位。报价只和同时段、带时间的报价比对，网页上没有时间的价格不能拿来质疑工具报价。团队研究员（`research_workspace.agent_prompt`）也带这段 |
 | `graphs/financial.py` | financial 的角色说明 |
-| `graphs/research.py` | 单 Agent 深度研究的步骤 |
+| `graphs/research.py` | 单 Agent 深度研究：取数步骤、固定结构（一句话结论、带日期的数字、多空、风险、后续看点、数据缺口），不给建仓 / 分批买入 / 止损这类个人操作建议 |
 | `graphs/portfolio.py` / `creators.py` / `earnings.py` / `macro.py` / `smart_money.py` / `valuation.py` / `buzz.py` / `paper_review.py` | 八个专项 Agent 的取数步骤和回答规则（见第 1 节） |
 | `graphs/supervisor.py` | 路由提示词；按本轮可用工具追加的规则（报价时间、亿 / billion 换算、营收期间、技能被关时的说明）；financial 的 `ANSWER_SHAPE` |
 
@@ -145,9 +148,12 @@ Web 流式请求发送 `team_research`（`auto` / `ask` / `off`）、`max_team_a
 模型抄错数字是聊天里最常见的错误，所以每轮都做：
 
 - `quote_evidence.py` / `revenue_evidence.py` / `financial_evidence.py`：从本轮工具结果里抽出报价、营收、财务指标。报价和营收会作为卡片显示给用户。
+- `data_evidence.py`（由 `extract_financial_evidence` 调用）：宏观（当期、前值、近期历史）、估值（PE、分位、三档参考值和距离）、13F（权重、持股变化、市值）、期权异动（权利金）。和财务指标一样，只有答案在谈这个指标（附近出现对应的词）时，相近但不同的数字才算抄错。
 - `unit_fix.py`：修「1,270.38 billion」被写成「1,270.38 亿」这类单位错误。
 - `answer_check.py`：答案里的每个数字对照本轮 evidence，标为 matched / mismatch / unverified，只有 mismatch 会提示给用户。结果存在 `chat_messages.answer_check`。
 - `data_gaps.py`：哪个工具没拿到数据、是暂时失败还是本来就没有，前端 `DataGapNote` 显示。
+
+团队研究的笔记和综合结论走同一套核对，见第 3 节「研究工作区」。
 
 只认**本轮**工具结果：历史消息里的数字不算 evidence。这也是追问时会重新调工具的原因（见第 7 节）。
 
@@ -181,7 +187,12 @@ Web 流式请求发送 `team_research`（`auto` / `ask` / `off`）、`max_team_a
 - 后端用 service role 写；RLS 只允许用户读和删自己的那一行。用户通过 `GET` / `DELETE /api/v1/chat/memory` 查看和清除；界面在 Web「设置 → 偏好设置 → AI 聊天记忆」（经 Next 路由 `/api/chat-history/memory` 转发）和 App 设置的偏好设置页（仅登录后显示），清除前都要二次确认。删除对话不会清除它。
 - 用户说过的偏好（「回答短一点」「我做长线」）目前只会进这个对话的摘要，不会跨对话记住。
 
-## 8. 目录
+## 8. 缓存和日志
+
+- **工具缓存**（`tool_cache.py`）：报价 15 秒，宏观 15 分钟，估值 1 小时，财务、分析师、营收、13F 6 小时，公司概况 1 天。每个进程各自一份，按工具名和参数存；带 `error` 或 `gap` 的结果不缓存。在 `tools/__init__.py` 里套上，工具文件本身不变。测试在 `tests/conftest.py` 里每个用例前后清空。
+- **每轮一行日志**：流式回复保存后，`routes.log_turn` 写一行 `chat_turn {...}`：路由到的子 Agent、模型、按顺序调用的工具、耗时、模型调用次数和 token、数字核对的 matched / mismatch / unverified、单位修正次数、数据缺口来自哪些工具。不写用户 ID、问题或答案原文。token 来自 `stream_agent` 的 `done` 事件里的 `usage`。
+
+## 9. 目录
 
 ```
 app/agent/
@@ -197,21 +208,24 @@ app/agent/
 │   └── portfolio.py / creators.py / earnings.py / macro.py /
 │       smart_money.py / valuation.py / buzz.py / paper_review.py   # 专项 Agent 提示词
 ├── tools/               # 见第 3 节；trading_analysis_tools.py 未接入，见下
-├── quote_evidence.py / revenue_evidence.py / financial_evidence.py
+├── tool_cache.py        # 工具结果短时缓存，见第 8 节
+├── quote_evidence.py / revenue_evidence.py / financial_evidence.py / data_evidence.py
 ├── answer_check.py / unit_fix.py / data_gaps.py
 ```
 
-## 9. 和 AI 研究报告的关系
+## 10. 和 AI 研究报告的关系
 
 AI 研究报告库（`/dashboard/ai-research`，功能开关 `tradingAnalysis`）**不走这个 Agent**。报告由开源多 Agent 框架 TradingAgents 生成：`app/services/trading_analysis_service.py` 在后台线程里跑，Redis 记录进度，结果存 Supabase，只有管理员能发起，生成后所有登录用户可读。
 
 `tools/trading_analysis_tools.py` 里有一个把 TradingAgents 包成聊天工具的版本，但没有接入，因为：一次要跑好几分钟，会卡住聊天；绕过了 `TradingAnalysisService`，结果不保存、不进报告库；模型写死；而且等于让任何用户在聊天里触发一次很贵的多模型调用。聊天里的团队研究走工作区的研究任务。
 
-## 10. 测试
+## 11. 测试
 
 ```bash
 cd kolvex-backend-py
 venv/bin/python -m pytest tests/test_chat_agent.py tests/test_chat_agents.py tests/test_chat_agents_more.py tests/test_technical_tools.py tests/test_creator_record.py \
   tests/test_answer_check.py tests/test_unit_fix.py tests/test_financial_evidence.py tests/test_chat_numbers_eval.py \
-  tests/test_research_workspace.py
+  tests/test_research_workspace.py tests/test_chat_guardrails_eval.py tests/test_web_search_tool.py tests/test_data_evidence.py tests/test_tool_cache.py
 ```
+
+改提示词、路由或工具后，用真实模型跑评测（付费）：`evals/chat_numbers.py` 测查数字（financial），`evals/chat_guardrails.py` 测九个专项子 Agent 的路由、必调工具和硬规则。用法见 [evals/README.md](../../evals/README.md)。

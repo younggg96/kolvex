@@ -474,7 +474,26 @@ class StreamAgentTests(unittest.IsolatedAsyncioTestCase):
             patch.object(supervisor, "_create_agent_for_request", return_value=FakeAgent(events)),
         ):
             out = [e async for e in supervisor.stream_agent([HumanMessage(content="hi")])]
+        # Token use is checked in test_done_reports_token_use; other tests compare the rest.
+        self.usage = next(
+            (e.pop("usage") for e in out if e["type"] == "done" and "usage" in e), None
+        )
         return [e for e in out if e["type"] not in ("status", "agent")]
+
+    async def test_done_reports_token_use(self):
+        first, second = end("a", "", tool_call=True), end("b", "Answer")
+        first["data"]["output"].usage_metadata = {
+            "input_tokens": 900,
+            "output_tokens": 20,
+            "total_tokens": 920,
+        }
+        second["data"]["output"].usage_metadata = {
+            "input_tokens": 1100,
+            "output_tokens": 80,
+            "total_tokens": 1180,
+        }
+        await self.run_stream([first, stream("b", "Answer"), second])
+        self.assertEqual(self.usage, {"model_calls": 2, "input_tokens": 2000, "output_tokens": 100})
 
     async def test_answer_arrives_token_by_token(self):
         out = await self.run_stream(
@@ -872,3 +891,32 @@ class RetryReuseTests(unittest.IsolatedAsyncioTestCase):
                 row, save = await self.run_save(latest)
                 self.assertEqual(row["id"], "new")
                 save.assert_awaited_once()
+
+
+class TurnLogTests(unittest.TestCase):
+    def test_turn_log_has_cost_and_checks_but_no_user_text(self):
+        from app.api.routes.chat import routes
+
+        with self.assertLogs(routes.logger, level="INFO") as logs:
+            line = routes.log_turn(
+                agent="buzz",
+                model=None,
+                tools=["get_market_buzz", None, "web_search"],
+                seconds=6.04,
+                usage={"model_calls": 3, "input_tokens": 30000, "output_tokens": 900},
+                answer_check={
+                    "matched": 4,
+                    "mismatch": 1,
+                    "unverified": 2,
+                    "claims": [{"text": "secret"}],
+                    "unit_fixes": [{}],
+                },
+                gaps=[{"tool": "get_market_buzz", "kind": "unavailable"}],
+            )
+        self.assertEqual(line, {
+            "agent": "buzz", "model": "default", "tools": ["get_market_buzz", "web_search"], "seconds": 6.0,
+            "model_calls": 3, "input_tokens": 30000, "output_tokens": 900,
+            "matched": 4, "mismatch": 1, "unverified": 2, "unit_fixes": 1, "data_gaps": ["get_market_buzz"],
+        })  # fmt: skip
+        self.assertIn("chat_turn", logs.output[0])
+        self.assertNotIn("secret", logs.output[0])

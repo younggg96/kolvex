@@ -95,16 +95,16 @@ def creator_opinions_payload(ticker: str, days: int = 90) -> dict:
                 "bullish_count",
                 "bearish_count",
                 "neutral_count",
-                "avg_score",
                 "latest_opinion_at",
             )
         },
+        # No avg_score or per-opinion confidence: the product shows no numeric creator scores, and
+        # agents whose prompts do not repeat that rule copied them into answers ("信心 0.86").
         "opinions": [
             {
                 "creator": r.get("channel_title"),
                 "date": r.get("opinion_date") or str(r.get("video_published_at") or "")[:10],
                 "sentiment": r.get("sentiment"),
-                "confidence": r.get("confidence"),
                 "time_horizon": r.get("time_horizon"),
                 "thesis": _text(r.get("thesis") or r.get("summary")),
                 "risks": _text(r.get("risks"), 200),

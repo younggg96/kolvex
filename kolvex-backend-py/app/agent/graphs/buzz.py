@@ -23,6 +23,8 @@ Rules for the answer:
 - Attention is not an opinion and not a signal. Do not say a stock "will" move because it is
   trending, and do not suggest chasing it.
 - Give a reason for a move only when a dated headline supports it; otherwise say no reason was found.
+  Look for that headline beyond the stock itself (peers, sector, deals) as the shared rules describe,
+  and treat a peer's sharp move in the same session as a lead to check.
 - If a source is in "unavailable_sources", say it could not be loaded rather than leaving it out.
 """
 )

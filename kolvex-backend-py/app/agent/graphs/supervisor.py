@@ -70,7 +70,71 @@ from app.agent.graphs.research import RESEARCH_SYSTEM_PROMPT  # noqa: E402
 from app.agent.graphs.smart_money import SMART_MONEY_SYSTEM_PROMPT  # noqa: E402
 from app.agent.graphs.valuation import VALUATION_SYSTEM_PROMPT  # noqa: E402
 
-# Every agent gets the same tools; they differ only in their prompt. financial is the fallback.
+# Specialists get only the tools their prompts use, plus quotes and news for "why did it move"
+# (config.MOVE_REASON_RULES): fewer tool descriptions per call, fewer wrong picks. financial (the
+# fallback) and research keep every tool. The user's data-source and skill switches still apply on top.
+_NEWS_TOOLS = {"get_stock_quote", "search_news_flashes", "web_search"}
+AGENT_TOOL_NAMES: Dict[str, set] = {
+    "portfolio": _NEWS_TOOLS
+    | {
+        "get_user_portfolio",
+        "get_user_watchlist",
+        "get_market_events",
+        "get_creator_opinions",
+        "get_daily_brief",
+    },
+    "creators": _NEWS_TOOLS
+    | {
+        "get_creator_opinions",
+        "get_creator_recent_opinions",
+        "get_creator_record",
+        "search_creator_opinions",
+    },
+    "earnings": _NEWS_TOOLS
+    | {
+        "get_market_events",
+        "get_reported_revenue",
+        "get_analyst_recommendations",
+        "get_creator_opinions",
+        "get_stock_financials",
+        "get_company_info",
+    },
+    "macro": _NEWS_TOOLS
+    | {"get_macro_indicators", "get_market_events", "get_daily_brief", "search_creator_opinions"},
+    "smart_money": _NEWS_TOOLS
+    | {
+        "get_superinvestor_portfolio",
+        "get_institutional_holders",
+        "get_congress_trades",
+        "get_options_activity",
+        "get_company_info",
+    },
+    "valuation": _NEWS_TOOLS
+    | {
+        "get_valuation",
+        "get_stock_financials",
+        "get_analyst_recommendations",
+        "get_reported_revenue",
+        "get_stock_history",
+    },
+    "buzz": _NEWS_TOOLS
+    | {
+        "get_market_buzz",
+        "get_creator_opinions",
+        "get_daily_brief",
+        "get_market_events",
+        "get_technical_indicators",
+    },
+    "paper_review": {"get_paper_trading_account", "get_stock_quote"},
+}
+
+
+def tools_for_agent(agent_type: str, tools: list) -> list:
+    """The agent's own tool set, out of the tools this request allows."""
+    wanted = AGENT_TOOL_NAMES.get(agent_type)
+    return list(tools) if wanted is None else [t for t in tools if t.name in wanted]
+
+
 AGENT_PROMPTS = {
     "financial": FINANCIAL_SYSTEM_PROMPT,
     "research": RESEARCH_SYSTEM_PROMPT,
@@ -170,8 +234,10 @@ def _create_agent_for_request(
     # 创建 LLM（用户 key 优先）
     llm = get_llm(provider=provider, model=model, user_api_keys=user_api_keys)
 
-    # 获取过滤后的工具（传入 user_id 以绑定 portfolio 工具）
-    tools = get_tools_for_sources(sources, user_id=user_id, skills=skills)
+    # 获取过滤后的工具（传入 user_id 以绑定 portfolio 工具），再收窄到这个子 Agent 的工具
+    tools = tools_for_agent(
+        agent_type, get_tools_for_sources(sources, user_id=user_id, skills=skills)
+    )
 
     # 选择系统提示词 + source hints
     available_tools = {tool.name for tool in tools}
@@ -476,6 +542,7 @@ async def stream_agent(
         tool_texts: list[tuple[str, str]] = []
         gaps: list[dict] = []
         financials: dict[str, dict] = {}
+        usage = {"model_calls": 0, "input_tokens": 0, "output_tokens": 0}
         writing = {"type": "status", "stage": "writing", "content": "Writing the response"}
 
         async for event in agent.astream_events(
@@ -490,6 +557,13 @@ async def stream_agent(
                 node = (event.get("metadata") or {}).get("langgraph_node")
                 if node not in (None, "agent"):
                     continue
+
+            if kind == "on_chat_model_end":
+                # Token use for the per-turn log line (app/api/routes/chat/routes.py).
+                spent = getattr(event.get("data", {}).get("output"), "usage_metadata", None) or {}
+                usage["model_calls"] += 1
+                usage["input_tokens"] += spent.get("input_tokens", 0) or 0
+                usage["output_tokens"] += spent.get("output_tokens", 0) or 0
 
             if kind == "on_chat_model_stream":
                 if final_response_emitted:
@@ -567,7 +641,7 @@ async def stream_agent(
             }
             return
 
-        done: Dict[str, Any] = {"type": "done", "content": ""}
+        done: Dict[str, Any] = {"type": "done", "content": "", "usage": usage}
         # The caller repairs "1,270.38 billion" copied as "1,270.38 亿" against these.
         if gaps:
             done["data_gaps"] = merge_gaps(gaps)
@@ -662,8 +736,11 @@ _SMART_MONEY_WORDS = re.compile(
     re.IGNORECASE,
 )
 _VALUATION_WORDS = re.compile(
-    r"估值|贵不贵|便宜吗|贵吗|高估|低估|合理价|历史市盈率|PE\s*(?:区间|分位)|"
-    r"\b(?:valuation|overvalued|undervalued|expensive|cheap|fair value)\b",
+    r"估值|贵不贵|便宜吗|贵吗|高估|低估|合理价|历史市盈率|PE\s*(?:区间|分位)|偏贵|偏便宜|"
+    # A multiple judged against its own history ("市盈率在历史上算高吗"), not just looked up.
+    r"(?:市盈率|市净率|市销率|(?<![A-Za-z])P/?[ES](?![A-Za-z])).{0,12}(?:历史|过去|五年|5\s*年).{0,8}(?:高|低|贵|便宜)|"
+    r"\b(?:valuation|overvalued|undervalued|expensive|cheap|fair value)\b|"
+    r"\bP/?E\b.{0,30}\bhistor(?:y|ic|ical|ically)\b",
     re.IGNORECASE,
 )
 _BUZZ_WORDS = re.compile(

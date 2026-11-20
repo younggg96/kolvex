@@ -36,9 +36,13 @@ export function ChatMessageList({
 
   const actualEndRef = messagesEndRef || endRef;
 
+  // Scroll only the thread: scrollIntoView also scrolls the shell's overflow-hidden
+  // ancestors, which shifts the sidebar and pins the composer to the top of the page.
   const scrollToBottom = useCallback(() => {
-    actualEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [actualEndRef]);
+    const container = containerRef.current;
+    if (!container) return;
+    container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
+  }, []);
 
   // Auto-scroll when anything changes
   useEffect(() => {

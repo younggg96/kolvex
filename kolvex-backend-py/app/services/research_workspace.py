@@ -16,6 +16,7 @@ from typing import Any, Callable, Literal, Optional
 from pydantic import BaseModel, Field
 
 from app.agent.agents import CHAT_AGENTS, TEAM_SPECIALISTS
+from app.agent.config import MOVE_REASON_RULES
 from app.core.report_format import REPORT_FORMATTING
 
 logger = logging.getLogger(__name__)
@@ -754,6 +755,7 @@ Stay inside your scope; other researchers cover the rest.
 - Write in the language of the research question or brief (Chinese or English).
 - Output Markdown: a one-line key finding first, then short sections with evidence, then risks or open questions.
 - Keep it under 400 words. This is research, not personalised investment advice."""
+        + MOVE_REASON_RULES
         + REPORT_FORMATTING
     )
 
@@ -780,6 +782,69 @@ def _tools_used(messages: list) -> list[str]:
             if name:
                 names.append(name)
     return names
+
+
+def tool_evidence(messages: list) -> dict:
+    """What one researcher's tools returned, in the shapes the chat's number check reads."""
+    from langchain_core.messages import ToolMessage
+
+    from app.agent.financial_evidence import extract_financial_evidence
+    from app.agent.quote_evidence import extract_quote_evidence
+    from app.agent.revenue_evidence import extract_revenue_evidence
+
+    outputs = [m for m in messages if isinstance(m, ToolMessage)]
+    return {
+        "quotes": [q.model_dump(mode="json") for m in outputs if (q := extract_quote_evidence(m))],
+        "revenues": [
+            r.model_dump(mode="json", exclude_none=True)
+            for m in outputs
+            for r in extract_revenue_evidence(m)
+        ],
+        "financials": [item for m in outputs for item in extract_financial_evidence(m)],
+        "outputs": [(m.name or "", str(m.content)) for m in outputs],
+    }
+
+
+EVIDENCE_KEYS = ("quotes", "revenues", "financials", "outputs")
+
+
+def merge_evidence(parts: list[dict]) -> dict:
+    """Every researcher's evidence together: the conclusion cites all of them."""
+    return {key: [item for part in parts for item in part.get(key, [])] for key in EVIDENCE_KEYS}
+
+
+def check_text(text: str, evidence: dict) -> tuple[str, Optional[dict]]:
+    """The same repair and number check a chat answer gets before it is saved
+    (app/api/routes/chat/routes.py): unit slips fixed, then every figure judged against evidence."""
+    from app.agent.answer_check import check_answer
+    from app.agent.unit_fix import figures_by_trust, fix_unit_slips, with_unit_fixes
+
+    revenues = evidence.get("revenues", [])
+    try:
+        text, fixes = fix_unit_slips(
+            text,
+            figures_by_trust(evidence.get("outputs", [])),
+            [r["value"] for r in revenues if isinstance(r.get("value"), (int, float))],
+        )
+        check = check_answer(
+            text, evidence.get("quotes", []), revenues, evidence.get("financials", [])
+        )
+        return text, with_unit_fixes(check, fixes) if fixes else check
+    except Exception as error:  # noqa: BLE001  A failed check must not lose the research itself.
+        logger.warning("[Workspace] number check failed: %s", error)
+        return text, None
+
+
+def save_tolerant(write: Callable[[dict], Any], values: dict) -> None:
+    """Write a row; before migration 20261120213000 adds answer_check, write it without that column
+    instead of losing the research (the run would otherwise stay "running")."""
+    try:
+        write(values)
+    except Exception as error:  # noqa: BLE001
+        if "answer_check" not in values or "answer_check" not in str(error):
+            raise
+        logger.info("[Workspace] answer_check column missing; run migration 20261120213000")
+        write({k: v for k, v in values.items() if k != "answer_check"})
 
 
 STANCE_ALIASES = {
@@ -904,7 +969,14 @@ async def run_research(
     gate = asyncio.Semaphore(AGENT_CONCURRENCY)
 
     def update_result(agent: str, values: dict) -> None:
-        db.table(RESULTS).update(values).eq("run_id", run["id"]).eq("agent", agent).execute()
+        save_tolerant(
+            lambda v: db.table(RESULTS)
+            .update(v)
+            .eq("run_id", run["id"])
+            .eq("agent", agent)
+            .execute(),
+            values,
+        )
 
     async def one(agent: str) -> dict:
         async with gate:
@@ -913,10 +985,12 @@ async def run_research(
             )
             try:
                 if run.get("source_message_id"):
-                    from app.agent.graphs.supervisor import AGENT_PROMPTS
+                    from app.agent.graphs.supervisor import AGENT_PROMPTS, tools_for_agent
                     from app.agent.tools import get_tools_for_sources
 
-                    tools = get_tools_for_sources(run.get("sources"), user_id, run.get("skills"))
+                    tools = tools_for_agent(
+                        agent, get_tools_for_sources(run.get("sources"), user_id, run.get("skills"))
+                    )
                     prompt = AGENT_PROMPTS[agent] + (
                         "\n\nYou are one specialist on the workspace research team. "
                         "Stay within your specialty. Use the available tools and cite sources and dates. "
@@ -936,10 +1010,13 @@ async def run_research(
                 content = _final_text(messages)
                 if not content:
                     raise RuntimeError("agent returned no answer")
+                evidence = tool_evidence(messages)
+                content, check = check_text(content, evidence)
                 finding = await summarize_finding(fast, content)
                 values = {
                     "status": "completed",
                     "content": content,
+                    "answer_check": check,
                     "summary": finding.summary,
                     "stance": finding.stance,
                     "confidence": finding.confidence,
@@ -956,7 +1033,11 @@ async def run_research(
                 )
                 values = {"status": "failed", "error": reason[:500], "completed_at": utcnow()}
             await asyncio.to_thread(update_result, agent, values)
-            return {"agent": agent, **values}
+            return {
+                "agent": agent,
+                **values,
+                "evidence": evidence if values["status"] == "completed" else {},
+            }
 
     results = await asyncio.gather(*(one(a) for a in run["agents"]))
     done = [r for r in results if r["status"] == "completed"]
@@ -976,16 +1057,21 @@ async def run_research(
                 timeout=AGENT_TIMEOUT_SECONDS,
             )
             synthesis = _final_text([reply]) or str(reply.content)
+            # The conclusion restates the notes' figures: judge it against all of their tools.
+            synthesis, check = check_text(synthesis, merge_evidence([r["evidence"] for r in done]))
             finding = await summarize_finding(fast, synthesis)
             final.update(
                 status="partial" if missing else "completed",
                 synthesis=synthesis,
                 stance=finding.stance,
+                answer_check=check,
             )
         except Exception as error:  # noqa: BLE001
             logger.warning("[Workspace] synthesis failed in run %s: %s", run["id"], error)
             final.update(status="partial", error=f"synthesis failed: {type(error).__name__}"[:500])
-    await asyncio.to_thread(lambda: db.table(RUNS).update(final).eq("id", run["id"]).execute())
+    await asyncio.to_thread(
+        save_tolerant, lambda v: db.table(RUNS).update(v).eq("id", run["id"]).execute(), final
+    )
     return final
 
 

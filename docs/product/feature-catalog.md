@@ -56,7 +56,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 | 功能 | ID | Web 入口 | App 入口 | 后端 | 文档 | App |
 | --- | --- | --- | --- | --- | --- | --- |
 | AI 聊天（十个子 Agent：问答、深度研究、持仓、博主观点、财报、宏观、资金动向、估值、市场热度、模拟交易复盘；按意图自动路由） | `chat` | `/dashboard/chat`（桌面侧栏顶部主入口，手机网页底栏首项） | `(tabs)/chat`、`/chat/[id]` | `chat/` | `kolvex-backend-py/app/agent/README.md`、[model-catalog.md](../model-catalog.md)、[opinion-backtest.md](../opinion-backtest.md)（博主观点后股价工具）；记忆见 README 第 7 节（需迁移 `20261115000000_chat_memory.sql`；查看 / 清除入口在两端设置的偏好设置页） | ✅ |
-| 研究工作区（聊天按问题选择专项研究员，自动创建或复用工作区并启动一轮研究；专项结果、进度和综合结论保存在工作区；全局历史只列普通对话；Web 设置可选自动 / 先问我 / 关闭和人数上限） | `chat` | `/dashboard/workspaces` | `(more)/workspaces` | `research_workspaces.py`、`chat/` | [聊天和团队研究](../../kolvex-backend-py/app/agent/README.md) · 迁移 `20261117011931_chat_team_research.sql` | ◐（App 可查看团队研究，聊天自动发起待移植） |
+| 研究工作区（聊天按问题选择专项研究员，自动创建或复用工作区并启动一轮研究；专项结果、进度和综合结论保存在工作区；全局历史只列普通对话；Web 设置可选自动 / 先问我 / 关闭和人数上限） | `chat` | `/dashboard/workspaces` | `(more)/workspaces` | `research_workspaces.py`、`chat/` | [聊天和团队研究](../../kolvex-backend-py/app/agent/README.md) · 迁移 `20261117011931_chat_team_research.sql`、`20261120213000_team_research_answer_check.sql`（研究员笔记和综合结论的数字核对） | ◐（App 可查看团队研究，聊天自动发起和数字核对显示待移植） |
 | AI 研究报告库、阅读（Web 列表支持按需翻译已存技术结论和条件计划） | `tradingAnalysis` | `/dashboard/ai-research` | `(more)/research`、`/report/[id]` | `trading_analysis/` | [内容翻译](../content-translation.md) | ✅ |
 | 研究任务生成（仅管理员） | `tradingAnalysis` | `/dashboard/ai-research?view=authoring` | `/research-task/[id]` | `trading_analysis/` | — | ◐（轮询代替 SSE） |
 

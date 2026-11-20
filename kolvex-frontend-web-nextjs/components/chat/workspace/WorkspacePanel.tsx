@@ -41,6 +41,7 @@ import {
   type ResearchAgent,
   type ResearchRun,
 } from "@/lib/researchWorkspaceApi";
+import { AnswerCheckNote } from "../AnswerCheckNote";
 import { AgentDesk } from "./AgentDesk";
 import type { ChatWorkspace } from "./useChatWorkspace";
 import { workspaceErrorCode } from "./useChatWorkspace";
@@ -558,7 +559,10 @@ function RunView({
           </div>
         )}
         {run.synthesis ? (
-          <ResearchMarkdown symbols={symbols}>{run.synthesis}</ResearchMarkdown>
+          <>
+            <ResearchMarkdown symbols={symbols}>{run.synthesis}</ResearchMarkdown>
+            {run.answer_check && <AnswerCheckNote check={run.answer_check} />}
+          </>
         ) : run.status === "failed" ? (
           <p className="text-sm text-negative">
             {c("This research run failed.", "这轮研究失败了。")}
@@ -653,6 +657,7 @@ function ResultRow({ result, c, symbols }: { result: AgentResult; c: Copy; symbo
           {result.status === "completed" ? (
             <div className="space-y-3">
               <ResearchMarkdown symbols={symbols}>{result.content}</ResearchMarkdown>
+              {result.answer_check && <AnswerCheckNote check={result.answer_check} />}
               {result.tools_used.length > 0 && (
                 <p className="text-xs text-muted-foreground">
                   {c("Data used", "使用的数据")}:{" "}
