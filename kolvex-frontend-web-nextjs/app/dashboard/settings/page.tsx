@@ -19,6 +19,7 @@ import {
   Monitor,
   SunMoon,
   Palette,
+  TrendingUp,
   User,
   Mail,
   Phone,
@@ -77,7 +78,9 @@ import { useCurrentUserProfile, updateUserTheme, type UserProfileUpdate } from "
 import {
   THEME_PALETTES,
   applyThemePalette,
+  readFollowMarket,
   readThemePalette,
+  writeFollowMarket,
   type PaletteMode,
 } from "@/lib/themePalettes";
 import {
@@ -210,6 +213,7 @@ function SettingsContent() {
   const [activeTab, setActiveTab] = useState("account");
   const [mounted, setMounted] = useState(false);
   const [palettes, setPalettes] = useState<Record<PaletteMode, string> | null>(null);
+  const [followMarket, setFollowMarket] = useState(false);
 
   // Profile editing state
   const [isEditing, setIsEditing] = useState(false);
@@ -313,6 +317,7 @@ function SettingsContent() {
   useEffect(() => {
     setMounted(true);
     setPalettes({ light: readThemePalette("light"), dark: readThemePalette("dark") });
+    setFollowMarket(readFollowMarket());
 
     // Get tab from URL
     const tab = searchParams.get("tab");
@@ -1254,36 +1259,61 @@ function SettingsContent() {
                           />
                         )}
                       </FieldRow>
-                      {/* Only the palettes of the theme in effect; "system" follows the OS. */}
-                      <FieldRow
-                        icon={Palette}
-                        label={t(`settings.preferences.palette.${paletteMode}`)}
+                      <SettingsRow
+                        icon={TrendingUp}
+                        label={
+                          <>
+                            {t("settings.preferences.followMarket")}
+                            <InfoTip label={t("settings.preferences.followMarket")}>
+                              {t("settings.preferences.followMarketTip")}
+                            </InfoTip>
+                          </>
+                        }
                       >
-                        {mounted && palettes && (
-                          <SegmentedControl
-                            key={paletteMode}
-                            label={t(`settings.preferences.palette.${paletteMode}`)}
-                            semantics="radio"
-                            value={palettes[paletteMode]}
-                            onChange={(palette) => handlePaletteChange(paletteMode, palette)}
-                            options={THEME_PALETTES[paletteMode].map((palette) => ({
-                              value: palette,
-                              label: (
-                                <>
-                                  <span
-                                    aria-hidden="true"
-                                    data-mode={paletteMode}
-                                    data-palette={palette}
-                                    className="palette-swatch h-3.5 w-3.5 shrink-0 rounded-full ring-1 ring-inset ring-foreground/15"
-                                  />
-                                  {t(`settings.preferences.palettes.${paletteMode}.${palette}`)}
-                                </>
-                              ),
-                            }))}
-                            itemClassName="min-h-9 gap-1.5 px-3 text-[0.8125rem] sm:px-4"
+                        {mounted && (
+                          <Switch
+                            checked={followMarket}
+                            onCheckedChange={(checked) => {
+                              setFollowMarket(checked);
+                              writeFollowMarket(checked);
+                            }}
+                            aria-label={t("settings.preferences.followMarket")}
                           />
                         )}
-                      </FieldRow>
+                      </SettingsRow>
+                      {/* Only the palettes of the theme in effect; "system" follows the OS.
+                          Hidden while the market picks the colour. */}
+                      {!followMarket && (
+                        <FieldRow
+                          icon={Palette}
+                          label={t(`settings.preferences.palette.${paletteMode}`)}
+                        >
+                          {mounted && palettes && (
+                            <SegmentedControl
+                              key={paletteMode}
+                              label={t(`settings.preferences.palette.${paletteMode}`)}
+                              semantics="radio"
+                              value={palettes[paletteMode]}
+                              onChange={(palette) => handlePaletteChange(paletteMode, palette)}
+                              options={THEME_PALETTES[paletteMode].map((palette) => ({
+                                value: palette,
+                                label: (
+                                  <>
+                                    <span
+                                      aria-hidden="true"
+                                      data-mode={paletteMode}
+                                      data-palette={palette}
+                                      className="palette-swatch h-3 w-3 shrink-0 rounded-full ring-1 ring-inset ring-foreground/10"
+                                    />
+                                    {t(`settings.preferences.palettes.${paletteMode}.${palette}`)}
+                                  </>
+                                ),
+                              }))}
+                              itemClassName="min-h-9 gap-1.5 px-3 text-[0.8125rem] sm:px-4"
+                            />
+                          )}
+                        </FieldRow>
+                      )}
                     </SettingsGroup>
                     <AiAssistantSettings className="mt-6" />
                     <ChatMemorySettings className="mt-6" />

@@ -1209,24 +1209,25 @@
       "themeLightDesc": "Light theme",
       "themeDarkDesc": "Dark theme",
       "themeSystemDesc": "Follow system",
+      "followMarket": "Follow the market",
+      "followMarketTip": "During US regular hours the colour follows the S&P 500 today: green when it's up or flat, red when it's down. Outside trading hours the page turns black and white. Your own palette comes back when you turn this off.",
       "palette": { "light": "Light palette", "dark": "Dark palette" },
       "palettes": {
         "light": {
           "green": "Green",
           "mono": "Mono",
-          "sapphire": "Sapphire",
-          "lavender": "Lavender",
-          "caramel": "Caramel",
-          "navy": "Navy"
+          "sunrise": "Sunrise",
+          "red": "Red",
+          "deepsea": "Deep Sea",
+          "slate": "Slate"
         },
         "dark": {
           "green": "Green",
           "mono": "Mono",
-          "electric": "Electric",
-          "midnight": "Midnight",
-          "neon": "Neon",
-          "gold": "Gold",
-          "starry": "Starry"
+          "sunrise": "Sunrise",
+          "red": "Red",
+          "deepsea": "Deep Sea",
+          "slate": "Slate"
         }
       },
       "failedToUpdateTheme": "Failed to update theme",

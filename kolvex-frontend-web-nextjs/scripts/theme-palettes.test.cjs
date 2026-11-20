@@ -78,7 +78,7 @@ for (const id of ids("light")) {
     legible(id, t["primary-hover"], t.background, "primary-hover text");
     legible(id, t["secondary-foreground"], t.secondary, "secondary pair");
     legible(id, t["field-edge"], WHITE, "field edge", 3);
-    legible(id, t.primary, WHITE, "primary on surface", 3);
+    legible(id, t.primary, WHITE, "primary on surface");
     legible(id, [100, 116, 139], t.background, "muted text on background");
     legible(id, [71, 85, 105], t["surface-hover"], "muted on hover");
   });
@@ -122,10 +122,77 @@ test("every palette has a swatch and both translations", () => {
         css.includes(`.palette-swatch[data-mode="${mode}"][data-palette="${id}"]`),
         `${mode} ${id} swatch`,
       );
+      if (id !== "green") {
+        const art = mode === "light" ? ".site-background" : ".dashboard-backdrop-art";
+        const root =
+          mode === "light"
+            ? `:root:not(.dark)[data-light-palette="${id}"]`
+            : `.dark[data-dark-palette="${id}"]`;
+        assert.ok(css.includes(`${root} ${art}`), `${mode} ${id} background tint`);
+      }
       for (const locale of locales) {
         assert.ok(locale.settings.preferences.palettes[mode][id], `${mode} ${id} label`);
         assert.ok(locale.settings.preferences.palette[mode], `${mode} row label`);
       }
     }
   }
+});
+
+const vm = require("node:vm");
+const ts = require("typescript");
+const paletteLib = { exports: {} };
+vm.runInNewContext(
+  ts.transpileModule(lib, {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
+  }).outputText,
+  { module: paletteLib, exports: paletteLib.exports },
+);
+const { marketPalette, THEME_PALETTE_BOOT_SCRIPT } = paletteLib.exports;
+
+test("follow the market: down is red, up or flat is green, closed is mono", () => {
+  assert.equal(marketPalette(true, -0.42), "red");
+  assert.equal(marketPalette(true, 0.42), "green");
+  assert.equal(marketPalette(true, 0), "green");
+  assert.equal(marketPalette(false, -3), "mono");
+  assert.equal(marketPalette(false, 3), "mono");
+});
+
+function boot(storage) {
+  const attributes = {};
+  vm.runInNewContext(THEME_PALETTE_BOOT_SCRIPT, {
+    localStorage: { getItem: (key) => (key in storage ? storage[key] : null) },
+    document: { documentElement: { setAttribute: (name, value) => (attributes[name] = value) } },
+  });
+  return attributes;
+}
+
+test("the boot script paints the chosen palettes, or the last market palette when following", () => {
+  assert.deepEqual(boot({ "kolvex-light-palette": "slate", "kolvex-dark-palette": "red" }), {
+    "data-light-palette": "slate",
+    "data-dark-palette": "red",
+  });
+  assert.deepEqual(
+    boot({
+      "kolvex-light-palette": "slate",
+      "kolvex-palette-follow-market": "on",
+      "kolvex-palette-market-last": "mono",
+    }),
+    { "data-light-palette": "mono", "data-dark-palette": "mono" },
+  );
+  // Following with no reading yet paints nothing (default green) until the first quote.
+  assert.deepEqual(
+    boot({ "kolvex-light-palette": "slate", "kolvex-palette-follow-market": "on" }),
+    {},
+  );
+  // Storage blocked: nothing painted, no error.
+  assert.doesNotThrow(() =>
+    vm.runInNewContext(THEME_PALETTE_BOOT_SCRIPT, {
+      localStorage: {
+        getItem() {
+          throw new Error("blocked");
+        },
+      },
+      document: { documentElement: { setAttribute() {} } },
+    }),
+  );
 });

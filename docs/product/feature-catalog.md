@@ -75,7 +75,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 | 功能 | ID | Web 入口 | App 入口 | 后端 | 文档 | App |
 | --- | --- | --- | --- | --- | --- | --- |
 | 登录注册、OAuth、找回密码 | — | `/auth/*` | `/sign-in`、`/auth/*` | `auth/` | — | ✅（App 必须登录） |
-| 个人资料、头像、主题、语言、模型 API Key（Web 另有浅色 / 深色配色，仅存本机） | `settings` | `/dashboard/settings`、`/config` | `/account`、`/preferences`、`(more)/settings` | `users.py`、`upload/`、`user_api_keys/` | — | ✅ |
+| 个人资料、头像、主题、语言、模型 API Key（Web 另有浅色 / 深色配色和「跟随大盘」自动配色，仅存本机） | `settings` | `/dashboard/settings`、`/config` | `/account`、`/preferences`、`(more)/settings` | `users.py`、`upload/`、`user_api_keys/` | — | ✅ |
 | 管理后台（用户、日报、事件、YouTube、X、期权异动、邮件设置、超级投资者名单） | `admin` | `/dashboard/admin` | `(more)/admin` | `admin/` 等 | [mcp-content-admin.md](../mcp-content-admin.md) | ◐ |
 | 动态（原「人物动态」；横滑头像、美联储官员显示 Fed 徽章、站内固定头像与近 24 小时动态提示圈；紧凑时间线支持时区展开、独立股票行情行和筛选；后台可逐条新增、编辑、删除，也可 JSON 批量导入） | `personUpdates` | `/dashboard/person-updates`、`/tracker`、`/dashboard/admin?tab=person-updates` | — | `person_updates.py` | [动态](../person-updates.md) | — |
 | YouTube 自动导入（本地 Mac worker 每天 21:00 获取未追踪视频字幕 → 后端 DeepSeek 分析 → 导入观点；管理后台「YouTube 导入」可立即运行并查看结果） | `admin` | `/dashboard/admin?tab=youtube` | — | `youtube_auto_import.py`（`/admin/youtube-auto-import/*`、`/youtube-auto-import/worker/*`） | [youtube-auto-import.md](../youtube-auto-import.md)；需迁移 `20261116150000_youtube_auto_import.sql` | — |

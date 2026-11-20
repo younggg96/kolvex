@@ -4,6 +4,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { MarketPaletteSync } from "@/components/theme/MarketPaletteSync";
 import { LanguageProvider } from "@/lib/i18n";
 import { UserProfileProvider } from "@/components/user/UserProfileProvider";
 import { StockDataCacheProvider } from "@/components/portfolio/hooks/useStockDataCache";
@@ -62,6 +63,7 @@ export default function RootLayout({
       <body className={`${inter.variable} font-sans`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           <SiteBackground />
+          <MarketPaletteSync />
           <LanguageProvider>
             <UserProfileProvider>
               <StockDataCacheProvider>

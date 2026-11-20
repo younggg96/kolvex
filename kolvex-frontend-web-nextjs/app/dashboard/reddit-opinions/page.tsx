@@ -150,6 +150,8 @@ export default function RedditOpinionsPage() {
     <WatchlistButton ticker={row.ticker} showLabel={!compact} />
   );
 
+  // Column headers are right-aligned like the numbers under them, so the sort
+  // arrow leads the label and the label text itself ends on the column edge.
   const sortButton = (value: RedditSort, label: string) => (
     <button
       type="button"
@@ -157,12 +159,12 @@ export default function RedditOpinionsPage() {
       aria-pressed={sort === value}
       title={t(`redditOpinions.sortOptions.${value}`)}
       className={cn(
-        "list-control inline-flex min-h-8 items-center gap-0.5 rounded-full px-2 hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary",
+        "list-control inline-flex min-h-6 items-center gap-0.5 whitespace-nowrap rounded-full px-2 hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary",
         sort === value && "font-medium text-foreground",
       )}
     >
-      {label}
       {sort === value && <ArrowDown className="h-3 w-3" aria-hidden="true" />}
+      {label}
     </button>
   );
 
@@ -329,18 +331,20 @@ export default function RedditOpinionsPage() {
                 </div>
               )}
 
-              {/* Mirrors ListRow geometry (gap-1, pr-2, 36px icon button) so each
-                  label sits over its column; -mr-2 cancels the sort buttons'
-                  own px-2 so label text ends on the column edge like the values. */}
-              <div className="mt-3 hidden items-center gap-1 border-b border-border pb-1 pr-2 text-xs text-muted-foreground lg:flex">
+              {/* Mirrors ListRow geometry (gap-3, pr-2, 36px icon button) so each
+                  label sits over its column. Each stat cell stacks two lines
+                  (mentions over change, rank over upvotes), so its two sort
+                  labels stack the same way; -mr-2 cancels the buttons' own px-2
+                  so label text ends on the column edge like the values. */}
+              <div className="mt-3 hidden items-center gap-3 border-b border-border pb-1 pr-2 text-xs text-muted-foreground lg:flex">
                 <div className={cn(ROW_GRID, "px-2")}>
                   <span className="pl-8">{t("redditOpinions.stock")}</span>
-                  <span className="-mr-2 flex justify-end gap-0.5">
+                  <span className="-mr-2 flex flex-col items-end">
                     {sortButton("mentions", t("redditOpinions.mentionsUnit"))}
                     {sortButton("mentionChange", t("redditOpinions.changeShort"))}
                   </span>
-                  <span className="text-right">{t("redditOpinions.trend")}</span>
-                  <span className="-mr-2 flex justify-end gap-0.5">
+                  <span className="text-center">{t("redditOpinions.trend")}</span>
+                  <span className="-mr-2 flex flex-col items-end">
                     {sortButton("rankChange", t("redditOpinions.rankShort"))}
                     {sortButton("upvotes", t("redditOpinions.upvotesShort"))}
                   </span>
@@ -386,7 +390,7 @@ export default function RedditOpinionsPage() {
                     {rows.map((row) => {
                       const change = changeLabel(row);
                       return (
-                        <ListRow key={row.ticker} className="opinion-result-row gap-1">
+                        <ListRow key={row.ticker} className="opinion-result-row">
                           <Link
                             href={marketStockHref(row.ticker)}
                             aria-label={t("redditOpinions.openStock", { ticker: row.ticker })}
