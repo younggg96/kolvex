@@ -1475,7 +1475,12 @@ Rules that follow from that:
   movement. Selection measurement ignores its own style writes.
 - Desktop sidebar, mobile dock and the mobile opinion source nav take a grey
   wash on hover by default. The current route uses a filled pill, and icons
-  follow the label color. AI Chat is the primary link in the fixed desktop
+  follow the label color. On hover or keyboard focus each desktop sidebar icon
+  plays a short motion (≤560ms) matching what it draws — chart bars grow, text
+  lines write in, the star turns, signal waves spread, the pulse line draws —
+  keyed on lucide's per-icon class in `globals.css`; icons without their own
+  rule (platform logos, new icons) fall back to a small pop. Reduced motion
+  turns all of it off. AI Chat is the primary link in the fixed desktop
   sidebar header: it uses a solid brand fill from another route and a neutral,
   inverted fill when chat is current. The collapsed rail keeps the chat icon
   and its accessible label.
