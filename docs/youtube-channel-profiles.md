@@ -10,7 +10,7 @@ On the YouTube opinions page, the By Creator tab opens as a horizontal avatar ra
 
 ## Share opinions from a video on Web
 
-Use Share video opinions above the stock opinions in a video card, in the video feed or the creator’s video history.
+Use the share icon at the right end of a video card’s title row (it shares the video summary and the selected stock opinions), in the video feed or the creator’s video history.
 The selector starts with all recorded opinions from that creator and video,
 independent of the list’s current filters and pagination. The selected
 opinions drive the PNG preview and copyable text, with attribution and a

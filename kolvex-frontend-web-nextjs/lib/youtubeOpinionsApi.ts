@@ -439,10 +439,15 @@ export interface CreatorLatestVideo {
     YouTubeCreatorSummary,
     "channel_id" | "channel_title" | "channel_handle" | "channel_avatar_url" | "channel_url"
   > | null;
-  video: Pick<
-    YouTubeOpinion,
-    "video_id" | "video_title" | "video_url" | "video_published_at" | "opinion_date"
-  > | null;
+  video:
+    | (Pick<
+        YouTubeOpinion,
+        "video_id" | "video_title" | "video_url" | "video_published_at" | "opinion_date"
+      > & {
+        /** Whole-video summary; the share UI copies it from the opinion rows when included. */
+        video_summary?: string | null;
+      })
+    | null;
   opinions: YouTubeOpinion[];
 }
 

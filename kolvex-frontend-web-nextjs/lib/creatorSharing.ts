@@ -40,6 +40,15 @@ export function sourceVideoUrl(
     : "";
 }
 
+/** The whole-video summary travels on every opinion row of that video. */
+export function creatorVideoSummary(data: CreatorLatestVideo | null | undefined): string {
+  return (
+    data?.video?.video_summary?.trim() ||
+    data?.opinions.find((opinion) => opinion.video_summary?.trim())?.video_summary?.trim() ||
+    ""
+  );
+}
+
 export function creatorShareContent(
   creator: CreatorShareIdentity,
   data: CreatorLatestVideo | null,
@@ -80,10 +89,13 @@ export function creatorShareContent(
       (opinion) =>
         `${opinion.ticker} · ${labels[opinion.sentiment]}\n${opinion.summary || opinion.thesis || opinion.key_points?.join("\n") || (zh ? "详情见原视频" : "See the source video")}`,
     ) || [];
+  // Only the summary the caller placed on the selection is shared.
+  const videoSummary = data?.video?.video_summary?.trim();
   const text = [
     title,
     date ? `${date} · ${zh ? "美东日期" : "New York date"}` : "",
     data?.video?.video_title,
+    videoSummary ? `${zh ? "视频概括" : "Video summary"}\n${videoSummary}` : "",
     ...summaries,
     url,
   ]

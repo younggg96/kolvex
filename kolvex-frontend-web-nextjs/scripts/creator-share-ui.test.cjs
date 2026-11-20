@@ -103,12 +103,7 @@ function fixture(pageCount = 1, videoId) {
     "@/components/ui/skeleton": { Skeleton: "skeleton" },
     "@/components/ui/input": { Input: "input" },
     "@/components/ui/textarea": { Textarea: "textarea" },
-    "@/components/ui/tabs": {
-      Tabs: "tabs",
-      TabsContent: "tabcontent",
-      TabsList: "tablist",
-      TabsTrigger: "tabtrigger",
-    },
+    "@/components/ui/segmented-control": { SegmentedControl: "segmented" },
     "@/lib/creatorSharing": loadHelper("creatorSharing"),
     "@/lib/utils": { cn: (...values) => values.join(" ") },
     "@/components/ui/dialog": {
@@ -260,7 +255,7 @@ test("closing a pending share aborts the fetch and cannot reveal late results", 
 });
 
 function imageMode(h) {
-  nodes(h.render(), (node) => node.type === "tabs")[0].props.onValueChange("image");
+  nodes(h.render(), (node) => node.type === "segmented")[0].props.onChange("image");
   h.render();
   h.effects();
 }
@@ -327,9 +322,9 @@ test("changing website theme invalidates the previous image and regenerates it",
 test("one Share entry defaults to links and social composers without rendering an image", async () => {
   const h = fixture();
   const trigger = nodes(h.render(), (node) => node.type === "trigger")[0];
-  assert.ok(
-    nodes(trigger, (node) => node.type === "button" && node.props.children.includes("分享")).length,
-  );
+  const icon = nodes(trigger, (node) => node.type === "button")[0];
+  assert.equal(icon.props.size, "icon");
+  assert.equal(icon.props["aria-label"], "分享博主观点");
   h.render().props.onOpenChange(true);
   h.render();
   h.effects();
@@ -500,7 +495,7 @@ test("video selection drives the image and text while keeping the original video
   assert.equal(previewImage(h), undefined);
   await flushImages(h);
   assert.equal(h.planned.at(-1).join(","), "NVDA");
-  nodes(h.render(), (node) => node.type === "tabs")[0].props.onValueChange("link");
+  nodes(h.render(), (node) => node.type === "segmented")[0].props.onChange("link");
   h.render();
   h.effects();
   const text = nodes(h.render(), (node) => node.type === "textarea")[0].props.value;
@@ -511,4 +506,42 @@ test("video selection drives the image and text while keeping the original video
   const nvda = nodes(h.render(), (node) => node.type === "checkbox")[0];
   nvda.props.onCheckedChange(false);
   assert.equal(nodes(h.render(), (node) => node.type === "textarea").length, 0);
+});
+
+test("the whole-video summary is shared by default and can be left out", async () => {
+  const h = fixture(1, "abcdefghijk");
+  h.render().props.onOpenChange(true);
+  h.render();
+  h.effects();
+  h.request.resolve({
+    ...data,
+    opinions: data.opinions.map((opinion) => ({ ...opinion, video_summary: "整体概括内容" })),
+  });
+  await tick();
+  await flushImages(h);
+  const trigger = nodes(h.render(), (node) => node.type === "trigger")[0];
+  assert.equal(
+    nodes(trigger, (node) => node.type === "button")[0].props["aria-label"],
+    "分享视频观点",
+  );
+  nodes(h.render(), (node) => node.type === "segmented")[0].props.onChange("link");
+  h.render();
+  h.effects();
+  assert.match(
+    nodes(h.render(), (node) => node.type === "textarea")[0].props.value,
+    /视频概括\n整体概括内容\n\nNVDA/,
+  );
+  const [summary, nvda] = nodes(h.render(), (node) => node.type === "checkbox");
+  assert.equal(summary.props.checked, true);
+  summary.props.onCheckedChange(false);
+  assert.doesNotMatch(
+    nodes(h.render(), (node) => node.type === "textarea")[0].props.value,
+    /整体概括内容/,
+  );
+  // The summary alone is still shareable.
+  summary.props.onCheckedChange(true);
+  nvda.props.onCheckedChange(false);
+  const text = nodes(h.render(), (node) => node.type === "textarea")[0].props.value;
+  assert.match(text, /整体概括内容/);
+  assert.doesNotMatch(text, /NVDA ·/);
 });

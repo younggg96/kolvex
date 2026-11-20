@@ -176,6 +176,11 @@ export default function VideoOpinionCard({
               ))}
           </p>
         </div>
+        {creator && video.video_id && opinions.length > 0 && (
+          <div className="-mr-2 -mt-2 shrink-0 sm:-mt-1.5">
+            <CreatorShare creator={creator} videoId={video.video_id} />
+          </div>
+        )}
       </header>
 
       {group.video_summary && (
@@ -186,14 +191,8 @@ export default function VideoOpinionCard({
         />
       )}
 
-      {creator && video.video_id && opinions.length > 0 && (
-        <div className="mb-1 mt-4 flex justify-end">
-          <CreatorShare creator={creator} videoId={video.video_id} />
-        </div>
-      )}
-
       {opinions.length > 0 && (
-        <ul id={opinionsId} className={cn("min-w-0", !(creator && video.video_id) && "mt-5")}>
+        <ul id={opinionsId} className="mt-4 min-w-0">
           {shown.map((opinion) => {
             const confidence =
               opinion.confidence === null || opinion.confidence === undefined

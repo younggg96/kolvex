@@ -594,9 +594,13 @@ complete image contained inside it. Card and footer height follow the content so
 short pages do not retain a large blank area. Desktop and mobile readers can save each
 image, while supported devices can explicitly open native file sharing. PNGs
 are prepared before the share click and remain local; object URLs are revoked
-on page changes and close. Empty/error/retry states retain the same dialog. The video-card Share video opinions button sits between the analysis summary
-and the first stock opinion. It uses the same dialog with Image selected first and a scrollable checkbox group above the
-tabs. Each choice combines its ticker, opinion strength and summary. The count
+on page changes and close. Empty/error/retry states retain the same dialog. Every CreatorShare trigger is an icon-only ghost button (44px on phones,
+36px from `sm`) with a bilingual `aria-label`; on a video card it sits at the
+right end of the title row. The dialog uses `DialogContent layout="sheet"`:
+a bottom sheet on phones, centred from `sm`. A full-width SegmentedControl
+switches Image / Text, the body scrolls, and the actions stay in a fixed footer.
+On a video card Image is selected first and an "Include" checkbox group sits
+below the preview, led by the whole-video summary when one exists. Each choice combines its ticker, opinion strength and summary. The count
 and select-all control apply to all of the selected video's recorded opinions.
 Changing the selection invalidates the PNG preview and updates the copied text.
 The video preview is capped at 32dvh or 320px to keep export actions in view.

@@ -68,12 +68,14 @@ export function readCreatorShareAppearance(element: HTMLElement): ShareAppearanc
 }
 
 export type ShareFragment = {
+  /** A "summary" fragment carries the whole-video summary; its ticker holds the section label. */
+  kind?: "opinion" | "summary";
   ticker: string;
   sentiment: OpinionSentiment;
   lines: string[];
   continued: boolean;
   y: number;
-  strength: StrengthDescription;
+  strength?: StrengthDescription;
 };
 export type CreatorShareDocument = {
   creator: string;
@@ -130,20 +132,41 @@ export function planCreatorShare(
   t: (key: string, params?: Record<string, string>) => string,
   scope: "latest" | "video" = "latest",
 ): CreatorShareDocument {
-  if (!data.creator || !data.video || !data.opinions.length) throw new Error("No creator opinions");
+  const videoSummary = data.video?.video_summary?.trim();
+  if (!data.creator || !data.video || (!data.opinions.length && !videoSummary))
+    throw new Error("No creator opinions");
   const pages: ShareFragment[][] = [[]];
   let y = TOP;
   ctx.font = `400 34px ${appearance.fontFamily}`;
-  // The caller supplies the selected opinions in display order.
-  for (const opinion of data.opinions) {
-    const text =
-      opinion.summary?.trim() ||
-      opinion.thesis?.trim() ||
-      opinion.key_points?.join("\n") ||
-      (locale === "zh"
-        ? "暂无文字摘要，请查看原视频。"
-        : "No written summary. See the source video.");
-    const lines = wrapShareText(ctx, text, TEXT_WIDTH);
+  const items = [
+    ...(videoSummary
+      ? [
+          {
+            kind: "summary" as const,
+            ticker: locale === "zh" ? "视频概括" : "Video summary",
+            sentiment: "neutral" as OpinionSentiment,
+            text: videoSummary,
+            strength: undefined,
+          },
+        ]
+      : []),
+    // The caller supplies the selected opinions in display order.
+    ...data.opinions.map((opinion) => ({
+      kind: "opinion" as const,
+      ticker: opinion.ticker,
+      sentiment: opinion.sentiment,
+      text:
+        opinion.summary?.trim() ||
+        opinion.thesis?.trim() ||
+        opinion.key_points?.join("\n") ||
+        (locale === "zh"
+          ? "暂无文字摘要，请查看原视频。"
+          : "No written summary. See the source video."),
+      strength: describeStrength(opinion.direction_score, { t }),
+    })),
+  ];
+  for (const opinion of items) {
+    const lines = wrapShareText(ctx, opinion.text, TEXT_WIDTH);
     let cursor = 0;
     while (cursor < lines.length) {
       let room = Math.floor((BOTTOM - y - ROW_PADDING) / LINE_HEIGHT);
@@ -157,12 +180,13 @@ export function planCreatorShare(
       }
       const count = Math.min(room, lines.length - cursor);
       pages[pages.length - 1].push({
+        kind: opinion.kind,
         ticker: opinion.ticker,
         sentiment: opinion.sentiment,
         lines: lines.slice(cursor, cursor + count),
         continued: cursor > 0,
         y,
-        strength: describeStrength(opinion.direction_score, { t }),
+        strength: opinion.strength,
       });
       y += ROW_PADDING + count * LINE_HEIGHT;
       cursor += count;
@@ -323,6 +347,23 @@ export function drawCreatorSharePage(
       appearance.mutedForeground,
     );
   for (const fragment of page) {
+    if (!fragment.strength) {
+      // Video summary: a quiet section label, then the summary in body colour.
+      text(
+        fragment.ticker + (fragment.continued ? (zh ? "（续）" : " (continued)") : ""),
+        84,
+        fragment.y + 38,
+        30,
+        appearance.mutedForeground,
+        600,
+      );
+      fragment.lines.forEach((line, i) =>
+        text(line, 84, fragment.y + 86 + i * LINE_HEIGHT, 34, appearance.cardForeground),
+      );
+      if (fragment !== page[page.length - 1])
+        rule(fragment.y + ROW_PADDING + fragment.lines.length * LINE_HEIGHT - 12);
+      continue;
+    }
     const color =
       fragment.strength.tone === "positive"
         ? appearance.positive
