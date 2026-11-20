@@ -2275,11 +2275,12 @@ html[data-chat-history-open] .app-workbench .app-sidebar {
   animation: sidebar-live-ping 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
 
-/* Nav rows: colour fades in; on hover or keyboard focus each icon plays a short
-   motion that matches what it draws (bars grow, lines write, the star turns…).
-   Icons without a dedicated motion (platform logos) get a small pop. Keyed on
-   lucide's per-icon class, so a new nav icon falls back to the pop until it has
-   its own rule. */
+/* Nav icons (desktop sidebar and the phone dock): when a row is hovered,
+   keyboard-focused or becomes the current page, its icon plays a short motion
+   matching what it draws (bars grow, lines write, the star turns…). On phones
+   the tap makes the tab current, so the motion plays on tap. Keyed on lucide's
+   per-icon class; icons without their own rule (platform logos, new icons) get
+   a small pop. */
 .app-sidebar [data-sidebar="menu-button"],
 .app-sidebar [data-sidebar="menu-sub-button"] {
   transition-property: width, height, padding, background-color, color, box-shadow;
@@ -2287,18 +2288,27 @@ html[data-chat-history-open] .app-workbench .app-sidebar {
   transition-timing-function: ease;
 }
 
-.app-sidebar [data-sidebar="menu-button"] > svg,
-.app-sidebar [data-sidebar="menu-sub-button"] > svg,
-.app-sidebar [data-sidebar="menu-button"] > svg > *,
-.app-sidebar [data-sidebar="menu-sub-button"] > svg > * {
+:is(
+    .app-sidebar :is([data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]),
+    [data-mobile-dock] :is(a, button)
+  )
+  > svg,
+:is(
+    .app-sidebar :is([data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]),
+    [data-mobile-dock] :is(a, button)
+  )
+  > svg
+  > * {
   transform-box: fill-box;
   transform-origin: center;
   --nav-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 /* Fallback: pop. */
-.app-sidebar
-  :is([data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]):is(:hover, :focus-visible)
+:is(
+    .app-sidebar :is([data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]),
+    [data-mobile-dock] :is(a, button)
+  ):is(:hover, :focus-visible, [aria-current="page"])
   > svg:not(
     .lucide-search,
     .lucide-bar-chart3,
@@ -2313,100 +2323,127 @@ html[data-chat-history-open] .app-workbench .app-sidebar {
     .lucide-folder-kanban,
     .lucide-telescope,
     .lucide-pie-chart,
-    .lucide-book-open
+    .lucide-book-open,
+    .lucide-messages-square,
+    .lucide-earth,
+    .lucide-menu,
+    .lucide-settings
   ) {
   animation: nav-icon-pop 380ms var(--nav-ease);
 }
 
 /* Search: the lens sweeps. */
-.app-sidebar [data-sidebar="menu-button"]:is(:hover, :focus-visible) > svg.lucide-search {
+:is(
+    .app-sidebar :is([data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]),
+    [data-mobile-dock] :is(a, button)
+  ):is(:hover, :focus-visible, [aria-current="page"])
+  > svg.lucide-search {
   animation: nav-icon-sweep 460ms ease-in-out;
 }
 
 /* Markets: bars grow from the baseline, left to right. */
-.app-sidebar
-  [data-sidebar="menu-button"]:is(:hover, :focus-visible)
+:is(
+    .app-sidebar :is([data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]),
+    [data-mobile-dock] :is(a, button)
+  ):is(:hover, :focus-visible, [aria-current="page"])
   > svg.lucide-bar-chart3
   > path:nth-child(n + 2) {
   transform-origin: bottom;
   animation: nav-icon-grow 420ms var(--nav-ease) both;
 }
-.app-sidebar
-  [data-sidebar="menu-button"]:is(:hover, :focus-visible)
+:is(
+    .app-sidebar :is([data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]),
+    [data-mobile-dock] :is(a, button)
+  ):is(:hover, :focus-visible, [aria-current="page"])
   > svg.lucide-bar-chart3
   > path:nth-child(3) {
   animation-delay: 70ms;
 }
-.app-sidebar
-  [data-sidebar="menu-button"]:is(:hover, :focus-visible)
+:is(
+    .app-sidebar :is([data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]),
+    [data-mobile-dock] :is(a, button)
+  ):is(:hover, :focus-visible, [aria-current="page"])
   > svg.lucide-bar-chart3
   > path:nth-child(2) {
   animation-delay: 140ms;
 }
 
 /* Watchlist: the star turns one point. */
-.app-sidebar [data-sidebar="menu-button"]:is(:hover, :focus-visible) > svg.lucide-star > polygon {
+:is(
+    .app-sidebar :is([data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]),
+    [data-mobile-dock] :is(a, button)
+  ):is(:hover, :focus-visible, [aria-current="page"])
+  > svg.lucide-star
+  > polygon {
   animation: nav-icon-spin 520ms var(--nav-ease);
 }
 
 /* Lines of text write in: briefs, opinions, Congress trades. */
-.app-sidebar
-  [data-sidebar="menu-button"]:is(:hover, :focus-visible)
-  > svg.lucide-newspaper
-  > path:is(:nth-child(2), :nth-child(3)),
-.app-sidebar
-  [data-sidebar="menu-button"]:is(:hover, :focus-visible)
-  > svg.lucide-message-square-text
-  > path:nth-child(n + 2),
-.app-sidebar
-  [data-sidebar="menu-button"]:is(:hover, :focus-visible)
-  > svg.lucide-scroll-text
-  > path:nth-child(-n + 2) {
+:is(
+    .app-sidebar :is([data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]),
+    [data-mobile-dock] :is(a, button)
+  ):is(:hover, :focus-visible, [aria-current="page"])
+  :is(
+    svg.lucide-newspaper > path:is(:nth-child(2), :nth-child(3)),
+    svg.lucide-message-square-text > path:nth-child(n + 2),
+    svg.lucide-scroll-text > path:nth-child(-n + 2)
+  ) {
   --nav-len: 12;
   animation: nav-icon-draw 280ms ease-out both;
 }
-.app-sidebar
-  [data-sidebar="menu-button"]:is(:hover, :focus-visible)
-  > svg:is(.lucide-newspaper, .lucide-message-square-text)
-  > path:nth-child(3),
-.app-sidebar
-  [data-sidebar="menu-button"]:is(:hover, :focus-visible)
-  > svg.lucide-scroll-text
-  > path:nth-child(1) {
+:is(
+    .app-sidebar :is([data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]),
+    [data-mobile-dock] :is(a, button)
+  ):is(:hover, :focus-visible, [aria-current="page"])
+  :is(
+    svg.lucide-newspaper > path:nth-child(3),
+    svg.lucide-message-square-text > path:nth-child(3),
+    svg.lucide-scroll-text > path:nth-child(1)
+  ) {
   animation-delay: 120ms;
 }
 
 /* News: signal waves spread outward. */
-.app-sidebar
-  [data-sidebar="menu-button"]:is(:hover, :focus-visible)
+:is(
+    .app-sidebar :is([data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]),
+    [data-mobile-dock] :is(a, button)
+  ):is(:hover, :focus-visible, [aria-current="page"])
   > svg.lucide-radio
   > path:is(:nth-child(2), :nth-child(4)) {
   animation: nav-icon-fade 420ms ease-out both;
 }
-.app-sidebar
-  [data-sidebar="menu-button"]:is(:hover, :focus-visible)
+:is(
+    .app-sidebar :is([data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]),
+    [data-mobile-dock] :is(a, button)
+  ):is(:hover, :focus-visible, [aria-current="page"])
   > svg.lucide-radio
   > path:is(:nth-child(1), :nth-child(5)) {
   animation: nav-icon-fade 420ms 120ms ease-out both;
 }
 
 /* Updates: the person nods. */
-.app-sidebar
-  [data-sidebar="menu-button"]:is(:hover, :focus-visible)
+:is(
+    .app-sidebar :is([data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]),
+    [data-mobile-dock] :is(a, button)
+  ):is(:hover, :focus-visible, [aria-current="page"])
   > svg.lucide-user-round
   > circle {
   animation: nav-icon-nod 420ms ease-in-out;
 }
 
 /* Superinvestors: the roof settles, columns rise. */
-.app-sidebar
-  [data-sidebar="menu-button"]:is(:hover, :focus-visible)
+:is(
+    .app-sidebar :is([data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]),
+    [data-mobile-dock] :is(a, button)
+  ):is(:hover, :focus-visible, [aria-current="page"])
   > svg.lucide-landmark
   > polygon {
   animation: nav-icon-drop 420ms var(--nav-ease);
 }
-.app-sidebar
-  [data-sidebar="menu-button"]:is(:hover, :focus-visible)
+:is(
+    .app-sidebar :is([data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]),
+    [data-mobile-dock] :is(a, button)
+  ):is(:hover, :focus-visible, [aria-current="page"])
   > svg.lucide-landmark
   > line:nth-child(n + 2) {
   transform-origin: bottom;
@@ -2414,60 +2451,161 @@ html[data-chat-history-open] .app-workbench .app-sidebar {
 }
 
 /* Options activity: the pulse line draws. */
-.app-sidebar [data-sidebar="menu-button"]:is(:hover, :focus-visible) > svg.lucide-activity > path {
+:is(
+    .app-sidebar :is([data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]),
+    [data-mobile-dock] :is(a, button)
+  ):is(:hover, :focus-visible, [aria-current="page"])
+  > svg.lucide-activity
+  > path {
   --nav-len: 64;
   animation: nav-icon-draw 560ms ease-out both;
 }
 
 /* Workspaces: kanban cards drop into the folder. */
-.app-sidebar
-  [data-sidebar="menu-button"]:is(:hover, :focus-visible)
+:is(
+    .app-sidebar :is([data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]),
+    [data-mobile-dock] :is(a, button)
+  ):is(:hover, :focus-visible, [aria-current="page"])
   > svg.lucide-folder-kanban
   > path:nth-child(n + 2) {
   transform-origin: top;
   animation: nav-icon-grow 380ms var(--nav-ease) both;
 }
-.app-sidebar
-  [data-sidebar="menu-button"]:is(:hover, :focus-visible)
+:is(
+    .app-sidebar :is([data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]),
+    [data-mobile-dock] :is(a, button)
+  ):is(:hover, :focus-visible, [aria-current="page"])
   > svg.lucide-folder-kanban
   > path:nth-child(3) {
   animation-delay: 60ms;
 }
-.app-sidebar
-  [data-sidebar="menu-button"]:is(:hover, :focus-visible)
+:is(
+    .app-sidebar :is([data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]),
+    [data-mobile-dock] :is(a, button)
+  ):is(:hover, :focus-visible, [aria-current="page"])
   > svg.lucide-folder-kanban
   > path:nth-child(4) {
   animation-delay: 120ms;
 }
 
 /* Research: the telescope tilts up to look. */
-.app-sidebar [data-sidebar="menu-button"]:is(:hover, :focus-visible) > svg.lucide-telescope {
+:is(
+    .app-sidebar :is([data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]),
+    [data-mobile-dock] :is(a, button)
+  ):is(:hover, :focus-visible, [aria-current="page"])
+  > svg.lucide-telescope {
   transform-origin: 50% 90%;
   animation: nav-icon-tilt 480ms ease-in-out;
 }
 
 /* Portfolio: a slice pops out of the pie. */
-.app-sidebar
-  [data-sidebar="menu-button"]:is(:hover, :focus-visible)
+:is(
+    .app-sidebar :is([data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]),
+    [data-mobile-dock] :is(a, button)
+  ):is(:hover, :focus-visible, [aria-current="page"])
   > svg.lucide-pie-chart
   > path:nth-child(2) {
   animation: nav-icon-slice 460ms var(--nav-ease);
 }
 
 /* Guides: the pages flap open. */
-.app-sidebar
-  [data-sidebar="menu-button"]:is(:hover, :focus-visible)
+:is(
+    .app-sidebar :is([data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]),
+    [data-mobile-dock] :is(a, button)
+  ):is(:hover, :focus-visible, [aria-current="page"])
   > svg.lucide-book-open
   > path:nth-child(1) {
   transform-origin: right;
   animation: nav-icon-page 440ms var(--nav-ease);
 }
-.app-sidebar
-  [data-sidebar="menu-button"]:is(:hover, :focus-visible)
+:is(
+    .app-sidebar :is([data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]),
+    [data-mobile-dock] :is(a, button)
+  ):is(:hover, :focus-visible, [aria-current="page"])
   > svg.lucide-book-open
   > path:nth-child(2) {
   transform-origin: left;
   animation: nav-icon-page 440ms var(--nav-ease);
+}
+
+/* AI Chat (dock): the reply bubble slides in behind. */
+:is(
+    .app-sidebar :is([data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]),
+    [data-mobile-dock] :is(a, button)
+  ):is(:hover, :focus-visible, [aria-current="page"])
+  > svg.lucide-messages-square
+  > path:nth-child(2) {
+  animation: nav-icon-reply 420ms var(--nav-ease);
+}
+
+/* Home (dock): the globe turns. */
+:is(
+    .app-sidebar :is([data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]),
+    [data-mobile-dock] :is(a, button)
+  ):is(:hover, :focus-visible, [aria-current="page"])
+  > svg.lucide-earth {
+  animation: nav-icon-turn 520ms var(--nav-ease);
+}
+
+/* Menu (dock): the bars extend in turn. */
+:is(
+    .app-sidebar :is([data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]),
+    [data-mobile-dock] :is(a, button)
+  ):is(:hover, :focus-visible, [aria-current="page"])
+  > svg.lucide-menu
+  > line {
+  transform-origin: left;
+  animation: nav-icon-extend 320ms var(--nav-ease) both;
+}
+:is(
+    .app-sidebar :is([data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]),
+    [data-mobile-dock] :is(a, button)
+  ):is(:hover, :focus-visible, [aria-current="page"])
+  > svg.lucide-menu
+  > line:nth-child(1) {
+  animation-delay: 60ms;
+}
+:is(
+    .app-sidebar :is([data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]),
+    [data-mobile-dock] :is(a, button)
+  ):is(:hover, :focus-visible, [aria-current="page"])
+  > svg.lucide-menu
+  > line:nth-child(3) {
+  animation-delay: 120ms;
+}
+
+/* Settings: the gear turns. */
+:is(
+    .app-sidebar :is([data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]),
+    [data-mobile-dock] :is(a, button)
+  ):is(:hover, :focus-visible, [aria-current="page"])
+  > svg.lucide-settings {
+  animation: nav-icon-gear 560ms var(--nav-ease);
+}
+
+@keyframes nav-icon-reply {
+  from {
+    transform: translate(-3px, -3px);
+    opacity: 0;
+  }
+}
+
+@keyframes nav-icon-turn {
+  from {
+    transform: rotate(-40deg) scale(0.9);
+  }
+}
+
+@keyframes nav-icon-extend {
+  from {
+    transform: scaleX(0.3);
+  }
+}
+
+@keyframes nav-icon-gear {
+  from {
+    transform: rotate(-90deg);
+  }
 }
 
 @keyframes nav-icon-pop {
@@ -2607,7 +2745,9 @@ html[data-chat-history-open] .app-workbench .app-sidebar {
   .app-sidebar [data-sidebar="menu-button"] > svg,
   .app-sidebar [data-sidebar="menu-sub-button"] > svg,
   .app-sidebar [data-sidebar="menu-button"] > svg > *,
-  .app-sidebar [data-sidebar="menu-sub-button"] > svg > * {
+  .app-sidebar [data-sidebar="menu-sub-button"] > svg > *,
+  [data-mobile-dock] :is(a, button) > svg,
+  [data-mobile-dock] :is(a, button) > svg > * {
     transition: none;
     animation: none !important;
     transform: none !important;
