@@ -549,6 +549,7 @@ export default function StockObservationList({
             </label>
             <CommandSearch className="w-full" hasValue={!!searchDraft} shortcut="mod+k">
               <div className="relative">
+                <SearchFieldIcon />
                 <Input
                   shape="pill"
                   ref={searchRef}
