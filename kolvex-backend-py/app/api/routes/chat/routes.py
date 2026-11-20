@@ -406,6 +406,8 @@ async def send_message(
     revenues = []
     financials: list = []
     gaps: list = []
+    stats: dict = {}
+    started = asyncio.get_running_loop().time()
     try:
         ai_response_text = await run_agent(
             messages=attach_page_evidence(history, context),
@@ -422,6 +424,7 @@ async def send_message(
             memory_note=note,
             agent=request.agent,
             allowed_agents=request.agents,
+            turn_stats=stats,
         )
     except Exception as e:
         logger.error(f"Agent failed: {e}", exc_info=True)
@@ -432,6 +435,9 @@ async def send_message(
     # 4. 保存 AI 回复
     quote_rows = [quote.model_dump(mode="json") for quote in quotes]
     revenue_rows = [revenue.model_dump(mode="json", exclude_none=True) for revenue in revenues]
+    answer_check = _with_gaps(
+        check_answer(ai_response_text, quote_rows, revenue_rows, financials), gaps
+    )
     ai_msg = await save_message(
         user_id=current_user_id,
         conversation_id=conversation_id,
@@ -439,10 +445,18 @@ async def send_message(
         content=ai_response_text,
         quote_evidence=quote_rows,
         revenue_evidence=revenue_rows,
-        answer_check=_with_gaps(
-            check_answer(ai_response_text, quote_rows, revenue_rows, financials), gaps
-        ),
+        answer_check=answer_check,
     )
+    if ai_msg and "usage" in stats:  # a failed run has no usage and is logged as an error above
+        log_turn(
+            agent=stats.get("agent"),
+            model=request.model,
+            tools=stats.get("tools", []),
+            seconds=asyncio.get_running_loop().time() - started,
+            usage=stats["usage"],
+            answer_check=answer_check,
+            gaps=gaps,
+        )
 
     if not ai_msg:
         raise HTTPException(

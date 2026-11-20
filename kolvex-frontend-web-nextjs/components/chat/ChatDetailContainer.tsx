@@ -859,7 +859,8 @@ export function ChatDetailContainer({
         <div
           ref={composerRef}
           className={cn(
-            "z-20 max-lg:pointer-events-none max-lg:absolute max-lg:inset-x-0 max-lg:bottom-[var(--chat-composer-bottom)] lg:sticky lg:bottom-0",
+            // lg:mt-auto keeps it at the bottom while the thread is still empty (the list renders nothing).
+            "z-20 max-lg:pointer-events-none max-lg:absolute max-lg:inset-x-0 max-lg:bottom-[var(--chat-composer-bottom)] lg:sticky lg:bottom-0 lg:mt-auto",
             // Once collapsed, only the round button takes touches; the rest scrolls the thread.
             !composerCollapsed && "max-lg:[&_form]:pointer-events-auto",
           )}

@@ -383,6 +383,61 @@ class RouteTests(unittest.TestCase):
         self.assertEqual(seen["memory_note"], "NOTE")
         self.assertEqual(remember, [("user-1", "c1", "英伟达怎么样", ["NVDA"], None)])
 
+    def test_both_chat_endpoints_log_one_line_per_answered_turn(self):
+        app, routes = self.app()
+
+        async def fake_run(**kwargs):
+            kwargs["turn_stats"].update(
+                agent="valuation",
+                tools=["get_valuation"],
+                usage={"model_calls": 2, "input_tokens": 7000, "output_tokens": 300},
+            )
+            return "估值参考"
+
+        async def fake_stream(**_kwargs):
+            yield {"type": "agent", "agent": "buzz"}
+            yield {"type": "tool_start", "tool": "get_market_buzz", "input": {}}
+            yield {"type": "token", "content": "Answer"}
+            yield {
+                "type": "done",
+                "usage": {"model_calls": 1, "input_tokens": 5000, "output_tokens": 90},
+            }
+
+        when = "2026-11-20T12:00:00+00:00"
+        user = {
+            "id": "q",
+            "conversation_id": "c1",
+            "role": "user",
+            "content": "hi",
+            "created_at": when,
+        }
+        saved = {
+            "id": "a",
+            "conversation_id": "c1",
+            "role": "assistant",
+            "content": "x",
+            "created_at": when,
+        }
+        logged = []
+        app.dependency_overrides[routes.get_chat_service] = lambda: SimpleNamespace()
+        with (
+            patch("app.agent.memory.save_user_message_once", AsyncMock(return_value=user)),
+            patch("app.agent.memory.save_message", AsyncMock(return_value=saved)),
+            patch("app.agent.memory.load_conversation_history", AsyncMock(return_value=[])),
+            patch("app.agent.chat_memory.load_memory_note", AsyncMock(return_value=None)),
+            patch("app.agent.chat_memory.remember_turn_later", lambda *a, **k: None),
+            patch.object(routes, "turn_context", AsyncMock(return_value=None)),
+            patch.object(routes, "log_turn", lambda **k: logged.append(k)),
+            patch("app.agent.graphs.supervisor.run_agent", fake_run),
+            patch("app.agent.graphs.supervisor.stream_agent", fake_stream),
+        ):
+            client = TestClient(app)
+            client.post("/conversations/c1/send", json={"content": "AAPL 贵吗"})
+            client.post("/conversations/c1/stream", json={"content": "今天异动"})
+        self.assertEqual([(line["agent"], line["tools"]) for line in logged],
+                         [("valuation", ["get_valuation"]), ("buzz", ["get_market_buzz"])])  # fmt: skip
+        self.assertEqual([line["usage"]["input_tokens"] for line in logged], [7000, 5000])
+
     def test_failed_reply_is_not_remembered(self):
         app, routes = self.app()
 

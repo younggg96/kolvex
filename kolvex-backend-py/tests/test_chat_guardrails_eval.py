@@ -107,6 +107,10 @@ class RuleTests(unittest.TestCase):
         )
 
     def test_restating_the_question_is_not_answering_it(self):
+        # Seen in a real run: the question restated as "会不会", then declined.
+        declined = "至于美联储下个月会不会降息，我不会替美联储做预测。"
+        self.assertEqual(rules_broken("macro_cpi_fed", declined), [])
+        self.assertEqual(rules_broken("macro_cpi_fed", "美联储下个月不会降息。"), ["fed_forecast"])
         self.assertEqual(
             rules_broken("macro_cpi_fed", "关于美联储下个月会降息吗？我无法预测。"), []
         )

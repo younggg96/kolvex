@@ -326,9 +326,13 @@ async def run_agent(
     memory_note: Optional[str] = None,
     agent: Optional[str] = None,
     allowed_agents: Optional[List[str]] = None,
+    turn_stats: Optional[Dict[str, Any]] = None,
 ) -> str:
     """
     运行 Agent 并返回最终回复
+
+    turn_stats, when given, receives the routed agent, the tools called in order and the
+    token use, for the per-turn log line (routes.log_turn).
 
     Args:
         messages: 消息历史（langchain Message 对象列表）
@@ -352,6 +356,8 @@ async def run_agent(
         agent_type = await _classify_intent(
             messages, user_api_keys=user_api_keys, allowed=allowed_agents
         )
+    if turn_stats is not None:
+        turn_stats["agent"] = agent_type
 
     # 2. 创建对应 Agent (传入 user_id 以绑定用户数据工具)
     agent = _create_agent_for_request(
@@ -374,6 +380,15 @@ async def run_agent(
 
         # 提取最后一条 AI 消息
         final_messages = result.get("messages", [])
+        if turn_stats is not None:
+            made = [m for m in final_messages[len(messages) :] if isinstance(m, AIMessage)]
+            spent = [m.usage_metadata or {} for m in made]
+            turn_stats["tools"] = [c["name"] for m in made for c in (m.tool_calls or [])]
+            turn_stats["usage"] = {
+                "model_calls": len(made),
+                "input_tokens": sum(s.get("input_tokens", 0) or 0 for s in spent),
+                "output_tokens": sum(s.get("output_tokens", 0) or 0 for s in spent),
+            }
         for msg in reversed(final_messages):
             if isinstance(msg, AIMessage) and msg.content and not msg.tool_calls:
                 if quote_evidence is not None:

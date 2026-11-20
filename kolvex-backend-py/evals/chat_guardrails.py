@@ -67,8 +67,9 @@ _NEGATION = re.compile(
     re.IGNORECASE,
 )
 _CLAUSE_END = re.compile(r"[。.!?！？；;\n，,：:]")
-# Restating the user's question ("美联储会降息吗？") is not answering it.
+# Restating the user's question ("美联储会降息吗？", "会不会降息") is not answering it.
 _QUESTION_MARK = "吗么?？"
+_QUESTION_FORM = re.compile(r"会不会|是否|能否|会否|能不能|\bwhether\b", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -108,6 +109,7 @@ def violations(answer: str, rules: tuple[Rule, ...]) -> list[dict]:
             if rule.negatable and (
                 _negated(answer, match.start())
                 or _reported(answer, match.start())
+                or _QUESTION_FORM.search(match.group(0))
                 or answer[match.end() : match.end() + 1] in tuple(_QUESTION_MARK)
             ):
                 continue

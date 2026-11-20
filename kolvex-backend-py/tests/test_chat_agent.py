@@ -620,6 +620,31 @@ class StreamAgentTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([i["label"] for i in found], ["NVDA gross margin (Yahoo Finance)"])
         self.assertEqual(gaps, [{"tool": "get_options_chain_summary", "kind": "unavailable"}])
 
+    async def test_sync_agent_reports_route_tools_and_tokens(self):
+        initial = [HumanMessage(content="NVDA?")]
+        planning = AIMessage(
+            content="", tool_calls=[{"name": "get_stock_quote", "args": {}, "id": "q"}]
+        )
+        planning.usage_metadata = {"input_tokens": 700, "output_tokens": 10, "total_tokens": 710}
+        answer = AIMessage(content="NVDA: 123.45 USD")
+        answer.usage_metadata = {"input_tokens": 900, "output_tokens": 40, "total_tokens": 940}
+        agent = Mock(
+            ainvoke=AsyncMock(
+                return_value={"messages": [*initial, planning, quote_result(), answer]}
+            )
+        )
+        stats: dict = {}
+        with (
+            patch.object(supervisor, "_classify_intent", AsyncMock(return_value="buzz")),
+            patch.object(supervisor, "_create_agent_for_request", return_value=agent),
+        ):
+            await supervisor.run_agent(initial, turn_stats=stats)
+        self.assertEqual(stats["agent"], "buzz")
+        self.assertEqual(stats["tools"], ["get_stock_quote"])
+        self.assertEqual(
+            stats["usage"], {"model_calls": 2, "input_tokens": 1600, "output_tokens": 50}
+        )
+
     async def test_stream_errors_do_not_show_the_exception_text(self):
         from app.agent.graphs import supervisor
 
