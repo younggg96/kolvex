@@ -348,6 +348,27 @@ async def get_messages(
 # ===== Agent-Powered Routes =====
 
 
+async def _check_free_allowance(
+    user_id: str, model_id: Optional[str], api_keys_service: UserApiKeysService
+) -> None:
+    """Refuse a turn on the free model before it starts once this week's allowance is spent."""
+    from app.agent.llm import uses_free_model
+    from app.services.free_llm_quota import (
+        FreeQuotaExceeded,
+        FreeQuotaUnavailable,
+        ensure_allowance,
+    )
+
+    if not uses_free_model(model_id, await api_keys_service.get_keys_dict(user_id)):
+        return
+    try:
+        await ensure_allowance(user_id)
+    except FreeQuotaExceeded:
+        raise HTTPException(status_code=429, detail=FreeQuotaExceeded.code)
+    except FreeQuotaUnavailable:
+        raise HTTPException(status_code=503, detail=FreeQuotaUnavailable.code)
+
+
 @router.post(
     "/conversations/{conversation_id}/send",
     response_model=AgentMessageResponse,
@@ -381,6 +402,8 @@ async def send_message(
     )
     from app.agent.graphs.supervisor import run_agent
     from app.agent.memory import load_conversation_history, save_message, save_user_message_once
+
+    await _check_free_allowance(current_user_id, request.model, api_keys_service)
 
     # 1. 保存用户消息（重试时复用上一条未回复的同一问题）
     user_msg = await save_user_message_once(current_user_id, conversation_id, request.content)
@@ -526,6 +549,7 @@ async def stream_message(
     key = (current_user_id, conversation_id)
     if key in _chat_turns:
         raise HTTPException(status_code=409, detail="A reply is already being generated.")
+    await _check_free_allowance(current_user_id, request.model, api_keys_service)
 
     events: asyncio.Queue[Optional[str]] = asyncio.Queue(maxsize=128)
     subscribed = True
@@ -724,7 +748,15 @@ async def stream_message(
                     json.dumps(
                         {
                             name: event[name]
-                            for name in ("type", "content", "stage", "tool", "agent", "agents")
+                            for name in (
+                                "type",
+                                "code",
+                                "content",
+                                "stage",
+                                "tool",
+                                "agent",
+                                "agents",
+                            )
                             if name in event
                         }
                     )

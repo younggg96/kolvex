@@ -3,13 +3,11 @@ Redis 缓存服务
 提供统一的缓存管理接口，支持连接池、键前缀管理、装饰器缓存等功能
 """
 
+import functools
+import hashlib
 import json
 import logging
-import hashlib
-import functools
-from typing import Any, Optional, Callable, Union
-from datetime import timedelta
-import asyncio
+from typing import Any, Callable, Optional, Union
 
 import redis.asyncio as redis
 from redis.asyncio.connection import ConnectionPool
@@ -70,9 +68,7 @@ class RedisService:
             if settings.REDIS_URL and settings.REDIS_URL != "redis://localhost:6379/0":
                 redis_url = settings.REDIS_URL
             else:
-                password_part = (
-                    f":{settings.REDIS_PASSWORD}@" if settings.REDIS_PASSWORD else ""
-                )
+                password_part = f":{settings.REDIS_PASSWORD}@" if settings.REDIS_PASSWORD else ""
                 redis_url = f"redis://{password_part}{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}"
 
             # 创建连接池
@@ -168,7 +164,9 @@ class RedisService:
         try:
             await self._client.eval(
                 "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
-                1, self._make_key(key), token,
+                1,
+                self._make_key(key),
+                token,
             )
         except Exception:
             logger.warning("Redis lease release failed [%s]", key)
@@ -190,6 +188,16 @@ class RedisService:
             return True
         except Exception as e:
             logger.error(f"Redis SET 错误 [{key}]: {e}")
+            return False
+
+    async def set_if_absent(self, key: str, value: Union[str, int, float], ttl: int) -> bool:
+        """SET NX with expiry; False when the key already exists or Redis is unavailable."""
+        if not self.is_connected:
+            return False
+        try:
+            return bool(await self._client.set(self._make_key(key), value, nx=True, ex=ttl))
+        except Exception as e:
+            logger.error(f"Redis SET NX 错误 [{key}]: {e}")
             return False
 
     async def set_json(

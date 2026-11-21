@@ -484,6 +484,15 @@
       "placeholder": "Ask about a stock, a creator, or your holdings...",
       "apiKeyRequired": "API key required",
       "apiKeyRequiredDesc": "Add at least one model API key in Settings to unlock the model dropdown and start chatting.",
+      "freeAllowance": {
+        "badge": "Free",
+        "remaining": "Free allowance: {remaining} of {limit} left this week, resets Monday",
+        "exhausted": "This week's free allowance is used up. It resets Monday.",
+        "exhaustedTitle": "Free allowance used up this week",
+        "exhaustedDesc": "It resets Monday at 00:00 Beijing time. You can also add your own model API key to keep chatting.",
+        "errorExceeded": "This week's free allowance is used up. It resets Monday at 00:00 Beijing time, or add your own API key in Settings.",
+        "errorUnavailable": "The free allowance can't be checked right now. Please try again later."
+      },
       "settingsApiKeys": "Settings → API Keys",
       "addApiKeyPlaceholder": "Please add an API key in Settings first...",
       "expand": "Open message box",

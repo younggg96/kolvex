@@ -14,7 +14,9 @@ Provider API model IDs were verified on 2026-10-09. Chat and chart analysis shar
 | Kimi | K3 | https://platform.kimi.ai/docs/models |
 | xAI | Grok 4.7 | https://docs.x.ai/developers/models |
 
-Only providers with a user-configured key enable their choices. Saving or deleting
+Only providers with a user-configured key enable their choices, plus the free
+model (`deepseek-flash` on the server key, ¥1 per user per week; see
+[free-llm-allowance.md](free-llm-allowance.md)). Saving or deleting
 a key refreshes consumers in the same window; returning from another window
 refreshes on focus. Loading availability cannot enable sending. Retired saved
 model IDs are discarded; chat selects an available current model. Chart model

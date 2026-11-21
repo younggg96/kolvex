@@ -272,3 +272,25 @@ ${SKELETON(date)}
 export function buildXhsCollectionPrompt(locale: string, date: string): string {
   return locale.toLowerCase().startsWith("zh") ? PROMPT_ZH(date) : PROMPT_EN(date);
 }
+
+/**
+ * Combine picked JSON files into one import body. Each file may hold one day (an
+ * object) or several (an array); the result is always an array, in file order.
+ * Validation of the days themselves stays on the server.
+ */
+export function combineDigestFiles(
+  files: { name: string; text: string }[],
+): { json: string; days: number } | { error: "invalid_json"; file: string } {
+  const days: unknown[] = [];
+  for (const file of files) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(file.text.replace(/^﻿/, ""));
+    } catch {
+      return { error: "invalid_json", file: file.name };
+    }
+    if (Array.isArray(parsed)) days.push(...parsed);
+    else days.push(parsed);
+  }
+  return { json: JSON.stringify(days.length === 1 ? days[0] : days, null, 2), days: days.length };
+}

@@ -45,6 +45,11 @@ import { allowedAgents, readAiAssistantSettings } from "@/lib/aiAssistantSetting
 
 // ===== localStorage helpers for persisting chat preferences =====
 const PANEL_PREF_KEY = "kolvex:workspacePanel";
+/** Backend codes (a 429/503 detail or a stream error `code`) for the free weekly allowance. */
+const FREE_QUOTA_ERRORS: Record<string, string> = {
+  free_quota_exceeded: "chat.input.freeAllowance.errorExceeded",
+  free_quota_unavailable: "chat.input.freeAllowance.errorUnavailable",
+};
 /** Below Tailwind's lg the composer floats over the thread and can tuck itself away. */
 const FLOATING_COMPOSER_QUERY = "(max-width: 1023px)";
 const PREFS_SOURCES_KEY = "kolvex:sources";
@@ -186,7 +191,12 @@ export function ChatDetailContainer({
       return true;
     }
   });
-  const { availableProviders } = useAvailableProviders();
+  const {
+    availableProviders,
+    freeModels,
+    freeAllowance,
+    refresh: refreshProviders,
+  } = useAvailableProviders();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
@@ -308,6 +318,10 @@ export function ChatDetailContainer({
             break;
 
           case "error":
+            if (event.code && FREE_QUOTA_ERRORS[event.code]) {
+              refreshProviders();
+              throw new Error(t(FREE_QUOTA_ERRORS[event.code]));
+            }
             throw new Error(
               event.workspace_error
                 ? workspaceErrorText(event.workspace_error, copy)
@@ -321,7 +335,7 @@ export function ChatDetailContainer({
       }
       return completion;
     },
-    [t, copy, offerAgentLaunch],
+    [t, copy, offerAgentLaunch, refreshProviders],
   );
 
   // ---- Notify parent when conversation changes ----
@@ -463,7 +477,8 @@ export function ChatDetailContainer({
   };
 
   // Whether the user has any usable model
-  const isBlocked = availableProviders !== undefined && availableProviders.length === 0;
+  const isBlocked =
+    availableProviders !== undefined && availableProviders.length === 0 && freeModels.length === 0;
 
   // ---- Submit user message from input ----
   const handleSubmit = useCallback(
@@ -560,8 +575,11 @@ export function ChatDetailContainer({
       } catch (error) {
         if (abortControllerRef.current !== controller) return;
         console.error("Chat error:", error);
-        turn.error =
-          error instanceof Error
+        const quotaKey = error instanceof Error ? FREE_QUOTA_ERRORS[error.message] : undefined;
+        if (quotaKey) refreshProviders();
+        turn.error = quotaKey
+          ? t(quotaKey)
+          : error instanceof Error
             ? error.message
             : "The AI agent may be unavailable. Please try again.";
         const state = await getAgentStreamStatus(conversationId, controller.signal).catch(
@@ -605,6 +623,8 @@ export function ChatDetailContainer({
       activeSkills,
       messages,
       pageEvidence,
+      refreshProviders,
+      t,
     ],
   );
 
@@ -896,6 +916,8 @@ export function ChatDetailContainer({
               selectedModel={selectedModel}
               onSelectModel={(model) => setSelectedModel(model)}
               availableProviders={availableProviders}
+              freeModels={freeModels}
+              freeAllowance={freeAllowance}
               evidenceLabel={evidenceLabel}
               onClearEvidence={evidenceLabel ? clearEvidence : undefined}
               fieldClassName="min-h-24"

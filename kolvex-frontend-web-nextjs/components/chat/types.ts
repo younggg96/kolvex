@@ -1,4 +1,5 @@
 import type { AnswerCheck, QuoteEvidence, RevenueEvidence } from "@/lib/chatApi";
+import type { FreeAllowance } from "@/lib/api/userApiKeysApi";
 import type { ChatSkill } from "./chatSkills";
 
 // Chat component types and interfaces
@@ -86,6 +87,10 @@ export interface ChatInputProps {
   showModelSelector?: boolean;
   /** Backend provider IDs with usable keys (e.g. ["openai","deepseek"]) */
   availableProviders?: string[];
+  /** Models usable without the user's own key (the free weekly allowance). */
+  freeModels?: string[];
+  /** This week's free allowance, shown in the model menu; null when not offered or unreadable. */
+  freeAllowance?: FreeAllowance | null;
   /** Human label for page evidence attached to this question. */
   evidenceLabel?: string;
   onClearEvidence?: () => void;
@@ -137,6 +142,8 @@ export interface ChatWelcomeProps {
   onSelectModel?: (model: AIModel) => void;
   /** Backend provider IDs with usable keys */
   availableProviders?: string[];
+  freeModels?: string[];
+  freeAllowance?: FreeAllowance | null;
   /**
    * "page" is the full landing layout, "compact" drops the heading and link
    * rows for use inside a dialog, and "dock" is the chat page: the option rows

@@ -5,22 +5,23 @@ Multi-Provider LLM Factory
 
 import logging
 from typing import Optional
+
 from langchain_core.language_models.chat_models import BaseChatModel
 
 from app.agent.config import (
-    LLM_PROVIDER,
-    LLM_MODEL,
-    LLM_TEMPERATURE,
-    LLM_FALLBACK_PROVIDER,
-    LLM_FALLBACK_MODEL,
-    OPENAI_API_KEY,
     ANTHROPIC_API_KEY,
     DEEPSEEK_API_KEY,
-    QWEN_API_KEY,
     GOOGLE_API_KEY,
-    KIMI_API_KEY,
     GROK_API_KEY,
+    KIMI_API_KEY,
+    LLM_FALLBACK_MODEL,
+    LLM_FALLBACK_PROVIDER,
+    LLM_MODEL,
+    LLM_PROVIDER,
+    LLM_TEMPERATURE,
     OLLAMA_BASE_URL,
+    OPENAI_API_KEY,
+    QWEN_API_KEY,
 )
 
 logger = logging.getLogger(__name__)
@@ -93,6 +94,16 @@ def _resolve_api_key(
     return server_keys.get(provider) or None
 
 
+def _free_tier_user(provider: str, user_api_keys: Optional[dict[str, str]]) -> Optional[str]:
+    """The signed-in user to meter, when this call would otherwise use a server key."""
+    from app.services.free_llm_quota import billed_user
+
+    user = billed_user()
+    if not user or provider == "ollama":
+        return None
+    return None if (user_api_keys or {}).get(provider, "").strip() else user
+
+
 def _create_llm(
     provider: str,
     model: str,
@@ -118,6 +129,16 @@ def _create_llm(
     """
     provider = provider.lower().strip()
 
+    # A signed-in user without their own key for this provider gets the free model on the
+    # server DeepSeek key, metered against their weekly allowance (app/services/free_llm_quota.py).
+    free_user = _free_tier_user(provider, user_api_keys)
+    if free_user:
+        from app.services.free_llm_quota import FREE_MODEL, FREE_PROVIDER, FreeQuotaCallback
+
+        provider, model, user_api_keys = FREE_PROVIDER, FREE_MODEL, None
+        kwargs["callbacks"] = [*(kwargs.get("callbacks") or []), FreeQuotaCallback(free_user)]
+        kwargs["stream_usage"] = True  # streamed calls report usage only when asked
+
     # ---- OpenAI 原生 ----
     if provider == "openai":
         from langchain_openai import ChatOpenAI
@@ -137,7 +158,9 @@ def _create_llm(
         api_key = _resolve_api_key("anthropic", user_api_keys) or ANTHROPIC_API_KEY
         return ChatAnthropic(
             model=model,
-            temperature=None if model.startswith("claude-") and model in MODEL_TO_PROVIDER else temperature,
+            temperature=None
+            if model.startswith("claude-") and model in MODEL_TO_PROVIDER
+            else temperature,
             api_key=api_key,
             **kwargs,
         )
@@ -168,6 +191,7 @@ def _create_llm(
 
         if provider in {"deepseek", "kimi"}:
             from app.agent.thinking_chat import ThinkingChatOpenAI
+
             chat_class = ThinkingChatOpenAI
         else:
             chat_class = ChatOpenAI
@@ -181,12 +205,9 @@ def _create_llm(
         )
 
     else:
-        supported = ["openai", "anthropic", "ollama"] + list(
-            OPENAI_COMPATIBLE_PROVIDERS.keys()
-        )
+        supported = ["openai", "anthropic", "ollama"] + list(OPENAI_COMPATIBLE_PROVIDERS.keys())
         raise ValueError(
-            f"Unsupported LLM provider: '{provider}'. "
-            f"Supported providers: {', '.join(supported)}"
+            f"Unsupported LLM provider: '{provider}'. Supported providers: {', '.join(supported)}"
         )
 
 
@@ -237,13 +258,14 @@ def get_llm(
 
         # 尝试 fallback
         if LLM_FALLBACK_PROVIDER and LLM_FALLBACK_MODEL:
-            logger.info(
-                f"Trying fallback LLM: {LLM_FALLBACK_PROVIDER}/{LLM_FALLBACK_MODEL}"
-            )
+            logger.info(f"Trying fallback LLM: {LLM_FALLBACK_PROVIDER}/{LLM_FALLBACK_MODEL}")
             try:
                 fallback_llm = _create_llm(
-                    LLM_FALLBACK_PROVIDER, LLM_FALLBACK_MODEL, _temperature,
-                    user_api_keys=user_api_keys, **kwargs
+                    LLM_FALLBACK_PROVIDER,
+                    LLM_FALLBACK_MODEL,
+                    _temperature,
+                    user_api_keys=user_api_keys,
+                    **kwargs,
                 )
                 logger.info("Fallback LLM created successfully")
                 return fallback_llm
@@ -284,7 +306,9 @@ def get_fast_llm(
     model = fast_models.get(provider, LLM_MODEL)
 
     try:
-        return get_llm(provider=provider, model=model, temperature=0.3, user_api_keys=user_api_keys, **kwargs)
+        return get_llm(
+            provider=provider, model=model, temperature=0.3, user_api_keys=user_api_keys, **kwargs
+        )
     except Exception as e:
         logger.warning(f"Fast LLM ({provider}/{model}) creation failed: {e}")
         # Fallback 顺序: deepseek → openai → gemini
@@ -296,7 +320,9 @@ def get_fast_llm(
         for fb_provider, fb_model, fb_key in fallback_chain:
             if fb_key and fb_provider != provider:
                 try:
-                    llm = _create_llm(fb_provider, fb_model, 0.3, user_api_keys=user_api_keys, **kwargs)
+                    llm = _create_llm(
+                        fb_provider, fb_model, 0.3, user_api_keys=user_api_keys, **kwargs
+                    )
                     logger.info(f"Fast LLM fallback to {fb_provider}/{fb_model}")
                     return llm
                 except Exception:
@@ -321,7 +347,7 @@ MODEL_TO_PROVIDER: dict[str, str] = {
     "qwen3.7-plus": "qwen",
     "qwen3.8-flash": "qwen",
     "kimi-k3": "kimi",
-    "grok-4.7": "grok"
+    "grok-4.7": "grok",
 }
 
 
@@ -329,3 +355,9 @@ def resolve_model_id(model_id: Optional[str]) -> tuple[Optional[str], Optional[s
     """Resolve current selectable models; retired IDs are no longer accepted."""
     provider = MODEL_TO_PROVIDER.get(model_id or "")
     return (provider, model_id) if provider else (None, None)
+
+
+def uses_free_model(model_id: Optional[str], user_api_keys: Optional[dict[str, str]]) -> bool:
+    """Whether a request for model_id is answered by the metered free model."""
+    provider, _ = resolve_model_id(model_id)
+    return _free_tier_user((provider or LLM_PROVIDER).lower(), user_api_keys) is not None

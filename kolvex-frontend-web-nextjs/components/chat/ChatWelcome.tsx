@@ -4,20 +4,11 @@ import { useState, useRef, useEffect } from "react";
 import { MessageCircle, Briefcase, Youtube, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { ChatInput, MODEL_CONFIGS } from "./ChatInput";
+import { isModelUsable } from "@/lib/aiModels";
 import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import type { ChatWelcomeProps } from "./types";
 import { Button } from "@/components/ui/button";
-
-const PROVIDER_NAME_TO_ID: Record<string, string> = {
-  OpenAI: "openai",
-  Anthropic: "anthropic",
-  DeepSeek: "deepseek",
-  Google: "gemini",
-  Qwen: "qwen",
-  Kimi: "kimi",
-  xAI: "grok",
-};
 
 /** Questions that ask the assistant; the two page links sit beside the composer. */
 const suggestionKeys = [
@@ -44,6 +35,8 @@ export function ChatWelcome({
   selectedModel,
   onSelectModel,
   availableProviders,
+  freeModels = [],
+  freeAllowance,
   variant = "page",
   suggestions: suggestionOverrides,
   placeholder,
@@ -74,11 +67,7 @@ export function ChatWelcome({
   // Whether the user has any usable model
   const hasAnyModel =
     availableProviders !== undefined &&
-    availableProviders.length > 0 &&
-    MODEL_CONFIGS.some((m) => {
-      const bid = PROVIDER_NAME_TO_ID[m.provider];
-      return bid ? availableProviders.includes(bid) : false;
-    });
+    MODEL_CONFIGS.some((m) => isModelUsable(m, availableProviders, freeModels));
 
   const isBlocked = availableProviders !== undefined && !hasAnyModel;
 
@@ -119,6 +108,8 @@ export function ChatWelcome({
       onSelectModel={onSelectModel}
       inputRef={inputRef}
       availableProviders={availableProviders}
+      freeModels={freeModels}
+      freeAllowance={freeAllowance}
       evidenceLabel={evidenceLabel}
       onClearEvidence={onClearEvidence}
       fieldClassName={dock ? "min-h-24 text-[0.9375rem] leading-6" : undefined}
@@ -165,7 +156,10 @@ export function ChatWelcome({
 
     return (
       // Below lg the page runs under the dock, so the composer floats just above it like a thread's.
-      <div data-chat-welcome-dock className="flex flex-1 flex-col px-4 pt-6 max-lg:pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:px-8 md:pt-10">
+      <div
+        data-chat-welcome-dock
+        className="flex flex-1 flex-col px-4 pt-6 max-lg:pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:px-8 md:pt-10"
+      >
         <ul className="mx-auto w-full max-w-2xl animate-fade-in">
           {suggestions.map((suggestion) => (
             <li key={suggestion.text}>
@@ -210,7 +204,13 @@ export function ChatWelcome({
             const raw = t("chat.heading");
             const parts = raw.split(/<highlight>|<\/highlight>/);
             if (parts.length === 3) {
-              return <>{parts[0]}{parts[1]}{parts[2]}</>;
+              return (
+                <>
+                  {parts[0]}
+                  {parts[1]}
+                  {parts[2]}
+                </>
+              );
             }
             return raw;
           })()}

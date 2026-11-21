@@ -35,7 +35,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CHAT_SKILLS, type ChatSkill } from "./chatSkills";
 import type { ChatInputProps, SearchSource, AIModel, AIModelConfig } from "./types";
 
-import { MODEL_CONFIGS, PROVIDER_NAME_TO_ID } from "@/lib/aiModels";
+import { MODEL_CONFIGS, getFirstAvailableModelId, isModelUsable } from "@/lib/aiModels";
+import type { FreeAllowance } from "@/lib/api/userApiKeysApi";
 export { MODEL_CONFIGS, PROVIDER_NAME_TO_ID, getFirstAvailableModelId } from "@/lib/aiModels";
 
 const SKILL_ICONS = {
@@ -76,25 +77,31 @@ function SourceChip({ icon, label, active, onClick }: SourceChipProps) {
   );
 }
 
+// Two decimals keep small weekly spend visible (¥0.04 rather than ¥0).
+const formatYuan = (value: number) => `¥${value.toFixed(2)}`;
+
 // Model Selector Component
 function ModelSelector({
   selectedModel,
   onSelectModel,
   availableProviders,
+  freeModels = [],
+  freeAllowance,
 }: {
   selectedModel: AIModel;
   onSelectModel: (model: AIModel) => void;
   availableProviders?: string[];
+  freeModels?: string[];
+  freeAllowance?: FreeAllowance | null;
 }) {
   const { t } = useTranslation();
   const currentModel = MODEL_CONFIGS.find((m) => m.id === selectedModel);
 
-  // Check if a model's provider is available
-  const isModelAvailable = (model: AIModelConfig): boolean => {
-    if (!availableProviders) return false; // Wait for user key availability
-    const backendId = PROVIDER_NAME_TO_ID[model.provider];
-    return backendId ? availableProviders.includes(backendId) : false;
-  };
+  // Wait for key availability before enabling anything
+  const isModelAvailable = (model: AIModelConfig): boolean =>
+    availableProviders !== undefined && isModelUsable(model, availableProviders, freeModels);
+  const isFreeModel = (model: AIModelConfig) =>
+    freeAllowance?.model === model.id && !isModelUsable(model, availableProviders);
 
   const hasAnyAvailable = !availableProviders || MODEL_CONFIGS.some((m) => isModelAvailable(m));
 
@@ -129,7 +136,17 @@ function ModelSelector({
           <ChevronDown className="w-3 h-3 text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" side="top" className="w-52 max-h-72 overflow-y-auto">
+      <DropdownMenuContent align="start" side="top" className="w-56 max-h-72 overflow-y-auto">
+        {freeAllowance && (
+          <p className="px-2 pb-1.5 pt-1 text-[0.6875rem] tabular-nums text-muted-foreground">
+            {freeAllowance.exhausted
+              ? t("chat.input.freeAllowance.exhausted")
+              : t("chat.input.freeAllowance.remaining", {
+                  remaining: formatYuan(freeAllowance.remaining_yuan),
+                  limit: formatYuan(freeAllowance.limit_yuan),
+                })}
+          </p>
+        )}
         {/* Prompt when no API keys configured */}
         {!hasAnyAvailable && (
           <div className="px-3 py-3 text-center">
@@ -183,7 +200,12 @@ function ModelSelector({
               >
                 {model.name}
               </span>
-              {model.isPro && available && (
+              {isFreeModel(model) && (
+                <span className="ml-auto rounded-full bg-positive/10 px-1.5 py-0.5 text-[0.625rem] font-semibold text-positive">
+                  {t("chat.input.freeAllowance.badge")}
+                </span>
+              )}
+              {model.isPro && available && !isFreeModel(model) && (
                 <span className="ml-auto rounded-full bg-muted px-1.5 py-0.5 text-[0.625rem] font-semibold text-muted-foreground">
                   Pro
                 </span>
@@ -264,6 +286,8 @@ export function ChatInput({
   onSelectModel,
   showModelSelector = true,
   availableProviders,
+  freeModels = [],
+  freeAllowance,
   evidenceLabel,
   onClearEvidence,
   fieldClassName,
@@ -312,43 +336,25 @@ export function ChatInput({
     (showSourceToggle && onToggleSource) ||
     (showModelSelector && onSelectModel);
 
-  // Check if current model's provider is available
-  const isCurrentModelAvailable = (() => {
-    if (!availableProviders) return false; // still loading
-    const currentConfig = MODEL_CONFIGS.find((m) => m.id === selectedModel);
-    if (!currentConfig) return false;
-    const backendId = PROVIDER_NAME_TO_ID[currentConfig.provider];
-    return backendId ? availableProviders.includes(backendId) : false;
-  })();
-
-  const hasAnyModel =
-    !availableProviders || availableProviders.length === 0
-      ? false
-      : MODEL_CONFIGS.some((m) => {
-          const bid = PROVIDER_NAME_TO_ID[m.provider];
-          return bid ? availableProviders.includes(bid) : false;
-        });
+  // Nothing is usable while availability is still loading
+  const usable = (model: AIModelConfig) =>
+    availableProviders !== undefined && isModelUsable(model, availableProviders, freeModels);
+  const currentConfig = MODEL_CONFIGS.find((m) => m.id === selectedModel);
+  const isCurrentModelAvailable = currentConfig ? usable(currentConfig) : false;
+  const hasAnyModel = MODEL_CONFIGS.some(usable);
 
   // Auto-select first available model if current is unavailable
+  const freeKey = freeModels.join(",");
   useEffect(() => {
-    if (
-      availableProviders &&
-      availableProviders.length > 0 &&
-      !isCurrentModelAvailable &&
-      onSelectModel
-    ) {
-      const firstAvailable = MODEL_CONFIGS.find((m) => {
-        const bid = PROVIDER_NAME_TO_ID[m.provider];
-        return bid ? availableProviders.includes(bid) : false;
-      });
-      if (firstAvailable) {
-        onSelectModel(firstAvailable.id);
-      }
+    if (availableProviders && !isCurrentModelAvailable && onSelectModel) {
+      const first = getFirstAvailableModelId(availableProviders, freeKey ? freeKey.split(",") : []);
+      if (first) onSelectModel(first);
     }
-  }, [availableProviders, isCurrentModelAvailable, onSelectModel, selectedModel]);
+  }, [availableProviders, freeKey, isCurrentModelAvailable, onSelectModel, selectedModel]);
 
-  // Whether chat is completely blocked (no API keys)
+  // Whether chat is completely blocked (no own key and no free allowance left)
   const isBlocked = availableProviders !== undefined && !hasAnyModel;
+  const allowanceSpent = Boolean(freeAllowance?.exhausted);
 
   // Send is disabled when: empty text, loading, or no available model
   const isSendDisabled = !value.trim() || isLoading || isBlocked || !isCurrentModelAvailable;
@@ -378,10 +384,14 @@ export function ChatInput({
             <Lock className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning" />
             <div>
               <p className="text-[0.8125rem] font-semibold text-foreground">
-                {t("chat.input.apiKeyRequired")}
+                {allowanceSpent
+                  ? t("chat.input.freeAllowance.exhaustedTitle")
+                  : t("chat.input.apiKeyRequired")}
               </p>
               <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
-                {t("chat.input.apiKeyRequiredDesc")}{" "}
+                {allowanceSpent
+                  ? t("chat.input.freeAllowance.exhaustedDesc")
+                  : t("chat.input.apiKeyRequiredDesc")}{" "}
                 <Link
                   href="/dashboard/settings?tab=api-keys"
                   className="font-semibold text-positive hover:underline"
@@ -591,6 +601,8 @@ export function ChatInput({
                     selectedModel={selectedModel}
                     onSelectModel={onSelectModel}
                     availableProviders={availableProviders}
+                    freeModels={freeModels}
+                    freeAllowance={freeAllowance}
                   />
                 )}
               </div>

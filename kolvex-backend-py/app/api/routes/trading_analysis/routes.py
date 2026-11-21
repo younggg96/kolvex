@@ -20,27 +20,28 @@ DELETE /trading-analysis/{id}               — Delete analysis
 import asyncio
 import json
 import logging
-from typing import Any, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
-from supabase import Client
 
+from app.agent.config import LLM_MODEL, LLM_PROVIDER
 from app.api.dependencies.auth import get_current_user_id
-from app.agent.config import LLM_PROVIDER, LLM_MODEL
-from app.services.technical_analysis import _choose_model
 from app.core.supabase import get_supabase, get_supabase_service
 from app.services.agent_signal_evaluation import load_user_performance
+from app.services.free_llm_quota import FreeTierNotSupported
+from app.services.technical_analysis import _choose_model
 from app.services.trading_analysis_service import (
     TRADINGAGENTS_AVAILABLE,
-    get_trading_analysis_service,
     _resolve_api_key,
+    get_trading_analysis_service,
 )
 from app.services.user_api_keys_service import (
     UserApiKeysService,
     get_user_api_keys_service,
 )
+from supabase import Client
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +50,9 @@ router = APIRouter(prefix="/trading-analysis", tags=["Trading Analysis"])
 
 class StartAnalysisRequest(BaseModel):
     ticker: str = Field(..., min_length=1, max_length=10, description="Stock ticker symbol")
-    trade_date: str = Field(..., pattern=r"^\d{4}-\d{2}-\d{2}$", description="Analysis date (YYYY-MM-DD)")
+    trade_date: str = Field(
+        ..., pattern=r"^\d{4}-\d{2}-\d{2}$", description="Analysis date (YYYY-MM-DD)"
+    )
     provider: str = Field(default="openai", description="LLM provider")
     deep_think_model: str = Field(default="gpt-4o", description="Model for complex reasoning")
     quick_think_model: str = Field(default="gpt-4o-mini", description="Model for quick tasks")
@@ -58,7 +61,9 @@ class StartAnalysisRequest(BaseModel):
         description="Analyst types: market, social, news, fundamentals",
     )
     max_debate_rounds: int = Field(default=1, ge=1, le=3, description="Investment debate rounds")
-    max_risk_discuss_rounds: int = Field(default=1, ge=1, le=3, description="Risk discussion rounds")
+    max_risk_discuss_rounds: int = Field(
+        default=1, ge=1, le=3, description="Risk discussion rounds"
+    )
 
 
 class AnalysisResponse(BaseModel):
@@ -102,6 +107,8 @@ async def start_analysis(
             user_api_keys=user_api_keys or None,
         )
         return record
+    except FreeTierNotSupported:
+        raise HTTPException(status_code=403, detail="own_key_required")
     except Exception as e:
         logger.error(f"Failed to start analysis: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to start analysis: {str(e)}")
@@ -130,12 +137,18 @@ async def start_stock_analysis(
     # Resume an existing in-progress stock job after reload instead of starting
     # another expensive research run from the same UI.
     history = await service.list_analyses(current_user_id, limit=100, ticker=request.ticker.upper())
-    running = next((item for item in history["items"] if item["status"] in ("running", "pending")), None)
+    running = next(
+        (item for item in history["items"] if item["status"] in ("running", "pending")), None
+    )
     if running:
         return running
     return await service.start_analysis(
-        user_id=current_user_id, ticker=request.ticker, trade_date=request.trade_date,
-        provider=provider, deep_think_model=model, quick_think_model=model,
+        user_id=current_user_id,
+        ticker=request.ticker,
+        trade_date=request.trade_date,
+        provider=provider,
+        deep_think_model=model,
+        quick_think_model=model,
         user_api_keys=keys or None,
     )
 
@@ -157,7 +170,9 @@ async def translate_analysis(
     if not api_key:
         raise HTTPException(503, "ai_not_configured")
     try:
-        return await get_trading_analysis_service().translate_existing(analysis_id, language, provider, model, api_key)
+        return await get_trading_analysis_service().translate_existing(
+            analysis_id, language, provider, model, api_key
+        )
     except ValueError:
         raise HTTPException(400, "unsupported_language")
     except LookupError:
@@ -198,7 +213,9 @@ async def list_analyses(
 async def signal_performance(current_user_id: str = Depends(get_current_user_id)):
     """How the current user's structured agent signals performed once their horizon passed."""
     try:
-        return await asyncio.to_thread(load_user_performance, get_supabase_service(), current_user_id)
+        return await asyncio.to_thread(
+            load_user_performance, get_supabase_service(), current_user_id
+        )
     except Exception as error:  # missing tables before the migrations are applied, or DB outage
         logger.warning("Signal performance unavailable: %s", error)
         raise HTTPException(status_code=503, detail="Signal performance unavailable")
@@ -212,7 +229,10 @@ async def list_public_analyses(
 ):
     """Public reading pages only expose explicitly published, completed reports."""
     return await get_trading_analysis_service().list_published_analyses(
-        limit=limit, offset=offset, ticker=ticker, published_only=True,
+        limit=limit,
+        offset=offset,
+        ticker=ticker,
+        published_only=True,
     )
 
 
@@ -220,7 +240,8 @@ async def list_public_analyses(
 async def get_public_analysis(analysis_id: str):
     """Recheck publication on every read so unpublishing revokes public access."""
     record = await get_trading_analysis_service().get_published_analysis(
-        analysis_id, published_only=True,
+        analysis_id,
+        published_only=True,
     )
     if not record:
         raise HTTPException(status_code=404, detail="Analysis not found or not published")
@@ -244,7 +265,9 @@ async def list_published_analyses(
 
 
 @router.get("/published/{analysis_id}")
-async def get_published_analysis(analysis_id: str, current_user_id: str = Depends(get_current_user_id)):
+async def get_published_analysis(
+    analysis_id: str, current_user_id: str = Depends(get_current_user_id)
+):
     """Get a single published analysis (all signed-in users)."""
     service = get_trading_analysis_service()
     record = await service.get_published_analysis(analysis_id)
@@ -269,7 +292,9 @@ async def get_analysis(
 @router.get("/{analysis_id}/stream")
 async def stream_progress(
     analysis_id: str,
-    token: Optional[str] = Query(None, description="Bearer token for direct browser SSE connections"),
+    token: Optional[str] = Query(
+        None, description="Bearer token for direct browser SSE connections"
+    ),
     authorization: Optional[str] = Header(None),
     supabase: Client = Depends(get_supabase),
 ):
@@ -314,9 +339,7 @@ async def stream_progress(
         async def _reader():
             try:
                 async for event in service.stream_progress(analysis_id):
-                    await queue.put(
-                        f"data: {json.dumps(event, default=str)}\n\n"
-                    )
+                    await queue.put(f"data: {json.dumps(event, default=str)}\n\n")
             finally:
                 await queue.put(None)
 

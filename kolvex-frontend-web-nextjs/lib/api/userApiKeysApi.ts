@@ -89,8 +89,23 @@ export const PROVIDER_INFO: Record<string, ProviderInfo> = {
   },
 };
 
+/** This week's free model allowance on the server key; real spend, never an estimate. */
+export interface FreeAllowance {
+  model: string;
+  limit_yuan: number;
+  used_yuan: number;
+  remaining_yuan: number;
+  exhausted: boolean;
+  resets_at: string;
+}
+
 export interface AvailableProvidersResponse {
+  /** Providers with the user's own keys. */
   available_providers: string[];
+  /** Models usable without the user's own key (empty when the server offers none). */
+  free_models?: string[];
+  /** Null when the allowance cannot be read right now. */
+  free_allowance?: FreeAllowance | null;
 }
 
 // ===== API Functions =====
@@ -98,11 +113,18 @@ export interface AvailableProvidersResponse {
 /**
  * Get providers with user-configured API keys
  */
-export async function getAvailableProviders(signal?: AbortSignal): Promise<AvailableProvidersResponse> {
-  const response = await fetch(`${API_PREFIX}?action=available-providers`, { cache: "no-store", signal });
+export async function getAvailableProviders(
+  signal?: AbortSignal,
+): Promise<AvailableProvidersResponse> {
+  const response = await fetch(`${API_PREFIX}?action=available-providers`, {
+    cache: "no-store",
+    signal,
+  });
 
   if (!response.ok) {
-    throw Object.assign(new Error("Failed to fetch available providers"), { status: response.status });
+    throw Object.assign(new Error("Failed to fetch available providers"), {
+      status: response.status,
+    });
   }
 
   return response.json();
@@ -125,10 +147,7 @@ export async function getUserApiKeys(): Promise<UserApiKeysResponse> {
 /**
  * Create or update an API key for a provider
  */
-export async function upsertUserApiKey(
-  provider: string,
-  apiKey: string
-): Promise<UserApiKey> {
+export async function upsertUserApiKey(provider: string, apiKey: string): Promise<UserApiKey> {
   const response = await fetch(API_PREFIX, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
@@ -148,9 +167,7 @@ export async function upsertUserApiKey(
 /**
  * Delete an API key for a specific provider
  */
-export async function deleteUserApiKey(
-  provider: string
-): Promise<SuccessResponse> {
+export async function deleteUserApiKey(provider: string): Promise<SuccessResponse> {
   const response = await fetch(`${API_PREFIX}/${provider}`, {
     method: "DELETE",
   });

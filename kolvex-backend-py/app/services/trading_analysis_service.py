@@ -20,13 +20,13 @@ from datetime import date, datetime, timedelta
 from typing import Any, AsyncGenerator, Optional
 
 from app.agent.config import (
-    OPENAI_API_KEY,
     ANTHROPIC_API_KEY,
     DEEPSEEK_API_KEY,
-    QWEN_API_KEY,
     GOOGLE_API_KEY,
-    KIMI_API_KEY,
     GROK_API_KEY,
+    KIMI_API_KEY,
+    OPENAI_API_KEY,
+    QWEN_API_KEY,
 )
 from app.core.redis import get_redis
 from app.core.supabase import get_supabase_service
@@ -37,8 +37,11 @@ from app.services.agent_portfolio import (
     load_paper_state,
     resolve_action,
 )
+from app.services.free_llm_quota import FreeTierNotSupported, billed_user
 from app.services.research_translation import (
     DEFAULT_TIMEOUT as TRANSLATION_TIMEOUT,
+)
+from app.services.research_translation import (
     SUPPORTED_LANGUAGES,
     create_translation_llm,
     translate_record,
@@ -52,6 +55,7 @@ logger = logging.getLogger(__name__)
 TRADINGAGENTS_AVAILABLE = False
 try:
     import tradingagents  # noqa: F401
+
     TRADINGAGENTS_AVAILABLE = True
 except ImportError:
     logger.warning("tradingagents package not found — Trading Analysis feature disabled")
@@ -76,6 +80,10 @@ def _resolve_api_key(
 ) -> Optional[str]:
     if user_api_keys and provider in user_api_keys:
         return user_api_keys[provider]
+    # Multi-agent research is not covered by the free allowance: a signed-in user
+    # needs their own key (app/services/free_llm_quota.py).
+    if billed_user():
+        return None
     return _SERVER_KEY_FALLBACKS.get(provider)
 
 
@@ -95,6 +103,11 @@ def build_ta_config(
     from tradingagents.default_config import DEFAULT_CONFIG
 
     api_key = _resolve_api_key(provider, user_api_keys)
+    if not api_key and billed_user():
+        # Without this the vendored clients would read the server key from the environment.
+        raise FreeTierNotSupported(
+            "Trading analysis needs your own API key for this provider; add one in Settings."
+        )
     logger.info(
         f"build_ta_config: provider={provider}, "
         f"key_source={'user' if user_api_keys and provider in user_api_keys else 'server'}, "
@@ -102,14 +115,16 @@ def build_ta_config(
     )
 
     config = DEFAULT_CONFIG.copy()
-    config.update({
-        "llm_provider": provider,
-        "deep_think_llm": deep_think_model,
-        "quick_think_llm": quick_think_model,
-        "api_key": api_key,
-        "max_debate_rounds": max_debate_rounds,
-        "max_risk_discuss_rounds": max_risk_discuss_rounds,
-    })
+    config.update(
+        {
+            "llm_provider": provider,
+            "deep_think_llm": deep_think_model,
+            "quick_think_llm": quick_think_model,
+            "api_key": api_key,
+            "max_debate_rounds": max_debate_rounds,
+            "max_risk_discuss_rounds": max_risk_discuss_rounds,
+        }
+    )
     return config
 
 
@@ -127,6 +142,7 @@ def create_trading_graph(
         config=config,
         callbacks=callbacks,
     )
+
 
 TABLE = "trading_analyses"
 SIGNALS_TABLE = "agent_signals"
@@ -253,9 +269,7 @@ def _extract_node_detail(node_name: str, node_output: dict) -> dict:
             result["detail"] = preview
             return result
 
-    for report_key in [
-        "market_report", "sentiment_report", "news_report", "fundamentals_report"
-    ]:
+    for report_key in ["market_report", "sentiment_report", "news_report", "fundamentals_report"]:
         report = node_output.get(report_key, "")
         if report and len(report) > 20:
             preview = report[:DETAIL_PREVIEW_LEN].strip()
@@ -302,15 +316,15 @@ def _append_db_progress_event(analysis_id: str, event: dict) -> None:
         current.append(_stored_progress_event(event))
         current = current[-MAX_STORED_PROGRESS_EVENTS:]
 
-        supabase.table(TABLE).update({
-            "progress_events": current,
-            "progress_stage": event.get("stage"),
-            "progress_message": event.get("message", ""),
-        }).eq("id", analysis_id).execute()
+        supabase.table(TABLE).update(
+            {
+                "progress_events": current,
+                "progress_stage": event.get("stage"),
+                "progress_message": event.get("message", ""),
+            }
+        ).eq("id", analysis_id).execute()
     except Exception as e:
-        logger.warning(
-            f"[TradingAnalysis] {analysis_id}: DB progress append failed: {e}"
-        )
+        logger.warning(f"[TradingAnalysis] {analysis_id}: DB progress append failed: {e}")
 
 
 def _run_graph_sync(
@@ -331,11 +345,15 @@ def _run_graph_sync(
     progress_stage / progress_message to the DB so the frontend can poll it.
     """
     import redis as sync_redis
+
     from app.core.config import settings
 
     rc = None
     try:
-        redis_url = settings.REDIS_URL or f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}"
+        redis_url = (
+            settings.REDIS_URL
+            or f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}"
+        )
         rc = sync_redis.from_url(redis_url, decode_responses=True)
         rc.ping()
         logger.info(f"[TradingAnalysis] {analysis_id}: sync Redis connected ({redis_url})")
@@ -361,10 +379,12 @@ def _run_graph_sync(
             _last_db_stage[0] = stage
             try:
                 supabase = get_supabase_service()
-                supabase.table(TABLE).update({
-                    "progress_stage": stage,
-                    "progress_message": event.get("message", ""),
-                }).eq("id", analysis_id).execute()
+                supabase.table(TABLE).update(
+                    {
+                        "progress_stage": stage,
+                        "progress_message": event.get("message", ""),
+                    }
+                ).eq("id", analysis_id).execute()
             except Exception as e:
                 logger.warning(f"[TradingAnalysis] {analysis_id}: DB progress update failed: {e}")
 
@@ -382,7 +402,9 @@ def _run_graph_sync(
     logger.info(f"[TradingAnalysis] {analysis_id}: starting stream({ticker}, {trade_date})...")
 
     init_state = graph.propagator.create_initial_state(
-        ticker, trade_date, format_portfolio_context(portfolio) if portfolio else "",
+        ticker,
+        trade_date,
+        format_portfolio_context(portfolio) if portfolio else "",
     )
     stream_config = {"recursion_limit": 100}
     start_t = time.time()
@@ -418,8 +440,7 @@ def _run_graph_sync(
                     message = base_message
 
                 logger.info(
-                    f"[TradingAnalysis] {analysis_id}: "
-                    f"{node_name} #{count} ({elapsed:.0f}s)"
+                    f"[TradingAnalysis] {analysis_id}: {node_name} #{count} ({elapsed:.0f}s)"
                 )
                 progress_event: dict[str, Any] = {
                     "stage": stage,
@@ -440,9 +461,7 @@ def _run_graph_sync(
                 accumulated_state.update(node_output)
 
         if time.time() - start_t > timeout_seconds:
-            raise TimeoutError(
-                f"Analysis timed out after {timeout_seconds}s"
-            )
+            raise TimeoutError(f"Analysis timed out after {timeout_seconds}s")
 
     extraction = graph.signal_processor.extract_structured(
         accumulated_state.get("final_trade_decision", ""),
@@ -455,11 +474,13 @@ def _run_graph_sync(
         f"decision={decision} signal={extraction.status}"
     )
 
-    push_progress({
-        "stage": "completed",
-        "message": f"Analysis complete: {decision}",
-        "decision": decision,
-    })
+    push_progress(
+        {
+            "stage": "completed",
+            "message": f"Analysis complete: {decision}",
+            "decision": decision,
+        }
+    )
 
     result = {
         "market_report": accumulated_state.get("market_report", ""),
@@ -526,7 +547,9 @@ def build_signal_row(
     }
 
 
-def _load_portfolio(analysis_id: str, user_id: str, ticker: str, trade_date: str) -> Optional[dict[str, Any]]:
+def _load_portfolio(
+    analysis_id: str, user_id: str, ticker: str, trade_date: str
+) -> Optional[dict[str, Any]]:
     """Paper-account context for a live analysis; None for past dates or on any read failure."""
     if not is_live_trade_date(trade_date):
         return None
@@ -607,7 +630,7 @@ class TradingAnalysisService:
             "quick_think_model": quick_think_model,
         }
 
-        result = (await asyncio.to_thread(self._supabase.table(TABLE).insert(row).execute))
+        result = await asyncio.to_thread(self._supabase.table(TABLE).insert(row).execute)
         record = result.data[0] if result.data else row
 
         config = build_ta_config(
@@ -639,17 +662,21 @@ class TradingAnalysisService:
         try:
             result = (
                 self._supabase.table(TABLE)
-                .update({
-                    "status": "failed",
-                    "error_message": "Analysis interrupted by server restart",
-                    "completed_at": datetime.utcnow().isoformat(),
-                })
+                .update(
+                    {
+                        "status": "failed",
+                        "error_message": "Analysis interrupted by server restart",
+                        "completed_at": datetime.utcnow().isoformat(),
+                    }
+                )
                 .eq("status", "running")
                 .execute()
             )
             count = len(result.data) if result.data else 0
             if count > 0:
-                logger.warning(f"[TradingAnalysis] Cleaned up {count} stale 'running' analyses on startup")
+                logger.warning(
+                    f"[TradingAnalysis] Cleaned up {count} stale 'running' analyses on startup"
+                )
             return count
         except Exception as e:
             logger.error(f"[TradingAnalysis] Failed to cleanup stale analyses: {e}")
@@ -728,16 +755,30 @@ class TradingAnalysisService:
                 # Separate, best-effort write before the status flips: the completion trigger
                 # snapshots the row, and a missing column must never fail the research itself.
                 try:
-                    supabase.table(TABLE).update({"translations": translations}).eq("id", analysis_id).execute()
+                    supabase.table(TABLE).update({"translations": translations}).eq(
+                        "id", analysis_id
+                    ).execute()
                 except Exception as error:  # noqa: BLE001
-                    logger.warning(f"[TradingAnalysis] {analysis_id}: saving translations failed: {error}")
+                    logger.warning(
+                        f"[TradingAnalysis] {analysis_id}: saving translations failed: {error}"
+                    )
             supabase.table(TABLE).update(update).eq("id", analysis_id).execute()
             # After the analysis row is final: agent_signals.analysis_id references it.
-            _save_signal(analysis_id, build_signal_row(
-                analysis_id, user_id, ticker, trade_date, config, result["signal_extraction"],
-                result["portfolio"],
-            ))
-            logger.info(f"Analysis {analysis_id} completed: {result['final_decision']} in {duration:.1f}s")
+            _save_signal(
+                analysis_id,
+                build_signal_row(
+                    analysis_id,
+                    user_id,
+                    ticker,
+                    trade_date,
+                    config,
+                    result["signal_extraction"],
+                    result["portfolio"],
+                ),
+            )
+            logger.info(
+                f"Analysis {analysis_id} completed: {result['final_decision']} in {duration:.1f}s"
+            )
 
         except BaseException as e:
             completed.set()
@@ -753,7 +794,9 @@ class TradingAnalysisService:
         finally:
             watchdog_timer.cancel()
 
-    def _translate_result(self, analysis_id: str, progress_key: str, config: dict, result: dict) -> dict:
+    def _translate_result(
+        self, analysis_id: str, progress_key: str, config: dict, result: dict
+    ) -> dict:
         """Translate reader-facing text before completion so the saved version is bilingual.
 
         Best effort: a translation failure never fails the research; readers then see the
@@ -770,7 +813,9 @@ class TradingAnalysisService:
                 config.get("api_key"),
             )
             for language in SUPPORTED_LANGUAGES:
-                translated = translate_record({"id": analysis_id, **result}, language, llm, timeout=TRANSLATION_TIMEOUT)
+                translated = translate_record(
+                    {"id": analysis_id, **result}, language, llm, timeout=TRANSLATION_TIMEOUT
+                )
                 if translated:
                     translations[language] = translated
         except Exception as error:  # noqa: BLE001
@@ -807,7 +852,9 @@ class TradingAnalysisService:
                 if translated:
                     self._store_translation(analysis_id, language, translated)
             except Exception as error:  # noqa: BLE001
-                logger.warning(f"[TradingAnalysis] {analysis_id}: on-demand translation failed: {error}")
+                logger.warning(
+                    f"[TradingAnalysis] {analysis_id}: on-demand translation failed: {error}"
+                )
             finally:
                 with _translation_lock:
                     _translations_in_flight.discard(key)
@@ -815,7 +862,9 @@ class TradingAnalysisService:
         asyncio.get_running_loop().run_in_executor(_executor, work)
         return {"status": "translating"}
 
-    def translation_status(self, analysis_id: str, language: str, record: Optional[dict]) -> dict[str, Any]:
+    def translation_status(
+        self, analysis_id: str, language: str, record: Optional[dict]
+    ) -> dict[str, Any]:
         existing = ((record or {}).get("translations") or {}).get(language)
         if existing:
             return {"status": "completed", "translation": existing}
@@ -826,13 +875,13 @@ class TradingAnalysisService:
     async def get_shared_analysis(self, analysis_id: str) -> Optional[dict[str, Any]]:
         """Completed research is readable by every signed-in user."""
         try:
-            result = (
-                (await asyncio.to_thread(self._supabase.table(TABLE)
+            result = await asyncio.to_thread(
+                self._supabase.table(TABLE)
                 .select("*")
                 .eq("id", analysis_id)
                 .eq("status", "completed")
                 .maybe_single()
-                .execute))
+                .execute
             )
             return result.data if result else None
         except Exception as e:
@@ -843,26 +892,46 @@ class TradingAnalysisService:
     def _store_translation(analysis_id: str, language: str, translated: dict) -> None:
         """Write the translation to the record and to its stock-page version snapshot."""
         supabase = get_supabase_service()
-        row = supabase.table(TABLE).select("translations").eq("id", analysis_id).maybe_single().execute()
+        row = (
+            supabase.table(TABLE)
+            .select("translations")
+            .eq("id", analysis_id)
+            .maybe_single()
+            .execute()
+        )
         translations = dict(((row.data if row else None) or {}).get("translations") or {})
         translations[language] = translated
         supabase.table(TABLE).update({"translations": translations}).eq("id", analysis_id).execute()
         version = (
-            supabase.table("stock_analysis_versions").select("payload")
-            .eq("id", analysis_id).eq("kind", "research").maybe_single().execute()
+            supabase.table("stock_analysis_versions")
+            .select("payload")
+            .eq("id", analysis_id)
+            .eq("kind", "research")
+            .maybe_single()
+            .execute()
         )
         snapshot = ((version.data if version else None) or {}).get("payload")
         if snapshot:
             snapshot = dict(snapshot)
-            snapshot["translations"] = {**(snapshot.get("translations") or {}), language: translated}
-            supabase.table("stock_analysis_versions").update({"payload": snapshot}).eq("id", analysis_id).eq("kind", "research").execute()
+            snapshot["translations"] = {
+                **(snapshot.get("translations") or {}),
+                language: translated,
+            }
+            supabase.table("stock_analysis_versions").update({"payload": snapshot}).eq(
+                "id", analysis_id
+            ).eq("kind", "research").execute()
 
     @staticmethod
     def _push_progress(progress_key: str, event: dict) -> None:
         try:
             import redis as sync_redis
+
             from app.core.config import settings
-            redis_url = settings.REDIS_URL or f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}"
+
+            redis_url = (
+                settings.REDIS_URL
+                or f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}"
+            )
             rc = sync_redis.from_url(redis_url, decode_responses=True)
             full_key = f"{settings.REDIS_KEY_PREFIX}{progress_key}"
             rc.rpush(full_key, json.dumps(event))
@@ -875,14 +944,16 @@ class TradingAnalysisService:
     def _mark_failed(analysis_id: str, error_msg: str, duration: float):
         try:
             supabase = get_supabase_service()
-            supabase.table(TABLE).update({
-                "status": "failed",
-                "progress_stage": "failed",
-                "progress_message": None,
-                "error_message": error_msg[:2000],
-                "duration_seconds": round(duration, 2),
-                "completed_at": datetime.utcnow().isoformat(),
-            }).eq("id", analysis_id).execute()
+            supabase.table(TABLE).update(
+                {
+                    "status": "failed",
+                    "progress_stage": "failed",
+                    "progress_message": None,
+                    "error_message": error_msg[:2000],
+                    "duration_seconds": round(duration, 2),
+                    "completed_at": datetime.utcnow().isoformat(),
+                }
+            ).eq("id", analysis_id).execute()
         except Exception as db_err:
             logger.error(f"Failed to update error status for {analysis_id}: {db_err}")
 
@@ -897,8 +968,13 @@ class TradingAnalysisService:
         _append_db_progress_event(analysis_id, failure_event)
         try:
             import redis as sync_redis
+
             from app.core.config import settings
-            redis_url = settings.REDIS_URL or f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}"
+
+            redis_url = (
+                settings.REDIS_URL
+                or f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}"
+            )
             rc = sync_redis.from_url(redis_url, decode_responses=True)
             full_key = f"{settings.REDIS_KEY_PREFIX}{progress_key}"
             rc.rpush(full_key, json.dumps(failure_event))
@@ -910,13 +986,13 @@ class TradingAnalysisService:
     async def get_analysis(self, analysis_id: str, user_id: str) -> Optional[dict[str, Any]]:
         """Get a single analysis by ID."""
         try:
-            result = (
-                (await asyncio.to_thread(self._supabase.table(TABLE)
+            result = await asyncio.to_thread(
+                self._supabase.table(TABLE)
                 .select("*")
                 .eq("id", analysis_id)
                 .eq("user_id", user_id)
                 .maybe_single()
-                .execute))
+                .execute
             )
             return result.data if result else None
         except Exception as e:
@@ -933,7 +1009,10 @@ class TradingAnalysisService:
         """List analyses for a user with optional ticker filter."""
         query = (
             self._supabase.table(TABLE)
-            .select("id, ticker, trade_date, status, selected_analysts, llm_provider, final_decision, duration_seconds, created_at, completed_at, error_message, is_published, published_at", count="exact")
+            .select(
+                "id, ticker, trade_date, status, selected_analysts, llm_provider, final_decision, duration_seconds, created_at, completed_at, error_message, is_published, published_at",
+                count="exact",
+            )
             .eq("user_id", user_id)
             .order("created_at", desc=True)
         )
@@ -941,7 +1020,7 @@ class TradingAnalysisService:
         if ticker:
             query = query.eq("ticker", ticker.upper())
 
-        result = (await asyncio.to_thread(query.range(offset, offset + limit - 1).execute))
+        result = await asyncio.to_thread(query.range(offset, offset + limit - 1).execute)
         total = result.count or 0
 
         return {
@@ -953,28 +1032,30 @@ class TradingAnalysisService:
 
     async def delete_analysis(self, analysis_id: str, user_id: str) -> bool:
         """Delete an analysis."""
-        result = (
-            (await asyncio.to_thread(self._supabase.table(TABLE)
+        result = await asyncio.to_thread(
+            self._supabase.table(TABLE)
             .delete()
             .eq("id", analysis_id)
             .eq("user_id", user_id)
-            .execute))
+            .execute
         )
         return bool(result.data)
 
     async def publish_analysis(self, analysis_id: str, user_id: str) -> Optional[dict[str, Any]]:
         """Publish an analysis so all users can view it."""
         try:
-            result = (
-                (await asyncio.to_thread(self._supabase.table(TABLE)
-                .update({
-                    "is_published": True,
-                    "published_at": datetime.utcnow().isoformat(),
-                })
+            result = await asyncio.to_thread(
+                self._supabase.table(TABLE)
+                .update(
+                    {
+                        "is_published": True,
+                        "published_at": datetime.utcnow().isoformat(),
+                    }
+                )
                 .eq("id", analysis_id)
                 .eq("user_id", user_id)
                 .eq("status", "completed")
-                .execute))
+                .execute
             )
             return result.data[0] if result.data else None
         except Exception as e:
@@ -984,15 +1065,17 @@ class TradingAnalysisService:
     async def unpublish_analysis(self, analysis_id: str, user_id: str) -> Optional[dict[str, Any]]:
         """Unpublish an analysis, making it private again."""
         try:
-            result = (
-                (await asyncio.to_thread(self._supabase.table(TABLE)
-                .update({
-                    "is_published": False,
-                    "published_at": None,
-                })
+            result = await asyncio.to_thread(
+                self._supabase.table(TABLE)
+                .update(
+                    {
+                        "is_published": False,
+                        "published_at": None,
+                    }
+                )
                 .eq("id", analysis_id)
                 .eq("user_id", user_id)
-                .execute))
+                .execute
             )
             return result.data[0] if result.data else None
         except Exception as e:
@@ -1017,7 +1100,8 @@ class TradingAnalysisService:
             self._supabase.table(TABLE)
             .select(select_fields, count="exact")
             .eq("status", "completed")
-            .order("created_at", desc=True).order("id", desc=True)
+            .order("created_at", desc=True)
+            .order("id", desc=True)
         )
 
         if ticker:
@@ -1025,7 +1109,7 @@ class TradingAnalysisService:
 
         if published_only:
             query = query.eq("is_published", True)
-        result = (await asyncio.to_thread(query.range(offset, offset + limit - 1).execute))
+        result = await asyncio.to_thread(query.range(offset, offset + limit - 1).execute)
         total = result.count or 0
         items = result.data or []
 
@@ -1039,7 +1123,10 @@ class TradingAnalysisService:
         }
 
     async def get_published_analysis(
-        self, analysis_id: str, *, published_only: bool = False,
+        self,
+        analysis_id: str,
+        *,
+        published_only: bool = False,
     ) -> Optional[dict[str, Any]]:
         """Read completed research; anonymous routes must set published_only."""
         try:
@@ -1051,7 +1138,7 @@ class TradingAnalysisService:
             )
             if published_only:
                 query = query.eq("is_published", True)
-            result = (await asyncio.to_thread(query.maybe_single().execute))
+            result = await asyncio.to_thread(query.maybe_single().execute)
             record = result.data if result else None
             if record:
                 self._attach_authors([record])
@@ -1088,31 +1175,31 @@ class TradingAnalysisService:
     async def get_analysis_status(self, analysis_id: str) -> Optional[dict[str, Any]]:
         """Get analysis status without user_id check (service-level)."""
         try:
-            result = (
-                (await asyncio.to_thread(self._supabase.table(TABLE)
-                .select("id, status, final_decision, error_message, progress_stage, progress_message, progress_events")
+            result = await asyncio.to_thread(
+                self._supabase.table(TABLE)
+                .select(
+                    "id, status, final_decision, error_message, progress_stage, progress_message, progress_events"
+                )
                 .eq("id", analysis_id)
                 .maybe_single()
-                .execute))
+                .execute
             )
             return result.data if result else None
         except Exception as e:
-            logger.warning(
-                f"get_analysis_status({analysis_id}) with progress_events failed: {e}"
-            )
+            logger.warning(f"get_analysis_status({analysis_id}) with progress_events failed: {e}")
             try:
-                result = (
-                    (await asyncio.to_thread(self._supabase.table(TABLE)
-                    .select("id, status, final_decision, error_message, progress_stage, progress_message")
+                result = await asyncio.to_thread(
+                    self._supabase.table(TABLE)
+                    .select(
+                        "id, status, final_decision, error_message, progress_stage, progress_message"
+                    )
                     .eq("id", analysis_id)
                     .maybe_single()
-                    .execute))
+                    .execute
                 )
                 return result.data if result else None
             except Exception as fallback_error:
-                logger.warning(
-                    f"get_analysis_status({analysis_id}) failed: {fallback_error}"
-                )
+                logger.warning(f"get_analysis_status({analysis_id}) failed: {fallback_error}")
                 return None
 
     async def stream_progress(
@@ -1153,9 +1240,7 @@ class TradingAnalysisService:
                         yield {"stage": "info", "message": str(raw)}
                 cursor += len(events)
 
-            should_check_db = (
-                iteration % 3 == 0 if redis.is_connected else True
-            )
+            should_check_db = iteration % 3 == 0 if redis.is_connected else True
 
             if should_check_db:
                 record = await self.get_analysis_status(analysis_id)

@@ -99,6 +99,9 @@ class Settings:
     GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY", "")  # Google Gemini API Key
     KIMI_API_KEY: str = os.getenv("KIMI_API_KEY", "")  # Moonshot/Kimi API Key
     GROK_API_KEY: str = os.getenv("GROK_API_KEY", "")  # xAI Grok API Key
+    # Free allowance on the server DeepSeek key (app/services/free_llm_quota.py)
+    FREE_LLM_WEEKLY_LIMIT_YUAN: float = float(os.getenv("FREE_LLM_WEEKLY_LIMIT_YUAN", "1"))
+    FREE_LLM_USD_CNY: float = float(os.getenv("FREE_LLM_USD_CNY", "7.2"))
 
     # ==================== 网络搜索工具配置 ====================
     TAVILY_API_KEY: str = os.getenv("TAVILY_API_KEY", "")

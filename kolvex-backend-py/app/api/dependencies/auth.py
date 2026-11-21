@@ -14,6 +14,7 @@ from typing import Optional
 from fastapi import Depends, Header, HTTPException, status
 
 from app.core.supabase import SupabaseClient, get_supabase_service
+from app.services.free_llm_quota import bill_to
 from supabase import Client
 
 # Verifying a token used to create a fresh Supabase client (new TLS connection)
@@ -127,6 +128,8 @@ async def get_current_user_id(
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
+        # Model calls on server keys while serving this user count against their free allowance.
+        bill_to(user.id)
         return user.id
 
     except Exception as e:

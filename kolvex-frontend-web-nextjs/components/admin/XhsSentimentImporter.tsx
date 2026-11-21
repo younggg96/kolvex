@@ -1,20 +1,33 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { Check, Copy } from "lucide-react";
+import { Check, Copy, FileJson } from "lucide-react";
 import { useCopy } from "@/components/decision/shared";
 import XhsDayView from "@/components/xhs/XhsDayView";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslation } from "@/lib/i18n";
-import { buildXhsCollectionPrompt, todayPt, type XhsDay } from "@/lib/xhsSentiment";
+import { cn } from "@/lib/utils";
+import {
+  buildXhsCollectionPrompt,
+  combineDigestFiles,
+  todayPt,
+  type XhsDay,
+} from "@/lib/xhsSentiment";
 
-/** Paste one day's xhs-daily.v2 JSON, preview it as readers will see it, then save. */
+type PreviewDay = { digest: XhsDay; replaces: boolean };
+
+/**
+ * Paste or pick one or more days of xhs-daily.v2 JSON, preview each day as readers
+ * will see it, then save them together.
+ */
 export default function XhsSentimentImporter() {
   const c = useCopy();
   const [input, setInput] = useState("");
   const [result, setResult] = useState("");
-  const [preview, setPreview] = useState<{ digest: XhsDay; replaces: boolean } | null>(null);
+  const [preview, setPreview] = useState<PreviewDay[] | null>(null);
+  const [shown, setShown] = useState<string | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const textarea = useRef<HTMLTextAreaElement>(null);
   const inFlight = useRef(false);
@@ -36,6 +49,29 @@ export default function XhsSentimentImporter() {
       setShowPrompt(true);
     }
   }
+
+  async function loadFiles(files: FileList | null) {
+    if (!files?.length) return;
+    const read = await Promise.all(
+      [...files].map(async (file) => ({ name: file.name, text: await file.text() })),
+    );
+    const combined = combineDigestFiles(read);
+    if ("error" in combined) {
+      setResult(c(`${combined.file} is not valid JSON.`, `${combined.file} 不是有效的 JSON。`));
+      return;
+    }
+    setInput(combined.json);
+    setPreview(null);
+    setResult(
+      c(
+        `Loaded ${combined.days} day(s) from ${files.length} file(s). Validate next.`,
+        `已从 ${files.length} 个文件读入 ${combined.days} 天，请校验。`,
+      ),
+    );
+  }
+
+  const replaced = preview?.filter((day) => day.replaces) ?? [];
+  const current = preview?.find((day) => day.digest.date_pt === shown) ?? preview?.[0];
 
   async function submit(validate: boolean) {
     if (inFlight.current) return;
@@ -62,21 +98,27 @@ export default function XhsSentimentImporter() {
         return;
       }
       if (validate) {
-        const data: { digest: XhsDay; replaces_existing: boolean } = await response.json();
-        setPreview({ digest: data.digest, replaces: data.replaces_existing });
+        const data: { days: { digest: XhsDay; replaces_existing: boolean }[] } =
+          await response.json();
+        const days = data.days.map((day) => ({
+          digest: day.digest,
+          replaces: day.replaces_existing,
+        }));
+        setPreview(days);
+        setShown(days[0]?.digest.date_pt ?? null);
         setResult(
           c(
-            `Valid: ${data.digest.date_pt}, ${data.digest.topics.length} topic(s).`,
-            `校验通过：${data.digest.date_pt}，${data.digest.topics.length} 个话题。`,
+            `Valid: ${days.length} day(s), ${days.at(-1)?.digest.date_pt} to ${days[0]?.digest.date_pt}.`,
+            `校验通过：${days.length} 天，${days.at(-1)?.digest.date_pt} 至 ${days[0]?.digest.date_pt}。`,
           ),
         );
       } else {
-        const data: { date_pt: string; topics: number } = await response.json();
+        const data: { dates: string[]; topics: number } = await response.json();
         setPreview(null);
         setResult(
           c(
-            `Saved ${data.date_pt} with ${data.topics} topic(s).`,
-            `已保存 ${data.date_pt}，共 ${data.topics} 个话题。`,
+            `Saved ${data.dates.length} day(s) (${data.dates.join(", ")}), ${data.topics} topic(s) in total.`,
+            `已保存 ${data.dates.length} 天（${data.dates.join("、")}），共 ${data.topics} 个话题。`,
           ),
         );
       }
@@ -136,13 +178,39 @@ export default function XhsSentimentImporter() {
           </pre>
         )}
       </div>
-      <p className="text-sm font-medium">
-        {c("2. Paste the JSON it returns", "2. 粘贴返回的 JSON")}
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm font-medium">
+          {c("2. Paste the JSON or choose files", "2. 粘贴 JSON，或选择文件")}
+        </p>
+        <Button
+          variant="outline"
+          size="xs"
+          className="shrink-0 gap-1.5"
+          disabled={busy}
+          onClick={() => fileInput.current?.click()}
+        >
+          <FileJson className="h-3.5 w-3.5" aria-hidden />
+          {c("Choose JSON files", "选择 JSON 文件")}
+        </Button>
+        <input
+          ref={fileInput}
+          type="file"
+          accept=".json,application/json"
+          multiple
+          hidden
+          onChange={(event) => {
+            void loadFiles(event.target.files);
+            event.target.value = "";
+          }}
+        />
+      </div>
       <Textarea
         ref={textarea}
         aria-label={c("Daily digest JSON", "每日情绪 JSON")}
-        placeholder={c("Paste one day of xhs-daily.v2 JSON", "粘贴一天的 xhs-daily.v2 JSON")}
+        placeholder={c(
+          "One day as an object, or several days as an array […]",
+          "一天为一个对象；多天放进数组 […]",
+        )}
         spellCheck={false}
         value={input}
         readOnly={busy}
@@ -163,7 +231,16 @@ export default function XhsSentimentImporter() {
           {c("Validate and preview", "校验并预览")}
         </Button>
         <Button type="button" disabled={busy || !preview} onClick={() => void submit(false)}>
-          {preview?.replaces ? c("Replace saved day", "覆盖已保存的这一天") : c("Save", "保存")}
+          {!preview || preview.length === 1
+            ? replaced.length
+              ? c("Replace saved day", "覆盖已保存的这一天")
+              : c("Save", "保存")
+            : replaced.length
+              ? c(
+                  `Save ${preview.length} days (replace ${replaced.length})`,
+                  `保存 ${preview.length} 天（覆盖 ${replaced.length} 天）`,
+                )
+              : c(`Save ${preview.length} days`, `保存 ${preview.length} 天`)}
         </Button>
         <Button
           type="button"
@@ -190,15 +267,48 @@ export default function XhsSentimentImporter() {
               "先校验，预览通过后才能保存。格式见 docs/xhs-sentiment.md。",
             )}
         </p>
-        {preview?.replaces && (
+        {replaced.length > 0 && (
           <p className="m-0 text-sm font-medium text-negative">
             {c(
-              `${preview.digest.date_pt} is already saved. Saving replaces that whole day.`,
-              `${preview.digest.date_pt} 已有数据，保存会整天覆盖原内容。`,
+              `Already saved: ${replaced.map((day) => day.digest.date_pt).join(", ")}. Saving replaces each of these days in full.`,
+              `已有数据：${replaced.map((day) => day.digest.date_pt).join("、")}。保存会把这些天整天覆盖。`,
             )}
           </p>
         )}
-        {preview && <XhsDayView day={preview.digest} />}
+        {preview && preview.length > 1 && (
+          <ul
+            className="flex flex-wrap gap-2"
+            aria-label={c("Days in this import", "本次导入的日期")}
+          >
+            {preview.map(({ digest, replaces }) => (
+              <li key={digest.date_pt}>
+                <button
+                  type="button"
+                  aria-pressed={digest.date_pt === current?.digest.date_pt}
+                  onClick={() => setShown(digest.date_pt)}
+                  className={cn(
+                    "min-h-11 rounded-xl border px-3 py-1.5 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/25",
+                    digest.date_pt === current?.digest.date_pt
+                      ? "border-foreground"
+                      : "border-border hover:bg-foreground/[0.04]",
+                  )}
+                >
+                  <span className="block font-medium tabular-nums">{digest.date_pt}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {c(
+                      `${digest.topics.length} topics · ${digest.sample.posts_scanned} posts`,
+                      `${digest.topics.length} 个话题 · ${digest.sample.posts_scanned} 帖`,
+                    )}
+                    {replaces && (
+                      <span className="ml-1 text-negative">{c("· replaces", "· 将覆盖")}</span>
+                    )}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {current && <XhsDayView key={current.digest.date_pt} day={current.digest} />}
       </div>
     </div>
   );

@@ -10,7 +10,7 @@ from postgrest.exceptions import APIError
 
 from app.api.dependencies.auth import verify_admin
 from app.core.supabase import get_supabase_service
-from app.schemas.xhs_sentiment import validate_digest
+from app.schemas.xhs_sentiment import validate_batch
 from supabase import Client
 
 router = APIRouter(prefix="/xhs-sentiment", tags=["Xiaohongshu sentiment"])
@@ -18,7 +18,7 @@ admin_router = APIRouter(prefix="/xhs-sentiment", tags=["Admin Xiaohongshu senti
 logger = logging.getLogger(__name__)
 
 TABLE = "xhs_daily_sentiment"
-MAX_BYTES = 1024 * 1024
+MAX_BYTES = 4 * 1024 * 1024
 LOS_ANGELES = ZoneInfo("America/Los_Angeles")
 DAY_PATTERN = r"^\d{4}-\d{2}-\d{2}$"
 SUMMARY_COLUMNS = "date_pt,captured_at,sample,sentiment"
@@ -29,19 +29,22 @@ def _chinese(request: Request) -> bool:
     return not request.headers.get("accept-language", "").lower().startswith("en")
 
 
-async def _validated(request: Request) -> dict:
+async def _validated(request: Request) -> list[dict]:
     chinese = _chinese(request)
     body = bytearray()
     async for chunk in request.stream():
         if len(body) + len(chunk) > MAX_BYTES:
             raise HTTPException(
-                413, "JSON 超过 1 MB，请缩小后重试。" if chinese else "JSON exceeds 1 MB."
+                413,
+                "JSON 超过 4 MB，请分批导入。"
+                if chinese
+                else "JSON exceeds 4 MB. Import fewer days.",
             )
         body.extend(chunk)
-    digest, errors = validate_digest(bytes(body), datetime.now(LOS_ANGELES).date(), chinese)
+    days, errors = validate_batch(bytes(body), datetime.now(LOS_ANGELES).date(), chinese)
     if errors:
         raise HTTPException(422, detail="\n".join(errors))
-    return digest
+    return days
 
 
 def _summary(row: dict) -> dict:
@@ -57,21 +60,26 @@ def _summary(row: dict) -> dict:
     }
 
 
+RECORD_KEYS = ("date_pt", "captured_at", "sample", "sentiment", "topics", "rumors", "limitations")
+
+
 @admin_router.post("/validate")
 async def preview(
     request: Request,
     _admin: str = Depends(verify_admin),
     db: Client = Depends(get_supabase_service),
 ):
-    digest = await _validated(request)
+    days = await _validated(request)
+    dates = [day["date_pt"] for day in days]
     try:
         existing = await asyncio.to_thread(
-            db.table(TABLE).select("date_pt").eq("date_pt", digest["date_pt"]).limit(1).execute
+            db.table(TABLE).select("date_pt").in_("date_pt", dates).execute
         )
     except APIError as exc:
         logger.exception("Xiaohongshu sentiment lookup failed")
         raise HTTPException(503, detail=exc.message) from exc
-    return {"digest": digest, "replaces_existing": bool(existing.data)}
+    saved = {row["date_pt"] for row in existing.data}
+    return {"days": [{"digest": day, "replaces_existing": day["date_pt"] in saved} for day in days]}
 
 
 @admin_router.post("")
@@ -80,28 +88,28 @@ async def save(
     admin_id: str = Depends(verify_admin),
     db: Client = Depends(get_supabase_service),
 ):
-    digest = await _validated(request)
-    record = {
-        key: digest[key]
-        for key in (
-            "date_pt",
-            "captured_at",
-            "sample",
-            "sentiment",
-            "topics",
-            "rumors",
-            "limitations",
-        )
-    }
-    record.update(imported_by=admin_id, imported_at=datetime.now(timezone.utc).isoformat())
+    days = await _validated(request)
+    imported_at = datetime.now(timezone.utc).isoformat()
+    records = [
+        {
+            **{key: day[key] for key in RECORD_KEYS},
+            "imported_by": admin_id,
+            "imported_at": imported_at,
+        }
+        for day in days
+    ]
     try:
+        # One upsert statement: Postgres writes every day or none.
         await asyncio.to_thread(
-            db.table(TABLE).upsert(record, on_conflict="date_pt", returning="minimal").execute
+            db.table(TABLE).upsert(records, on_conflict="date_pt", returning="minimal").execute
         )
     except APIError as exc:
         logger.exception("Xiaohongshu sentiment import failed")
         raise HTTPException(503, detail=exc.message) from exc
-    return {"date_pt": digest["date_pt"], "topics": len(digest["topics"])}
+    return {
+        "dates": [day["date_pt"] for day in days],
+        "topics": sum(len(day["topics"]) for day in days),
+    }
 
 
 @router.get("/days")

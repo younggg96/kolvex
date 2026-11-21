@@ -207,7 +207,7 @@ function welcomeFixture(createConversation, props = {}) {
     "./ChatWelcome": { ChatWelcome: "welcome" },
     "./useChatHistory": { useChatHistory: () => ({ createConversation }) },
     "@/hooks/useAvailableProviders": {
-      useAvailableProviders: () => ({ availableProviders: ["deepseek"] }),
+      useAvailableProviders: () => ({ availableProviders: ["deepseek"], freeModels: [] }),
     },
     "./ChatInput": { getFirstAvailableModelId: () => "deepseek-chat" },
   });
@@ -284,7 +284,7 @@ function detailFixture(done = { type: "done" }) {
       }),
     },
     "@/hooks/useAvailableProviders": {
-      useAvailableProviders: () => ({ availableProviders: ["deepseek"] }),
+      useAvailableProviders: () => ({ availableProviders: ["deepseek"], freeModels: [] }),
     },
     // No task is still running on the server, so nothing resumes in the background.
     "@/lib/chatApi": {

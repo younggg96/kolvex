@@ -23,6 +23,11 @@ from app.agent.revenue_evidence import (
 )
 from app.agent.tools import get_tools_for_sources
 from app.agent.unit_fix import figures_by_trust, fix_unit_slips
+from app.services.free_llm_quota import (
+    FREE_QUOTA_MESSAGES,
+    FreeQuotaExceeded,
+    FreeQuotaUnavailable,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -674,6 +679,8 @@ async def stream_agent(
             ]
         yield done
 
+    except (FreeQuotaExceeded, FreeQuotaUnavailable) as e:
+        yield {"type": "error", "code": e.code, "content": FREE_QUOTA_MESSAGES[e.code]}
     except Exception as e:
         logger.error(f"Agent streaming failed: {e}", exc_info=True)
         yield {

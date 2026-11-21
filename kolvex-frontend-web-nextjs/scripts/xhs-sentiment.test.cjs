@@ -131,3 +131,32 @@ test("the collection prompt names every field the importer requires, in both lan
   assert.match(lib.buildXhsCollectionPrompt("zh-CN", "2026-11-20"), /^你在帮我整理/);
   assert.match(lib.buildXhsCollectionPrompt("en", "2026-11-20"), /^You are compiling/);
 });
+
+test("picked files combine into one batch, flattening files that already hold several days", () => {
+  const one = (date) => JSON.stringify({ date_pt: date });
+  const combined = lib.combineDigestFiles([
+    { name: "a.json", text: "﻿" + one("2026-11-18") },
+    {
+      name: "b.json",
+      text: JSON.stringify([{ date_pt: "2026-11-19" }, { date_pt: "2026-11-20" }]),
+    },
+  ]);
+  assert.equal(combined.days, 3);
+  assert.deepEqual(
+    JSON.parse(combined.json).map((day) => day.date_pt),
+    ["2026-11-18", "2026-11-19", "2026-11-20"],
+  );
+  // A single day stays a plain object, the same shape as a pasted day.
+  const single = lib.combineDigestFiles([{ name: "a.json", text: one("2026-11-20") }]);
+  assert.equal(single.days, 1);
+  assert.equal(JSON.parse(single.json).date_pt, "2026-11-20");
+  assert.deepEqual(
+    {
+      ...lib.combineDigestFiles([
+        { name: "a.json", text: one("x") },
+        { name: "bad.json", text: "{" },
+      ]),
+    },
+    { error: "invalid_json", file: "bad.json" },
+  );
+});

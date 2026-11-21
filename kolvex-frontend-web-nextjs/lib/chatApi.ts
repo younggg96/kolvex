@@ -260,6 +260,8 @@ export interface AgentStreamEvent {
   workspace_id?: string;
   run_id?: string;
   workspace_error?: string;
+  /** "error": a machine-readable reason, e.g. "free_quota_exceeded". */
+  code?: string;
   stage?: "routing" | "planning" | "writing" | string;
   message_id?: string;
   user_message?: ChatMessage;

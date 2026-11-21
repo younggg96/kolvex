@@ -55,13 +55,14 @@ export function ChatWelcomeContainer({
   const [selectedModel, setSelectedModel] = useState<AIModel>("deepseek-flash");
 
   const { createConversation } = useChatHistory();
-  const { availableProviders } = useAvailableProviders();
+  const { availableProviders, freeModels, freeAllowance } = useAvailableProviders();
 
   // Default to first available model when API keys load
+  const freeKey = freeModels.join(",");
   useEffect(() => {
-    const first = getFirstAvailableModelId(availableProviders);
+    const first = getFirstAvailableModelId(availableProviders, freeKey ? freeKey.split(",") : []);
     if (first) setSelectedModel(first);
-  }, [availableProviders]);
+  }, [availableProviders, freeKey]);
 
   const toggleSource = (source: SearchSource) => {
     setActiveSources((prev) => {
@@ -137,6 +138,8 @@ export function ChatWelcomeContainer({
             selectedModel={selectedModel}
             onSelectModel={setSelectedModel}
             availableProviders={availableProviders}
+            freeModels={freeModels}
+            freeAllowance={freeAllowance}
             variant={variant}
             suggestions={suggestions}
             placeholder={placeholder}

@@ -192,10 +192,13 @@ class DailyDigest(Strict):
         return self
 
 
-def validate_digest(body: bytes, today_pt: date, chinese: bool) -> tuple[dict | None, list[str]]:
-    """Parse and validate one day's digest. Topics come back sorted by heat."""
+MAX_DAYS = 31
+
+
+def _parse(body: bytes, chinese: bool):
+    """Return (document, None) or (None, [error])."""
     try:
-        document = json.loads(body.decode("utf-8"), parse_constant=_reject_constant)
+        return json.loads(body.decode("utf-8"), parse_constant=_reject_constant), None
     except json.JSONDecodeError as exc:
         return None, [
             f"JSON 格式错误（第 {exc.lineno} 行，第 {exc.colno} 列）：{exc.msg}"
@@ -205,6 +208,8 @@ def validate_digest(body: bytes, today_pt: date, chinese: bool) -> tuple[dict | 
     except (UnicodeDecodeError, ValueError, RecursionError):
         return None, ["JSON 格式错误。" if chinese else "Invalid JSON."]
 
+
+def _check_day(document, today_pt: date, chinese: bool) -> tuple[dict | None, list[str]]:
     try:
         digest = DailyDigest.model_validate(document)
     except ValidationError as exc:
@@ -223,6 +228,61 @@ def validate_digest(body: bytes, today_pt: date, chinese: bool) -> tuple[dict | 
         datetime.fromisoformat(result["captured_at"]).astimezone(timezone.utc).isoformat()
     )
     return result, []
+
+
+def validate_digest(body: bytes, today_pt: date, chinese: bool) -> tuple[dict | None, list[str]]:
+    """Parse and validate one day's digest. Topics come back sorted by heat."""
+    document, errors = _parse(body, chinese)
+    if errors:
+        return None, errors
+    return _check_day(document, today_pt, chinese)
+
+
+def validate_batch(
+    body: bytes, today_pt: date, chinese: bool
+) -> tuple[list[dict] | None, list[str]]:
+    """
+    One day as an object, or up to MAX_DAYS days as an array. Every day must pass,
+    and no date may repeat; otherwise nothing is returned. Days come back newest first.
+    """
+    document, errors = _parse(body, chinese)
+    if errors:
+        return None, errors
+    if isinstance(document, dict):
+        day, errors = _check_day(document, today_pt, chinese)
+        return ([day] if day else None), errors
+    if not isinstance(document, list) or not 1 <= len(document) <= MAX_DAYS:
+        return None, [
+            f"顶层须为一天的对象，或包含 1–{MAX_DAYS} 天的数组"
+            if chinese
+            else f"Top level must be one day's object or an array of 1–{MAX_DAYS} days"
+        ]
+
+    days, errors, seen = [], [], {}
+    for index, item in enumerate(document, 1):
+        raw_date = item.get("date_pt") if isinstance(item, dict) else None
+        label = (
+            f"第 {index} 天" + (f"（{raw_date}）" if isinstance(raw_date, str) else "")
+            if chinese
+            else f"Day {index}" + (f" ({raw_date})" if isinstance(raw_date, str) else "")
+        )
+        day, day_errors = _check_day(item, today_pt, chinese)
+        errors.extend(f"{label} {error}" for error in day_errors)
+        if day is None:
+            continue
+        if day["date_pt"] in seen:
+            errors.append(
+                f"{label} 与第 {seen[day['date_pt']]} 天日期重复"
+                if chinese
+                else f"{label} repeats the date of day {seen[day['date_pt']]}"
+            )
+            continue
+        seen[day["date_pt"]] = index
+        days.append(day)
+    if errors:
+        return None, errors
+    days.sort(key=lambda day: day["date_pt"], reverse=True)
+    return days, []
 
 
 MESSAGES_ZH = {

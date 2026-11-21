@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 from app.api.dependencies.auth import verify_admin
 from app.api.routes import xhs_sentiment as routes
 from app.core.supabase import get_supabase_service
-from app.schemas.xhs_sentiment import validate_digest
+from app.schemas.xhs_sentiment import validate_batch, validate_digest
 
 TODAY = date(2026, 11, 20)
 NOTE = "6740a1b2000000001e01c2d3"
@@ -163,16 +163,29 @@ def client():
     return TestClient(app), db
 
 
-def test_validate_reports_replacement_without_writing(client, monkeypatch):
+def day(date_pt):
+    return {**copy.deepcopy(DIGEST), "date_pt": date_pt}
+
+
+def test_validate_reports_which_days_replace_saved_ones_without_writing(client):
     http, db = client
-    monkeypatch.setattr(routes, "validate_digest", lambda body, today, chinese: (DIGEST, []))
     table = db.table.return_value
-    table.select.return_value.eq.return_value.limit.return_value.execute.return_value = (
-        SimpleNamespace(data=[{"date_pt": "2026-11-20"}])
+    table.select.return_value.in_.return_value.execute.return_value = SimpleNamespace(
+        data=[{"date_pt": "2026-11-19"}]
     )
-    response = http.post("/admin/xhs-sentiment/validate", content=b"{}")
-    assert response.status_code == 200
-    assert response.json()["replaces_existing"] is True
+    body = json.dumps([day("2026-11-18"), day("2026-11-20"), day("2026-11-19")]).encode()
+    response = http.post("/admin/xhs-sentiment/validate", content=body)
+    assert response.status_code == 200, response.text
+    days = response.json()["days"]
+    assert [(item["digest"]["date_pt"], item["replaces_existing"]) for item in days] == [
+        ("2026-11-20", False),
+        ("2026-11-19", True),
+        ("2026-11-18", False),
+    ]
+    assert table.select.return_value.in_.call_args.args == (
+        "date_pt",
+        ["2026-11-20", "2026-11-19", "2026-11-18"],
+    )
     table.upsert.assert_not_called()
 
 
@@ -180,10 +193,11 @@ def test_save_upserts_one_day_with_audit_fields(client):
     http, db = client
     response = http.post("/admin/xhs-sentiment", content=json.dumps(DIGEST).encode())
     assert response.status_code == 200, response.text
-    assert response.json() == {"date_pt": "2026-11-20", "topics": 1}
-    record = db.table.return_value.upsert.call_args.args[0]
-    assert record["imported_by"] == "admin-id"
-    assert set(record) == {
+    assert response.json() == {"dates": ["2026-11-20"], "topics": 1}
+    records = db.table.return_value.upsert.call_args.args[0]
+    assert len(records) == 1
+    assert records[0]["imported_by"] == "admin-id"
+    assert set(records[0]) == {
         "date_pt",
         "captured_at",
         "sample",
@@ -195,6 +209,57 @@ def test_save_upserts_one_day_with_audit_fields(client):
         "imported_at",
     }
     assert db.table.return_value.upsert.call_args.kwargs["on_conflict"] == "date_pt"
+
+
+def test_save_writes_every_day_in_one_upsert(client):
+    http, db = client
+    body = json.dumps([day("2026-11-19"), day("2026-11-20")]).encode()
+    response = http.post("/admin/xhs-sentiment", content=body)
+    assert response.status_code == 200, response.text
+    assert response.json() == {"dates": ["2026-11-20", "2026-11-19"], "topics": 2}
+    db.table.return_value.upsert.assert_called_once()
+    records = db.table.return_value.upsert.call_args.args[0]
+    assert [record["date_pt"] for record in records] == ["2026-11-20", "2026-11-19"]
+    assert records[0]["imported_at"] == records[1]["imported_at"]
+
+
+def test_one_bad_day_blocks_the_whole_batch(client):
+    http, db = client
+    bad = day("2026-11-19")
+    bad["topics"] = []
+    response = http.post(
+        "/admin/xhs-sentiment", content=json.dumps([day("2026-11-20"), bad]).encode()
+    )
+    assert response.status_code == 422
+    assert "第 2 天（2026-11-19） topics：数量不足" in response.json()["detail"]
+    db.table.return_value.upsert.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("document", "message"),
+    [
+        ([], "顶层须为一天的对象，或包含 1–31 天的数组"),
+        ([day("2026-10-01")] * 32, "顶层须为一天的对象，或包含 1–31 天的数组"),
+        ("2026-11-20", "顶层须为一天的对象"),
+        ([day("2026-11-20"), day("2026-11-20")], "第 2 天（2026-11-20） 与第 1 天日期重复"),
+        ([day("2026-11-20"), 5], "第 2 天 JSON：须为对象"),
+    ],
+)
+def test_batch_shape_errors(document, message):
+    days, errors = validate_batch(json.dumps(document).encode(), TODAY, True)
+    assert days is None
+    assert any(message in error for error in errors), errors
+
+
+def test_batch_returns_days_newest_first_and_english_labels():
+    days, errors = validate_batch(
+        json.dumps([day("2026-11-01"), day("2026-11-20")]).encode(), TODAY, True
+    )
+    assert errors == [] and [item["date_pt"] for item in days] == ["2026-11-20", "2026-11-01"]
+    bad = day("2026-11-19")
+    bad["topics"] = []
+    _, errors = validate_batch(json.dumps([bad]).encode(), TODAY, False)
+    assert errors[0].startswith("Day 1 (2026-11-19) topics:")
 
 
 def test_invalid_upload_is_rejected_before_any_write(client):

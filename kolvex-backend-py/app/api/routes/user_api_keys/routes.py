@@ -4,17 +4,20 @@ Allows users to set their own LLM provider API keys
 """
 
 import logging
-from fastapi import APIRouter, Depends, HTTPException
-from starlette import status as http_status
-from pydantic import BaseModel, Field
-from typing import Optional, List
 from datetime import datetime
+from typing import List, Optional
 
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
+from starlette import status as http_status
+
+from app.agent.config import DEEPSEEK_API_KEY
 from app.api.dependencies.auth import get_current_user_id
+from app.services import free_llm_quota
 from app.services.user_api_keys_service import (
+    VALID_PROVIDERS,
     UserApiKeysService,
     get_user_api_keys_service,
-    VALID_PROVIDERS,
 )
 
 logger = logging.getLogger(__name__)
@@ -24,8 +27,10 @@ router = APIRouter(prefix="/user-api-keys", tags=["User API Keys"])
 
 # ===== Schemas =====
 
+
 class ApiKeyResponse(BaseModel):
     """Single API key response (masked)"""
+
     id: str
     provider: str
     api_key_masked: str
@@ -35,40 +40,53 @@ class ApiKeyResponse(BaseModel):
 
 class ApiKeysListResponse(BaseModel):
     """List of user API keys"""
+
     keys: List[ApiKeyResponse]
     supported_providers: List[str]
 
 
 class UpsertApiKeyRequest(BaseModel):
     """Request to create or update an API key"""
-    provider: str = Field(
-        description="LLM provider name (e.g. openai, anthropic, deepseek)"
-    )
-    api_key: str = Field(
-        min_length=1,
-        max_length=500,
-        description="API key value"
-    )
+
+    provider: str = Field(description="LLM provider name (e.g. openai, anthropic, deepseek)")
+    api_key: str = Field(min_length=1, max_length=500, description="API key value")
 
 
 class DeleteApiKeyRequest(BaseModel):
     """Request to delete an API key"""
-    provider: str = Field(
-        description="LLM provider name to delete"
-    )
+
+    provider: str = Field(description="LLM provider name to delete")
 
 
 class SuccessResponse(BaseModel):
     """Simple success response"""
+
     message: str
     success: bool = True
 
 
 # ===== Routes =====
 
+
+class FreeAllowanceResponse(BaseModel):
+    """This week's free model allowance on the server key (app/services/free_llm_quota.py)."""
+
+    model: str
+    limit_yuan: float
+    used_yuan: float
+    remaining_yuan: float
+    exhausted: bool
+    resets_at: str
+
+
 class AvailableProvidersResponse(BaseModel):
-    """List of providers that have usable API keys"""
+    """Providers with the user's own keys, plus the free model when the server offers one"""
+
     available_providers: List[str]
+    # Models usable without the user's own key; empty when the server has no DeepSeek key.
+    free_models: List[str] = []
+    # None when free_models is empty or the allowance cannot be read right now.
+    free_allowance: Optional[FreeAllowanceResponse] = None
 
 
 @router.get(
@@ -81,11 +99,21 @@ async def get_available_providers(
     service: UserApiKeysService = Depends(get_user_api_keys_service),
 ):
     """
-    Returns providers that have a usable API key (user-level or server-level).
-    Used by the frontend to enable/disable model selection.
+    Returns providers with the user's own keys, and the free model with this
+    week's allowance. Used by the frontend to enable/disable model selection.
     """
     providers = await service.get_available_providers(current_user_id)
-    return AvailableProvidersResponse(available_providers=providers)
+    if not DEEPSEEK_API_KEY:
+        return AvailableProvidersResponse(available_providers=providers)
+    try:
+        allowance = FreeAllowanceResponse(**await free_llm_quota.allowance(current_user_id))
+    except free_llm_quota.FreeQuotaUnavailable:
+        allowance = None
+    return AvailableProvidersResponse(
+        available_providers=providers,
+        free_models=[free_llm_quota.FREE_MODEL],
+        free_allowance=allowance,
+    )
 
 
 @router.get("", response_model=ApiKeysListResponse, summary="Get all user API keys")
