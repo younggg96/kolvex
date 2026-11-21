@@ -18,9 +18,8 @@ import {
   XCircle,
   MinusCircle,
   Info,
-  Gauge,
-  PieChart,
   History,
+  ArrowUpRight,
 } from "lucide-react";
 import { AiModelSelect, aiModelName, useAiModelChoice } from "@/components/ai/AiModelSelect";
 import { InfoTip } from "@/components/ui/info-tip";
@@ -28,7 +27,6 @@ import { Button } from "@/components/ui/button";
 import CompanyLogo, { phoneListLogoClass } from "@/components/ui/company-logo";
 import { marketStockHref } from "@/lib/stockLinks";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Accordion,
@@ -68,20 +66,28 @@ function asDirection(sentiment: string): Direction {
   return sentiment === "bullish" || sentiment === "bearish" ? sentiment : "neutral";
 }
 
+// Recommendation chips are neutral pills; only the icon and word carry the
+// semantic tone, so the action reads without colour and green stays reserved
+// for brand actions.
 const RECOMMENDATION_CONFIG = {
-  strong_buy: { icon: CheckCircle2, className: "bg-primary text-primary-foreground" },
-  buy: { icon: TrendingUp, className: "bg-positive/10 text-positive" },
-  buy_more: { icon: TrendingUp, className: "bg-positive/10 text-positive" },
-  hold: { icon: MinusCircle, className: "bg-warning/10 text-warning" },
-  reduce: { icon: TrendingDown, className: "bg-warning/10 text-warning" },
-  sell: { icon: XCircle, className: "bg-negative/10 text-negative" },
+  strong_buy: { icon: CheckCircle2, tone: "text-positive" },
+  buy: { icon: TrendingUp, tone: "text-positive" },
+  buy_more: { icon: TrendingUp, tone: "text-positive" },
+  hold: { icon: MinusCircle, tone: "text-foreground" },
+  reduce: { icon: TrendingDown, tone: "text-warning" },
+  sell: { icon: XCircle, tone: "text-negative" },
 } as const;
 
 const RISK_CONFIG = {
-  low: { color: "bg-positive-fill", width: "33%", textColor: "text-positive" },
-  medium: { color: "bg-warning", width: "66%", textColor: "text-warning" },
-  high: { color: "bg-negative-fill", width: "100%", textColor: "text-negative" },
+  low: { steps: 1, tone: "text-positive", labelKey: "portfolio.ai.lowRisk" },
+  medium: { steps: 2, tone: "text-warning", labelKey: "portfolio.ai.mediumRisk" },
+  high: { steps: 3, tone: "text-negative", labelKey: "portfolio.ai.highRisk" },
 } as const;
+
+/** Labels in the locale files end with a colon for inline use; stat labels drop it. */
+function bareLabel(t: TFunction, key: string) {
+  return t(key).replace(/[:：]\s*$/, "");
+}
 
 // ============================================================
 // Sub-Components
@@ -95,121 +101,88 @@ function RecommendationBadge({ recommendation, t }: { recommendation: string; t:
   const Icon = config.icon;
 
   return (
-    <Badge size="sm" className={cn("gap-1 font-semibold border-0", config.className)}>
-      <Icon className="w-3 h-3" />
+    <span
+      className={cn(
+        "inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-muted px-2.5 py-1 text-xs font-medium",
+        config.tone,
+      )}
+    >
+      <Icon className="h-3.5 w-3.5" aria-hidden="true" />
       {t(`portfolio.ai.recommendation.${key}`)}
-    </Badge>
+    </span>
   );
 }
 
-function RiskMeter({ level, t }: { level: string; t: TFunction }) {
-  const config = RISK_CONFIG[level as keyof typeof RISK_CONFIG] || RISK_CONFIG.medium;
-  const labelKey =
-    level === "low"
-      ? "portfolio.ai.lowRisk"
-      : level === "high"
-        ? "portfolio.ai.highRisk"
-        : "portfolio.ai.mediumRisk";
-  const label = t(labelKey);
-
+function Stat({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Gauge className="w-4 h-4" />
-          <span>{t("portfolio.ai.riskLevel")}</span>
-        </div>
-        <span className={cn("text-sm font-semibold", config.textColor)}>{label}</span>
-      </div>
-      <div className="h-2 bg-muted rounded-full overflow-hidden">
-        <div
-          className={cn("h-full rounded-full transition-all duration-700 ease-out", config.color)}
-          style={{ width: config.width }}
-        />
-      </div>
+    <div className="min-w-0 px-4 py-3.5">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="mt-1.5">{children}</dd>
     </div>
   );
 }
 
-function DiversificationGauge({ score, t }: { score: number; t: TFunction }) {
-  const getColor = (s: number) => {
-    if (s >= 70) return { ring: "text-positive", text: "text-positive" };
-    if (s >= 40) return { ring: "text-warning", text: "text-warning" };
-    return { ring: "text-negative", text: "text-negative" };
-  };
-  const colors = getColor(score);
-  const circumference = 2 * Math.PI * 40;
-  const strokeDashoffset = circumference - (score / 100) * circumference;
-  const statusLabel =
-    score >= 70
+function RiskStat({ level, t }: { level: string; t: TFunction }) {
+  const config = RISK_CONFIG[level as keyof typeof RISK_CONFIG] || RISK_CONFIG.medium;
+  return (
+    <>
+      <p className={cn("text-[0.9375rem] font-semibold", config.tone)}>{t(config.labelKey)}</p>
+      <div className={cn("mt-2 flex gap-1", config.tone)} aria-hidden="true">
+        {[1, 2, 3].map((step) => (
+          <span
+            key={step}
+            className={cn(
+              "h-1 flex-1 rounded-full",
+              step <= config.steps ? "bg-current" : "bg-muted",
+            )}
+          />
+        ))}
+      </div>
+    </>
+  );
+}
+
+function DiversificationStat({ score, t }: { score: number; t: TFunction }) {
+  const clamped = Math.max(0, Math.min(100, Math.round(score)));
+  const tone = clamped >= 70 ? "text-positive" : clamped >= 40 ? "text-warning" : "text-negative";
+  const status =
+    clamped >= 70
       ? t("portfolio.ai.wellDiversified")
-      : score >= 40
+      : clamped >= 40
         ? t("portfolio.ai.moderate")
         : t("portfolio.ai.concentrated");
-
   return (
-    <div className="flex items-center gap-4">
-      <div className="relative w-16 h-16">
-        <svg className="w-16 h-16 -rotate-90" viewBox="0 0 100 100">
-          <circle
-            cx="50"
-            cy="50"
-            r="40"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="8"
-            className="text-gray-200"
-          />
-          <circle
-            cx="50"
-            cy="50"
-            r="40"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="8"
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
-            className={cn("transition-all duration-700 ease-out", colors.ring)}
-          />
-        </svg>
-        <span
-          className={cn(
-            "absolute inset-0 flex items-center justify-center text-lg font-bold",
-            colors.text,
-          )}
-        >
-          {score}
+    <>
+      <p className="flex items-baseline gap-2">
+        <span className="text-[0.9375rem] font-semibold tabular-nums">
+          {clamped}
+          <span className="text-xs font-normal text-muted-foreground">/100</span>
         </span>
+        <span className={cn("text-xs font-medium", tone)}>{status}</span>
+      </p>
+      <div className="mt-2 h-1 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+        <div
+          className={cn("h-full rounded-full bg-current", tone)}
+          style={{ width: `${clamped}%` }}
+        />
       </div>
-      <div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <PieChart className="w-4 h-4" />
-          <span>{t("portfolio.ai.diversification")}</span>
-        </div>
-        <p className={cn("text-sm font-semibold", colors.text)}>{statusLabel}</p>
-      </div>
-    </div>
+    </>
   );
 }
 
-function MetricCard({
-  icon: Icon,
-  label,
-  children,
-}: {
-  icon: React.ElementType;
-  label: string;
-  children: React.ReactNode;
-}) {
+function PointList({ items }: { items: string[] }) {
   return (
-    <div className="p-4 rounded-2xl border border-foreground/10 glass-card bg-card-glass">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-        <Icon className="w-4 h-4" />
-        <span>{label}</span>
-      </div>
-      {children}
-    </div>
+    <ul className="space-y-2">
+      {items.map((item, idx) => (
+        <li key={idx} className="flex items-start gap-2.5 text-sm leading-6">
+          <span
+            className="mt-[0.6875rem] h-1 w-1 shrink-0 rounded-full bg-muted-foreground"
+            aria-hidden="true"
+          />
+          <span className="min-w-0">{item}</span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -218,14 +191,12 @@ function MetricCard({
 // ============================================================
 
 function StockAnalysisItem({ stock, t }: { stock: StockAnalysis; t: TFunction }) {
+  const hasWeight = stock.current_weight !== undefined && stock.current_weight !== null;
   return (
-    <AccordionItem
-      value={stock.symbol}
-      className="glass-card bg-card-glass border border-foreground/10 rounded-2xl mb-2 overflow-hidden"
-    >
-      <AccordionTrigger className="px-4 py-3 transition-colors hover:bg-foreground/[0.06] hover:no-underline">
-        <div className="flex items-center gap-3 flex-1">
-          <span aria-hidden="true">
+    <AccordionItem value={stock.symbol} className="border-b border-border last:border-0">
+      <AccordionTrigger className="list-control min-h-16 gap-3 rounded-2xl px-2 py-3 text-left hover:bg-foreground/[0.06] hover:no-underline focus-visible:bg-foreground/[0.06] focus-visible:outline-2 focus-visible:outline-primary max-md:px-0 [&>svg]:text-muted-foreground">
+        <span className="flex min-w-0 flex-1 items-center gap-3">
+          <span aria-hidden="true" className="shrink-0">
             <CompanyLogo
               symbol={stock.symbol}
               name={stock.name}
@@ -233,62 +204,62 @@ function StockAnalysisItem({ stock, t }: { stock: StockAnalysis; t: TFunction })
               className={phoneListLogoClass}
             />
           </span>
-          <div className="flex-1 min-w-0 text-left">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-semibold">{stock.symbol}</span>
+          <span className="min-w-0 flex-1">
+            <span className="flex flex-wrap items-center gap-x-2">
+              <span className="text-[0.9375rem] font-semibold">{stock.symbol}</span>
               <DirectionBadge direction={asDirection(stock.sentiment)} className="text-xs" />
-            </div>
-            {stock.name && <p className="text-xs text-muted-foreground truncate">{stock.name}</p>}
-          </div>
-          <RecommendationBadge recommendation={stock.recommendation} t={t} />
-        </div>
-      </AccordionTrigger>
-      <AccordionContent className="px-4 pb-4">
-        <div className="space-y-4 pt-2">
-          {/* Quotes page entry point: the accordion trigger above is a
-                        button, so the stock identity cannot itself be a link. */}
-          <Link
-            href={marketStockHref(stock.symbol)}
-            className="inline-flex min-h-11 items-center gap-2 rounded-2xl text-sm font-medium underline-offset-4 hover:underline focus-visible:outline-none "
-          >
-            <CompanyLogo symbol={stock.symbol} name={stock.name} size="sm" />
-            <span>{t("redditOpinions.openStock", { ticker: stock.symbol })}</span>
-          </Link>
-
-          {/* Analysis Text */}
-          {stock.analysis && (
-            <p className="text-sm text-muted-foreground leading-relaxed">{stock.analysis}</p>
+            </span>
+            {stock.name && (
+              <span className="mt-0.5 block truncate text-[0.8125rem] font-normal text-muted-foreground">
+                {stock.name}
+              </span>
+            )}
+          </span>
+          {hasWeight && (
+            <span className="hidden shrink-0 text-right text-sm font-normal tabular-nums sm:block">
+              <span className="sr-only">{bareLabel(t, "portfolio.ai.weight")} </span>
+              {stock.current_weight!.toFixed(1)}%
+            </span>
           )}
+          <RecommendationBadge recommendation={stock.recommendation} t={t} />
+        </span>
+      </AccordionTrigger>
+      <AccordionContent className="px-2 pb-5 max-md:px-0 md:pl-[3.75rem]">
+        <div className="space-y-4">
+          {stock.analysis && <p className="text-sm leading-6">{stock.analysis}</p>}
 
-          {/* Key Points */}
           {stock.key_points && stock.key_points.length > 0 && (
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-                {t("portfolio.ai.keyPoints")}
-              </p>
-              <ul className="space-y-1.5">
-                {stock.key_points.map((point, idx) => (
-                  <li key={idx} className="flex items-start gap-2 text-sm">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-                    <span>{point}</span>
-                  </li>
-                ))}
-              </ul>
+              <p className="mb-2 text-xs text-muted-foreground">{t("portfolio.ai.keyPoints")}</p>
+              <PointList items={stock.key_points} />
             </div>
           )}
 
-          {/* Metrics */}
-          <div className="flex items-center gap-4 pt-2 border-t border-border">
-            {stock.current_weight !== undefined && stock.current_weight !== null && (
-              <div className="text-xs">
-                <span className="text-muted-foreground">{t("portfolio.ai.weight")} </span>
-                <span className="font-semibold">{stock.current_weight.toFixed(1)}%</span>
-              </div>
-            )}
-            <div className="text-xs">
-              <span className="text-muted-foreground">{t("portfolio.ai.confidence")} </span>
-              <span className="font-semibold">{(stock.confidence * 100).toFixed(0)}%</span>
-            </div>
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            <span className="flex flex-wrap gap-x-4 tabular-nums">
+              {hasWeight && (
+                <span>
+                  {bareLabel(t, "portfolio.ai.weight")}{" "}
+                  <span className="font-medium text-foreground">
+                    {stock.current_weight!.toFixed(1)}%
+                  </span>
+                </span>
+              )}
+              <span>
+                {bareLabel(t, "portfolio.ai.confidence")}{" "}
+                <span className="font-medium text-foreground">
+                  {(stock.confidence * 100).toFixed(0)}%
+                </span>
+              </span>
+            </span>
+            {/* The accordion trigger is a button, so the quote page gets its own link. */}
+            <Link
+              href={marketStockHref(stock.symbol)}
+              className="inline-flex min-h-11 items-center gap-1 rounded-full font-medium text-foreground underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-primary"
+            >
+              {t("redditOpinions.openStock", { ticker: stock.symbol })}
+              <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </Link>
           </div>
         </div>
       </AccordionContent>
@@ -301,71 +272,55 @@ function StockAnalysisItem({ stock, t }: { stock: StockAnalysis; t: TFunction })
 // ============================================================
 
 function OverallAnalysisSection({ analysis, t }: { analysis: OverallAnalysis; t: TFunction }) {
+  const strengths = analysis.strengths ?? [];
+  const weaknesses = analysis.weaknesses ?? [];
   return (
-    <div className="space-y-4">
-      {/* Summary Card */}
-      <div className="p-4 rounded-2xl  from-primary/5 via-primary/3 to-transparent border border-primary/10">
-        <p className="text-sm leading-relaxed">{analysis.summary}</p>
-      </div>
+    <div className="space-y-5">
+      <p className="text-[0.9375rem] leading-7">{analysis.summary}</p>
 
-      {/* Metrics Grid - Bento Style */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <MetricCard icon={Gauge} label={t("portfolio.ai.riskAssessment")}>
-          <RiskMeter level={analysis.risk_level} t={t} />
-        </MetricCard>
-        <MetricCard icon={PieChart} label={t("portfolio.ai.portfolioHealth")}>
-          <DiversificationGauge score={analysis.diversification_score} t={t} />
-        </MetricCard>
-      </div>
+      <dl
+        className={cn(
+          "grid grid-cols-1 divide-y divide-border rounded-2xl border border-border sm:divide-y-0 sm:divide-x",
+          analysis.portfolio_style ? "sm:grid-cols-3" : "sm:grid-cols-2",
+        )}
+      >
+        <Stat label={t("portfolio.ai.riskLevel")}>
+          <RiskStat level={analysis.risk_level} t={t} />
+        </Stat>
+        <Stat label={t("portfolio.ai.diversification")}>
+          <DiversificationStat score={analysis.diversification_score} t={t} />
+        </Stat>
+        {analysis.portfolio_style && (
+          <Stat label={bareLabel(t, "portfolio.ai.portfolioStyle")}>
+            <p className="text-sm font-medium leading-6 first-letter:uppercase">
+              {analysis.portfolio_style}
+            </p>
+          </Stat>
+        )}
+      </dl>
 
-      {/* Portfolio Style */}
-      {analysis.portfolio_style && (
-        <div className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-muted border border-border">
-          <span className="text-sm text-muted-foreground">{t("portfolio.ai.portfolioStyle")}</span>
-          <span className="text-sm font-semibold capitalize">{analysis.portfolio_style}</span>
+      {(strengths.length > 0 || weaknesses.length > 0) && (
+        <div className="grid grid-cols-1 gap-x-8 gap-y-5 md:grid-cols-2">
+          {strengths.length > 0 && (
+            <div>
+              <h4 className="mb-2.5 flex items-center gap-2 text-sm font-semibold">
+                <CheckCircle2 className="h-4 w-4 text-positive" aria-hidden="true" />
+                {t("portfolio.ai.strengths")}
+              </h4>
+              <PointList items={strengths} />
+            </div>
+          )}
+          {weaknesses.length > 0 && (
+            <div>
+              <h4 className="mb-2.5 flex items-center gap-2 text-sm font-semibold">
+                <AlertTriangle className="h-4 w-4 text-warning" aria-hidden="true" />
+                {t("portfolio.ai.areasToImprove")}
+              </h4>
+              <PointList items={weaknesses} />
+            </div>
+          )}
         </div>
       )}
-
-      {/* Strengths & Weaknesses */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {analysis.strengths && analysis.strengths.length > 0 && (
-          <div className="p-4 rounded-2xl border border-positive/30 bg-positive/10">
-            <div className="flex items-center gap-2 mb-3">
-              <CheckCircle2 className="w-4 h-4 text-positive" />
-              <span className="text-sm font-semibold text-positive">
-                {t("portfolio.ai.strengths")}
-              </span>
-            </div>
-            <ul className="space-y-1.5">
-              {analysis.strengths.map((item, idx) => (
-                <li key={idx} className="flex items-start gap-2 text-sm text-positive">
-                  <span className="w-1 h-1 rounded-full bg-positive-fill mt-2 shrink-0" />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {analysis.weaknesses && analysis.weaknesses.length > 0 && (
-          <div className="p-4 rounded-2xl border border-warning/30 bg-warning/10">
-            <div className="flex items-center gap-2 mb-3">
-              <AlertTriangle className="w-4 h-4 text-warning" />
-              <span className="text-sm font-semibold text-warning">
-                {t("portfolio.ai.areasToImprove")}
-              </span>
-            </div>
-            <ul className="space-y-1.5">
-              {analysis.weaknesses.map((item, idx) => (
-                <li key={idx} className="flex items-start gap-2 text-sm text-warning">
-                  <span className="w-1 h-1 rounded-full bg-warning mt-2 shrink-0" />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
     </div>
   );
 }
@@ -375,34 +330,10 @@ function OverallAnalysisSection({ analysis, t }: { analysis: OverallAnalysis; t:
 // ============================================================
 
 const SUGGESTION_SECTIONS = [
-  {
-    key: "rebalancing",
-    titleKey: "portfolio.ai.rebalancing",
-    icon: Target,
-    color: "text-gery-500",
-    bg: "bg-muted",
-  },
-  {
-    key: "risk_management",
-    titleKey: "portfolio.ai.riskManagement",
-    icon: Shield,
-    color: "text-foreground",
-    bg: "bg-muted",
-  },
-  {
-    key: "opportunities",
-    titleKey: "portfolio.ai.opportunities",
-    icon: Lightbulb,
-    color: "text-warning",
-    bg: "bg-warning/10",
-  },
-  {
-    key: "tax_considerations",
-    titleKey: "portfolio.ai.taxTips",
-    icon: Info,
-    color: "text-foreground",
-    bg: "bg-muted",
-  },
+  { key: "rebalancing", titleKey: "portfolio.ai.rebalancing", icon: Target },
+  { key: "risk_management", titleKey: "portfolio.ai.riskManagement", icon: Shield },
+  { key: "opportunities", titleKey: "portfolio.ai.opportunities", icon: Lightbulb },
+  { key: "tax_considerations", titleKey: "portfolio.ai.taxTips", icon: Info },
 ] as const;
 
 function SuggestionsSection({
@@ -422,34 +353,25 @@ function SuggestionsSection({
   if (activeSections.length === 0) return null;
 
   return (
-    <div className="space-y-2">
-      {activeSections.map((section) => {
-        const Icon = section.icon;
-        const items = suggestions[section.key as keyof typeof suggestions] ?? [];
+    <section>
+      <h3 className="mb-3 text-sm font-semibold">{t("portfolio.ai.recommendations")}</h3>
+      <div className="divide-y divide-border">
+        {activeSections.map((section) => {
+          const Icon = section.icon;
+          const items = suggestions[section.key as keyof typeof suggestions] ?? [];
 
-        return (
-          <div
-            key={section.key}
-            className="p-4 rounded-2xl border border-foreground/10 glass-card bg-card-glass"
-          >
-            <div className="flex items-center gap-2 mb-3">
-              <div className={cn("p-1.5 rounded-md", section.bg)}>
-                <Icon className={cn("w-4 h-4", section.color)} />
-              </div>
-              <span className="font-semibold text-sm">{t(section.titleKey)}</span>
+          return (
+            <div key={section.key} className="py-4 first:pt-0 last:pb-0">
+              <h4 className="mb-2.5 flex items-center gap-2 text-sm font-semibold">
+                <Icon className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                {t(section.titleKey)}
+              </h4>
+              <PointList items={items} />
             </div>
-            <ul className="space-y-1.5 pl-2">
-              {items.map((item, idx) => (
-                <li key={idx} className="flex items-start gap-2 text-sm text-muted-foreground">
-                  <span className="w-1 h-1 rounded-full bg-current mt-2 shrink-0 opacity-50" />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        );
-      })}
-    </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
@@ -457,72 +379,55 @@ function SuggestionsSection({
 // Loading State
 // ============================================================
 
-/** Mirrors the result: overview summary, two metric cards, sentiment strip, strengths/risks, then per-stock rows. */
+/** Mirrors the result: summary, stat strip, strengths/risks, then flat per-stock rows. */
 function AnalysisLoadingState({ t }: { t: TFunction }) {
   return (
-    <div role="status" className="space-y-6">
+    <div role="status" className="space-y-8">
       <span className="sr-only">{t("portfolio.ai.analyzing")}</span>
-      <div aria-hidden="true">
-        <Skeleton className="mb-3 h-4 w-32 rounded-md" />
-        <div className="space-y-4">
-          <div className="space-y-2 rounded-2xl border border-primary/10 p-4">
-            <Skeleton className="h-4 w-full rounded-md" />
-            <Skeleton className="h-4 w-full rounded-md" />
-            <Skeleton className="h-4 w-2/3 rounded-md" />
-          </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {[0, 1].map((i) => (
-              <div
-                key={i}
-                className="glass-card rounded-2xl border border-foreground/10 bg-card-glass p-4"
-              >
-                <Skeleton className="mb-3 h-4 w-24 rounded-md" />
-                <Skeleton className="h-2 w-full rounded-full" />
-                <Skeleton className="mt-2 h-3 w-16 rounded-md" />
-              </div>
-            ))}
-          </div>
-          <Skeleton className="h-11 w-full rounded-2xl" />
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            {[0, 1].map((i) => (
-              <div
-                key={i}
-                className={
-                  i
-                    ? "rounded-2xl border border-warning/30 bg-warning/10 p-4"
-                    : "rounded-2xl border border-positive/30 bg-positive/10 p-4"
-                }
-              >
-                <Skeleton className="mb-3 h-4 w-20 rounded-md" />
-                <div className="space-y-2">
-                  {[0, 1, 2].map((j) => (
-                    <Skeleton key={j} className="h-3.5 w-full rounded-md" />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+      <div aria-hidden="true" className="space-y-5">
+        <Skeleton className="h-4 w-24 rounded-md" />
+        <div className="space-y-2.5">
+          <Skeleton className="h-4 w-full rounded-md" />
+          <Skeleton className="h-4 w-full rounded-md" />
+          <Skeleton className="h-4 w-2/3 rounded-md" />
         </div>
-      </div>
-      <div aria-hidden="true">
-        <Skeleton className="mb-3 h-4 w-28 rounded-md" />
-        <div className="space-y-2">
+        <div className="grid grid-cols-1 divide-y divide-border rounded-2xl border border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
           {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              className="glass-card flex items-center justify-between gap-3 rounded-2xl border border-foreground/10 bg-card-glass px-4 py-3"
-            >
-              <span className="flex items-center gap-3">
-                <Skeleton className="h-8 w-8 rounded-full" />
-                <Skeleton className="h-4 w-14 rounded-md" />
-              </span>
-              <span className="flex gap-2">
-                <Skeleton className="h-5 w-16 rounded-full" />
-                <Skeleton className="h-5 w-12 rounded-full" />
-              </span>
+            <div key={i} className="space-y-2.5 px-4 py-3.5">
+              <Skeleton className="h-3 w-14 rounded-md" />
+              <Skeleton className="h-4 w-20 rounded-md" />
+              <Skeleton className="h-1 w-full rounded-full" />
             </div>
           ))}
         </div>
+        <div className="grid grid-cols-1 gap-x-8 gap-y-5 md:grid-cols-2">
+          {[0, 1].map((i) => (
+            <div key={i} className="space-y-2.5">
+              <Skeleton className="h-4 w-16 rounded-md" />
+              {[0, 1, 2].map((j) => (
+                <Skeleton key={j} className="h-3.5 w-full rounded-md" />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div aria-hidden="true">
+        <Skeleton className="mb-3 h-4 w-20 rounded-md" />
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            className="flex min-h-16 items-center justify-between gap-3 border-b border-border px-2 py-3 last:border-0 max-md:px-0"
+          >
+            <span className="flex items-center gap-3">
+              <Skeleton className="h-10 w-10 rounded-full max-md:h-8 max-md:w-8" />
+              <span className="space-y-1.5">
+                <Skeleton className="h-4 w-14 rounded-md" />
+                <Skeleton className="h-3 w-28 rounded-md" />
+              </span>
+            </span>
+            <Skeleton className="h-6 w-16 rounded-full" />
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -828,10 +733,10 @@ export function PortfolioAIAnalysis({ className }: PortfolioAIAnalysisProps) {
 
             {/* Analysis Results */}
             {analysis && !loading && !error && (
-              <div className={cn("space-y-6 transition-opacity", openingId && "opacity-50")}>
+              <div className={cn("space-y-10 transition-opacity", openingId && "opacity-50")}>
                 {/* Overall Analysis */}
                 <section>
-                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                  <h3 className="mb-3 text-sm font-semibold">
                     {t("portfolio.ai.portfolioOverview")}
                   </h3>
                   <OverallAnalysisSection analysis={analysis.overall_analysis} t={t} />
@@ -840,11 +745,11 @@ export function PortfolioAIAnalysis({ className }: PortfolioAIAnalysisProps) {
                 {/* Stock Analysis */}
                 {analysis.stock_analyses && analysis.stock_analyses.length > 0 && (
                   <section>
-                    <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                    <h3 className="mb-2 flex items-baseline gap-2 text-sm font-semibold">
                       {t("portfolio.ai.stockAnalysis")}
-                      <Badge variant="default" className="ml-1">
+                      <span className="text-xs font-normal tabular-nums text-muted-foreground">
                         {analysis.stock_analyses.length}
-                      </Badge>
+                      </span>
                     </h3>
                     <Accordion
                       type="multiple"
@@ -876,12 +781,7 @@ export function PortfolioAIAnalysis({ className }: PortfolioAIAnalysisProps) {
                 )}
 
                 {/* Suggestions */}
-                <section>
-                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                    {t("portfolio.ai.recommendations")}
-                  </h3>
-                  <SuggestionsSection suggestions={analysis.portfolio_suggestions} t={t} />
-                </section>
+                <SuggestionsSection suggestions={analysis.portfolio_suggestions} t={t} />
 
                 {/* Footer */}
                 <footer className="pt-4 border-t border-border">
