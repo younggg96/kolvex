@@ -4,7 +4,7 @@ import { UsersRound } from "lucide-react";
 import { useCopy } from "@/components/decision/shared";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AvatarRail } from "@/components/ui/avatar-rail";
-import type { PersonUpdatePerson } from "@/lib/personUpdates";
+import { FED_GROUP, personUpdateRail, type PersonUpdatePerson } from "@/lib/personUpdates";
 import { PersonUpdateAvatar } from "./PersonUpdateAvatar";
 
 export function PersonUpdatesPeopleRail({
@@ -20,10 +20,10 @@ export function PersonUpdatesPeopleRail({
   const allPeople = c("All people", "全部人物");
   const items = [
     { name: "", label: allPeople, avatar: null, fedOfficial: false, newCount: 0 },
-    ...people,
+    ...personUpdateRail(people),
   ].map((person) => ({
     id: person.name,
-    label: person.label,
+    label: person.name === FED_GROUP ? c("Fed officials", "美联储官员") : person.label,
     updateLabel: person.newCount
       ? c(
           `${person.newCount} new ${person.newCount === 1 ? "update" : "updates"} in the past 24 hours`,

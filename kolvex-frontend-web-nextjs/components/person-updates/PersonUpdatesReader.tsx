@@ -9,7 +9,12 @@ import { ContentLoading } from "@/components/ui/content-loading";
 import { ListCard, ListEmptyState } from "@/components/ui/list-card";
 import { FilterSheet, FilterSheetGroup } from "@/components/ui/filter-sheet";
 import { useTranslation } from "@/lib/i18n";
-import { personUpdatePeople, type PersonUpdate } from "@/lib/personUpdates";
+import {
+  FED_GROUP,
+  matchesPersonFilter,
+  personUpdatePeople,
+  type PersonUpdate,
+} from "@/lib/personUpdates";
 import { PersonUpdatesPeopleRail } from "./PersonUpdatesPeopleRail";
 import { PersonUpdateTimeline } from "./PersonUpdateTimeline";
 
@@ -100,12 +105,17 @@ export function PersonUpdatesReader() {
   const person = search.get("person") || "";
   const tag = search.get("tag") || "";
   const filtered = items.filter(
-    (item) => (!person || item.person === person) && (!tag || item.tags.includes(tag)),
+    (item) => matchesPersonFilter(item, person) && (!tag || item.tags.includes(tag)),
   );
-  const personLabel = people.find((entry) => entry.name === person)?.label || person;
+  const fedLabel = c("Fed officials", "美联储官员");
+  const personLabel =
+    person === FED_GROUP
+      ? fedLabel
+      : people.find((entry) => entry.name === person)?.label || person;
   const summary = [personLabel, tag].filter(Boolean).join(" · ");
   const personOptions = [
     { value: "", label: c("All people", "全部人物") },
+    ...(people.some((entry) => entry.fedOfficial) ? [{ value: FED_GROUP, label: fedLabel }] : []),
     ...people.map((entry) => ({ value: entry.name, label: entry.label })),
   ];
   if (person && !personOptions.some((entry) => entry.value === person)) {

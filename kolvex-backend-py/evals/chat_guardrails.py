@@ -77,6 +77,8 @@ class Rule:
     id: str
     pattern: str
     negatable: bool = True
+    # Not a violation when this matches the same sentence (the doubt is about an undated web page).
+    unless: str = ""
 
 
 def _negated(text: str, start: int) -> bool:
@@ -113,6 +115,12 @@ def violations(answer: str, rules: tuple[Rule, ...]) -> list[dict]:
                 or answer[match.end() : match.end() + 1] in tuple(_QUESTION_MARK)
             ):
                 continue
+            if rule.unless:
+                sentence = re.split(
+                    r"[。.!?！？\n]", answer[max(0, match.start() - 200) : match.start()]
+                )[-1]
+                if re.search(rule.unless, sentence + match.group(0), re.IGNORECASE):
+                    continue
             found.append({"rule": rule.id, "text": match.group(0)})
             break
     return found
@@ -238,6 +246,8 @@ QUOTE_DOUBT = Rule(
     "quote_doubt",
     r"(?:报价|价格|跌幅|quote|price).{0,10}(?:存疑|不可靠|可能有误|可能是错|unreliable|questionable|may be wrong)|"
     r"可靠性存疑",
+    # Calling the undated web page's old price unreliable is the right call, not doubting the quote.
+    unless=r"没有时间|无时间|未标(?:明)?时间|网页|页面|检索结果|搜索结果|\bundated\b|web page|no timestamp",
 )
 # The product calls tracked YouTube creators 博主; earlier answers drifted to 创作者.
 CREATOR_TERM = Rule("creator_term", r"创作者", negatable=False)
@@ -1156,6 +1166,7 @@ FOLLOW_UPS = [
                 "leaves_decision",
                 r"(?:决定|判断|选择|决策)[^。\n]{0,15}(?:在你|由你|你自己|取决于你|交给你)|"
                 r"(?:你自己|由你|你来|你本人)[^。\n]{0,4}(?:决定|判断|选择|决策)|"
+                r"(?:决定|主意)[^。\n]{0,6}(?:只能|应该|得|要)?(?:由)?你(?:自己|来)?(?:做|拿|定)|"
                 r"不(?:能|会)(?:替你|帮你|直接)|can't (?:make|tell)|won't (?:make|tell)|your (?:decision|call)",
             ),
         ),

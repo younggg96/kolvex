@@ -39,9 +39,11 @@ import {
 import { withSign } from "@/lib/format";
 
 // Same column rhythm as the YouTube opinions stock rows: identity, then two
-// right-aligned stat columns that keep fixed widths from sm up.
+// stat columns that keep fixed widths from sm up. From md the trend sits
+// centred in its own column and the rank/upvotes column is left-aligned, so the
+// sparkline has the same gap on both sides however short the rank label is.
 const ROW_GRID =
-  "grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 sm:grid-cols-[minmax(0,1fr)_120px_120px] sm:gap-x-4 md:grid-cols-[minmax(0,1fr)_120px_120px_120px]";
+  "grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 sm:grid-cols-[minmax(0,1fr)_120px_120px] sm:gap-x-4 md:grid-cols-[minmax(0,1fr)_112px_152px_120px]";
 const STOCK_IDENTITY = "flex min-w-0 items-center gap-3";
 const STOCK_TICKER = "block text-[0.9375rem] font-semibold";
 const STOCK_NAME = "mt-0.5 block text-[0.8125rem] text-muted-foreground";
@@ -62,7 +64,7 @@ function TrendSparkline({ points }: { points: number[] }) {
       viewBox={`0 0 ${width} ${height}`}
       width={width}
       height={height}
-      className="ml-auto block text-primary"
+      className="mx-auto block text-primary"
       aria-hidden="true"
     >
       <polygon
@@ -150,9 +152,10 @@ export default function RedditOpinionsPage() {
     <WatchlistButton ticker={row.ticker} showLabel={!compact} />
   );
 
-  // Column headers are right-aligned like the numbers under them, so the sort
-  // arrow leads the label and the label text itself ends on the column edge.
-  const sortButton = (value: RedditSort, label: string) => (
+  // Headers align like the values under them. In a right-aligned column the
+  // sort arrow leads the label so the text ends on the column edge; in the
+  // left-aligned rank column it trails so the text starts on the edge.
+  const sortButton = (value: RedditSort, label: string, align: "end" | "start" = "end") => (
     <button
       type="button"
       onClick={() => setSort(value)}
@@ -163,8 +166,9 @@ export default function RedditOpinionsPage() {
         sort === value && "font-medium text-foreground",
       )}
     >
-      {sort === value && <ArrowDown className="h-3 w-3" aria-hidden="true" />}
+      {align === "end" && sort === value && <ArrowDown className="h-3 w-3" aria-hidden="true" />}
       {label}
+      {align === "start" && sort === value && <ArrowDown className="h-3 w-3" aria-hidden="true" />}
     </button>
   );
 
@@ -334,8 +338,8 @@ export default function RedditOpinionsPage() {
               {/* Mirrors ListRow geometry (gap-3, pr-2, 36px icon button) so each
                   label sits over its column. Each stat cell stacks two lines
                   (mentions over change, rank over upvotes), so its two sort
-                  labels stack the same way; -mr-2 cancels the buttons' own px-2
-                  so label text ends on the column edge like the values. */}
+                  labels stack the same way; -mr-2 / -ml-2 cancel the buttons' own
+                  px-2 so label text meets the column edge like the values. */}
               <div className="mt-3 hidden items-center gap-3 border-b border-border pb-1 pr-2 text-xs text-muted-foreground lg:flex">
                 <div className={cn(ROW_GRID, "px-2")}>
                   <span className="pl-8">{t("redditOpinions.stock")}</span>
@@ -344,9 +348,9 @@ export default function RedditOpinionsPage() {
                     {sortButton("mentionChange", t("redditOpinions.changeShort"))}
                   </span>
                   <span className="text-center">{t("redditOpinions.trend")}</span>
-                  <span className="-mr-2 flex flex-col items-end">
-                    {sortButton("rankChange", t("redditOpinions.rankShort"))}
-                    {sortButton("upvotes", t("redditOpinions.upvotesShort"))}
+                  <span className="-ml-2 flex flex-col items-start">
+                    {sortButton("rankChange", t("redditOpinions.rankShort"), "start")}
+                    {sortButton("upvotes", t("redditOpinions.upvotesShort"), "start")}
                   </span>
                 </div>
                 <span className="w-9 shrink-0" aria-hidden="true" />
@@ -374,8 +378,8 @@ export default function RedditOpinionsPage() {
                             <Skeleton className="h-4 w-10 rounded-md" />
                             <Skeleton className="h-3 w-16 rounded-md" />
                           </span>
-                          <Skeleton className="ml-auto hidden h-8 w-[120px] rounded-md md:block" />
-                          <span className="flex flex-col items-end gap-2">
+                          <Skeleton className="mx-auto hidden h-8 w-[120px] rounded-md md:block" />
+                          <span className="flex flex-col items-end gap-2 md:items-start">
                             <Skeleton className="h-4 w-12 rounded-md" />
                             <Skeleton className="h-3 w-14 rounded-md" />
                           </span>
@@ -442,12 +446,12 @@ export default function RedditOpinionsPage() {
                               {row.trend ? (
                                 <TrendSparkline points={row.trend} />
                               ) : (
-                                <span className="block text-right text-xs text-muted-foreground">
+                                <span className="block text-center text-xs text-muted-foreground">
                                   —<span className="sr-only">{t("redditOpinions.noTrend")}</span>
                                 </span>
                               )}
                             </span>
-                            <span className="text-right tabular-nums">
+                            <span className="text-right tabular-nums md:text-left">
                               <span className="block whitespace-nowrap text-sm font-medium">
                                 <span className="sr-only">{t("redditOpinions.rankChange")} </span>
                                 {rankLabel(row)}

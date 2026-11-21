@@ -18,6 +18,9 @@ const {
   isFedOfficial,
   personAvatar,
   FED_SEAL_AVATAR,
+  FED_GROUP,
+  personUpdateRail,
+  matchesPersonFilter,
 } = context.exports;
 
 test("the same instant keeps each market's local date", () => {
@@ -133,4 +136,29 @@ test("local portraits win, other Fed officials get the Board seal", () => {
   assert.equal(personAvatar({ person: "Someone", tags: ["美联储官员"] }), FED_SEAL_AVATAR);
   assert.equal(personAvatar({ person: "Elon Musk", tags: [], avatar_url: feed }), feed);
   assert.equal(personAvatar({ person: "Elon Musk", tags: [] }), null);
+});
+
+test("Fed officials sharing the seal collapse into one rail entry that filters all Fed officials", () => {
+  const people = [
+    { name: "Scott Bessent", label: "贝森特", avatar: "/b.jpg", fedOfficial: false, newCount: 1 },
+    {
+      name: "Michael Barr",
+      label: "巴尔",
+      avatar: FED_SEAL_AVATAR,
+      fedOfficial: true,
+      newCount: 2,
+    },
+    { name: "Kevin Warsh", label: "沃什", avatar: "/w.jpg", fedOfficial: true, newCount: 1 },
+    { name: "Lisa Cook", label: "库克", avatar: FED_SEAL_AVATAR, fedOfficial: true, newCount: 0 },
+  ];
+  const rail = personUpdateRail(people);
+  assert.deepEqual(JSON.parse(JSON.stringify(rail.map((p) => [p.name, p.newCount]))), [
+    ["Scott Bessent", 1],
+    [FED_GROUP, 3],
+    ["Kevin Warsh", 1],
+  ]);
+  assert.equal(matchesPersonFilter({ person: "Kevin Warsh", tags: [] }, FED_GROUP), true);
+  assert.equal(matchesPersonFilter({ person: "Anyone", tags: ["美联储官员"] }, FED_GROUP), true);
+  assert.equal(matchesPersonFilter({ person: "Scott Bessent", tags: [] }, FED_GROUP), false);
+  assert.equal(matchesPersonFilter({ person: "Scott Bessent", tags: [] }, ""), true);
 });

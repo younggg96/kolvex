@@ -131,3 +131,36 @@ export function personUpdatePeople(items: readonly PersonUpdate[], now: number) 
   }
   return Array.from(people.values());
 }
+
+/** Filter value for the merged "all Fed officials" avatar. */
+export const FED_GROUP = "fed";
+
+/**
+ * Rail entries: Fed officials who only have the shared Board seal collapse into one FED entry
+ * placed where the first of them appeared. Officials with their own portrait stay separate.
+ */
+export function personUpdateRail(people: readonly PersonUpdatePerson[]) {
+  const rail: PersonUpdatePerson[] = [];
+  let fed: PersonUpdatePerson | null = null;
+  for (const person of people) {
+    if (!person.fedOfficial || person.avatar !== FED_SEAL_AVATAR) {
+      rail.push(person);
+      continue;
+    }
+    if (!fed) {
+      fed = { ...person, name: FED_GROUP, label: "FED" };
+      rail.push(fed);
+    }
+  }
+  if (fed) {
+    // The group covers every Fed official, including those shown with their own portrait.
+    fed.newCount = people.reduce((sum, p) => sum + (p.fedOfficial ? p.newCount : 0), 0);
+  }
+  return rail;
+}
+
+export function matchesPersonFilter(item: Pick<PersonUpdate, "person" | "tags">, person: string) {
+  if (!person) return true;
+  if (person === FED_GROUP) return isFedOfficial(item);
+  return item.person === person;
+}
