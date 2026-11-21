@@ -8,6 +8,7 @@ import FearGreedImporter from "@/components/admin/FearGreedImporter";
 import MarketEventManager from "@/components/admin/MarketEventManager";
 import PersonUpdatesImporter from "@/components/admin/PersonUpdatesImporter";
 import PersonUpdatesManager from "@/components/admin/PersonUpdatesManager";
+import XhsSentimentImporter from "@/components/admin/XhsSentimentImporter";
 import { useCopy } from "@/components/decision/shared";
 import DailyBriefImporter from "@/components/admin/DailyBriefImporter";
 import YouTubeOpinionImporter from "@/components/admin/YouTubeOpinionImporter";
@@ -33,6 +34,7 @@ const DIRECT_ADMIN_TABS = new Set([
   "youtube",
   "institutions",
   "person-updates",
+  "xhs",
 ]);
 
 interface AdminUser {
@@ -181,6 +183,7 @@ export default function AdminPageClient({ initialTab }: { initialTab?: string })
             <TabsTrigger value="creators">博主观点</TabsTrigger>
             <TabsTrigger value="youtube">YouTube 导入</TabsTrigger>
             <TabsTrigger value="x">X 内容</TabsTrigger>
+            <TabsTrigger value="xhs">{c("Xiaohongshu", "小红书情绪")}</TabsTrigger>
             <TabsTrigger value="events">重大事件</TabsTrigger>
             <TabsTrigger value="fear-greed">{c("Fear & Greed", "恐慌与贪婪")}</TabsTrigger>
             <TabsTrigger value="briefs">日报管理</TabsTrigger>
@@ -278,6 +281,9 @@ export default function AdminPageClient({ initialTab }: { initialTab?: string })
             </div>
           </TabsContent>
 
+          <TabsContent value="xhs" forceMount className="mt-6 data-[state=inactive]:hidden">
+            <XhsSentimentImporter />
+          </TabsContent>
           <TabsContent value="fear-greed" forceMount className="mt-6 data-[state=inactive]:hidden">
             <FearGreedImporter />
           </TabsContent>

@@ -114,6 +114,27 @@ def caption_candidates(info):
     return sorted(candidates)
 
 
+# Clients that serve media without a GVS PO token. The signed-in defaults (web_creator for Premium,
+# web_embedded otherwise) sometimes hand out URLs that later return HTTP 403 when no PO token provider
+# is installed; a fresh extraction from these clients gets new URLs.
+FALLBACK_AUDIO_CLIENTS = 'tv_samsung,tv,web_safari'
+
+
+def download_audio(url, folder, timeout, update=lambda **_: None):
+    args = ['-f', 'bestaudio/best', '-x', '--audio-format', 'wav',
+            '--max-filesize', '500M', '-o', str(folder / 'audio.%(ext)s')]
+    try:
+        ytdlp(*args, url, timeout=timeout)
+    except RuntimeError as error:
+        # --retries reuses the same signed URL, so a 403 needs a new extraction rather than a retry.
+        if 'HTTP Error 403' not in str(error):
+            raise
+        for partial in folder.glob('audio.*'):
+            partial.unlink(missing_ok=True)
+        update(stage='audio', message='音频地址被 YouTube 拒绝（403），正在换用其他客户端重试…')
+        ytdlp(*args, '--extractor-args', f'youtube:player_client={FALLBACK_AUDIO_CLIENTS}', url, timeout=timeout)
+
+
 def fetch_transcript(url, folder, update):
     update(stage='captions', message='正在检查视频信息与现有字幕…')
     info = json.loads(ytdlp('--dump-single-json', '--skip-download', url))
@@ -145,8 +166,7 @@ def fetch_transcript(url, folder, update):
     if importlib.util.find_spec('mlx_whisper') is None:
         raise RuntimeError('视频没有可读取的字幕，请先运行 ./setup.sh --whisper 安装本地转写依赖。')
     update(stage='audio', message='没有可读取的字幕，正在提取音频…', warnings=warnings)
-    ytdlp('-f', 'bestaudio/best', '-x', '--audio-format', 'wav',
-          '--max-filesize', '500M', '-o', str(folder / 'audio.%(ext)s'), url, timeout=max(1800, int(info['duration'])))
+    download_audio(url, folder, timeout=max(1800, int(info['duration'])), update=update)
     # yt-dlp exits successfully when --max-filesize skips the download.
     if not (folder / 'audio.wav').exists():
         raise RuntimeError('音频未能下载：文件可能超过 500MB 上限，且视频没有可读取的字幕。')

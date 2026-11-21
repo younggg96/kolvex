@@ -65,6 +65,7 @@
 | [news-feed.md](news-feed.md) | 新闻终端 |
 | [daily-briefs.md](daily-briefs.md) · [prompts/daily-brief-generator.md](prompts/daily-brief-generator.md) | 早晚报导入与生成提示词 |
 | [x-content.md](x-content.md) | X 博主内容 |
+| [xhs-sentiment.md](xhs-sentiment.md) | 小红书每日情绪与讨论话题（Web 已实现、待上线；不做帖子 feed；含导入 JSON v2 格式） |
 | [youtube-channel-profiles.md](youtube-channel-profiles.md) | YouTube 博主主页 |
 | [opinion-backtest.md](opinion-backtest.md) | 观点事后表现（卡片上的「发布后股价」）与博主观点回测脚本 |
 | [public-reading.md](public-reading.md) | 未登录公开阅读页与 SEO |

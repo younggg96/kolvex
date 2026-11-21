@@ -67,6 +67,23 @@ class PipelineTests(unittest.TestCase):
              self.assertRaises(p.VideoNotReady):
             p.fetch_transcript('url', Path(temp), lambda **_: None)
 
+    def test_audio_403_retries_once_with_fallback_clients(self):
+        forbidden = RuntimeError('YouTube 获取失败：ERROR: unable to download video data: HTTP Error 403: Forbidden')
+        with tempfile.TemporaryDirectory() as temp, patch.object(p, 'ytdlp', side_effect=[forbidden, '']) as fake:
+            (Path(temp) / 'audio.webm.part').write_text('partial')
+            p.download_audio('url', Path(temp), timeout=10)
+            self.assertEqual(fake.call_count, 2)
+            self.assertNotIn('--extractor-args', fake.call_args_list[0].args)
+            self.assertIn(f'youtube:player_client={p.FALLBACK_AUDIO_CLIENTS}', fake.call_args_list[1].args)
+            self.assertFalse((Path(temp) / 'audio.webm.part').exists())
+        with tempfile.TemporaryDirectory() as temp, patch.object(p, 'ytdlp', side_effect=[forbidden, forbidden]), \
+             self.assertRaises(RuntimeError):
+            p.download_audio('url', Path(temp), timeout=10)
+        with tempfile.TemporaryDirectory() as temp, patch.object(p, 'ytdlp', side_effect=RuntimeError('Sign in to confirm')) as fake, \
+             self.assertRaises(RuntimeError):
+            p.download_audio('url', Path(temp), timeout=10)
+        self.assertEqual(fake.call_count, 1)
+
     def test_translation_mismatch_fails_without_fabrication(self):
         segments = [{'start': 0, 'end': 2, 'text': 'Hello'}]
         with patch.object(p, 'generate', return_value={'translations': []}):

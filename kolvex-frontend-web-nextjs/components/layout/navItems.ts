@@ -13,6 +13,7 @@ import {
   UserRound,
   FolderKanban,
   MessagesSquare,
+  BookHeart,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -46,14 +47,31 @@ export interface MainNavItem {
   type: "link";
   featureId: ProductFeatureId;
   group: NavGroupId;
-  children?: { title: string; href: string; icon: LucideIcon | PlatformIconComponent }[];
+  children?: {
+    title: string;
+    titleZh?: string;
+    href: string;
+    icon: LucideIcon | PlatformIconComponent;
+  }[];
 }
 /** Each opinion source keeps the platform's own logo so the links stay distinct. */
-export const OPINION_SOURCES = [
+export const OPINION_SOURCES: {
+  title: string;
+  /** Chinese name where the platform has one; brand names stay as they are. */
+  titleZh?: string;
+  href: string;
+  icon: LucideIcon | PlatformIconComponent;
+}[] = [
   { title: "YouTube", href: "/dashboard/youtube-opinions", icon: YouTubeIcon },
   { title: "Reddit", href: "/dashboard/reddit-opinions", icon: RedditIcon },
   { title: "X", href: "/dashboard/x-opinions", icon: XIcon },
+  // No official Xiaohongshu mark is vendored, so a neutral glyph stands in.
+  { title: "RedNote", titleZh: "小红书", href: "/dashboard/xhs-sentiment", icon: BookHeart },
 ];
+
+export function opinionSourceTitle(source: { title: string; titleZh?: string }, locale: string) {
+  return locale === "zh" && source.titleZh ? source.titleZh : source.title;
+}
 
 export const MAIN_NAV_ITEMS: MainNavItem[] = [
   {

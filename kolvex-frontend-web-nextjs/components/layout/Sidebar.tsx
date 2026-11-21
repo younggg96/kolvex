@@ -13,6 +13,7 @@ import {
   SEARCH_HREF,
   isNavItemActive,
   isMainNavItemActive,
+  opinionSourceTitle,
 } from "./navItems";
 import UserMenu from "@/components/user/UserMenu";
 import { Button } from "@/components/ui/button";
@@ -45,7 +46,7 @@ interface AppSidebarProps {
 function AppSidebar({ onNavigate }: AppSidebarProps) {
   const pathname = usePathname();
   const { state, toggleSidebar, isInitialized, setOpenMobile } = useSidebar();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const c = useCopy();
   const { openAsk, canAsk } = useDecisionCommand();
   const [isMounted, setIsMounted] = useState(false);
@@ -235,7 +236,7 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
                                   aria-current={isActive(child.href) ? "page" : undefined}
                                 >
                                   <child.icon aria-hidden="true" />
-                                  <span>{child.title}</span>
+                                  <span>{opinionSourceTitle(child, locale)}</span>
                                 </Link>
                               </SidebarMenuSubButton>
                             </SidebarMenuSubItem>

@@ -32,6 +32,7 @@ from app.api.routes.upload import router as upload_router
 from app.api.routes.user_api_keys import router as user_api_keys_router
 from app.api.routes.valuation import router as valuation_router
 from app.api.routes.x_content import router as x_content_router
+from app.api.routes.xhs_sentiment import router as xhs_sentiment_router
 from app.api.routes.youtube_auto_import import worker_router as youtube_auto_import_worker_router
 from app.api.routes.youtube_opinions import router as youtube_opinions_router
 
@@ -62,6 +63,7 @@ api_router.include_router(plaid_router)
 api_router.include_router(youtube_opinions_router)
 api_router.include_router(youtube_auto_import_worker_router)
 api_router.include_router(x_content_router)
+api_router.include_router(xhs_sentiment_router)
 api_router.include_router(chart_drawings_router)
 api_router.include_router(paper_trading_router)
 api_router.include_router(research_workspaces_router)
