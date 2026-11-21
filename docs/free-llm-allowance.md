@@ -14,7 +14,7 @@ Users with their own key for a provider keep using it, unmetered and unchanged.
 | Cost of a call | DeepSeek's reported cache-hit / cache-miss / output tokens × the official Flash price (USD, peak or off-peak) × `FREE_LLM_USD_CNY` (default 7.2), rounded up | `cost_micro_yuan()` |
 | Peak hours | Mon–Fri 01:00–04:00 and 06:00–10:00 UTC. Chinese public holidays are charged at peak. | `PEAK_UTC_HOURS` |
 | No usage returned | Charged as one token per character of prompt and answer (above the real count) | `FreeQuotaCallback.on_llm_end` |
-| Running total | Redis key `free_llm_spend:{user_id}:{week}` (millionths of a yuan, 8-day TTL), checked before every call. If Redis cannot be read, the free model is refused (`free_quota_unavailable`) instead of running unmetered. | `spent_micro()` |
+| Running total | Redis key `free_llm_spend:{user_id}:{week}` (millionths of a yuan, 8-day TTL), checked before every call. Without Redis (production has none since its Railway Redis service was removed on 2026-04-23) the total is read from the ledger before every call instead. Only when neither can be read is the free model refused (`free_quota_unavailable`) rather than run unmetered. | `spent_micro()` |
 | Ledger | Table `free_llm_usage_events`: one row per charged call (user, week, tokens, cost, `estimated`, `peak`), written before the Redis total. A missing Redis total is rebuilt from it with `free_llm_week_usage(user, week)` (migration `20261121050500_free_llm_week_usage.sql`); if neither can be read, the free model is refused. Backend-only (service role, insert and select). Migration `20261121050000_free_llm_usage_events.sql`. | `Ledger`, `record_spend()` |
 
 At the 2026-11-20 price, ¥1 is roughly 90 peak-hour chat turns of 4,000 input

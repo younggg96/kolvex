@@ -6,8 +6,8 @@ weekly budget in yuan (FREE_LLM_WEEKLY_LIMIT_YUAN, default 1). Spend is the
 real cost of each call, worked out from the token usage DeepSeek returns and
 its published prices. Redis keeps the running total per user per Beijing week,
 which every call checks; the table free_llm_usage_events keeps one row per
-charged call, so spend can be audited and the Redis total rebuilt when Redis
-loses it (migration 20261121050000_free_llm_usage_events.sql).
+charged call, so spend can be audited, the Redis total rebuilt when Redis
+loses it, and the limit enforced from the ledger alone when Redis is down (migration 20261121050000_free_llm_usage_events.sql).
 
 The billed user is a context variable set by authentication
 (app/api/dependencies/auth.py), so every model call made while serving a
@@ -195,17 +195,22 @@ def _ledger() -> Ledger:
 async def spent_micro(user_id: str, now: Optional[datetime] = None, store=None, ledger=None) -> int:
     """This week's spend. Raises FreeQuotaUnavailable when it cannot be read.
 
-    A missing Redis total (a new week, or Redis lost its data) is rebuilt from the ledger.
+    Redis is a fast copy of the ledger total. A missing Redis total (a new week, or Redis lost
+    its data) is rebuilt from the ledger, and without Redis the ledger is read directly.
     """
     now = now or datetime.now(timezone.utc)
     store = store or _store()
+    ledger = ledger or _ledger()
     if not store.is_connected:
-        raise FreeQuotaUnavailable()
+        total = await ledger.week_spend(user_id, week_id(now))
+        if total is None:
+            raise FreeQuotaUnavailable()
+        return total
     key = spend_key(user_id, now)
     value = await store.get(key)
     if value is not None:
         return int(value)
-    total = await (ledger or _ledger()).week_spend(user_id, week_id(now))
+    total = await ledger.week_spend(user_id, week_id(now))
     if total is None:
         raise FreeQuotaUnavailable()
     # Only if still absent: a call finishing meanwhile has already added its own spend.
@@ -248,6 +253,11 @@ async def record_spend(
             "peak": is_peak(now),
         }
     )
+    if not saved:
+        logger.error("Free model spend of %s µ¥ for %s is missing from the ledger", amount, user_id)
+    if not store.is_connected:
+        # The ledger row is the record; the next check reads the ledger total directly.
+        return None
     key = spend_key(user_id, now)
     total = await store.incr(key, amount)
     if total is None:
@@ -263,12 +273,12 @@ async def record_spend(
 
 
 async def allowance(user_id: str, now: Optional[datetime] = None, store=None, ledger=None) -> dict:
-    now = now or datetime.now(timezone.utc)
     """What the user is shown: the share of the week's allowance used and the real token counts.
 
     Money stays internal; the limit is enforced in yuan but users see tokens. Tokens come from
     the ledger and are None when it cannot be read (the share still comes from Redis).
     """
+    now = now or datetime.now(timezone.utc)
     ledger = ledger or _ledger()
     used = await spent_micro(user_id, now, store, ledger)
     limit = weekly_limit_micro()

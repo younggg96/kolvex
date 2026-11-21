@@ -226,9 +226,23 @@ def test_spend_key_expires_after_the_week():
     assert store.ttls[quota.spend_key("u1", PEAK)] == 8 * 24 * 3600
 
 
-def test_unreadable_spend_refuses_rather_than_runs_unmetered():
-    with pytest.raises(quota.FreeQuotaUnavailable):
-        run(quota.ensure_allowance("u1", PEAK, FakeStore(connected=False)))
+def test_without_redis_the_limit_is_enforced_from_the_ledger(ledger):
+    store = FakeStore(connected=False)
+    run(quota.ensure_allowance("u1", PEAK, store))  # nothing spent yet
+    run(quota.record_spend("u1", quota.weekly_limit_micro() - 1, PEAK, store, usage=(0, 5, 5)))
+    run(quota.ensure_allowance("u1", PEAK, store))
+    run(quota.record_spend("u1", 1, PEAK, store))
+    with pytest.raises(quota.FreeQuotaExceeded):
+        run(quota.ensure_allowance("u1", PEAK, store))
+    assert len(ledger.rows) == 2
+    status = run(quota.allowance("u1", PEAK, store))
+    assert status["used_percent"] == 100 and status["tokens"]["output_tokens"] == 5
+
+
+def test_without_redis_or_ledger_the_free_model_is_refused():
+    with patch.object(quota, "_ledger", lambda: FakeLedger(readable=False)):
+        with pytest.raises(quota.FreeQuotaUnavailable):
+            run(quota.ensure_allowance("u1", PEAK, FakeStore(connected=False)))
 
 
 def test_allowance_shows_tokens_and_share_used_never_money():
