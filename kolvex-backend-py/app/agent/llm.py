@@ -139,6 +139,15 @@ def _create_llm(
         kwargs["callbacks"] = [*(kwargs.get("callbacks") or []), FreeQuotaCallback(free_user)]
         kwargs["stream_usage"] = True  # streamed calls report usage only when asked
 
+    # A chat turn in progress counts every model call's tokens (app/agent/turn_usage.py).
+    from app.agent.turn_usage import TurnUsageCallback, current_turn
+
+    turn = current_turn()
+    if turn is not None:
+        kwargs["callbacks"] = [*(kwargs.get("callbacks") or []), TurnUsageCallback(turn)]
+        if provider != "ollama":
+            kwargs["stream_usage"] = True
+
     # ---- OpenAI 原生 ----
     if provider == "openai":
         from langchain_openai import ChatOpenAI

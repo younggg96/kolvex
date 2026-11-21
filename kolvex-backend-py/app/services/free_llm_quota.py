@@ -132,6 +132,13 @@ def usage_of(result: Any) -> Optional[tuple[int, int, int]]:
     return None
 
 
+USAGE_FIELDS = (
+    "cost_micro_yuan",
+    "cache_hit_tokens",
+    "cache_miss_tokens",
+    "output_tokens",
+    "calls",
+)
 SPEND_TTL_SECONDS = int(timedelta(days=8).total_seconds())  # a day past the week
 
 
@@ -159,17 +166,23 @@ class Ledger:
             logger.exception("Free model ledger row for %s was not saved", row.get("user_id"))
             return False
 
-    async def week_spend(self, user_id: str, week: str) -> Optional[int]:
+    async def week_usage(self, user_id: str, week: str) -> Optional[dict]:
+        """{cost_micro_yuan, cache_hit_tokens, cache_miss_tokens, output_tokens, calls}, or None."""
         try:
             result = await asyncio.to_thread(
                 lambda: self._db()
-                .rpc("free_llm_week_spend", {"p_user_id": user_id, "p_week_start": week})
+                .rpc("free_llm_week_usage", {"p_user_id": user_id, "p_week_start": week})
                 .execute()
             )
-            return int(result.data or 0)
+            row = (result.data or [{}])[0]
+            return {key: int(row.get(key) or 0) for key in USAGE_FIELDS}
         except Exception:
-            logger.exception("Free model ledger total for %s could not be read", user_id)
+            logger.exception("Free model ledger totals for %s could not be read", user_id)
             return None
+
+    async def week_spend(self, user_id: str, week: str) -> Optional[int]:
+        usage = await self.week_usage(user_id, week)
+        return None if usage is None else usage["cost_micro_yuan"]
 
 
 _default_ledger = Ledger()
@@ -251,15 +264,30 @@ async def record_spend(
 
 async def allowance(user_id: str, now: Optional[datetime] = None, store=None, ledger=None) -> dict:
     now = now or datetime.now(timezone.utc)
+    """What the user is shown: the share of the week's allowance used and the real token counts.
+
+    Money stays internal; the limit is enforced in yuan but users see tokens. Tokens come from
+    the ledger and are None when it cannot be read (the share still comes from Redis).
+    """
+    ledger = ledger or _ledger()
     used = await spent_micro(user_id, now, store, ledger)
     limit = weekly_limit_micro()
+    week = await ledger.week_usage(user_id, week_id(now))
+    tokens = None
+    if week is not None:
+        tokens = {
+            "input_tokens": week["cache_hit_tokens"] + week["cache_miss_tokens"],
+            "cached_input_tokens": week["cache_hit_tokens"],
+            "output_tokens": week["output_tokens"],
+            "model_calls": week["calls"],
+        }
     return {
         "model": FREE_MODEL,
-        "limit_yuan": limit / MICRO,
-        "used_yuan": round(used / MICRO, 4),
-        "remaining_yuan": round(max(limit - used, 0) / MICRO, 4),
+        # Rounded up so "100" only ever means spent and a single call never reads as 0.
+        "used_percent": min(100, math.ceil(used * 100 / limit)) if limit else 100,
         "exhausted": used >= limit,
         "resets_at": (week_start(now) + timedelta(days=7)).isoformat(),
+        "tokens": tokens,
     }
 
 

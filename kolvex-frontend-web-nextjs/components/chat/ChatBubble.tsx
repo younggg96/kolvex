@@ -1,5 +1,6 @@
 "use client";
 
+import { formatTokens, type TokenUsage } from "@/lib/tokenUsage";
 import { cn } from "@/lib/utils";
 import { Copy, Check, RotateCcw, ChevronDown } from "lucide-react";
 import { useState } from "react";
@@ -47,6 +48,7 @@ export function ChatBubble({
   quoteEvidence,
   revenueEvidence,
   answerCheck,
+  tokenUsage,
   messageId,
   question: askedQuestion,
 }: ChatBubbleProps) {
@@ -109,10 +111,11 @@ export function ChatBubble({
   return (
     <div className="group flex w-full justify-start animate-fade-in">
       <div className="w-full min-w-0 max-w-[45rem]">
-        <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
           <span className="font-semibold text-foreground">{t("chat.assistantName")}</span>
           {modelName && <span>{modelName}</span>}
           {timestamp && <span>{formatTime(timestamp)}</span>}
+          {!isStreaming && tokenUsage && <ReplyTokens usage={tokenUsage} />}
         </div>
 
         <div className="text-foreground">
@@ -220,6 +223,22 @@ export function ChatBubble({
         )}
       </div>
     </div>
+  );
+}
+
+/** Real token counts for this answer's turn; cached input is in the hover text. */
+function ReplyTokens({ usage }: { usage: TokenUsage }) {
+  const { t } = useTranslation();
+  const locale = t("common.intlLocale");
+  const values = {
+    input: formatTokens(usage.input_tokens, locale),
+    output: formatTokens(usage.output_tokens, locale),
+    cached: formatTokens(usage.cached_input_tokens, locale),
+  };
+  return (
+    <span className="tabular-nums" title={t("chat.tokens.replyDetail", values)}>
+      {t(usage.incomplete ? "chat.tokens.replyAtLeast" : "chat.tokens.reply", values)}
+    </span>
   );
 }
 

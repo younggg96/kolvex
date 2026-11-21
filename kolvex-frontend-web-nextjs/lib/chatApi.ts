@@ -1,3 +1,4 @@
+import type { TokenUsage } from "@/lib/tokenUsage";
 import { invalidateClientCache, loadClientCache } from "./clientCache";
 
 /**
@@ -69,6 +70,7 @@ export interface ChatMessage {
   quote_evidence?: QuoteEvidence[] | null;
   revenue_evidence?: RevenueEvidence[] | null;
   answer_check?: AnswerCheck | null;
+  token_usage?: TokenUsage | null;
 }
 
 export interface ChatConversation {
@@ -268,6 +270,7 @@ export interface AgentStreamEvent {
   quote_evidence?: QuoteEvidence[];
   revenue_evidence?: RevenueEvidence[];
   answer_check?: AnswerCheck | null;
+  token_usage?: TokenUsage | null;
   created_at?: string;
 }
 

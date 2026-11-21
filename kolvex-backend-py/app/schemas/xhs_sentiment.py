@@ -4,7 +4,7 @@ import json
 import re
 from datetime import date, datetime, timezone
 from typing import Annotated, Literal
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 
 from pydantic import (
     AfterValidator,
@@ -113,6 +113,12 @@ class Source(Strict):
             raise PydanticCustomError("xhs_url", "Use an HTTPS xiaohongshu.com or xhslink.com URL")
         if parts.hostname != "xhslink.com" and self.note_id not in parts.path:
             raise PydanticCustomError("note_url", "The URL path must contain note_id")
+        # Xiaohongshu refuses note pages opened without xsec_token (error 300031),
+        # so a link without one can never be opened by a reader.
+        if parts.hostname != "xhslink.com" and not any(
+            token.strip() for token in parse_qs(parts.query).get("xsec_token", [])
+        ):
+            raise PydanticCustomError("xsec_token", "xiaohongshu.com URLs must include xsec_token")
         return self
 
 
@@ -305,6 +311,7 @@ MESSAGES_ZH = {
     "date": "须为 YYYY-MM-DD",
     "xhs_url": "须为 xiaohongshu.com 或 xhslink.com 的 HTTPS 链接",
     "note_url": "链接路径须包含 note_id",
+    "xsec_token": "xiaohongshu.com 链接须带 xsec_token（从搜索结果点进帖子，复制地址栏完整链接），否则读者打不开",
     "scan_total": "sample.posts_scanned 须等于 sentiment.all 各项之和",
     "latest_window": "提供 sentiment.latest 时须填写 sample.latest_window_hours",
     "latest_total": "sentiment.latest 总数不能超过 sentiment.all",

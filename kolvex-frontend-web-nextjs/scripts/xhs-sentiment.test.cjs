@@ -11,7 +11,15 @@ function compile(file) {
   const output = ts.transpileModule(source, {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
   }).outputText;
-  vm.runInNewContext(output, { module, exports: module.exports, require, console, Intl, Date });
+  vm.runInNewContext(output, {
+    module,
+    exports: module.exports,
+    require,
+    console,
+    Intl,
+    Date,
+    URL,
+  });
   return module.exports;
 }
 
@@ -159,4 +167,25 @@ test("picked files combine into one batch, flattening files that already hold se
     },
     { error: "invalid_json", file: "bad.json" },
   );
+});
+
+test("sources open only when Xiaohongshu will show them", () => {
+  const id = "6b0071ef000000002b03e801";
+  assert.equal(
+    lib.canOpenXhsSource(
+      `https://www.xiaohongshu.com/explore/${id}?xsec_token=AB1&xsec_source=pc_search`,
+    ),
+    true,
+  );
+  assert.equal(lib.canOpenXhsSource("https://xhslink.com/a/AbC123"), true);
+  assert.equal(lib.canOpenXhsSource(`https://www.xiaohongshu.com/discovery/item/${id}`), false);
+  assert.equal(
+    lib.canOpenXhsSource(`https://www.xiaohongshu.com/explore/${id}?xsec_token=`),
+    false,
+  );
+  assert.equal(
+    lib.canOpenXhsSource(`http://www.xiaohongshu.com/explore/${id}?xsec_token=AB1`),
+    false,
+  );
+  assert.equal(lib.canOpenXhsSource("not a url"), false);
 });

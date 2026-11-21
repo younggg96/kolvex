@@ -22,6 +22,8 @@ class MessageSchema(BaseModel):
     quote_evidence: list[QuoteEvidence] | None = None
     revenue_evidence: list[RevenueEvidence] | None = None
     answer_check: dict[str, Any] | None = None
+    # Tokens this answer used across its turn's model calls (app/agent/turn_usage.py).
+    token_usage: dict[str, Any] | None = None
 
 
 class ConversationSchema(BaseModel):
@@ -108,6 +110,8 @@ class MessageResponse(BaseModel):
     quote_evidence: list[QuoteEvidence] | None = None
     revenue_evidence: list[RevenueEvidence] | None = None
     answer_check: dict[str, Any] | None = None
+    # Tokens this answer used across its turn's model calls (app/agent/turn_usage.py).
+    token_usage: dict[str, Any] | None = None
 
 
 class AgentMessageResponse(BaseModel):

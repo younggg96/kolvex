@@ -37,6 +37,7 @@ import type { ChatInputProps, SearchSource, AIModel, AIModelConfig } from "./typ
 
 import { MODEL_CONFIGS, getFirstAvailableModelId, isModelUsable } from "@/lib/aiModels";
 import type { FreeAllowance } from "@/lib/api/userApiKeysApi";
+import { formatTokens } from "@/lib/tokenUsage";
 export { MODEL_CONFIGS, PROVIDER_NAME_TO_ID, getFirstAvailableModelId } from "@/lib/aiModels";
 
 const SKILL_ICONS = {
@@ -77,9 +78,6 @@ function SourceChip({ icon, label, active, onClick }: SourceChipProps) {
   );
 }
 
-// Two decimals keep small weekly spend visible (¥0.04 rather than ¥0).
-const formatYuan = (value: number) => `¥${value.toFixed(2)}`;
-
 // Model Selector Component
 function ModelSelector({
   selectedModel,
@@ -95,6 +93,7 @@ function ModelSelector({
   freeAllowance?: FreeAllowance | null;
 }) {
   const { t } = useTranslation();
+  const locale = t("common.intlLocale");
   const currentModel = MODEL_CONFIGS.find((m) => m.id === selectedModel);
 
   // Wait for key availability before enabling anything
@@ -138,14 +137,24 @@ function ModelSelector({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" side="top" className="w-56 max-h-72 overflow-y-auto">
         {freeAllowance && (
-          <p className="px-2 pb-1.5 pt-1 text-[0.6875rem] tabular-nums text-muted-foreground">
-            {freeAllowance.exhausted
-              ? t("chat.input.freeAllowance.exhausted")
-              : t("chat.input.freeAllowance.remaining", {
-                  remaining: formatYuan(freeAllowance.remaining_yuan),
-                  limit: formatYuan(freeAllowance.limit_yuan),
+          <div className="px-2 pb-1.5 pt-1 text-[0.6875rem] tabular-nums text-muted-foreground">
+            <p>
+              {freeAllowance.exhausted
+                ? t("chat.input.freeAllowance.exhausted")
+                : t("chat.input.freeAllowance.used", {
+                    percent: String(freeAllowance.used_percent),
+                  })}
+            </p>
+            {freeAllowance.tokens && (
+              <p>
+                {t("chat.input.freeAllowance.tokens", {
+                  input: formatTokens(freeAllowance.tokens.input_tokens, locale),
+                  cached: formatTokens(freeAllowance.tokens.cached_input_tokens, locale),
+                  output: formatTokens(freeAllowance.tokens.output_tokens, locale),
                 })}
-          </p>
+              </p>
+            )}
+          </div>
         )}
         {/* Prompt when no API keys configured */}
         {!hasAnyAvailable && (

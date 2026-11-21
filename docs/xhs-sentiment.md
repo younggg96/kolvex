@@ -128,7 +128,7 @@ UTF-8，一次导入最大 4 MB。整份校验通过才写入。
 | 字段 | 规则 |
 | --- | --- |
 | `note_id` | 必填，小红书笔记 ID |
-| `url` | 必填，绝对 HTTPS 链接，主机为 `www.xiaohongshu.com` 或 `xhslink.com`，路径含 `note_id`。按采集时浏览器地址栏原样保存（可含 `xsec_token`） |
+| `url` | 必填，绝对 HTTPS 链接，主机为 `www.xiaohongshu.com` 或 `xhslink.com`，路径含 `note_id`。`xiaohongshu.com` 链接必须带非空 `xsec_token`（从搜索结果或列表点进帖子后复制地址栏完整链接），`xhslink.com` 短链除外。小红书对不带 `xsec_token` 的笔记页返回「当前笔记暂时无法浏览」（error_code 300031），读者打不开 |
 | `title` | 必填，帖子标题原文 |
 | `author_nickname` | 可选，发帖人昵称 |
 | `published_at` | 可空，带时区的 ISO 8601。采集端按 `captured_at` 换算相对时间，无法换算时填 `null` |
@@ -237,7 +237,7 @@ v1 最大的变化是：从「帖子列表 + 汇总」改成「汇总 + 话题�
 2. 采集结束后归纳当天的 5–12 个话题。每个话题都要写明出处帖子，不能只写概括。
 3. 把相对时间换算成 `published_at`，原文写进 `published_raw`。
 4. 评论只输出摘录文本和赞数，不输出评论人昵称和属地。
-5. 输出前自检：`posts_scanned == sum(sentiment.all)`；每个话题至少 1 条 `sources`；话题 `id` 不重复；所有链接都是 HTTPS。
+5. 输出前自检：`posts_scanned == sum(sentiment.all)`；每个话题至少 1 条 `sources`；话题 `id` 不重复；所有链接都是 HTTPS，`xiaohongshu.com` 链接带 `xsec_token`。
 
 ## 7. 实现
 
@@ -265,11 +265,17 @@ v1 最大的变化是：从「帖子列表 + 汇总」改成「汇总 + 话题�
 
 导航：博主观点下新增第四个来源。仓库里没有小红书官方标志，暂用 lucide `BookHeart` 图标代替。
 
+出处链接（2026-11-20 起）：
+
+实测：不带 `xsec_token` 的 `/explore/<id>` 和 `/discovery/item/<id>` 都会跳到小红书 404 页（error_code 300031「当前笔记暂时无法浏览」）。所以：
+
+- 导入时 `xiaohongshu.com` 链接必须带非空 `xsec_token`，否则整份拒绝；采集提示词同步要求。
+- 页面上，已导入但没有 `xsec_token` 的出处只显示标题和元信息，不再显示「打开原帖」链接，避免点进死链。重新导入当天数据后恢复链接。
+
 ## 8. 待确认的问题
 
 - 话题由谁归纳：采集端 AI 写进 JSON（本方案的假设），还是导入后由后端调用 DeepSeek 生成（会花钱，只能在管理员点击后触发）。
 - 页面放在博主观点的「小红书」tab，还是和 Reddit 热度合成「社区情绪」。
-- 小红书链接不带 `xsec_token` 时，可能无法在未登录状态下打开。需要实测，确认「打开原帖」的体验能不能接受。
 
 ## 9. 验证
 

@@ -139,6 +139,7 @@ export function ChatMessageList({
               quoteEvidence={message.quoteEvidence}
               revenueEvidence={message.revenueEvidence}
               answerCheck={message.answerCheck}
+              tokenUsage={message.tokenUsage}
               timestamp={message.timestamp}
               isFirst={index === 0}
               symbols={symbols}

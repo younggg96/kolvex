@@ -480,13 +480,19 @@
       "unknownCurrency": "Currency unavailable",
       "openSource": "View source for {symbol}"
     },
+    "tokens": {
+      "reply": "Input {input} · output {output} tokens",
+      "replyAtLeast": "At least input {input} · output {output} tokens",
+      "replyDetail": "This answer: {input} input tokens ({cached} cache hits), {output} output tokens"
+    },
     "input": {
       "placeholder": "Ask about a stock, a creator, or your holdings...",
       "apiKeyRequired": "API key required",
       "apiKeyRequiredDesc": "Add at least one model API key in Settings to unlock the model dropdown and start chatting.",
       "freeAllowance": {
         "badge": "Free",
-        "remaining": "Free allowance: {remaining} of {limit} left this week, resets Monday",
+        "used": "{percent}% of this week's free allowance used, resets Monday",
+        "tokens": "Input {input} ({cached} cached) · output {output} tokens",
         "exhausted": "This week's free allowance is used up. It resets Monday.",
         "exhaustedTitle": "Free allowance used up this week",
         "exhaustedDesc": "It resets Monday at 00:00 Beijing time. You can also add your own model API key to keep chatting.",

@@ -1,3 +1,5 @@
+import type { TokenUsage } from "@/lib/tokenUsage";
+
 /**
  * User API Keys Management
  * Client-side API for managing user-provided LLM provider API keys
@@ -89,14 +91,15 @@ export const PROVIDER_INFO: Record<string, ProviderInfo> = {
   },
 };
 
-/** This week's free model allowance on the server key; real spend, never an estimate. */
+/** This week's free model allowance on the server key. Users see tokens and a share, never money. */
 export interface FreeAllowance {
   model: string;
-  limit_yuan: number;
-  used_yuan: number;
-  remaining_yuan: number;
+  /** Share of the week's allowance used, 0–100, rounded up. */
+  used_percent: number;
   exhausted: boolean;
   resets_at: string;
+  /** Real counts from the server ledger; null when it cannot be read. */
+  tokens: Omit<TokenUsage, "incomplete"> | null;
 }
 
 export interface AvailableProvidersResponse {

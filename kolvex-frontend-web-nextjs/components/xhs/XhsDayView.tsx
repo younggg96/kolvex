@@ -13,6 +13,7 @@ import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import {
   XHS_STANCES,
+  canOpenXhsSource,
   countsTotal,
   dominantStance,
   negativeCount,
@@ -164,6 +165,25 @@ function SentimentCard({ day }: { day: XhsDay }) {
 
 function SourceLink({ source }: { source: XhsSource }) {
   const c = useCopy();
+  const body = (
+    <span className="min-w-0 flex-1">
+      <span className="line-clamp-2 break-words">{source.title}</span>
+      <span className="mt-0.5 block text-xs text-muted-foreground">
+        {[
+          source.author_nickname,
+          source.published_raw,
+          source.comments !== null && c(`${source.comments} comments`, `${source.comments} 条评论`),
+        ]
+          .filter(Boolean)
+          .join(" · ")}
+      </span>
+    </span>
+  );
+  // Links imported without xsec_token open Xiaohongshu's "cannot view" page,
+  // so show the source as text instead of a dead link.
+  if (!canOpenXhsSource(source.url)) {
+    return <li className="flex min-h-11 min-w-0 items-start gap-2 py-1.5 text-sm">{body}</li>;
+  }
   return (
     <li className="min-w-0">
       <a
@@ -172,19 +192,7 @@ function SourceLink({ source }: { source: XhsSource }) {
         rel="noopener noreferrer"
         className="group flex min-h-11 items-start gap-2 rounded-lg py-1.5 text-sm hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/25"
       >
-        <span className="min-w-0 flex-1">
-          <span className="line-clamp-2 break-words">{source.title}</span>
-          <span className="mt-0.5 block text-xs text-muted-foreground">
-            {[
-              source.author_nickname,
-              source.published_raw,
-              source.comments !== null &&
-                c(`${source.comments} comments`, `${source.comments} 条评论`),
-            ]
-              .filter(Boolean)
-              .join(" · ")}
-          </span>
-        </span>
+        {body}
         <ArrowUpRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
         <span className="sr-only">{c("Open the original post", "打开原帖")}</span>
       </a>

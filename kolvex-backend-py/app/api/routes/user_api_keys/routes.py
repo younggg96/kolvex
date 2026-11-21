@@ -68,15 +68,27 @@ class SuccessResponse(BaseModel):
 # ===== Routes =====
 
 
+class FreeTokensResponse(BaseModel):
+    """Real token counts from the ledger for this week's free model calls."""
+
+    input_tokens: int
+    cached_input_tokens: int
+    output_tokens: int
+    model_calls: int
+
+
 class FreeAllowanceResponse(BaseModel):
-    """This week's free model allowance on the server key (app/services/free_llm_quota.py)."""
+    """This week's free model allowance on the server key (app/services/free_llm_quota.py).
+
+    The limit is enforced in yuan, but users are shown only the share used and tokens.
+    """
 
     model: str
-    limit_yuan: float
-    used_yuan: float
-    remaining_yuan: float
+    used_percent: int
     exhausted: bool
     resets_at: str
+    # None when the ledger cannot be read.
+    tokens: Optional[FreeTokensResponse] = None
 
 
 class AvailableProvidersResponse(BaseModel):

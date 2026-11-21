@@ -192,7 +192,7 @@ const SKELETON = (date: string) => `{
       "sources": [
         {
           "note_id": "<地址栏里的笔记 ID>",
-          "url": "<地址栏完整链接>",
+          "url": "<地址栏完整链接，含 xsec_token>",
           "title": "<帖子标题原文>",
           "author_nickname": "<发帖人昵称或 null>",
           "published_at": "<带时区的 ISO 时间或 null>",
@@ -220,7 +220,7 @@ const PROMPT_ZH = (
 
 ## 规则
 - 不编造：数字、链接、昵称、时间看不清就填 null，或者不写这一条。不要估算、不要补 0。
-- 出处必须可追溯：note_id 和 url 从帖子详情页的浏览器地址栏取，url 原样保留（可以带 xsec_token），必须是 https://www.xiaohongshu.com/… 或 https://xhslink.com/…。没有链接的帖子只计入情绪统计，不能作为出处。
+- 出处必须可追溯：note_id 和 url 从帖子详情页的浏览器地址栏取：从搜索结果或列表点进帖子，复制地址栏完整链接，形如 https://www.xiaohongshu.com/explore/<note_id>?xsec_token=…&xsec_source=pc_search。url 必须带 xsec_token，不要自己拼 /explore/<note_id> 或 /discovery/item/<note_id>，缺 xsec_token 的链接读者打不开，导入会拒绝。xhslink.com 短链可以不带。没有可用链接的帖子只计入情绪统计，不能作为出处。
 - 时间：published_raw 写页面上的原文（如「3小时前」「昨天 23:50」）；published_at 按采集时间换算成带时区的 ISO 8601，换算不了填 null。captured_at 写采集结束时间。
 - 隐私：评论摘录只写原话和点赞数，不写评论人昵称、头像、IP 属地。
 - 股票代码用大写美股代码（英伟达 → NVDA，特斯拉 → TSLA，纳指 ETF → QQQ）；拿不准就不写。
@@ -234,7 +234,7 @@ ${SKELETON(date)}
 
 ## 输出前自检
 - sample.posts_scanned 等于 sentiment.all 五项之和；sentiment.latest 总数不超过 sentiment.all。
-- 每个话题至少 1 条出处，话题 id 不重复，每个出处 url 的路径里包含它的 note_id（xhslink.com 短链除外）。
+- 每个话题至少 1 条出处，话题 id 不重复，每个出处 url 的路径里包含它的 note_id 且带 xsec_token（xhslink.com 短链除外）。
 - 只输出 JSON，可以被 JSON.parse 直接解析。`;
 
 const PROMPT_EN = (
@@ -251,7 +251,7 @@ const PROMPT_EN = (
 
 ## Rules
 - Do not invent anything. If a number, link, nickname or time is unclear, use null or leave the item out. Do not estimate or fill in 0.
-- Sources must be traceable: take note_id and url from the post page's address bar and keep the url as it is (it may include xsec_token). It must start with https://www.xiaohongshu.com/ or https://xhslink.com/. A post without a link can count towards sentiment but cannot be a source.
+- Sources must be traceable: open the post from the search results or feed and copy the full address-bar URL, such as https://www.xiaohongshu.com/explore/<note_id>?xsec_token=…&xsec_source=pc_search. The url must include xsec_token. Do not build /explore/<note_id> or /discovery/item/<note_id> yourself: without xsec_token readers cannot open the post and the import rejects it. xhslink.com short links may omit it. A post without a usable link can count towards sentiment but cannot be a source.
 - Times: published_raw is the text shown on the page (such as 3小时前). published_at is that time converted to ISO 8601 with a time zone, using the collection time; use null if you cannot convert it. captured_at is when collection finished.
 - Privacy: comment excerpts carry only the text and like count, never the commenter's nickname, avatar or IP location.
 - Tickers are upper-case US symbols (英伟达 → NVDA, 特斯拉 → TSLA, Nasdaq ETF → QQQ). Leave a ticker out if unsure.
@@ -265,8 +265,25 @@ ${SKELETON(date)}
 
 ## Check before output
 - sample.posts_scanned equals the sum of sentiment.all; sentiment.latest does not exceed sentiment.all.
-- Every topic has at least one source, topic ids are unique, and each source url path contains its note_id (except xhslink.com short links).
+- Every topic has at least one source, topic ids are unique, and each source url path contains its note_id and the url includes xsec_token (except xhslink.com short links).
 - Output only JSON that JSON.parse can read directly.`;
+
+/**
+ * Whether a reader can open this source. Xiaohongshu refuses note pages opened
+ * without xsec_token (error 300031), so older imports without one are shown
+ * without a link rather than as a dead one. xhslink.com short links carry it.
+ */
+export function canOpenXhsSource(url: string): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return false;
+  }
+  if (parsed.protocol !== "https:") return false;
+  if (parsed.hostname === "xhslink.com") return true;
+  return Boolean(parsed.searchParams.get("xsec_token")?.trim());
+}
 
 /** The prompt an administrator hands to a browsing assistant to produce one day's JSON. */
 export function buildXhsCollectionPrompt(locale: string, date: string): string {

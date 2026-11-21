@@ -17,6 +17,7 @@ from fastapi.responses import StreamingResponse
 from starlette import status as http_status
 
 from app.agent.answer_check import check_answer
+from app.agent.turn_usage import start_turn
 from app.agent.unit_fix import fix_unit_slips, with_unit_fixes
 from app.api.dependencies.auth import get_current_user_id
 from app.api.routes.chat.schemas import (
@@ -431,6 +432,7 @@ async def send_message(
     gaps: list = []
     stats: dict = {}
     started = asyncio.get_running_loop().time()
+    turn_usage = start_turn()
     try:
         ai_response_text = await run_agent(
             messages=attach_page_evidence(history, context),
@@ -469,6 +471,7 @@ async def send_message(
         quote_evidence=quote_rows,
         revenue_evidence=revenue_rows,
         answer_check=answer_check,
+        token_usage=(tokens := turn_usage.as_dict()),
     )
     if ai_msg and "usage" in stats:  # a failed run has no usage and is logged as an error above
         log_turn(
@@ -497,7 +500,7 @@ async def send_message(
     # 5. 返回
     return AgentMessageResponse(
         message=MessageResponse(**user_msg),
-        response=MessageResponse(**ai_msg),
+        response=MessageResponse(**ai_msg, token_usage=tokens),
     )
 
 
@@ -589,6 +592,7 @@ async def stream_message(
         routed_agent = None
         started = asyncio.get_running_loop().time()
         team_run = None
+        turn_usage = start_turn()
         async for event in stream_agent(
             messages=attach_page_evidence(history, context),
             user_id=current_user_id,
@@ -689,6 +693,8 @@ async def stream_message(
                     if unit_fixes:
                         answer_check = with_unit_fixes(answer_check, unit_fixes)
                     answer_check = _with_gaps(answer_check, event.get("data_gaps") or [])
+                    # One snapshot: background work after this (chat memory) is not this answer's.
+                    tokens = turn_usage.as_dict()
                     ai_msg = await save_message(
                         user_id=current_user_id,
                         conversation_id=conversation_id,
@@ -697,6 +703,7 @@ async def stream_message(
                         quote_evidence=quotes,
                         revenue_evidence=revenues,
                         answer_check=answer_check,
+                        token_usage=tokens,
                     )
                     if not ai_msg:
                         publish(
@@ -731,6 +738,7 @@ async def stream_message(
                         quote_evidence=quotes,
                         revenue_evidence=revenues,
                         answer_check=answer_check,
+                        token_usage=tokens,
                     )
                 publish(json.dumps(done))
                 return

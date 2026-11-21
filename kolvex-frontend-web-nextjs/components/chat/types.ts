@@ -1,5 +1,6 @@
 import type { AnswerCheck, QuoteEvidence, RevenueEvidence } from "@/lib/chatApi";
 import type { FreeAllowance } from "@/lib/api/userApiKeysApi";
+import type { TokenUsage } from "@/lib/tokenUsage";
 import type { ChatSkill } from "./chatSkills";
 
 // Chat component types and interfaces
@@ -12,6 +13,7 @@ export interface Message {
   revenueEvidence?: RevenueEvidence[] | null;
   quoteEvidence?: QuoteEvidence[] | null;
   answerCheck?: AnswerCheck | null;
+  tokenUsage?: TokenUsage | null;
 }
 
 export interface ChatConversation {
@@ -115,6 +117,8 @@ export interface ChatBubbleProps {
   revenueEvidence?: RevenueEvidence[] | null;
   quoteEvidence?: QuoteEvidence[] | null;
   answerCheck?: AnswerCheck | null;
+  /** Tokens the server counted for this answer's turn. */
+  tokenUsage?: TokenUsage | null;
   /** Saved message id; enables sharing the answer or a selected passage. */
   messageId?: string;
   /** The question this answer replies to, offered (optionally) with the share. */

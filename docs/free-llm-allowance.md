@@ -15,7 +15,7 @@ Users with their own key for a provider keep using it, unmetered and unchanged.
 | Peak hours | Mon–Fri 01:00–04:00 and 06:00–10:00 UTC. Chinese public holidays are charged at peak. | `PEAK_UTC_HOURS` |
 | No usage returned | Charged as one token per character of prompt and answer (above the real count) | `FreeQuotaCallback.on_llm_end` |
 | Running total | Redis key `free_llm_spend:{user_id}:{week}` (millionths of a yuan, 8-day TTL), checked before every call. If Redis cannot be read, the free model is refused (`free_quota_unavailable`) instead of running unmetered. | `spent_micro()` |
-| Ledger | Table `free_llm_usage_events`: one row per charged call (user, week, tokens, cost, `estimated`, `peak`), written before the Redis total. A missing Redis total is rebuilt from it with `free_llm_week_spend(user, week)`; if neither can be read, the free model is refused. Backend-only (service role, insert and select). Migration `20261121050000_free_llm_usage_events.sql`. | `Ledger`, `record_spend()` |
+| Ledger | Table `free_llm_usage_events`: one row per charged call (user, week, tokens, cost, `estimated`, `peak`), written before the Redis total. A missing Redis total is rebuilt from it with `free_llm_week_usage(user, week)` (migration `20261121050500_free_llm_week_usage.sql`); if neither can be read, the free model is refused. Backend-only (service role, insert and select). Migration `20261121050000_free_llm_usage_events.sql`. | `Ledger`, `record_spend()` |
 
 At the 2026-11-20 price, ¥1 is roughly 90 peak-hour chat turns of 4,000 input
 tokens (half cached) and 800 output tokens, or about twice that off-peak. Agent
@@ -39,8 +39,20 @@ assumptions, technical analysis, portfolio AI insights) are unchanged.
 
 - `GET /api/v1/user-api-keys/available-providers` adds `free_models`
   (`["deepseek-flash"]`, empty when the server has no DeepSeek key) and
-  `free_allowance` (`model`, `limit_yuan`, `used_yuan`, `remaining_yuan`,
-  `exhausted`, `resets_at`), or `null` when spend cannot be read.
+  `free_allowance` (`model`, `used_percent`, `exhausted`, `resets_at`,
+  `tokens`), or `null` when spend cannot be read. The limit is enforced in yuan,
+  but no money figure leaves the backend: users see the share used (0–100,
+  rounded up) and `tokens` (`input_tokens`, `cached_input_tokens`,
+  `output_tokens`, `model_calls`) summed from the ledger, or `null` when the
+  ledger cannot be read.
+- Every assistant message carries `token_usage` (`input_tokens`,
+  `cached_input_tokens`, `output_tokens`, `model_calls`, `incomplete`): the
+  server's count over every model call of that turn (routing, the answering
+  agent, model calls inside its tools; not the chat memory summary written
+  afterwards). It is saved in `chat_messages.token_usage` (migration
+  `20261121051000_chat_token_usage.sql`; before it, answers save without it),
+  returned in the stream's `done` event and in message history. Counted for
+  every model, the user's own keys included (`app/agent/turn_usage.py`).
 - `POST /chat/conversations/{id}/stream` and `/send` return **429
   `free_quota_exceeded`** (or 503 `free_quota_unavailable`) before starting a
   turn on the free model once the week's allowance is spent.
@@ -50,7 +62,9 @@ assumptions, technical analysis, portfolio AI insights) are unchanged.
 ## Web
 
 The chat model menu enables `deepseek-flash` with a 免费 / Free badge and shows
-the remaining allowance. When it is spent, the free model is disabled and the
+「本周免费额度已用 38%」 with this week's input (cached) and output tokens. Each
+answer's header shows 「输入 7,400 · 输出 800 token」, cached input in the hover
+text, and 「至少」 when a call reported no usage. When it is spent, the free model is disabled and the
 composer explains the Monday reset and links to Settings → API keys. Quota
 errors are shown in the user's language by `code`.
 

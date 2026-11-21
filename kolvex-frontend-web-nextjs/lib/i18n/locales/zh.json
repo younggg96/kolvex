@@ -463,13 +463,19 @@
       "unknownCurrency": "币种未知",
       "openSource": "查看 {symbol} 的行情来源"
     },
+    "tokens": {
+      "reply": "输入 {input} · 输出 {output} token",
+      "replyAtLeast": "至少 输入 {input} · 输出 {output} token",
+      "replyDetail": "本次回答：输入 {input} token（其中缓存命中 {cached}），输出 {output} token"
+    },
     "input": {
       "placeholder": "问一只股票、一位博主，或和持仓的关系...",
       "apiKeyRequired": "需要 API 密钥",
       "apiKeyRequiredDesc": "请在设置中添加至少一个模型 API 密钥，以解锁模型选择并开始对话。",
       "freeAllowance": {
         "badge": "免费",
-        "remaining": "本周免费额度剩余 {remaining} / {limit}，每周一重置",
+        "used": "本周免费额度已用 {percent}%，每周一重置",
+        "tokens": "输入 {input}（缓存 {cached}）· 输出 {output} token",
         "exhausted": "本周免费额度已用完，每周一重置",
         "exhaustedTitle": "本周免费额度已用完",
         "exhaustedDesc": "每周一 0 点（北京时间）重置。也可以添加自己的模型 API 密钥继续使用。",

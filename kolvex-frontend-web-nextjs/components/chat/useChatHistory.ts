@@ -10,9 +10,7 @@ function generateTitle(firstMessage: string): string {
 }
 
 // Convert API response to local format
-function convertApiConversation(
-  apiConv: chatApi.ChatConversation
-): ChatConversation {
+function convertApiConversation(apiConv: chatApi.ChatConversation): ChatConversation {
   const seenMessageIds = new Set<string>();
   return {
     id: apiConv.id,
@@ -37,15 +35,14 @@ function convertApiMessage(msg: chatApi.ChatMessage): Message {
     quoteEvidence: msg.quote_evidence,
     revenueEvidence: msg.revenue_evidence,
     answerCheck: msg.answer_check,
+    tokenUsage: msg.token_usage,
     timestamp: new Date(msg.created_at),
   };
 }
 
 export function useChatHistory() {
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
-  const [currentConversationId, setCurrentConversationId] = useState<
-    string | null
-  >(null);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,9 +68,7 @@ export function useChatHistory() {
 
       try {
         const response = await chatApi.getConversations();
-        const apiConversations = response.conversations.map(
-          convertApiConversation
-        );
+        const apiConversations = response.conversations.map(convertApiConversation);
         // A slow initial list must not overwrite a chat created or loaded meanwhile.
         setConversations((prev) => [
           ...prev,
@@ -92,9 +87,7 @@ export function useChatHistory() {
   }, []);
 
   // Get current conversation
-  const currentConversation = conversations.find(
-    (c) => c.id === currentConversationId
-  );
+  const currentConversation = conversations.find((c) => c.id === currentConversationId);
 
   // Get history items for sidebar
   const historyItems: ChatHistoryItem[] = [...conversations]
@@ -102,8 +95,7 @@ export function useChatHistory() {
     .map((conv) => ({
       id: conv.id,
       title: conv.title,
-      preview:
-        conv.messages[conv.messages.length - 1]?.content.slice(0, 100) || "",
+      preview: conv.messages[conv.messages.length - 1]?.content.slice(0, 100) || "",
       updatedAt: conv.updatedAt,
       messageCount: conv.messages.length,
     }));
@@ -122,7 +114,7 @@ export function useChatHistory() {
         window.dispatchEvent(
           new CustomEvent("kolvex:currentChatChanged", {
             detail: { id: converted.id },
-          })
+          }),
         );
         window.dispatchEvent(new CustomEvent("kolvex:conversationUpdated"));
       }
@@ -145,9 +137,7 @@ export function useChatHistory() {
         // If no current conversation, create one
         if (!targetId) {
           const newConv = await chatApi.createConversation(
-            message.role === "user"
-              ? generateTitle(message.content)
-              : "New Chat"
+            message.role === "user" ? generateTitle(message.content) : "New Chat",
           );
           targetId = newConv.id;
           const converted = convertApiConversation(newConv);
@@ -161,7 +151,7 @@ export function useChatHistory() {
             window.dispatchEvent(
               new CustomEvent("kolvex:currentChatChanged", {
                 detail: { id: targetId },
-              })
+              }),
             );
           }
         }
@@ -170,7 +160,7 @@ export function useChatHistory() {
         const newMessage = await chatApi.addMessage(
           targetId,
           message.role as "user" | "assistant" | "system",
-          message.content
+          message.content,
         );
 
         const convertedMessage: Message = {
@@ -191,7 +181,7 @@ export function useChatHistory() {
               };
             }
             return conv;
-          })
+          }),
         );
 
         // Notify sidebar to refresh
@@ -205,7 +195,7 @@ export function useChatHistory() {
         throw err;
       }
     },
-    [] // No dependencies needed since we use ref
+    [], // No dependencies needed since we use ref
   );
 
   // Select a conversation
@@ -233,9 +223,7 @@ export function useChatHistory() {
       });
 
       if (typeof window !== "undefined" && currentConversationIdRef.current === id) {
-        window.dispatchEvent(
-          new CustomEvent("kolvex:currentChatChanged", { detail: { id } })
-        );
+        window.dispatchEvent(new CustomEvent("kolvex:currentChatChanged", { detail: { id } }));
         window.dispatchEvent(new CustomEvent("kolvex:conversationUpdated"));
       }
       return converted;
@@ -252,17 +240,19 @@ export function useChatHistory() {
   }, []);
 
   const rememberMessages = useCallback((id: string, committed: chatApi.ChatMessage[]) => {
-    setConversations((previous) => previous.map((conversation) => {
-      if (conversation.id !== id) return conversation;
-      const existing = new Set(conversation.messages.map((message) => message.id));
-      return {
-        ...conversation,
-        messages: [
-          ...conversation.messages,
-          ...committed.filter((message) => !existing.has(message.id)).map(convertApiMessage),
-        ],
-      };
-    }));
+    setConversations((previous) =>
+      previous.map((conversation) => {
+        if (conversation.id !== id) return conversation;
+        const existing = new Set(conversation.messages.map((message) => message.id));
+        return {
+          ...conversation,
+          messages: [
+            ...conversation.messages,
+            ...committed.filter((message) => !existing.has(message.id)).map(convertApiMessage),
+          ],
+        };
+      }),
+    );
   }, []);
 
   // Delete a conversation
@@ -284,12 +274,12 @@ export function useChatHistory() {
           window.dispatchEvent(
             new CustomEvent("kolvex:currentChatChanged", {
               detail: { id: null },
-            })
+            }),
           );
         }
       }
     },
-    [] // Use ref instead of state dependency
+    [], // Use ref instead of state dependency
   );
 
   // Start new chat (clear current selection)
@@ -298,9 +288,7 @@ export function useChatHistory() {
     currentConversationIdRef.current = null;
 
     if (typeof window !== "undefined") {
-      window.dispatchEvent(
-        new CustomEvent("kolvex:currentChatChanged", { detail: { id: null } })
-      );
+      window.dispatchEvent(new CustomEvent("kolvex:currentChatChanged", { detail: { id: null } }));
     }
   }, []);
 
@@ -322,9 +310,7 @@ export function useChatHistory() {
     try {
       setIsLoading(true);
       const response = await chatApi.getConversations();
-      const apiConversations = response.conversations.map(
-        convertApiConversation
-      );
+      const apiConversations = response.conversations.map(convertApiConversation);
       setConversations(apiConversations);
     } catch (err) {
       console.error("Failed to refresh conversations:", err);

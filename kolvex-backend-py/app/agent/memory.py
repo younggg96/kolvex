@@ -118,6 +118,7 @@ async def save_message(
     quote_evidence: Optional[List[Dict[str, Any]]] = None,
     revenue_evidence: Optional[List[Dict[str, Any]]] = None,
     answer_check: Optional[Dict[str, Any]] = None,
+    token_usage: Optional[Dict[str, Any]] = None,
 ) -> Optional[Dict[str, Any]]:
     """
     保存消息到数据库
@@ -155,9 +156,20 @@ async def save_message(
             row["revenue_evidence"] = revenue_evidence
         if answer_check:
             row["answer_check"] = answer_check
+        if token_usage:
+            row["token_usage"] = token_usage
 
         # 保存消息
-        result = await asyncio.to_thread(supabase.table("chat_messages").insert(row).execute)
+        try:
+            result = await asyncio.to_thread(supabase.table("chat_messages").insert(row).execute)
+        except Exception as error:
+            # Before migration 20261121051000_chat_token_usage.sql the column is missing;
+            # the answer is still saved, only without its token count.
+            if "token_usage" not in row or "token_usage" not in str(error):
+                raise
+            logger.warning("chat_messages.token_usage is missing; saving the answer without it")
+            row.pop("token_usage")
+            result = await asyncio.to_thread(supabase.table("chat_messages").insert(row).execute)
 
         if result.data:
             msg = result.data[0]

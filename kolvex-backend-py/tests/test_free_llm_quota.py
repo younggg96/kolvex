@@ -2,6 +2,8 @@
 
 import asyncio
 import contextvars
+import json
+import math
 from datetime import datetime, timezone
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
@@ -54,14 +56,16 @@ class FakeLedger:
         self.rows.append(row)
         return True
 
-    async def week_spend(self, user_id, week):
+    async def week_usage(self, user_id, week):
         if not self.readable:
             return None
-        return sum(
-            r["cost_micro_yuan"]
-            for r in self.rows
-            if r["user_id"] == user_id and r["week_start"] == week
-        )
+        rows = [r for r in self.rows if r["user_id"] == user_id and r["week_start"] == week]
+        totals = {k: sum(r[k] for r in rows) for k in quota.USAGE_FIELDS if k != "calls"}
+        return {**totals, "calls": len(rows)}
+
+    async def week_spend(self, user_id, week):
+        usage = await self.week_usage(user_id, week)
+        return None if usage is None else usage["cost_micro_yuan"]
 
 
 @pytest.fixture(autouse=True)
@@ -227,15 +231,39 @@ def test_unreadable_spend_refuses_rather_than_runs_unmetered():
         run(quota.ensure_allowance("u1", PEAK, FakeStore(connected=False)))
 
 
-def test_allowance_reports_real_spend_and_reset_time():
+def test_allowance_shows_tokens_and_share_used_never_money():
     store = FakeStore()
-    run(quota.record_spend("u1", 250_000, PEAK, store))
+    run(quota.record_spend("u1", 250_000, PEAK, store, usage=(600, 400, 50)))
+    run(quota.record_spend("u1", 1, PEAK, store, usage=(0, 10, 5)))
     status = run(quota.allowance("u1", PEAK, store))
-    assert status["model"] == "deepseek-flash"
-    assert status["used_yuan"] == 0.25
-    assert status["remaining_yuan"] == quota.settings.FREE_LLM_WEEKLY_LIMIT_YUAN - 0.25
-    assert status["resets_at"] == "2026-11-23T00:00:00+08:00"
-    assert status["exhausted"] is False
+    assert status == {
+        "model": "deepseek-flash",
+        "used_percent": math.ceil(250_001 * 100 / quota.weekly_limit_micro()),
+        "exhausted": False,
+        "resets_at": "2026-11-23T00:00:00+08:00",
+        "tokens": {
+            "input_tokens": 1010,
+            "cached_input_tokens": 600,
+            "output_tokens": 55,
+            "model_calls": 2,
+        },
+    }
+    assert not any("yuan" in key for key in status)
+
+
+def test_a_single_call_never_reads_as_zero_percent():
+    store = FakeStore()
+    run(quota.record_spend("u1", 1, PEAK, store))
+    assert run(quota.allowance("u1", PEAK, store))["used_percent"] == 1
+
+
+def test_allowance_without_a_readable_ledger_still_shows_the_share():
+    store = FakeStore()
+    run(quota.record_spend("u1", 10, PEAK, store))
+    with patch.object(quota, "_ledger", lambda: FakeLedger(readable=False)):
+        status = run(quota.allowance("u1", PEAK, store))
+    assert status["tokens"] is None
+    assert status["used_percent"] == 1
 
 
 def test_call_without_usage_is_still_charged_by_an_estimate(ledger):
@@ -402,3 +430,106 @@ def test_stream_reports_a_spent_allowance_by_code():
     events = run(collect())
     assert events[-1]["type"] == "error"
     assert events[-1]["code"] == "free_quota_exceeded"
+
+
+# ---------- tokens per chat turn ----------
+
+
+def test_turn_usage_counts_every_model_call_of_the_turn():
+    from app.agent import llm
+    from app.agent.turn_usage import TurnUsageCallback, start_turn
+
+    def build():
+        turn = start_turn()
+        model = llm._create_llm("deepseek", "deepseek-v4-pro", user_api_keys={"deepseek": "mine"})
+        return turn, model
+
+    turn, model = in_fresh_context(build)
+    callback = next(c for c in model.callbacks if isinstance(c, TurnUsageCallback))
+    usage = {
+        "input_tokens": 1000,
+        "output_tokens": 80,
+        "total_tokens": 1080,
+        "input_token_details": {"cache_read": 700},
+    }
+    run(callback.on_llm_end(result_with(AIMessage(content="a", usage_metadata=usage))))
+    run(callback.on_llm_end(result_with(AIMessage(content="b", usage_metadata=usage))))
+    assert turn.as_dict() == {
+        "input_tokens": 2000,
+        "cached_input_tokens": 1400,
+        "output_tokens": 160,
+        "model_calls": 2,
+        "incomplete": False,
+    }
+    assert model.stream_usage is True
+
+
+def test_turn_with_a_call_missing_usage_is_marked_incomplete():
+    from app.agent.turn_usage import TurnUsage, TurnUsageCallback
+
+    turn = TurnUsage()
+    run(TurnUsageCallback(turn).on_llm_end(result_with(AIMessage(content="x"))))
+    assert turn.as_dict()["incomplete"] is True
+
+
+def test_turn_without_model_calls_saves_no_token_usage():
+    from app.agent.turn_usage import TurnUsage
+
+    assert TurnUsage().as_dict() is None
+
+
+def test_models_outside_a_chat_turn_are_not_counted():
+    from app.agent import llm
+    from app.agent.turn_usage import TurnUsageCallback
+
+    model = in_fresh_context(
+        lambda: llm._create_llm("deepseek", "deepseek-v4-pro", user_api_keys={"deepseek": "mine"})
+    )
+    assert not any(isinstance(c, TurnUsageCallback) for c in model.callbacks or [])
+
+
+def test_streamed_answer_is_saved_and_sent_with_its_tokens():
+    from app.agent.turn_usage import current_turn
+    from app.api.routes.chat import routes
+
+    async def fake_stream(**_kwargs):
+        turn = current_turn()
+        turn.model_calls, turn.input_tokens, turn.output_tokens = 2, 900, 120
+        yield {"type": "token", "content": "Answer"}
+        yield {"type": "done"}
+
+    app = FastAPI()
+    app.include_router(routes.router)
+    app.dependency_overrides[routes.get_current_user_id] = lambda: "user-1"
+    app.dependency_overrides[routes.get_user_api_keys_service] = lambda: SimpleNamespace(
+        get_keys_dict=AsyncMock(return_value={})
+    )
+    save = AsyncMock(return_value={"id": "m1", "created_at": "now"})
+
+    async def save_user(*_args, **_kwargs):
+        return {
+            "id": "u1",
+            "conversation_id": "c1",
+            "role": "user",
+            "content": "hi",
+            "created_at": "now",
+        }
+
+    with (
+        patch("app.agent.memory.save_message", save),
+        patch("app.agent.memory.save_user_message_once", save_user),
+        patch("app.agent.memory.load_conversation_history", AsyncMock(return_value=[])),
+        patch.object(routes, "turn_context", AsyncMock(return_value=None)),
+        patch("app.agent.graphs.supervisor.stream_agent", fake_stream),
+    ):
+        response = TestClient(app).post("/conversations/c1/stream", json={"content": "hi"})
+    expected = {
+        "input_tokens": 900,
+        "cached_input_tokens": 0,
+        "output_tokens": 120,
+        "model_calls": 2,
+        "incomplete": False,
+    }
+    assert save.await_args.kwargs["token_usage"] == expected
+    done = [line for line in response.text.splitlines() if '"done"' in line][-1]
+    assert json.loads(done[6:])["token_usage"] == expected
