@@ -6,17 +6,19 @@ import { useCopy } from "@/components/decision/shared";
 import type { XMediaAsset } from "@/lib/xContentApi";
 import { cn } from "@/lib/utils";
 
-const frame = "block w-full overflow-hidden rounded-xl border border-border bg-muted";
+const frame = "block overflow-hidden rounded-lg border border-border bg-muted";
 const focus = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary";
 
 function Attachment({
   asset,
   poster,
   source,
+  tiled,
 }: {
   asset: XMediaAsset | undefined;
   poster: XMediaAsset | undefined;
   source: string;
+  tiled: boolean;
 }) {
   const c = useCopy();
   const [failed, setFailed] = useState(false);
@@ -34,7 +36,7 @@ function Attachment({
         src={asset.url}
         poster={poster?.url}
         aria-label={c("Video from this post", "原帖视频")}
-        className={cn(frame, "aspect-video max-h-96 object-contain")}
+        className={cn(frame, "aspect-video w-full object-contain")}
         onError={() => setFailed(true)}
       />
     );
@@ -48,7 +50,7 @@ function Attachment({
         target="_blank"
         rel="noopener noreferrer"
         aria-label={isVideo ? originalLabel : c("Open full image", "打开完整图片")}
-        className={cn(frame, focus, "relative")}
+        className={cn(frame, focus, "relative", tiled ? "aspect-[4/3] w-full" : "w-fit max-w-full")}
       >
         {/* Archived files load directly from Storage and already have an attachment limit. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -57,7 +59,7 @@ function Attachment({
           alt={image.alt || (isVideo ? "" : c("Image from this post", "原帖图片"))}
           loading="lazy"
           decoding="async"
-          className="max-h-96 w-full object-contain"
+          className={tiled ? "size-full object-cover" : "max-h-56 w-auto max-w-full object-contain"}
           onError={() => setFailed(true)}
         />
         {isVideo && (
@@ -103,13 +105,14 @@ export function XPostMedia({
   }
   if (!entries.size) return null;
   return (
-    <div className={cn("mt-2.5 grid min-w-0 gap-2", entries.size > 1 && "grid-cols-2")}>
+    <div className={cn("mt-2.5 grid min-w-0 max-w-md gap-1.5", entries.size > 1 && "grid-cols-2")}>
       {[...entries.values()].map(({ source, asset, poster }) => (
         <Attachment
           key={`${source}:${asset?.key ?? ""}:${poster?.key ?? ""}`}
           source={source}
           asset={asset}
           poster={poster}
+          tiled={entries.size > 1}
         />
       ))}
     </div>

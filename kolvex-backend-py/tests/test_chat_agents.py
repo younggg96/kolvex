@@ -92,6 +92,9 @@ class RoutingTests(unittest.TestCase):
             "When are AAPL earnings?": "earnings",
             "谁提到过数据中心": "creators",
             "what did creators say about TSLA": "creators",
+            # Seen in the follow-up eval: this went to financial, which then called no tool.
+            "那他之前的推荐准不准？说对了几次？": "creators",
+            "What is his track record?": "creators",
             "CPI 出来了对科技股意味着什么": "macro",
             "Is the Fed going to cut rates?": "macro",
             "现在利率多少": "macro",
@@ -490,3 +493,11 @@ class AgentToolSetTests(unittest.TestCase):
         self.assertEqual(
             {t.name for t in supervisor.tools_for_agent("macro", no_news)}, {"get_stock_quote"}
         )
+
+
+class CreatorAccuracyPromptTests(unittest.TestCase):
+    def test_accuracy_questions_fetch_the_record_instead_of_asking(self):
+        # The follow-up eval saw "需要我查哪只股票？" with no tool called, twice in three runs.
+        prompt = supervisor.AGENT_PROMPTS["creators"]
+        self.assertIn("call get_creator_record right away", prompt)
+        self.assertIn("A refusal without the facts is not an answer.", prompt)

@@ -120,4 +120,6 @@ Added 2026-11-19: the Web Reddit 热度榜 shows a 30-day relative mention trend
 
 11. Number check on team research (added on the Web 2026-11-20). Each researcher's note and the combined conclusion carry `answer_check` (same shape as `chat_messages.answer_check`) on `GET /research-workspaces/runs/{id}` and in `latest_run`; Web shows it with `components/chat/AnswerCheckNote.tsx` under the conclusion and inside each opened note. Not ported: native shows no number check anywhere yet, chat included. Needs migration `20261120213000_team_research_answer_check.sql`; before it the field is absent.
 
+12. More researchers on manual workspace runs (added on the Web 2026-11-20). Besides the five workspace researchers, a manual run can add the chat specialists valuation, earnings, smart_money, macro and buzz, at most five researchers per run (`SPECIALIST_RESEARCH_AGENTS` and `MAX_RESEARCH_AGENTS` in Web `lib/researchWorkspaceApi.ts`; the backend rejects a sixth with `invalid_agents`). Specialists the user turned off in AI settings are hidden. App follow-up: `src/app/(tabs)/(more)/workspace/[id].tsx` still offers only the five and shows `n/5` from `RESEARCH_AGENTS.length`; add the specialist chips and the cap. Runs started on the Web already display on native because results use the shared agent metadata.
+
 No RLS, administrator grants or OAuth settings were changed.

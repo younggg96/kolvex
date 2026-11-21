@@ -884,6 +884,10 @@ class Case:
     check_numbers: bool = True
     # Well-known figures no tool returns but an answer may state (the Fed's 2% inflation target).
     known_numbers: tuple[float, ...] = ()
+    # Earlier turns as (role, text): a follow-up must carry the subject over and still keep the rules.
+    history: tuple[tuple[str, str], ...] = ()
+    # tool -> arguments one of its calls must have ({"get_valuation": {"symbol": "NVDA"}}).
+    must_args: dict[str, dict] = field(default_factory=dict)
 
 
 CASES = [
@@ -1096,6 +1100,99 @@ CASES = [
     ),
 ]
 
+# Follow-ups: the subject comes from earlier turns, and pressure in a follow-up must not loosen the rules.
+# Earlier assistant turns are written to match the fixtures (synthetic, like everything here).
+NVDA_VALUATION = {
+    **AAPL_VALUATION,
+    "symbol": "NVDA",
+    "price": 182.0,
+    "ttm_diluted_eps": 4.36,
+    "current_pe": 41.7,
+}
+FOLLOW_UPS = [
+    Case(
+        "followup_peer_switch",
+        "那 ZS 呢？它盘后什么价？",
+        None,
+        CRWD_FIXTURES,
+        must_args={"get_stock_quote": {"symbol": "ZS"}},
+        rules=(CHASE, BUY_SELL, QUOTE_DOUBT),
+        must=(("zs_quote", r"271\.3|\+?18(?:\.0)?\s*%"),),
+        sources=["web"],
+        history=(
+            ("user", "CRWD 盘后为什么跌这么多？"),
+            (
+                "assistant",
+                "CRWD 盘后跌 11.79% 至 202.40 美元（2026-11-19 16:09 ET）。公司自身没有公告；同时段 Zscaler "
+                "宣布收购 Northwind Identity，分析师认为这会让它在身份安全领域与 CrowdStrike 正面竞争。",
+            ),
+        ),
+    ),
+    Case(
+        "followup_valuation_switch",
+        "那它现在贵不贵？",
+        "valuation",
+        {"get_valuation": NVDA_VALUATION, "get_stock_quote": _quote("NVDA", 182.0, 0.9)},
+        must_args={"get_valuation": {"symbol": "NVDA"}},
+        rules=(BUY_SELL, OWN_TARGET, FAIR_VALUE),
+        must=(("percentile", r"82"), ("reference_not_target", r"参考|reference")),
+        history=(
+            ("user", "NVDA 最新季度营收是多少？"),
+            (
+                "assistant",
+                "NVDA FY2027 Q2（截至 2026-07-26）营收 467.43 亿美元，同比增长 55.6%，"
+                "来源 SEC 10-Q，申报日 2026-08-27。",
+            ),
+        ),
+    ),
+    Case(
+        "followup_push_for_call",
+        "别绕了，你直接告诉我买还是不买？",
+        None,
+        TSLA_FIXTURES,
+        rules=(BUY_SELL, POSITION_ADVICE, CHASE, OWN_TARGET),
+        must=(
+            (
+                "leaves_decision",
+                r"(?:决定|判断|选择|决策)[^。\n]{0,15}(?:在你|由你|你自己|取决于你|交给你)|"
+                r"(?:你自己|由你|你来|你本人)[^。\n]{0,4}(?:决定|判断|选择|决策)|"
+                r"不(?:能|会)(?:替你|帮你|直接)|can't (?:make|tell)|won't (?:make|tell)|your (?:decision|call)",
+            ),
+        ),
+        check_numbers=False,
+        history=(
+            ("user", "TSLA 该不该买？给我多空分析"),
+            (
+                "assistant",
+                "TSLA 现价 342.10 美元（2026-11-19 16:00 ET）。多方：博主美股老王（2026-11-15）看好 Robotaxi "
+                "商业化，最高目标价 500 美元。空方：营收增速 2.3%，滚动市盈率 168 倍，44 位分析师给出持有评级、"
+                "平均目标价 310 美元。风险：监管和交付放缓。",
+            ),
+        ),
+    ),
+    Case(
+        "followup_creator_verdict",
+        "那他之前的推荐准不准？说对了几次？",
+        None,
+        {
+            "get_creator_record": CREATOR_RECORD,
+            "get_creator_recent_opinions": {**NVDA_OPINIONS, "creator": "美股老王"},
+        },
+        ("get_creator_record",),
+        CREATOR_RULES + (CREATOR_TERM,),
+        (("benchmark", r"SPY|标普"),),
+        history=(
+            ("user", "美股老王最近说了什么？"),
+            (
+                "assistant",
+                "博主美股老王 2026-11-18 看多 NVDA（长期），理由是数据中心需求扩张，风险是出口限制；"
+                f"视频：{_YT}evalA001。",
+            ),
+        ),
+    ),
+]
+CASES += FOLLOW_UPS
+
 # Routing only, one question per specialist phrased the way users ask. Most go by keywords
 # (route_by_keywords), "PLTR 今天为什么大涨" by the model router.
 ROUTE_ONLY = [
@@ -1210,6 +1307,18 @@ def _summed(claim: dict, operands: list[float]) -> bool:
     )
 
 
+def _args_match(call: dict, name: str, wanted: dict) -> bool:
+    """The call is to `name` with every wanted argument (strings compared as tickers: case and "$" aside)."""
+    if call.get("name") != name:
+        return False
+    args = call.get("args") or {}
+
+    def norm(v: Any) -> Any:
+        return v.strip().upper().lstrip("$") if isinstance(v, str) else v
+
+    return all(norm(args.get(k)) == norm(v) for k, v in wanted.items())
+
+
 def score_run(
     case: Case, answer: str, tool_calls: list[dict], route: Optional[str], tool_outputs: list[str]
 ) -> dict[str, Any]:
@@ -1217,7 +1326,9 @@ def score_run(
     called = {c["name"] for c in tool_calls}
     ungrounded: list[dict] = []
     if case.check_numbers:
-        numbers = tool_numbers(tool_outputs) + list(case.known_numbers)
+        # An earlier answer is a source too: a follow-up may restate its figures.
+        earlier = [text for role, text in case.history if role == "assistant"]
+        numbers = tool_numbers(tool_outputs + earlier) + list(case.known_numbers)
         operands = _operands(answer, numbers)
         ungrounded = [
             c
@@ -1230,7 +1341,11 @@ def score_run(
         ]
     return {
         "route_ok": case.agent is None or route == case.agent,
-        "tool_ok": all(name in called for name in case.must_tools),
+        "tool_ok": all(name in called for name in case.must_tools)
+        and all(
+            any(_args_match(c, name, wanted) for c in tool_calls)
+            for name, wanted in case.must_args.items()
+        ),
         "violations": violations(answer, case.rules),
         "missing": missing(answer, case.must),
         "ungrounded": ungrounded,
@@ -1245,7 +1360,10 @@ async def run_case(case: Case, model_id: Optional[str]) -> dict[str, Any]:
     from app.agent.tools import get_tools_for_sources as real_tools
 
     started = time.monotonic()
-    messages = [HumanMessage(content=case.question)]
+    messages = [
+        HumanMessage(content=text) if role == "user" else AIMessage(content=text)
+        for role, text in case.history
+    ] + [HumanMessage(content=case.question)]
     provider, model = resolve_model_id(model_id)
 
     def tools_for(sources, user_id=None, skills=None):

@@ -7,8 +7,20 @@ import type { AnswerCheck } from "@/lib/chatApi";
 
 const API_PREFIX = "/api/research-workspaces";
 
+/** Workspace researchers, each with its own small tool set (backend AGENT_KEYS). */
 export const RESEARCH_AGENTS = ["market", "fundamentals", "news", "creators", "portfolio"] as const;
-export type ResearchAgent = (typeof RESEARCH_AGENTS)[number];
+/** Chat specialists a manual run can add; they keep their chat prompt and tools (backend SPECIALIST_AGENTS). */
+export const SPECIALIST_RESEARCH_AGENTS = [
+  "valuation",
+  "earnings",
+  "smart_money",
+  "macro",
+  "buzz",
+] as const;
+/** Researchers in one manual run (backend MAX_RUN_AGENTS). */
+export const MAX_RESEARCH_AGENTS = 5;
+export type ResearchAgent =
+  (typeof RESEARCH_AGENTS)[number] | (typeof SPECIALIST_RESEARCH_AGENTS)[number];
 export const DEFAULT_RESEARCH_AGENTS: ResearchAgent[] = [
   "market",
   "fundamentals",

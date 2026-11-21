@@ -115,7 +115,7 @@ export function AgentDesk({ workspace, model }: { workspace: ChatWorkspace; mode
           <AddAgentMenu disabled={adding} adding={adding} onAdd={add} c={c} variant="primary" />
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 2xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
           {ordered.map((chat) => (
             <AgentPanel
               key={chat.id}

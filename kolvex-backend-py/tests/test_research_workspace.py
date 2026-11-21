@@ -130,6 +130,16 @@ class NormalizeTests(unittest.TestCase):
         with self.assertRaises(ws.WorkspaceError):
             ws.normalize_agents(["market", "astrology"])
 
+    def test_agents_accept_specialists_up_to_the_cap(self):
+        self.assertEqual(
+            ws.normalize_agents(["earnings", "market", "valuation"]),
+            ["market", "valuation", "earnings"],
+        )
+        with self.assertRaises(ws.WorkspaceError):
+            ws.normalize_agents(["market", "news", "creators", "earnings", "macro", "buzz"])
+        with self.assertRaises(ws.WorkspaceError):
+            ws.normalize_agents(["research"])
+
 
 class CrudTests(unittest.TestCase):
     def setUp(self):
@@ -303,6 +313,28 @@ class RunTests(unittest.TestCase):
             [r["agent"] for r in ws.get_run(self.db, "u1", run["id"])["results"]],
             ["earnings", "valuation"],
         )
+
+    def test_manual_run_mixes_workspace_and_specialist_researchers(self):
+        run = ws.start_run(self.db, "u1", self.w["id"], "", ["market", "earnings"], None)
+        deps = self.deps()
+        deps.agent_factory = Mock(wraps=deps.agent_factory)
+        with (
+            patch.object(
+                ws, "tools_for", side_effect=lambda a, u: [SimpleNamespace(name=f"{a}_tool")]
+            ) as workspace_tools,
+            patch(
+                "app.agent.tools.get_tools_for_sources",
+                return_value=[SimpleNamespace(name="get_market_events")],
+            ) as chat_tools,
+        ):
+            final = asyncio.run(ws.run_research(self.db, run, "u1", None, None, None, deps))
+        self.assertEqual(final["status"], "completed")
+        workspace_tools.assert_called_once_with("market", "u1")
+        # A manual run has no chat source or skill settings, so all tools stay available.
+        chat_tools.assert_called_once_with(None, "u1", None)
+        prompts = [call.kwargs["prompt"] for call in deps.agent_factory.call_args_list]
+        self.assertTrue(any("Earnings Agent" in prompt for prompt in prompts))
+        self.assertTrue(any("market researcher" in prompt for prompt in prompts))
 
     def test_all_failures_fail_run_without_synthesis(self):
         run = ws.start_run(self.db, "u1", self.w["id"], "", ["market"], None)

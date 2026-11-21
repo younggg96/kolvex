@@ -28,6 +28,11 @@ RESULTS = "research_agent_results"
 
 AGENT_KEYS = ("market", "fundamentals", "news", "creators", "portfolio")
 DEFAULT_AGENTS = ("market", "fundamentals", "news", "creators")
+# Chat specialists a user can also add to a manual run. They run with their chat prompt and
+# tools (see run_research), not the workspace tool sets in tools_for.
+SPECIALIST_AGENTS = ("valuation", "earnings", "smart_money", "macro", "buzz")
+RUN_AGENT_KEYS = AGENT_KEYS + SPECIALIST_AGENTS
+MAX_RUN_AGENTS = 5
 MAX_TICKERS = 10
 CONTEXT_MESSAGES_PER_CHAT = 12
 CONTEXT_CHAR_LIMIT = 8000
@@ -94,8 +99,8 @@ def normalize_tickers(raw: Any) -> list[str]:
 def normalize_agents(raw: Optional[list[str]]) -> list[str]:
     if not raw:
         return list(DEFAULT_AGENTS)
-    agents = [a for a in AGENT_KEYS if a in set(raw)]
-    if not agents or len(agents) != len(set(raw)):
+    agents = [a for a in RUN_AGENT_KEYS if a in set(raw)]
+    if not agents or len(agents) != len(set(raw)) or len(agents) > MAX_RUN_AGENTS:
         raise WorkspaceError("invalid_agents")
     return agents
 
@@ -669,7 +674,7 @@ def chat_workspace_context(db: Any, user_id: str, conversation_id: str) -> Optio
             .execute()
             .data
         ) or []
-        order = {k: i for i, k in enumerate(AGENT_KEYS)}
+        order = {k: i for i, k in enumerate(RUN_AGENT_KEYS)}
         for r in sorted(results, key=lambda r: order.get(r["agent"], 99)):
             label = AGENT_LABELS.get(r["agent"], r["agent"])
             if r["status"] != "completed":
@@ -984,7 +989,9 @@ async def run_research(
                 update_result, agent, {"status": "running", "started_at": utcnow()}
             )
             try:
-                if run.get("source_message_id"):
+                # Chat-started runs use chat specialists only; a manual run mixes the
+                # workspace researchers with specialists the user picked.
+                if run.get("source_message_id") or agent not in AGENT_KEYS:
                     from app.agent.graphs.supervisor import AGENT_PROMPTS, tools_for_agent
                     from app.agent.tools import get_tools_for_sources
 

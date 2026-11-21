@@ -731,7 +731,11 @@ _EARNINGS_WORDS = re.compile(
 )
 _CREATOR_WORDS = re.compile(
     r"博主|创作者|油管|频道|大V|\bKOLs?\b|youtubers?|creators?|influencers?|bloggers?|"
-    r"谁(?:说过|提到|提过|聊过|讲过)",
+    r"谁(?:说过|提到|提过|聊过|讲过)|"
+    # Asking how someone's calls turned out ("他之前的推荐准不准"): the creators agent answers with
+    # price facts from get_creator_record and no verdict.
+    r"准不准|说对了?(?:几次|吗|没)|看对了?(?:几次|吗|没)|说错|胜率|准确率|命中率|靠不靠谱|靠谱吗|"
+    r"\b(?:track record|hit rate|win rate)\b",
     re.IGNORECASE,
 )
 _MACRO_WORDS = re.compile(

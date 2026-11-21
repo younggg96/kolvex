@@ -28,7 +28,7 @@
 1. 保存用户消息（重试同一问题时复用上一条未回答的消息，`memory.save_user_message_once`）。
 2. 加载本对话摘要之后的消息（`memory.load_conversation_history`），以及对话摘要和跨对话记忆（`chat_memory.load_memory_note`，拼进系统提示词末尾），见第 7 节。
 3. 读用户自己的 API key。
-4. `_classify_intent`：先用关键词正则（`route_by_keywords`），按顺序判断：「研报 / 深度 / 该不该买」→ research；「模拟交易 / 模拟盘 / paper trading」→ paper_review；「我的持仓 / 我的自选 / my portfolio」→ portfolio；「13F / 巴菲特 / 段永平 / 国会 / 议员 / 期权异动」→ smart_money；「财报 / earnings」→ earnings；「博主 / KOL / 谁提到过」→ creators；「CPI / 降息 / 美联储 / 利率（不含净利率、毛利率）」→ macro；「估值 / 贵不贵 / 偏贵 / overvalued」或市盈率和自身历史比（「市盈率在历史上算高吗」）→ valuation；「异动 / 放量 / Reddit / trending」→ buzz；80 字以内的查数问题 → financial。判断不出来才调一次快模型，模型答出的名字不合法时回到 financial。快模型回答里没有 `research` 一律按 financial。
+4. `_classify_intent`：先用关键词正则（`route_by_keywords`），按顺序判断：「研报 / 深度 / 该不该买」→ research；「模拟交易 / 模拟盘 / paper trading」→ paper_review；「我的持仓 / 我的自选 / my portfolio」→ portfolio；「13F / 巴菲特 / 段永平 / 国会 / 议员 / 期权异动」→ smart_money；「财报 / earnings」→ earnings；「博主 / KOL / 谁提到过」或问某人的观点准不准（「准不准 / 说对了几次 / 胜率 / track record」）→ creators；「CPI / 降息 / 美联储 / 利率（不含净利率、毛利率）」→ macro；「估值 / 贵不贵 / 偏贵 / overvalued」或市盈率和自身历史比（「市盈率在历史上算高吗」）→ valuation；「异动 / 放量 / Reddit / trending」→ buzz；80 字以内的查数问题 → financial。判断不出来才调一次快模型，模型答出的名字不合法时回到 financial。快模型回答里没有 `research` 一律按 financial。
 5. `_create_agent_for_request`：按用户选的模型、数据源、技能拼出工具集，再用 `tools_for_agent` 收窄到这个子 Agent 的工具，加上提示词，`create_react_agent` 每轮新建。最多 `MAX_TOOL_ITERATIONS`（10）轮工具调用。
 6. 跑 Agent，收集 evidence，修单位错误，核对数字，保存助手消息。
 7. 回复保存后在后台更新记忆（`chat_memory.remember_turn_later`），不拖慢回复；回复失败的轮次不记。
@@ -121,6 +121,8 @@ Web 流式请求发送 `team_research`（`auto` / `ask` / `off`）、`max_team_a
 ### 研究工作区
 
 `app/services/research_workspace.py` 的 `tools_for` 给每个研究员一小组工具（market：报价、K 线、技术指标、期权；creators：两个博主工具；等等），复用这里的工具函数，但有自己的提示词和流程。
+
+手动发起的研究（`POST /research-workspaces/{id}/runs`）可选两类研究员，每轮最多 `MAX_RUN_AGENTS`（5）位：`AGENT_KEYS` 里的五位工作区研究员走 `tools_for` + `agent_prompt`；`SPECIALIST_AGENTS`（valuation / earnings / smart_money / macro / buzz）走聊天专项的 `AGENT_PROMPTS` 和 `tools_for_agent`，手动发起没有数据源和技能设置，所以不过滤工具。从聊天发起的研究只用聊天专项研究员。
 
 团队研究也做第 5 节的数字核对（`research_workspace.check_text`）：每位研究员的笔记对照它自己调用的工具结果，综合结论对照全部研究员的工具结果，先修单位错误再核对，结果存在 `research_agent_results.answer_check` 和 `research_workspace_runs.answer_check`，Web 工作区用 `AnswerCheckNote` 显示。需要迁移 `20261120213000_team_research_answer_check.sql`；没跑迁移时照常保存研究，只是不存核对结果。
 
