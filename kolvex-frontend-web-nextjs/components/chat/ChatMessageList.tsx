@@ -140,6 +140,7 @@ export function ChatMessageList({
               revenueEvidence={message.revenueEvidence}
               answerCheck={message.answerCheck}
               tokenUsage={message.tokenUsage}
+              webSources={message.webSources}
               timestamp={message.timestamp}
               isFirst={index === 0}
               symbols={symbols}

@@ -62,6 +62,16 @@ export interface AnswerCheck {
   data_gaps?: { tool: string; kind: "unavailable" | "no_data" }[];
 }
 
+/** A page the answer's web search returned. */
+export interface WebSource {
+  url: string;
+  domain: string;
+  title: string;
+  snippet: string;
+  query: string;
+  published_date?: string;
+}
+
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant" | "system";
@@ -71,6 +81,7 @@ export interface ChatMessage {
   revenue_evidence?: RevenueEvidence[] | null;
   answer_check?: AnswerCheck | null;
   token_usage?: TokenUsage | null;
+  web_sources?: WebSource[] | null;
 }
 
 export interface ChatConversation {
@@ -271,6 +282,7 @@ export interface AgentStreamEvent {
   revenue_evidence?: RevenueEvidence[];
   answer_check?: AnswerCheck | null;
   token_usage?: TokenUsage | null;
+  web_sources?: WebSource[];
   created_at?: string;
 }
 

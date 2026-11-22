@@ -23,6 +23,7 @@ from app.agent.revenue_evidence import (
 )
 from app.agent.tools import get_tools_for_sources
 from app.agent.unit_fix import figures_by_trust, fix_unit_slips
+from app.agent.web_sources import extract_web_sources, merge_web_sources
 from app.services.free_llm_quota import (
     FREE_QUOTA_MESSAGES,
     FreeQuotaExceeded,
@@ -562,6 +563,7 @@ async def stream_agent(
         tool_texts: list[tuple[str, str]] = []
         gaps: list[dict] = []
         financials: dict[str, dict] = {}
+        web_sources: dict[str, dict] = {}
         usage = {"model_calls": 0, "input_tokens": 0, "output_tokens": 0}
         writing = {"type": "status", "stage": "writing", "content": "Writing the response"}
 
@@ -647,6 +649,7 @@ async def stream_agent(
                     quotes[quote.symbol] = quote
                 for revenue in extract_revenue_evidence(event.get("data", {}).get("output")):
                     merge_revenue_evidence(revenues, revenue)
+                merge_web_sources(web_sources, extract_web_sources(event.get("name", ""), output))
                 # 工具调用结束
                 tool_name = event.get("name", "")
                 yield {
@@ -677,6 +680,8 @@ async def stream_agent(
             done["revenue_evidence"] = [
                 revenue.model_dump(mode="json", exclude_none=True) for revenue in revenues.values()
             ]
+        if web_sources:
+            done["web_sources"] = list(web_sources.values())
         yield done
 
     except (FreeQuotaExceeded, FreeQuotaUnavailable) as e:

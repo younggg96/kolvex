@@ -472,6 +472,13 @@
       "usd": "In USD",
       "fxAt": "(at the {date} rate)"
     },
+    "sources": {
+      "close": "Close sources",
+      "count": "{count} sources",
+      "countOne": "1 source",
+      "resultsFor": "Search results for “{query}”",
+      "title": "Sources"
+    },
     "quoteEvidence": {
       "collapse": "Collapse",
       "expand": "Show {count} more quotes",

@@ -1,4 +1,4 @@
-import type { AnswerCheck, QuoteEvidence, RevenueEvidence } from "@/lib/chatApi";
+import type { AnswerCheck, QuoteEvidence, RevenueEvidence, WebSource } from "@/lib/chatApi";
 import type { FreeAllowance } from "@/lib/api/userApiKeysApi";
 import type { TokenUsage } from "@/lib/tokenUsage";
 import type { ChatSkill } from "./chatSkills";
@@ -14,6 +14,7 @@ export interface Message {
   quoteEvidence?: QuoteEvidence[] | null;
   answerCheck?: AnswerCheck | null;
   tokenUsage?: TokenUsage | null;
+  webSources?: WebSource[] | null;
 }
 
 export interface ChatConversation {
@@ -119,6 +120,8 @@ export interface ChatBubbleProps {
   answerCheck?: AnswerCheck | null;
   /** Tokens the server counted for this answer's turn. */
   tokenUsage?: TokenUsage | null;
+  /** Pages the answer's web searches returned; listed as its sources. */
+  webSources?: WebSource[] | null;
   /** Saved message id; enables sharing the answer or a selected passage. */
   messageId?: string;
   /** The question this answer replies to, offered (optionally) with the share. */

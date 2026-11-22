@@ -679,6 +679,7 @@ async def stream_message(
                 if full_response.strip():
                     quotes = event.get("quote_evidence") or []
                     revenues = event.get("revenue_evidence") or []
+                    web_sources = event.get("web_sources") or []
                     # Streamed tokens may hold "1,270.38 亿" for a tool's "1,270.38 billion";
                     # the saved message and the done event carry the repaired text.
                     full_response, unit_fixes = fix_unit_slips(
@@ -704,6 +705,7 @@ async def stream_message(
                         revenue_evidence=revenues,
                         answer_check=answer_check,
                         token_usage=tokens,
+                        web_sources=web_sources,
                     )
                     if not ai_msg:
                         publish(
@@ -739,6 +741,7 @@ async def stream_message(
                         revenue_evidence=revenues,
                         answer_check=answer_check,
                         token_usage=tokens,
+                        web_sources=web_sources,
                     )
                 publish(json.dumps(done))
                 return

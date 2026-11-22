@@ -8,6 +8,7 @@ import ReactMarkdown from "react-markdown";
 import { visibleQuestion } from "./pageEvidence";
 import { RevenueEvidenceCard } from "./RevenueEvidenceCard";
 import { QuoteEvidenceCard } from "./QuoteEvidenceCard";
+import { WebSourcesButton, WebSourcesPanel, useWebSourcesPanel } from "./WebSources";
 import { AnswerCheckNote } from "./AnswerCheckNote";
 import { DataGapNote } from "./DataGapNote";
 import { ShareButton } from "@/components/share/ShareButton";
@@ -49,6 +50,7 @@ export function ChatBubble({
   revenueEvidence,
   answerCheck,
   tokenUsage,
+  webSources,
   messageId,
   question: askedQuestion,
 }: ChatBubbleProps) {
@@ -56,6 +58,7 @@ export function ChatBubble({
   const remarkPlugins = richRemarkPlugins(symbols);
   const [copied, setCopied] = useState(false);
   const [quotesExpanded, setQuotesExpanded] = useState(false);
+  const sourcesPanel = useWebSourcesPanel();
   const isUser = role === "user";
   const question = isUser ? visibleQuestion(content) : content;
   // Assistant text is a report: emoji come from the model, not from this design.
@@ -213,6 +216,14 @@ export function ChatBubble({
               />
             )}
 
+            {!!webSources?.length && (
+              <WebSourcesButton
+                sources={webSources}
+                open={sourcesPanel.open}
+                onToggle={sourcesPanel.toggle}
+              />
+            )}
+
             {onRetry && (
               <Button variant="ghost" size="xs" onClick={onRetry}>
                 <RotateCcw className="w-3.5 h-3.5" />
@@ -220,6 +231,10 @@ export function ChatBubble({
               </Button>
             )}
           </div>
+        )}
+
+        {sourcesPanel.open && !!webSources?.length && (
+          <WebSourcesPanel sources={webSources} onClose={sourcesPanel.close} />
         )}
       </div>
     </div>

@@ -569,6 +569,7 @@ export function ChatDetailContainer({
             revenue_evidence: completion.revenue_evidence,
             answer_check: completion.answer_check,
             token_usage: completion.token_usage,
+            web_sources: completion.web_sources,
           });
         }
         rememberMessages(conversationId, committed);

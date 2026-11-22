@@ -24,6 +24,8 @@ class MessageSchema(BaseModel):
     answer_check: dict[str, Any] | None = None
     # Tokens this answer used across its turn's model calls (app/agent/turn_usage.py).
     token_usage: dict[str, Any] | None = None
+    # Pages the turn's web searches returned (app/agent/web_sources.py).
+    web_sources: list[dict[str, Any]] | None = None
 
 
 class ConversationSchema(BaseModel):
@@ -112,6 +114,8 @@ class MessageResponse(BaseModel):
     answer_check: dict[str, Any] | None = None
     # Tokens this answer used across its turn's model calls (app/agent/turn_usage.py).
     token_usage: dict[str, Any] | None = None
+    # Pages the turn's web searches returned (app/agent/web_sources.py).
+    web_sources: list[dict[str, Any]] | None = None
 
 
 class AgentMessageResponse(BaseModel):

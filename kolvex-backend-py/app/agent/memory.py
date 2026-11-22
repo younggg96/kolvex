@@ -110,6 +110,28 @@ async def load_conversation_history(
         return []
 
 
+# Columns added by later migrations; before 20261121051000_chat_token_usage.sql and
+# 20261121052000_chat_web_sources.sql they are missing, and the answer is still saved without them.
+OPTIONAL_MESSAGE_COLUMNS = ("token_usage", "web_sources")
+
+
+async def _insert_without_missing_columns(supabase: Any, row: Dict[str, Any]) -> Any:
+    """Insert the row, dropping an optional column the database does not have yet.
+
+    PostgREST names one missing column per error, so each retry may drop one more.
+    """
+    while True:
+        try:
+            return await asyncio.to_thread(supabase.table("chat_messages").insert(row).execute)
+        except Exception as error:
+            missing = [c for c in OPTIONAL_MESSAGE_COLUMNS if c in row and c in str(error)]
+            if not missing:
+                raise
+            logger.warning("chat_messages.%s is missing; saving the answer without it", missing)
+            for column in missing:
+                row.pop(column)
+
+
 async def save_message(
     user_id: str,
     conversation_id: str,
@@ -119,6 +141,7 @@ async def save_message(
     revenue_evidence: Optional[List[Dict[str, Any]]] = None,
     answer_check: Optional[Dict[str, Any]] = None,
     token_usage: Optional[Dict[str, Any]] = None,
+    web_sources: Optional[List[Dict[str, Any]]] = None,
 ) -> Optional[Dict[str, Any]]:
     """
     保存消息到数据库
@@ -158,18 +181,11 @@ async def save_message(
             row["answer_check"] = answer_check
         if token_usage:
             row["token_usage"] = token_usage
+        if web_sources:
+            row["web_sources"] = web_sources
 
         # 保存消息
-        try:
-            result = await asyncio.to_thread(supabase.table("chat_messages").insert(row).execute)
-        except Exception as error:
-            # Before migration 20261121051000_chat_token_usage.sql the column is missing;
-            # the answer is still saved, only without its token count.
-            if "token_usage" not in row or "token_usage" not in str(error):
-                raise
-            logger.warning("chat_messages.token_usage is missing; saving the answer without it")
-            row.pop("token_usage")
-            result = await asyncio.to_thread(supabase.table("chat_messages").insert(row).execute)
+        result = await _insert_without_missing_columns(supabase, row)
 
         if result.data:
             msg = result.data[0]

@@ -455,6 +455,13 @@
       "usd": "折合美元",
       "fxAt": "（按 {date} 汇率）"
     },
+    "sources": {
+      "close": "收起来源",
+      "count": "{count} 个来源",
+      "countOne": "1 个来源",
+      "resultsFor": "“{query}”的搜索结果",
+      "title": "来源"
+    },
     "quoteEvidence": {
       "collapse": "收起",
       "expand": "展开其余 {count} 条行情",

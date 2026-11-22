@@ -36,6 +36,7 @@ function convertApiMessage(msg: chatApi.ChatMessage): Message {
     revenueEvidence: msg.revenue_evidence,
     answerCheck: msg.answer_check,
     tokenUsage: msg.token_usage,
+    webSources: msg.web_sources,
     timestamp: new Date(msg.created_at),
   };
 }
