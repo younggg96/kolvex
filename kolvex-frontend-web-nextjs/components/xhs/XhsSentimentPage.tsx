@@ -17,7 +17,6 @@ import { useCopy } from "@/components/decision/shared";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ContentLoading } from "@/components/ui/content-loading";
-import { InfoTip } from "@/components/ui/info-tip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCachedResource } from "@/hooks/useCachedResource";
 import { useTranslation } from "@/lib/i18n";
@@ -78,8 +77,8 @@ function TrendTooltip({
   );
 }
 
-/** Recent days as a line chart: X axis is date, Y axis is fear+bearish %. Click a point to drill in. */
-function Trend({
+/** Recent days as an inline chart (no Card wrapper — rendered inside the combined sentiment section). */
+export function TrendChart({
   days,
   selected,
   onSelect,
@@ -93,7 +92,6 @@ function Trend({
   const lang = locale === "zh" ? "zh" : "en";
 
   const data = useMemo(() => {
-    // Reverse to chronological order (oldest first) for the chart.
     return [...days].reverse().map((day): TrendPoint => {
       const counts = day.sentiment.all;
       const total = countsTotal(counts);
@@ -124,21 +122,9 @@ function Trend({
   if (days.length < 2) return null;
 
   return (
-    <Card role="region" aria-label={c("Recent days", "近期情绪")} className="p-4 md:p-5">
-      <div className="flex items-center gap-2">
-        <h2 className="text-sm font-medium">{c("Recent days", "近期情绪")}</h2>
-        <InfoTip label={c("How to read this chart", "图表说明")}>
-          <p>
-            {c(
-              "The line shows fear + bearish posts as a percentage of all posts each day. Click a point to view that day's detail.",
-              "折线显示每天恐慌+看空帖子占全部帖子的百分比。点击数据点查看当天详情。",
-            )}
-          </p>
-        </InfoTip>
-      </div>
-
+    <div className="mt-4 border-t border-border pt-4">
       {/* Legend */}
-      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
         <span className="flex items-center gap-1.5">
           <span className="inline-block h-2.5 w-2.5 rounded-full bg-negative-fill" />
           {c("Fear + Bearish %", "恐慌 + 看空 %")}
@@ -239,15 +225,7 @@ function Trend({
           </AreaChart>
         </ResponsiveContainer>
       </div>
-
-      {/* Selected day indicator */}
-      {selected && (
-        <p className="mt-2 text-center text-xs text-muted-foreground">
-          {c("Viewing:", "正在查看：")}
-          <span className="ml-1 font-medium text-foreground">{formatPtDate(selected, lang)}</span>
-        </p>
-      )}
-    </Card>
+    </div>
   );
 }
 
@@ -365,7 +343,17 @@ export default function XhsSentimentPage() {
       />
     );
   else if (!day.data) body = <DayLoading />;
-  else body = <XhsDayView day={day.data} />;
+  else
+    body = (
+      <XhsDayView
+        day={day.data}
+        trendSlot={
+          list.length >= 2 && selected ? (
+            <TrendChart days={list} selected={selected} onSelect={select} />
+          ) : undefined
+        }
+      />
+    );
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
@@ -422,7 +410,6 @@ export default function XhsSentimentPage() {
             {c("Could not refresh. Showing saved days.", "暂时无法刷新，正在显示上次读取的内容。")}
           </p>
         )}
-        {selected && <Trend days={list} selected={selected} onSelect={select} />}
         {body}
       </div>
     </div>

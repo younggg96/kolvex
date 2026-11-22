@@ -89,7 +89,7 @@ export function StanceBar({ counts, className }: { counts: XhsCounts; className?
   );
 }
 
-function SentimentCard({ day }: { day: XhsDay }) {
+function SentimentCard({ day, trendSlot }: { day: XhsDay; trendSlot?: React.ReactNode }) {
   const c = useCopy();
   const locale = useLocale();
   const latest = day.sentiment.latest;
@@ -101,12 +101,31 @@ function SentimentCard({ day }: { day: XhsDay }) {
   const negative = total ? Math.round((negativeCount(counts) / total) * 100) : 0;
   const number = new Intl.NumberFormat(c("en-US", "zh-CN"));
   const hours = day.sample.latest_window_hours;
+  const sample = day.sample;
 
   return (
     <Card className="space-y-4 p-4 md:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs text-muted-foreground">{c("Most posts", "多数帖子")}</p>
+          <p className="text-xs text-muted-foreground">
+            {c("Most posts", "多数帖子")}
+            <InfoTip label={c("How this is counted", "统计口径")}>
+              <p>
+                {c(
+                  `${number.format(sample.posts_scanned)} posts found by searching ${sample.keywords.join(", ")}, classified by ${sample.classified_by === "title" ? "title" : "post text"}. Not all of Xiaohongshu.`,
+                  `在「${sample.keywords.join("、")}」下找到 ${number.format(sample.posts_scanned)} 条帖子，按${sample.classified_by === "title" ? "标题" : "正文"}判断情绪，不代表小红书全部内容。`,
+                )}
+              </p>
+              {sample.comments_read !== null && (
+                <p className="mt-1">
+                  {c(
+                    `Comments: ${sample.comments_read} top comments sampled.`,
+                    `评论：抽样 ${sample.comments_read} 条热评。`,
+                  )}
+                </p>
+              )}
+            </InfoTip>
+          </p>
           <p
             className={cn(
               "mt-0.5 text-2xl font-semibold tracking-tight",
@@ -159,6 +178,7 @@ function SentimentCard({ day }: { day: XhsDay }) {
           </li>
         ))}
       </ul>
+      {trendSlot}
     </Card>
   );
 }
@@ -283,35 +303,21 @@ function TopicRow({ topic, rank }: { topic: XhsTopic; rank: number }) {
 }
 
 /** One day's digest: sentiment, the topics people discussed, rumours and coverage notes. */
-export default function XhsDayView({ day }: { day: XhsDay }) {
+export default function XhsDayView({
+  day,
+  trendSlot,
+}: {
+  day: XhsDay;
+  /** Rendered below the sentiment card inside the same Card, separated by a border. */
+  trendSlot?: React.ReactNode;
+}) {
   const c = useCopy();
   const locale = useLocale();
-  const number = new Intl.NumberFormat(c("en-US", "zh-CN"));
-  const sample = day.sample;
 
   return (
     <div className="space-y-6">
-      <section aria-labelledby="xhs-sentiment-title" className="space-y-3">
-        <h2 id="xhs-sentiment-title" className="flex items-center gap-2 text-lg font-semibold">
-          {c("Sentiment", "情绪")}
-          <InfoTip label={c("How this is counted", "统计口径")}>
-            <p>
-              {c(
-                `${number.format(sample.posts_scanned)} posts found by searching ${sample.keywords.join(", ")}, classified by ${sample.classified_by === "title" ? "title" : "post text"}. Not all of Xiaohongshu.`,
-                `在「${sample.keywords.join("、")}」下找到 ${number.format(sample.posts_scanned)} 条帖子，按${sample.classified_by === "title" ? "标题" : "正文"}判断情绪，不代表小红书全部内容。`,
-              )}
-            </p>
-            {sample.comments_read !== null && (
-              <p className="mt-1">
-                {c(
-                  `Comments: ${sample.comments_read} top comments sampled.`,
-                  `评论：抽样 ${sample.comments_read} 条热评。`,
-                )}
-              </p>
-            )}
-          </InfoTip>
-        </h2>
-        <SentimentCard key={day.date_pt} day={day} />
+      <section aria-label={c("Sentiment", "情绪")}>
+        <SentimentCard key={day.date_pt} day={day} trendSlot={trendSlot} />
       </section>
 
       <section aria-labelledby="xhs-topics-title" className="space-y-3">
