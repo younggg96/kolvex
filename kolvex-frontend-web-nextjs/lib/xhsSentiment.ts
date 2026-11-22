@@ -192,7 +192,7 @@ const SKELETON = (date: string) => `{
       "sources": [
         {
           "note_id": "<地址栏里的笔记 ID>",
-          "url": "<地址栏完整链接，含 xsec_token>",
+          "url": "<帖子链接，路径含 note_id>",
           "title": "<帖子标题原文>",
           "author_nickname": "<发帖人昵称或 null>",
           "published_at": "<带时区的 ISO 时间或 null>",
@@ -220,11 +220,12 @@ const PROMPT_ZH = (
 
 ## 规则
 - 不编造：数字、链接、昵称、时间看不清就填 null，或者不写这一条。不要估算、不要补 0。
-- 出处必须可追溯：note_id 和 url 从帖子详情页的浏览器地址栏取：从搜索结果或列表点进帖子，复制地址栏完整链接，形如 https://www.xiaohongshu.com/explore/<note_id>?xsec_token=…&xsec_source=pc_search。url 必须带 xsec_token，不要自己拼 /explore/<note_id> 或 /discovery/item/<note_id>，缺 xsec_token 的链接读者打不开，导入会拒绝。xhslink.com 短链可以不带。没有可用链接的帖子只计入情绪统计，不能作为出处。
+- 出处必须可追溯：note_id 从帖子详情页的浏览器地址栏取，不要猜。url 用 https://www.xiaohongshu.com/explore/<note_id> 即可；地址栏里带 xsec_token 的完整链接也可以，xsec_token 不是必需的，不用为了它反复点开帖子。也可以用 xhslink.com 短链。拿不到 note_id 的帖子只计入情绪统计，不能作为出处。
 - 时间：published_raw 写页面上的原文（如「3小时前」「昨天 23:50」）；published_at 按采集时间换算成带时区的 ISO 8601，换算不了填 null。captured_at 写采集结束时间。
 - 隐私：评论摘录只写原话和点赞数，不写评论人昵称、头像、IP 属地。
 - 股票代码用大写美股代码（英伟达 → NVDA，特斯拉 → TSLA，纳指 ETF → QQQ）；拿不准就不写。
 - 话题名、概括用简体中文；帖子标题、评论原话保持原文。
+- 长度上限：话题名 ≤40 字，概括 ≤200 字，评论摘录 ≤60 字，传言 ≤100 字，局限说明每条 ≤300 字。评论原话超过 60 字时，截取其中最能代表观点的连续一段原文，不要改写，也不要拼接。
 - 不要输出 score、占比、情绪标签或任何下面结构里没有的字段，导入会拒绝。
 
 ## 输出结构
@@ -234,7 +235,7 @@ ${SKELETON(date)}
 
 ## 输出前自检
 - sample.posts_scanned 等于 sentiment.all 五项之和；sentiment.latest 总数不超过 sentiment.all。
-- 每个话题至少 1 条出处，话题 id 不重复，每个出处 url 的路径里包含它的 note_id 且带 xsec_token（xhslink.com 短链除外）。
+- 每个话题至少 1 条出处，话题 id 不重复，每个出处 url 是 HTTPS，路径里包含它的 note_id（xhslink.com 短链除外）。
 - 只输出 JSON，可以被 JSON.parse 直接解析。`;
 
 const PROMPT_EN = (
@@ -251,11 +252,12 @@ const PROMPT_EN = (
 
 ## Rules
 - Do not invent anything. If a number, link, nickname or time is unclear, use null or leave the item out. Do not estimate or fill in 0.
-- Sources must be traceable: open the post from the search results or feed and copy the full address-bar URL, such as https://www.xiaohongshu.com/explore/<note_id>?xsec_token=…&xsec_source=pc_search. The url must include xsec_token. Do not build /explore/<note_id> or /discovery/item/<note_id> yourself: without xsec_token readers cannot open the post and the import rejects it. xhslink.com short links may omit it. A post without a usable link can count towards sentiment but cannot be a source.
+- Sources must be traceable: take note_id from the post's address bar; do not guess it. For url, https://www.xiaohongshu.com/explore/<note_id> is enough. The full address-bar URL with xsec_token is also fine, but xsec_token is not required, so do not reopen posts just to get it. xhslink.com short links are also accepted. A post whose note_id you cannot get can count towards sentiment but cannot be a source.
 - Times: published_raw is the text shown on the page (such as 3小时前). published_at is that time converted to ISO 8601 with a time zone, using the collection time; use null if you cannot convert it. captured_at is when collection finished.
 - Privacy: comment excerpts carry only the text and like count, never the commenter's nickname, avatar or IP location.
 - Tickers are upper-case US symbols (英伟达 → NVDA, 特斯拉 → TSLA, Nasdaq ETF → QQQ). Leave a ticker out if unsure.
 - Write topic titles and summaries in Simplified Chinese; keep post titles and comment excerpts in their original wording.
+- Length limits: topic title ≤40 characters, summary ≤200, comment excerpt ≤60, rumour ≤100, each limitation ≤300. If a comment is longer than 60 characters, take one continuous stretch of its original wording that carries the point; do not paraphrase or splice.
 - Do not output score, percentages, sentiment labels or any field not in the structure below. The import rejects them.
 
 ## Output structure
@@ -265,7 +267,7 @@ ${SKELETON(date)}
 
 ## Check before output
 - sample.posts_scanned equals the sum of sentiment.all; sentiment.latest does not exceed sentiment.all.
-- Every topic has at least one source, topic ids are unique, and each source url path contains its note_id and the url includes xsec_token (except xhslink.com short links).
+- Every topic has at least one source, topic ids are unique, and each source url is HTTPS with its note_id in the path (except xhslink.com short links).
 - Output only JSON that JSON.parse can read directly.`;
 
 /**

@@ -124,8 +124,6 @@ def test_rejects_invalid_digest(path, value, message):
         ({"url": "http://www.xiaohongshu.com/explore/" + NOTE}, "HTTPS"),
         ({"url": "https://example.com/explore/" + NOTE}, "HTTPS"),
         ({"url": "https://www.xiaohongshu.com/explore/other"}, "note_id"),
-        ({"url": "https://www.xiaohongshu.com/discovery/item/" + NOTE}, "xsec_token"),
-        ({"url": f"https://www.xiaohongshu.com/explore/{NOTE}?xsec_token="}, "xsec_token"),
         ({"likes": 3}, "未知字段"),
     ],
 )
@@ -135,6 +133,20 @@ def test_rejects_untraceable_sources(change, message):
     digest, errors = validate(document)
     assert digest is None
     assert any(message in error for error in errors), errors
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://www.xiaohongshu.com/discovery/item/" + NOTE,
+        f"https://www.xiaohongshu.com/explore/{NOTE}",
+        f"https://www.xiaohongshu.com/explore/{NOTE}?xsec_token=",
+    ],
+)
+def test_accepts_sources_without_xsec_token(url):
+    document = copy.deepcopy(DIGEST)
+    document["topics"][0]["sources"] = [{**SOURCE, "url": url}]
+    assert validate(document)[1] == []
 
 
 def test_short_links_skip_the_path_check_and_excerpts_reject_commenter_identity():
