@@ -188,7 +188,7 @@ const SKELETON = (date: string) => `{
       "stance": "<五档之一>",
       "tickers": ["NVDA"],
       "heat": { "posts": <整数>, "comments": <整数或 null> },
-      "excerpts": [{ "text": "<评论原话，≤60 字>", "likes": <整数或 null> }],
+      "excerpts": [{ "text": "<评论原话，完整照抄>", "likes": <整数或 null> }],
       "sources": [
         {
           "note_id": "<地址栏里的笔记 ID>",
@@ -225,7 +225,7 @@ const PROMPT_ZH = (
 - 隐私：评论摘录只写原话和点赞数，不写评论人昵称、头像、IP 属地。
 - 股票代码用大写美股代码（英伟达 → NVDA，特斯拉 → TSLA，纳指 ETF → QQQ）；拿不准就不写。
 - 话题名、概括用简体中文；帖子标题、评论原话保持原文。
-- 长度上限：话题名 ≤40 字，概括 ≤200 字，评论摘录 ≤60 字，传言 ≤100 字，局限说明每条 ≤300 字。评论原话超过 60 字时，截取其中最能代表观点的连续一段原文，不要改写，也不要拼接。
+- 长度上限：话题名 ≤40 字，概括 ≤200 字，传言 ≤100 字，局限说明每条 ≤300 字。评论摘录不限长度，完整照抄原话，不要截断、改写或拼接。
 - 不要输出 score、占比、情绪标签或任何下面结构里没有的字段，导入会拒绝。
 
 ## 输出结构
@@ -257,7 +257,7 @@ const PROMPT_EN = (
 - Privacy: comment excerpts carry only the text and like count, never the commenter's nickname, avatar or IP location.
 - Tickers are upper-case US symbols (英伟达 → NVDA, 特斯拉 → TSLA, Nasdaq ETF → QQQ). Leave a ticker out if unsure.
 - Write topic titles and summaries in Simplified Chinese; keep post titles and comment excerpts in their original wording.
-- Length limits: topic title ≤40 characters, summary ≤200, comment excerpt ≤60, rumour ≤100, each limitation ≤300. If a comment is longer than 60 characters, take one continuous stretch of its original wording that carries the point; do not paraphrase or splice.
+- Length limits: topic title ≤40 characters, summary ≤200, rumour ≤100, each limitation ≤300. Comment excerpts have no length limit: copy the whole comment verbatim, without cutting, paraphrasing or splicing.
 - Do not output score, percentages, sentiment labels or any field not in the structure below. The import rejects them.
 
 ## Output structure

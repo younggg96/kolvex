@@ -119,7 +119,12 @@ class Source(Strict):
 
 
 class Excerpt(Strict):
-    text: Text60
+    # Verbatim comment text, kept whole: no length cap.
+    text: Annotated[
+        str,
+        StringConstraints(strip_whitespace=True, min_length=1),
+        AfterValidator(_validate_text),
+    ]
     likes: Count | None
 
 

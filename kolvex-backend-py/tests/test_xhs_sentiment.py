@@ -157,6 +157,15 @@ def test_short_links_skip_the_path_check_and_excerpts_reject_commenter_identity(
     assert any("excerpts[1].author：未知字段" in error for error in validate(document)[1])
 
 
+def test_long_excerpts_are_kept_whole():
+    text = "我是想探讨一下，加息虽然不影响半导体公司业绩，但是影响估值啊，" * 4
+    document = copy.deepcopy(DIGEST)
+    document["topics"][0]["excerpts"] = [{"text": text, "likes": 2}]
+    digest, errors = validate(document)
+    assert errors == []
+    assert digest["topics"][0]["excerpts"][0]["text"] == text
+
+
 def test_english_and_syntax_errors():
     assert validate(changed(("topics",), []), chinese=False)[1][0].startswith("topics:")
     digest, errors = validate_digest(b"{", TODAY, True)
