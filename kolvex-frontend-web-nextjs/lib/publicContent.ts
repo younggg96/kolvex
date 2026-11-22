@@ -100,7 +100,7 @@ export const getPublicCongressTrades = cache(async () => {
 
 export type PublicXSummary = {
   username: string;
-  content: string;
+  content: Record<"zh" | "en", { headline: string; basis: string; risks: string }>;
   sources: { id: string; url: string; published_at: string }[];
   coverage_start: string;
   coverage_end: string;

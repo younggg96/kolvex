@@ -3,12 +3,21 @@ import { notFound } from "next/navigation";
 import { ReadingHeading, ReadingText } from "@/components/public/ReadingElements";
 import { ReadingSchema } from "@/components/public/ReadingSchema";
 import XhsDayView from "@/components/xhs/XhsDayView";
-import { getPublicXhsDay } from "@/lib/publicContent";
+import { getPublicXhsDay, getPublicXhsDays } from "@/lib/publicContent";
 import { breadcrumbData, readingMetadata } from "@/lib/publicSeo";
 import { SITE_URL } from "@/lib/seo";
 import { countsTotal, dominantStance, stanceLabel, type XhsDay } from "@/lib/xhsSentiment";
 
 type Props = { params: { date: string } };
+
+export async function generateStaticParams() {
+  try {
+    return (await getPublicXhsDays()).map((day) => ({ date: day.date_pt }));
+  } catch {
+    // An unreachable backend at build time still serves each day on first request.
+    return [];
+  }
+}
 
 function describe(day: XhsDay) {
   const counts = day.sentiment.all;

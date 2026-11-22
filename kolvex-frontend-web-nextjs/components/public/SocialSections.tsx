@@ -54,8 +54,14 @@ export function XSummaryList({
                 {summary.coverage_start.slice(0, 10)} – {summary.coverage_end.slice(0, 10)}
               </span>
             </div>
-            <p className="whitespace-pre-line break-words text-sm leading-relaxed">
-              {summary.content}
+            <p className="break-words text-sm font-medium">
+              <ReadingText en={summary.content.en.headline} zh={summary.content.zh.headline} />
+            </p>
+            <p className="break-words text-sm leading-relaxed">
+              <ReadingText en={summary.content.en.basis} zh={summary.content.zh.basis} />
+            </p>
+            <p className="break-words text-xs leading-relaxed text-muted-foreground">
+              <ReadingText en={summary.content.en.risks} zh={summary.content.zh.risks} />
             </p>
             <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
               <ReadingText en="Original posts:" zh="原帖：" />
