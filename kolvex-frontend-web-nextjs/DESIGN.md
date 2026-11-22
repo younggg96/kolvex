@@ -113,7 +113,9 @@ and allow descriptions to wrap.
 
 ## Layout
 
-AppShell owns the viewport, desktop sidebar and mobile navigation. DashboardLayout
+AppShell owns the viewport, desktop sidebar and mobile navigation. The desktop
+sidebar is a fixed 56px icon-only rail (40px buttons, 18px icons, label in a
+tooltip and `sr-only`); it has no expanded state and no collapse toggle. DashboardLayout
 has no top header or duplicate page title. Its only optional row is the
 breadcrumb. Page actions belong in the page content, beside the heading or list
 they act on: report actions sit on the ticker row, the AI Research management
@@ -154,8 +156,8 @@ Published
 reports stay within 1080px; Creator Opinions retains a wider two-column layout.
 
 Markets, Creator Opinions and AI Research each have one primary navigation entry.
-Creator Opinions contains YouTube, Reddit and X child links in the sidebar. Each
-child link carries that platform's own monochrome brand mark from
+In the icon rail, Creator Opinions appears as one icon per source (YouTube,
+Reddit, X, RedNote) rather than a parent with child links. Each source carries that platform's own monochrome brand mark from
 `components/common/PlatformIcons.tsx`; no two sources share a generic glyph. All
 sources keep the parent active in shared desktop/mobile navigation. Below the
 large breakpoint, `DashboardLayout` owns the shared `OpinionSourceNav` beneath
@@ -444,7 +446,7 @@ is introduced.
 | Buttons and focus | `components/ui/button.tsx` | Pill variants; neutral navigation actions use `asChild` links |
 | AI Research routes | `lib/researchRoutes.ts` | AI Research list, authoring and report return links |
 | Route navigation | `components/layout/navItems.ts` | Markets, Creator Opinions and AI Research; `aria-current`, visible keyboard focus |
-| Opinion source links | `components/layout/OpinionSourceNav.tsx`, `navItems.ts` and `components/common/PlatformIcons.tsx` | Sidebar child links with per-platform brand marks; shared mobile source row in `DashboardLayout` |
+| Opinion source links | `components/layout/OpinionSourceNav.tsx`, `navItems.ts` and `components/common/PlatformIcons.tsx` | One rail icon per source with its platform brand mark; shared mobile source row in `DashboardLayout` |
 | In-page tabs | `components/ui/tabs.tsx` | Radix tabs for peer report panels; not a replacement for route links |
 | Loading and data states | `components/ui/content-loading.tsx` and the owning list | Delayed status text, pending values in known rows, explicit empty/error states and retry |
 | Scrollbars | `app/globals.css` | Global standards properties and WebKit fallback; new scrollers need no opt-in class |

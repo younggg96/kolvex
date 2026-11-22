@@ -12,7 +12,7 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 
 const SIDEBAR_WIDTH = "16rem";
 const SIDEBAR_WIDTH_MOBILE = "18rem";
-const SIDEBAR_WIDTH_ICON = "3rem";
+const SIDEBAR_WIDTH_ICON = "3.5rem";
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
 
 type SidebarContext = {
@@ -370,7 +370,7 @@ const SidebarContent = React.forwardRef<HTMLDivElement, React.ComponentProps<"di
         ref={ref}
         data-sidebar="content"
         className={cn(
-          "flex min-h-0 flex-1 flex-col overflow-auto group-data-[collapsible=icon]:overflow-hidden",
+          "flex min-h-0 flex-1 flex-col overflow-auto group-data-[collapsible=icon]:overflow-x-hidden group-data-[collapsible=icon]:overflow-y-auto group-data-[collapsible=icon]:scrollbar-hide",
           className,
         )}
         {...props}
@@ -406,7 +406,9 @@ const SidebarGroupLabel = React.forwardRef<
       data-sidebar="group-label"
       className={cn(
         "flex h-8 shrink-0 items-center rounded-full px-3 text-xs font-medium text-muted-foreground outline-none transition-[margin,opa] duration-200 ease-spring [&>svg]:size-4 [&>svg]:shrink-0",
-        "group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0",
+        // Collapsed: the label stays in the flow for the width animation, but it must not
+        // sit on top of the previous group's last button and swallow its clicks.
+        "group-data-[collapsible=icon]:pointer-events-none group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:select-none group-data-[collapsible=icon]:opacity-0",
         className,
       )}
       {...props}
@@ -474,7 +476,7 @@ const SidebarMenuItem = React.forwardRef<HTMLLIElement, React.ComponentProps<"li
 SidebarMenuItem.displayName = "SidebarMenuItem";
 
 const sidebarMenuButtonVariants = cva(
-  "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-full p-2 text-left text-sm outline-none transition-[width,height,padding] data-[active=false]:hover:bg-foreground/[0.05] hover:text-foreground active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-secondary data-[active=true]:font-semibold data-[active=true]:text-foreground data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-2 group-data-[collapsible=icon]:data-[active=true]:hover:bg-secondary [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0",
+  "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-full p-2 text-left text-sm outline-none transition-[width,height,padding] data-[active=false]:hover:bg-foreground/[0.05] hover:text-foreground active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-secondary data-[active=true]:font-semibold data-[active=true]:text-foreground data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:!size-10 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:data-[active=true]:hover:bg-secondary [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 group-data-[collapsible=icon]:[&>svg]:size-[1.125rem] group-data-[collapsible=icon]:[&>span]:sr-only",
   {
     variants: {
       variant: {
