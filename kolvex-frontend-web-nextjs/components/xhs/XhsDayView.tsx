@@ -330,37 +330,6 @@ export default function XhsDayView({ day }: { day: XhsDay }) {
         </ListCard>
       </section>
 
-      {day.rumors.length > 0 && (
-        <section aria-labelledby="xhs-rumors-title" className="space-y-3">
-          <h2 id="xhs-rumors-title" className="text-lg font-semibold">
-            {c("Rumours", "传言")}
-          </h2>
-          <ListCard>
-            <ul>
-              {day.rumors.map((rumor, index) => (
-                <li key={index} className="border-b border-border py-3 last:border-b-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="outline" size="sm" className="text-muted-foreground">
-                      {rumor.status === "debunked"
-                        ? c("Denied", "已被否认")
-                        : c("Unverified", "未经证实")}
-                    </Badge>
-                    <span className="min-w-0 text-sm">{rumor.text}</span>
-                  </div>
-                  {rumor.sources.length > 0 && (
-                    <ul className="mt-1">
-                      {rumor.sources.map((source) => (
-                        <SourceLink key={source.note_id} source={source} />
-                      ))}
-                    </ul>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </ListCard>
-        </section>
-      )}
-
       <footer className="space-y-2 text-xs leading-5 text-muted-foreground">
         <p>
           {c("Collected", "采集于")} {formatPtTime(day.captured_at, locale)} ·{" "}
@@ -369,6 +338,29 @@ export default function XhsDayView({ day }: { day: XhsDay }) {
             "话题为公开帖子的归纳，不构成投资建议。",
           )}
         </p>
+        {day.rumors.length > 0 && (
+          <details>
+            <summary className="w-fit cursor-pointer rounded-sm py-1 underline-offset-4 hover:underline focus-visible:outline-none">
+              {c(`Rumours (${day.rumors.length})`, `传言（${day.rumors.length} 条）`)}
+            </summary>
+            <ul className="mt-2 space-y-2 pl-0">
+              {day.rumors.map((rumor, index) => (
+                <li key={index} className="flex flex-wrap items-start gap-2">
+                  <Badge
+                    variant="outline"
+                    size="sm"
+                    className="mt-0.5 shrink-0 text-muted-foreground"
+                  >
+                    {rumor.status === "debunked"
+                      ? c("Denied", "已被否认")
+                      : c("Unverified", "未经证实")}
+                  </Badge>
+                  <span className="min-w-0 text-sm text-muted-foreground">{rumor.text}</span>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
         {day.limitations.length > 0 && (
           <details>
             <summary className="w-fit cursor-pointer rounded-sm py-1 underline-offset-4 hover:underline focus-visible:outline-none">

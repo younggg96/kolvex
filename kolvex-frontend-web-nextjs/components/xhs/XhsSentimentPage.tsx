@@ -1,34 +1,84 @@
 "use client";
 
+import { useMemo, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Loader2, RefreshCw } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+  type TooltipProps,
+} from "recharts";
 import { useCopy } from "@/components/decision/shared";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ContentLoading } from "@/components/ui/content-loading";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCachedResource } from "@/hooks/useCachedResource";
 import { useTranslation } from "@/lib/i18n";
-import { cn } from "@/lib/utils";
 import {
   XHS_DAYS_PATH,
   XhsNotFound,
   countsTotal,
-  dominantStance,
   isIsoDate,
   negativeCount,
   neighbours,
   readXhsDay,
   readXhsDays,
-  stanceLabel,
   xhsDayPath,
   type XhsDaySummary,
 } from "@/lib/xhsSentiment";
-import XhsDayView, { STANCE_TEXT, StanceBar, formatPtDate } from "./XhsDayView";
+import XhsDayView, { formatPtDate } from "./XhsDayView";
 
 const CACHE = { ttl: 60_000, maxAge: 10 * 60_000, timeout: 20_000 };
 
-/** Recent days as rows, newest first: date, that day's five-band bar, and the lean in words. */
+/** CSS variable → resolved RGB string for Recharts (which needs concrete colours). */
+function cssVar(name: string): string {
+  if (typeof document === "undefined")
+    return name === "--negative" ? "rgb(255,80,0)" : "rgb(155,160,166)";
+  const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  if (!raw) return "currentColor";
+  // The CSS tokens are stored as "R G B" space-separated triples.
+  const parts = raw.split(/\s+/);
+  if (parts.length === 3 && parts.every((p) => /^\d+$/.test(p))) return `rgb(${parts.join(",")})`;
+  return raw;
+}
+
+interface TrendPoint {
+  date: string;
+  label: string;
+  negative: number;
+  bullish: number;
+  total: number;
+}
+
+function TrendTooltip({
+  active,
+  payload,
+  c,
+}: TooltipProps<number, string> & { c: (en: string, zh: string) => string }) {
+  if (!active || !payload?.length) return null;
+  const d = payload[0].payload as TrendPoint;
+  return (
+    <div className="rounded-lg border border-border bg-popover px-3 py-2 text-sm shadow-md">
+      <p className="font-medium">{d.label}</p>
+      <p className="mt-1 tabular-nums text-negative">
+        {c("Fear + Bearish", "恐慌 + 看空")} {d.negative}%
+      </p>
+      <p className="tabular-nums text-positive">
+        {c("Bullish", "看多")} {d.bullish}%
+      </p>
+      <p className="text-xs text-muted-foreground">{c(`${d.total} posts`, `共 ${d.total} 条`)}</p>
+    </div>
+  );
+}
+
+/** Recent days as a line chart: X axis is date, Y axis is fear+bearish %. Click a point to drill in. */
 function Trend({
   days,
   selected,
@@ -41,67 +91,162 @@ function Trend({
   const c = useCopy();
   const { locale } = useTranslation();
   const lang = locale === "zh" ? "zh" : "en";
+
+  const data = useMemo(() => {
+    // Reverse to chronological order (oldest first) for the chart.
+    return [...days].reverse().map((day): TrendPoint => {
+      const counts = day.sentiment.all;
+      const total = countsTotal(counts);
+      const neg = total ? Math.round((negativeCount(counts) / total) * 100) : 0;
+      const bull = total ? Math.round((counts.bullish / total) * 100) : 0;
+      return {
+        date: day.date_pt,
+        label: formatPtDate(day.date_pt, lang),
+        negative: neg,
+        bullish: bull,
+        total,
+      };
+    });
+  }, [days, lang]);
+
+  const negColor = useMemo(() => cssVar("--negative"), []);
+  const posColor = useMemo(() => cssVar("--positive"), []);
+  const mutedColor = useMemo(() => cssVar("--muted-foreground"), []);
+
+  const handleClick = useCallback(
+    (state: { activePayload?: { payload: TrendPoint }[] } | null) => {
+      const point = state?.activePayload?.[0]?.payload;
+      if (point) onSelect(point.date);
+    },
+    [onSelect],
+  );
+
   if (days.length < 2) return null;
+
   return (
     <Card role="region" aria-label={c("Recent days", "近期情绪")} className="p-4 md:p-5">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+      <div className="flex items-center gap-2">
         <h2 className="text-sm font-medium">{c("Recent days", "近期情绪")}</h2>
-        <p className="text-xs text-muted-foreground">
-          {c(
-            "Each bar is one day's posts by sentiment. Tap a day to open it.",
-            "每条横条是一天的帖子情绪占比，点一天查看详情",
-          )}
-        </p>
+        <InfoTip label={c("How to read this chart", "图表说明")}>
+          <p>
+            {c(
+              "The line shows fear + bearish posts as a percentage of all posts each day. Click a point to view that day's detail.",
+              "折线显示每天恐慌+看空帖子占全部帖子的百分比。点击数据点查看当天详情。",
+            )}
+          </p>
+        </InfoTip>
       </div>
-      <ol className="-mx-2 mt-2 max-h-72 space-y-0.5 overflow-y-auto">
-        {days.map((day) => {
-          const counts = day.sentiment.all;
-          const total = countsTotal(counts);
-          const negative = total ? Math.round((negativeCount(counts) / total) * 100) : 0;
-          const dominant = dominantStance(counts);
-          const active = day.date_pt === selected;
-          const lean = dominant ? stanceLabel(dominant, lang) : c("Mixed", "分歧");
-          return (
-            <li key={day.date_pt}>
-              <button
-                type="button"
-                onClick={() => onSelect(day.date_pt)}
-                aria-current={active ? "date" : undefined}
-                aria-label={c(
-                  `${formatPtDate(day.date_pt, lang)}: mostly ${lean}, fear plus bearish ${negative}%`,
-                  `${formatPtDate(day.date_pt, lang)}：多数${lean}，恐慌加看空 ${negative}%`,
-                )}
-                className={cn(
-                  "grid min-h-11 w-full grid-cols-[3.75rem_1fr_auto] items-center gap-3 rounded-lg px-2 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30",
-                  active ? "bg-muted" : "hover:bg-muted/60",
-                )}
-              >
-                <span className={cn("tabular-nums", active ? "font-semibold" : "font-medium")}>
-                  {formatPtDate(day.date_pt, lang, false)}
-                </span>
-                <StanceBar counts={counts} />
-                <span className="flex min-w-[5.5rem] items-baseline justify-end gap-1.5 whitespace-nowrap tabular-nums">
-                  <span
-                    className={cn(
-                      "font-medium",
-                      dominant ? STANCE_TEXT[dominant] : "text-muted-foreground",
-                    )}
-                  >
-                    {lean}
-                  </span>
-                  <span className="text-xs text-muted-foreground">{negative}%</span>
-                </span>
-              </button>
-            </li>
-          );
-        })}
-      </ol>
-      <p className="mt-2 text-xs text-muted-foreground">
-        {c(
-          "The % on the right is fear + bearish as a share of that day's posts.",
-          "右侧百分比 = 当天恐慌 + 看空占全部帖子的比例",
-        )}
-      </p>
+
+      {/* Legend */}
+      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-2.5 w-2.5 rounded-full bg-negative-fill" />
+          {c("Fear + Bearish %", "恐慌 + 看空 %")}
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-2.5 w-2.5 rounded-full bg-positive-fill" />
+          {c("Bullish %", "看多 %")}
+        </span>
+      </div>
+
+      {/* Chart */}
+      <div className="mt-3 h-48 w-full md:h-56">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={data} onClick={handleClick} style={{ cursor: "pointer" }}>
+            <defs>
+              <linearGradient id="negGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={negColor} stopOpacity={0.25} />
+                <stop offset="100%" stopColor={negColor} stopOpacity={0.03} />
+              </linearGradient>
+              <linearGradient id="posGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={posColor} stopOpacity={0.2} />
+                <stop offset="100%" stopColor={posColor} stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke={mutedColor} strokeOpacity={0.15} />
+            <XAxis
+              dataKey="label"
+              tick={{ fontSize: 11, fill: mutedColor }}
+              tickLine={false}
+              axisLine={false}
+              interval="preserveStartEnd"
+            />
+            <YAxis
+              domain={[0, 100]}
+              tickFormatter={(v: number) => `${v}%`}
+              tick={{ fontSize: 11, fill: mutedColor }}
+              tickLine={false}
+              axisLine={false}
+              width={40}
+            />
+            <Tooltip content={<TrendTooltip c={c} />} />
+            <Area
+              type="monotone"
+              dataKey="negative"
+              name={c("Fear + Bearish", "恐慌 + 看空")}
+              stroke={negColor}
+              strokeWidth={2}
+              fill="url(#negGrad)"
+              dot={(props: Record<string, unknown>) => {
+                const { cx, cy, payload } = props as {
+                  cx: number;
+                  cy: number;
+                  payload: TrendPoint;
+                };
+                const isActive = payload.date === selected;
+                return (
+                  <circle
+                    key={payload.date}
+                    cx={cx}
+                    cy={cy}
+                    r={isActive ? 5 : 3}
+                    fill={negColor}
+                    stroke={isActive ? "var(--background, #000)" : "none"}
+                    strokeWidth={isActive ? 2 : 0}
+                  />
+                );
+              }}
+              activeDot={{ r: 5, strokeWidth: 2, stroke: "var(--background, #000)" }}
+            />
+            <Area
+              type="monotone"
+              dataKey="bullish"
+              name={c("Bullish", "看多")}
+              stroke={posColor}
+              strokeWidth={2}
+              fill="url(#posGrad)"
+              dot={(props: Record<string, unknown>) => {
+                const { cx, cy, payload } = props as {
+                  cx: number;
+                  cy: number;
+                  payload: TrendPoint;
+                };
+                const isActive = payload.date === selected;
+                return (
+                  <circle
+                    key={`b-${payload.date}`}
+                    cx={cx}
+                    cy={cy}
+                    r={isActive ? 5 : 3}
+                    fill={posColor}
+                    stroke={isActive ? "var(--background, #000)" : "none"}
+                    strokeWidth={isActive ? 2 : 0}
+                  />
+                );
+              }}
+              activeDot={{ r: 5, strokeWidth: 2, stroke: "var(--background, #000)" }}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Selected day indicator */}
+      {selected && (
+        <p className="mt-2 text-center text-xs text-muted-foreground">
+          {c("Viewing:", "正在查看：")}
+          <span className="ml-1 font-medium text-foreground">{formatPtDate(selected, lang)}</span>
+        </p>
+      )}
     </Card>
   );
 }
