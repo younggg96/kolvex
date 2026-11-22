@@ -35,7 +35,7 @@ export const STANCE_FILL: Record<XhsStance, string> = {
   bullish: "bg-positive-fill",
 };
 
-const STANCE_TEXT: Record<XhsStance, string> = {
+export const STANCE_TEXT: Record<XhsStance, string> = {
   fear_panic: "text-negative",
   bearish: "text-negative",
   neutral: "text-muted-foreground",

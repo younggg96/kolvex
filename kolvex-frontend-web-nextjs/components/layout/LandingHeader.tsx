@@ -53,13 +53,13 @@ export default function LandingHeader() {
             className="transition-transform duration-200 group-hover:scale-105 motion-reduce:transform-none"
           />
         </Link>
-        <div className="flex items-center gap-1 sm:gap-4">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <DropdownMenu open={navigationOpen} onOpenChange={setNavigationOpen}>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
                 size="icon"
-                className="gap-2 sm:w-auto sm:px-3.5"
+                className="gap-2 sm:w-auto sm:px-3"
                 aria-label={c("Navigation", "导航")}
               >
                 <Menu size="1.125rem" aria-hidden="true" />
@@ -136,7 +136,8 @@ export default function LandingHeader() {
           {!isAuthRoute && (
             <Button
               asChild
-              className="max-sm:px-2.5 [.landing-page_&]:px-5 [.landing-page_&]:text-[0.8125rem] max-[641px]:[.landing-page_&]:hidden"
+              size="sm"
+              className="max-sm:px-3 [.landing-page_&]:px-4 max-[641px]:[.landing-page_&]:hidden"
             >
               <Link href={isAuthenticated ? "/dashboard" : "/auth"}>
                 {isAuthenticated ? (
@@ -158,7 +159,7 @@ export default function LandingHeader() {
             size="icon"
             onClick={() => setLocale(locale === "zh" ? "en" : "zh")}
             aria-label={locale === "zh" ? "Switch to English" : "切换为中文"}
-            className="w-auto min-w-9 px-2 text-xs font-semibold"
+            className="w-auto min-w-9 px-3 text-sm font-semibold"
           >
             <span lang={locale === "zh" ? "en" : "zh-CN"}>
               {locale === "zh" ? "English" : "中文"}

@@ -12,11 +12,11 @@ import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import {
   XHS_DAYS_PATH,
-  XHS_STANCES,
   XhsNotFound,
   countsTotal,
   dominantStance,
   isIsoDate,
+  negativeCount,
   neighbours,
   readXhsDay,
   readXhsDays,
@@ -24,11 +24,11 @@ import {
   xhsDayPath,
   type XhsDaySummary,
 } from "@/lib/xhsSentiment";
-import XhsDayView, { STANCE_FILL, formatPtDate } from "./XhsDayView";
+import XhsDayView, { STANCE_TEXT, StanceBar, formatPtDate } from "./XhsDayView";
 
 const CACHE = { ttl: 60_000, maxAge: 10 * 60_000, timeout: 20_000 };
 
-/** 30-day strip: one stacked column per imported day, oldest on the left. */
+/** Recent days as rows, newest first: date, that day's five-band bar, and the lean in words. */
 function Trend({
   days,
   selected,
@@ -43,46 +43,66 @@ function Trend({
   const lang = locale === "zh" ? "zh" : "en";
   if (days.length < 2) return null;
   return (
-    <section aria-label={c("Recent days", "近期情绪")} className="w-fit max-w-full space-y-1.5">
-      <ol className="flex h-14 items-end gap-1 overflow-x-auto pb-1">
-        {[...days].reverse().map((day) => {
+    <Card role="region" aria-label={c("Recent days", "近期情绪")} className="p-4 md:p-5">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h2 className="text-sm font-medium">{c("Recent days", "近期情绪")}</h2>
+        <p className="text-xs text-muted-foreground">
+          {c(
+            "Each bar is one day's posts by sentiment. Tap a day to open it.",
+            "每条横条是一天的帖子情绪占比，点一天查看详情",
+          )}
+        </p>
+      </div>
+      <ol className="-mx-2 mt-2 max-h-72 space-y-0.5 overflow-y-auto">
+        {days.map((day) => {
           const counts = day.sentiment.all;
-          const total = countsTotal(counts) || 1;
+          const total = countsTotal(counts);
+          const negative = total ? Math.round((negativeCount(counts) / total) * 100) : 0;
           const dominant = dominantStance(counts);
           const active = day.date_pt === selected;
-          const label = `${formatPtDate(day.date_pt, lang)} · ${
-            dominant ? stanceLabel(dominant, lang) : c("No single lean", "没有单一倾向")
-          }`;
+          const lean = dominant ? stanceLabel(dominant, lang) : c("Mixed", "分歧");
           return (
-            <li key={day.date_pt} className="h-full w-6 min-w-[10px] shrink">
+            <li key={day.date_pt}>
               <button
                 type="button"
                 onClick={() => onSelect(day.date_pt)}
-                aria-label={label}
                 aria-current={active ? "date" : undefined}
-                title={label}
+                aria-label={c(
+                  `${formatPtDate(day.date_pt, lang)}: mostly ${lean}, fear plus bearish ${negative}%`,
+                  `${formatPtDate(day.date_pt, lang)}：多数${lean}，恐慌加看空 ${negative}%`,
+                )}
                 className={cn(
-                  "flex h-full w-full flex-col-reverse overflow-hidden rounded-md border transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30",
-                  active ? "border-foreground" : "border-transparent opacity-60 hover:opacity-100",
+                  "grid min-h-11 w-full grid-cols-[3.75rem_1fr_auto] items-center gap-3 rounded-lg px-2 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30",
+                  active ? "bg-muted" : "hover:bg-muted/60",
                 )}
               >
-                {XHS_STANCES.map(({ key }) => (
+                <span className={cn("tabular-nums", active ? "font-semibold" : "font-medium")}>
+                  {formatPtDate(day.date_pt, lang, false)}
+                </span>
+                <StanceBar counts={counts} />
+                <span className="flex min-w-[5.5rem] items-baseline justify-end gap-1.5 whitespace-nowrap tabular-nums">
                   <span
-                    key={key}
-                    className={STANCE_FILL[key]}
-                    style={{ height: `${(counts[key] / total) * 100}%` }}
-                  />
-                ))}
+                    className={cn(
+                      "font-medium",
+                      dominant ? STANCE_TEXT[dominant] : "text-muted-foreground",
+                    )}
+                  >
+                    {lean}
+                  </span>
+                  <span className="text-xs text-muted-foreground">{negative}%</span>
+                </span>
               </button>
             </li>
           );
         })}
       </ol>
-      <p className="flex justify-between gap-4 text-xs text-muted-foreground">
-        <span>{formatPtDate(days.at(-1)!.date_pt, lang, false)}</span>
-        <span>{formatPtDate(days[0].date_pt, lang, false)}</span>
+      <p className="mt-2 text-xs text-muted-foreground">
+        {c(
+          "The % on the right is fear + bearish as a share of that day's posts.",
+          "右侧百分比 = 当天恐慌 + 看空占全部帖子的比例",
+        )}
       </p>
-    </section>
+    </Card>
   );
 }
 

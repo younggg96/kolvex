@@ -5,7 +5,7 @@ import { DISABLED_PRODUCT_REDIRECT, isProductRouteDisabled } from "@/lib/product
 import { PAGINATED_PUBLIC_PATH, publicPage, publicPagePath } from "@/lib/publicRoutes";
 
 // Anonymous, ISR-cached reading pages: no session work, so crawlers cost no auth round trip.
-const PUBLIC_READING_PATH = /^\/(?:research|creators|stocks|tracker|share)(?:\/|$)/;
+const PUBLIC_READING_PATH = /^\/(?:research|creators|stocks|tracker|share|congress|social)(?:\/|$)/;
 
 export async function middleware(request: NextRequest) {
   if (isProductRouteDisabled(request.nextUrl.pathname)) {

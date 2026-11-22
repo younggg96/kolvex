@@ -91,6 +91,25 @@ The contact page offers the support email link. Privacy and Terms include a
 Chinese translation of the existing English text and keep the same canonical
 URLs. The homepage supplies an English Open Graph and X card.
 
+## Congress and social pages (2026-11-21)
+
+Four more anonymous, ISR-cached reading areas, all in the header and sitemap:
+
+- `/congress`: the newest 100 congressional disclosures from `GET /api/v1/congress/public/trades`
+  (public filings; only the first page, `Cache-Control: public, max-age=600`; the signed-in
+  `/congress/trades` search is unchanged). The summary sentence counts only the rows shown.
+- `/social`: one page with X creator summaries (`x-content/summaries`, each with its original
+  posts), the Reddit ranking (`reddit-opinions`, all stocks and r/wallstreetbets), the latest
+  Xiaohongshu digest and the newest YouTube opinions. Each source loads on its own; one that fails
+  shows "unavailable" without hiding the others.
+- `/social/xiaohongshu` lists the last 30 digests; `/social/xiaohongshu/{YYYY-MM-DD}` is one day,
+  reusing `XhsDayView`, with its own title, description and `Article` data.
+- Options activity is **not** public: its quotes are licensed for signed-in users only
+  (see `options_activity.py`). Do not add it without confirming the data licence.
+
+`/llms.txt` lists these entry pages. The sitemap adds the four routes and one URL per digest day.
+Public readers are in `lib/publicContent.ts`.
+
 ## Verification
 
 `node --test scripts/public-reading.test.cjs scripts/creator-sharing.test.cjs`

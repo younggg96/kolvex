@@ -16,6 +16,8 @@ const links = [
   { href: "/research", en: "Stock research", zh: "股票研究" },
   { href: "/creators", en: "Creator opinions", zh: "博主观点" },
   { href: "/stocks", en: "Stock directory", zh: "股票目录" },
+  { href: "/congress", en: "Congress trades", zh: "国会交易" },
+  { href: "/social", en: "Social media", zh: "社交媒体" },
   ...(isProductFeatureEnabled("personUpdates")
     ? [{ href: "/tracker", en: "Updates", zh: "动态" }]
     : []),

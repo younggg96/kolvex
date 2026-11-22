@@ -167,6 +167,7 @@ test("sitemap walks every report batch, adds opinion routes and pagination witho
       creators: [{ channel_id: "creator1", total_opinions: 45 }],
       stocks: [{ ticker: "NVDA", total_opinions: 45 }],
     }),
+    getPublicXhsDays: async () => [{ date_pt: "2026-11-21", captured_at: "2026-11-22T05:51:29Z" }],
     getPublicResearchList: async (offset, limit) => {
       offsets.push(offset);
       return { items: reports.slice(offset, offset + limit), total: reports.length };
@@ -181,6 +182,13 @@ test("sitemap walks every report batch, adds opinion routes and pagination witho
   assert.ok(urls.includes("https://kolvex.app/research/page/11"));
   assert.ok(urls.includes("https://kolvex.app/stocks/NVDA/page/3"));
   assert.ok(urls.every((url) => !url.includes("?")));
+  for (const path of [
+    "/congress",
+    "/social",
+    "/social/xiaohongshu",
+    "/social/xiaohongshu/2026-11-21",
+  ])
+    assert.ok(urls.includes(`https://kolvex.app${path}`), path);
   assert.ok(urls.includes("https://kolvex.app/share/creators/creator1"));
   assert.equal(urls.filter((url) => url === "https://kolvex.app/stocks/NVDA").length, 1);
   assert.ok(urls.every((url) => !/dashboard|auth|api\//.test(url)));

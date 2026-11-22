@@ -81,7 +81,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 | 管理后台（用户、日报、事件、YouTube、X、小红书情绪、期权异动、邮件设置、超级投资者名单） | `admin` | `/dashboard/admin` | `(more)/admin` | `admin/` 等 | [mcp-content-admin.md](../mcp-content-admin.md) | ◐ |
 | 动态（原「人物动态」；横滑头像、美联储官员显示 Fed 徽章且在头像栏合并为一个可筛选的「美联储官员」头像、站内固定头像与近 24 小时动态提示圈；紧凑时间线支持时区展开、独立股票行情行和筛选；后台可逐条新增、编辑、删除，也可 JSON 批量导入） | `personUpdates` | `/dashboard/person-updates`、`/tracker`、`/dashboard/admin?tab=person-updates` | — | `person_updates.py` | [动态](../person-updates.md) | — |
 | YouTube 自动导入（本地 Mac worker 每天 21:00 获取未追踪视频字幕 → 后端 DeepSeek 分析 → 导入观点；管理后台「YouTube 导入」可立即运行并查看结果） | `admin` | `/dashboard/admin?tab=youtube` | — | `youtube_auto_import.py`（`/admin/youtube-auto-import/*`、`/youtube-auto-import/worker/*`） | [youtube-auto-import.md](../youtube-auto-import.md)；需迁移 `20261116150000_youtube_auto_import.sql` | — |
-| Web 首页、公开阅读页与 SEO | — | `/`（深色「黑白」使用 Wayglim Prism Flow 背景）；`app/(public)/`：`/stocks`、`/creators`、`/research`（中文缓存首屏，进入后沿用全站语言偏好；ISR 缓存 600 秒，分页用 `/page/N` 路径；`/llms.txt`、观点结构化数据） | —（App 无访客模式） | — | [public-reading.md](../public-reading.md) | — |
+| Web 首页、公开阅读页与 SEO | — | `/`（深色「黑白」使用 Wayglim Prism Flow 背景）；`app/(public)/`：`/stocks`、`/creators`、`/research`、`/congress`、`/social`、`/social/xiaohongshu`（国会披露、X、Reddit、小红书、YouTube 公开页；期权异动不公开）（中文缓存首屏，进入后沿用全站语言偏好；ISR 缓存 600 秒，分页用 `/page/N` 路径；`/llms.txt`、观点结构化数据） | —（App 无访客模式） | — | [public-reading.md](../public-reading.md) | — |
 | 隐私政策、条款、联系 | — | `/privacy`、`/terms`、`/contact` | 打开网页 | Web 双语，联系页使用支持邮箱 | — | ✅ |
 
 ### 已退役（不得恢复）

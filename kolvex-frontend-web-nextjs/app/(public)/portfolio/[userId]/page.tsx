@@ -4,8 +4,7 @@ import PortfolioHoldings from "@/components/portfolio/PortfolioHoldings";
 
 type Props = { params: { userId: string } };
 
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Personal holdings are shared by link only; keep them out of search results.
 export const metadata: Metadata = {
