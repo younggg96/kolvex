@@ -22,7 +22,10 @@ import { SegmentedControl } from "@/components/ui/segmented-control";
 import CreatorAvatar from "@/components/youtube/CreatorAvatar";
 import { useCachedResource } from "@/hooks/useCachedResource";
 import type { BriefList } from "@/lib/dailyBriefs";
+import type { InstitutionManager } from "@/lib/freeResearch";
 import type { FeedResponse } from "@/lib/newsFeed";
+import type { ActivityRun } from "@/lib/optionsActivity";
+import type { PersonUpdate } from "@/lib/personUpdates";
 import { isProductFeatureEnabled } from "@/lib/productFeatures";
 import type { RedditRanking } from "@/lib/redditOpinions";
 import type { SearchHistoryItem } from "@/lib/searchHistory";
@@ -31,6 +34,14 @@ import { getPublishedAnalyses, publishedAnalysesKey } from "@/lib/tradingAnalysi
 import { cn } from "@/lib/utils";
 import type { XCreator } from "@/lib/xContentApi";
 import type { YouTubeOpinionDashboard } from "@/lib/youtubeOpinionsApi";
+import {
+  CongressPicks,
+  OptionsActivityPicks,
+  PersonUpdatePicks,
+  SuperinvestorPicks,
+} from "./SearchDiscoveryFlows";
+import { DiscoverySection, PartialError, SourceState } from "./SearchDiscoveryParts";
+import type { Resource } from "./SearchSources";
 import { useCopy, useDayLabel } from "./shared";
 
 const TRENDING_STOCK_COUNT = 12;
@@ -38,7 +49,6 @@ const CREATOR_COUNT = 8;
 const RESEARCH_COUNT = 6;
 /** Matches the research list beside it so the two cards line up row for row. */
 const NEWS_COUNT = 6;
-type Resource<T> = { data?: T; loading: boolean; error: unknown; refresh: () => void };
 type Remember = (item: SearchHistoryItem) => void;
 
 // Shared row layouts. `cn` does not merge, so overrides of listCompactRowClass use `!`.
@@ -53,114 +63,6 @@ const creatorListClass =
   "grid grid-cols-2 content-start gap-x-3 xl:grid-cols-1 max-[360px]:grid-cols-1";
 const creatorLinkClass = "!gap-2.5 !py-1 max-lg:!min-h-[44px] max-lg:!gap-1.5";
 const briefListClass = "lg:grid lg:grid-cols-2 lg:gap-6";
-
-function ViewAll({ href, label }: { href: string; label: string }) {
-  const c = useCopy();
-  return (
-    <Link
-      href={href}
-      aria-label={label}
-      className="group flex min-h-11 shrink-0 items-center gap-1 rounded-full px-2 text-xs text-muted-foreground transition-colors hover:text-foreground active:bg-foreground/[0.1] motion-reduce:transition-none"
-    >
-      {c("View all", "查看全部")}
-    </Link>
-  );
-}
-
-function DiscoverySection({
-  id,
-  title,
-  icon,
-  href,
-  linkLabel,
-  className,
-  children,
-}: {
-  id: string;
-  title: string;
-  icon?: ReactNode;
-  href?: string;
-  linkLabel?: string;
-  className?: string;
-  children: ReactNode;
-}) {
-  return (
-    <section
-      aria-labelledby={id}
-      className={cn("flex min-w-0 flex-col [&>:last-child]:flex-1", className)}
-    >
-      <header className="mb-3 flex min-h-11 items-center justify-between gap-4 max-lg:mb-0.5">
-        <h2
-          id={id}
-          className="flex min-w-0 items-center gap-1.5 text-base font-semibold tracking-tight lg:gap-2 lg:text-lg"
-        >
-          {icon}
-          {title}
-        </h2>
-        {href && <ViewAll href={href} label={linkLabel || title} />}
-      </header>
-      {children}
-    </section>
-  );
-}
-
-function SourceState({
-  loading,
-  error,
-  retry,
-  className,
-  skeleton,
-}: {
-  loading: boolean;
-  error: unknown;
-  retry: () => void;
-  className?: string;
-  skeleton: ReactNode;
-}) {
-  const c = useCopy();
-  if (loading) return <ContentLoading className="min-h-0">{skeleton}</ContentLoading>;
-  return (
-    <div className={cn("flex min-h-40 items-center justify-center", className)}>
-      {
-        <ListEmptyState
-          title={
-            error
-              ? c("This source is unavailable", "这个来源暂时不可用")
-              : c("Nothing here yet", "暂时还没有内容")
-          }
-          action={
-            error ? (
-              <Button type="button" variant="outline" size="sm" onClick={retry}>
-                {c("Retry", "重试")}
-              </Button>
-            ) : undefined
-          }
-          alert={Boolean(error)}
-        />
-      }
-    </div>
-  );
-}
-
-function PartialError({ error, retry }: { error: unknown; retry: () => void }) {
-  const c = useCopy();
-  if (!error) return null;
-  return (
-    <p
-      role="status"
-      className="flex flex-wrap items-center gap-x-2 px-2 pt-2 text-xs text-muted-foreground"
-    >
-      {c("Showing saved content. Refresh failed.", "刷新失败，当前显示已加载内容。")}
-      <button
-        type="button"
-        onClick={retry}
-        className="min-h-9 rounded-full px-2 font-medium text-foreground underline underline-offset-4"
-      >
-        {c("Retry", "重试")}
-      </button>
-    </p>
-  );
-}
 
 function TrendingStocks({
   youtube,
@@ -663,6 +565,9 @@ export default function SearchDiscovery({
   youtube,
   reddit,
   x,
+  superinvestors,
+  personUpdates,
+  optionsActivity,
   history,
   onHistoryChange,
   onRemember,
@@ -670,6 +575,9 @@ export default function SearchDiscovery({
   youtube: Resource<YouTubeOpinionDashboard>;
   reddit: Resource<RedditRanking>;
   x: Resource<{ creators: XCreator[] }>;
+  superinvestors: Resource<{ managers: InstitutionManager[] }>;
+  personUpdates: Resource<{ items: PersonUpdate[] }>;
+  optionsActivity: Resource<ActivityRun>;
   history: SearchHistoryItem[];
   onHistoryChange: (items: SearchHistoryItem[]) => void;
   onRemember: Remember;
@@ -733,6 +641,18 @@ export default function SearchDiscovery({
           <CreatorPicks youtube={youtube} x={x} onRemember={onRemember} />
         </div>
       )}
+      <div className="mt-8 grid gap-8 max-lg:mt-3.5 max-lg:gap-3.5 lg:grid-cols-2">
+        {isProductFeatureEnabled("superinvestors") && (
+          <SuperinvestorPicks resource={superinvestors} onRemember={onRemember} />
+        )}
+        {isProductFeatureEnabled("congressTrades") && <CongressPicks onRemember={onRemember} />}
+        {isProductFeatureEnabled("optionsActivity") && (
+          <OptionsActivityPicks resource={optionsActivity} onRemember={onRemember} />
+        )}
+        {isProductFeatureEnabled("personUpdates") && (
+          <PersonUpdatePicks resource={personUpdates} onRemember={onRemember} />
+        )}
+      </div>
       <div className="mt-8 grid gap-8 max-lg:mt-3.5 max-lg:gap-3.5 lg:grid-cols-2">
         {isProductFeatureEnabled("tradingAnalysis") && <ResearchPicks onRemember={onRemember} />}
         {isProductFeatureEnabled("news") && <NewsPicks />}

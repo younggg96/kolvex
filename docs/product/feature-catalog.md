@@ -34,7 +34,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 | AI 基本面分析 | 个股概览 | 个股 `summary` tab | `market_data.py`（ai-fundamentals） | — | ✅ |
 | Kronos 预测（实验） | 技术分析 | `/technical/[symbol]` | `forecast.py` | — | ◐ |
 | 报价刷新与时效 | 全站 | 全站 | `market_data.py` | [market-data-freshness-20261104.md](../market-data-freshness-20261104.md)、[frontend-data-cache.md](../frontend-data-cache.md) | ✅ |
-| 搜索 | `/dashboard/search` | `(tabs)/search` | `market_data.py` | — | ✅ |
+| 搜索 / 探索（Web 未输入时展示热议股票、发现创作者、超级投资者、国会议员交易、期权异动（最近一轮按净权利金）、动态、最新研究、新闻、日报；输入时联想股票、创作者、AI 研究、超级投资者、国会议员交易（按议员姓名和股票代码，需登录）、期权异动、动态，可按「资金动向」「动态」筛选） | `/dashboard/search` | `(tabs)/search` | `market_data.py`、`free_research.py`、`congress_trades.py`、`options_activity.py`、`person_updates.py` | — | ◐（App 搜索未加超级投资者、国会交易、期权异动、动态） |
 
 ### 观点与内容
 

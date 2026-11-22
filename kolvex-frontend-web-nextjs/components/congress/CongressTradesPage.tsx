@@ -21,14 +21,23 @@ const TICKER = /^[A-Za-z0-9.^=-]{1,20}$/;
 /** Typing settles before the list reloads; choices from menus apply at once. */
 const TYPING_DELAY_MS = 350;
 
-export default function CongressTradesPage({ initialTicker }: { initialTicker: string }) {
+export default function CongressTradesPage({
+  initialTicker,
+  initialMember = "",
+}: {
+  initialTicker: string;
+  initialMember?: string;
+}) {
   const c = useCopy();
   const title = c("Congress trades", "国会议员交易");
   const [ticker, setTicker] = useState(initialTicker);
-  const [member, setMember] = useState("");
+  const [member, setMember] = useState(initialMember);
   const [chamber, setChamber] = useState<Chamber>("all");
   const [direction, setDirection] = useState<Direction>("all");
-  const [typed, setTyped] = useState({ ticker: initialTicker.trim(), member: "" });
+  const [typed, setTyped] = useState({
+    ticker: initialTicker.trim(),
+    member: initialMember.trim(),
+  });
   const [page, setPage] = useState(1);
 
   useEffect(() => {

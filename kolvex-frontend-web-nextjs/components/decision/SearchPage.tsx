@@ -7,7 +7,14 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { MOBILE_DOCK_SLOT_ID } from "@/components/layout/MobileTabBar";
-import { Star, X } from "lucide-react";
+import { Activity, Landmark, ScrollText, Star, UserRound, X } from "lucide-react";
+import { PersonUpdateAvatar } from "@/components/person-updates/PersonUpdateAvatar";
+import { useSessionLabel } from "@/components/options-activity/sections";
+import {
+  InvestorAvatar,
+  superinvestorHref,
+  useInvestorByline,
+} from "@/components/superinvestors/shared";
 import { XIcon, YouTubeIcon } from "@/components/common/PlatformIcons";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -33,19 +40,38 @@ import {
   writeSearchHistory,
   type SearchHistoryItem,
 } from "@/lib/searchHistory";
+import { formatPremium } from "@/lib/optionsActivity";
+import { isFedOfficial, personAvatar } from "@/lib/personUpdates";
+import { isProductFeatureEnabled } from "@/lib/productFeatures";
 import { marketStockHref } from "@/lib/stockLinks";
 import { getPublishedAnalyses, type TradingAnalysis } from "@/lib/tradingAnalysisApi";
 import { cn } from "@/lib/utils";
 import { xRequest, type XCreator } from "@/lib/xContentApi";
 import { getYouTubeOpinionDashboard } from "@/lib/youtubeOpinionsApi";
 import SearchDiscovery from "./SearchDiscovery";
+import { tradeAsset, usePersonLabel, useTradeSide } from "./SearchDiscoveryFlows";
+import {
+  congressTradesHref,
+  managerNames,
+  matchesPersonUpdate,
+  optionsTickersByPremium,
+  personUpdatesHref,
+  useCongressSearch,
+  useLatestOptionsRun,
+  usePersonUpdates,
+  useSuperinvestorManagers,
+  type CongressTrade,
+} from "./SearchSources";
 import { useCopy, useDayLabel } from "./shared";
 
-type Filter = "all" | "stocks" | "creators" | "research";
+type Filter = "all" | "stocks" | "creators" | "research" | "flows" | "updates";
 type StockResult = { ticker: string; name: string };
 const RESULT_LIMIT = 8;
 const RESEARCH_LIMIT = 5;
+/** Superinvestors, congress members, options tickers and updates each show this many. */
+const FLOW_LIMIT = 5;
 const RESEARCH_DEBOUNCE_MS = 300;
+const sectionIconClass = "h-4 w-4 text-muted-foreground";
 
 /** Lower scores list first; null means the stock doesn't match. */
 function stockMatchScore({ ticker, name }: StockResult, query: string) {
@@ -58,10 +84,21 @@ function stockMatchScore({ ticker, name }: StockResult, query: string) {
   return company.includes(query) ? 4 : null;
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+function Section({
+  title,
+  icon,
+  children,
+}: {
+  title: string;
+  icon?: ReactNode;
+  children: ReactNode;
+}) {
   return (
     <section className="mt-4 lg:mt-7">
-      <h2 className="mb-2 text-base font-semibold lg:mb-3 lg:text-lg">{title}</h2>
+      <h2 className="mb-2 flex items-center gap-2 text-base font-semibold lg:mb-3 lg:text-lg">
+        {icon}
+        {title}
+      </h2>
       <ListCard>
         <ListRows>{children}</ListRows>
       </ListCard>
@@ -79,7 +116,7 @@ function ResultRow({
 }: {
   href: string;
   title: string;
-  detail: string;
+  detail: ReactNode;
   leading?: ReactNode;
   trailing?: ReactNode;
   onOpen?: () => void;
@@ -155,6 +192,10 @@ export default function SearchPage() {
     failed?: boolean;
   } | null>(null);
   const [researchAttempt, setResearchAttempt] = useState(0);
+  const byline = useInvestorByline();
+  const personLabel = usePersonLabel();
+  const tradeSide = useTradeSide();
+  const sessionLabel = useSessionLabel();
 
   const opinions = useCachedResource(
     "/api/youtube-opinions/dashboard?limit=12",
@@ -178,6 +219,10 @@ export default function SearchPage() {
     (signal) => xRequest<{ creators: XCreator[] }>("creators", { signal }),
     { ttl: 60_000 },
   );
+
+  const superinvestors = useSuperinvestorManagers();
+  const personUpdates = usePersonUpdates();
+  const optionsRun = useLatestOptionsRun();
 
   useEffect(() => {
     setHistory(userId ? readSearchHistory(userId) : []);
@@ -291,6 +336,27 @@ export default function SearchPage() {
     return [...youtube, ...x].slice(0, RESULT_LIMIT);
   }, [opinions.data, xCreators.data, query]);
 
+  const superinvestorResults = useMemo(() => {
+    if (!query) return [];
+    return (superinvestors.data?.managers ?? [])
+      .filter((manager) => managerNames(manager).some((name) => name.toLowerCase().includes(query)))
+      .slice(0, FLOW_LIMIT);
+  }, [superinvestors.data, query]);
+
+  const optionsResults = useMemo(() => {
+    if (!query) return [];
+    return optionsTickersByPremium(optionsRun.data)
+      .filter((ticker) => ticker.symbol.toLowerCase().startsWith(query))
+      .slice(0, FLOW_LIMIT);
+  }, [optionsRun.data, query]);
+
+  const personResults = useMemo(() => {
+    if (!query) return [];
+    return (personUpdates.data?.items ?? [])
+      .filter((item) => matchesPersonUpdate(item, query))
+      .slice(0, FLOW_LIMIT);
+  }, [personUpdates.data, query]);
+
   const topTicker = stockResults[0]?.ticker;
   useEffect(() => {
     if (!topTicker || composing) return;
@@ -319,21 +385,70 @@ export default function SearchPage() {
   }, [topTicker, researchAttempt, composing]);
   const researchResults = research && research.ticker === topTicker ? research.items : [];
 
-  const catalogueLoading = opinions.loading || reddit.loading || xCreators.loading;
-  const catalogueFailed = Boolean(opinions.error || reddit.error || xCreators.error);
+  const includesFlows = filter === "all" || filter === "flows";
+  const congress = useCongressSearch(query, topTicker, {
+    enabled: Boolean(userId) && includesFlows && !composing,
+    delay: RESEARCH_DEBOUNCE_MS,
+  });
+  // One row per member: their latest matching trade. A member found only through the
+  // ticker opens the ticker's trades; a name match opens that member's trades.
+  const congressResults = useMemo(() => {
+    const members = new Map<string, { trade: CongressTrade; href: string }>();
+    const sorted = [...congress.trades].sort((a, b) => b.filed_date.localeCompare(a.filed_date));
+    for (const trade of sorted) {
+      if (members.has(trade.member_name)) continue;
+      const byName = trade.member_name.toLowerCase().includes(query);
+      members.set(trade.member_name, {
+        trade,
+        href: congressTradesHref(byName ? { member: trade.member_name } : { ticker: trade.ticker }),
+      });
+    }
+    return [...members.values()].slice(0, FLOW_LIMIT);
+  }, [congress.trades, query]);
+
+  const flowSources = [
+    isProductFeatureEnabled("superinvestors") && superinvestors,
+    isProductFeatureEnabled("optionsActivity") && optionsRun,
+    isProductFeatureEnabled("personUpdates") && personUpdates,
+  ].filter((source) => source !== false);
+  const catalogueLoading =
+    opinions.loading ||
+    reddit.loading ||
+    xCreators.loading ||
+    flowSources.some((source) => source.loading);
+  const catalogueFailed =
+    Boolean(opinions.error || reddit.error || xCreators.error) ||
+    flowSources.some((source) => source.error) ||
+    congress.failed;
   const includesResearch = filter === "all" || filter === "research";
   const researchPending = includesResearch && Boolean(topTicker) && research?.ticker !== topTicker;
   const researchFailed = includesResearch && research?.ticker === topTicker && research?.failed;
   const showStocks = (filter === "all" || filter === "stocks") && stockResults.length > 0;
   const showCreators = (filter === "all" || filter === "creators") && creatorResults.length > 0;
   const showResearch = includesResearch && researchResults.length > 0;
-  const hasResults = showStocks || showCreators || showResearch;
+  const showSuperinvestors = includesFlows && superinvestorResults.length > 0;
+  const showCongress = includesFlows && congressResults.length > 0;
+  const showOptions = includesFlows && optionsResults.length > 0;
+  const showUpdates = (filter === "all" || filter === "updates") && personResults.length > 0;
+  const hasResults =
+    showStocks ||
+    showCreators ||
+    showResearch ||
+    showSuperinvestors ||
+    showCongress ||
+    showOptions ||
+    showUpdates;
+  const pending = catalogueLoading || researchPending || congress.pending;
 
   const filters: { value: Filter; label: string }[] = [
     { value: "all", label: c("All", "全部") },
     { value: "stocks", label: c("Stocks", "股票") },
     { value: "creators", label: c("Creators", "创作者") },
     { value: "research", label: c("AI research", "AI 研究") },
+    { value: "flows", label: c("Money flows", "资金动向") },
+    ...(isProductFeatureEnabled("personUpdates")
+      ? [{ value: "updates" as const, label: c("Updates", "动态") }]
+      : []),
   ];
 
   function changeValue(next: string) {
@@ -401,10 +516,16 @@ export default function SearchPage() {
                     else router.back();
                   }
                 }}
-                aria-label={c("Search stocks and creators", "搜索股票和创作者")}
+                aria-label={c(
+                  "Search stocks, creators, investors and updates",
+                  "搜索股票、创作者、投资者和动态",
+                )}
                 aria-invalid={submitFailed || undefined}
                 aria-describedby={submitFailed ? "search-error" : undefined}
-                placeholder={c("Search stocks, companies, creators", "搜索股票、公司、创作者")}
+                placeholder={c(
+                  "Search stocks, creators, investors, members",
+                  "搜索股票、创作者、投资人、议员",
+                )}
                 autoComplete="off"
                 autoCorrect="off"
                 autoCapitalize="off"
@@ -470,6 +591,9 @@ export default function SearchPage() {
               youtube={opinions}
               reddit={reddit}
               x={xCreators}
+              superinvestors={superinvestors}
+              personUpdates={personUpdates}
+              optionsActivity={optionsRun}
               history={history}
               onHistoryChange={saveHistory}
               onRemember={remember}
@@ -554,8 +678,156 @@ export default function SearchPage() {
                     })}
                   </Section>
                 )}
+                {showSuperinvestors && (
+                  <Section
+                    title={c("Superinvestors", "超级投资者")}
+                    icon={<Landmark aria-hidden className={sectionIconClass} />}
+                  >
+                    {superinvestorResults.map((manager) => {
+                      const item = {
+                        href: superinvestorHref(manager.id),
+                        title: manager.name,
+                        detail: byline(manager.id, false, manager.profile) || "13F",
+                      };
+                      return (
+                        <ResultRow
+                          key={manager.id}
+                          {...item}
+                          leading={<InvestorAvatar id={manager.id} name={manager.name} />}
+                          onOpen={() => remember(item)}
+                        />
+                      );
+                    })}
+                  </Section>
+                )}
+                {showCongress && (
+                  <Section
+                    title={c("Congress trades", "国会议员交易")}
+                    icon={<ScrollText aria-hidden className={sectionIconClass} />}
+                  >
+                    {congressResults.map(({ trade, href }) => {
+                      const side = tradeSide(trade);
+                      const asset = tradeAsset(trade);
+                      const chamber =
+                        trade.chamber === "house"
+                          ? c("House", "众议院")
+                          : trade.chamber === "senate"
+                            ? c("Senate", "参议院")
+                            : null;
+                      return (
+                        <ResultRow
+                          key={trade.member_name}
+                          href={href}
+                          title={trade.member_name}
+                          detail={
+                            <>
+                              {chamber && `${chamber} · `}
+                              <span className={cn("font-medium", side.className)}>
+                                {side.label}
+                              </span>{" "}
+                              {asset} · {dayLabel(trade.filed_date)}
+                            </>
+                          }
+                          leading={
+                            <span aria-hidden>
+                              <CompanyLogo
+                                symbol={trade.ticker || "?"}
+                                name={asset}
+                                customSize={32}
+                              />
+                            </span>
+                          }
+                          onOpen={() =>
+                            remember({
+                              href,
+                              title: trade.member_name,
+                              detail: c("Congress trades", "国会议员交易"),
+                            })
+                          }
+                        />
+                      );
+                    })}
+                  </Section>
+                )}
+                {showOptions && optionsRun.data && (
+                  <Section
+                    title={c("Options activity", "期权异动")}
+                    icon={<Activity aria-hidden className={sectionIconClass} />}
+                  >
+                    {optionsResults.map((ticker) => (
+                      <ResultRow
+                        key={ticker.symbol}
+                        href={marketStockHref(ticker.symbol)}
+                        onOpen={() =>
+                          remember({
+                            title: ticker.symbol,
+                            detail: c("Options activity", "期权异动"),
+                            href: marketStockHref(ticker.symbol),
+                          })
+                        }
+                        title={ticker.symbol}
+                        detail={`${dayLabel(optionsRun.data!.trade_date)} · ${sessionLabel(
+                          optionsRun.data!.session,
+                        )} · ${c("Calls", "看涨")} ${formatPremium(ticker.call_premium)} · ${c(
+                          "Puts",
+                          "看跌",
+                        )} ${formatPremium(ticker.put_premium)}`}
+                        leading={
+                          <span aria-hidden>
+                            <CompanyLogo symbol={ticker.symbol} customSize={32} />
+                          </span>
+                        }
+                        trailing={
+                          <span
+                            title={c("Net premium", "净权利金")}
+                            className={cn(
+                              "shrink-0 pr-3 text-sm font-semibold tabular-nums",
+                              ticker.net_premium > 0
+                                ? "text-positive"
+                                : ticker.net_premium < 0
+                                  ? "text-negative"
+                                  : "text-muted-foreground",
+                            )}
+                          >
+                            {formatPremium(ticker.net_premium, true)}
+                          </span>
+                        }
+                      />
+                    ))}
+                  </Section>
+                )}
+                {showUpdates && (
+                  <Section
+                    title={c("Updates", "动态")}
+                    icon={<UserRound aria-hidden className={sectionIconClass} />}
+                  >
+                    {personResults.map((update) => {
+                      const name = personLabel(update);
+                      const href = personUpdatesHref(update.person);
+                      return (
+                        <ResultRow
+                          key={update.id}
+                          href={href}
+                          title={name}
+                          detail={`${dayLabel(update.published_at)} · ${update.title}`}
+                          leading={
+                            <PersonUpdateAvatar
+                              label={name}
+                              src={personAvatar(update)}
+                              fedOfficial={isFedOfficial(update)}
+                              className="h-8 w-8 shrink-0"
+                            />
+                          }
+                          onOpen={() =>
+                            remember({ href, title: name, detail: c("Updates", "动态") })
+                          }
+                        />
+                      );
+                    })}
+                  </Section>
+                )}
 
-                {!hasResults && (catalogueLoading || researchPending) && (
+                {!hasResults && pending && (
                   <ContentLoading className="min-h-0">
                     {[4, 3].map((rows, section) => (
                       <section key={section} className="mt-4 lg:mt-7">
@@ -577,7 +849,7 @@ export default function SearchPage() {
                     ))}
                   </ContentLoading>
                 )}
-                {!catalogueLoading && !researchPending && !researchFailed && !hasResults && (
+                {!pending && !researchFailed && !hasResults && (
                   <div className="mt-4 lg:mt-7">
                     <ListCard>
                       <ListEmptyState
@@ -638,6 +910,8 @@ export default function SearchPage() {
                         opinions.refresh();
                         reddit.refresh();
                         xCreators.refresh();
+                        for (const source of flowSources) if (source.error) source.refresh();
+                        if (congress.failed) congress.retry();
                       }}
                     >
                       {c("Retry", "重试")}
