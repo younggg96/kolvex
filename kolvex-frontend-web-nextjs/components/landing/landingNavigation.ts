@@ -15,4 +15,14 @@ export const landingNavigation = [
     label: ["Stock directory", "股票目录"],
     description: ["Find a stock and explore its research.", "查找关注的股票，查看相关研究。"],
   },
+  {
+    href: "/congress",
+    label: ["Congress trades", "国会交易"],
+    description: ["Lawmakers' disclosed stock trades.", "议员披露的股票交易。"],
+  },
+  {
+    href: "/social",
+    label: ["Social media", "社交媒体"],
+    description: ["X, Reddit, Xiaohongshu and YouTube.", "X、Reddit、小红书与 YouTube 讨论。"],
+  },
 ] as const;
