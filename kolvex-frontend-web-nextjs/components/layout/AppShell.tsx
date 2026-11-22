@@ -7,8 +7,6 @@ import MobileTabBar from "./MobileTabBar";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import CommandLayer from "@/components/decision/CommandLayer";
 
-const keepRailCollapsed = () => {};
-
 interface AppShellProps {
   children: ReactNode;
 }
@@ -20,9 +18,8 @@ interface AppShellProps {
 export default function AppShell({ children }: AppShellProps) {
   return (
     <CommandLayer>
-      {/* Desktop sidebar is an icon-only rail by design: it never expands.
-          Below lg the drawer (openMobile) still works as before. */}
-      <SidebarProvider open={false} onOpenChange={keepRailCollapsed}>
+      {/* Desktop sidebar starts as the icon-only rail; the header toggle expands it. */}
+      <SidebarProvider defaultOpen={false}>
         <div className="site-page-surface app-workbench relative isolate flex w-full overflow-clip bg-background font-display text-foreground">
           <DashboardBackground />
           <AppSidebar />

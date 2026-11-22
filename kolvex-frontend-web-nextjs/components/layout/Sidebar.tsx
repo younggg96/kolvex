@@ -4,7 +4,7 @@ import Link from "next/link";
 import KolvexWordmark from "@/components/common/KolvexWordmark";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { ArrowRight, Search, MessageSquareText } from "lucide-react";
+import { ArrowRight, PanelLeftClose, PanelLeft, Search, MessageSquareText } from "lucide-react";
 import { useDecisionCommand } from "@/components/decision/CommandLayer";
 import { useCopy } from "@/components/decision/shared";
 import {
@@ -16,6 +16,7 @@ import {
   opinionSourceTitle,
 } from "./navItems";
 import UserMenu from "@/components/user/UserMenu";
+import { Button } from "@/components/ui/button";
 import {
   Sidebar as SidebarPrimitive,
   SidebarContent,
@@ -27,6 +28,9 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useBreakpoints } from "@/hooks";
@@ -41,7 +45,7 @@ interface AppSidebarProps {
 
 function AppSidebar({ onNavigate }: AppSidebarProps) {
   const pathname = usePathname();
-  const { state, isInitialized, setOpenMobile } = useSidebar();
+  const { state, toggleSidebar, isInitialized, setOpenMobile } = useSidebar();
   const { t, locale } = useTranslation();
   const c = useCopy();
   const { openAsk, canAsk } = useDecisionCommand();
@@ -82,7 +86,7 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
       collapsible="icon"
       className="app-sidebar border-r border-border/70"
     >
-      {/* Fixed top: brand and global entry points. */}
+      {/* Fixed top: brand, expand/collapse toggle, and global entry points. */}
       <SidebarHeader className="gap-3 border-b border-border/40 pb-3">
         <div className="flex items-center justify-between gap-2 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center">
           <Link
@@ -100,6 +104,20 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
               className="hidden size-8 rounded-md group-data-[collapsible=icon]:block"
             />
           </Link>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleSidebar}
+            className="hidden size-8 rounded-full text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground lg:flex group-data-[collapsible=icon]:size-10"
+            aria-label={t("sidebar.toggleSidebar")}
+            title={t("sidebar.toggleSidebar")}
+          >
+            {state === "expanded" ? (
+              <PanelLeftClose aria-hidden="true" className="size-4" />
+            ) : (
+              <PanelLeft aria-hidden="true" className="size-[1.125rem]" />
+            )}
+          </Button>
         </div>
 
         <SidebarMenu>
@@ -176,39 +194,77 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {group.items.flatMap((item) => {
-                  // The rail is icon-only, so a parent with sub-links (Creator Opinions)
-                  // is replaced by one icon per source; each keeps its platform mark.
-                  const links = item.children
-                    ? item.children.map((child) => ({
-                        href: child.href,
-                        icon: child.icon,
-                        title: opinionSourceTitle(child, locale),
-                        active: isActive(child.href),
-                      }))
-                    : [
-                        {
-                          href: item.href,
-                          icon: item.icon,
-                          title: item.title,
-                          active: isMainNavItemActive(pathname, item),
-                        },
-                      ];
-                  return links.map((link) => (
-                    <SidebarMenuItem key={link.href}>
+                {group.items.map((item) => {
+                  const active = isMainNavItemActive(pathname, item);
+                  // Collapsed rail: a parent with sub-links (Creator Opinions) becomes one
+                  // icon per source, so every source stays one click away without labels.
+                  if (item.children && state === "collapsed") {
+                    return item.children.map((child) => {
+                      const title = opinionSourceTitle(child, locale);
+                      const childActive = isActive(child.href);
+                      return (
+                        <SidebarMenuItem key={child.href}>
+                          <SidebarMenuButton
+                            asChild
+                            isActive={childActive}
+                            onClick={handleNavigate}
+                            tooltip={title}
+                          >
+                            <Link href={child.href} aria-current={childActive ? "page" : undefined}>
+                              <child.icon aria-hidden="true" />
+                              <span>{title}</span>
+                            </Link>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    });
+                  }
+                  const hasChildren = Boolean(item.children);
+                  return (
+                    <SidebarMenuItem key={item.href}>
                       <SidebarMenuButton
                         asChild
-                        isActive={link.active}
+                        // A parent with sub-links marks its section, not the page:
+                        // the child row carries the highlight so only one row is filled.
+                        isActive={!hasChildren && active}
+                        data-section-active={hasChildren && active ? "true" : undefined}
                         onClick={handleNavigate}
-                        tooltip={link.title}
+                        tooltip={item.title}
                       >
-                        <Link href={link.href} aria-current={link.active ? "page" : undefined}>
-                          <link.icon aria-hidden="true" />
-                          <span>{link.title}</span>
+                        <Link
+                          href={item.href}
+                          aria-current={!hasChildren && active ? "page" : undefined}
+                        >
+                          <item.icon aria-hidden="true" />
+                          <span>{item.title}</span>
                         </Link>
                       </SidebarMenuButton>
+                      {item.children && (
+                        <SidebarMenuSub
+                          className="ml-5 mt-1 border-l border-border/50 pl-3"
+                          aria-label={item.title}
+                        >
+                          {item.children.map((child) => (
+                            <SidebarMenuSubItem key={child.href}>
+                              <SidebarMenuSubButton
+                                asChild
+                                isActive={isActive(child.href)}
+                                onClick={handleNavigate}
+                              >
+                                <Link
+                                  href={child.href}
+                                  aria-current={isActive(child.href) ? "page" : undefined}
+                                >
+                                  <child.icon aria-hidden="true" />
+                                  <span>{opinionSourceTitle(child, locale)}</span>
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          ))}
+                        </SidebarMenuSub>
+                      )}
                     </SidebarMenuItem>
-                  ));
+                  );
                 })}
               </SidebarMenu>
             </SidebarGroupContent>
