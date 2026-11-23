@@ -14,8 +14,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { TradingAccount, TradeGroup, fetchAccounts, fetchTradeGroups } from "@/lib/tradeOsApi";
-import { Plus, UploadCloud, Search, ArrowRight, TrendingUp, Wallet } from "lucide-react";
+import {
+  TradingAccount,
+  TradeGroup,
+  TradePlan,
+  MarketRegimeResponse,
+  fetchAccounts,
+  fetchTradeGroups,
+  fetchPlans,
+  fetchMarketRegime,
+} from "@/lib/tradeOsApi";
+import { Plus, UploadCloud, Search, Wallet, Check, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function TradeOsOverviewPage() {
@@ -23,17 +32,31 @@ export default function TradeOsOverviewPage() {
   const [accounts, setAccounts] = useState<TradingAccount[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
   const [tradeGroups, setTradeGroups] = useState<TradeGroup[]>([]);
+  const [plans, setPlans] = useState<TradePlan[]>([]);
+  const [regime, setRegime] = useState<MarketRegimeResponse | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const loadAccountData = async (id: string) => {
+    const [groups, planList] = await Promise.all([
+      fetchTradeGroups(id),
+      fetchPlans(id).catch(() => [] as TradePlan[]),
+    ]);
+    setTradeGroups(groups);
+    setPlans(planList);
+  };
 
   useEffect(() => {
     async function load() {
       try {
-        const accs = await fetchAccounts();
+        const [accs, reg] = await Promise.all([
+          fetchAccounts(),
+          fetchMarketRegime().catch(() => null),
+        ]);
         setAccounts(accs);
+        setRegime(reg);
         if (accs.length > 0) {
           setSelectedAccountId(accs[0].id);
-          const groups = await fetchTradeGroups(accs[0].id);
-          setTradeGroups(groups);
+          await loadAccountData(accs[0].id);
         }
       } catch (err) {
         console.error("Failed to load Trade OS overview", err);
@@ -53,6 +76,71 @@ export default function TradeOsOverviewPage() {
   const winCount = closedTrades.filter((g) => Number(g.realized_pnl) > 0).length;
   const winRate = closedTrades.length > 0 ? (winCount / closedTrades.length) * 100 : null;
 
+  const approvedPlans = plans.filter((p) =>
+    ["approved", "executed", "open", "closed"].includes(p.status),
+  );
+  const regimeLabel =
+    regime?.regime === "risk_on"
+      ? c("Risk-on: new entries allowed", "进攻：允许新开仓")
+      : regime?.regime === "risk_off"
+        ? c("Risk-off: no new entries", "防守：不建议新开仓")
+        : regime?.regime === "neutral"
+          ? c("Neutral: reduced risk", "中性：降低单笔风险")
+          : c("No market reading yet", "尚无市场读数");
+
+  const steps = [
+    {
+      key: "account",
+      title: c("Create an account", "建立交易账户"),
+      hint: c(
+        "Set starting equity — all risk limits are % of it.",
+        "填期初资金，所有风控上限都按它的百分比算。",
+      ),
+      done: accounts.length > 0,
+      href: "/dashboard/trade-os/settings",
+      cta: c("Create account", "去建账户"),
+    },
+    {
+      key: "import",
+      title: c("Import past fills", "导入历史成交"),
+      hint: c(
+        "Upload your broker CSV to rebuild round trips.",
+        "上传券商 CSV，系统归集成往返交易。",
+      ),
+      done: tradeGroups.length > 0,
+      href: "/dashboard/trade-os/settings",
+      cta: c("Import CSV", "导入 CSV"),
+    },
+    {
+      key: "market",
+      title: c("Check the market", "看市场能不能开仓"),
+      hint: regimeLabel,
+      done: regime != null && regime.regime !== "stale_data",
+      href: "/dashboard/trade-os/market",
+      cta: c("Open market regime", "看市场状态"),
+    },
+    {
+      key: "plan",
+      title: c("Write a plan, get approval", "写计划并过风控"),
+      hint: c(
+        "Entry, stop, target → system sizes the position and approves or blocks.",
+        "填入场、止损、目标，系统算仓位并给出通过或拒绝。",
+      ),
+      done: approvedPlans.length > 0,
+      href: "/dashboard/trade-os/plans",
+      cta: c("New plan", "新建计划"),
+    },
+    {
+      key: "review",
+      title: c("Review closed trades", "平仓后复盘"),
+      hint: c("Tag mistakes, see if you followed your plan.", "标注失误，看是否按计划执行。"),
+      done: closedTrades.length > 0,
+      href: "/dashboard/trade-os/journal",
+      cta: c("Open journal", "去复盘"),
+    },
+  ];
+  const nextStep = steps.find((st) => !st.done);
+
   return (
     <div className="space-y-6">
       {/* Account Toolbar & Quick Actions */}
@@ -66,8 +154,7 @@ export default function TradeOsOverviewPage() {
               value={selectedAccountId || ""}
               onValueChange={async (id) => {
                 setSelectedAccountId(id);
-                const groups = await fetchTradeGroups(id);
-                setTradeGroups(groups);
+                await loadAccountData(id);
               }}
             >
               <SelectTrigger className="h-9 w-[220px] rounded-full text-xs font-medium">
@@ -143,6 +230,54 @@ export default function TradeOsOverviewPage() {
         </Card>
       ) : (
         <>
+          {/* How to use: five steps, first unfinished one highlighted */}
+          <section aria-label={c("How to use Trade OS", "使用步骤")}>
+            <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              {steps.map((st, i) => {
+                const isNext = nextStep?.key === st.key;
+                return (
+                  <li key={st.key}>
+                    <Card
+                      className={cn(
+                        "flex h-full flex-col gap-2 p-4",
+                        isNext && "border-primary/50",
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={cn(
+                            "flex h-5 w-5 items-center justify-center rounded-full text-[0.6875rem] font-semibold",
+                            st.done
+                              ? "bg-positive/15 text-positive"
+                              : "bg-muted text-muted-foreground",
+                          )}
+                        >
+                          {st.done ? (
+                            <Check className="h-3 w-3" aria-label={c("Done", "已完成")} />
+                          ) : (
+                            i + 1
+                          )}
+                        </span>
+                        <span className="text-sm font-semibold text-foreground">{st.title}</span>
+                      </div>
+                      <p className="flex-1 text-xs text-muted-foreground">{st.hint}</p>
+                      <Link
+                        href={st.href}
+                        className={cn(
+                          "inline-flex items-center gap-1 text-xs font-medium",
+                          isNext ? "text-primary" : "text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        {st.cta}
+                        <ArrowRight className="h-3 w-3" />
+                      </Link>
+                    </Card>
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
+
           {/* Key Metrics */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
             <Card className="p-4 sm:p-5">
