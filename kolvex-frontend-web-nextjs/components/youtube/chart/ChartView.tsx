@@ -296,6 +296,11 @@ export interface ChartViewProps {
   onAnalysisBusy?: (busy: boolean) => void;
   /** Advanced mode runs inside a dialog that owns Escape; this lets the chart consume it first. */
   escapeRef?: MutableRefObject<(() => boolean) | null>;
+  /**
+   * Advanced mode only: the right column. Receives the chart's AI panel (null without AI) and
+   * returns the column content, e.g. a stack of watchlist / AI / news / earnings panels.
+   */
+  renderSidePanels?: (ai: ReactNode | null) => ReactNode;
 }
 
 /**
@@ -345,6 +350,7 @@ export default function ChartView({
   focusControls,
   drawingVersionControls,
   escapeRef,
+  renderSidePanels,
 }: ChartViewProps) {
   const advanced = mode === "advanced";
   const heightClass =
@@ -2187,6 +2193,16 @@ export default function ChartView({
     />
   );
 
+  /** Advanced AI column content; `aiControls` mounts the model dialog `runAi` opens. */
+  const advancedAiPanel =
+    showAi && advanced ? (
+      <>
+        {aiControls}
+        {!activeJob && aiStatus}
+        {aiResults}
+      </>
+    ) : null;
+
   return (
     <div className={cn("min-w-0", advanced && "flex min-h-full gap-4 sm:h-full sm:min-h-0")}>
       <div className={cn("min-w-0", advanced && "flex min-h-0 flex-1 flex-col")}>
@@ -2202,7 +2218,7 @@ export default function ChartView({
               </span>
             )}
             <div className="ml-auto flex shrink-0 items-center gap-2">
-              {showAi && (
+              {(showAi || renderSidePanels) && (
                 <Button
                   type="button"
                   size="sm"
@@ -2218,9 +2234,13 @@ export default function ChartView({
                     <PanelRightOpen className="h-4 w-4" aria-hidden="true" />
                   )}
                   {t(
-                    aiPanelOpen
-                      ? "youtubeOpinions.ai.collapsePanel"
-                      : "youtubeOpinions.ai.expandPanel",
+                    renderSidePanels
+                      ? aiPanelOpen
+                        ? "youtubeOpinions.sidePanels.collapse"
+                        : "youtubeOpinions.sidePanels.expand"
+                      : aiPanelOpen
+                        ? "youtubeOpinions.ai.collapsePanel"
+                        : "youtubeOpinions.ai.expandPanel",
                   )}
                 </Button>
               )}
@@ -2741,18 +2761,19 @@ export default function ChartView({
           resultsContainer &&
           createPortal(aiResults, resultsContainer)}
       </div>
-      {showAi && advanced && (
+      {advanced && (showAi || renderSidePanels) && (
         <aside
           id={aiPanelId}
-          aria-label={t("youtubeOpinions.ai.actions")}
+          aria-label={t(
+            renderSidePanels ? "youtubeOpinions.sidePanels.label" : "youtubeOpinions.ai.actions",
+          )}
           className={cn(
-            "hidden min-h-0 w-[clamp(22rem,28vw,30rem)] shrink-0 overflow-y-auto overscroll-contain border-l border-border pl-4",
+            "hidden min-h-0 w-[clamp(22rem,28vw,30rem)] shrink-0 overscroll-contain border-l border-border pl-4",
+            renderSidePanels ? "overflow-hidden" : "overflow-y-auto",
             aiPanelOpen && "lg:block",
           )}
         >
-          {aiControls}
-          {!activeJob && aiStatus}
-          {aiResults}
+          {renderSidePanels ? renderSidePanels(advancedAiPanel) : advancedAiPanel}
         </aside>
       )}
     </div>

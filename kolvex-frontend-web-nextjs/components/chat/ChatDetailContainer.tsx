@@ -570,6 +570,7 @@ export function ChatDetailContainer({
             answer_check: completion.answer_check,
             token_usage: completion.token_usage,
             web_sources: completion.web_sources,
+            follow_ups: completion.follow_ups,
           });
         }
         rememberMessages(conversationId, committed);
@@ -875,6 +876,7 @@ export function ChatDetailContainer({
           symbols={knownSymbols}
           onUserScroll={handleUserScroll}
           composerCollapsed={composerCollapsed}
+          onFollowUp={isBlocked ? undefined : (question) => void handleSubmit(question)}
         />
         {/* Chat Input */}
         {/* Below lg the composer floats above the dock while messages scroll beneath both. */}

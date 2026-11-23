@@ -15,6 +15,8 @@ export interface Message {
   answerCheck?: AnswerCheck | null;
   tokenUsage?: TokenUsage | null;
   webSources?: WebSource[] | null;
+  /** Suggested next questions; shown under the latest answer. */
+  followUps?: string[] | null;
 }
 
 export interface ChatConversation {
@@ -224,4 +226,6 @@ export interface ChatMessageListProps {
   onUserScroll?: () => void;
   /** Lets the scroll-to-bottom button use the space a collapsed composer frees. */
   composerCollapsed?: boolean;
+  /** Sends a suggested follow-up question as the next message. */
+  onFollowUp?: (question: string) => void;
 }

@@ -111,8 +111,9 @@ async def load_conversation_history(
 
 
 # Columns added by later migrations; before 20261121051000_chat_token_usage.sql and
-# 20261121052000_chat_web_sources.sql they are missing, and the answer is still saved without them.
-OPTIONAL_MESSAGE_COLUMNS = ("token_usage", "web_sources")
+# 20261121052000_chat_web_sources.sql (and 20261123090000_chat_follow_ups.sql) they are missing, and
+# the answer is still saved without them.
+OPTIONAL_MESSAGE_COLUMNS = ("token_usage", "web_sources", "follow_ups")
 
 
 async def _insert_without_missing_columns(supabase: Any, row: Dict[str, Any]) -> Any:
@@ -142,6 +143,7 @@ async def save_message(
     answer_check: Optional[Dict[str, Any]] = None,
     token_usage: Optional[Dict[str, Any]] = None,
     web_sources: Optional[List[Dict[str, Any]]] = None,
+    follow_ups: Optional[List[str]] = None,
 ) -> Optional[Dict[str, Any]]:
     """
     保存消息到数据库
@@ -183,6 +185,8 @@ async def save_message(
             row["token_usage"] = token_usage
         if web_sources:
             row["web_sources"] = web_sources
+        if follow_ups:
+            row["follow_ups"] = follow_ups
 
         # 保存消息
         result = await _insert_without_missing_columns(supabase, row)

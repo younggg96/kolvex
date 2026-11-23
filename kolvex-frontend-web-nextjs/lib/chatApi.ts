@@ -69,6 +69,8 @@ export interface WebSource {
   title: string;
   snippet: string;
   query: string;
+  /** Tool that returned the link, e.g. web_search, search_news_flashes. */
+  tool?: string;
   published_date?: string;
 }
 
@@ -82,6 +84,8 @@ export interface ChatMessage {
   answer_check?: AnswerCheck | null;
   token_usage?: TokenUsage | null;
   web_sources?: WebSource[] | null;
+  /** Suggested next questions the answer ended with. */
+  follow_ups?: string[] | null;
 }
 
 export interface ChatConversation {
@@ -283,6 +287,7 @@ export interface AgentStreamEvent {
   answer_check?: AnswerCheck | null;
   token_usage?: TokenUsage | null;
   web_sources?: WebSource[];
+  follow_ups?: string[];
   created_at?: string;
 }
 

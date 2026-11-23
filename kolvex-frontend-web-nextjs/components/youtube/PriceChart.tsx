@@ -32,6 +32,7 @@ import { analysisDrawings, planDrawings } from "./aiDrawings";
 import type { AnalysisVersion } from "@/lib/stockAnalysisHistory";
 import ChartView from "./chart/ChartView";
 import TechnicalFocusSelector from "./chart/TechnicalFocusSelector";
+import AdvancedSidePanels from "./chart/AdvancedSidePanels";
 import {
   DEFAULT_TECHNICAL_FOCUS,
   DEFAULT_DRAWING_FOCUS,
@@ -48,7 +49,7 @@ export type { PriceRange } from "@/lib/chart/range";
  * creator calls, the drawings synced per user and ticker, and one undo history.
  */
 export default function PriceChart({
-  symbol,
+  symbol: pageSymbol,
   range: requestedRange,
   from,
   to,
@@ -88,6 +89,14 @@ export default function PriceChart({
   resultsContainer?: HTMLElement | null;
   showAi?: boolean;
 }) {
+  /**
+   * The full-screen chart can switch to another stock from its watchlist panel without leaving
+   * the page. Everything below follows the charted symbol; closing the dialog returns to the page's.
+   */
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [advancedSymbol, setAdvancedSymbol] = useState<string | null>(null);
+  const symbol = (advancedOpen && advancedSymbol) || pageSymbol;
+  const onPageSymbol = symbol === pageSymbol;
   const { drawings, setDrawings: storeDrawings, status: syncStatus } = useSyncedDrawings(symbol);
   const versions = useStockHistory<AiTechnicalAnalysis>(symbol, "technical");
   const drawingVersions = useStockHistory<AiTechnicalAnalysis>(symbol, "drawings");
@@ -124,8 +133,9 @@ export default function PriceChart({
     [versions.selected, hiddenAnalysis],
   );
   useEffect(() => {
-    onAnalysisChange?.(selectedAnalysis, versions.selected);
-  }, [selectedAnalysis, versions.selected, onAnalysisChange]);
+    // The page reads its own stock's analysis; another charted stock never reaches it.
+    if (onPageSymbol) onAnalysisChange?.(selectedAnalysis, versions.selected);
+  }, [selectedAnalysis, versions.selected, onAnalysisChange, onPageSymbol]);
   const selectedDrawings = useMemo(
     () =>
       drawingVersions.selected
@@ -204,8 +214,8 @@ export default function PriceChart({
       </div>
     );
   useEffect(() => {
-    onAnalysisBusy?.(analysisPending);
-  }, [analysisPending, onAnalysisBusy]);
+    onAnalysisBusy?.(onPageSymbol && analysisPending);
+  }, [analysisPending, onAnalysisBusy, onPageSymbol]);
   useEffect(() => {
     if (aiJobs.analysis.status === "done" && aiJobs.analysis.result?.version_id === selectedId)
       aiJobs.clear("analysis");
@@ -258,7 +268,6 @@ export default function PriceChart({
     { ttl: 60_000 },
   );
   const events = opinionResource.data?.opinions ?? [];
-  const [advancedOpen, setAdvancedOpen] = useState(false);
   const escapeRef = useRef<(() => boolean) | null>(null);
   const advancedTriggerRef = useRef<HTMLElement | null>(null);
 
@@ -310,8 +319,15 @@ export default function PriceChart({
   useEffect(() => {
     setHistory([]);
     setTechnicalFocus(DEFAULT_TECHNICAL_FOCUS);
-    setAdvancedOpen(false);
   }, [symbol]);
+  useEffect(() => {
+    setAdvancedOpen(false);
+    setAdvancedSymbol(null);
+  }, [pageSymbol]);
+  const openAdvanced = useCallback((open: boolean) => {
+    setAdvancedOpen(open);
+    if (!open) setAdvancedSymbol(null);
+  }, []);
 
   function setDrawings(next: Drawing[], recordFrom: Drawing[] | null = drawings) {
     if (recordFrom) setHistory((previous) => [...previous.slice(-49), recordFrom]);
@@ -468,7 +484,7 @@ export default function PriceChart({
             {rerunButton}
           </>
         ))}
-      <Dialog open={advancedOpen} onOpenChange={setAdvancedOpen}>
+      <Dialog open={advancedOpen} onOpenChange={openAdvanced}>
         <DialogContent
           layout="fullscreen"
           showCloseButton={false}
@@ -491,6 +507,13 @@ export default function PriceChart({
                 mode="advanced"
                 {...shared}
                 escapeRef={escapeRef}
+                renderSidePanels={(ai) => (
+                  <AdvancedSidePanels
+                    symbol={symbol}
+                    ai={ai}
+                    onSelectSymbol={(next) => setAdvancedSymbol(next === pageSymbol ? null : next)}
+                  />
+                )}
                 headerActions={
                   <DialogClose asChild>
                     <Button

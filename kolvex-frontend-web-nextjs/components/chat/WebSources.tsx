@@ -43,15 +43,27 @@ function Favicon({ domain, className }: { domain: string; className?: string }) 
   );
 }
 
-/** Sources grouped by the search that found them, in the order the searches ran. */
-function groupByQuery(sources: WebSource[]) {
-  const groups = new Map<string, WebSource[]>();
+const GROUPED_TOOLS = new Set([
+  "search_news_flashes",
+  "get_creator_opinions",
+  "get_creator_recent_opinions",
+  "search_creator_opinions",
+  "get_market_buzz",
+  "get_macro_indicators",
+  "get_market_events",
+]);
+
+/** Sources grouped by the search or tool that found them, in the order the calls ran. */
+function groupSources(sources: WebSource[]) {
+  const groups = new Map<string, { tool: string; query: string; items: WebSource[] }>();
   for (const source of sources) {
-    const list = groups.get(source.query) ?? [];
-    list.push(source);
-    groups.set(source.query, list);
+    const tool = source.tool ?? "web_search";
+    const key = `${tool}\u0000${source.query}`;
+    const group = groups.get(key) ?? { tool, query: source.query, items: [] };
+    group.items.push(source);
+    groups.set(key, group);
   }
-  return Array.from(groups, ([query, items]) => ({ query, items }));
+  return Array.from(groups.values());
 }
 
 /** Open state for one answer's sources panel; only one panel is open on the page. */
@@ -149,13 +161,13 @@ export function WebSourcesPanel({
         <ChevronDown className="h-4 w-4" />
       </button>
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 pb-3">
-        {groupByQuery(sources).map(({ query, items }) => (
-          <section key={query}>
-            {query && (
-              <p className="mb-2 text-xs text-muted-foreground">
-                {t("chat.sources.resultsFor", { query })}
-              </p>
-            )}
+        {groupSources(sources).map(({ tool, query, items }) => (
+          <section key={`${tool}:${query}`}>
+            <p className="mb-2 text-xs text-muted-foreground">
+              {query
+                ? t("chat.sources.resultsFor", { query })
+                : t(`chat.sources.groups.${GROUPED_TOOLS.has(tool) ? tool : "other"}`)}
+            </p>
             <ul className="space-y-1">
               {items.map((source) => (
                 <li key={source.url}>

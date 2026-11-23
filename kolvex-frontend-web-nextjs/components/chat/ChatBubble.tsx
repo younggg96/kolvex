@@ -178,43 +178,52 @@ export function ChatBubble({
 
         {/* Actions */}
         {!isStreaming && content && (
-          <div
-            className={cn(
-              "flex items-center gap-1 mt-2 px-0.5",
-              "opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity duration-150",
-            )}
-          >
-            <Button
-              variant="ghost"
-              size="xs"
-              onClick={handleCopy}
+          <div className="mt-2 flex flex-wrap items-center gap-1 px-0.5">
+            <div
               className={cn(
-                "flex items-center gap-1.5 rounded-full px-2.5 py-1",
-                "text-xs text-muted-foreground",
-                "hover:bg-foreground/[0.06] hover:text-foreground",
-                "transition-colors duration-150",
+                "flex items-center gap-1",
+                "opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity duration-150",
               )}
             >
-              {copied ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-positive" />
-                  <span className="text-positive">{t("chat.actions.copied")}</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-3.5 h-3.5" />
-                  <span>{t("chat.actions.copy")}</span>
-                </>
-              )}
-            </Button>
+              <Button
+                variant="ghost"
+                size="xs"
+                onClick={handleCopy}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-full px-2.5 py-1",
+                  "text-xs text-muted-foreground",
+                  "hover:bg-foreground/[0.06] hover:text-foreground",
+                  "transition-colors duration-150",
+                )}
+              >
+                {copied ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-positive" />
+                    <span className="text-positive">{t("chat.actions.copied")}</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>{t("chat.actions.copy")}</span>
+                  </>
+                )}
+              </Button>
 
-            {shareable && (
-              <ShareButton
-                target={{ kind: "chat", sourceId: messageId! }}
-                preview={sharePreview}
-                className="rounded-full px-2.5 py-1 text-xs text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground"
-              />
-            )}
+              {shareable && (
+                <ShareButton
+                  target={{ kind: "chat", sourceId: messageId! }}
+                  preview={sharePreview}
+                  className="rounded-full px-2.5 py-1 text-xs text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground"
+                />
+              )}
+
+              {onRetry && (
+                <Button variant="ghost" size="xs" onClick={onRetry}>
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>{t("chat.actions.retry")}</span>
+                </Button>
+              )}
+            </div>
 
             {!!webSources?.length && (
               <WebSourcesButton
@@ -222,13 +231,6 @@ export function ChatBubble({
                 open={sourcesPanel.open}
                 onToggle={sourcesPanel.toggle}
               />
-            )}
-
-            {onRetry && (
-              <Button variant="ghost" size="xs" onClick={onRetry}>
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>{t("chat.actions.retry")}</span>
-              </Button>
             )}
           </div>
         )}

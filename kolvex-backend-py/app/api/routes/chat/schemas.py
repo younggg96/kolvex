@@ -26,6 +26,8 @@ class MessageSchema(BaseModel):
     token_usage: dict[str, Any] | None = None
     # Pages the turn's web searches returned (app/agent/web_sources.py).
     web_sources: list[dict[str, Any]] | None = None
+    # Suggested next questions the answer ended with (app/agent/follow_ups.py).
+    follow_ups: list[str] | None = None
 
 
 class ConversationSchema(BaseModel):
@@ -116,6 +118,8 @@ class MessageResponse(BaseModel):
     token_usage: dict[str, Any] | None = None
     # Pages the turn's web searches returned (app/agent/web_sources.py).
     web_sources: list[dict[str, Any]] | None = None
+    # Suggested next questions the answer ended with (app/agent/follow_ups.py).
+    follow_ups: list[str] | None = None
 
 
 class AgentMessageResponse(BaseModel):

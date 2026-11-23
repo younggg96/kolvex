@@ -59,6 +59,29 @@ sent to the server, and **恢复默认 / Reset** restores the defaults:
   `--foreground`, `--muted-foreground`), plus 绿涨红跌 / 红涨绿跌 presets. Turning a part
   off keeps candles visible (hollow body, neutral wick or outline).
 
+## Advanced chart side panels (看盘)
+
+On desktop (≥ `lg`) the advanced chart keeps the K-line on the left and a column of
+stacked panels on the right (`components/youtube/chart/AdvancedSidePanels.tsx`). The
+**面板 / Panels** menu shows, hides and reorders them; each panel's header collapses it
+or closes it. The layout is saved per browser under `kolvex:advanced-chart-panels`
+(`lib/chart/sidePanels.ts`) and is never sent to the server. The header button
+**收起面板 / Hide panels** hides the whole column.
+
+- **自选 / Watchlist** (default, first): the account-synced watchlist with delayed price
+  and signed change. Selecting a row charts that stock inside the dialog; closing the
+  dialog returns to the page's stock. The star adds or removes the charted stock.
+  Signed-out readers see a sign-in action.
+- **AI 分析 / AI analysis** (default, second): the AI actions and results that used to
+  fill the column. Only offered when the chart has AI.
+- **新闻 / News**: the charted stock's latest related news (same source as the stock
+  page), with Chinese headlines when the interface is Chinese.
+- **财报 / Earnings**: next report date and the last eight reported quarters' EPS
+  estimate, actual and surprise (Yahoo Finance; missing values stay "—").
+
+While another stock is charted, its AI analysis is not reported to the page's own
+technical tab. Phones keep the existing AI sheet; the panel column is desktop-only.
+
 ## Reading saved analysis in another language
 
 Saved results retain their generation language. If it differs from the Web

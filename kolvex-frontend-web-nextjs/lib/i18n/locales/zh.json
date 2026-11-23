@@ -371,6 +371,9 @@
       "scrollToBottom": "滚动到底部",
       "startFailed": "暂时无法开始聊天，请重试。"
     },
+    "followUps": {
+      "label": "相关问题"
+    },
     "activity": {
       "routing": "正在理解你的问题",
       "planning": "正在规划分析步骤",
@@ -458,6 +461,16 @@
       "fxAt": "（按 {date} 汇率）"
     },
     "sources": {
+      "groups": {
+        "get_creator_opinions": "博主观点",
+        "get_creator_recent_opinions": "博主观点",
+        "get_macro_indicators": "宏观数据",
+        "get_market_buzz": "X 帖子",
+        "get_market_events": "市场日历",
+        "other": "其他来源",
+        "search_creator_opinions": "博主观点",
+        "search_news_flashes": "快讯"
+      },
       "close": "收起来源",
       "count": "{count} 个来源",
       "countOne": "1 个来源",
@@ -1681,6 +1694,11 @@
     "priceAxisZoom": "价格轴：拖动、滚动鼠标滚轮或按 + / − 缩放，双击或按 0 恢复自动缩放。",
     "advancedChart": "高级",
     "advancedChartTitle": "{symbol} 高级图表",
+    "sidePanels": {
+      "collapse": "收起面板",
+      "expand": "展开面板",
+      "label": "看盘面板"
+    },
     "interval": "周期",
     "autoScale": "自动缩放",
     "graph": {

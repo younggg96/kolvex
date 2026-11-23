@@ -37,6 +37,7 @@ function convertApiMessage(msg: chatApi.ChatMessage): Message {
     answerCheck: msg.answer_check,
     tokenUsage: msg.token_usage,
     webSources: msg.web_sources,
+    followUps: msg.follow_ups,
     timestamp: new Date(msg.created_at),
   };
 }
@@ -215,8 +216,26 @@ export function useChatHistory() {
       setConversations((prev) => {
         const exists = prev.some((c) => c.id === id);
         if (exists) {
-          // Update existing conversation with full messages
-          return prev.map((c) => (c.id === id ? converted : c));
+          // Update existing conversation with full messages. Until the web_sources migration
+          // runs, the server copy has no sources; keep the ones this tab received in the stream.
+          return prev.map((c) => {
+            if (c.id !== id) return c;
+            // Same for follow-up questions before the follow_ups migration.
+            const local = new Map(c.messages.map((m) => [m.id, m]));
+            return {
+              ...converted,
+              messages: converted.messages.map((m) => {
+                const mine = local.get(m.id);
+                return {
+                  ...m,
+                  webSources: m.webSources?.length
+                    ? m.webSources
+                    : (mine?.webSources ?? m.webSources),
+                  followUps: m.followUps?.length ? m.followUps : (mine?.followUps ?? m.followUps),
+                };
+              }),
+            };
+          });
         } else {
           // Add new conversation if not in list
           return [converted, ...prev];

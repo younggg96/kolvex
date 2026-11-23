@@ -14,6 +14,7 @@ from langgraph.prebuilt import create_react_agent
 from app.agent.config import MAX_TOOL_ITERATIONS
 from app.agent.data_gaps import data_gap, merge_gaps
 from app.agent.financial_evidence import extract_financial_evidence
+from app.agent.follow_ups import FOLLOW_UP_PROMPT, FollowUpStream, split_follow_ups
 from app.agent.llm import get_fast_llm, get_llm, resolve_model_id
 from app.agent.quote_evidence import QuoteEvidence, extract_quote_evidence
 from app.agent.revenue_evidence import (
@@ -225,6 +226,7 @@ def _create_agent_for_request(
     user_api_keys: Optional[Dict[str, str]] = None,
     skills: Optional[List[str]] = None,
     memory_note: Optional[str] = None,
+    follow_ups: bool = False,
 ):
     """
     为每个请求创建合适的 Agent（支持动态 model 和 source 过滤）
@@ -303,6 +305,9 @@ def _create_agent_for_request(
     if memory_note:
         # Conversation summary and cross-conversation memory (app/agent/chat_memory.py).
         prompt += "\n\n" + memory_note
+    if follow_ups:
+        # Streamed chat only: stream_agent takes the block out (app/agent/follow_ups.py).
+        prompt += FOLLOW_UP_PROMPT
 
     return create_react_agent(
         model=llm,
@@ -543,6 +548,7 @@ async def stream_agent(
         user_api_keys=user_api_keys,
         skills=skills,
         memory_note=memory_note,
+        follow_ups=True,
     )
 
     yield {
@@ -564,6 +570,8 @@ async def stream_agent(
         gaps: list[dict] = []
         financials: dict[str, dict] = {}
         web_sources: dict[str, dict] = {}
+        follow_ups = FollowUpStream()
+        unstreamed_follow_ups: list[str] = []
         usage = {"model_calls": 0, "input_tokens": 0, "output_tokens": 0}
         writing = {"type": "status", "stage": "writing", "content": "Writing the response"}
 
@@ -596,6 +604,7 @@ async def stream_agent(
 
                 if getattr(chunk, "tool_call_chunks", None) or _message_has_tool_calls(chunk):
                     turn["tools"] = True
+                    follow_ups.reset()
                     if turn["emitted"]:
                         turn["emitted"] = False
                         yield {"type": "token_reset"}
@@ -606,7 +615,8 @@ async def stream_agent(
                     if not turn["emitted"]:
                         turn["emitted"] = True
                         yield writing
-                    yield {"type": "token", "content": text}
+                    if visible := follow_ups.feed(text):
+                        yield {"type": "token", "content": visible}
 
             elif kind == "on_chat_model_end":
                 run_id = str(event.get("run_id", "default"))
@@ -614,14 +624,19 @@ async def stream_agent(
                 output = event.get("data", {}).get("output")
 
                 if _message_has_tool_calls(output):
+                    follow_ups.reset()
                     if turn["emitted"]:
                         yield {"type": "token_reset"}
                 elif not final_response_emitted:
                     if turn["emitted"]:
                         final_response_emitted = True
+                        if held := follow_ups.flush():
+                            yield {"type": "token", "content": held}
                     else:
                         # Providers that do not stream only report the full message here.
-                        final_text = _content_to_text(getattr(output, "content", ""))
+                        final_text, unstreamed_follow_ups = split_follow_ups(
+                            _content_to_text(getattr(output, "content", ""))
+                        )
                         if final_text:
                             final_response_emitted = True
                             yield writing
@@ -682,6 +697,8 @@ async def stream_agent(
             ]
         if web_sources:
             done["web_sources"] = list(web_sources.values())
+        if suggested := follow_ups.follow_ups or unstreamed_follow_ups:
+            done["follow_ups"] = suggested
         yield done
 
     except (FreeQuotaExceeded, FreeQuotaUnavailable) as e:

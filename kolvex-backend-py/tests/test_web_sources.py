@@ -26,10 +26,48 @@ def test_extracts_only_http_pages_with_domain_and_clipped_snippet():
     assert rows[1]["title"] == "reuters.com"
     assert rows[1]["published_date"] == "2026-11-20"
     assert rows[0]["query"] == "hot stocks"
+    assert rows[0]["tool"] == "web_search"
 
 
-def test_ignores_other_tools_errors_and_garbage():
-    assert extract_web_sources("get_stock_quote", PAYLOAD) == []
+def test_kolvex_tools_with_links_become_sources():
+    news = json.dumps(
+        {
+            "headlines": [
+                {
+                    "title": "Fed holds",
+                    "link": "https://financialjuice.com/a",
+                    "time_utc": "2026-11-22 10:00",
+                }
+            ]
+        }
+    )
+    creator = json.dumps(
+        {
+            "opinions": [
+                {
+                    "creator": "Meet Kevin",
+                    "video_title": "NVDA after earnings",
+                    "video_url": "https://www.youtube.com/watch?v=1",
+                    "thesis": "Still bullish",
+                }
+            ]
+        }
+    )
+    buzz = json.dumps(
+        {"latest_posts": [{"author": "someone", "text": "$NVDA", "url": "https://x.com/s/1"}]}
+    )
+
+    [n] = extract_web_sources("search_news_flashes", news)
+    assert (n["title"], n["query"], n["tool"]) == ("Fed holds", "", "search_news_flashes")
+    [c] = extract_web_sources("get_creator_opinions", creator)
+    assert c["title"] == "Meet Kevin · NVDA after earnings"
+    assert c["domain"] == "youtube.com" and c["snippet"] == "Still bullish"
+    [b] = extract_web_sources("get_market_buzz", buzz)
+    assert b["title"] == "@someone" and b["snippet"] == "$NVDA"
+
+
+def test_ignores_linkless_errors_and_garbage():
+    assert extract_web_sources("get_stock_quote", json.dumps({"price": 1})) == []
     assert extract_web_sources("web_search", json.dumps({"error": "x"})) == []
     assert extract_web_sources("web_search", "not json") == []
 

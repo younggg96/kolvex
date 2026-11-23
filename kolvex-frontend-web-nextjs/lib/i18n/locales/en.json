@@ -388,6 +388,9 @@
       "scrollToBottom": "Scroll to bottom",
       "startFailed": "Unable to start a conversation. Please try again."
     },
+    "followUps": {
+      "label": "Related questions"
+    },
     "activity": {
       "routing": "Understanding your request",
       "planning": "Planning the analysis",
@@ -475,6 +478,16 @@
       "fxAt": "(at the {date} rate)"
     },
     "sources": {
+      "groups": {
+        "get_creator_opinions": "Creator opinions",
+        "get_creator_recent_opinions": "Creator opinions",
+        "get_macro_indicators": "Macro data",
+        "get_market_buzz": "X posts",
+        "get_market_events": "Market calendar",
+        "other": "Other sources",
+        "search_creator_opinions": "Creator opinions",
+        "search_news_flashes": "News flashes"
+      },
       "close": "Close sources",
       "count": "{count} sources",
       "countOne": "1 source",
@@ -1698,6 +1711,11 @@
     "priceAxisZoom": "Price axis. Drag, scroll, or press + or − to zoom. Double-click or press 0 to restore auto-scale.",
     "advancedChart": "Advanced",
     "advancedChartTitle": "{symbol} advanced chart",
+    "sidePanels": {
+      "collapse": "Hide panels",
+      "expand": "Show panels",
+      "label": "Chart side panels"
+    },
     "interval": "Interval",
     "autoScale": "Auto-scale",
     "graph": {

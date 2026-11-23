@@ -22,7 +22,12 @@ test("runAi's model dialog is mounted in the standard and advanced layouts", () 
   );
   assert.match(
     source,
-    /showAi && advanced && \(?\s*<aside\b[^>]*>\s*\{aiControls\}/,
+    /const advancedAiPanel =\s*showAi && advanced \? \(\s*<>\s*\{aiControls\}/,
+    "advanced AI panel",
+  );
+  assert.match(
+    source,
+    /<aside\b[\s\S]*?\{renderSidePanels \? renderSidePanels\(advancedAiPanel\) : advancedAiPanel\}/,
     "advanced layout",
   );
   assert.match(

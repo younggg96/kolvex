@@ -194,6 +194,8 @@ Web 流式请求发送 `team_research`（`auto` / `ask` / `off`）、`max_team_a
 - **工具缓存**（`tool_cache.py`）：报价 15 秒，宏观 15 分钟，估值 1 小时，财务、分析师、营收、13F 6 小时，公司概况 1 天。每个进程各自一份，按工具名和参数存；带 `error` 或 `gap` 的结果不缓存。在 `tools/__init__.py` 里套上，工具文件本身不变。测试在 `tests/conftest.py` 里每个用例前后清空。
 - **每轮一行日志**：回复保存后（流式 `/stream` 和非流式 `/send` 都写），`routes.log_turn` 写一行 `chat_turn {...}`：路由到的子 Agent、模型、按顺序调用的工具、耗时、模型调用次数和 token、数字核对的 matched / mismatch / unverified、单位修正次数、数据缺口来自哪些工具。不写用户 ID、问题或答案原文。token 来自 `stream_agent` 的 `done` 事件里的 `usage`，或 `run_agent` 的 `turn_stats`。
 
+- **相关问题**（`follow_ups.py`）：只在流式聊天（`stream_agent`）里，提示词末尾加 `FOLLOW_UP_PROMPT`，让回答模型在最终回答后写 `<follow_ups>` 块（3～5 个追问，用户语言，能用工具回答；回答以提问结尾时附一两个可能的回答）。`FollowUpStream` 把块挡在 `token` 事件之外（标签被切在两个 chunk 之间也挡得住），`token_reset` / 工具调用轮次会清空；问题放进 `done.follow_ups`，`routes.py` 存进 `chat_messages.follow_ups`（迁移 `20261123090000_chat_follow_ups.sql`，没跑时照常保存、不带这列）。不额外调用模型；模型没写块就没有相关问题。
+
 ## 9. 目录
 
 ```

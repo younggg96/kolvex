@@ -154,3 +154,79 @@ test("one-day and one-week previews keep distinct histories, including bars acro
     ],
   );
 });
+
+test("one-day previews show the current trading day's extended sessions from the prior close", () => {
+  const { trendPoints, currentTradingDay, trendSegments } = fixture();
+  const monday = trendPoints(
+    [
+      { date: "2026-11-19T15:55:00-05:00", close: 95 },
+      { date: "2026-11-20T04:00:00-05:00", close: 96 },
+      { date: "2026-11-20T15:55:00-05:00", close: 100 },
+      { date: "2026-11-20T16:00:00-05:00", close: 101 },
+      { date: "2026-11-22T20:00:00-05:00", close: 103, session: "overnight" },
+      { date: "2026-11-23T04:00:00-05:00", close: 104 },
+      { date: "2026-11-23T07:05:00-05:00", close: 108 },
+    ],
+    "5m",
+  );
+  assert.deepEqual(
+    Array.from(monday, (point) => point.session),
+    ["regular", "pre", "regular", "post", "overnight", "pre", "pre"],
+  );
+  const day = currentTradingDay(monday);
+  // Friday's close anchors Sunday night and Monday pre-market; Friday's own day is dropped.
+  assert.deepEqual(
+    Array.from(day, (point) => point.value),
+    [100, 103, 104, 108],
+  );
+  assert.deepEqual(
+    Array.from(trendSegments(day), (segment) => segment.session),
+    ["overnight", "pre"],
+  );
+  // After 20:00 the overnight session belongs to the next trading day.
+  const night = trendPoints(
+    [
+      { date: "2026-11-23T09:30:00-05:00", close: 100 },
+      { date: "2026-11-23T15:55:00-05:00", close: 102 },
+      { date: "2026-11-23T16:00:00-05:00", close: 103 },
+      { date: "2026-11-23T20:05:00-05:00", close: 104 },
+    ],
+    "5m",
+  );
+  assert.deepEqual(
+    Array.from(currentTradingDay(night), (point) => point.value),
+    [102, 104],
+  );
+  // Bars on another exchange clock are left as they are, without session styling.
+  const tokyo = trendPoints(
+    [
+      { date: "2026-11-23T09:00:00+09:00", close: 1 },
+      { date: "2026-11-23T09:05:00+09:00", close: 2 },
+    ],
+    "5m",
+  );
+  assert.equal(currentTradingDay(tokyo), tokyo);
+  assert.equal(tokyo[0].session, undefined);
+});
+
+test("live extended-hours quotes join the line on the New York clock with their session", () => {
+  const { trendPoints, augmentTrendWithQuote, currentTradingDay } = fixture();
+  const points = trendPoints(
+    [
+      { date: "2026-11-20T15:55:00-05:00", close: 100 },
+      { date: "2026-11-23T07:00:00-05:00", close: 104 },
+    ],
+    "5m",
+  );
+  const live = augmentTrendWithQuote(points, {
+    price: 105,
+    time: Date.parse("2026-11-23T12:09:00Z") / 1000,
+    session: "pre",
+  });
+  assert.equal(live.at(-1).date, "2026-11-23T07:09:00-05:00");
+  assert.equal(live.at(-1).session, "pre");
+  assert.deepEqual(
+    Array.from(currentTradingDay(live), (point) => point.value),
+    [100, 104, 105],
+  );
+});

@@ -4,6 +4,7 @@ import { useRef, useEffect, useState, useCallback } from "react";
 import { AlertCircle, ChevronDown, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ChatBubble } from "./ChatBubble";
+import { FollowUpQuestions } from "./FollowUpQuestions";
 import { AgentSteps } from "./AgentSteps";
 import type { ChatMessageListProps } from "./types";
 import { Button } from "../ui/button";
@@ -27,6 +28,7 @@ export function ChatMessageList({
   symbols,
   onUserScroll,
   composerCollapsed = false,
+  onFollowUp,
 }: ChatMessageListProps) {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -122,6 +124,17 @@ export function ChatMessageList({
     planning: t("chat.activity.planning"),
     writing: t("chat.activity.writing"),
   };
+  // Only the latest answer offers follow-ups, and only while nothing else is in flight.
+  const lastMessage = messages[messages.length - 1];
+  const followUps =
+    onFollowUp &&
+    lastMessage?.role === "assistant" &&
+    !isLoading &&
+    !streamingContent &&
+    !pendingUserMessage &&
+    !errorMessage
+      ? (lastMessage.followUps ?? [])
+      : [];
   const statusMessage = agentStatus
     ? statusLabels[agentStatus.stage] || agentStatus.message
     : undefined;
@@ -155,6 +168,10 @@ export function ChatMessageList({
               }
             />
           ))}
+
+          {onFollowUp && followUps.length > 0 && (
+            <FollowUpQuestions questions={followUps} onSelect={onFollowUp} />
+          )}
 
           {/* Pending user message (optimistic update — always visible) */}
           {pendingUserMessage && (
