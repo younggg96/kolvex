@@ -6,7 +6,6 @@ import { useCallback, useEffect, useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import FearGreedImporter from "@/components/admin/FearGreedImporter";
 import MarketEventManager from "@/components/admin/MarketEventManager";
-import PersonUpdatesImporter from "@/components/admin/PersonUpdatesImporter";
 import PersonUpdatesManager from "@/components/admin/PersonUpdatesManager";
 import XhsSentimentImporter from "@/components/admin/XhsSentimentImporter";
 import { useCopy } from "@/components/decision/shared";
@@ -295,13 +294,7 @@ export default function AdminPageClient({ initialTab }: { initialTab?: string })
             forceMount
             className="mt-6 data-[state=inactive]:hidden"
           >
-            <div className="space-y-10">
-              <PersonUpdatesManager />
-              <section className="space-y-4">
-                <h3 className="text-lg font-semibold">{c("Bulk import JSON", "批量导入 JSON")}</h3>
-                <PersonUpdatesImporter />
-              </section>
-            </div>
+            <PersonUpdatesManager />
           </TabsContent>
           <TabsContent value="options" className="mt-6">
             <OptionsActivityManager />

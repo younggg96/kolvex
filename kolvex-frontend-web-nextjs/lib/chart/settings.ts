@@ -41,7 +41,7 @@ export const CHART_SETTINGS_KEY = "kolvex:chart-settings";
 export const DEFAULT_CHART_SETTINGS: ChartSettings = {
   zoomAnchor: "cursor",
   crosshairSnap: "off",
-  extendedHours: false,
+  extendedHours: true,
   highlightSession: true,
   candles: {
     body: { enabled: true, up: "chart-up", down: "chart-down" },
@@ -134,7 +134,7 @@ export function intervalMinutes(interval: string): number | null {
   return Number(match[1]) * (match[2] === "h" ? 60 : 1);
 }
 
-export type TradingSession = "pre" | "regular" | "post";
+export type TradingSession = "pre" | "regular" | "post" | "overnight";
 const REGULAR_OPEN = 9 * 60 + 30;
 const REGULAR_CLOSE = 16 * 60;
 
@@ -158,11 +158,12 @@ export function extendedRuns(
   interval: string,
   first: number,
   last: number,
+  sessions?: Array<"overnight" | null | undefined>,
 ): Array<{ start: number; end: number; session: Exclude<TradingSession, "regular"> }> {
   const runs: Array<{ start: number; end: number; session: Exclude<TradingSession, "regular"> }> =
     [];
   for (let index = Math.max(first, 0); index <= Math.min(last, dates.length - 1); index++) {
-    const session = barSession(dates[index], interval);
+    const session = sessions?.[index] ?? barSession(dates[index], interval);
     if (session === "regular") continue;
     const previous = runs[runs.length - 1];
     if (previous && previous.session === session && previous.end === index - 1)

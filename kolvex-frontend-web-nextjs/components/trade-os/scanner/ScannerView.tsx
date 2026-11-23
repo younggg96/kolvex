@@ -9,6 +9,9 @@ import {
   ScannerCandidate,
   ScannerRunResponse,
 } from "@/lib/tradeOsApi";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ListCard, ListEmptyState } from "@/components/ui/list-card";
 import {
   Search,
   Play,
@@ -16,9 +19,9 @@ import {
   ArrowUpRight,
   Sparkles,
   Layers,
-  ChevronRight,
   SlidersHorizontal,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function ScannerView() {
   const c = useCopy();
@@ -86,7 +89,7 @@ export function ScannerView() {
     return (
       <div className="flex items-center justify-center p-12 text-sm text-muted-foreground">
         <RefreshCw className="w-5 h-5 animate-spin mr-2" />
-        Loading Scanner...
+        {c("Loading Scanner...", "正在加载扫描器...")}
       </div>
     );
   }
@@ -94,189 +97,202 @@ export function ScannerView() {
   return (
     <div className="space-y-6">
       {/* Header & Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <Search className="w-5 h-5 text-primary" />
-            {t.title}
-          </h2>
-          <p className="text-sm text-muted-foreground mt-0.5">{t.subtitle}</p>
-        </div>
+      <div className="flex items-center justify-between">
+        <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+          <Search className="w-4 h-4 text-primary" />
+          {t.title}
+        </h2>
 
-        <button
+        <Button
           onClick={handleRunScan}
           disabled={running}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition shadow disabled:opacity-50"
+          size="sm"
+          className="rounded-full px-4 text-xs font-semibold"
         >
           {running ? (
-            <RefreshCw className="w-4 h-4 animate-spin" />
+            <RefreshCw className="mr-1.5 w-3.5 h-3.5 animate-spin" />
           ) : (
-            <Play className="w-4 h-4 fill-current" />
+            <Play className="mr-1.5 w-3.5 h-3.5 fill-current" />
           )}
           {running ? t.running : t.runScan}
-        </button>
+        </Button>
       </div>
 
       {error && (
-        <div className="p-4 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-500 text-sm">
+        <div className="p-4 rounded-2xl bg-destructive/10 border border-destructive/30 text-destructive text-sm">
           {error}
         </div>
       )}
 
-      {/* Strategy & Universe Context */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <div className="rounded-xl border border-border/60 bg-card p-4 space-y-1">
+      {/* Strategy & Universe Context Cards */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+        <Card className="p-4 sm:p-5 space-y-1">
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <SlidersHorizontal className="w-3.5 h-3.5" />
+            <SlidersHorizontal className="w-3.5 h-3.5 text-primary" />
             <span>{t.strategy}</span>
           </div>
-          <div className="text-sm font-semibold text-foreground">Trend Breakout 20D</div>
+          <div className="text-sm font-semibold text-foreground tracking-tight">
+            Trend Breakout 20D
+          </div>
           <div className="text-xs text-muted-foreground">Price &gt; SMA50 &gt; SMA200</div>
-        </div>
+        </Card>
 
-        <div className="rounded-xl border border-border/60 bg-card p-4 space-y-1">
+        <Card className="p-4 sm:p-5 space-y-1">
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Layers className="w-3.5 h-3.5" />
+            <Layers className="w-3.5 h-3.5 text-primary" />
             <span>{t.universe}</span>
           </div>
-          <div className="text-sm font-semibold text-foreground">Liquid Growth Top 25</div>
+          <div className="text-sm font-semibold text-foreground tracking-tight">
+            Liquid Growth Top 25
+          </div>
           <div className="text-xs text-muted-foreground">Min 500K Daily Vol</div>
-        </div>
+        </Card>
 
-        <div className="rounded-xl border border-border/60 bg-card p-4 space-y-1">
+        <Card className="p-4 sm:p-5 space-y-1">
           <span className="text-xs text-muted-foreground">{t.scanned}</span>
-          <div className="text-xl font-bold text-foreground">{data?.total_scanned || 0}</div>
+          <div className="figure text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+            {data?.total_scanned || 0}
+          </div>
           <div className="text-xs text-muted-foreground">
             {data?.run_at ? new Date(data.run_at).toLocaleTimeString() : "Pending"}
           </div>
-        </div>
+        </Card>
 
-        <div className="rounded-xl border border-border/60 bg-card p-4 space-y-1">
+        <Card className="p-4 sm:p-5 space-y-1">
           <span className="text-xs text-muted-foreground">{t.candidatesFound}</span>
-          <div className="text-xl font-bold text-emerald-500">{data?.candidates_count || 0}</div>
+          <div className="figure text-2xl font-semibold tracking-tight text-positive sm:text-3xl">
+            {data?.candidates_count || 0}
+          </div>
           <div className="text-xs text-muted-foreground">Ready for Trade Plan</div>
-        </div>
+        </Card>
       </div>
 
-      {/* Candidate List */}
-      <div className="rounded-xl border border-border/60 bg-card overflow-hidden shadow-sm">
-        <div className="p-4 border-b border-border/40 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+      {/* Candidate List Card */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between px-1">
+          <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-primary" />
-            Strategy Candidates
+            {c("Strategy Candidates", "策略候选标的")}
           </h3>
-          <span className="text-xs text-muted-foreground">
-            {data?.candidates_count || 0} matches
+          <span className="figure text-xs text-muted-foreground">
+            {data?.candidates_count || 0} {c("matches", "只匹配")}
           </span>
         </div>
 
-        {!data?.candidates || data.candidates.length === 0 ? (
-          <div className="p-12 text-center space-y-3">
-            <div className="w-12 h-12 rounded-full bg-muted/60 flex items-center justify-center mx-auto text-muted-foreground">
-              <Search className="w-6 h-6" />
-            </div>
-            <div className="max-w-md mx-auto text-sm text-muted-foreground leading-relaxed">
-              {t.emptyCandidates}
-            </div>
-            <button
-              onClick={handleRunScan}
-              disabled={running}
-              className="mt-2 text-xs font-medium text-primary hover:underline"
-            >
-              Run scan now &rarr;
-            </button>
-          </div>
-        ) : (
-          <div className="divide-y divide-border/30">
-            {data.candidates.map((cand: ScannerCandidate) => (
-              <div
-                key={cand.symbol}
-                className="p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4 hover:bg-muted/20 transition"
-              >
-                <div className="space-y-2 max-w-xl">
-                  <div className="flex items-center gap-3">
-                    <span className="text-lg font-bold text-foreground tracking-tight">
-                      {cand.symbol}
-                    </span>
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                      Score: {cand.rank_score.toFixed(0)}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      Vol Surge:{" "}
-                      <strong className="text-foreground">
-                        {parseFloat(cand.volume_surge_ratio).toFixed(2)}x
-                      </strong>
-                    </span>
+        <ListCard>
+          {!data?.candidates || data.candidates.length === 0 ? (
+            <ListEmptyState
+              title={c("No stocks currently qualify", "当前暂无符合条件的标的")}
+              description={t.emptyCandidates}
+              action={
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRunScan}
+                  disabled={running}
+                  className="rounded-full"
+                >
+                  {c("Run scan now", "立即重新扫描")}
+                </Button>
+              }
+            />
+          ) : (
+            <div className="divide-y divide-border/40">
+              {data.candidates.map((cand: ScannerCandidate) => (
+                <div
+                  key={cand.symbol}
+                  className="p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4 hover:bg-muted/20 transition rounded-2xl"
+                >
+                  <div className="space-y-2 max-w-xl">
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg font-bold text-foreground tracking-tight">
+                        {cand.symbol}
+                      </span>
+                      <span className="figure text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-positive border border-emerald-500/20">
+                        Score: {cand.rank_score.toFixed(0)}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        Vol Surge:{" "}
+                        <strong className="figure text-foreground font-semibold">
+                          {parseFloat(cand.volume_surge_ratio).toFixed(2)}x
+                        </strong>
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                      <span>
+                        Price:{" "}
+                        <strong className="figure text-foreground">
+                          ${parseFloat(cand.current_price).toFixed(2)}
+                        </strong>
+                      </span>
+                      <span>
+                        20D High:{" "}
+                        <strong className="figure text-foreground">
+                          ${parseFloat(cand.breakout_level).toFixed(2)}
+                        </strong>
+                      </span>
+                      <span>
+                        ATR(14):{" "}
+                        <strong className="figure text-foreground">
+                          ${parseFloat(cand.atr14).toFixed(2)}
+                        </strong>
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {cand.matched_criteria.map((cr, i) => (
+                        <span
+                          key={i}
+                          className="text-[11px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground"
+                        >
+                          {cr}
+                        </span>
+                      ))}
+                    </div>
                   </div>
 
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                    <span>
-                      Price:{" "}
-                      <strong className="text-foreground">
-                        ${parseFloat(cand.current_price).toFixed(2)}
-                      </strong>
-                    </span>
-                    <span>
-                      20D High:{" "}
-                      <strong className="text-foreground">
-                        ${parseFloat(cand.breakout_level).toFixed(2)}
-                      </strong>
-                    </span>
-                    <span>
-                      ATR(14):{" "}
-                      <strong className="text-foreground">
-                        ${parseFloat(cand.atr14).toFixed(2)}
-                      </strong>
-                    </span>
-                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 lg:self-center">
+                    <div className="bg-muted/30 p-3 rounded-2xl border border-foreground/5 text-xs space-y-1 sm:text-right min-w-[190px]">
+                      <div className="text-muted-foreground">
+                        Stop:{" "}
+                        <span className="figure text-negative font-semibold">
+                          ${parseFloat(cand.suggested_stop).toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="text-muted-foreground">
+                        Target (2R):{" "}
+                        <span className="figure text-positive font-semibold">
+                          ${parseFloat(cand.suggested_target_2r).toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="text-muted-foreground">
+                        Risk / Share:{" "}
+                        <span className="figure text-foreground font-semibold">
+                          ${parseFloat(cand.risk_per_share).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
 
-                  <div className="flex flex-wrap gap-1.5 pt-1">
-                    {cand.matched_criteria.map((c, i) => (
-                      <span
-                        key={i}
-                        className="text-[11px] px-2 py-0.5 rounded bg-muted/60 text-muted-foreground border border-border/40"
+                    <Button
+                      size="sm"
+                      asChild
+                      className="rounded-full px-4 text-xs font-semibold gap-1.5"
+                    >
+                      <Link
+                        href={`/dashboard/trade-os/plans?symbol=${cand.symbol}&entry=${cand.suggested_entry}&stop=${cand.suggested_stop}&target=${cand.suggested_target_2r}`}
                       >
-                        {c}
-                      </span>
-                    ))}
+                        {t.createPlan}
+                        <ArrowUpRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </Button>
                   </div>
                 </div>
-
-                <div className="flex flex-col sm:flex-row sm:items-center gap-4 lg:self-center">
-                  <div className="bg-muted/40 p-3 rounded-lg border border-border/40 text-xs space-y-1 sm:text-right min-w-[190px]">
-                    <div className="text-muted-foreground">
-                      Stop:{" "}
-                      <span className="text-rose-500 font-semibold">
-                        ${parseFloat(cand.suggested_stop).toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="text-muted-foreground">
-                      Target (2R):{" "}
-                      <span className="text-emerald-500 font-semibold">
-                        ${parseFloat(cand.suggested_target_2r).toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="text-muted-foreground">
-                      Risk / Share:{" "}
-                      <span className="text-foreground font-semibold">
-                        ${parseFloat(cand.risk_per_share).toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <Link
-                    href={`/dashboard/trade-os/plans?symbol=${cand.symbol}&entry=${cand.suggested_entry}&stop=${cand.suggested_stop}&target=${cand.suggested_target_2r}`}
-                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-xs hover:opacity-90 transition shadow"
-                  >
-                    {t.createPlan}
-                    <ArrowUpRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+        </ListCard>
+      </section>
     </div>
   );
 }

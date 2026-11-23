@@ -1651,7 +1651,8 @@
     "quoteSession": {
       "regular": "Regular · vs previous close",
       "pre": "Pre-market · vs close",
-      "post": "After hours · vs close"
+      "post": "After hours · vs close",
+      "overnight": "Overnight · vs close"
     },
     "quoteTimeUnknown": "Quote time unavailable",
     "quoteMayBeDelayed": "Quotes may be delayed",
@@ -2050,7 +2051,7 @@
       "snapOhlc": "Nearest OHLC",
       "data": "Data",
       "extendedHours": "Show extended hours",
-      "extendedHoursHint": "Applies to minute and hour bars only; pre-market 4:00–9:30 and after-hours 16:00–20:00 ET.",
+      "extendedHoursHint": "Minute and hour bars can include pre-market, after-hours and overnight data where available.",
       "highlightSession": "Highlight trading session",
       "colors": "Candle colors",
       "body": "Candle body",

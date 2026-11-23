@@ -95,6 +95,27 @@ export function advancedHistoryQuery(
   return params.toString();
 }
 
+/** Start the 1D view before the most recent cash session without discarding chart history. */
+export function extendedDayStart(
+  dates: string[],
+  interval: string,
+): number | null {
+  const minutes =
+    Number.parseInt(interval, 10) * (interval.endsWith("h") ? 60 : 1);
+  const regularDay = dates
+    .findLast((date) => {
+      const hours =
+        Number(date.slice(11, 13)) * 60 + Number(date.slice(14, 16));
+      return hours < 16 * 60 && hours + minutes > 9 * 60 + 30;
+    })
+    ?.slice(0, 10);
+  const day = regularDay ? Date.parse(regularDay) : NaN;
+  if (!Number.isFinite(day)) return null;
+  const previous = new Date(day - 86_400_000).toISOString().slice(0, 10);
+  const first = dates.find((date) => date.slice(0, 16) >= `${previous}T20:00`);
+  return first ? Date.parse(first) : null;
+}
+
 /** Earliest bar time shown when a range is first opened; null shows everything loaded. */
 export function rangeStart(
   range: AdvancedRange,

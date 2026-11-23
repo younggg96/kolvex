@@ -98,3 +98,18 @@ test("crosshair snaps to the close or the nearest OHLC price", () => {
   assert.equal(settings.snapCrosshair("ohlc", bar, yOf(13.9), yOf), 14);
   assert.equal(settings.snapCrosshair("ohlc", bar, yOf(8.4), yOf), 8);
 });
+
+test("overnight candles use their explicit data-source session across midnight", () => {
+  const dates = [
+    "2026-11-22T23:55:00-05:00",
+    "2026-11-23T00:00:00-05:00",
+    "2026-11-23T04:00:00-05:00",
+  ];
+  assert.deepEqual(
+    plain(settings.extendedRuns(dates, "5m", 0, 2, ["overnight", "overnight", null])),
+    [
+      { start: 0, end: 1, session: "overnight" },
+      { start: 2, end: 2, session: "pre" },
+    ],
+  );
+});

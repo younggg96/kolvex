@@ -277,6 +277,9 @@ test("single and batch quotes preserve matching regular and extended-session tim
     pre_market_time: 1793800000,
     post_market_price: 204,
     post_market_time: 1793830000,
+    overnight_market_price: 205,
+    overnight_market_time: 1793840000,
+    overnight_market_source: "Alpaca / Blue Ocean ATS",
   };
   const api = load("app/api/stocks/route.ts", async (url) =>
     Response.json(String(url).includes("/quotes?") ? { NVDA: raw } : raw),
@@ -292,6 +295,9 @@ test("single and batch quotes preserve matching regular and extended-session tim
   assert.equal(single.preMarketTime, raw.pre_market_time);
   assert.equal(single.postMarketTime, raw.post_market_time);
   assert.equal(single.postMarketPrice, 204);
+  assert.equal(single.overnightMarketPrice, 205);
+  assert.equal(single.overnightMarketTime, raw.overnight_market_time);
+  assert.equal(single.overnightMarketSource, raw.overnight_market_source);
   assert.equal(single.source, "Yahoo Finance");
   assert.equal(single.updatedAt, new Date(raw.market_time * 1000).toISOString());
 });

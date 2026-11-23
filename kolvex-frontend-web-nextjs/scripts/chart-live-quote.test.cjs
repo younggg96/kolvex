@@ -166,3 +166,24 @@ test("quote failures retain useful history and clearly distinguish retained quot
   assert.match(snapshot, /in this range/);
   assert.doesNotMatch(snapshot, /Yahoo Finance|Latest quote unavailable/);
 });
+
+test("Yahoo POSTPOST stays after-hours and a newer sourced overnight trade gets its own label", () => {
+  const after = {
+    ...quotes,
+    marketState: "POSTPOST",
+    postMarketPrice: 205,
+    postMarketTime: quotes.marketTime + 1,
+  };
+  assert.equal(latestChartQuote(after).session, "post");
+  const overnight = {
+    ...after,
+    overnightMarketTime: quotes.marketTime + 2,
+    overnightMarketPrice: 206,
+    overnightMarketSource: "Alpaca / Blue Ocean ATS",
+  };
+  assert.equal(latestChartQuote(overnight).session, "overnight");
+  const markup = render({ quote: overnight, extendedHours: true });
+  assert.match(markup, /Overnight · vs close/);
+  assert.match(markup, /Blue Ocean ATS/);
+  assert.doesNotMatch(markup, /Chart shows regular hours/);
+});

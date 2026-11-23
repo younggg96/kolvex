@@ -20,6 +20,8 @@ import httpx
 import pandas as pd
 import yfinance as yf
 
+from app.services.yfinance import overnight
+
 # Yahoo calls take 0.5-1.5 s each and the stock page used to repeat the same
 # `ticker.info` download in every endpoint, for every visitor. Successful
 # results are shared per symbol for a short, data-appropriate time.
@@ -154,6 +156,8 @@ def _history_point(row) -> Dict[str, Any]:
         "volume": _optional_volume(row.get("Volume")),
         "dividends": _optional_number(row.get("Dividends"), 4) or 0.0,
         "stock_splits": _optional_number(row.get("Stock Splits"), 4) or 0.0,
+        "source": "Alpaca / Blue Ocean ATS" if row.get("Source") == "boats" else None,
+        "session": "overnight" if row.get("Source") == "boats" else None,
     }
 
 
@@ -163,8 +167,22 @@ def _group_session_bars(df, size: int):
     e.g. 09:30–13:30 and 13:30–16:00 for a regular US session.
     """
     session = df.index.date
-    bucket = df.groupby(session).cumcount() // size
-    keys = [session, bucket.values]
+    keys = [session]
+    if str(df.index.tz) == "America/New_York" and "Source" in df:
+        minutes = df.index.hour * 60 + df.index.minute
+        phase = [
+            "overnight"
+            if source == "boats"
+            else "pre"
+            if minute + 60 <= 570
+            else "post"
+            if minute >= 960
+            else "regular"
+            for minute, source in zip(minutes, df["Source"])
+        ]
+        keys.append(phase)
+    bucket = df.groupby(keys).cumcount() // size
+    keys.append(bucket.values)
     grouped = df.groupby(keys, sort=True)
     merged = grouped.agg(
         {
@@ -173,12 +191,30 @@ def _group_session_bars(df, size: int):
             "Low": "min",
             "Close": "last",
             "Volume": "sum",
+            **({"Source": "first"} if "Source" in df else {}),
             **({"Dividends": "sum"} if "Dividends" in df else {}),
             **({"Stock Splits": "sum"} if "Stock Splits" in df else {}),
         }
     )
     merged.index = pd.DatetimeIndex([frame.index[0] for _, frame in grouped], name="Datetime")
     return merged
+
+
+def _latest_us_session(df, interval):
+    """Keep the latest cash session, its preceding night and all subsequent prints."""
+    index = df.index
+    minutes = index.hour * 60 + index.minute
+    duration = 60 if interval == "1h" else int(interval[:-1])
+    regular = index[(minutes + duration > 570) & (minutes < 960) & df["Close"].notna()]
+    if len(regular) == 0:
+        return df
+    session_day = regular[-1].normalize()
+    night_open = (session_day - pd.DateOffset(days=1)).replace(hour=20)
+    previous = regular[regular < session_day]
+    visible = df[index >= night_open]
+    if len(previous):
+        return pd.concat([df.loc[[previous[-1]]], visible])
+    return visible
 
 
 def _parse_option_row(row) -> Dict[str, Any]:
@@ -403,6 +439,18 @@ class YFinanceService:
             change = round(current_price - previous_close, 4)
             change_percent = round(((current_price - previous_close) / previous_close) * 100, 4)
 
+        pre_market_price = info.get("preMarketPrice")
+        pre_market_time = info.get("preMarketTime")
+        pre_market_change = info.get("preMarketChange")
+        pre_market_change_percent = info.get("preMarketChangePercent")
+        post_market_price = info.get("postMarketPrice")
+        post_market_time = info.get("postMarketTime")
+        post_market_change = info.get("postMarketChange")
+        post_market_change_percent = info.get("postMarketChangePercent")
+        market_state = info.get("marketState")
+
+        overnight_price, overnight_time = self._overnight_quote(symbol, info)
+
         return {
             "symbol": symbol.upper(),
             "name": info.get("shortName") or info.get("longName"),
@@ -428,13 +476,20 @@ class YFinanceService:
             "market_cap": info.get("marketCap"),
             # 时间
             "market_time": info.get("regularMarketTime") if regular_price else None,
-            "market_state": info.get("marketState"),
+            "market_state": market_state,
             "quote_source": "Yahoo Finance",
             "exchange_timezone_name": info.get("exchangeTimezoneName"),
-            "pre_market_price": info.get("preMarketPrice"),
-            "pre_market_time": info.get("preMarketTime"),
-            "post_market_price": info.get("postMarketPrice"),
-            "post_market_time": info.get("postMarketTime"),
+            "pre_market_price": pre_market_price,
+            "pre_market_time": pre_market_time,
+            "pre_market_change": pre_market_change,
+            "pre_market_change_percent": pre_market_change_percent,
+            "post_market_price": post_market_price,
+            "post_market_time": post_market_time,
+            "post_market_change": post_market_change,
+            "post_market_change_percent": post_market_change_percent,
+            "overnight_market_price": overnight_price,
+            "overnight_market_time": overnight_time,
+            "overnight_market_source": "Alpaca / Blue Ocean ATS" if overnight_time else None,
         }
 
     def get_history(
@@ -461,6 +516,15 @@ class YFinanceService:
         """
         ticker = self.get_ticker(symbol)
         source_interval = "60m" if interval == "4h" else interval
+        # Ask for enough Yahoo history to retain the prior cash close after midnight.
+        latest_session = (
+            prepost
+            and period == "1d"
+            and not (start and end)
+            and (source_interval in overnight.INTERVALS)
+            and overnight.is_us_symbol(symbol)
+        )
+        yahoo_period = "5d" if latest_session else period
 
         if start and end:
             df = ticker.history(
@@ -468,29 +532,83 @@ class YFinanceService:
             )
         else:
             df = ticker.history(
-                period=period, interval=source_interval, auto_adjust=False, prepost=prepost
+                period=yahoo_period, interval=source_interval, auto_adjust=False, prepost=prepost
             )
+
+        if (
+            prepost
+            and source_interval in overnight.INTERVALS
+            and (df.empty or str(df.index.tz) == "America/New_York")
+        ):
+            night = self._overnight_bars(symbol, period, source_interval, start, end)
+            if night:
+                night_frame = pd.DataFrame.from_records(night).set_index("Datetime")
+                if source_interval == "90m":
+                    night_frame = (
+                        night_frame.resample("90min", offset="20h")
+                        .agg(
+                            {
+                                "Open": "first",
+                                "High": "max",
+                                "Low": "min",
+                                "Close": "last",
+                                "Volume": "sum",
+                                "Source": "first",
+                            }
+                        )
+                        .dropna(subset=["Close"])
+                    )
+                if not df.empty:
+                    first_day = df.index.min().normalize()
+                    earliest = (first_day - pd.DateOffset(days=1)).replace(hour=20)
+                    night_frame = night_frame[night_frame.index >= earliest]
+                df = pd.concat([df, night_frame] if not df.empty else [night_frame]).sort_index(
+                    kind="stable"
+                )
+                df = df[~df.index.duplicated(keep="last")].rename_axis("Datetime")
 
         if df.empty:
             return []
 
+        if latest_session:
+            if str(df.index.tz) == "America/New_York":
+                df = _latest_us_session(df, source_interval)
+            else:
+                df = df[df.index.date == df.index[-1].date()]
         if interval == "4h":
-            df = _group_session_bars(df, 4)
+            df = _group_session_bars(df, 4).sort_index()
 
         return [_history_point(row) for _, row in df.reset_index().iterrows()]
 
-    def get_intraday(self, symbol: str, interval: str = "5m") -> List[Dict[str, Any]]:
+    def _overnight_quote(self, symbol: str, info: dict):
+        if info.get("exchangeTimezoneName") != "America/New_York":
+            return None, None
+        return self._latest_overnight_trade(symbol) or (None, None)
+
+    @_cached(15)
+    def _latest_overnight_trade(self, symbol: str):
+        return overnight.latest_trade(symbol)
+
+    @_cached(45)
+    def _overnight_bars(self, symbol: str, period: str, interval: str, start, end):
+        # Cache a serializable collection; the shared cache checks truthiness.
+        return overnight.history(symbol, period, interval, start, end)
+
+    def get_intraday(
+        self, symbol: str, interval: str = "5m", prepost: bool = True
+    ) -> List[Dict[str, Any]]:
         """
         获取日内行情数据
 
         Args:
             symbol: 股票代码
             interval: K线间隔 (1m, 2m, 5m, 15m, 30m, 60m, 90m, 1h)
+            prepost: 是否包含盘前盘后数据
 
         Returns:
             日内价格数据列表
         """
-        return self.get_history(symbol, period="1d", interval=interval)
+        return self.get_history(symbol, period="1d", interval=interval, prepost=prepost)
 
     # ============================================================
     # 基本面数据

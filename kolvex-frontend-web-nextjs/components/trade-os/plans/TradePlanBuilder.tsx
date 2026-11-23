@@ -11,14 +11,18 @@ import {
   calculateSizing,
   RiskAssessment,
 } from "@/lib/tradeOsApi";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
-  ShieldCheck,
-  ShieldAlert,
-  AlertCircle,
-  RefreshCw,
-  Calculator,
-  ArrowRight,
-} from "lucide-react";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ShieldCheck, AlertCircle, RefreshCw, Calculator } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface TradePlanBuilderProps {
   accounts: TradingAccount[];
@@ -146,165 +150,161 @@ export function TradePlanBuilder({
   };
 
   return (
-    <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-      <div className="flex items-center justify-between pb-4 border-b border-border">
-        <div>
-          <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
-            <Calculator className="h-4 w-4 text-emerald-500" />
-            {c("Trade Plan Builder", "创建交易计划")}
-          </h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {c(
-              "Standardize entry, exit, invalidation thesis, and calibrate risk before placing broker orders.",
-              "在向券商下单前，标准化入场理由、止损止盈与失效假设，并经服务端风控引擎审批。",
-            )}
-          </p>
-        </div>
+    <Card className="p-5 sm:p-6 space-y-5">
+      <div className="flex items-center justify-between pb-3 border-b border-border/50">
+        <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+          <Calculator className="h-4 w-4 text-primary" />
+          {c("Trade Plan Builder", "创建交易计划")}
+        </h2>
       </div>
 
-      <form onSubmit={handleSubmit} className="pt-4 space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
         {/* Row 1: Symbol & Strategy */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">
               {c("Stock Symbol", "股票代码")}
             </label>
-            <input
+            <Input
               type="text"
               required
               value={symbol}
               onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-              className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm font-mono font-bold text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              className="h-10 rounded-xl font-mono font-bold"
               placeholder="AAPL, NVDA, TSLA..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">
               {c("Strategy Version", "绑定策略版本")}
             </label>
-            <select
-              value={strategyId}
-              onChange={(e) => setStrategyId(e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              {strategies.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.display_name} (v{s.version})
-                </option>
-              ))}
-            </select>
+            <Select value={strategyId} onValueChange={(val) => setStrategyId(val)}>
+              <SelectTrigger className="h-10 rounded-xl text-xs font-medium">
+                <SelectValue placeholder={c("Select strategy", "选择策略")} />
+              </SelectTrigger>
+              <SelectContent>
+                {strategies.map((s) => (
+                  <SelectItem key={s.id} value={s.id} className="text-xs font-medium">
+                    {s.display_name} (v{s.version})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
         {/* Row 2: Price Brackets */}
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">
               {c("Entry Price ($)", "计划入场价 ($)")}
             </label>
-            <input
+            <Input
               type="number"
               step="0.01"
               required
               value={entryPrice}
               onChange={(e) => setEntryPrice(e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              className="h-10 rounded-xl font-mono text-xs"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1 text-red-500">
+            <label className="block text-xs font-medium text-negative mb-1.5">
               {c("Stop Loss ($)", "止损价格 ($)")}
             </label>
-            <input
+            <Input
               type="number"
               step="0.01"
               required
               value={stopPrice}
               onChange={(e) => setStopPrice(e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              className="h-10 rounded-xl font-mono text-xs border-negative/40 focus-visible:ring-negative/40"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1 text-emerald-600 dark:text-emerald-400">
+            <label className="block text-xs font-medium text-positive mb-1.5">
               {c("Profit Target ($)", "目标止盈价 ($)")}
             </label>
-            <input
+            <Input
               type="number"
               step="0.01"
               required
               value={targetPrice}
               onChange={(e) => setTargetPrice(e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              className="h-10 rounded-xl font-mono text-xs border-positive/40 focus-visible:ring-positive/40"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">
               {c("Quantity (Shares)", "计划股数")}
             </label>
-            <input
+            <Input
               type="number"
               min="1"
               required
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm font-mono font-bold text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              className="h-10 rounded-xl font-mono font-bold text-xs"
             />
           </div>
         </div>
 
         {/* Live Risk Sizing Preview Panel */}
         {sizingResult && (
-          <div className="rounded-lg border border-border bg-muted/40 p-3 text-xs">
-            <span className="font-semibold text-foreground flex items-center gap-1.5 mb-2">
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+          <div className="rounded-2xl border border-foreground/10 bg-muted/30 p-3.5 text-xs">
+            <span className="font-semibold text-foreground flex items-center gap-1.5 mb-2.5">
+              <ShieldCheck className="h-4 w-4 text-primary" />
               {c("Risk Sizing Calibration", "风控头寸校准")}
             </span>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center font-mono">
-              <div className="rounded bg-background p-2 border border-border">
-                <p className="text-[0.625rem] text-muted-foreground">
+              <div className="rounded-xl bg-background/80 p-2.5 border border-foreground/5">
+                <p className="text-[0.6875rem] text-muted-foreground">
                   {c("Risk / Share", "每股风险")}
                 </p>
-                <p className="font-bold text-foreground">
+                <p className="figure mt-1 font-semibold text-foreground">
                   ${parseFloat(sizingResult.risk_per_share).toFixed(2)}
                 </p>
               </div>
-              <div className="rounded bg-background p-2 border border-border">
-                <p className="text-[0.625rem] text-muted-foreground">
-                  {c("Max Risk Budget", "单笔风险预算")}
+              <div className="rounded-xl bg-background/80 p-2.5 border border-foreground/5">
+                <p className="text-[0.6875rem] text-muted-foreground">
+                  {c("Risk Budget", "单笔风险预算")}
                 </p>
-                <p className="font-bold text-emerald-600 dark:text-emerald-400">
+                <p className="figure mt-1 font-semibold text-positive">
                   ${parseFloat(sizingResult.risk_budget).toFixed(2)}
                 </p>
               </div>
-              <div className="rounded bg-background p-2 border border-border">
-                <p className="text-[0.625rem] text-muted-foreground">
+              <div className="rounded-xl bg-background/80 p-2.5 border border-foreground/5">
+                <p className="text-[0.6875rem] text-muted-foreground">
                   {c("Max Allowed Qty", "最大允许股数")}
                 </p>
-                <p className="font-bold text-foreground">{sizingResult.max_allowed_quantity}</p>
+                <p className="figure mt-1 font-semibold text-foreground">
+                  {sizingResult.max_allowed_quantity}
+                </p>
               </div>
-              <div className="rounded bg-background p-2 border border-border">
-                <p className="text-[0.625rem] text-muted-foreground">
+              <div className="rounded-xl bg-background/80 p-2.5 border border-foreground/5">
+                <p className="text-[0.6875rem] text-muted-foreground">
                   {c("Planned Notional", "计划本金敞口")}
                 </p>
-                <p className="font-bold text-foreground">
+                <p className="figure mt-1 font-semibold text-foreground">
                   ${(parseFloat(entryPrice) * (parseInt(quantity) || 0)).toFixed(2)}
                 </p>
               </div>
-              <div className="rounded bg-background p-2 border border-border">
-                <p className="text-[0.625rem] text-muted-foreground">
+              <div className="rounded-xl bg-background/80 p-2.5 border border-foreground/5">
+                <p className="text-[0.6875rem] text-muted-foreground">
                   {c("Estimated Risk", "计划止损损失")}
                 </p>
                 <p
-                  className={`font-bold ${
+                  className={cn(
+                    "figure mt-1 font-semibold",
                     parseFloat(sizingResult.risk_per_share) * (parseInt(quantity) || 0) >
-                    parseFloat(sizingResult.risk_budget)
-                      ? "text-red-500"
-                      : "text-foreground"
-                  }`}
+                      parseFloat(sizingResult.risk_budget)
+                      ? "text-negative"
+                      : "text-foreground",
+                  )}
                 >
                   $
                   {(parseFloat(sizingResult.risk_per_share) * (parseInt(quantity) || 0)).toFixed(2)}
@@ -317,7 +317,7 @@ export function TradePlanBuilder({
         {/* Row 3: Setup Reason & Invalidation Reason */}
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">
               {c("Setup Reason (Why enter now?)", "入场理由（为什么现在买？）")}
             </label>
             <textarea
@@ -325,13 +325,13 @@ export function TradePlanBuilder({
               rows={2}
               value={setupReason}
               onChange={(e) => setSetupReason(e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-              placeholder="e.g. Breakout of 20-day resistance on heavy volume following positive earnings guidance..."
+              className="w-full rounded-2xl border border-input bg-background/50 px-3.5 py-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              placeholder="e.g. Breakout of 20-day resistance on heavy volume..."
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">
               {c(
                 "Invalidation Thesis (When is this trade wrong?)",
                 "交易失败条件（什么情况说明判断错误？）",
@@ -342,39 +342,40 @@ export function TradePlanBuilder({
               rows={2}
               value={invalidationReason}
               onChange={(e) => setInvalidationReason(e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-              placeholder="e.g. Failure to hold $123.50 support on closing basis or sector rotation out of semis..."
+              className="w-full rounded-2xl border border-input bg-background/50 px-3.5 py-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              placeholder="e.g. Failure to hold support on closing basis..."
             />
           </div>
         </div>
 
         {error && (
-          <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive flex items-center gap-2">
+          <div className="rounded-2xl border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive flex items-center gap-2">
             <AlertCircle className="h-4 w-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         <div className="flex justify-end pt-2">
-          <button
+          <Button
             type="submit"
             disabled={submitting || !selectedAccountId}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-5 py-2 text-xs font-medium text-white hover:bg-emerald-700 transition-colors disabled:opacity-50"
+            size="sm"
+            className="rounded-full px-5 text-xs font-semibold"
           >
             {submitting ? (
               <>
-                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                <RefreshCw className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                 {c("Assessing Risk Constraints...", "正在风控评估...")}
               </>
             ) : (
               <>
-                <ShieldCheck className="h-3.5 w-3.5" />
-                {c("Submit Plan for Risk Approval", "提交计划并审批风控")}
+                <ShieldCheck className="mr-1.5 h-3.5 w-3.5" />
+                {c("Submit Plan for Approval", "提交计划并审批风控")}
               </>
             )}
-          </button>
+          </Button>
         </div>
       </form>
-    </div>
+    </Card>
   );
 }

@@ -1,3 +1,9 @@
+import {
+  latestQuote,
+  shortSessionLabels,
+  withChartQuote,
+} from "../lib/chartQuote";
+import { useMarketPolling } from "../lib/useMarketPolling";
 // The Web's Market overview pieces (components/decision/Market.tsx) at phone size:
 // the horizontally scrolling index cards with a sparkline, and the creator-update rows.
 import { Pressable, ScrollView, View } from "react-native";
@@ -56,14 +62,18 @@ const loadSeries = async (
     points = days ? all.slice(-days) : all;
     if (days) return points;
   } else {
+    const isIntraday = !instrument.daily && (range === "1D" || range === "1W");
+    const period = instrument.daily && range === "1D" ? "5d" : spec.period;
+    const interval = instrument.daily ? "1d" : spec.interval;
     const data = await apiRequest<{ data: Bar[] }>(
-      `/market/history/${encodeURIComponent(symbol)}?period=${spec.period}&interval=${spec.interval}`,
+      `/market/history/${encodeURIComponent(symbol)}?period=${period}&interval=${interval}${isIntraday ? "&prepost=true" : ""}`,
       { signal, timeout: 20_000 },
     );
     points = data.data.filter(
       (bar): bar is { date: string; close: number } =>
         bar.close !== null && Number.isFinite(bar.close),
     );
+    if (instrument.daily && range === "1D") return points.slice(-2);
   }
   if (range === "1Y" || range === "QTD" || range === "YTD") {
     // These fetch extra history so the period's opening close is known.
@@ -140,20 +150,32 @@ export function InstrumentCard({
     (s) => loadSeries(instrument, range, s),
     25_000,
   );
-  const values = (series.data ?? []).map((p) => p.close);
+  useMarketPolling(series.refresh, 60_000, range === "1D" || range === "1W");
+  useMarketPolling(q.refresh, 15_000, !fred && !instrument.daily);
+  const extended =
+    range === "1D" && !instrument.daily
+      ? latestQuote(q.data ?? undefined)
+      : null;
+  const values = withChartQuote(series.data ?? [], extended).map(
+    (point) => point.close,
+  );
+  const session =
+    extended && extended.session !== "regular" ? extended.session : null;
   const first = values[0];
   const last = values.at(-1);
   // Yields change in basis points; prices and levels show the move and its percent.
   const points = instrument.unit === "percent";
   const versusPriorClose = range === "1D" && !fred;
-  const value = q.data?.current_price ?? last ?? null;
+  const value = extended?.price ?? q.data?.current_price ?? last ?? null;
   const delta = versusPriorClose
-    ? (q.data?.change ?? null)
+    ? session && q.data && extended
+      ? extended.price - (q.data.current_price ?? extended.price)
+      : (q.data?.change ?? null)
     : value != null && first != null
       ? value - first
       : null;
   const percent = versusPriorClose
-    ? (q.data?.change_percent ?? null)
+    ? (extended?.changePercent ?? q.data?.change_percent ?? null)
     : delta != null && first
       ? (delta / Math.abs(first)) * 100
       : null;
@@ -228,9 +250,9 @@ export function InstrumentCard({
             {changeText}
           </Copy>
         )}
-        {rangeLabel && (
+        {(session || rangeLabel) && (
           <Copy size={12} muted lines={1}>
-            {rangeLabel}
+            {session ? shortSessionLabels[session] : rangeLabel}
           </Copy>
         )}
         <View style={{ marginTop: 8 }}>
@@ -578,6 +600,7 @@ export function MiniTrend({
   revision,
   height = phone(28),
   positive,
+  latest = null,
 }: {
   symbol: string;
   range: RangeKey;
@@ -585,6 +608,7 @@ export function MiniTrend({
   height?: number;
   /** The row's own move, which wins over the line's first and last points. */
   positive?: boolean;
+  latest?: ReturnType<typeof latestQuote>;
 }) {
   const t = useTheme();
   const series = useResource(
@@ -592,7 +616,12 @@ export function MiniTrend({
     (s) => loadSeries({ symbol, en: symbol, zh: symbol }, range, s),
     25_000,
   );
-  const values = (series.data ?? []).map((p) => p.close);
+  const intraday = range === "1D" || range === "1W";
+  useMarketPolling(series.refresh, 60_000, intraday);
+  const values = withChartQuote(
+    series.data ?? [],
+    intraday ? latest : null,
+  ).map((p) => p.close);
   if (series.loading && !series.data) return <Skeleton height={height} />;
   const up = positive ?? (values.at(-1) ?? 0) >= (values[0] ?? 0);
   return (

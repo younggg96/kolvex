@@ -79,6 +79,7 @@ class QuoteFallbackTests(unittest.TestCase):
                 "get_ticker": lambda self, symbol: Ticker(),
                 "get_info": lambda self, symbol: Ticker().info,
                 "get_quote": scope["get_quote"],
+                "_overnight_quote": lambda self, symbol, info: (None, None),
             },
         )()
         quote = service.get_quote("NVDA")
@@ -157,6 +158,7 @@ class QuoteFallbackTests(unittest.TestCase):
                 "get_ticker": lambda self, symbol: Ticker(),
                 "get_info": lambda self, symbol: Ticker().info,
                 "get_quote": scope["get_quote"],
+                "_overnight_quote": lambda self, symbol, info: (None, None),
             },
         )()
         quote = service.get_quote("^GSPC")

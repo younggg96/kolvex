@@ -41,6 +41,8 @@ import MarketWatchlistCard from "./MarketWatchlistCard";
 import FundHoldingsDialog from "./FundHoldingsDialog";
 import { MarketInfoButton } from "./MarketToolbar";
 import { signedPercent, withSign } from "@/lib/format";
+import { latestChartQuote, sessionLabel } from "@/lib/chart/quote";
+import { augmentTrendWithQuote } from "@/lib/stockTrends";
 
 const OVERVIEW_GROUPS = MARKET_GROUPS.filter((group) => group.key === "indices");
 const TREND_GROUPS = MARKET_GROUPS.filter((group) => group.key !== "indices");
@@ -142,9 +144,18 @@ function MarketInstrumentCard({
     return () => controller.abort();
   }, [benchmark, range, attempt, near, seriesKey, seriesRevision]);
 
+  const live =
+    !benchmark.daily && (range === "1D" || range === "1W") ? latestChartQuote(quote) : null;
+  const ext = range === "1D" ? live : null;
+  const isExtended = Boolean(ext && ext.session !== "regular");
+
   const value =
     scrub?.value ??
-    (benchmark.daily ? series.at(-1)?.value : (quote?.price ?? series.at(-1)?.value));
+    (benchmark.daily
+      ? series.at(-1)?.value
+      : isExtended && ext
+        ? ext.price
+        : (quote?.price ?? series.at(-1)?.value));
   // 1D compares with the prior close; longer ranges compare with the close before the range starts.
   const versusPriorClose = range === "1D" && !benchmark.daily;
   const quoteDelta = versusPriorClose && !scrub && quote;
@@ -152,19 +163,25 @@ function MarketInstrumentCard({
     ? (quote?.previousClose ?? (quote ? quote.price - quote.change : undefined))
     : marketRangeBaseline(series, range);
   const change = quoteDelta
-    ? quote.change
+    ? isExtended && ext && ext.change !== undefined
+      ? ext.change
+      : quote.change
     : value !== undefined && baseline !== undefined
       ? value - baseline
       : undefined;
   const percent = quoteDelta
-    ? quote.changePercent
+    ? isExtended && ext && ext.changePercent !== null && ext.changePercent !== undefined
+      ? ext.changePercent
+      : quote.changePercent
     : change !== undefined && baseline
       ? (change / Math.abs(baseline)) * 100
       : undefined;
   const positive = (change ?? 0) >= 0;
   const pointDate =
-    !scrub && !benchmark.daily && quote?.marketTime
-      ? new Date(quote.marketTime * 1000).toISOString()
+    !scrub && !benchmark.daily && (isExtended && ext?.time ? ext.time : quote?.marketTime)
+      ? new Date(
+          ((isExtended && ext?.time ? ext.time : quote?.marketTime) as number) * 1000,
+        ).toISOString()
       : (scrub ?? series[series.length - 1])?.date;
   // Use the trading date supplied by the data, rather than the viewer's local day.
   const date = pointDate?.slice(0, 10);
@@ -183,6 +200,17 @@ function MarketInstrumentCard({
       ) : (
         money(value)
       )}
+      {isExtended && ext && (
+        <span
+          className="ml-2 inline-flex items-center rounded bg-muted px-1.5 py-0.5 text-xs font-normal text-muted-foreground align-middle"
+          title={c(
+            `Regular close: ${indexValue(quote?.price ?? 0)} (${signedPercent(quote?.changePercent ?? 0)})`,
+            `收盘价: ${indexValue(quote?.price ?? 0)} (${signedPercent(quote?.changePercent ?? 0)})`,
+          )}
+        >
+          {sessionLabel(ext.session, c("en", "zh"))}
+        </span>
+      )}
     </>
   );
   const changeDisplay = (
@@ -195,6 +223,9 @@ function MarketInstrumentCard({
         <Skeleton className="inline-block h-4 w-32 align-middle" />
       ) : (
         c("Change unavailable", "暂无涨跌数据")
+      )}
+      {isExtended && ext && (
+        <span className="ml-1 text-muted-foreground text-[11px]">({c("vs close", "较收盘")})</span>
       )}
       {benchmark.daily && range === "1D" && (
         <span className="ml-1 text-muted-foreground">
@@ -209,6 +240,7 @@ function MarketInstrumentCard({
       )}
     </>
   );
+  const effectiveSeries = useMemo(() => augmentTrendWithQuote(series, live), [series, live]);
   const chartDisplay = (
     <>
       {seriesState === "loading" ? (
@@ -223,7 +255,7 @@ function MarketInstrumentCard({
         </div>
       ) : (
         <ScrubChart
-          data={series}
+          data={effectiveSeries}
           positive={positive}
           height="100%"
           onScrub={setScrub}

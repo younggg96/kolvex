@@ -85,3 +85,12 @@ test("intraday detection keeps the 6M default daily interval out of intraday mod
   assert.equal(timeframes.isIntraday("1h"), true);
   assert.equal(timeframes.isIntraday("1mo"), false);
 });
+
+test("the advanced 1D view retains Sunday night while keeping the longer history loaded", () => {
+  const fri = "2026-11-20T15:55:00-05:00";
+  const night = "2026-11-22T20:05:00-05:00";
+  const pre = "2026-11-23T04:05:00-05:00";
+  const open = "2026-11-23T09:30:00-05:00";
+  assert.equal(timeframes.extendedDayStart([fri, night, pre], "5m"), Date.parse(fri));
+  assert.equal(timeframes.extendedDayStart([fri, night, pre, open], "5m"), Date.parse(night));
+});

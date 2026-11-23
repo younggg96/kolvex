@@ -2,7 +2,7 @@
 
 import { useCachedResource } from "@/hooks/useCachedResource";
 import { useStockQuote } from "@/hooks/useStockData";
-import { latestChartQuote } from "@/lib/chart/quote";
+import { latestChartQuote, sessionLabel } from "@/lib/chart/quote";
 import { isProductFeatureEnabled } from "@/lib/productFeatures";
 
 import { usePathname, useSearchParams } from "next/navigation";
@@ -344,9 +344,7 @@ export default function StockWorkspace({
                       className="mt-1 text-[0.6875rem] text-muted-foreground sm:mt-2 sm:text-xs"
                       suppressHydrationWarning
                     >
-                      {latestQuote.session === "pre"
-                        ? c("Pre-market", "盘前")
-                        : c("After hours", "盘后")}
+                      {sessionLabel(latestQuote.session, c("en", "zh"))}
                       {" · "}
                       {latestQuote.time &&
                         new Date(latestQuote.time * 1000).toLocaleTimeString(

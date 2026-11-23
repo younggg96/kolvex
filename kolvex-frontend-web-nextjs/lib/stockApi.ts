@@ -31,8 +31,15 @@ export interface StockQuote {
   exchangeTimezone?: string;
   preMarketPrice?: number;
   preMarketTime?: number;
+  preMarketChange?: number;
+  preMarketChangePercent?: number;
   postMarketPrice?: number;
   postMarketTime?: number;
+  overnightMarketPrice?: number;
+  overnightMarketTime?: number;
+  overnightMarketSource?: string;
+  postMarketChange?: number;
+  postMarketChangePercent?: number;
 }
 
 export async function getStockQuote(symbol: string, signal?: AbortSignal): Promise<StockQuote> {
@@ -205,6 +212,8 @@ export interface PriceBar {
   low: number;
   close: number;
   volume: number | null;
+  session?: "overnight" | null;
+  source?: string | null;
 }
 
 export interface PriceHistoryParams {
@@ -212,7 +221,7 @@ export interface PriceHistoryParams {
   interval?: string;
   start?: string;
   end?: string;
-  /** "true" adds pre-market / after-hours bars to intraday intervals. */
+  /** "true" adds pre-market, after-hours and available overnight bars to intraday intervals. */
   prepost?: string;
 }
 

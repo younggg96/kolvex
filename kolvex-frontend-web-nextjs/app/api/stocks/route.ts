@@ -164,7 +164,7 @@ export async function GET(request: NextRequest) {
         if (cachedChart) {
           return NextResponse.json(cachedChart, {
             headers: {
-              "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+              "Cache-Control": "no-store",
               "X-Cache": "HIT",
             },
           });
@@ -172,35 +172,35 @@ export async function GET(request: NextRequest) {
 
         try {
           const historyResponse = await fetch(
-            `${BACKEND_API_URL}/api/v1/market/intraday/${symbol}?interval=${interval}`,
+            `${BACKEND_API_URL}/api/v1/market/intraday/${encodeURIComponent(symbol)}?interval=${encodeURIComponent(interval)}&prepost=true`,
             // Next's Data Cache has no expiry here; freshness comes from chartCache.
-            { cache: "no-store" },
+            { cache: "no-store", signal: AbortSignal.timeout(15_000) },
           );
           if (!historyResponse.ok) {
             throw new Error(`Backend returned ${historyResponse.status}`);
           }
           const historyData = await historyResponse.json();
           // Transform to chart format
-          const chartData: ChartDataPoint[] = (historyData.data || []).map(
-            (d: { date: string; close: number; volume: number }) => ({
-              time: d.date,
-              value: d.close,
-              volume: d.volume,
-            }),
-          );
+          const chartData: ChartDataPoint[] = (historyData.data || [])
+            .filter((bar: { close: number }) => Number.isFinite(bar.close) && bar.close > 0)
+            .map((bar: { date: string; close: number; volume: number }) => ({
+              time: bar.date,
+              value: bar.close,
+              volume: bar.volume,
+            }));
 
-          // 存入缓存（5 分钟）
-          chartCache.set(chartCacheKey, chartData, CACHE_TTL.CHART);
+          if (!chartData.length) throw new Error("History unavailable");
+          chartCache.set(chartCacheKey, chartData, 60);
 
           return NextResponse.json(chartData, {
             headers: {
-              "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+              "Cache-Control": "no-store",
               "X-Cache": "MISS",
             },
           });
         } catch (error) {
           console.error("Failed to fetch chart data from backend:", error);
-          return NextResponse.json([], { status: 200 });
+          return NextResponse.json([], { status: 503, headers: { "Cache-Control": "no-store" } });
         }
 
       case "overview":

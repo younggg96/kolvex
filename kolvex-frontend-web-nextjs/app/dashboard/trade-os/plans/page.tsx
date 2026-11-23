@@ -11,6 +11,13 @@ import {
   fetchPlans,
   fetchStrategies,
 } from "@/lib/tradeOsApi";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { TradePlanBuilder } from "@/components/trade-os/plans/TradePlanBuilder";
 import { PlanList } from "@/components/trade-os/plans/PlanList";
 import { ApprovalModal } from "@/components/trade-os/plans/ApprovalModal";
@@ -60,38 +67,37 @@ export default function TradeOsPlansPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-foreground">
-            {c("Trade Plans & Pre-Trade Risk Engine", "交易计划与开仓前风控审批")}
-          </h1>
-          <p className="text-xs text-muted-foreground mt-1">
-            {c(
-              "Every trade requires an approved plan. Server-side risk engine enforces position sizing and risk caps.",
-              "每笔交易均需关联有效的交易计划。服务端风控引擎强制校验仓位预算并拦截超标交易。",
-            )}
-          </p>
+      {/* Account Toolbar */}
+      {accounts.length > 0 && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-medium text-muted-foreground">
+              {c("Trading Account", "交易账户")}:
+            </span>
+            <Select
+              value={selectedAccountId || ""}
+              onValueChange={(val) => setSelectedAccountId(val)}
+            >
+              <SelectTrigger className="h-9 w-[220px] rounded-full text-xs font-medium">
+                <SelectValue placeholder={c("Select account", "选择账户")} />
+              </SelectTrigger>
+              <SelectContent>
+                {accounts.map((a) => (
+                  <SelectItem key={a.id} value={a.id} className="text-xs font-medium">
+                    {a.account_name} ({a.broker})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-
-        {accounts.length > 0 && (
-          <select
-            value={selectedAccountId || ""}
-            onChange={(e) => setSelectedAccountId(e.target.value)}
-            className="rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground focus:outline-none"
-          >
-            {accounts.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.account_name} ({a.broker})
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
+      )}
 
       {/* Plan Builder Form */}
       <Suspense
-        fallback={<div className="h-48 rounded-xl border border-border bg-card/50 animate-pulse" />}
+        fallback={
+          <div className="h-48 rounded-3xl border border-foreground/10 bg-card-glass animate-pulse" />
+        }
       >
         <TradePlanBuilder
           accounts={accounts}

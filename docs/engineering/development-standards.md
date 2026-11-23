@@ -44,7 +44,7 @@ App ─────────────────────────�
 | 颜色、圆角等 token | `app/globals.css` → `tailwind.config.ts`。组件里用语义类名，不写死 hex；多系列图表用 `--compare-*`，持仓板块用 `--sector-*`。由 `scripts/color-tokens.test.cjs` 检查（OG 图片和品牌素材例外） |
 | 样式 | **只用 Tailwind**。不新建 `.css` / `.scss` / CSS Modules，也不在组件里 import CSS；唯一的 CSS 文件是 `app/globals.css`（token、Tailwind 指令、跨组件的全局基础样式）。`@keyframes` 放 `tailwind.config.ts` 的 `keyframes`/`animation`；后代、伪元素、`@supports` 这类写法用任意变体（`[&_a]:`、`before:`、`supports-[…]:`）。由 `scripts/tailwind-only.test.cjs` 检查 |
 
-数据加载：读请求用 `useCachedResource` / `clientCache`（见 [frontend-data-cache.md](../frontend-data-cache.md)），需要轮询时用 `useVisiblePolling`（页面不可见时暂停；美股盘前、盘中、盘后都休市时——美东 20:00–次日 04:00 和周末——定时刷新最多 5 分钟一次），首次加载用 `ContentLoading`（见 [loading-states.md](../loading-states.md)）。
+数据加载：读请求用 `useCachedResource` / `clientCache`（见 [frontend-data-cache.md](../frontend-data-cache.md)），需要轮询时用 `useVisiblePolling`（页面不可见时暂停；美国股票 24/5 行情的周末休市时段定时刷新最多 5 分钟一次），首次加载用 `ContentLoading`（见 [loading-states.md](../loading-states.md)）。
 
 Vercel 计算成本（Hobby 额度超了会直接暂停部署，2026-11-14 发生过）：
 

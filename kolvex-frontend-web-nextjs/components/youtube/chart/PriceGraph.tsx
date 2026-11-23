@@ -370,13 +370,8 @@ function tickLabel(bar: PriceBar, intraday: boolean, interval: string, locale: s
   const date = bar.date.slice(0, 10);
   const [year, month, day] = date.split("-").map(Number);
   const local = new Date(year, (month || 1) - 1, day || 1);
-  if (intraday) {
-    return new Intl.DateTimeFormat(locale, {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: false,
-    }).format(new Date(bar.date));
-  }
+  // Intraday bars carry the exchange's local time and offset.
+  if (intraday) return bar.date.slice(11, 16);
   if (interval === "1wk" || interval === "1mo") {
     return new Intl.DateTimeFormat(locale, { year: "2-digit", month: "short" }).format(local);
   }
@@ -392,6 +387,7 @@ export interface PriceGraphProps {
   bars: PriceBar[] | null;
   quote?: StockQuote | null;
   quoteEnabled?: boolean;
+  extendedHours?: boolean;
   quoteLoading?: boolean;
   quoteError?: boolean;
   onQuoteRetry?: () => void;
@@ -478,6 +474,7 @@ export default function PriceGraph({
   bars,
   quote,
   quoteEnabled = false,
+  extendedHours = false,
   quoteLoading = false,
   quoteError = false,
   onQuoteRetry,
@@ -1296,6 +1293,9 @@ export default function PriceGraph({
       {extended && showExtended && extended.time ? (
         <span className="block">
           {t(`youtubeOpinions.quoteSession.${extended.session}`)} ·{" "}
+          {extended.session === "overnight" && quote?.overnightMarketSource
+            ? `${quote.overnightMarketSource} · `
+            : ""}
           {new Date(extended.time * 1000).toLocaleString(t("common.intlLocale"), {
             timeZone: quote?.exchangeTimezone || "America/New_York",
             month: "2-digit",
@@ -1309,7 +1309,7 @@ export default function PriceGraph({
       ) : null}
       <span className="block">
         {t("youtubeOpinions.quoteMayBeDelayed")}
-        {showExtended ? ` · ${t("youtubeOpinions.regularSessionChart")}` : ""}
+        {showExtended && !extendedHours ? ` · ${t("youtubeOpinions.regularSessionChart")}` : ""}
       </span>
     </InfoTip>
   ) : null;

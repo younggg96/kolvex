@@ -22,13 +22,13 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 
 | 功能 | Web 入口 | App 入口 | 后端（`app/api/routes/`） | 文档 | App |
 | --- | --- | --- | --- | --- | --- |
-| 行情总览、指数 / 板块 / 跨资产 | `/dashboard` | `(tabs)/index`、`/markets` | `market_data.py` | [decision-workspace.md](../decision-workspace.md) | ✅ |
+| 行情总览、指数 / 板块 / 跨资产（股票、ETF 分时图含可用的盘前、盘后及已授权的 BOATS 夜盘，指数 ETF 单独显示） | `/dashboard` | `(tabs)/index`、`/markets` | `market_data.py` | [decision-workspace.md](../decision-workspace.md) | ✅ |
 | CNN 恐慌与贪婪指数（管理员手动导入） | `/dashboard`、`/dashboard/admin?tab=fear-greed` | 待跟进 | `fear_greed.py` | [fear-greed.md](../fear-greed.md) | ◐ |
 | 股票观察（今日异动 / 放量活跃 / 博主热议…） | `/dashboard` | 首页 | `market_data.py`（`/market/discovery`） | [stock-discovery.md](../stock-discovery.md) | ✅ |
 | 宏观指标 | `/dashboard?tab=macro` | `/macro` | `economic_indicators.py`、`market_observations.py` | `kolvex-backend-py/docs/macro-data.md` | ✅ |
 | 重大事件日历 | `/dashboard?tab=calendar` | `/calendar` | `market_events.py` | [market-events.md](../market-events.md) | ✅ |
 | 个股工作台（概览、财报、盈利、指标趋势、同行、持股、分析师、简介） | `/dashboard/market/[ticker]?tab=…` | `/stock/[symbol]?tab=…` | `market_data.py` | [decision-workspace.md](../decision-workspace.md) | ✅ |
-| 技术图表、画线、AI 技术分析（Web 已存结论和条件计划可按需翻译；高级图表有十字线、默认拖动平移、⚙ 图表设置：缩放锚点、十字线吸附、盘前盘后与时段高亮、K 线颜色） | 个股 `?tab=technical` | `/technical/[symbol]` | `chart_drawings.py`、`market_data.py`（ai-technical、chart-jobs） | [technical-analysis-focus.md](../technical-analysis-focus.md) | ◐ |
+| 技术图表、画线、AI 技术分析（Web 已存结论和条件计划可按需翻译；高级图表有十字线、默认拖动平移、⚙ 图表设置：缩放锚点、十字线吸附、盘前、盘后、夜盘与时段高亮、K 线颜色） | 个股 `?tab=technical` | `/technical/[symbol]` | `chart_drawings.py`、`market_data.py`（ai-technical、chart-jobs） | [technical-analysis-focus.md](../technical-analysis-focus.md) | ◐ |
 | 估值（PE 区间、情景模拟、公司估值计算器） | 个股 `?tab=valuation` | 个股 `valuation` tab | `valuation.py` | [stock-valuation/PRD.md](../stock-valuation/PRD.md)、[README.md](../stock-valuation/README.md) | ◐ |
 | 期权链 | 个股 `?tab=options` | 个股 `options` tab | `options.py` | `PRODUCT.md` | ✅ |
 | AI 基本面分析 | 个股概览 | 个股 `summary` tab | `market_data.py`（ai-fundamentals） | — | ✅ |
@@ -80,7 +80,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 | 登录注册、OAuth、找回密码 | — | `/auth/*` | `/sign-in`、`/auth/*` | `auth/` | — | ✅（App 必须登录） |
 | 个人资料、头像、主题、语言、模型 API Key（Web 另有浅色 / 深色配色和「跟随大盘」自动配色，仅存本机） | `settings` | `/dashboard/settings`、`/config` | `/account`、`/preferences`、`(more)/settings` | `users.py`、`upload/`、`user_api_keys/` | — | ✅ |
 | 管理后台（用户、日报、事件、YouTube、X、小红书情绪、期权异动、邮件设置、超级投资者名单） | `admin` | `/dashboard/admin` | `(more)/admin` | `admin/` 等 | [mcp-content-admin.md](../mcp-content-admin.md) | ◐ |
-| 动态（原「人物动态」；横滑头像、美联储官员显示 Fed 徽章且在头像栏合并为一个可筛选的「美联储官员」头像、站内固定头像与近 24 小时动态提示圈；紧凑时间线支持时区展开、独立股票行情行和筛选；后台可逐条新增、编辑、删除，也可 JSON 批量导入） | `personUpdates` | `/dashboard/person-updates`、`/tracker`、`/dashboard/admin?tab=person-updates` | — | `person_updates.py` | [动态](../person-updates.md) | — |
+| 动态（原「人物动态」；横滑头像、美联储官员显示 Fed 徽章且在头像栏合并为一个可筛选的「美联储官员」头像、站内固定头像与近 24 小时动态提示圈；紧凑时间线支持时区展开、独立股票行情行和筛选；后台可逐条新增、编辑、删除，新增弹窗支持选择 JSON 文件或粘贴 JSON 批量导入） | `personUpdates` | `/dashboard/person-updates`、`/tracker`、`/dashboard/admin?tab=person-updates` | — | `person_updates.py` | [动态](../person-updates.md) | — |
 | YouTube 自动导入（本地 Mac worker 每天 21:00 获取未追踪视频字幕 → 后端 DeepSeek 分析 → 导入观点；管理后台「YouTube 导入」可立即运行并查看结果） | `admin` | `/dashboard/admin?tab=youtube` | — | `youtube_auto_import.py`（`/admin/youtube-auto-import/*`、`/youtube-auto-import/worker/*`） | [youtube-auto-import.md](../youtube-auto-import.md)；需迁移 `20261116150000_youtube_auto_import.sql` | — |
 | Web 首页、公开阅读页与 SEO | — | `/`（深色「黑白」使用 Wayglim Prism Flow 背景）；`app/(public)/`：`/stocks`、`/creators`、`/research`、`/congress`、`/social`、`/social/xiaohongshu`（国会披露、X、Reddit、小红书、YouTube 公开页；期权异动不公开）（中文缓存首屏，进入后沿用全站语言偏好；ISR 缓存 600 秒，分页用 `/page/N` 路径；`/llms.txt`、观点结构化数据） | —（App 无访客模式） | — | [public-reading.md](../public-reading.md) | — |
 | 隐私政策、条款、联系 | — | `/privacy`、`/terms`、`/contact` | 打开网页 | Web 双语，联系页使用支持邮箱 | — | ✅ |

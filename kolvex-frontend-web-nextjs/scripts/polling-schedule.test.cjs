@@ -14,21 +14,23 @@ vm.runInNewContext(
 );
 const { usMarketsClosed, usRegularSessionOpen } = loaded.exports;
 
-test("US markets count as open from 04:00 to 20:00 New York time on weekdays", () => {
+test("24/5 polling continues through overnight in New York time", () => {
   // Wed 2026-11-11, EST (UTC-5)
-  assert.equal(usMarketsClosed(new Date("2026-11-11T08:59:00Z")), true); // 03:59
+  assert.equal(usMarketsClosed(new Date("2026-11-11T08:59:00Z")), false); // 03:59
   assert.equal(usMarketsClosed(new Date("2026-11-11T09:00:00Z")), false); // 04:00 pre-market
   assert.equal(usMarketsClosed(new Date("2026-11-11T15:00:00Z")), false); // 10:00 regular
   assert.equal(usMarketsClosed(new Date("2026-11-12T00:59:00Z")), false); // 19:59 after-hours
-  assert.equal(usMarketsClosed(new Date("2026-11-12T01:00:00Z")), true); // 20:00
+  assert.equal(usMarketsClosed(new Date("2026-11-12T01:00:00Z")), false); // 20:00
   // Summer time (EDT, UTC-4): 04:00 New York is 08:00 UTC
   assert.equal(usMarketsClosed(new Date("2026-07-15T08:00:00Z")), false);
-  assert.equal(usMarketsClosed(new Date("2026-07-15T07:59:00Z")), true);
+  assert.equal(usMarketsClosed(new Date("2026-07-15T07:59:00Z")), false);
 });
 
-test("weekends are closed all day", () => {
+test("Friday after-hours, Saturday and Sunday before the overnight open are closed", () => {
   assert.equal(usMarketsClosed(new Date("2026-11-14T15:00:00Z")), true); // Sat 10:00
   assert.equal(usMarketsClosed(new Date("2026-11-15T20:00:00Z")), true); // Sun 15:00
+  assert.equal(usMarketsClosed(new Date("2026-11-16T01:00:00Z")), false); // Sun 20:00
+  assert.equal(usMarketsClosed(new Date("2026-11-14T01:00:00Z")), true); // Fri 20:00
 });
 
 test("the regular session runs 09:30 to 16:00 New York time on weekdays", () => {

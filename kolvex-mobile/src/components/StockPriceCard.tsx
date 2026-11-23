@@ -1,3 +1,6 @@
+import { latestQuote, withChartQuote } from "../lib/chartQuote";
+import { isIntraday } from "../lib/chartTimeframes";
+import { useMarketPolling } from "../lib/useMarketPolling";
 // The Web's stock-page price card (StockWorkspace "价格走势" + PriceGraph) at phone size:
 // the range's change, an "Advanced" link to the technical chart, the line
 // with its price scale, and the range chips 1日 … 5年.
@@ -109,21 +112,24 @@ export function StockPriceCard({
   symbol,
   currency,
   revision,
+  latest,
 }: {
   symbol: string;
   currency?: string;
   revision: number;
+  latest: ReturnType<typeof latestQuote>;
 }) {
   const t = useTheme();
   const { locale } = usePreferences();
   const [range, setRange] = useState<(typeof RANGES)[number]["key"]>("3M");
   const [info, setInfo] = useState(false);
   const spec = RANGES.find((item) => item.key === range)!;
+  const intraday = isIntraday(spec.interval);
   const bars = useResource(
     `price-card:${symbol}:${range}:${revision}`,
     (signal) =>
       apiRequest<{ data: Bar[] }>(
-        `/market/history/${encodeURIComponent(symbol)}?period=${spec.period}&interval=${spec.interval}`,
+        `/market/history/${encodeURIComponent(symbol)}?period=${spec.period}&interval=${spec.interval}${intraday ? "&prepost=true" : ""}`,
         { signal, timeout: 25_000 },
       ).then((data) =>
         data.data.filter(
@@ -132,7 +138,9 @@ export function StockPriceCard({
         ),
       ),
   );
-  const points = bars.data ?? [];
+  useMarketPolling(bars.refresh, 60_000, intraday);
+  const history = bars.data ?? [];
+  const points = intraday ? withChartQuote(history, latest) : history;
   const first = points[0]?.close;
   const last = points.at(-1)?.close;
   const change = first && last != null ? ((last - first) / first) * 100 : null;

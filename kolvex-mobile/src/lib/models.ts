@@ -1,11 +1,10 @@
+import type { ChartQuote } from "./chartQuote";
 import { withSign } from "./format";
-export type Quote = {
+export type Quote = ChartQuote & {
   symbol: string;
   name?: string;
   currency?: string | null;
-  current_price: number | null;
   change: number | null;
-  change_percent: number | null;
   open?: number | null;
   day_high?: number | null;
   day_low?: number | null;

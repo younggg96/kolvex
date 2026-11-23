@@ -1634,7 +1634,8 @@
     "quoteSession": {
       "regular": "常规交易 · 较昨收",
       "pre": "盘前 · 较收盘",
-      "post": "盘后 · 较收盘"
+      "post": "盘后 · 较收盘",
+      "overnight": "夜盘 · 较收盘"
     },
     "quoteTimeUnknown": "报价时间未提供",
     "quoteMayBeDelayed": "行情可能延迟",
@@ -2032,8 +2033,8 @@
       "snapClose": "收盘价",
       "snapOhlc": "最近的开高低收",
       "data": "数据",
-      "extendedHours": "显示盘前盘后",
-      "extendedHoursHint": "仅对分钟和小时 K 线生效；盘前 4:00–9:30、盘后 16:00–20:00（美东）。",
+      "extendedHours": "显示盘前、盘后和夜盘",
+      "extendedHoursHint": "仅对分钟和小时 K 线生效，按标的显示可用的盘前、盘后和夜盘数据。",
       "highlightSession": "高亮盘前盘后时段",
       "colors": "K 线颜色",
       "body": "实体",

@@ -106,8 +106,15 @@ class QuoteResponse(BaseModel):
     exchange_timezone_name: Optional[str] = None
     pre_market_price: Optional[float] = None
     pre_market_time: Optional[int] = None
+    pre_market_change: Optional[float] = None
+    pre_market_change_percent: Optional[float] = None
     post_market_price: Optional[float] = None
     post_market_time: Optional[int] = None
+    post_market_change: Optional[float] = None
+    post_market_change_percent: Optional[float] = None
+    overnight_market_price: Optional[float] = None
+    overnight_market_time: Optional[int] = None
+    overnight_market_source: Optional[str] = None
 
 
 class HistoryDataPoint(BaseModel):
@@ -121,6 +128,8 @@ class HistoryDataPoint(BaseModel):
     volume: Optional[int] = None
     dividends: Optional[float] = None
     stock_splits: Optional[float] = None
+    source: Optional[str] = None
+    session: Optional[str] = None
 
 
 class HistoryResponse(BaseModel):
@@ -486,7 +495,7 @@ def get_history(
     interval: HistoryInterval = Query(HistoryInterval.ONE_DAY, description="K线间隔"),
     start: Optional[str] = Query(None, description="开始日期 (YYYY-MM-DD)"),
     end: Optional[str] = Query(None, description="结束日期 (YYYY-MM-DD)"),
-    prepost: bool = Query(False, description="日内 K 线是否包含盘前盘后"),
+    prepost: bool = Query(False, description="日内 K 线是否包含盘前、盘后和可用的夜盘"),
 ):
     """获取历史行情数据"""
     try:
@@ -761,11 +770,12 @@ def activate_stock_analysis(
 def get_intraday(
     symbol: str = Path(..., description="股票代码"),
     interval: str = Query("5m", description="间隔: 1m, 2m, 5m, 15m, 30m, 60m"),
+    prepost: bool = Query(True, description="日内 K 线是否包含盘前、盘后和可用的夜盘"),
 ):
     """获取日内行情数据"""
     try:
         service = get_yfinance_service()
-        data = service.get_intraday(symbol, interval=interval)
+        data = service.get_intraday(symbol, interval=interval, prepost=prepost)
         return HistoryResponse(
             symbol=symbol.upper(),
             period="1d",

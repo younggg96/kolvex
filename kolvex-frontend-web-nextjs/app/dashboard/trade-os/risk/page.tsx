@@ -13,6 +13,13 @@ import {
   fetchRiskState,
   fetchDrawdown,
 } from "@/lib/tradeOsApi";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { PortfolioRiskDashboard } from "@/components/trade-os/risk/PortfolioRiskDashboard";
 
 export default function TradeOsRiskPage() {
@@ -68,37 +75,34 @@ export default function TradeOsRiskPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-foreground">
-            {c("Portfolio Risk & Drawdown Monitor", "组合风险与回撤监控")}
-          </h1>
-          <p className="text-xs text-muted-foreground mt-1">
-            {c(
-              "Track open risk to stops, capital concentration, and cash-flow-adjusted account drawdowns.",
-              "实时监控有效止损敞口、多头名义本金集中度以及出入金调整后的真实账户回撤。",
-            )}
-          </p>
+      {/* Account Toolbar */}
+      {accounts.length > 0 && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-medium text-muted-foreground">
+              {c("Trading Account", "交易账户")}:
+            </span>
+            <Select
+              value={selectedAccountId || ""}
+              onValueChange={(val) => setSelectedAccountId(val)}
+            >
+              <SelectTrigger className="h-9 w-[220px] rounded-full text-xs font-medium">
+                <SelectValue placeholder={c("Select account", "选择账户")} />
+              </SelectTrigger>
+              <SelectContent>
+                {accounts.map((a) => (
+                  <SelectItem key={a.id} value={a.id} className="text-xs font-medium">
+                    {a.account_name} ({a.broker})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-
-        {accounts.length > 0 && (
-          <select
-            value={selectedAccountId || ""}
-            onChange={(e) => setSelectedAccountId(e.target.value)}
-            className="rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground focus:outline-none"
-          >
-            {accounts.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.account_name} ({a.broker})
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
+      )}
 
       {loading ? (
-        <div className="rounded-xl border border-border bg-card p-12 text-center text-xs text-muted-foreground">
+        <div className="rounded-3xl border border-foreground/10 bg-card-glass p-12 text-center text-xs text-muted-foreground">
           {c("Loading portfolio risk metrics...", "正在加载组合风控指标...")}
         </div>
       ) : (

@@ -1,3 +1,9 @@
+import {
+  latestQuote,
+  shortSessionLabels,
+  type ChartQuote,
+} from "../../lib/chartQuote";
+import { useMarketPolling } from "../../lib/useMarketPolling";
 // The Web's stock workspace (components/decision/StockWorkspace.tsx) at phone size:
 // a pinned back button and watch star, logo and name, "ticker · exchange · currency", the watch star, the price
 // with its change and New York time, then the pill tabs over the price card and panels.
@@ -25,20 +31,11 @@ import { usePreferences } from "../../state/Preferences";
 import { useWatchlist } from "../../state/Watchlist";
 import { withSign } from "../../lib/format";
 
-type StockQuote = {
-  symbol: string;
+type StockQuote = ChartQuote & {
   name?: string;
   exchange?: string | null;
   currency?: string | null;
-  current_price: number | null;
-  change: number | null;
-  change_percent: number | null;
-  market_time?: number | null;
-  market_state?: string | null;
-  pre_market_price?: number | null;
-  pre_market_time?: number | null;
-  post_market_price?: number | null;
-  post_market_time?: number | null;
+  change?: number | null;
 };
 
 // Prices read "$7,520.93" in both languages, as on the Web.
@@ -103,6 +100,7 @@ export default function Stock() {
         })
       : Promise.reject(new Error("股票代码无效，请返回行情重新搜索。")),
   );
+  useMarketPolling(q.refresh, 15_000, valid);
   const quote = q.data;
   const currency = quote?.currency || "USD";
   const name = benchmark
@@ -111,25 +109,9 @@ export default function Stock() {
       : benchmark.zh
     : quote?.name || symbol;
   const up = (quote?.change ?? 0) >= 0;
-  // The Web shows the extended-hours price beside the close when there is one.
-  const extended =
-    quote?.post_market_price != null && quote.post_market_time
-      ? {
-          price: quote.post_market_price,
-          time: quote.post_market_time,
-          label: "盘后",
-        }
-      : quote?.pre_market_price != null && quote.pre_market_time
-        ? {
-            price: quote.pre_market_price,
-            time: quote.pre_market_time,
-            label: "盘前",
-          }
-        : null;
-  const extendedChange =
-    extended && quote?.current_price
-      ? ((extended.price - quote.current_price) / quote.current_price) * 100
-      : null;
+  const latest = latestQuote(quote);
+  const extended = latest?.session !== "regular" ? latest : null;
+  const extendedChange = extended?.changePercent;
   return (
     <Page
       title={symbol || "股票详情"}
@@ -213,7 +195,7 @@ export default function Stock() {
             <Copy size={12} muted localize={!quote.market_time}>
               {quote.market_time ? nyTime(quote.market_time) : "最新可用报价"}
             </Copy>
-            {extended && (
+            {extended && extended.session !== "regular" && extended.time && (
               <View
                 style={{
                   alignSelf: "flex-start",
@@ -228,7 +210,7 @@ export default function Stock() {
                 }}
               >
                 <Copy size={12} muted>
-                  {extended.label}
+                  {shortSessionLabels[extended.session]}
                 </Copy>
                 <Copy size={13} bold localize={false}>
                   {money(extended.price, currency, locale)}
@@ -264,6 +246,7 @@ export default function Stock() {
               symbol={symbol}
               currency={currency}
               revision={revision}
+              latest={latest}
             />
           }
         />

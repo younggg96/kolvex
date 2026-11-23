@@ -1,142 +1,77 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import DashboardLayout from "@/components/layout/DashboardLayout";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import { InfoTip } from "@/components/ui/info-tip";
 import { useCopy } from "@/components/decision/shared";
-import {
-  ShieldAlert,
-  BarChart3,
-  Search,
-  FileSpreadsheet,
-  PieChart,
-  FlaskConical,
-  BookOpen,
-  LineChart,
-  Settings,
-} from "lucide-react";
-
-interface SubNavItem {
-  href: string;
-  labelEn: string;
-  labelZh: string;
-  icon: any;
-  phase: number;
-}
-
-const SUB_NAV_ITEMS: SubNavItem[] = [
-  { href: "/dashboard/trade-os", labelEn: "Overview", labelZh: "总览", icon: BarChart3, phase: 0 },
-  {
-    href: "/dashboard/trade-os/settings",
-    labelEn: "Settings & Import",
-    labelZh: "账户与导入",
-    icon: Settings,
-    phase: 0,
-  },
-  {
-    href: "/dashboard/trade-os/plans",
-    labelEn: "Trade Plans",
-    labelZh: "交易计划",
-    icon: FileSpreadsheet,
-    phase: 1,
-  },
-  {
-    href: "/dashboard/trade-os/risk",
-    labelEn: "Portfolio Risk",
-    labelZh: "持仓风控",
-    icon: PieChart,
-    phase: 1,
-  },
-  {
-    href: "/dashboard/trade-os/market",
-    labelEn: "Market Regime",
-    labelZh: "市场状态",
-    icon: ShieldAlert,
-    phase: 2,
-  },
-  {
-    href: "/dashboard/trade-os/scanner",
-    labelEn: "Scanner",
-    labelZh: "机会扫描",
-    icon: Search,
-    phase: 2,
-  },
-  {
-    href: "/dashboard/trade-os/strategies",
-    labelEn: "Strategy Lab",
-    labelZh: "策略实验室",
-    icon: FlaskConical,
-    phase: 1,
-  },
-  {
-    href: "/dashboard/trade-os/journal",
-    labelEn: "Journal",
-    labelZh: "交易复盘",
-    icon: BookOpen,
-    phase: 3,
-  },
-  {
-    href: "/dashboard/trade-os/analytics",
-    labelEn: "Analytics",
-    labelZh: "绩效统计",
-    icon: LineChart,
-    phase: 3,
-  },
-];
 
 export default function TradeOsLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const c = useCopy();
 
+  const navOptions = [
+    { value: "/dashboard/trade-os", label: c("Overview", "总览") },
+    { value: "/dashboard/trade-os/plans", label: c("Trade Plans", "交易计划") },
+    { value: "/dashboard/trade-os/risk", label: c("Portfolio Risk", "持仓风控") },
+    { value: "/dashboard/trade-os/market", label: c("Market Regime", "市场状态") },
+    { value: "/dashboard/trade-os/scanner", label: c("Scanner", "机会扫描") },
+    { value: "/dashboard/trade-os/strategies", label: c("Strategy Lab", "策略实验室") },
+    { value: "/dashboard/trade-os/journal", label: c("Journal", "交易复盘") },
+    { value: "/dashboard/trade-os/analytics", label: c("Analytics", "绩效统计") },
+    { value: "/dashboard/trade-os/settings", label: c("Settings & Import", "设置与导入") },
+  ];
+
+  // Determine active route value
+  const activeValue =
+    navOptions.find((opt) =>
+      opt.value === "/dashboard/trade-os"
+        ? pathname === "/dashboard/trade-os"
+        : pathname === opt.value || pathname.startsWith(`${opt.value}/`),
+    )?.value || "/dashboard/trade-os";
+
   return (
-    <div className="flex min-h-screen flex-col">
-      {/* Subnavigation Bar */}
-      <div className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex h-12 items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-foreground tracking-tight flex items-center gap-1.5">
-              <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
-              Kolvex Trade OS
-            </span>
-            <span className="rounded-full bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[0.6875rem] font-semibold text-amber-500 uppercase tracking-wider">
-              {c("Experimental · Beta", "实验性功能 · Beta")}
-            </span>
+    <DashboardLayout title={c("Trade OS", "交易系统")}>
+      <main className="flex-1 overflow-y-auto">
+        <div className="mx-auto w-full max-w-6xl space-y-6 px-[16px] pb-14 pt-4 md:px-8 md:pt-6">
+          {/* Header */}
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                {c("Trade OS", "Trade OS")}
+              </h1>
+              <span className="inline-flex items-center rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-500 tracking-wide">
+                Beta
+              </span>
+              <InfoTip label={c("About Trade OS Beta", "关于 Trade OS 实验版")}>
+                <p>
+                  {c(
+                    "Kolvex Trade OS is an experimental personal trading decision & risk management system (PRD V1.0). It enforces deterministic rules, position sizing, and journal review without automated broker execution.",
+                    "Kolvex Trade OS 为实验性交易决策与风控系统（PRD V1.0）。系统遵循规则优先与限额预算，不代为执行券商自动下单，用于辅助交易纪律与复盘验证。",
+                  )}
+                </p>
+              </InfoTip>
+            </div>
           </div>
 
-          {/* Navigation links */}
-          <nav className="flex items-center space-x-1 overflow-x-auto py-1 scrollbar-none">
-            {SUB_NAV_ITEMS.map((item) => {
-              const isActive =
-                item.href === "/dashboard/trade-os"
-                  ? pathname === "/dashboard/trade-os"
-                  : pathname === item.href || pathname.startsWith(`${item.href}/`);
-              const Icon = item.icon;
+          {/* Sub Navigation via SegmentedControl */}
+          <div className="w-full">
+            <SegmentedControl
+              semantics="nav"
+              label={c("Trade OS Navigation", "Trade OS 导航")}
+              value={activeValue}
+              onChange={(value) => router.push(value)}
+              options={navOptions}
+              size="md"
+              className="max-w-full"
+            />
+          </div>
 
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                    isActive
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  }`}
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  <span>{c(item.labelEn, item.labelZh)}</span>
-                  {item.phase > 0 && (
-                    <span className="rounded bg-black/10 dark:bg-white/10 px-1 py-0.2 text-[0.625rem] text-xs">
-                      P{item.phase}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
-          </nav>
+          {/* Page Content */}
+          <div className="pt-1">{children}</div>
         </div>
-      </div>
-
-      {/* Main page content */}
-      <main className="flex-1 p-4 sm:p-6 max-w-7xl mx-auto w-full">{children}</main>
-    </div>
+      </main>
+    </DashboardLayout>
   );
 }

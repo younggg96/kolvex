@@ -355,6 +355,13 @@ return navigation restores them. The reader API selects editorial metadata and
 payload only, requires verified authentication, and exposes no write routes.
 Database browser grants remain unchanged.
 
+## 美股盘前、盘后和夜盘走势
+
+- 行情卡片、自选、股票观察和个股的分时图请求扩展时段。盘前为美东 04:00–09:30，常规盘为 09:30–16:00，盘后为 16:00–20:00；具体覆盖以交易日和数据源为准。日线及更长周期继续使用各标的的历史收盘口径。
+- 盘前盘后使用 Yahoo Finance。具备实时数据及展示授权的 Alpaca 账号可以用现有密钥配置并设置 `ALPACA_BOATS_ENABLED=true`，接入 Blue Ocean ATS 夜盘成交和 K 线。夜盘通常为周日到周四美东 20:00 至次日 04:00，仅覆盖数据源支持的股票和 ETF。单只和批量报价使用独立的夜盘价格、时间和来源字段。未授权、无成交或接口不给数据时，该时段留空。
+- 1 日分时图保留最近一个现金交易时段、前序夜盘及之后已收到的真实成交。分时趋势自动拉取 K 线，支持报价叠加的图表按实际时间戳补上更新的末点。盘前、盘后和夜盘报价涨跌以最近常规盘收盘价为基准。刷新是轮询，实际延迟取决于数据源。
+- 现金指数保留官方指数点位。指数 ETF 作为独立标的提供可用的扩展时段走势，例如 SPY、QQQ、DIA 和 IWM。期货和数字资产沿用各自数据源的交易安排，FRED 和其他日度数据使用原发布频率。
+
 ## Stock workspace layout
 
 The stock workspace uses one reading column at every viewport: header, chart,

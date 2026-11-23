@@ -13,13 +13,24 @@ export type ChartQuote = {
   pre_market_time?: number | null;
   post_market_price?: number | null;
   post_market_time?: number | null;
+  overnight_market_price?: number | null;
+  overnight_market_time?: number | null;
+  overnight_market_source?: string | null;
   source?: string | null;
+  exchange_timezone_name?: string | null;
 };
 
 export const sessionLabels = {
   regular: "常规交易 · 较昨收",
   pre: "盘前 · 较收盘",
   post: "盘后 · 较收盘",
+  overnight: "夜盘 · 较收盘",
+} as const;
+
+export const shortSessionLabels = {
+  pre: "盘前",
+  post: "盘后",
+  overnight: "夜盘",
 } as const;
 
 export const positive = (v: number | null | undefined): v is number =>
@@ -33,7 +44,7 @@ export function latestQuote(
   if (!quote || !positive(quote.current_price)) return null;
   let price = quote.current_price;
   let time = positive(quote.market_time) ? quote.market_time : undefined;
-  let session: "regular" | "pre" | "post" = "regular";
+  let session: keyof typeof sessionLabels = "regular";
   if (time && includeExtended)
     for (const c of [
       {
@@ -45,6 +56,11 @@ export function latestQuote(
         price: quote.post_market_price,
         time: quote.post_market_time,
         session: "post" as const,
+      },
+      {
+        price: quote.overnight_market_price,
+        time: quote.overnight_market_time,
+        session: "overnight" as const,
       },
     ])
       if (positive(c.price) && positive(c.time) && c.time > time) {
@@ -61,6 +77,17 @@ export function latestQuote(
         ? ((price - baseline) / baseline) * 100
         : null;
   return { price, time, session, changePercent };
+}
+
+export function withChartQuote(
+  points: { date: string; close: number }[],
+  quote: ReturnType<typeof latestQuote>,
+) {
+  const last = points.at(-1);
+  if (!quote?.time || !last) return points;
+  const time = new Date(quote.time * 1000);
+  if (!(time.getTime() > Date.parse(last.date))) return points;
+  return [...points, { date: time.toISOString(), close: quote.price }];
 }
 
 /** The current saved technical analysis and AI drawings, as the Web loads them on open. */

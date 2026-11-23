@@ -54,6 +54,8 @@ import {
 import type { YouTubeStockSummary } from "@/lib/youtubeOpinionsApi";
 import { cn } from "@/lib/utils";
 import { MARKET_RANGES } from "@/lib/marketObservations";
+import { latestChartQuote, sessionLabel } from "@/lib/chart/quote";
+import { signedPercent } from "@/lib/format";
 import {
   Change,
   Empty,
@@ -922,21 +924,55 @@ export default function StockObservationList({
                             interval={trend.interval}
                             rangeLabel={c(trend.en, trend.zh)}
                             rangeKey={range}
+                            latestQuote={
+                              quotes[symbol] ? latestChartQuote(quotes[symbol]) : undefined
+                            }
                           />
                         </span>
                         <span className="min-w-0 text-right">
                           {quoteLoading && !quotes[symbol] ? (
                             <PendingValue className="h-10" />
                           ) : (
-                            <>
-                              <span className="figure block text-base font-medium">
-                                {money(quotes[symbol]?.price)}
-                              </span>
-                              <Change
-                                value={quotes[symbol]?.changePercent}
-                                className="mt-1 block text-xs font-semibold"
-                              />
-                            </>
+                            (() => {
+                              const q = quotes[symbol];
+                              const ext = q ? latestChartQuote(q) : null;
+                              const isExtended = range === "1D" && ext && ext.session !== "regular";
+                              if (isExtended && ext) {
+                                return (
+                                  <>
+                                    <span className="figure block text-base font-medium">
+                                      {money(ext.price)}
+                                    </span>
+                                    <span className="mt-1 flex items-center justify-end gap-1">
+                                      <Change
+                                        value={ext.changePercent}
+                                        className="text-xs font-semibold"
+                                      />
+                                      <span
+                                        className="rounded bg-muted px-1 py-0.5 text-[10px] font-medium text-muted-foreground"
+                                        title={c(
+                                          `Regular close: ${money(q.price)} (${signedPercent(q.changePercent)})`,
+                                          `收盘价: ${money(q.price)} (${signedPercent(q.changePercent)})`,
+                                        )}
+                                      >
+                                        {sessionLabel(ext.session, c("en", "zh"))}
+                                      </span>
+                                    </span>
+                                  </>
+                                );
+                              }
+                              return (
+                                <>
+                                  <span className="figure block text-base font-medium">
+                                    {money(quotes[symbol]?.price)}
+                                  </span>
+                                  <Change
+                                    value={quotes[symbol]?.changePercent}
+                                    className="mt-1 block text-xs font-semibold"
+                                  />
+                                </>
+                              );
+                            })()
                           )}
                         </span>
                         <span className="col-span-full text-xs leading-5 text-muted-foreground max-lg:hidden">

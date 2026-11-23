@@ -132,6 +132,7 @@ import {
 import {
   advancedHistoryParams,
   defaultInterval,
+  extendedDayStart,
   isIntraday,
   isPresetRange,
   priceRanges,
@@ -373,19 +374,21 @@ export default function ChartView({
     writeChartSettings(next);
   }, []);
   const [chartSettingsOpen, setChartSettingsOpen] = useState(false);
-  /** Pre-market / after-hours bars exist only for intraday intervals. */
+  const historyParams: PriceHistoryParams =
+    advanced && !snapshotBars ? advancedHistoryParams(range, effectiveInterval) : compactParams;
   const extendedHours =
-    advanced &&
     !snapshotBars &&
-    chartSettings.extendedHours &&
-    intervalMinutes(effectiveInterval) !== null;
-  const params =
-    advanced && !snapshotBars
-      ? {
-          ...advancedHistoryParams(range, effectiveInterval),
-          ...(extendedHours ? { prepost: "true" } : {}),
-        }
-      : compactParams;
+    intervalMinutes(historyParams.interval || "1d") !== null &&
+    (advanced ? chartSettings.extendedHours : historyParams.prepost !== "false");
+  const wholeSession = extendedHours && range === "1D";
+  const params = extendedHours
+    ? {
+        ...(wholeSession && !advanced
+          ? { period: "1d", interval: historyParams.interval }
+          : historyParams),
+        prepost: "true",
+      }
+    : historyParams;
   const paramsKey = JSON.stringify(params);
   const chartCacheKey = stockHistoryKey(symbol, params);
   const quoteResource = useStockQuote(symbol, 15_000, !snapshotBars);
@@ -632,6 +635,16 @@ export default function ChartView({
     return index;
   }, [forecast, bars]);
 
+  const extendedWindowStart = useMemo(
+    () =>
+      advanced && wholeSession && quoteResource.data?.exchangeTimezone === "America/New_York"
+        ? extendedDayStart(
+            (bars ?? []).map((bar) => bar.date),
+            effectiveInterval,
+          )
+        : null,
+    [advanced, wholeSession, quoteResource.data?.exchangeTimezone, bars, effectiveInterval],
+  );
   const defaultView = useMemo<View>(() => {
     if (!count) return { start: 0, end: 1 };
     if (!advanced) return { start: 0, end: count };
@@ -642,10 +655,10 @@ export default function ChartView({
         count,
         times,
         range,
-        rangeStart: windowStartFor(range, times[count - 1]),
+        rangeStart: extendedWindowStart ?? windowStartFor(range, times[count - 1]),
       }) || { start: 0, end: count }
     );
-  }, [advanced, count, range, times]);
+  }, [advanced, count, range, times, extendedWindowStart]);
   const current = view || defaultView;
   /** Once per loaded forecast, widen the window so the band past the last bar is in view; turning it off gives the room back. */
   const revealedForecast = useRef<string | null>(null);
@@ -1002,10 +1015,10 @@ export default function ChartView({
     if (operation === "analysis") setAi({ status: "idle" });
     else setDrawingAi({ status: "idle" });
     // AI reads the regular-session history; the extended-hours flag is display-only.
-    const { prepost: _prepost, ...historyParams } = params;
+    const { prepost: _prepost, ...analysisParams } = historyParams;
     void _prepost;
     await aiJobs.submit({
-      ...historyParams,
+      ...analysisParams,
       ...(operation === "analysis" ? technicalFocus : drawingFocus),
       operation,
       model: selectedModel,
@@ -1624,12 +1637,16 @@ export default function ChartView({
       last && last.close >= (bars[count - 2]?.close ?? last.open) ? "positive" : "negative";
     const visibleBars = bars.slice(firstVisible, lastVisible + 1);
     const sessionRuns =
-      extendedHours && chartSettings.highlightSession
+      extendedHours &&
+      chartSettings.highlightSession &&
+      quoteResource.data?.exchangeTimezone === "America/New_York" &&
+      /^[A-Z][A-Z0-9]*(?:-[A-Z])?$/.test(symbol.toUpperCase())
         ? extendedRuns(
             bars.map((bar) => bar.date),
             effectiveInterval,
             firstVisible - 1,
             lastVisible + 1,
+            bars.map((bar) => bar.session),
           )
         : [];
     const maxVolume = visibleBars.reduce((maximum, bar) => Math.max(maximum, bar.volume || 0), 1);
@@ -1668,7 +1685,7 @@ export default function ChartView({
             width={(run.end - run.start + 1) * slot}
             height={plotH}
             fill="rgb(var(--foreground))"
-            fillOpacity={run.session === "pre" ? 0.045 : 0.06}
+            fillOpacity={run.session === "overnight" ? 0.09 : run.session === "pre" ? 0.045 : 0.06}
           />
         ))}
         {visibleBars.map((bar, offset) => {
@@ -2082,6 +2099,7 @@ export default function ChartView({
       bars={bars}
       quote={quoteResource.data}
       quoteEnabled={!snapshotBars}
+      extendedHours={extendedHours}
       quoteLoading={quoteResource.loading}
       quoteError={!!quoteResource.error}
       onQuoteRetry={quoteResource.refresh}
@@ -2108,7 +2126,13 @@ export default function ChartView({
       onRangeOpenChange={onRangeOpenChange}
       rangeOptions={graphRangeOptions}
       rangeLabel={advanced && snapshotBars ? undefined : rangeLabel}
-      rangeStart={advanced ? windowStartFor(range, times[count - 1] ?? Date.now()) : undefined}
+      rangeStart={
+        advanced
+          ? (extendedWindowStart ?? windowStartFor(range, times[count - 1] ?? Date.now()))
+          : wholeSession
+            ? null
+            : undefined
+      }
       calls={callCounts}
       showCalls={showCalls}
       activeIndex={active}

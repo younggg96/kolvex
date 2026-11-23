@@ -47,12 +47,13 @@ sent to the server, and **恢复默认 / Reset** restores the defaults:
 
 - Zoom anchor: cursor (default) or right edge — wheel and toolbar zoom.
 - Crosshair snap: off (default), close, or nearest of open/high/low/close.
-- Extended hours (default off): minute and hour intervals request `prepost=true` from
-  `GET /api/v1/market/history/{symbol}` and include pre-market (4:00–9:30 ET) and
-  after-hours (16:00–20:00 ET) bars. Daily and longer intervals are unaffected.
+- Extended hours (default on): minute and hour intervals request `prepost=true` from
+  `GET /api/v1/market/history/{symbol}` for available pre-market, after-hours and
+  [Blue Ocean ATS overnight bars](decision-workspace.md#美股盘前盘后和夜盘走势).
+  Daily and longer intervals use the instrument's regular historical bars.
   AI analysis requests never send `prepost`, so it always reads regular-session bars.
-- Highlight trading session (default on, needs extended hours): shades pre-market and
-  after-hours bars. A bar that overlaps the regular session counts as regular.
+- Highlight trading session (default on, needs extended hours): shades pre-market,
+  after-hours and source-tagged overnight bars. A bar that overlaps the regular session counts as regular.
 - Candle colours: body, border and wick each have an on/off switch and up/down colours
   chosen from design tokens (`--chart-up`, `--chart-down`, `--compare-1…6`,
   `--foreground`, `--muted-foreground`), plus 绿涨红跌 / 红涨绿跌 presets. Turning a part

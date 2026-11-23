@@ -3,16 +3,20 @@
 import React, { useState } from "react";
 import { useCopy } from "@/components/decision/shared";
 import { runBacktest, BacktestResult, BacktestTrade } from "@/lib/tradeOsApi";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ListCard } from "@/components/ui/list-card";
 import {
-  Play,
-  RefreshCw,
-  BarChart2,
-  Shield,
-  TrendingUp,
-  Calendar,
-  AlertCircle,
-} from "lucide-react";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Play, RefreshCw, BarChart2, AlertCircle } from "lucide-react";
 import { withSign } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 export function BacktestRunner() {
   const c = useCopy();
@@ -73,44 +77,51 @@ export function BacktestRunner() {
   return (
     <div className="space-y-6">
       {/* Control Panel */}
-      <div className="rounded-xl border border-border/70 bg-card p-5 shadow-sm space-y-4">
+      <Card className="p-5 sm:p-6 space-y-4">
         <div>
           <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
             <BarChart2 className="w-4 h-4 text-primary" />
             {t.title}
           </h3>
-          <p className="text-xs text-muted-foreground mt-0.5">{t.subtitle}</p>
         </div>
 
         <form onSubmit={handleRun} className="flex flex-wrap items-end gap-3 pt-1">
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground">{t.symbol}</label>
-            <input
+            <Input
               type="text"
               value={symbol}
               onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-              placeholder="e.g. NVDA"
-              className="w-28 rounded-lg border border-border bg-muted/40 px-3 py-1.5 text-xs font-semibold uppercase text-foreground focus:outline-none"
+              placeholder="NVDA"
+              className="h-9 w-28 rounded-xl font-mono text-xs font-semibold uppercase"
             />
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground">{t.period}</label>
-            <select
-              value={period}
-              onChange={(e) => setPeriod(e.target.value)}
-              className="rounded-lg border border-border bg-muted/40 px-3 py-1.5 text-xs font-medium text-foreground focus:outline-none"
-            >
-              <option value="1y">1 Year (1 年)</option>
-              <option value="2y">2 Years (2 年)</option>
-              <option value="5y">5 Years (5 年)</option>
-            </select>
+            <Select value={period} onValueChange={(val) => setPeriod(val)}>
+              <SelectTrigger className="h-9 w-36 rounded-xl text-xs font-medium">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1y" className="text-xs">
+                  1 Year (1 年)
+                </SelectItem>
+                <SelectItem value="2y" className="text-xs">
+                  2 Years (2 年)
+                </SelectItem>
+                <SelectItem value="5y" className="text-xs">
+                  5 Years (5 年)
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          <button
+          <Button
             type="submit"
             disabled={running || !symbol}
-            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium text-xs hover:opacity-90 transition shadow disabled:opacity-50"
+            size="sm"
+            className="h-9 rounded-full px-4 text-xs font-semibold gap-1.5"
           >
             {running ? (
               <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -118,26 +129,28 @@ export function BacktestRunner() {
               <Play className="w-3.5 h-3.5 fill-current" />
             )}
             {running ? t.running : t.run}
-          </button>
+          </Button>
 
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground ml-auto self-center">
             <span>Quick:</span>
             {["NVDA", "AAPL", "MSFT", "AMZN", "TSLA"].map((sym) => (
-              <button
+              <Button
                 key={sym}
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => setSymbol(sym)}
-                className="px-2 py-0.5 rounded bg-muted/60 hover:bg-muted text-foreground text-[11px]"
+                className="h-7 px-2 rounded-full text-xs text-muted-foreground hover:text-foreground"
               >
                 {sym}
-              </button>
+              </Button>
             ))}
           </div>
         </form>
-      </div>
+      </Card>
 
       {error && (
-        <div className="p-4 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs flex items-center gap-2">
+        <div className="p-4 rounded-2xl bg-destructive/10 border border-destructive/30 text-destructive text-xs flex items-center gap-2">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{error}</span>
         </div>
@@ -147,134 +160,141 @@ export function BacktestRunner() {
       {result && result.summary && (
         <div className="space-y-6">
           {/* Metrics Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            <div className="rounded-xl border border-border/60 bg-card p-3.5 space-y-1">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 sm:gap-4">
+            <Card className="p-4 sm:p-5 space-y-1">
               <span className="text-xs text-muted-foreground block">{t.winRate}</span>
-              <div className="text-lg font-bold text-foreground">
+              <div className="figure text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
                 {result.summary.win_rate_pct.toFixed(1)}%
               </div>
-              <span className="text-[11px] text-muted-foreground">
+              <span className="figure text-[11px] text-muted-foreground">
                 {result.summary.winning_trades}W / {result.summary.losing_trades}L
               </span>
-            </div>
+            </Card>
 
-            <div className="rounded-xl border border-border/60 bg-card p-3.5 space-y-1">
+            <Card className="p-4 sm:p-5 space-y-1">
               <span className="text-xs text-muted-foreground block">{t.profitFactor}</span>
-              <div className="text-lg font-bold text-foreground">
+              <div className="figure text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
                 {result.summary.profit_factor.toFixed(2)}
               </div>
               <span className="text-[11px] text-muted-foreground">Gross Win/Loss</span>
-            </div>
+            </Card>
 
-            <div className="rounded-xl border border-border/60 bg-card p-3.5 space-y-1">
+            <Card className="p-4 sm:p-5 space-y-1">
               <span className="text-xs text-muted-foreground block">{t.expectancy}</span>
               <div
-                className={`text-lg font-bold ${
-                  result.summary.expectancy_r >= 0 ? "text-emerald-500" : "text-rose-500"
-                }`}
+                className={cn(
+                  "figure text-xl font-semibold tracking-tight sm:text-2xl",
+                  result.summary.expectancy_r >= 0 ? "text-positive" : "text-negative",
+                )}
               >
                 {withSign(result.summary.expectancy_r, (m) => `${m.toFixed(2)}R`)}
               </div>
               <span className="text-[11px] text-muted-foreground">Per Trade Return</span>
-            </div>
+            </Card>
 
-            <div className="rounded-xl border border-border/60 bg-card p-3.5 space-y-1">
+            <Card className="p-4 sm:p-5 space-y-1">
               <span className="text-xs text-muted-foreground block">{t.maxDd}</span>
-              <div className="text-lg font-bold text-rose-500">
+              <div className="figure text-xl font-semibold tracking-tight text-negative sm:text-2xl">
                 {result.summary.max_drawdown_pct.toFixed(2)}%
               </div>
               <span className="text-[11px] text-muted-foreground">From Peak Equity</span>
-            </div>
+            </Card>
 
-            <div className="rounded-xl border border-border/60 bg-card p-3.5 space-y-1">
+            <Card className="p-4 sm:p-5 space-y-1">
               <span className="text-xs text-muted-foreground block">{t.netPnl}</span>
               <div
-                className={`text-lg font-bold ${
-                  parseFloat(result.summary.net_pnl) >= 0 ? "text-emerald-500" : "text-rose-500"
-                }`}
+                className={cn(
+                  "figure text-xl font-semibold tracking-tight sm:text-2xl",
+                  parseFloat(result.summary.net_pnl) >= 0 ? "text-positive" : "text-negative",
+                )}
               >
                 {withSign(parseFloat(result.summary.net_pnl), (m) => `$${m.toFixed(2)}`)}
               </div>
-              <span className="text-[11px] text-muted-foreground">
+              <span className="figure text-[11px] text-muted-foreground">
                 Return: {result.summary.total_return_pct.toFixed(1)}%
               </span>
-            </div>
+            </Card>
 
-            <div className="rounded-xl border border-border/60 bg-card p-3.5 space-y-1">
+            <Card className="p-4 sm:p-5 space-y-1">
               <span className="text-xs text-muted-foreground block">{t.totalTrades}</span>
-              <div className="text-lg font-bold text-foreground">{result.summary.total_trades}</div>
-              <span className="text-[11px] text-muted-foreground">
+              <div className="figure text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+                {result.summary.total_trades}
+              </div>
+              <span className="figure text-[11px] text-muted-foreground">
                 Sharpe: {result.summary.sharpe_ratio}
               </span>
-            </div>
+            </Card>
           </div>
 
-          {/* Trade Logs Table */}
-          <div className="rounded-xl border border-border/60 bg-card overflow-hidden shadow-sm">
-            <div className="p-4 border-b border-border/40 flex items-center justify-between">
-              <h4 className="text-xs font-semibold text-foreground uppercase tracking-wider">
-                {t.trades} ({result.trades.length})
-              </h4>
-            </div>
+          {/* Trade Logs Table inside ListCard */}
+          <section className="space-y-3">
+            <h4 className="text-base font-semibold text-foreground px-1">
+              {t.trades} ({result.trades.length})
+            </h4>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-muted/40 text-muted-foreground border-b border-border/30">
-                  <tr>
-                    <th className="px-4 py-2.5 font-medium">Dates (Entry &rarr; Exit)</th>
-                    <th className="px-4 py-2.5 font-medium">{t.entry}</th>
-                    <th className="px-4 py-2.5 font-medium">{t.exit}</th>
-                    <th className="px-4 py-2.5 font-medium">Shares</th>
-                    <th className="px-4 py-2.5 font-medium">{t.pnl}</th>
-                    <th className="px-4 py-2.5 font-medium">{t.rMult}</th>
-                    <th className="px-4 py-2.5 font-medium">{t.reason}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/20 text-foreground">
-                  {result.trades.map((tr: BacktestTrade, idx: number) => {
-                    const pnlNum = parseFloat(tr.pnl);
-                    return (
-                      <tr key={idx} className="hover:bg-muted/20 transition">
-                        <td className="px-4 py-2.5 font-mono text-muted-foreground">
-                          {tr.entry_date} &rarr; {tr.exit_date}
-                        </td>
-                        <td className="px-4 py-2.5 font-medium">${tr.entry_price}</td>
-                        <td className="px-4 py-2.5 font-medium">${tr.exit_price}</td>
-                        <td className="px-4 py-2.5">{tr.shares}</td>
-                        <td
-                          className={`px-4 py-2.5 font-semibold ${
-                            pnlNum >= 0 ? "text-emerald-500" : "text-rose-500"
-                          }`}
-                        >
-                          {withSign(pnlNum, (m) => `$${m.toFixed(2)}`)}
-                        </td>
-                        <td
-                          className={`px-4 py-2.5 font-semibold ${
-                            tr.r_multiple >= 0 ? "text-emerald-500" : "text-rose-500"
-                          }`}
-                        >
-                          {withSign(tr.r_multiple, (m) => `${m.toFixed(2)}R`)}
-                        </td>
-                        <td className="px-4 py-2.5">
-                          <span
-                            className={`px-2 py-0.5 rounded text-[11px] font-medium uppercase ${
-                              tr.exit_reason === "take_profit"
-                                ? "bg-emerald-500/10 text-emerald-500"
-                                : tr.exit_reason === "stop_loss"
-                                  ? "bg-rose-500/10 text-rose-500"
-                                  : "bg-muted text-muted-foreground"
-                            }`}
+            <ListCard>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="text-muted-foreground border-b border-border/40">
+                    <tr>
+                      <th className="px-3 py-2.5 font-medium">Dates (Entry &rarr; Exit)</th>
+                      <th className="px-3 py-2.5 font-medium">{t.entry}</th>
+                      <th className="px-3 py-2.5 font-medium">{t.exit}</th>
+                      <th className="px-3 py-2.5 font-medium">Shares</th>
+                      <th className="px-3 py-2.5 font-medium">{t.pnl}</th>
+                      <th className="px-3 py-2.5 font-medium">{t.rMult}</th>
+                      <th className="px-3 py-2.5 font-medium">{t.reason}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/30 text-foreground font-mono">
+                    {result.trades.map((tr: BacktestTrade, idx: number) => {
+                      const pnlNum = parseFloat(tr.pnl);
+                      return (
+                        <tr key={idx} className="hover:bg-muted/20 transition">
+                          <td className="px-3 py-3 text-muted-foreground">
+                            {tr.entry_date} &rarr; {tr.exit_date}
+                          </td>
+                          <td className="px-3 py-3 font-medium figure">${tr.entry_price}</td>
+                          <td className="px-3 py-3 font-medium figure">${tr.exit_price}</td>
+                          <td className="px-3 py-3 figure">{tr.shares}</td>
+                          <td
+                            className={cn(
+                              "px-3 py-3 font-semibold figure",
+                              pnlNum >= 0 ? "text-positive" : "text-negative",
+                            )}
                           >
-                            {tr.exit_reason}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                            {withSign(pnlNum, (m) => `$${m.toFixed(2)}`)}
+                          </td>
+                          <td
+                            className={cn(
+                              "px-3 py-3 font-semibold figure",
+                              tr.r_multiple >= 0 ? "text-positive" : "text-negative",
+                            )}
+                          >
+                            {withSign(tr.r_multiple, (m) => `${m.toFixed(2)}R`)}
+                          </td>
+                          <td className="px-3 py-3 font-sans">
+                            <span
+                              className={cn(
+                                "px-2 py-0.5 rounded-full text-[11px] font-medium uppercase",
+                                tr.exit_reason === "take_profit"
+                                  ? "bg-emerald-500/10 text-positive"
+                                  : tr.exit_reason === "stop_loss"
+                                    ? "bg-negative/10 text-negative"
+                                    : "bg-muted text-muted-foreground",
+                              )}
+                            >
+                              {tr.exit_reason}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </ListCard>
+          </section>
         </div>
       )}
     </div>

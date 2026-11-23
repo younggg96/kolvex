@@ -1,10 +1,13 @@
 import json
 import math
 import unittest
+from datetime import datetime
+from unittest.mock import Mock, patch
 
 import pandas as pd
 
-from app.services.yfinance.client import _history_point
+from app.services.yfinance import overnight
+from app.services.yfinance.client import YFinanceService, _history_point
 
 
 class HistoryPointTests(unittest.TestCase):
@@ -57,10 +60,105 @@ class HistoryPointTests(unittest.TestCase):
         self.assertEqual(bar["dividends"], 0.25)
 
 
+class OvernightHistoryTests(unittest.TestCase):
+    def test_one_day_joins_sunday_and_monday_without_losing_friday_close(self):
+        ticker = Mock()
+        index = pd.DatetimeIndex(
+            ["2026-11-20 15:55", "2026-11-20 19:55", "2026-11-23 04:00"],
+            tz="America/New_York",
+            name="Datetime",
+        )
+        ticker.history.return_value = pd.DataFrame(
+            {"Open": 100, "High": 104, "Low": 99, "Close": [100, 101, 103], "Volume": 10},
+            index=index,
+        )
+        night = [
+            {
+                "Datetime": pd.Timestamp(at, tz="America/New_York"),
+                "Open": 102,
+                "High": 103,
+                "Low": 101,
+                "Close": 102,
+                "Volume": 4,
+                "Source": "boats",
+            }
+            for at in ["2026-11-22 20:05", "2026-11-23 00:10"]
+        ]
+        service = YFinanceService()
+        with (
+            patch.object(service, "get_ticker", return_value=ticker),
+            patch.object(service, "_overnight_bars", return_value=night),
+        ):
+            result = service.get_intraday("AAPL")
+
+        ticker.history.assert_called_once_with(
+            period="5d", interval="5m", prepost=True, auto_adjust=False
+        )
+        self.assertEqual([bar["close"] for bar in result], [100, 101, 102, 102, 103])
+        self.assertEqual(
+            [bar["session"] for bar in result], [None, None, "overnight", "overnight", None]
+        )
+        self.assertEqual(result[2]["source"], "Alpaca / Blue Ocean ATS")
+        self.assertEqual(result[3]["date"], "2026-11-23T00:10:00-05:00")
+
+    def test_boats_history_is_opt_in_and_keeps_cash_index_symbols_out(self):
+        with patch.dict(
+            "os.environ",
+            {
+                "ALPACA_BOATS_ENABLED": "true",
+                "ALPACA_API_KEY_ID": "test",
+                "ALPACA_API_SECRET_KEY": "test",
+            },
+        ):
+            with patch.object(overnight.httpx, "Client") as http:
+                self.assertEqual(overnight.history("^GSPC", "1d", "5m", None, None), [])
+                http.assert_not_called()
+
+    def test_boats_history_preserves_requested_window_and_filters_other_sessions(self):
+        now = datetime(2026, 11, 23, 10, tzinfo=overnight.NEW_YORK)
+        prices = {"o": 100, "h": 103, "l": 99, "c": 102, "v": 10}
+        with (
+            patch.object(overnight, "_headers", return_value={"test": "test"}),
+            patch.object(overnight, "datetime", wraps=datetime) as clock,
+            patch.object(overnight.httpx, "Client") as http,
+        ):
+            clock.now.return_value = now
+            get = http.return_value.__enter__.return_value.get
+            get.return_value.json.return_value = {
+                "bars": {
+                    "AAPL": [
+                        {"t": "2026-11-23T00:59:00Z", **prices},
+                        {"t": "2026-11-23T06:00:00Z", **prices},
+                        {"t": "2026-11-23T09:00:00Z", **prices},
+                    ],
+                },
+            }
+            bars = overnight.history("AAPL", "1mo", "5m", "2026-11-22", "2026-11-23T08:00")
+        params = get.call_args.kwargs["params"]
+        self.assertEqual((params["feed"], params["timeframe"]), ("boats", "5Min"))
+        self.assertEqual(params["start"], "2026-11-22T00:00:00-05:00")
+        self.assertEqual(params["end"], "2026-11-23T08:00:00-05:00")
+        self.assertEqual(
+            [bar["Datetime"].isoformat() for bar in bars], ["2026-11-23T01:00:00-05:00"]
+        )
+
+    def test_latest_trade_rejects_prior_overnight_sessions(self):
+        now = datetime(2026, 11, 23, 1, tzinfo=overnight.NEW_YORK)
+        with (
+            patch.object(overnight, "_headers", return_value={"test": "test"}),
+            patch.object(overnight, "datetime", wraps=datetime) as clock,
+            patch.object(overnight.httpx, "get") as get,
+        ):
+            clock.now.return_value = now
+            get.return_value.json.return_value = {"trade": {"p": 102, "t": "2026-11-20T04:55:00Z"}}
+            self.assertIsNone(overnight.latest_trade("AAPL"))
+            get.return_value.json.return_value = {"trade": {"p": 104, "t": "2026-11-23T05:55:00Z"}}
+            self.assertEqual(overnight.latest_trade("AAPL"), (104, int(now.timestamp()) - 300))
+            self.assertEqual(get.call_args.kwargs["params"], {"feed": "boats"})
+
+
 class HistoryRoutePrepostTests(unittest.TestCase):
     def _call(self, **kwargs):
-        from unittest.mock import Mock, patch
-
         from app.api.routes import market_data
 
         service = Mock()
@@ -81,6 +179,15 @@ class HistoryRoutePrepostTests(unittest.TestCase):
 
     def test_regular_session_by_default(self):
         self.assertFalse(self._call(prepost=False)["prepost"])
+
+    def test_intraday_defaults_to_prepost(self):
+        from app.api.routes import market_data
+
+        service = Mock()
+        service.get_intraday.return_value = []
+        with patch.object(market_data, "get_yfinance_service", return_value=service):
+            market_data.get_intraday(symbol="nvda", interval="5m", prepost=True)
+        self.assertTrue(service.get_intraday.call_args.kwargs["prepost"])
 
 
 if __name__ == "__main__":

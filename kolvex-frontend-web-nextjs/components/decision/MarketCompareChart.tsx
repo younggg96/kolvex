@@ -1,7 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CartesianGrid,
   Line,
@@ -24,6 +24,7 @@ import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { MarketInstrument } from "@/lib/marketBenchmarks";
 import { MARKET_RANGES, type MarketObservation } from "@/lib/marketObservations";
+import { useVisiblePolling } from "@/hooks/useVisiblePolling";
 import { loadMarketSeries, type MarketRangeKey } from "@/lib/marketSeries";
 import { cn } from "@/lib/utils";
 import { useCopy } from "./shared";
@@ -96,11 +97,14 @@ function CompareChart({
   const blocked = (item: MarketInstrument) => range === "1D" && Boolean(item.daily);
   const active = instruments.filter((item) => selected[item.symbol] && !blocked(item));
   const activeKey = active.map((item) => item.symbol).join("|");
+  const [revision, setRevision] = useState(0);
+  const refresh = useCallback(() => setRevision((value) => value + 1), []);
+  useVisiblePolling(refresh, 60_000, intraday && active.length > 0);
 
-  const lastForce = useRef(`${attempt}/${retry}`);
+  const lastForce = useRef(`${attempt}/${retry}/${revision}`);
   useEffect(() => {
     const controller = new AbortController();
-    const forceKey = `${attempt}/${retry}`;
+    const forceKey = `${attempt}/${retry}/${revision}`;
     const force = lastForce.current !== forceKey;
     lastForce.current = forceKey;
     active.forEach((item) => {
@@ -128,7 +132,7 @@ function CompareChart({
     });
     return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `activeKey` stands in for the instruments it lists.
-  }, [activeKey, range, attempt, retry]);
+  }, [activeKey, range, attempt, retry, revision]);
 
   const lines = useMemo(
     () =>
@@ -165,7 +169,7 @@ function CompareChart({
     new Intl.DateTimeFormat(
       c("en-US", "zh-CN"),
       range === "1D"
-        ? { hour: "2-digit", minute: "2-digit", hour12: false }
+        ? { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/New_York" }
         : intraday
           ? { month: "2-digit", day: "2-digit" }
           : { month: "2-digit", day: "2-digit", timeZone: "UTC" },
@@ -174,7 +178,14 @@ function CompareChart({
     new Intl.DateTimeFormat(
       c("en-US", "zh-CN"),
       intraday
-        ? { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }
+        ? {
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+            timeZone: "America/New_York",
+          }
         : { year: "numeric", month: "2-digit", day: "2-digit", timeZone: "UTC" },
     ).format(t);
 

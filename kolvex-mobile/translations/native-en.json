@@ -1,4 +1,7 @@
 {
+  "夜盘": "Overnight",
+  "指数 ETF": "Index ETFs",
+  "罗素 2000 ETF": "Russell 2000 ETF",
   "明星投资者": "Featured investors",
   "巴菲特": "Buffett",
   "桥水": "Bridgewater",
@@ -1874,5 +1877,7 @@
   "你的对话不会被删除。此操作无法撤销。": "Your conversations are not deleted. This cannot be undone.",
   "AI 聊天会跨对话记住你常用的语言和它帮你查过的股票，这样只发一个股票代码之类的简短问题也能看懂。它不会记住价格或其他数字，这些每次都会重新查。": "Across conversations, the AI chat remembers the language you usually write in and the stocks it looked up for you, so short questions like just a ticker are easier to understand. It does not remember prices or other figures; those are fetched again each time.",
   "来源为 Yahoo Finance 复权日收盘价，以区间开始前最后一个收盘价为 0%。": "Yahoo Finance adjusted daily closes. The last close before the period is 0%.",
-  "该区间暂无足够的行情数据。": "Not enough priced data for this period."
+  "该区间暂无足够的行情数据。": "Not enough priced data for this period.",
+  "拖动平移": "Drag to pan",
+  "ApeWisdom 汇总所选 Reddit 社区的讨论。本页展示来源排名前 100 个代码，搜索、排序和关注筛选仅覆盖当前榜单。数据缓存 5 分钟，变化对比来源提供的 24 小时前数据。提及量基数缺失或为零时不计算百分比；排序时无对比值的代码置后。代码与名称按来源展示，未作独立证券身份核验。讨论热度不代表看多或看空情绪。": "ApeWisdom aggregates discussions from selected Reddit communities. This page shows the top 100 tickers from the source; search, sorting, and watchlist filters only cover the current list. Data is cached for 5 minutes, and changes compare to data provided 24 hours ago. Percentage change is not calculated when baseline mentions are missing or zero; tickers without comparison data are placed last when sorted. Tickers and company names are shown as provided by the source without independent verification. Discussion volume does not represent bullish or bearish sentiment."
 }

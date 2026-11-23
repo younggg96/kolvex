@@ -1,3 +1,4 @@
+import { useMarketPolling } from "../lib/useMarketPolling";
 // The Web's stock-page Technicals tab at phone size (ChartView compact + PriceGraph):
 // price · change · 所选区间 with after-hours below, a close line carrying the saved AI
 // plan, levels and zones with their axis tags, creator calls, a peak tag, the range bar,
@@ -72,18 +73,20 @@ export function TechnicalPreview({ symbol }: { symbol: string }) {
     validBars(
       (
         await apiRequest<{ data: PriceBar[] }>(
-          `/market/history/${encodeURIComponent(symbol)}?period=${spec.period}&interval=${spec.interval}`,
+          `/market/history/${encodeURIComponent(symbol)}?period=${spec.period}&interval=${spec.interval}${intraday ? "&prepost=true" : ""}`,
           { signal, timeout: 25_000 },
         )
       ).data,
     ),
   );
+  useMarketPolling(history.refresh, 60_000, intraday);
   const bars = useMemo(() => history.data ?? [], [history.data]);
   const quote = useResource(`chart-quote:${symbol}`, (signal) =>
     apiRequest<ChartQuote>(`/market/quote/${encodeURIComponent(symbol)}`, {
       signal,
     }),
   );
+  useMarketPolling(quote.refresh, 15_000);
   const opinions = useResource(`chart-calls:${symbol}`, (signal) =>
     apiRequest<{ opinions?: CallEvent[] }>(
       `/youtube-opinions/stocks/${encodeURIComponent(symbol)}`,

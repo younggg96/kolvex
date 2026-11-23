@@ -8,6 +8,8 @@ import {
   MarketRegimeResponse,
   BenchmarkMetrics,
 } from "@/lib/tradeOsApi";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   ShieldAlert,
   ShieldCheck,
@@ -18,6 +20,7 @@ import {
   Info,
 } from "lucide-react";
 import { withSign } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 export function MarketRegimeView() {
   const c = useCopy();
@@ -85,7 +88,7 @@ export function MarketRegimeView() {
   const renderBadge = (regime: string) => {
     if (regime === "risk_on") {
       return (
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-500 border border-emerald-500/30">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-positive border border-emerald-500/30">
           <ShieldCheck className="w-3.5 h-3.5" />
           RISK ON (进攻)
         </span>
@@ -100,7 +103,7 @@ export function MarketRegimeView() {
       );
     }
     return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-500/15 text-rose-500 border border-rose-500/30">
+      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-negative/15 text-negative border border-negative/30">
         <ShieldAlert className="w-3.5 h-3.5" />
         RISK OFF (全面防守)
       </span>
@@ -113,15 +116,15 @@ export function MarketRegimeView() {
     const slopeNum = parseFloat(bm.sma200_slope_20d_pct || "0");
 
     return (
-      <div className="rounded-xl border border-border/60 bg-card p-5 space-y-4 shadow-sm">
-        <div className="flex items-center justify-between pb-3 border-b border-border/40">
+      <Card className="p-5 sm:p-6 space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-border/50">
           <div>
             <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
               {title} ({bm.symbol})
               {isBull ? (
-                <TrendingUp className="w-4 h-4 text-emerald-500" />
+                <TrendingUp className="w-4 h-4 text-positive" />
               ) : (
-                <TrendingDown className="w-4 h-4 text-rose-500" />
+                <TrendingDown className="w-4 h-4 text-negative" />
               )}
             </h3>
             <p className="text-xs text-muted-foreground mt-0.5">
@@ -129,53 +132,55 @@ export function MarketRegimeView() {
             </p>
           </div>
           <span
-            className={`px-2.5 py-0.5 rounded-full text-xs font-medium uppercase border ${
+            className={cn(
+              "px-2.5 py-0.5 rounded-full text-xs font-medium uppercase border",
               isBull
-                ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                : "bg-rose-500/10 text-rose-500 border-rose-500/20"
-            }`}
+                ? "bg-emerald-500/10 text-positive border-emerald-500/20"
+                : "bg-negative/10 text-negative border-negative/20",
+            )}
           >
             {bm.status}
           </span>
         </div>
 
         <div className="grid grid-cols-2 gap-3 text-sm">
-          <div className="bg-muted/40 p-2.5 rounded-lg border border-border/30">
+          <div className="bg-muted/30 p-3 rounded-2xl border border-foreground/5">
             <span className="text-xs text-muted-foreground block">{t.price}</span>
-            <span className="font-semibold text-foreground mt-0.5 block">
+            <span className="figure font-semibold text-foreground mt-1 block">
               ${parseFloat(bm.price || "0").toFixed(2)}
             </span>
           </div>
 
-          <div className="bg-muted/40 p-2.5 rounded-lg border border-border/30">
+          <div className="bg-muted/30 p-3 rounded-2xl border border-foreground/5">
             <span className="text-xs text-muted-foreground block">{t.distance200}</span>
             <span
-              className={`font-semibold mt-0.5 block ${
-                distNum >= 0 ? "text-emerald-500" : "text-rose-500"
-              }`}
+              className={cn(
+                "figure font-semibold mt-1 block",
+                distNum >= 0 ? "text-positive" : "text-negative",
+              )}
             >
               {withSign(distNum, (m) => `${m.toFixed(2)}%`)}
             </span>
           </div>
 
-          <div className="bg-muted/40 p-2.5 rounded-lg border border-border/30">
+          <div className="bg-muted/30 p-3 rounded-2xl border border-foreground/5">
             <span className="text-xs text-muted-foreground block">{t.sma50}</span>
-            <span className="font-medium text-foreground mt-0.5 block">
+            <span className="figure font-medium text-foreground mt-1 block">
               ${parseFloat(bm.sma50 || "0").toFixed(2)}
             </span>
           </div>
 
-          <div className="bg-muted/40 p-2.5 rounded-lg border border-border/30">
+          <div className="bg-muted/30 p-3 rounded-2xl border border-foreground/5">
             <span className="text-xs text-muted-foreground block">{t.sma200}</span>
-            <span className="font-medium text-foreground mt-0.5 block">
+            <span className="figure font-medium text-foreground mt-1 block">
               ${parseFloat(bm.sma200 || "0").toFixed(2)}
             </span>
           </div>
         </div>
 
-        <div className="pt-2 border-t border-border/30 flex items-center justify-between text-xs text-muted-foreground">
+        <div className="pt-2 border-t border-border/40 flex items-center justify-between text-xs text-muted-foreground">
           <span>{t.slope20}:</span>
-          <span className="font-medium text-foreground">
+          <span className="figure font-medium text-foreground">
             {withSign(slopeNum, (m) => `${m.toFixed(2)}%`)}
           </span>
         </div>
@@ -183,9 +188,10 @@ export function MarketRegimeView() {
         <div className="space-y-1.5 pt-1 text-xs">
           <div className="flex items-center gap-2">
             <div
-              className={`w-1.5 h-1.5 rounded-full ${
-                bm.is_above_sma200 ? "bg-emerald-500" : "bg-rose-500"
-              }`}
+              className={cn(
+                "w-1.5 h-1.5 rounded-full",
+                bm.is_above_sma200 ? "bg-primary" : "bg-negative",
+              )}
             />
             <span className="text-muted-foreground">
               Price {bm.is_above_sma200 ? ">" : "<"} 200 SMA
@@ -193,9 +199,10 @@ export function MarketRegimeView() {
           </div>
           <div className="flex items-center gap-2">
             <div
-              className={`w-1.5 h-1.5 rounded-full ${
-                bm.is_above_sma50 ? "bg-emerald-500" : "bg-rose-500"
-              }`}
+              className={cn(
+                "w-1.5 h-1.5 rounded-full",
+                bm.is_above_sma50 ? "bg-primary" : "bg-negative",
+              )}
             />
             <span className="text-muted-foreground">
               Price {bm.is_above_sma50 ? ">" : "<"} 50 SMA
@@ -203,16 +210,17 @@ export function MarketRegimeView() {
           </div>
           <div className="flex items-center gap-2">
             <div
-              className={`w-1.5 h-1.5 rounded-full ${
-                bm.is_golden_cross ? "bg-emerald-500" : "bg-amber-500"
-              }`}
+              className={cn(
+                "w-1.5 h-1.5 rounded-full",
+                bm.is_golden_cross ? "bg-primary" : "bg-amber-500",
+              )}
             />
             <span className="text-muted-foreground">
               50 SMA {bm.is_golden_cross ? ">" : "<"} 200 SMA (Golden Cross)
             </span>
           </div>
         </div>
-      </div>
+      </Card>
     );
   };
 
@@ -220,30 +228,28 @@ export function MarketRegimeView() {
     return (
       <div className="flex items-center justify-center p-12 text-sm text-muted-foreground">
         <RefreshCw className="w-5 h-5 animate-spin mr-2" />
-        Loading Market Regime...
+        {c("Loading Market Regime...", "正在加载大盘环境数据...")}
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-bold tracking-tight text-foreground">{t.title}</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">{t.subtitle}</p>
-        </div>
-        <button
+      <div className="flex items-center justify-between">
+        <h2 className="text-base font-semibold text-foreground">{t.title}</h2>
+        <Button
           onClick={handleReevaluate}
           disabled={evaluating}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition shadow disabled:opacity-50"
+          size="sm"
+          className="rounded-full px-4 text-xs font-semibold"
         >
-          <RefreshCw className={`w-4 h-4 ${evaluating ? "animate-spin" : ""}`} />
+          <RefreshCw className={cn("mr-1.5 w-3.5 h-3.5", evaluating && "animate-spin")} />
           {evaluating ? t.evaluating : t.reEvaluate}
-        </button>
+        </Button>
       </div>
 
       {error && (
-        <div className="p-4 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-500 text-sm">
+        <div className="p-4 rounded-2xl bg-destructive/10 border border-destructive/30 text-destructive text-sm">
           {error}
         </div>
       )}
@@ -251,7 +257,7 @@ export function MarketRegimeView() {
       {data && (
         <>
           {/* Regime Status Banner */}
-          <div className="rounded-xl border border-border/70 bg-card p-6 shadow-sm space-y-4">
+          <Card className="p-5 sm:p-6 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1">
                 <span className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
@@ -264,9 +270,10 @@ export function MarketRegimeView() {
                 <div>
                   <span className="text-xs text-muted-foreground block">{t.permission}</span>
                   <span
-                    className={`font-semibold ${
-                      data.allow_new_entries ? "text-emerald-500" : "text-rose-500"
-                    }`}
+                    className={cn(
+                      "font-semibold",
+                      data.allow_new_entries ? "text-positive" : "text-negative",
+                    )}
                   >
                     {data.allow_new_entries ? t.allowed : t.blocked}
                   </span>
@@ -274,14 +281,14 @@ export function MarketRegimeView() {
 
                 <div>
                   <span className="text-xs text-muted-foreground block">{t.riskBudget}</span>
-                  <span className="font-semibold text-foreground">
+                  <span className="figure font-semibold text-foreground">
                     {(parseFloat(data.effective_risk_pct) * 100).toFixed(2)}%
                   </span>
                 </div>
               </div>
             </div>
 
-            <p className="text-sm text-foreground/90 bg-muted/30 p-3 rounded-lg border border-border/30">
+            <p className="text-xs text-foreground/90 bg-muted/30 p-3.5 rounded-2xl border border-foreground/5 leading-relaxed">
               {data.summary}
             </p>
 
@@ -289,10 +296,10 @@ export function MarketRegimeView() {
               <Info className="w-3.5 h-3.5 shrink-0" />
               <span>{t.rulesNote}</span>
             </div>
-          </div>
+          </Card>
 
           {/* Benchmark Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             {renderBenchmarkCard(data.spy, "S&P 500 ETF")}
             {renderBenchmarkCard(data.qqq, "Nasdaq 100 ETF")}
           </div>

@@ -1,3 +1,5 @@
+import { latestQuote, shortSessionLabels } from "../lib/chartQuote";
+import { useMarketPolling } from "../lib/useMarketPolling";
 // The Web's "Stock watch" panel (components/decision/StockObservationList.tsx) for the
 // market-wide lists: today's movers, volume surges and the curated core list.
 import { useState } from "react";
@@ -343,12 +345,13 @@ function WatchRow({
 }) {
   const t = useTheme();
   const { locale } = usePreferences();
-  const known = price != null;
   const q = useResource(`watch-quote:${symbol}:${revision}`, (signal) =>
-    known ? Promise.resolve(null) : quote(symbol, signal),
+    quote(symbol, signal),
   );
-  const value = price ?? q.data?.current_price ?? null;
-  const move = known ? changePercent : (q.data?.change_percent ?? null);
+  useMarketPolling(q.refresh, 15_000);
+  const latest = latestQuote(q.data);
+  const value = latest?.price ?? price ?? null;
+  const move = latest?.changePercent ?? changePercent ?? null;
   const region = locale === "en" ? "en-US" : "zh-CN";
   return (
     <Pressable
@@ -397,6 +400,7 @@ function WatchRow({
           symbol={symbol}
           range={range}
           revision={revision}
+          latest={latest}
           positive={range === "1D" && move != null ? move >= 0 : undefined}
         />
       </View>
@@ -417,6 +421,11 @@ function WatchRow({
         >
           {move == null ? "—" : signedPercent(move)}
         </Copy>
+        {latest && latest.session !== "regular" && (
+          <Copy size={10} muted>
+            {shortSessionLabels[latest.session]}
+          </Copy>
+        )}
       </View>
     </Pressable>
   );

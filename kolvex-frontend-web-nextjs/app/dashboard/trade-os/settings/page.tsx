@@ -66,19 +66,6 @@ export default function TradeOsSettingsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold tracking-tight text-foreground">
-          {c("Trade OS — Settings & Data Foundation", "Trade OS — 账户与数据基础")}
-        </h1>
-        <p className="text-xs text-muted-foreground mt-1">
-          {c(
-            "Phase 0: Manage trading ledgers, import Robinhood history, and review reconciled FIFO trades.",
-            "Phase 0 阶段：管理交易账户、导入 Robinhood 历史流水，并核对 FIFO 归集的往返交易。",
-          )}
-        </p>
-      </div>
-
       {/* Account Setup */}
       <AccountSetup
         accounts={accounts}

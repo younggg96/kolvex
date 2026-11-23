@@ -1854,7 +1854,10 @@ buttons reach additional people. The labeled shared FilterSheet opens from the
 bottom on phones and centers on desktop. Person and topic changes apply
 immediately and are reflected in the URL.
 
-The Admin 人物动态 tab uses the shared Textarea and three text buttons for paste,
-validate and preview, save, and clearing the editor. Preview reuses the reader's
-timeline rows in the persistent result region. Progress, validation errors, and
-saved record IDs use a live status region. The draft survives tab changes.
+In the Admin 动态 tab, the Add update Dialog uses the shared SegmentedControl
+for manual entry and JSON import. The import mode uses the shared Button
+and Textarea. Selecting a valid JSON file fills the editor, which also accepts
+pasted JSON. Preview reuses the reader's timeline rows in the result region.
+Progress, validation errors, and saved record IDs use live regions. Both
+drafts survive mode changes while the dialog is open. Saving JSON refreshes
+the saved updates list.

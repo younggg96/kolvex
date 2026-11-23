@@ -2,6 +2,7 @@
 
 import { useCopy } from "@/components/decision/shared";
 import { RiskAssessment } from "@/lib/tradeOsApi";
+import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, AlertTriangle, ShieldCheck, X } from "lucide-react";
 
 interface ApprovalModalProps {
@@ -19,16 +20,16 @@ export function ApprovalModal({ assessment, onClose }: ApprovalModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-2xl rounded-xl border border-border bg-card p-6 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+      <div className="w-full max-w-2xl rounded-3xl border border-foreground/10 bg-card-glass glass-card p-6 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-start justify-between pb-4 border-b border-border">
+        <div className="flex items-start justify-between pb-4 border-b border-border/50">
           <div className="flex items-center gap-3">
             <div
-              className={`rounded-full p-2 ${
+              className={`rounded-full p-2.5 ${
                 isApproved
-                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                  ? "bg-emerald-500/10 text-positive"
                   : isBlocked
-                    ? "bg-red-500/10 text-red-500"
+                    ? "bg-negative/10 text-negative"
                     : "bg-amber-500/10 text-amber-500"
               }`}
             >
@@ -37,7 +38,7 @@ export function ApprovalModal({ assessment, onClose }: ApprovalModalProps) {
               {isReview && <AlertTriangle className="h-6 w-6" />}
             </div>
             <div>
-              <h3 className="text-base font-bold text-foreground">
+              <h3 className="text-base font-semibold text-foreground">
                 {isApproved && c("Trade Plan APPROVED", "交易计划已批准")}
                 {isBlocked && c("Trade Plan BLOCKED by Risk Engine", "风控引擎已拒绝该交易计划")}
                 {isReview && c("Review Required Before Execution", "交易计划需要人工复核")}
@@ -51,12 +52,14 @@ export function ApprovalModal({ assessment, onClose }: ApprovalModalProps) {
               </p>
             </div>
           </div>
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={onClose}
-            className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground"
           >
             <X className="h-4 w-4" />
-          </button>
+          </Button>
         </div>
 
         {/* Content: Checks Breakdown */}
@@ -155,13 +158,10 @@ export function ApprovalModal({ assessment, onClose }: ApprovalModalProps) {
         </div>
 
         {/* Footer */}
-        <div className="pt-4 border-t border-border flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="rounded-lg bg-primary px-4 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
-          >
+        <div className="pt-4 border-t border-border/50 flex justify-end gap-2">
+          <Button size="sm" onClick={onClose} className="rounded-full px-5 text-xs font-semibold">
             {c("Close & Continue", "关闭并返回")}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

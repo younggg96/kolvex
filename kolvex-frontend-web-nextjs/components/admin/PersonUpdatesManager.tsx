@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { AdminRowsSkeleton } from "@/components/admin/AdminSkeletons";
+import PersonUpdatesImporter from "@/components/admin/PersonUpdatesImporter";
 import { useCopy } from "@/components/decision/shared";
 import { PersonUpdateAvatar } from "@/components/person-updates/PersonUpdateAvatar";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
   Select,
   SelectContent,
@@ -110,9 +112,11 @@ export default function PersonUpdatesManager() {
   const [message, setMessage] = useState("");
   const [draft, setDraft] = useState<Draft | null>(null);
   const [editing, setEditing] = useState(false);
+  const [addMode, setAddMode] = useState<"manual" | "json">("manual");
   const [formError, setFormError] = useState("");
   const [removing, setRemoving] = useState<PersonUpdate | null>(null);
   const [busy, setBusy] = useState(false);
+  const loadErrorMessage = c("Could not load updates.", "无法加载动态。");
 
   const load = useCallback(async () => {
     setLoadError("");
@@ -123,12 +127,9 @@ export default function PersonUpdatesManager() {
       setItems(data.items);
     } catch (error) {
       setItems(null);
-      setLoadError(
-        c("Could not load updates.", "无法加载动态。") +
-          (error instanceof Error ? ` ${error.message}` : ""),
-      );
+      setLoadError(loadErrorMessage + (error instanceof Error ? ` ${error.message}` : ""));
     }
-  }, [c]);
+  }, [loadErrorMessage]);
 
   useEffect(() => {
     void load();
@@ -223,8 +224,10 @@ export default function PersonUpdatesManager() {
         <h3 className="text-lg font-semibold">{c("Saved updates", "已保存动态")}</h3>
         <Button
           size="sm"
+          disabled={busy}
           onClick={() => {
             setEditing(false);
+            setAddMode("manual");
             setFormError("");
             setDraft({ ...EMPTY, published_at: toLocalInput(new Date().toISOString()) });
           }}
@@ -299,14 +302,47 @@ export default function PersonUpdatesManager() {
       )}
 
       <Dialog open={draft !== null} onOpenChange={(open) => !open && !busy && setDraft(null)}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+        <DialogContent
+          className="sm:max-w-2xl"
+          showCloseButton={!busy}
+          onEscapeKeyDown={(event) => busy && event.preventDefault()}
+          onPointerDownOutside={(event) => busy && event.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>
               {editing ? c("Edit update", "编辑动态") : c("Add update", "新增动态")}
             </DialogTitle>
-            {editing && <DialogDescription className="break-all">{draft?.id}</DialogDescription>}
+            {editing ? (
+              <DialogDescription className="break-all">{draft?.id}</DialogDescription>
+            ) : (
+              <DialogDescription className="sr-only">
+                {c("Enter an update or import JSON.", "手动填写动态，或导入 JSON。")}
+              </DialogDescription>
+            )}
           </DialogHeader>
-          <form className="grid gap-4 sm:grid-cols-2" onSubmit={save}>
+          {!editing && (
+            <div className="mb-4">
+              <SegmentedControl
+                semantics="radio"
+                label={c("Add method", "新增方式")}
+                value={addMode}
+                onChange={setAddMode}
+                options={[
+                  { value: "manual", label: c("Manual entry", "手动填写"), disabled: busy },
+                  { value: "json", label: c("Upload JSON", "上传 JSON"), disabled: busy },
+                ]}
+              />
+            </div>
+          )}
+          {!editing && (
+            <div hidden={addMode !== "json"}>
+              <PersonUpdatesImporter busy={busy} onBusyChange={setBusy} onSaved={load} />
+            </div>
+          )}
+          <form
+            className={editing || addMode === "manual" ? "grid gap-4 sm:grid-cols-2" : "hidden"}
+            onSubmit={save}
+          >
             <div className="space-y-1.5">
               <Label htmlFor="person-update-person">{c("Name (English)", "英文名")}</Label>
               <Input required {...field("person")} />
@@ -322,7 +358,7 @@ export default function PersonUpdatesManager() {
             <div className="space-y-1.5">
               <Label htmlFor="person-update-impact">{c("Impact", "影响")}</Label>
               <Select
-                value={draft?.impact}
+                value={draft?.impact ?? EMPTY.impact}
                 onValueChange={(impact) =>
                   setDraft(
                     (current) =>

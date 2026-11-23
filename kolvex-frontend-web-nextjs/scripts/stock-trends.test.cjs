@@ -21,9 +21,9 @@ const bars = [
 ];
 const params = { period: "1d", interval: "5m" };
 const tick = () => new Promise((resolve) => setImmediate(resolve));
-test("intraday previews use the latest session anchored at the previous close and exclude invalid prices", () => {
+test("intraday previews retain the server’s close anchor and exclude invalid bars", () => {
   const { trendPoints, trendPath } = fixture();
-  const points = trendPoints([...bars, { date: "2026-10-23", close: NaN }].reverse(), true);
+  const points = trendPoints([...bars, { date: "2026-10-23", close: NaN }].reverse());
   // 120 previous close -> 100 -> 110: the line reads as a down day, matching the daily change.
   assert.deepEqual(
     Array.from(points, (point) => point.value),
@@ -32,7 +32,7 @@ test("intraday previews use the latest session anchored at the previous close an
   assert.equal(points[0].date, "2026-10-21T16:00:00");
   assert.equal(trendPath(points), "2.00,6.00 50.00,34.00 98.00,20.00");
   assert.deepEqual(
-    Array.from(trendPoints(bars.slice(1), true), (point) => point.value),
+    Array.from(trendPoints(bars.slice(1)), (point) => point.value),
     [100, 110],
   );
   assert.equal(
@@ -117,4 +117,40 @@ test("empty trends are rejected and a recovered provider is contacted again", as
   await assert.rejects(loadStockTrend("A", params, signal), /Trend unavailable/);
   assert.equal((await loadStockTrend("A", params, signal)).length, 3);
   assert.equal(calls, 2);
+});
+
+test("live points compare actual instants across an offset and UTC", () => {
+  const { augmentTrendWithQuote } = fixture();
+  const points = [{ date: "2026-11-22T23:59:00-05:00", value: 100 }];
+  const time = Date.parse("2026-11-23T05:01:00Z") / 1000;
+  assert.equal(augmentTrendWithQuote(points, { time, price: 104 }).at(-1).value, 104);
+  assert.equal(
+    augmentTrendWithQuote(points, {
+      time: Date.parse("2026-11-23T04:58:00Z") / 1000,
+      price: 90,
+    }),
+    points,
+  );
+});
+
+test("one-day and one-week previews keep distinct histories, including bars across midnight", async () => {
+  const paramsSeen = [];
+  const { loadStockTrend } = fixture(async (symbol, params) => {
+    paramsSeen.push(params);
+    return [
+      { date: "2026-11-20T15:55:00-05:00", close: 100 },
+      { date: "2026-11-22T20:05:00-05:00", close: 101 },
+      { date: "2026-11-23T00:10:00-05:00", close: 102 },
+    ];
+  });
+  const signal = new AbortController().signal;
+  assert.equal((await loadStockTrend("A", params, signal)).length, 3);
+  await loadStockTrend("A", { ...params, period: "5d" }, signal);
+  assert.deepEqual(
+    paramsSeen.map(({ period, prepost }) => [period, prepost]),
+    [
+      ["1d", "true"],
+      ["5d", "true"],
+    ],
+  );
 });

@@ -1,3 +1,10 @@
+import {
+  latestQuote,
+  positive,
+  sessionLabels,
+  type ChartQuote,
+} from "../../lib/chartQuote";
+import { useMarketPolling } from "../../lib/useMarketPolling";
 // The Web's fullscreen advanced chart (PriceChart's dialog around ChartView mode="advanced")
 // laid out as it is on a phone: header, OHLC line, drawing toolbar, price header, plot,
 // range bar with the interval menu, chart toggles, drawing layers and the oscillator.
@@ -44,6 +51,7 @@ import {
   advancedHistoryQuery,
   advancedRanges,
   defaultInterval,
+  extendedDayStart,
   intervalLabels,
   isIntraday,
   rangeIntervals,
@@ -118,59 +126,6 @@ const fixedPrice = (v: number) =>
     maximumFractionDigits: 2,
   });
 
-type StockQuote = {
-  current_price: number | null;
-  change_percent: number | null;
-  previous_close?: number | null;
-  market_time?: number | null;
-  pre_market_price?: number | null;
-  pre_market_time?: number | null;
-  post_market_price?: number | null;
-  post_market_time?: number | null;
-  source?: string | null;
-};
-
-const positive = (v: number | null | undefined): v is number =>
-  typeof v === "number" && Number.isFinite(v) && v > 0;
-/** The Web's latestChartQuote: an extended-hours price only when it is provably newer. */
-function latestQuote(quote: StockQuote | undefined, includeExtended = true) {
-  if (!quote || !positive(quote.current_price)) return null;
-  let price = quote.current_price;
-  let time = positive(quote.market_time) ? quote.market_time : undefined;
-  let session: "regular" | "pre" | "post" = "regular";
-  if (time && includeExtended)
-    for (const c of [
-      {
-        price: quote.pre_market_price,
-        time: quote.pre_market_time,
-        session: "pre" as const,
-      },
-      {
-        price: quote.post_market_price,
-        time: quote.post_market_time,
-        session: "post" as const,
-      },
-    ])
-      if (positive(c.price) && positive(c.time) && c.time > time) {
-        price = c.price;
-        time = c.time;
-        session = c.session;
-      }
-  const baseline =
-    session === "regular" ? quote.previous_close : quote.current_price;
-  const changePercent =
-    session === "regular" && Number.isFinite(quote.change_percent)
-      ? quote.change_percent
-      : positive(baseline)
-        ? ((price - baseline) / baseline) * 100
-        : null;
-  return { price, time, session, changePercent };
-}
-const sessionLabels = {
-  regular: "常规交易 · 较昨收",
-  pre: "盘前 · 较收盘",
-  post: "盘后 · 较收盘",
-};
 const formatVolume = (v: number) =>
   v >= 1e9
     ? `${(v / 1e9).toFixed(2)}B`
@@ -404,30 +359,27 @@ function Workspace({ symbol }: { symbol: string }) {
   );
   const query = advancedHistoryQuery(range, interval);
   const intraday = isIntraday(interval);
-  const history = useResource(`advanced:${symbol}:${query}`, async (signal) => {
-    const data = await apiRequest<{ data: PriceBar[] }>(
-      `/market/history/${encodeURIComponent(symbol)}?${query}`,
-      { signal },
-    );
-    return validBars(data.data);
-  });
+  const wholeSession = range === "1D" && intraday;
+  const displayQuery = intraday ? `${query}&prepost=true` : query;
+  const history = useResource(
+    `advanced:${symbol}:${displayQuery}`,
+    async (signal) => {
+      const data = await apiRequest<{ data: PriceBar[] }>(
+        `/market/history/${encodeURIComponent(symbol)}?${displayQuery}`,
+        { signal },
+      );
+      return validBars(data.data);
+    },
+  );
   const bars = useMemo(() => history.data ?? [], [history.data]);
   const count = bars.length;
-  const refreshHistory = history.refresh;
-  useEffect(() => {
-    const timer = setInterval(refreshHistory, 60_000);
-    return () => clearInterval(timer);
-  }, [refreshHistory]);
+  useMarketPolling(history.refresh, 60_000, intraday);
   const quote = useResource(`chart-quote:${symbol}`, (signal) =>
-    apiRequest<StockQuote>(`/market/quote/${encodeURIComponent(symbol)}`, {
+    apiRequest<ChartQuote>(`/market/quote/${encodeURIComponent(symbol)}`, {
       signal,
     }),
   );
-  const refreshQuote = quote.refresh;
-  useEffect(() => {
-    const timer = setInterval(refreshQuote, 15_000);
-    return () => clearInterval(timer);
-  }, [refreshQuote]);
+  useMarketPolling(quote.refresh, 15_000);
   const opinions = useResource(`chart-calls:${symbol}`, (signal) =>
     apiRequest<{ opinions?: CallEvent[] }>(
       `/youtube-opinions/stocks/${encodeURIComponent(symbol)}`,
@@ -441,14 +393,29 @@ function Workspace({ symbol }: { symbol: string }) {
   );
   const defaultCount = useMemo(() => {
     if (!count) return 0;
-    const from = rangeStart(range, Date.parse(bars[count - 1].date));
+    const extendedStart =
+      wholeSession && quote.data?.exchange_timezone_name === "America/New_York"
+        ? extendedDayStart(
+            bars.map((bar) => bar.date),
+            interval,
+          )
+        : null;
+    const from =
+      extendedStart ?? rangeStart(range, Date.parse(bars[count - 1].date));
     if (from === null) return count;
     const first = bars.findIndex((b) => Date.parse(b.date) >= from);
     return Math.max(
       Math.min(MIN_BARS, count),
       first < 0 ? count : count - first,
     );
-  }, [bars, count, range]);
+  }, [
+    bars,
+    count,
+    range,
+    interval,
+    wholeSession,
+    quote.data?.exchange_timezone_name,
+  ]);
   const windowCount = Math.max(1, Math.min(count, win?.count ?? defaultCount));
   const offset = Math.max(0, Math.min(win?.offset ?? 0, count - windowCount));
   const [autoScale, setAutoScale] = useState(true);

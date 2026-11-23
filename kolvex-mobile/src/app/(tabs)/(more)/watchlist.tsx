@@ -1,8 +1,9 @@
-import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { latestQuote, shortSessionLabels } from "../../../lib/chartQuote";
+import { useMarketPolling } from "../../../lib/useMarketPolling";
+import { router, useLocalSearchParams } from "expo-router";
 import { SymbolView, type SymbolViewProps } from "expo-symbols";
-import { useCallback, useRef, useState, type ComponentRef } from "react";
+import { useRef, useState, type ComponentRef } from "react";
 import {
-  AppState,
   Pressable,
   StyleSheet,
   TextInput,
@@ -174,17 +175,8 @@ export default function Watchlist() {
     (signal) => loadQuotes(list.symbols, signal),
     30_000,
   );
-  const refreshQuotes = quotes.refresh;
   const hasSymbols = list.symbols.length > 0;
-  useFocusEffect(
-    useCallback(() => {
-      if (!hasSymbols || quotes.loading) return;
-      const interval = setInterval(() => {
-        if (AppState.currentState === "active") refreshQuotes();
-      }, 15_000);
-      return () => clearInterval(interval);
-    }, [hasSymbols, quotes.loading, refreshQuotes]),
-  );
+  useMarketPolling(quotes.refresh, 15_000, hasSymbols && !quotes.loading);
 
   const term = query.trim().replace(/^\$/, "").toLowerCase();
   const filtered = list.symbols
@@ -198,8 +190,8 @@ export default function Watchlist() {
     .sort((left, right) => {
       if (sort[0] === "added") return 0;
       if (sort[0] === "symbol") return left.localeCompare(right);
-      const a = quotes.data?.[left]?.change_percent;
-      const b = quotes.data?.[right]?.change_percent;
+      const a = latestQuote(quotes.data?.[left])?.changePercent;
+      const b = latestQuote(quotes.data?.[right])?.changePercent;
       if (a == null || !Number.isFinite(a))
         return b == null || !Number.isFinite(b) ? left.localeCompare(right) : 1;
       if (b == null || !Number.isFinite(b)) return -1;
@@ -210,7 +202,7 @@ export default function Watchlist() {
     list.symbols.some((symbol) => quotes.data?.[symbol]?.current_price == null);
 
   function refresh() {
-    refreshQuotes();
+    quotes.refresh();
     setRevision((value) => value + 1);
   }
 
@@ -321,7 +313,8 @@ export default function Watchlist() {
               )}
               {filtered.slice(0, rows).map((symbol, index) => {
                 const current = quotes.data?.[symbol];
-                const move = current?.change_percent;
+                const latest = latestQuote(current);
+                const move = latest?.changePercent;
                 const hasMove = move != null && Number.isFinite(move);
                 const name = current?.name || companyNames.get(symbol);
                 return (
@@ -374,6 +367,7 @@ export default function Watchlist() {
                           <MiniTrend
                             symbol={symbol}
                             range="1D"
+                            latest={latest}
                             revision={revision}
                           />
                         </View>
@@ -383,9 +377,7 @@ export default function Watchlist() {
                           <PendingValue height={phone(40)} />
                         ) : (
                           <>
-                            <Copy localize={false}>
-                              {money(current?.current_price)}
-                            </Copy>
+                            <Copy localize={false}>{money(latest?.price)}</Copy>
                             <Copy
                               size={12}
                               bold
@@ -400,6 +392,11 @@ export default function Watchlist() {
                             >
                               {hasMove ? signedPercent(move) : "—"}
                             </Copy>
+                            {latest && latest.session !== "regular" && (
+                              <Copy size={10} muted>
+                                {shortSessionLabels[latest.session]}
+                              </Copy>
+                            )}
                           </>
                         )}
                       </View>

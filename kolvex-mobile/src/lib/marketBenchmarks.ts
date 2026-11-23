@@ -119,12 +119,25 @@ export const CROSS_ASSETS: readonly MarketInstrument[] = [
   { symbol: "BTC-USD", en: "Bitcoin", zh: "比特币" },
 ];
 
+const INDEX_ETFS: readonly MarketInstrument[] = [
+  { symbol: "SPY", en: "S&P 500 ETF", zh: "标普 500 ETF" },
+  { symbol: "QQQ", en: "Nasdaq-100 ETF", zh: "纳斯达克 100 ETF" },
+  { symbol: "DIA", en: "Dow Jones ETF", zh: "道琼斯 ETF" },
+  { symbol: "IWM", en: "Russell 2000 ETF", zh: "罗素 2000 ETF" },
+];
+
 export const MARKET_GROUPS = [
   {
     key: "indices",
     en: "Market indices",
     zh: "市场指数",
     instruments: BENCHMARKS as readonly MarketInstrument[],
+  },
+  {
+    key: "index-etfs",
+    en: "Index ETFs",
+    zh: "指数 ETF",
+    instruments: INDEX_ETFS,
   },
   {
     key: "sectors",

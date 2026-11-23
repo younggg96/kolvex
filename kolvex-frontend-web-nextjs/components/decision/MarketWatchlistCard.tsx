@@ -13,6 +13,8 @@ import { ListRow, ListRows } from "@/components/ui/list-card";
 import { PendingValue } from "@/components/ui/content-loading";
 import { Change, money, useCopy } from "./shared";
 import { Skeleton } from "../ui/skeleton";
+import { latestChartQuote, sessionLabel } from "@/lib/chart/quote";
+import { signedPercent } from "@/lib/format";
 
 const PREVIEW_SIZE = 6;
 
@@ -32,37 +34,150 @@ export default function MarketWatchlistCard() {
     return c(label.en, label.zh);
   }
 
-  return <section aria-labelledby="market-watchlist-title" className="min-w-0">
-    <header className="mb-3 flex min-h-14 max-md:min-h-0 items-center gap-2">
-      <h2 id="market-watchlist-title" className="text-lg font-semibold">{c("Watchlist", "自选股")}</h2>
-      {ready && <span className="rounded-full bg-muted px-2 py-0.5 text-xs tabular-nums text-muted-foreground" aria-label={c(`Showing ${symbols.length} of ${watchlist.length} saved stocks`, `展示 ${symbols.length} 只，共 ${watchlist.length} 只自选股`)}>{symbols.length}/{watchlist.length}</span>}
-      <div className="ml-auto flex items-center">
-        <Button asChild variant="outline" size="icon" className="h-11 w-11"><Link href="/dashboard/watchlist" aria-label={c("Open full Watchlist", "查看全部自选股")} title={c("Open Watchlist", "查看自选股")}><ArrowUpRight className="h-4 w-4" aria-hidden /></Link></Button>
+  return (
+    <section aria-labelledby="market-watchlist-title" className="min-w-0">
+      <header className="mb-3 flex min-h-14 max-md:min-h-0 items-center gap-2">
+        <h2 id="market-watchlist-title" className="text-lg font-semibold">
+          {c("Watchlist", "自选股")}
+        </h2>
+        {ready && (
+          <span
+            className="rounded-full bg-muted px-2 py-0.5 text-xs tabular-nums text-muted-foreground"
+            aria-label={c(
+              `Showing ${symbols.length} of ${watchlist.length} saved stocks`,
+              `展示 ${symbols.length} 只，共 ${watchlist.length} 只自选股`,
+            )}
+          >
+            {symbols.length}/{watchlist.length}
+          </span>
+        )}
+        <div className="ml-auto flex items-center">
+          <Button asChild variant="outline" size="icon" className="h-11 w-11">
+            <Link
+              href="/dashboard/watchlist"
+              aria-label={c("Open full Watchlist", "查看全部自选股")}
+              title={c("Open Watchlist", "查看自选股")}
+            >
+              <ArrowUpRight className="h-4 w-4" aria-hidden />
+            </Link>
+          </Button>
+        </div>
+      </header>
+      <div
+        className="rounded-3xl border border-foreground/10 glass-card bg-card-glass p-3"
+        aria-busy={!ready || loading}
+      >
+        {!ready ? (
+          <div role="status" aria-label={c("Loading Watchlist", "正在加载自选股")}>
+            <Skeleton className="mb-1 ml-1 mt-2.5 h-3 w-20 rounded-md max-md:ml-0" />
+            <RailRowsSkeleton rows={4} />
+          </div>
+        ) : (!userId || error) && !symbols.length ? null : !symbols.length ? (
+          <div className="px-3 py-6 text-center">
+            <Star className="mx-auto h-5 w-5 text-muted-foreground" aria-hidden />
+            <p className="mt-3 text-sm font-medium">
+              {c("Follow your first stock", "添加第一只自选股")}
+            </p>
+            <Button asChild variant="outline" size="sm" className="mt-4">
+              <Link href="/dashboard/watchlist">{c("Manage Watchlist", "管理自选股")}</Link>
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {groups.map(([sector, stocks]) => {
+              const rows = (
+                <ListRows>
+                  {stocks.map((symbol) => (
+                    <ListRow key={symbol} className="pr-0">
+                      <Link
+                        href={marketStockHref(symbol)}
+                        className="grid min-h-11 w-full grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 rounded-full px-1 text-sm max-md:px-0 transition-colors duration-150 hover:text-foreground focus-visible:outline-none"
+                        title={c(
+                          `${quotes[symbol]?.name ?? symbol} quotes`,
+                          `${quotes[symbol]?.name ?? symbol} 行情`,
+                        )}
+                      >
+                        <span className="flex min-w-0 items-center gap-2">
+                          <span className="shrink-0" aria-hidden>
+                            <CompanyLogo
+                              symbol={symbol}
+                              size="sm"
+                              className="md:max-h-5 md:max-w-5 md:!p-0.5"
+                            />
+                          </span>
+                          <span className="truncate font-medium">{symbol}</span>
+                        </span>
+                        {loading && !quotes[symbol] ? (
+                          <PendingValue className="col-span-2 h-4" />
+                        ) : (
+                          (() => {
+                            const q = quotes[symbol];
+                            const ext = q ? latestChartQuote(q) : null;
+                            const isExtended = ext && ext.session !== "regular";
+                            if (isExtended && ext) {
+                              return (
+                                <>
+                                  <span className="figure text-right">{money(ext.price)}</span>
+                                  <span className="flex items-center justify-end gap-1">
+                                    <Change
+                                      value={ext.changePercent}
+                                      className="min-w-14 text-right text-xs"
+                                    />
+                                    <span
+                                      className="rounded bg-muted px-1 py-0.2 text-[9px] font-medium text-muted-foreground"
+                                      title={c(
+                                        `Regular: ${money(q.price)} (${signedPercent(q.changePercent)})`,
+                                        `收盘: ${money(q.price)} (${signedPercent(q.changePercent)})`,
+                                      )}
+                                    >
+                                      {sessionLabel(ext.session, c("en", "zh"))}
+                                    </span>
+                                  </span>
+                                </>
+                              );
+                            }
+                            return (
+                              <>
+                                <span className="figure text-right">{money(q?.price)}</span>
+                                <Change
+                                  value={q?.changePercent}
+                                  className="min-w-14 text-right text-xs"
+                                />
+                              </>
+                            );
+                          })()
+                        )}
+                      </Link>
+                    </ListRow>
+                  ))}
+                </ListRows>
+              );
+              return sector === "pending" ? (
+                <div key={sector}>{rows}</div>
+              ) : (
+                <details key={sector} open className="group">
+                  <summary className="flex min-h-9 cursor-pointer list-none items-center gap-2 rounded-2xl px-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none max-md:px-0 [&::-webkit-details-marker]:hidden">
+                    <ChevronDown
+                      className="h-3.5 w-3.5 shrink-0 -rotate-90 group-open:rotate-0"
+                      aria-hidden
+                    />
+                    {groupLabel(sector)}
+                  </summary>
+                  {rows}
+                </details>
+              );
+            })}
+          </div>
+        )}
+        {unavailable && (
+          <p role="status" className="mt-3 text-xs leading-5 text-muted-foreground">
+            {c(
+              "Some quotes are unavailable. Use refresh to retry.",
+              "部分报价暂不可用，可点击刷新重试。",
+            )}
+          </p>
+        )}
       </div>
-    </header>
-    <div className="rounded-3xl border border-foreground/10 glass-card bg-card-glass p-3" aria-busy={!ready || loading}>
-      {!ready ? <div role="status" aria-label={c("Loading Watchlist", "正在加载自选股")}><Skeleton className="mb-1 ml-1 mt-2.5 h-3 w-20 rounded-md max-md:ml-0" /><RailRowsSkeleton rows={4} /></div>
-        : (!userId || error) && !symbols.length ? null : !symbols.length ? <div className="px-3 py-6 text-center">
-          <Star className="mx-auto h-5 w-5 text-muted-foreground" aria-hidden />
-          <p className="mt-3 text-sm font-medium">{c("Follow your first stock", "添加第一只自选股")}</p>
-          <Button asChild variant="outline" size="sm" className="mt-4"><Link href="/dashboard/watchlist">{c("Manage Watchlist", "管理自选股")}</Link></Button>
-        </div> : <div className="space-y-2">
-          {groups.map(([sector, stocks]) => {
-            const rows = <ListRows>{stocks.map(symbol => <ListRow key={symbol} className="pr-0">
-              <Link href={marketStockHref(symbol)} className="grid min-h-11 w-full grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 rounded-full px-1 text-sm max-md:px-0 transition-colors duration-150 hover:text-foreground focus-visible:outline-none" title={c(`${quotes[symbol]?.name ?? symbol} quotes`, `${quotes[symbol]?.name ?? symbol} 行情`)}>
-                <span className="flex min-w-0 items-center gap-2"><span className="shrink-0" aria-hidden><CompanyLogo symbol={symbol} size="sm" className="md:max-h-5 md:max-w-5 md:!p-0.5" /></span><span className="truncate font-medium">{symbol}</span></span>
-                {loading && !quotes[symbol] ? <PendingValue className="col-span-2 h-4" /> : <><span className="figure text-right">{money(quotes[symbol]?.price)}</span><Change value={quotes[symbol]?.changePercent} className="min-w-14 text-right text-xs" /></>}
-              </Link>
-            </ListRow>)}</ListRows>;
-            return sector === "pending" ? <div key={sector}>{rows}</div> : <details key={sector} open className="group">
-            <summary className="flex min-h-9 cursor-pointer list-none items-center gap-2 rounded-2xl px-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none max-md:px-0 [&::-webkit-details-marker]:hidden">
-              <ChevronDown className="h-3.5 w-3.5 shrink-0 -rotate-90 group-open:rotate-0" aria-hidden />{groupLabel(sector)}
-            </summary>
-            {rows}
-          </details>;
-          })}
-        </div>}
-      {unavailable && <p role="status" className="mt-3 text-xs leading-5 text-muted-foreground">{c("Some quotes are unavailable. Use refresh to retry.", "部分报价暂不可用，可点击刷新重试。")}</p>}
-    </div>
-  </section>;
+    </section>
+  );
 }

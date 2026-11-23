@@ -22,8 +22,15 @@ export interface BackendQuote {
   exchange_timezone_name?: string;
   pre_market_price?: number;
   pre_market_time?: number;
+  pre_market_change?: number;
+  pre_market_change_percent?: number;
   post_market_price?: number;
   post_market_time?: number;
+  overnight_market_price?: number;
+  overnight_market_time?: number;
+  overnight_market_source?: string;
+  post_market_change?: number;
+  post_market_change_percent?: number;
 }
 
 export function transformQuote(quote: BackendQuote) {
@@ -54,8 +61,15 @@ export function transformQuote(quote: BackendQuote) {
     exchangeTimezone: quote.exchange_timezone_name,
     preMarketPrice: quote.pre_market_price,
     preMarketTime: quote.pre_market_time,
+    preMarketChange: quote.pre_market_change,
+    preMarketChangePercent: quote.pre_market_change_percent,
     postMarketPrice: quote.post_market_price,
     postMarketTime: quote.post_market_time,
+    overnightMarketPrice: quote.overnight_market_price,
+    overnightMarketTime: quote.overnight_market_time,
+    overnightMarketSource: quote.overnight_market_source,
+    postMarketChange: quote.post_market_change,
+    postMarketChangePercent: quote.post_market_change_percent,
   };
 }
 
