@@ -14,6 +14,7 @@ import {
   FolderKanban,
   MessagesSquare,
   BookHeart,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -47,6 +48,7 @@ export interface MainNavItem {
   type: "link";
   featureId: ProductFeatureId;
   group: NavGroupId;
+  badge?: string;
   children?: {
     title: string;
     titleZh?: string;
@@ -182,6 +184,16 @@ export const MAIN_NAV_ITEMS: MainNavItem[] = [
     type: "link",
     featureId: "tradingAnalysis",
     group: "research",
+  },
+  {
+    icon: ShieldCheck,
+    titleKey: "sidebar.tradeOs",
+    shortTitleKey: "tabBar.tradeOs",
+    href: "/dashboard/trade-os",
+    type: "link",
+    featureId: "tradeOS",
+    group: "trade",
+    badge: "Beta",
   },
   {
     icon: PieChart,

@@ -52,6 +52,7 @@
     }
   },
   "sidebar": {
+    "tradeOs": "Trade OS",
     "paperTrading": "Paper trading",
     "watchlist": "Watchlist",
     "markets": "Markets",
@@ -90,6 +91,7 @@
     }
   },
   "tabBar": {
+    "tradeOs": "Trade OS",
     "superinvestors": "Superinvestors",
     "congressTrades": "Congress trades",
     "optionsActivity": "Options activity",

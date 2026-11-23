@@ -27,6 +27,7 @@ from app.api.routes.plaid import router as plaid_router
 from app.api.routes.portfolio import router as portfolio_router
 from app.api.routes.reddit_opinions import router as reddit_opinions_router
 from app.api.routes.research_workspaces import router as research_workspaces_router
+from app.api.routes.trade_os import router as trade_os_router
 from app.api.routes.trading_analysis import router as trading_analysis_router
 from app.api.routes.upload import router as upload_router
 from app.api.routes.user_api_keys import router as user_api_keys_router
@@ -66,6 +67,7 @@ api_router.include_router(x_content_router)
 api_router.include_router(xhs_sentiment_router)
 api_router.include_router(chart_drawings_router)
 api_router.include_router(paper_trading_router)
+api_router.include_router(trade_os_router)
 api_router.include_router(research_workspaces_router)
 api_router.include_router(briefs_router)
 api_router.include_router(person_updates_router)

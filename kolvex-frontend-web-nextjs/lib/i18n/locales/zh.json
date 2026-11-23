@@ -52,6 +52,7 @@
     }
   },
   "sidebar": {
+    "tradeOs": "Trade OS",
     "paperTrading": "虚拟交易",
     "watchlist": "自选股",
     "markets": "行情",
@@ -90,6 +91,7 @@
     }
   },
   "tabBar": {
+    "tradeOs": "Trade OS",
     "paperTrading": "虚拟交易",
     "superinvestors": "超级投资者",
     "congressTrades": "国会议员交易",

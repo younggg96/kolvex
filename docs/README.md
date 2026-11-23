@@ -71,6 +71,7 @@
 | [public-reading.md](public-reading.md) | 未登录公开阅读页与 SEO |
 | [content-sharing.md](content-sharing.md) | 内容分享（AI 回答 / 选段、观点、动态、期权异动、研究的分享链接与分享图） |
 | [paper-trading/PLAN.md](paper-trading/PLAN.md) · [README.md](paper-trading/README.md) | 虚拟交易（规划 + 运行验证） |
+| [trade-os/README.md](trade-os/README.md) | Trade OS 交易决策与风控系统（Phase 0 数据基础 + 路线图） |
 | [model-catalog.md](model-catalog.md) | 可选 AI 模型目录 |
 | [free-llm-allowance.md](free-llm-allowance.md) | 免费 AI 额度（`deepseek-flash`，每人每周 ¥1） |
 | [mcp-content-admin.md](mcp-content-admin.md) | 内容管理 MCP 服务 |

@@ -237,6 +237,11 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
                         >
                           <item.icon aria-hidden="true" />
                           <span>{item.title}</span>
+                          {item.badge && (
+                            <span className="ml-auto rounded px-1.5 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide bg-amber-500/15 text-amber-500 border border-amber-500/25 group-data-[collapsible=icon]:hidden">
+                              {item.badge}
+                            </span>
+                          )}
                         </Link>
                       </SidebarMenuButton>
                       {item.children && (

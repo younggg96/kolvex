@@ -13,6 +13,7 @@ export type ProductFeatureId =
   | "superinvestors"
   | "congressTrades"
   | "optionsActivity"
+  | "tradeOS"
   | "settings"
   | "admin";
 
@@ -20,6 +21,7 @@ export interface ProductFeature {
   id: ProductFeatureId;
   label: string;
   enabled: boolean;
+  experimental?: boolean;
   routePrefixes: readonly string[];
   apiPrefixes?: readonly string[];
   componentDirs?: readonly string[];
@@ -27,6 +29,16 @@ export interface ProductFeature {
 }
 
 export const PRODUCT_FEATURES = [
+  {
+    id: "tradeOS",
+    label: "Trade OS (Experimental)",
+    enabled: true,
+    experimental: true,
+    routePrefixes: ["/dashboard/trade-os"],
+    apiPrefixes: ["/api/trade-os"],
+    componentDirs: ["components/trade-os"],
+    libFiles: ["lib/tradeOsApi.ts"],
+  },
   {
     id: "paperTrading",
     label: "Paper trading",
