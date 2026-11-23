@@ -50,6 +50,10 @@ export function ChatWelcomeContainer({
   useEffect(() => {
     setActiveSkills([...readAiAssistantSettings().defaultSkills]);
   }, []);
+  // Warm the detail route's code so the first send does not wait for it to compile or download.
+  useEffect(() => {
+    router.prefetch("/dashboard/chat/new");
+  }, [router]);
   const [isLoading, setIsLoading] = useState(false);
   const submittingRef = useRef(false);
   const [selectedModel, setSelectedModel] = useState<AIModel>("deepseek-flash");
