@@ -207,7 +207,8 @@ export function AgentSteps({
   const title = statusMessage || t("chat.activity.working");
 
   return (
-    <div className="flex w-full justify-start animate-fade-in">
+    // Starts just after a sent question's bubble so the two do not arrive at once.
+    <div className="flex w-full justify-start animate-fade-in [animation-delay:180ms] [animation-fill-mode:both]">
       <MotionConfig reducedMotion="user">
         <div className="w-full max-w-[45rem]">
           <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">

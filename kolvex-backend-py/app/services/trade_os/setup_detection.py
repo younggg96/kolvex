@@ -20,10 +20,10 @@ from typing import Any, Dict, List, Optional
 from app.services.trade_os.decimal_utils import ZERO, d
 
 STRATEGY_CODE = "SWING_V3_TREND_PULLBACK"
-STRATEGY_VERSION = "3.0.0"
+STRATEGY_VERSION = "3.1.0"
 
-# PRD defaults. Kept together so a strategy version snapshot can be hashed.
-DEFAULT_PARAMS: Dict[str, Any] = {
+# Swing V3.0 as written in the PRD (2026-11-23). Kept so it can still be backtested.
+V3_0_PARAMS: Dict[str, Any] = {
     "pivot_lookback": 20,
     "pullback_min_days": 3,
     "pullback_max_days": 10,
@@ -31,11 +31,23 @@ DEFAULT_PARAMS: Dict[str, Any] = {
     "pullback_max_depth": Decimal("0.10"),
     "stop_atr_buffer": Decimal("0.25"),
     "target_r_multiple": Decimal("2"),
+    "time_exit_day": 16,
     "min_stop_distance": Decimal("0.025"),
     "max_stop_distance": Decimal("0.10"),
     "entry_window_days": 2,
     "max_gap_r": Decimal("0.5"),
+    "earnings_blackout_sessions": 5,
     "tick": Decimal("0.01"),
+}
+
+# Swing V3.1 (adopted 2026-11-23): wider stop, 3R target, 60-session time exit.
+# Chosen on 2017–2023 only, confirmed on 2024–2025; see
+# docs/trade-os/research-2026-11-23-swing-v3-params.md. Everything else is unchanged.
+DEFAULT_PARAMS: Dict[str, Any] = {
+    **V3_0_PARAMS,
+    "stop_atr_buffer": Decimal("0.75"),
+    "target_r_multiple": Decimal("3"),
+    "time_exit_day": 60,
 }
 
 TICK = Decimal("0.01")

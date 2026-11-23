@@ -537,6 +537,9 @@ export interface ScannerCandidate {
   reward_risk?: string;
   earnings_date?: string | null;
   earnings_status?: "clear" | "blackout" | "unavailable" | "not_applicable";
+  /** Which lists named this stock: core, sector, etf, youtube, reddit or manual. */
+  sources?: string[];
+  sector?: string;
 }
 
 export interface ScannerRunResponse {
@@ -551,6 +554,8 @@ export interface ScannerRunResponse {
   /** Symbols with a live signal (SIGNAL_CONFIRMED / ENTRY_PENDING). */
   candidates_count: number;
   failed_symbols?: string[];
+  /** Per-list counts, and any trending list that could not be fetched this run. */
+  universe?: { counts: Record<string, number>; errors: Record<string, string> };
   /** Every scanned symbol with its status, best first. */
   candidates: ScannerCandidate[];
 }
@@ -621,7 +626,7 @@ export interface BacktestTrade {
   r_multiple: number;
   mfe_r: number;
   mae_r: number;
-  exit_reason: "TARGET" | "STOP" | "GAP_STOP" | "TIME_EXIT" | "END_OF_DATA";
+  exit_reason: "TARGET" | "STOP" | "GAP_STOP" | "TIME_EXIT" | "EARNINGS_EXIT" | "END_OF_DATA";
   holding_days: number;
   gap_loss: boolean;
   path_uncertain: boolean;

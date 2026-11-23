@@ -28,7 +28,7 @@ export function BacktestRunner() {
   const [error, setError] = useState<string | null>(null);
 
   const t = {
-    title: c("Backtest Swing V3.0 on one stock", "用 Swing V3.0 回测单只股票"),
+    title: c("Backtest Swing V3.1 on one stock", "用 Swing V3.1 回测单只股票"),
     subtitle: c(
       "Simulate historical performance with strict position sizing and ATR stop brackets.",
       "基于历史日线全真模拟，执行严格的头寸缩放与 ATR 止损止盈几何结构。",
@@ -320,7 +320,8 @@ export function BacktestRunner() {
                                   TARGET: c("Target", "止盈"),
                                   STOP: c("Stop", "止损"),
                                   GAP_STOP: c("Gap stop", "跳空止损"),
-                                  TIME_EXIT: c("Day 16 exit", "第 16 天退出"),
+                                  TIME_EXIT: c("Time exit", "到期退出"),
+                                  EARNINGS_EXIT: c("Before earnings", "财报前退出"),
                                   END_OF_DATA: c("Still open", "数据截止"),
                                 }[tr.exit_reason]
                               }

@@ -37,7 +37,7 @@ def test_valid_signal_has_plan_levels():
     assert row["status"] == "SIGNAL_CONFIRMED", row
     assert row["suggested_entry"] == "154.01"
     assert float(row["suggested_stop"]) < float(row["pullback_low"])
-    assert row["reward_risk"] == "2.00"
+    assert row["reward_risk"] == "3.00"  # V3.1
     assert float(row["rs20_pct"]) > 0
     assert row["earnings_status"] == "clear"
     assert all(c["passed"] for c in row["checks"])

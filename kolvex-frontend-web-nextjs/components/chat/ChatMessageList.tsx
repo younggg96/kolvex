@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { ChatBubble } from "./ChatBubble";
 import { FollowUpQuestions } from "./FollowUpQuestions";
 import { AgentSteps } from "./AgentSteps";
+import { visibleQuestion } from "./pageEvidence";
 import type { ChatMessageListProps } from "./types";
 import { Button } from "../ui/button";
 import { useTranslation } from "@/lib/i18n";
@@ -106,6 +107,12 @@ export function ChatMessageList({
     };
   }, [messages.length, onUserScroll]);
 
+  // When the saved copy of a just-sent question replaces the optimistic bubble, it takes the
+  // same spot, so it must not play an entrance again.
+  const [sentQuestion, setSentQuestion] = useState("");
+  const pendingQuestion = pendingUserMessage?.trim() ?? "";
+  if (pendingQuestion && pendingQuestion !== sentQuestion) setSentQuestion(pendingQuestion);
+
   if (
     messages.length === 0 &&
     !pendingUserMessage &&
@@ -158,6 +165,13 @@ export function ChatMessageList({
               isFirst={index === 0}
               symbols={symbols}
               messageId={message.id}
+              entrance={
+                sentQuestion &&
+                message.role === "user" &&
+                visibleQuestion(message.content).trim() === sentQuestion
+                  ? "none"
+                  : "fade"
+              }
               question={
                 message.role === "assistant"
                   ? messages
@@ -175,7 +189,12 @@ export function ChatMessageList({
 
           {/* Pending user message (optimistic update — always visible) */}
           {pendingUserMessage && (
-            <ChatBubble role="user" content={pendingUserMessage} isFirst={messages.length === 0} />
+            <ChatBubble
+              role="user"
+              content={pendingUserMessage}
+              isFirst={messages.length === 0}
+              entrance="send"
+            />
           )}
 
           {/* Agent activity: tools + thinking indicator (compact, single block) */}

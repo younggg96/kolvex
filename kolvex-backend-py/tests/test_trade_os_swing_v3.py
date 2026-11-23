@@ -11,6 +11,7 @@ from app.services.trade_os.risk_engine import (
     drawdown_level,
 )
 from app.services.trade_os.setup_detection import (
+    V3_0_PARAMS,
     build_plan_levels,
     detect_pullback_setup,
     ema_series,
@@ -126,7 +127,7 @@ def test_ac07_day5_pullback_confirms_signal():
     assert Decimal("0.03") <= sig["pullback_depth"] <= Decimal("0.10")
     assert sig["entry"] == Decimal("154.01")
     assert sig["stop"] < sig["pullback_low"]
-    assert sig["target"] == sig["entry"] + 2 * sig["risk_per_share"]
+    assert sig["target"] == sig["entry"] + 3 * sig["risk_per_share"]  # V3.1: 3R
     assert sig["valid"] is True
 
 
@@ -203,7 +204,10 @@ def test_plan_rejects_stop_outside_2_5_to_10_pct():
     assert tight["valid"] is False and tight["reject_code"] == "INVALID_STOP"
     ok = build_plan_levels("100", "96", "1")
     assert ok["entry"] == Decimal("100.01")
-    assert ok["stop"] == Decimal("95.75")
+    assert ok["stop"] == Decimal("95.25")  # V3.1: pullback low − 0.75×ATR
+    v30 = build_plan_levels("100", "96", "1", V3_0_PARAMS)
+    assert v30["stop"] == Decimal("95.75")
+    assert v30["target"] == v30["entry"] + 2 * v30["risk_per_share"]
     assert ok["valid"] is True
 
 

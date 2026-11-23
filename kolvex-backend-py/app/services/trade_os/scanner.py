@@ -11,6 +11,7 @@ Every symbol gets a status (PRD §7.7) with a reason, not just the passing ones.
 AI scores are never used here.
 """
 
+import asyncio
 import logging
 from datetime import date, datetime, timezone
 from decimal import Decimal
@@ -19,6 +20,7 @@ from typing import Any, Callable, Dict, List, Optional
 from app.services.trade_os.decimal_utils import ZERO, d, quantize_money
 from app.services.trade_os.market_regime import get_latest_market_regime, normalize_regime
 from app.services.trade_os.setup_detection import (
+    DEFAULT_PARAMS,
     STRATEGY_CODE,
     STRATEGY_VERSION,
     detect_pullback_setup,
@@ -30,19 +32,17 @@ from app.services.trade_os.trading_calendar import (
     last_completed_session,
     sessions_after,
 )
+from app.services.trade_os.universe import (
+    build_universe,
+    default_product_lookup,
+    sector_of,
+)
 
 logger = logging.getLogger(__name__)
 
-# Admin-configured liquid universe (PRD §7.2). Today's list; not valid for historical backtests.
-DEFAULT_SCANNER_UNIVERSE = [
-    "NVDA", "AAPL", "MSFT", "AMZN", "GOOGL", "META", "TSLA", "AVGO", "AMD", "QCOM",
-    "NFLX", "PLTR", "CRM", "AMAT", "MU", "LRCX", "PANW", "NOW", "UBER", "COIN",
-    "ARM", "LLY", "ORCL", "ADBE", "INTU",
-]  # fmt: skip
+# The scan universe (core, sector, ETF, YouTube and Reddit lists) lives in universe.py.
 
-# Non-leveraged ETFs are exempt from the earnings filter (PRD §7.6).
-KNOWN_ETFS = {"SPY", "QQQ", "IWM", "DIA", "XLK", "XLF", "XLE", "XLV", "SMH", "SOXX"}
-
+SCAN_CONCURRENCY = 8
 MIN_PRICE = Decimal("10")
 MIN_DOLLAR_VOLUME = Decimal("20000000")
 EARNINGS_WINDOW_TRADING_DAYS = 5
@@ -84,6 +84,7 @@ def evaluate_symbol(
     market_regime: Optional[str] = None,
     earnings_lookup: Optional[Callable[[str], Dict[str, Any]]] = None,
     today: Optional[date] = None,
+    product_lookup: Optional[Callable[[str], Dict[str, bool]]] = None,
 ) -> Dict[str, Any]:
     """Runs all four layers plus the setup state machine for one symbol."""
     sym = symbol.upper()
@@ -188,15 +189,19 @@ def evaluate_symbol(
                 "suggested_target": _money(sig["target"]),
                 "risk_per_share": _money(sig["risk_per_share"]),
                 "stop_distance_pct": _pct(sig["stop_distance_pct"]),
-                "reward_risk": "2.00",
+                "reward_risk": str(quantize_money(DEFAULT_PARAMS["target_r_multiple"])),
             }
         )
 
     if state not in SIGNAL_STATES:
         return row
 
-    # Layer 4: earnings (only looked up for live signals)
-    if sym in KNOWN_ETFS:
+    # Layer 4: product type and earnings (only looked up for live signals)
+    product = (product_lookup or default_product_lookup)(sym)
+    if product["leveraged"]:
+        row.update(status="BLOCKED", status_reason="LEVERAGED_PRODUCT")
+        return row
+    if product["is_etf"]:
         row["earnings_status"] = "not_applicable"
     else:
         info = (earnings_lookup or default_earnings_lookup)(sym)
@@ -265,7 +270,17 @@ async def run_opportunity_scanner(
     """Runs the Swing V3.0 scanner across the universe and returns every symbol's status."""
     global _CACHED_SCAN_RUN
 
-    target_symbols = [s.upper() for s in (symbols or DEFAULT_SCANNER_UNIVERSE)]
+    if symbols:
+        target_symbols = [s.strip().upper() for s in symbols if s.strip()]
+        universe = {
+            "symbols": target_symbols,
+            "sources": {s: ["manual"] for s in target_symbols},
+            "counts": {"manual": len(target_symbols), "total": len(target_symbols)},
+            "errors": {},
+        }
+    else:
+        universe = await build_universe()
+        target_symbols = universe["symbols"]
 
     if bar_fetcher is None:
         from app.services.yfinance.client import get_yfinance_service
@@ -281,27 +296,39 @@ async def run_opportunity_scanner(
         market_regime = regime_result["regime"]
 
     try:
-        spy_bars = bar_fetcher("SPY")
+        spy_bars = await asyncio.to_thread(bar_fetcher, "SPY")
     except Exception as e:
         logger.warning(f"Failed to fetch SPY bars for RS20: {e}")
         spy_bars = []
 
-    rows: List[Dict[str, Any]] = []
+    gate = asyncio.Semaphore(SCAN_CONCURRENCY)
     errors: List[str] = []
-    for sym in target_symbols:
-        try:
-            rows.append(
-                evaluate_symbol(
-                    sym, bar_fetcher(sym) or [], spy_bars, market_regime, earnings_lookup
+
+    async def scan_one(sym: str) -> Dict[str, Any]:
+        # Bars come from blocking yfinance calls: run them off the event loop, a few at a time.
+        async with gate:
+            try:
+                row = await asyncio.to_thread(
+                    lambda: evaluate_symbol(
+                        sym, bar_fetcher(sym) or [], spy_bars, market_regime, earnings_lookup
+                    )
                 )
-            )
-        except Exception as e:
-            logger.warning(f"Error scanning {sym}: {e}")
-            errors.append(sym)
-            rows.append(
-                {"symbol": sym, "strategy_code": STRATEGY_CODE, "status": "INELIGIBLE",
-                 "status_reason": "DATA_FETCH_FAILED", "checks": []}
-            )  # fmt: skip
+            except Exception as e:
+                logger.warning(f"Error scanning {sym}: {e}")
+                errors.append(sym)
+                row = {
+                    "symbol": sym,
+                    "strategy_code": STRATEGY_CODE,
+                    "status": "INELIGIBLE",
+                    "status_reason": "DATA_FETCH_FAILED",
+                    "checks": [],
+                }
+        row["sources"] = universe["sources"].get(sym, [])
+        if sector_of(sym):
+            row["sector"] = sector_of(sym)
+        return row
+
+    rows: List[Dict[str, Any]] = list(await asyncio.gather(*(scan_one(s) for s in target_symbols)))
 
     rows = sort_rows(rows)
     signals = [r for r in rows if r["status"] in SIGNAL_STATES]
@@ -311,7 +338,8 @@ async def run_opportunity_scanner(
         "strategy_version": STRATEGY_VERSION,
         "run_at": datetime.now(timezone.utc).isoformat(),
         "trading_date": trading_date.isoformat() if trading_date else None,
-        "universe_type": "admin_liquid_top25",
+        "universe_type": "mixed" if not symbols else "manual",
+        "universe": {"counts": universe["counts"], "errors": universe["errors"]},
         "market_regime": normalize_regime(market_regime),
         "total_scanned": len(target_symbols),
         "candidates_count": len(signals),
@@ -334,6 +362,7 @@ async def run_opportunity_scanner(
             "strategy_version": STRATEGY_VERSION,
             "market_regime": scan_result["market_regime"],
             "failed_symbols": errors,
+            "universe": scan_result["universe"],
         }
         if trading_date is not None:
             row["trading_date"] = trading_date.isoformat()
@@ -352,6 +381,15 @@ async def run_opportunity_scanner(
         )
 
     return scan_result
+
+
+def _universe_from_rows(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Per-source counts rebuilt from stored rows (runs saved before the universe column)."""
+    counts: Dict[str, int] = {}
+    for r in rows:
+        for tag in r.get("sources") or []:
+            counts[tag] = counts.get(tag, 0) + 1
+    return {"counts": {**counts, "total": len(rows)}, "errors": {}}
 
 
 def get_latest_scanner_run() -> Optional[Dict[str, Any]]:
@@ -383,6 +421,7 @@ def get_latest_scanner_run() -> Optional[Dict[str, Any]]:
                     "total_scanned": row.get("total_scanned", 0),
                     "candidates_count": row.get("candidates_count", 0),
                     "failed_symbols": row.get("failed_symbols") or [],
+                    "universe": row.get("universe") or _universe_from_rows(cands),
                     "candidates": cands,
                 }
     except Exception as e:

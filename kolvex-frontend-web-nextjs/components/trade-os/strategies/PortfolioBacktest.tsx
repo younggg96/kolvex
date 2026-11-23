@@ -145,13 +145,13 @@ export function PortfolioBacktest() {
       <Card className="space-y-4 p-5 sm:p-6">
         <div className="flex items-center gap-1.5">
           <h2 className="text-base font-semibold text-foreground">
-            {c("Does Swing V3.0 have an edge?", "Swing V3.0 到底有没有优势？")}
+            {c("Does Swing V3.1 have an edge?", "Swing V3.1 到底有没有优势？")}
           </h2>
           <InfoTip label={c("How this backtest works", "回测怎么算")}>
             <p>
               {c(
-                "Replays the live scanner's exact rules on every stock in the list, on one shared $100k account: market state per day, same-day signals ranked by RS20, 10% max per stock, open-risk caps, slippage 5 bps each side. Results are split into development, out-of-sample and untouched periods and checked against the PRD research thresholds. Not modelled: earnings exits, dividends, delisted stocks (today's list is used for the past, which flatters results).",
-                "用实时扫描的同一套规则，在一个 10 万美元的共用账户上回放清单里所有股票：每天按当时的市场状态限额，同一天多个信号按 RS20 排序，单股不超过 10%，合计风险有上限，双边滑点各 5 个基点。结果分成开发集、样本外、未使用数据三段，并对照 PRD 的研究门槛。未模拟：财报前退出、分红、已退市股票（用今天的股票名单回测过去，结果会偏乐观）。",
+                "Replays the live scanner's exact rules on every stock in the list, on one shared $100k account: market state per day, same-day signals ranked by RS20, 10% max per stock, open-risk caps, slippage 5 bps each side. Results are split into development, out-of-sample and untouched periods and checked against the PRD research thresholds. Earnings rules are applied (no entry within 5 sessions of a report, exit the session before it). Not modelled: dividends and delisted stocks (today's list is used for the past, which flatters results).",
+                "用实时扫描的同一套规则，在一个 10 万美元的共用账户上回放清单里所有股票：每天按当时的市场状态限额，同一天多个信号按 RS20 排序，单股不超过 10%，合计风险有上限，双边滑点各 5 个基点。结果分成开发集、样本外、未使用数据三段，并对照 PRD 的研究门槛。已计入财报规则（财报前 5 个交易日不入场，财报前最后一个交易日离场）。未模拟：分红、已退市股票（用今天的股票名单回测过去，结果会偏乐观）。",
               )}
             </p>
           </InfoTip>

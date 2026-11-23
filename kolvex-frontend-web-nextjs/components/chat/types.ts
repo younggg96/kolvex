@@ -128,6 +128,8 @@ export interface ChatBubbleProps {
   messageId?: string;
   /** The question this answer replies to, offered (optionally) with the share. */
   question?: string;
+  /** User bubbles: "send" for a question just sent, "none" for its saved copy replacing it. */
+  entrance?: "fade" | "send" | "none";
 }
 
 export interface ChatHistorySidebarProps {

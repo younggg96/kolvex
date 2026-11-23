@@ -80,7 +80,7 @@ export function StatusBadge({ status }: { status: ScannerStatus }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full border px-2 py-0.5 text-[0.6875rem] font-semibold",
+        "inline-flex items-center whitespace-nowrap rounded-full border px-2 py-0.5 text-[0.6875rem] font-semibold",
         TONE_CLASS[statusTone(status)],
       )}
     >
@@ -138,6 +138,7 @@ export function reasonText(code: string | null | undefined, c: Copy): string | n
       "无法确认下一次财报日期，不按无风险处理。",
     ),
     DUPLICATE_POSITION: c("You already hold or plan this symbol.", "该股票已有持仓或待执行计划。"),
+    LEVERAGED_PRODUCT: c("Leveraged or inverse fund: not traded.", "杠杆或反向产品，不交易。"),
     DAILY_LOSS_LIMIT: c("Daily loss limit reached.", "已触及单日亏损上限。"),
     // Scanner filter reasons
     INSUFFICIENT_DATA: c("Less than 200 days of price history.", "历史行情不足 200 个交易日。"),
@@ -183,6 +184,25 @@ export function reasonText(code: string | null | undefined, c: Copy): string | n
     ENTRY_TRIGGERED: c("Price reached the entry trigger.", "价格已触及入场价。"),
   };
   return map[code] ?? code;
+}
+
+/** One-line version for dense lists; reasonText() holds the full sentence for tooltips. */
+export function reasonShort(code: string | null | undefined, c: Copy): string | null {
+  if (!code) return null;
+  const short: Record<string, string> = {
+    LIQUIDITY_FILTER: c("Low liquidity", "流动性不足"),
+    TREND_FILTER: c("Trend not valid", "趋势不合格"),
+    RS20_NOT_POSITIVE: c("Weaker than SPY", "弱于 SPY"),
+    RS_DATA_UNAVAILABLE: c("No SPY data", "缺少 SPY 数据"),
+    INSUFFICIENT_DATA: c("Under 200 days of history", "历史不足 200 天"),
+    DATA_FETCH_FAILED: c("Price data failed", "行情加载失败"),
+    MARKET_RISK_OFF: c("Market Risk Off", "市场防守"),
+    STALE_MARKET_DATA: c("Market data stale", "市场数据过期"),
+    EARNINGS_BLACKOUT: c("Earnings soon", "财报临近"),
+    LEVERAGED_PRODUCT: c("Leveraged / inverse", "杠杆 / 反向产品"),
+    EVENT_DATA_UNAVAILABLE: c("Earnings date unknown", "财报日期未知"),
+  };
+  return short[code] ?? reasonText(code, c);
 }
 
 /** "+2.00R" style (PRD §18.3). */

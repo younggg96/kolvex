@@ -12,10 +12,10 @@ Portfolio replay over many symbols on one shared account:
   (PRD §13.4); every signal that is not taken is listed with its reason.
 - Market state per signal date sets risk per trade, max positions and total open risk.
 - Size = min(risk budget, 10% of equity, cash, remaining open-risk budget).
-- Fixed target = fill + 2 × (fill − initial stop). No trailing stop, no scaling.
+- Fixed target = fill + 3R (V3.1; ``target_r_multiple``). No trailing stop, no scaling.
 - Open through the stop exits at the open (gap loss is recorded).
 - Stop and target on the same daily bar: the stop is assumed (conservative, AC-18).
-- Time exit at the open of holding day 16 (entry day = day 1).
+- Time exit at the open of holding day 60 (V3.1; ``time_exit_day``; entry day = day 1).
 - Slippage applied against the trader on both sides.
 
 Not modelled yet (reported in ``assumptions``): earnings exits, dividends,
@@ -38,8 +38,7 @@ from app.services.trade_os.setup_detection import (
     detect_pullback_setup,
 )
 
-ENGINE_VERSION = "swing-v3-portfolio-1"
-TIME_EXIT_DAY = 16
+ENGINE_VERSION = "swing-v3-portfolio-2"
 MIN_BARS = 220
 MAX_POSITION_PCT = Decimal("0.10")
 # Used when the market filter is off.
@@ -89,7 +88,7 @@ def run_portfolio_backtest(
     ``earnings`` maps symbol -> report timestamps (ISO, New York time); None turns the
     earnings rules off. A symbol mapped to None has unknown dates and is not traded.
     """
-    p = {**DEFAULT_PARAMS, "time_exit_day": TIME_EXIT_DAY, **(params or {})}
+    p = {**DEFAULT_PARAMS, **(params or {})}
     slip = d(slippage_bps) / Decimal(10000)
     flat_risk = d(risk_per_trade_pct) if risk_per_trade_pct is not None else Decimal("0.0050")
     regime_map = {k[:10]: v for k, v in (regimes or {}).items()}
@@ -422,6 +421,7 @@ def run_strategy_backtest(
     regimes: Optional[Dict[str, str]] = None,
     slippage_bps: Decimal = Decimal("5"),
     risk_per_trade_pct: Optional[Decimal] = None,
+    params: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Single-symbol run: the portfolio engine with one stock (same rules, same code)."""
     return run_portfolio_backtest(
@@ -431,6 +431,7 @@ def run_strategy_backtest(
         slippage_bps=slippage_bps,
         risk_per_trade_pct=risk_per_trade_pct,
         segments=(),
+        params=params,
     )
 
 

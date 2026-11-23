@@ -51,6 +51,7 @@ export function ChatBubble({
   webSources,
   messageId,
   question: askedQuestion,
+  entrance = "fade",
 }: ChatBubbleProps) {
   const { t } = useTranslation();
   const remarkPlugins = richRemarkPlugins(symbols);
@@ -89,7 +90,13 @@ export function ChatBubble({
 
   if (isUser) {
     return (
-      <div className="flex w-full justify-end animate-fade-in">
+      <div
+        className={cn(
+          "flex w-full justify-end",
+          entrance === "fade" && "animate-fade-in",
+          entrance === "send" && "animate-chat-bubble-send",
+        )}
+      >
         <div className="max-w-[88%] md:max-w-[70%]">
           <div
             className="glass-card rounded-3xl border border-foreground/10 bg-card-glass px-4 py-2.5 text-foreground"

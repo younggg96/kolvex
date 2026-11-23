@@ -3,6 +3,7 @@
 from decimal import Decimal
 
 from app.services.trade_os.backtester import run_strategy_backtest
+from app.services.trade_os.setup_detection import V3_0_PARAMS
 
 
 def bar(o, h, low, c, date):
@@ -34,7 +35,7 @@ def test_insufficient_data():
 
 def test_target_hit_records_2r_trade():
     bars = history([TRIGGER, (155, 170, 154.5, 168)])
-    res = run_strategy_backtest("NVDA", bars, slippage_bps=Decimal("0"))
+    res = run_strategy_backtest("NVDA", bars, slippage_bps=Decimal("0"), params=V3_0_PARAMS)
     t = res["trades"][0]
     assert t["exit_reason"] == "TARGET"
     assert t["entry_price"] == "154.01"
@@ -45,7 +46,9 @@ def test_target_hit_records_2r_trade():
 
 def test_ac18_same_bar_stop_and_target_assumes_stop():
     bars = history([TRIGGER, (155, 170, 140, 160)])
-    t = run_strategy_backtest("NVDA", bars, slippage_bps=Decimal("0"))["trades"][0]
+    t = run_strategy_backtest("NVDA", bars, slippage_bps=Decimal("0"), params=V3_0_PARAMS)[
+        "trades"
+    ][0]
     assert t["exit_reason"] == "STOP"
     assert t["path_uncertain"] is True
     assert abs(t["r_multiple"] + 1.0) < 0.05
@@ -62,7 +65,9 @@ def test_gap_below_stop_exits_at_open():
 def test_ac19_time_exit_on_day_16_open():
     flat = [(155, 156, 154, 155)] * 20
     bars = history([TRIGGER] + flat)
-    t = run_strategy_backtest("NVDA", bars, slippage_bps=Decimal("0"))["trades"][0]
+    t = run_strategy_backtest("NVDA", bars, slippage_bps=Decimal("0"), params=V3_0_PARAMS)[
+        "trades"
+    ][0]
     assert t["exit_reason"] == "TIME_EXIT"
     assert t["holding_days"] == 16
 
@@ -197,3 +202,13 @@ def test_unknown_earnings_dates_are_not_traded():
     res = run_portfolio_backtest({"NVDA": history(WIN)}, earnings={"NVDA": None}, segments=())
     assert res["trades"] == []
     assert res["skipped_signals"][-1]["reason"] == "EVENT_DATA_UNAVAILABLE"
+
+
+def test_v3_1_defaults_use_3r_target_and_60_day_exit():
+    up = [(155 + i * 0.1, 155.5 + i * 0.1, 154.5 + i * 0.1, 155.2 + i * 0.1) for i in range(70)]
+    t = run_strategy_backtest("NVDA", history([TRIGGER] + up), slippage_bps=Decimal("0"))["trades"][
+        0
+    ]
+    assert t["exit_reason"] == "TIME_EXIT"
+    assert t["holding_days"] == 60
+    assert abs(float(t["target_price"]) - (154.01 + 3 * (154.01 - float(t["stop_price"])))) < 0.02

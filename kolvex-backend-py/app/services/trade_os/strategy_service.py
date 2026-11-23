@@ -70,6 +70,30 @@ DEFAULT_STRATEGY_SWING_V3 = {
 }
 
 
+# Swing V3.1 (adopted 2026-11-23): same entries as V3.0; stop 0.75×ATR, 3R target,
+# time exit on day 60. Research: docs/trade-os/research-2026-11-23-swing-v3-params.md
+DEFAULT_STRATEGY_SWING_V3_1 = {
+    **DEFAULT_STRATEGY_SWING_V3,
+    "version": "3.1.0",
+    "display_name": "Swing V3.1 · Trend Pullback",
+    "parameters": {
+        **DEFAULT_STRATEGY_SWING_V3["parameters"],
+        "stop_atr_buffer": 0.75,
+        "target_r_multiple": 3.0,
+        "time_exit_day": 60,
+    },
+    "exit_rules": [
+        {"type": "stop_loss", "distance": "Pullback Low - 0.75 * ATR14"},
+        {"type": "take_profit", "target": "3R"},
+        {"type": "time_expiry", "exit": "open of holding day 60"},
+        {"type": "earnings", "exit": "last session before the report"},
+    ],
+}
+
+# Seeded in this order; versions are immutable, so a new one is added, never edited.
+SEEDED_STRATEGY_VERSIONS = (DEFAULT_STRATEGY_SWING_V3, DEFAULT_STRATEGY_SWING_V3_1)
+
+
 class StrategyService:
     def __init__(self, supabase=None):
         self.supabase = supabase or get_supabase_service()
@@ -84,21 +108,22 @@ class StrategyService:
             .execute()
         )
         data = res.data or []
-        # Seed Swing V3.0 once per user. Older versions stay as they are (versions are immutable).
-        if not any(
-            row.get("strategy_key") == DEFAULT_STRATEGY_SWING_V3["strategy_key"] for row in data
-        ):
+        # Seed each Swing version once per user. Existing versions are never edited.
+        have = {(row.get("strategy_key"), row.get("version")) for row in data}
+        for spec in SEEDED_STRATEGY_VERSIONS:
+            if (spec["strategy_key"], spec["version"]) in have:
+                continue
             seeded = self.create_strategy_version(
                 user_id=user_id,
-                strategy_key=DEFAULT_STRATEGY_SWING_V3["strategy_key"],
-                version=DEFAULT_STRATEGY_SWING_V3["version"],
-                display_name=DEFAULT_STRATEGY_SWING_V3["display_name"],
-                description=DEFAULT_STRATEGY_SWING_V3["description"],
-                parameters=DEFAULT_STRATEGY_SWING_V3["parameters"],
-                entry_rules=DEFAULT_STRATEGY_SWING_V3["entry_rules"],
-                exit_rules=DEFAULT_STRATEGY_SWING_V3["exit_rules"],
-                risk_rules=DEFAULT_STRATEGY_SWING_V3["risk_rules"],
-                # Not live until it has passed the PRD backtest and paper-trading gates.
+                strategy_key=spec["strategy_key"],
+                version=spec["version"],
+                display_name=spec["display_name"],
+                description=spec["description"],
+                parameters=spec["parameters"],
+                entry_rules=spec["entry_rules"],
+                exit_rules=spec["exit_rules"],
+                risk_rules=spec["risk_rules"],
+                # Not live until it has passed paper trading (PRD §14.4).
                 status="research",
             )
             data = [seeded] + data

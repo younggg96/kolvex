@@ -15,15 +15,15 @@ from typing import Any, Callable, Dict, List, Optional
 
 from app.services.trade_os.backtester import run_portfolio_backtest
 from app.services.trade_os.market_regime import regime_by_date
-from app.services.trade_os.scanner import DEFAULT_SCANNER_UNIVERSE
 from app.services.trade_os.setup_detection import STRATEGY_CODE
 from app.services.trade_os.trading_calendar import completed_bars
+from app.services.trade_os.universe import is_etf, static_universe
 
 logger = logging.getLogger(__name__)
 
 TABLE = "trade_os_backtest_runs"
 STALE_AFTER = timedelta(minutes=30)
-MAX_SYMBOLS = 50
+MAX_SYMBOLS = 220
 SUMMARY_COLUMNS = (
     "id,status,error,symbol,start_date,end_date,initial_capital,parameters,"
     "summary_metrics,gates,segments,benchmark,config_hash,created_at,completed_at"
@@ -98,7 +98,8 @@ def execute_portfolio_backtest(
 
     earnings = None
     if params.get("use_earnings_rules", True) and earnings_fetch is not None:
-        earnings = {sym: earnings_fetch(sym) for sym in bars}
+        # ETFs have no earnings (PRD §7.6): an empty list means "no report", not "unknown".
+        earnings = {sym: ([] if is_etf(sym) else earnings_fetch(sym)) for sym in bars}
 
     result = run_portfolio_backtest(
         bars,
@@ -162,7 +163,7 @@ def start_portfolio_job(
     slippage_bps: float = 5.0,
     fetch: Optional[Fetcher] = None,
 ) -> Dict[str, Any]:
-    universe = [s.strip().upper() for s in (symbols or DEFAULT_SCANNER_UNIVERSE) if s.strip()]
+    universe = [s.strip().upper() for s in (symbols or static_universe()) if s.strip()]
     if not universe or len(universe) > MAX_SYMBOLS:
         raise ValueError(f"Choose 1–{MAX_SYMBOLS} symbols.")
     params = {
