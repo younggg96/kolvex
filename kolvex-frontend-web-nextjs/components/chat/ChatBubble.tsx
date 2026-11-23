@@ -155,12 +155,7 @@ export function ChatBubble({
         {/* Actions */}
         {!isStreaming && content && (
           <div className="mt-2 flex flex-wrap items-center gap-1 px-0.5">
-            <div
-              className={cn(
-                "flex items-center gap-1",
-                "opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity duration-150",
-              )}
-            >
+            <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="xs"
