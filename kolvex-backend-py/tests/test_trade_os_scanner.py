@@ -117,3 +117,19 @@ def test_run_reports_every_symbol_and_counts_only_signals():
     assert res["total_scanned"] == 2
     assert res["candidates_count"] == 1
     assert [r["symbol"] for r in res["candidates"]] == ["NVDA", "THIN"]
+
+
+def test_latest_route_returns_null_before_first_scan():
+    from unittest.mock import patch
+
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    from app.api.routes.trade_os import scanner as route
+
+    app = FastAPI()
+    app.include_router(route.router)
+    with patch.object(route, "get_latest_scanner_run", return_value=None):
+        res = TestClient(app).get("/scanner/latest")
+    assert res.status_code == 200
+    assert res.json() is None

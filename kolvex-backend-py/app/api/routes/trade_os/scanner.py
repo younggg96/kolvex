@@ -22,8 +22,8 @@ class ScannerRunRequest(BaseModel):
 
 
 @router.get("/latest")
-async def get_latest_scan() -> Dict[str, Any]:
-    """Returns the most recent opportunity scanner run results."""
+async def get_latest_scan() -> Optional[Dict[str, Any]]:
+    """Latest Swing V3.0 scan, or null when none has run yet (not an error)."""
     try:
         return get_latest_scanner_run()
     except Exception as e:
@@ -34,7 +34,7 @@ async def get_latest_scan() -> Dict[str, Any]:
 async def trigger_scanner_run(
     body: Optional[ScannerRunRequest] = None, _user_id: str = Depends(get_current_user_id)
 ) -> Dict[str, Any]:
-    """Executes the Trend Breakout 20D scanner on liquid growth universe."""
+    """Runs the Swing V3.0 scan on the admin universe now."""
     try:
         symbols = body.symbols if body else None
         save = body.save_to_db if body else True
