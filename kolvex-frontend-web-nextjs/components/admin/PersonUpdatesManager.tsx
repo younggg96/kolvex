@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2, UserRound } from "lucide-react";
 import { AdminRowsSkeleton } from "@/components/admin/AdminSkeletons";
 import PersonAvatarsEditor from "@/components/admin/PersonAvatarsEditor";
 import PersonUpdatesImporter from "@/components/admin/PersonUpdatesImporter";
@@ -117,6 +117,7 @@ export default function PersonUpdatesManager() {
   const [formError, setFormError] = useState("");
   const [removing, setRemoving] = useState<PersonUpdate | null>(null);
   const [busy, setBusy] = useState(false);
+  const [portraitsOpen, setPortraitsOpen] = useState(false);
   const loadErrorMessage = c("Could not load updates.", "无法加载动态。");
 
   const load = useCallback(async () => {
@@ -223,19 +224,30 @@ export default function PersonUpdatesManager() {
     <section className="space-y-4">
       <div className="flex items-center justify-between gap-4">
         <h3 className="text-lg font-semibold">{c("Saved updates", "已保存动态")}</h3>
-        <Button
-          size="sm"
-          disabled={busy}
-          onClick={() => {
-            setEditing(false);
-            setAddMode("manual");
-            setFormError("");
-            setDraft({ ...EMPTY, published_at: toLocalInput(new Date().toISOString()) });
-          }}
-        >
-          <Plus className="size-4" aria-hidden />
-          {c("Add update", "新增动态")}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={busy || !items}
+            onClick={() => setPortraitsOpen(true)}
+          >
+            <UserRound className="size-4" aria-hidden />
+            {c("Portraits", "人物头像")}
+          </Button>
+          <Button
+            size="sm"
+            disabled={busy}
+            onClick={() => {
+              setEditing(false);
+              setAddMode("manual");
+              setFormError("");
+              setDraft({ ...EMPTY, published_at: toLocalInput(new Date().toISOString()) });
+            }}
+          >
+            <Plus className="size-4" aria-hidden />
+            {c("Add update", "新增动态")}
+          </Button>
+        </div>
       </div>
       {message && (
         <p role="status" className="text-sm text-muted-foreground">
@@ -302,7 +314,20 @@ export default function PersonUpdatesManager() {
         </ul>
       )}
 
-      {items && <PersonAvatarsEditor items={items} onSaved={load} />}
+      <Dialog open={portraitsOpen} onOpenChange={setPortraitsOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{c("Portraits", "人物头像")}</DialogTitle>
+            <DialogDescription>
+              {c(
+                "One portrait per person. New updates never replace it.",
+                "每人一个头像，新动态不会覆盖。",
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          {items && <PersonAvatarsEditor items={items} onSaved={load} />}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={draft !== null} onOpenChange={(open) => !open && !busy && setDraft(null)}>
         <DialogContent

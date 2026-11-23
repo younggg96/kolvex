@@ -58,7 +58,25 @@ def _default_fetcher() -> Fetcher:
     return fetch
 
 
-def execute_portfolio_backtest(params: Dict[str, Any], fetch: Fetcher) -> Dict[str, Any]:
+def default_earnings_history(symbol: str) -> Optional[List[str]]:
+    """Past and scheduled report timestamps (New York time); None when unavailable."""
+    try:
+        import yfinance as yf
+
+        df = yf.Ticker(symbol).get_earnings_dates(limit=60)
+        if df is None or df.empty:
+            return None
+        return sorted(ts.isoformat() for ts in df.index)
+    except Exception as err:  # noqa: BLE001 — unknown, never "no earnings"
+        logger.warning("Earnings history unavailable for %s: %s", symbol, err)
+        return None
+
+
+def execute_portfolio_backtest(
+    params: Dict[str, Any],
+    fetch: Fetcher,
+    earnings_fetch: Optional[Callable[[str], Optional[List[str]]]] = None,
+) -> Dict[str, Any]:
     """Fetch, replay, return the result. No database access (unit-testable)."""
     start, end = params["start_date"], params.get("end_date")
     symbols = [s.upper() for s in params["symbols"]]
@@ -78,8 +96,13 @@ def execute_portfolio_backtest(params: Dict[str, Any], fetch: Fetcher) -> Dict[s
             raise RuntimeError("SPY/QQQ history unavailable for the market filter.")
         regimes = regime_by_date(spy, qqq)
 
+    earnings = None
+    if params.get("use_earnings_rules", True) and earnings_fetch is not None:
+        earnings = {sym: earnings_fetch(sym) for sym in bars}
+
     result = run_portfolio_backtest(
         bars,
+        earnings=earnings,
         initial_capital=Decimal(str(params.get("initial_capital", 100000))),
         regimes=regimes,
         slippage_bps=Decimal(str(params.get("slippage_bps", 5))),
@@ -93,7 +116,12 @@ def _run_and_store(job_id: str, params: Dict[str, Any], fetch: Optional[Fetcher]
     db = _db()
     db.table(TABLE).update({"status": "running"}).eq("id", job_id).execute()
     try:
-        result = execute_portfolio_backtest(params, fetch or _default_fetcher())
+        if fetch is None:
+            result = execute_portfolio_backtest(
+                params, _default_fetcher(), default_earnings_history
+            )
+        else:
+            result = execute_portfolio_backtest(params, fetch)
         if result.get("error"):
             raise RuntimeError(result["error"])
         db.table(TABLE).update(

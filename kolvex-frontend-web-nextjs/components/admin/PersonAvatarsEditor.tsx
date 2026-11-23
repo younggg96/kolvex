@@ -65,17 +65,18 @@ export default function PersonAvatarsEditor({
     }
   }
 
-  if (!people.length) return null;
+  if (!people.length) {
+    return <p className="text-sm text-muted-foreground">{c("No people yet.", "暂无人物。")}</p>;
+  }
 
   return (
-    <section className="space-y-3">
-      <h3 className="text-lg font-semibold">{c("Portraits", "人物头像")}</h3>
+    <div className="space-y-3">
       {message && (
         <p role="status" className="text-sm text-muted-foreground">
           {message}
         </p>
       )}
-      <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card [&>li]:px-4">
+      <ul className="max-h-[60vh] divide-y divide-border overflow-y-auto rounded-2xl border border-border bg-card [&>li]:px-4">
         {people.map((item) => {
           const saved = item.profile_avatar_url ?? "";
           const value = drafts[item.person] ?? saved;
@@ -133,6 +134,6 @@ export default function PersonAvatarsEditor({
           );
         })}
       </ul>
-    </section>
+    </div>
   );
 }

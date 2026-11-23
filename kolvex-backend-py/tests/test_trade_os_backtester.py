@@ -171,3 +171,29 @@ def test_job_execution_with_market_filter_and_failed_fetch():
     assert res["gates"]["passed"] is False  # one trade is far below the 100-trade gate
     old = {"status": "running", "created_at": "2020-01-01T00:00:00+00:00"}
     assert _mark_stale(old)["status"] == "failed"
+
+
+# --- Earnings rules (PRD §7.6, §11.5, AC-24) --------------------------------
+
+
+def test_report_within_five_sessions_blocks_entry():
+    bars = history(WIN + [(168, 169, 167, 168)] * 5)  # signal at index 264
+    res = run_portfolio_backtest({"NVDA": bars}, earnings={"NVDA": ["d0267"]}, segments=())
+    assert res["trades"] == []
+    assert res["skipped_signals"][-1]["reason"] == "EARNINGS_BLACKOUT"
+
+
+def test_open_position_exits_at_close_before_report():
+    flat = [(155, 156, 154, 155)] * 20
+    res = run_portfolio_backtest(
+        {"NVDA": history([TRIGGER] + flat)}, earnings={"NVDA": ["d0275"]}, segments=()
+    )
+    t = res["trades"][0]
+    assert t["exit_reason"] == "EARNINGS_EXIT"
+    assert t["holding_days"] == 10  # exits on d0274, the session before the report
+
+
+def test_unknown_earnings_dates_are_not_traded():
+    res = run_portfolio_backtest({"NVDA": history(WIN)}, earnings={"NVDA": None}, segments=())
+    assert res["trades"] == []
+    assert res["skipped_signals"][-1]["reason"] == "EVENT_DATA_UNAVAILABLE"
