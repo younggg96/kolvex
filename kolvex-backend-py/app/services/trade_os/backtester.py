@@ -1,246 +1,301 @@
 """
-Event-driven Strategy Backtester for Kolvex Trade OS.
-Simulates Trend Breakout 20D strategy against historical daily OHLCV bars.
-Calculates risk-adjusted returns, R-Multiple distributions, and cash-flow equity curves.
+Backtest Lab for Kolvex Trade OS — Swing Trading Strategy V3.0 (PRD §13).
+
+Signals come from ``setup_detection.detect_pullback_setup``, the same code the
+live scanner uses (PRD §20.3), so a backtest can never drift from the scan rules.
+
+Execution model (PRD §10–§11):
+- Entry only on t+1 / t+2 after the signal close, at max(open, entry trigger).
+- Open more than 0.5R above the trigger cancels the trade.
+- After a gap the stop distance (2.5%–10%) and size are recomputed from the fill.
+- Fixed target = fill + 2 × (fill − initial stop). No trailing stop, no scaling.
+- Open through the stop exits at the open (gap loss is recorded).
+- Stop and target on the same daily bar: the stop is assumed (conservative, AC-18).
+- Time exit at the open of holding day 16 (entry day = day 1).
+- Slippage applied against the trader on both sides.
+
+Not modelled yet (reported in ``assumptions``): earnings exits, dividends,
+survivorship / historical universe, intraday path.
 """
 
-import logging
+import hashlib
+import json
 import math
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
 from app.services.trade_os.decimal_utils import ZERO, d, quantize_money
-from app.services.trade_os.indicators import calculate_atr, calculate_highest_high, calculate_sma
+from app.services.trade_os.market_regime import regime_limits
+from app.services.trade_os.position_sizing import calculate_position_size
+from app.services.trade_os.setup_detection import (
+    DEFAULT_PARAMS,
+    STRATEGY_CODE,
+    STRATEGY_VERSION,
+    detect_pullback_setup,
+)
 
-logger = logging.getLogger(__name__)
+ENGINE_VERSION = "swing-v3-backtest-1"
+TIME_EXIT_DAY = 16
+MAX_POSITION_PCT = Decimal("0.10")
+
+
+def _hash(payload: Dict[str, Any]) -> str:
+    return hashlib.sha256(json.dumps(payload, sort_keys=True, default=str).encode()).hexdigest()
 
 
 def run_strategy_backtest(
     symbol: str,
     bars: List[Dict[str, Any]],
     initial_capital: Decimal = Decimal("100000.00"),
-    risk_per_trade_pct: Decimal = Decimal("0.0050"),
-    breakout_period: int = 20,
-    atr_period: int = 14,
-    stop_atr_mult: Decimal = Decimal("2.0"),
-    target_r_mult: Decimal = Decimal("2.5"),
-    max_holding_bars: int = 60,
+    regimes: Optional[Dict[str, str]] = None,
+    slippage_bps: Decimal = Decimal("5"),
+    risk_per_trade_pct: Optional[Decimal] = None,
 ) -> Dict[str, Any]:
     """
-    Executes a daily bar backtest of the Trend Breakout strategy.
+    Single-symbol replay of Swing V3.0.
+
+    ``regimes`` maps bar date -> market state. When given, signals on Risk Off /
+    Unknown days are skipped and risk per trade follows the state (0.5% / 0.25%).
+    When omitted, the market filter is off and ``risk_per_trade_pct`` (default 0.5%) is used.
     """
+    sym = symbol.upper()
     if len(bars) < 220:
         return {
             "error": "Insufficient historical data for backtest (minimum 220 bars required).",
             "trades": [],
+            "skipped_signals": [],
             "summary": {},
             "equity_curve": [],
         }
 
-    capital = initial_capital
-    peak_capital = capital
-    equity_curve: List[Dict[str, Any]] = []
-    trades: List[Dict[str, Any]] = []
+    slip = d(slippage_bps) / Decimal(10000)
+    flat_risk = d(risk_per_trade_pct) if risk_per_trade_pct is not None else Decimal("0.0050")
+    config = {
+        "strategy_code": STRATEGY_CODE,
+        "strategy_version": STRATEGY_VERSION,
+        "engine_version": ENGINE_VERSION,
+        "symbol": sym,
+        "start": bars[0].get("date"),
+        "end": bars[-1].get("date"),
+        "initial_capital": str(initial_capital),
+        "market_filter": regimes is not None,
+        "risk_per_trade_pct": None if regimes is not None else str(flat_risk),
+        "slippage_bps": str(slippage_bps),
+        "params": {k: str(v) for k, v in DEFAULT_PARAMS.items()},
+    }
 
-    # State
-    in_pos = False
-    pos_shares = 0
-    pos_entry_price = ZERO
-    pos_stop_price = ZERO
-    pos_target_price = ZERO
-    pos_initial_risk = ZERO
-    pos_entry_date = ""
-    pos_bars_held = 0
-
-    closes = [d(b["close"]) for b in bars]
+    opens = [d(b["open"]) for b in bars]
     highs = [d(b["high"]) for b in bars]
     lows = [d(b["low"]) for b in bars]
+    closes = [d(b["close"]) for b in bars]
 
-    # Warmup loop start index
-    warmup_idx = 200
+    signals = detect_pullback_setup(bars)["signals"]
+    fills = {s["fill_index"]: s for s in signals if s.get("outcome") == "TRIGGERED"}
 
-    for i in range(warmup_idx, len(bars)):
-        bar = bars[i]
-        b_date = bar.get("date", f"bar_{i}")
-        b_open = d(bar["open"])
-        b_high = d(bar["high"])
-        b_low = d(bar["low"])
-        b_close = d(bar["close"])
+    capital = d(initial_capital)
+    trades: List[Dict[str, Any]] = []
+    skipped: List[Dict[str, Any]] = []
+    equity_curve: List[Dict[str, Any]] = []
+    peak = capital
+    pos: Optional[Dict[str, Any]] = None
 
-        # History slices up to yesterday (i-1)
-        hist_closes = closes[:i]
-        hist_highs = highs[:i]
-        hist_lows = lows[:i]
+    for sig in signals:
+        if sig.get("outcome") != "TRIGGERED":
+            skipped.append(
+                {
+                    "signal_date": sig["signal_date"],
+                    "reason": sig.get("outcome_reason") or "NOT_TRIGGERED",
+                }
+            )
 
-        sma50 = calculate_sma(hist_closes, 50)
-        sma200 = calculate_sma(hist_closes, 200)
-
-        # 1. Manage active position exit
-        if in_pos:
-            pos_bars_held += 1
-            exit_price: Optional[Decimal] = None
-            exit_reason = ""
-
-            # Check stop loss hit
-            if b_low <= pos_stop_price:
-                # If opened with a gap down below stop, fill at open; otherwise at stop
-                exit_price = min(b_open, pos_stop_price)
-                exit_reason = "stop_loss"
-            # Check target hit
-            elif b_high >= pos_target_price:
-                # If opened with a gap up above target, fill at open; otherwise at target
-                exit_price = max(b_open, pos_target_price)
-                exit_reason = "take_profit"
-            # Time stop / max holding period
-            elif pos_bars_held >= max_holding_bars:
-                exit_price = b_close
-                exit_reason = "time_stop"
-
-            if exit_price is not None:
-                pnl = (exit_price - pos_entry_price) * Decimal(pos_shares)
-                r_mult = pnl / pos_initial_risk if pos_initial_risk > ZERO else ZERO
-                capital += pnl
-
-                trades.append(
-                    {
-                        "symbol": symbol.upper(),
-                        "entry_date": pos_entry_date,
-                        "exit_date": b_date,
-                        "entry_price": str(quantize_money(pos_entry_price)),
-                        "exit_price": str(quantize_money(exit_price)),
-                        "shares": pos_shares,
-                        "pnl": str(quantize_money(pnl)),
-                        "r_multiple": float(quantize_money(r_mult)),
-                        "exit_reason": exit_reason,
-                        "holding_bars": pos_bars_held,
-                    }
-                )
-
-                # Reset position
-                in_pos = False
-                pos_shares = 0
-
-        # 2. Look for new entry if flat
-        if not in_pos and sma50 is not None and sma200 is not None:
-            # Trend condition: prior close > SMA50 > SMA200
-            prior_close = hist_closes[-1]
-            is_uptrend = prior_close > sma50 and sma50 > sma200
-
-            if is_uptrend:
-                prior_breakout = calculate_highest_high(hist_highs, breakout_period)
-                if prior_breakout is not None and b_high >= prior_breakout:
-                    atr = calculate_atr(hist_highs, hist_lows, hist_closes, atr_period) or Decimal(
-                        "2.00"
-                    )
-                    entry_p = max(b_open, prior_breakout)
-                    stop_p = entry_p - (stop_atr_mult * atr)
-                    risk_per_share = entry_p - stop_p
-
-                    if risk_per_share > ZERO and stop_p < entry_p:
-                        # Position Sizing
-                        risk_budget = capital * risk_per_trade_pct
-                        allowed_shares = int(risk_budget / risk_per_share)
-                        # Cap max notional at 15% of capital
-                        max_notional_shares = int((capital * Decimal("0.15")) / entry_p)
-                        shares = min(allowed_shares, max_notional_shares)
-
-                        if shares > 0:
-                            in_pos = True
-                            pos_shares = shares
-                            pos_entry_price = entry_p
-                            pos_stop_price = stop_p
-                            pos_target_price = entry_p + (target_r_mult * risk_per_share)
-                            pos_initial_risk = Decimal(shares) * risk_per_share
-                            pos_entry_date = b_date
-                            pos_bars_held = 0
-
-        # Mark equity at day end
-        unrealized = ((b_close - pos_entry_price) * Decimal(pos_shares)) if in_pos else ZERO
-        current_equity = capital + unrealized
-        if current_equity > peak_capital:
-            peak_capital = current_equity
-
-        dd_pct = (
-            (peak_capital - current_equity) / peak_capital * Decimal(100)
-            if peak_capital > ZERO
-            else ZERO
+    def close_position(i: int, raw_price: Decimal, reason: str, path_uncertain: bool = False):
+        nonlocal capital, pos
+        exit_price = raw_price * (1 - slip)
+        pnl = (exit_price - pos["entry"]) * pos["shares"]
+        planned_loss = pos["risk_per_share"] * pos["shares"]
+        capital += pnl
+        window_hi = max(highs[pos["index"] : i + 1])
+        window_lo = min(lows[pos["index"] : i + 1])
+        r = pos["risk_per_share"]
+        trades.append(
+            {
+                "symbol": sym,
+                "signal_date": pos["signal_date"],
+                "entry_date": bars[pos["index"]].get("date"),
+                "exit_date": bars[i].get("date"),
+                "entry_price": str(quantize_money(pos["entry"])),
+                "stop_price": str(quantize_money(pos["stop"])),
+                "target_price": str(quantize_money(pos["target"])),
+                "exit_price": str(quantize_money(exit_price)),
+                "shares": int(pos["shares"]),
+                "planned_risk": str(quantize_money(planned_loss)),
+                "pnl": str(quantize_money(pnl)),
+                "r_multiple": float(quantize_money(pnl / planned_loss))
+                if planned_loss > ZERO
+                else 0.0,
+                "mfe_r": float(quantize_money((window_hi - pos["entry"]) / r)),
+                "mae_r": float(quantize_money((window_lo - pos["entry"]) / r)),
+                "exit_reason": reason,
+                "holding_days": i - pos["index"] + 1,
+                "gap_loss": reason == "GAP_STOP",
+                "path_uncertain": path_uncertain,
+            }
         )
+        pos = None
 
+    for i in range(len(bars)):
+        day = bars[i].get("date")
+
+        # 1. Manage an open position
+        if pos is not None and i > pos["index"]:
+            holding_day = i - pos["index"] + 1
+            o, h, lo = opens[i], highs[i], lows[i]
+            if holding_day >= TIME_EXIT_DAY:
+                close_position(i, o, "TIME_EXIT")
+            elif o <= pos["stop"]:
+                close_position(i, o, "GAP_STOP")
+            elif o >= pos["target"]:
+                close_position(i, o, "TARGET")
+            elif lo <= pos["stop"] and h >= pos["target"]:
+                close_position(i, pos["stop"], "STOP", path_uncertain=True)
+            elif lo <= pos["stop"]:
+                close_position(i, pos["stop"], "STOP")
+            elif h >= pos["target"]:
+                close_position(i, pos["target"], "TARGET")
+
+        # 2. New entry on a triggered signal
+        sig = fills.get(i)
+        if sig is not None:
+            reason = None
+            regime = (regimes or {}).get(bars[sig["signal_index"]].get("date"), "unknown")
+            if pos is not None:
+                reason = "DUPLICATE_POSITION"
+            elif regimes is not None and not regime_limits(regime)["allow_new_entries"]:
+                reason = "MARKET_RISK_OFF" if regime == "risk_off" else "STALE_MARKET_DATA"
+
+            fill = sig["fill_price"] * (1 + slip)
+            stop = sig["stop"]
+            r = fill - stop
+            if reason is None and not (
+                DEFAULT_PARAMS["min_stop_distance"]
+                <= r / fill
+                <= DEFAULT_PARAMS["max_stop_distance"]
+            ):
+                reason = "INVALID_STOP_AFTER_GAP"
+
+            if reason is None:
+                risk_pct = regime_limits(regime)["risk_pct"] if regimes is not None else flat_risk
+                sizing = calculate_position_size(
+                    capital, fill, stop, risk_pct, MAX_POSITION_PCT, available_cash=capital
+                )
+                shares = sizing["max_allowed_quantity"]
+                if shares < 1:
+                    reason = "SIZE_BELOW_ONE_SHARE"
+                else:
+                    pos = {
+                        "index": i,
+                        "signal_date": sig["signal_date"],
+                        "entry": fill,
+                        "stop": stop,
+                        "target": fill + 2 * r,
+                        "risk_per_share": r,
+                        "shares": Decimal(shares),
+                    }
+                    # Stop hit on the entry bar itself: assume the worse order.
+                    if lows[i] <= stop:
+                        close_position(i, stop, "STOP", path_uncertain=True)
+            if reason is not None:
+                skipped.append({"signal_date": sig["signal_date"], "reason": reason})
+
+        # 3. Mark to market
+        unrealized = (closes[i] - pos["entry"]) * pos["shares"] if pos else ZERO
+        equity = capital + unrealized
+        peak = max(peak, equity)
+        dd = (peak - equity) / peak * 100 if peak > ZERO else ZERO
         equity_curve.append(
             {
-                "date": b_date,
-                "equity": str(quantize_money(current_equity)),
-                "drawdown_pct": str(quantize_money(dd_pct)),
-                "in_position": in_pos,
+                "date": day,
+                "equity": str(quantize_money(equity)),
+                "drawdown_pct": str(quantize_money(dd)),
+                "in_position": pos is not None,
             }
         )
 
-    # 3. Compute Summary Statistics
-    total_trades = len(trades)
-    winning_trades = [t for t in trades if float(t["pnl"]) > 0]
-    losing_trades = [t for t in trades if float(t["pnl"]) < 0]
+    if pos is not None:
+        close_position(len(bars) - 1, closes[-1], "END_OF_DATA")
 
-    win_count = len(winning_trades)
-    loss_count = len(losing_trades)
-    win_rate = (
-        (Decimal(win_count) / Decimal(total_trades) * Decimal(100)) if total_trades > 0 else ZERO
-    )
+    summary = _summarize(sym, trades, equity_curve, d(initial_capital), capital)
+    return {
+        "symbol": sym,
+        "config": config,
+        "config_hash": _hash(config),
+        "assumptions": {
+            "fills": "Next-day open or trigger, whichever is higher; slippage against you on both sides.",
+            "same_bar_stop_and_target": "Stop assumed first (daily bars only).",
+            "earnings_filter": "not_applied",
+            "dividends": "not_applied",
+            "universe": "single symbol, today's ticker (survivorship not handled)",
+        },
+        "summary": summary,
+        "trades": trades,
+        "skipped_signals": skipped,
+        "equity_curve": equity_curve,
+    }
 
-    gross_profit = sum([d(t["pnl"]) for t in winning_trades], ZERO)
-    gross_loss = abs(sum([d(t["pnl"]) for t in losing_trades], ZERO))
 
-    profit_factor = (
-        (gross_profit / gross_loss)
-        if gross_loss > ZERO
-        else (Decimal("99.99") if gross_profit > ZERO else Decimal("1.00"))
-    )
+def _summarize(
+    sym: str,
+    trades: List[Dict[str, Any]],
+    curve: List[Dict[str, Any]],
+    initial: Decimal,
+    ending: Decimal,
+) -> Dict[str, Any]:
+    n = len(trades)
+    wins = [t for t in trades if d(t["pnl"]) > ZERO]
+    losses = [t for t in trades if d(t["pnl"]) < ZERO]
+    gross_profit = sum((d(t["pnl"]) for t in wins), ZERO)
+    gross_loss = abs(sum((d(t["pnl"]) for t in losses), ZERO))
+    rs = [t["r_multiple"] for t in trades]
 
-    total_r = sum([d(t["r_multiple"]) for t in trades], ZERO)
-    expectancy_r = total_r / Decimal(total_trades) if total_trades > 0 else ZERO
+    streak = longest = 0
+    for t in trades:
+        streak = streak + 1 if d(t["pnl"]) < ZERO else 0
+        longest = max(longest, streak)
 
-    avg_win_pnl = gross_profit / Decimal(win_count) if win_count > 0 else ZERO
-    avg_loss_pnl = gross_loss / Decimal(loss_count) if loss_count > 0 else ZERO
-
-    # Max Drawdown from equity curve
-    max_dd = max([d(pt["drawdown_pct"]) for pt in equity_curve], default=ZERO)
-    total_return_pct = (
-        (capital - initial_capital) / initial_capital * Decimal(100)
-        if initial_capital > ZERO
-        else ZERO
-    )
-
-    # Sharpe approximation
-    trade_returns = [float(t["r_multiple"]) for t in trades]
-    if len(trade_returns) > 1:
-        mean_r = sum(trade_returns) / len(trade_returns)
-        std_r = math.sqrt(sum((x - mean_r) ** 2 for x in trade_returns) / (len(trade_returns) - 1))
+    if len(rs) > 1:
+        mean_r = sum(rs) / len(rs)
+        std_r = math.sqrt(sum((x - mean_r) ** 2 for x in rs) / (len(rs) - 1))
         sharpe = (mean_r / std_r) * math.sqrt(252 / 10) if std_r > 0 else 0.0
     else:
         sharpe = 0.0
 
-    summary = {
-        "symbol": symbol.upper(),
-        "total_trades": total_trades,
-        "winning_trades": win_count,
-        "losing_trades": loss_count,
-        "win_rate_pct": float(quantize_money(win_rate)),
-        "profit_factor": float(quantize_money(profit_factor)),
-        "expectancy_r": float(quantize_money(expectancy_r)),
-        "avg_win_pnl": str(quantize_money(avg_win_pnl)),
-        "avg_loss_pnl": str(quantize_money(avg_loss_pnl)),
-        "gross_profit": str(quantize_money(gross_profit)),
-        "gross_loss": str(quantize_money(gross_loss)),
-        "net_pnl": str(quantize_money(capital - initial_capital)),
-        "total_return_pct": float(quantize_money(total_return_pct)),
-        "max_drawdown_pct": float(quantize_money(max_dd)),
-        "sharpe_ratio": round(sharpe, 2),
-        "initial_capital": str(initial_capital),
-        "ending_capital": str(quantize_money(capital)),
-    }
+    exposure = (sum(1 for p in curve if p["in_position"]) / len(curve) * 100) if curve else 0.0
 
     return {
-        "symbol": symbol.upper(),
-        "summary": summary,
-        "trades": trades,
-        "equity_curve": equity_curve,
+        "symbol": sym,
+        "total_trades": n,
+        "winning_trades": len(wins),
+        "losing_trades": len(losses),
+        "win_rate_pct": float(quantize_money(Decimal(len(wins)) / n * 100)) if n else 0.0,
+        # None instead of a made-up 99.99 when there were no losing trades.
+        "profit_factor": float(quantize_money(gross_profit / gross_loss))
+        if gross_loss > ZERO
+        else None,
+        "expectancy_r": float(quantize_money(Decimal(str(sum(rs))) / n)) if n else 0.0,
+        "avg_win_pnl": str(quantize_money(gross_profit / len(wins))) if wins else "0.00",
+        "avg_loss_pnl": str(quantize_money(gross_loss / len(losses))) if losses else "0.00",
+        "gross_profit": str(quantize_money(gross_profit)),
+        "gross_loss": str(quantize_money(gross_loss)),
+        "net_pnl": str(quantize_money(ending - initial)),
+        "total_return_pct": float(quantize_money((ending - initial) / initial * 100))
+        if initial > ZERO
+        else 0.0,
+        "max_drawdown_pct": float(max((d(p["drawdown_pct"]) for p in curve), default=ZERO)),
+        "max_consecutive_losses": longest,
+        "avg_holding_days": round(sum(t["holding_days"] for t in trades) / n, 1) if n else 0.0,
+        "gap_loss_count": sum(1 for t in trades if t["gap_loss"]),
+        "market_exposure_pct": round(exposure, 1),
+        "sharpe_ratio": round(sharpe, 2),
+        "initial_capital": str(initial),
+        "ending_capital": str(quantize_money(ending)),
     }

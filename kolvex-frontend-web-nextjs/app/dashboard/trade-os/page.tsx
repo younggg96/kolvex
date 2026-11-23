@@ -3,430 +3,184 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useCopy } from "@/components/decision/shared";
-import { withSign } from "@/lib/format";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ListCard, ListEmptyState, ListRow, ListRows } from "@/components/ui/list-card";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  TradingAccount,
-  TradeGroup,
-  TradePlan,
+  AccountRiskState,
   MarketRegimeResponse,
-  fetchAccounts,
-  fetchTradeGroups,
-  fetchPlans,
+  PortfolioRiskSummary,
+  RiskConfig,
+  fetchDrawdown,
   fetchMarketRegime,
+  fetchPortfolioRisk,
+  fetchRiskConfig,
+  fetchRiskState,
 } from "@/lib/tradeOsApi";
-import { Plus, UploadCloud, Search, Wallet, Check, ArrowRight } from "lucide-react";
+import { ScannerView } from "@/components/trade-os/scanner/ScannerView";
+import { MarketRegimeView } from "@/components/trade-os/market/MarketRegimeView";
+import { PortfolioRiskDashboard } from "@/components/trade-os/risk/PortfolioRiskDashboard";
+import { AccountPicker, useTradeAccount } from "@/components/trade-os/AccountPicker";
+import { RegimeBadge } from "@/components/trade-os/shared";
+import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export default function TradeOsOverviewPage() {
-  const c = useCopy();
-  const [accounts, setAccounts] = useState<TradingAccount[]>([]);
-  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
-  const [tradeGroups, setTradeGroups] = useState<TradeGroup[]>([]);
-  const [plans, setPlans] = useState<TradePlan[]>([]);
-  const [regime, setRegime] = useState<MarketRegimeResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+type Risk = {
+  summary: PortfolioRiskSummary | null;
+  config: RiskConfig | null;
+  state: AccountRiskState | null;
+  drawdownPct: number | null;
+};
 
-  const loadAccountData = async (id: string) => {
-    const [groups, planList] = await Promise.all([
-      fetchTradeGroups(id),
-      fetchPlans(id).catch(() => [] as TradePlan[]),
-    ]);
-    setTradeGroups(groups);
-    setPlans(planList);
-  };
+export default function TradeOsTodayPage() {
+  const c = useCopy();
+  const { accounts, accountId, setAccountId, loading: accountsLoading } = useTradeAccount();
+  const [regime, setRegime] = useState<MarketRegimeResponse | null>(null);
+  const [regimeError, setRegimeError] = useState(false);
+  const [risk, setRisk] = useState<Risk | null>(null);
+  const [riskError, setRiskError] = useState(false);
+  const [showMarket, setShowMarket] = useState(false);
 
   useEffect(() => {
-    async function load() {
-      try {
-        const [accs, reg] = await Promise.all([
-          fetchAccounts(),
-          fetchMarketRegime().catch(() => null),
-        ]);
-        setAccounts(accs);
-        setRegime(reg);
-        if (accs.length > 0) {
-          setSelectedAccountId(accs[0].id);
-          await loadAccountData(accs[0].id);
-        }
-      } catch (err) {
-        console.error("Failed to load Trade OS overview", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
+    fetchMarketRegime()
+      .then(setRegime)
+      .catch(() => setRegimeError(true));
   }, []);
 
-  const selectedAccount = accounts.find((a) => a.id === selectedAccountId);
+  useEffect(() => {
+    if (!accountId) return;
+    setRisk(null);
+    setRiskError(false);
+    Promise.all([
+      fetchPortfolioRisk(accountId),
+      fetchRiskConfig(accountId),
+      fetchRiskState(accountId),
+      // Unknown drawdown stays unknown; it is never shown as 0%.
+      fetchDrawdown(accountId)
+        .then((dd) => parseFloat(dd.current_drawdown_pct))
+        .catch(() => null),
+    ])
+      .then(([summary, config, state, drawdownPct]) =>
+        setRisk({ summary, config, state, drawdownPct }),
+      )
+      .catch(() => setRiskError(true));
+  }, [accountId]);
 
-  // Calculate simple summary stats
-  const totalTrades = tradeGroups.length;
-  const closedTrades = tradeGroups.filter((g) => g.status === "closed");
-  const totalRealizedPnl = tradeGroups.reduce((acc, g) => acc + Number(g.realized_pnl || 0), 0);
-  const winCount = closedTrades.filter((g) => Number(g.realized_pnl) > 0).length;
-  const winRate = closedTrades.length > 0 ? (winCount / closedTrades.length) * 100 : null;
+  const pct = (v?: string) => `${(parseFloat(v || "0") * 100).toFixed(2)}%`;
+  const allowed = regime?.allow_new_entries ?? false;
+  const frozen =
+    !!risk?.state && risk.state.state !== "normal" && risk.state.state !== "reduced_risk";
 
-  const approvedPlans = plans.filter((p) =>
-    ["approved", "executed", "open", "closed"].includes(p.status),
-  );
-  const regimeLabel =
-    regime?.regime === "risk_on"
-      ? c("Risk-on: new entries allowed", "进攻：允许新开仓")
-      : regime?.regime === "risk_off"
-        ? c("Risk-off: no new entries", "防守：不建议新开仓")
-        : regime?.regime === "neutral"
-          ? c("Neutral: reduced risk", "中性：降低单笔风险")
-          : c("No market reading yet", "尚无市场读数");
-
-  const steps = [
-    {
-      key: "account",
-      title: c("Create an account", "建立交易账户"),
-      hint: c(
-        "Set starting equity — all risk limits are % of it.",
-        "填期初资金，所有风控上限都按它的百分比算。",
-      ),
-      done: accounts.length > 0,
-      href: "/dashboard/trade-os/settings",
-      cta: c("Create account", "去建账户"),
-    },
-    {
-      key: "import",
-      title: c("Import past fills", "导入历史成交"),
-      hint: c(
-        "Upload your broker CSV to rebuild round trips.",
-        "上传券商 CSV，系统归集成往返交易。",
-      ),
-      done: tradeGroups.length > 0,
-      href: "/dashboard/trade-os/settings",
-      cta: c("Import CSV", "导入 CSV"),
-    },
-    {
-      key: "market",
-      title: c("Check the market", "看市场能不能开仓"),
-      hint: regimeLabel,
-      done: regime != null && regime.regime !== "stale_data",
-      href: "/dashboard/trade-os/market",
-      cta: c("Open market regime", "看市场状态"),
-    },
-    {
-      key: "plan",
-      title: c("Write a plan, get approval", "写计划并过风控"),
-      hint: c(
-        "Entry, stop, target → system sizes the position and approves or blocks.",
-        "填入场、止损、目标，系统算仓位并给出通过或拒绝。",
-      ),
-      done: approvedPlans.length > 0,
-      href: "/dashboard/trade-os/plans",
-      cta: c("New plan", "新建计划"),
-    },
-    {
-      key: "review",
-      title: c("Review closed trades", "平仓后复盘"),
-      hint: c("Tag mistakes, see if you followed your plan.", "标注失误，看是否按计划执行。"),
-      done: closedTrades.length > 0,
-      href: "/dashboard/trade-os/journal",
-      cta: c("Open journal", "去复盘"),
-    },
-  ];
-  const nextStep = steps.find((st) => !st.done);
+  let headline: string;
+  if (regimeError || !regime) {
+    headline = regimeError
+      ? c("Market state failed to load — don't open new trades", "市场状态加载失败，先不要开新仓")
+      : c("Checking the market...", "正在检查市场...");
+  } else if (!allowed) {
+    headline = c("No new longs today", "今天不开新多仓");
+  } else if (frozen) {
+    headline = c("Account is locked — no new trades", "账户风控锁定中，不开新仓");
+  } else {
+    headline = c("New longs allowed today", "今天可以开新多仓");
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Account Toolbar & Quick Actions */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        {accounts.length > 0 ? (
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-medium text-muted-foreground">
-              {c("Trading Account", "交易账户")}:
-            </span>
-            <Select
-              value={selectedAccountId || ""}
-              onValueChange={async (id) => {
-                setSelectedAccountId(id);
-                await loadAccountData(id);
-              }}
-            >
-              <SelectTrigger className="h-9 w-[220px] rounded-full text-xs font-medium">
-                <SelectValue placeholder={c("Select account", "选择账户")} />
-              </SelectTrigger>
-              <SelectContent>
-                {accounts.map((a) => (
-                  <SelectItem key={a.id} value={a.id} className="text-xs font-medium">
-                    {a.account_name} ({a.broker})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        ) : (
-          <div />
-        )}
-
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            asChild
-            className="h-9 rounded-full px-3 text-xs gap-1.5"
-          >
-            <Link href="/dashboard/trade-os/settings">
-              <UploadCloud className="h-3.5 w-3.5 text-primary" />
-              {c("Import Trades", "导入流水")}
-            </Link>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            asChild
-            className="h-9 rounded-full px-3 text-xs gap-1.5"
-          >
-            <Link href="/dashboard/trade-os/scanner">
-              <Search className="h-3.5 w-3.5" />
-              {c("Scan Setups", "扫描形态")}
-            </Link>
-          </Button>
-          <Button size="sm" asChild className="h-9 rounded-full px-3.5 text-xs gap-1.5">
-            <Link href="/dashboard/trade-os/plans">
-              <Plus className="h-3.5 w-3.5" />
-              {c("New Plan", "新建计划")}
-            </Link>
-          </Button>
+    <div className="space-y-8">
+      {/* 1. Can I trade today? */}
+      <Card className="space-y-4 p-5 sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <RegimeBadge regime={regime?.regime} className="px-3 py-1 text-sm" />
+          <AccountPicker accounts={accounts} accountId={accountId} onChange={setAccountId} />
         </div>
-      </div>
-
-      {/* No Account State */}
-      {!loading && accounts.length === 0 ? (
-        <Card className="p-8 sm:p-12 text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-            <Wallet className="h-6 w-6 text-primary" />
+        <h2
+          className={cn(
+            "text-xl font-semibold tracking-tight sm:text-2xl",
+            regime && allowed && !frozen ? "text-foreground" : "text-negative",
+          )}
+        >
+          {headline}
+        </h2>
+        {regime && (
+          <dl className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
+            {[
+              [c("Risk per trade", "单笔风险"), allowed ? pct(regime.effective_risk_pct) : "0%"],
+              [c("Max positions", "最多持仓"), String(regime.max_positions)],
+              [c("Total open risk", "合计止损风险"), pct(regime.max_open_risk_pct)],
+              [c("Based on close of", "依据收盘日"), regime.data_as_of ?? "—"],
+            ].map(([k, v]) => (
+              <div key={k}>
+                <dt className="text-muted-foreground">{k}</dt>
+                <dd className="figure mt-0.5 text-sm font-semibold text-foreground">{v}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
+        <button
+          type="button"
+          onClick={() => setShowMarket((v) => !v)}
+          aria-expanded={showMarket}
+          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+        >
+          {c("Why? SPY / QQQ details", "为什么？看 SPY / QQQ 明细")}
+          <ChevronDown
+            className={cn("h-3.5 w-3.5 transition-transform", showMarket && "rotate-180")}
+          />
+        </button>
+        {showMarket && (
+          <div className="border-t border-border/50 pt-4">
+            <MarketRegimeView />
           </div>
-          <h2 className="text-lg font-semibold text-foreground">
-            {c("No Trading Account Configured", "尚未创建交易账户")}
-          </h2>
-          <p className="mx-auto mt-1.5 max-w-md text-sm text-muted-foreground">
-            {c(
-              "Set up a trading account to track capital, configure position sizing caps, and verify trade plans.",
-              "创建账户并设置期初资金后，系统将自动试算开仓上限、校验风控规则并归集历史交易。",
-            )}
-          </p>
-          <div className="mt-6">
-            <Button size="sm" asChild className="rounded-full px-4">
-              <Link href="/dashboard/trade-os/settings">
-                {c("Set Up Account in Settings", "前往设置账户")}
-              </Link>
-            </Button>
-          </div>
-        </Card>
-      ) : (
-        <>
-          {/* How to use: five steps, first unfinished one highlighted */}
-          <section aria-label={c("How to use Trade OS", "使用步骤")}>
-            <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              {steps.map((st, i) => {
-                const isNext = nextStep?.key === st.key;
-                return (
-                  <li key={st.key}>
-                    <Card
-                      className={cn(
-                        "flex h-full flex-col gap-2 p-4",
-                        isNext && "border-primary/50",
-                      )}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={cn(
-                            "flex h-5 w-5 items-center justify-center rounded-full text-[0.6875rem] font-semibold",
-                            st.done
-                              ? "bg-positive/15 text-positive"
-                              : "bg-muted text-muted-foreground",
-                          )}
-                        >
-                          {st.done ? (
-                            <Check className="h-3 w-3" aria-label={c("Done", "已完成")} />
-                          ) : (
-                            i + 1
-                          )}
-                        </span>
-                        <span className="text-sm font-semibold text-foreground">{st.title}</span>
-                      </div>
-                      <p className="flex-1 text-xs text-muted-foreground">{st.hint}</p>
-                      <Link
-                        href={st.href}
-                        className={cn(
-                          "inline-flex items-center gap-1 text-xs font-medium",
-                          isNext ? "text-primary" : "text-muted-foreground hover:text-foreground",
-                        )}
-                      >
-                        {st.cta}
-                        <ArrowRight className="h-3 w-3" />
-                      </Link>
-                    </Card>
-                  </li>
-                );
-              })}
-            </ol>
-          </section>
+        )}
+      </Card>
 
-          {/* Key Metrics */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-            <Card className="p-4 sm:p-5">
-              <span className="text-xs text-muted-foreground">
-                {c("Initial Equity", "期初权益")}
-              </span>
-              <div className="figure mt-1.5 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                {selectedAccount?.initial_equity != null
-                  ? `$${Number(selectedAccount.initial_equity).toLocaleString("en-US", {
-                      minimumFractionDigits: 2,
-                    })}`
-                  : "—"}
-              </div>
-              <span className="mt-1 block text-xs text-muted-foreground">
-                {selectedAccount?.broker || "manual"}
-              </span>
-            </Card>
+      {/* 2. Which stocks have a signal? */}
+      <section>
+        <ScannerView embedded />
+      </section>
 
-            <Card className="p-4 sm:p-5">
-              <span className="text-xs text-muted-foreground">
-                {c("Realized P&L", "已实现净收益")}
-              </span>
-              <div
-                className={cn(
-                  "figure mt-1.5 text-2xl font-semibold tracking-tight sm:text-3xl",
-                  totalRealizedPnl > 0
-                    ? "text-positive"
-                    : totalRealizedPnl < 0
-                      ? "text-negative"
-                      : "text-foreground",
-                )}
-              >
-                {withSign(totalRealizedPnl, (m) => `$${m.toFixed(2)}`)}
-              </div>
-              <span className="mt-1 block text-xs text-muted-foreground">
-                {closedTrades.length} {c("closed trades", "笔已平仓交易")}
-              </span>
-            </Card>
-
-            <Card className="p-4 sm:p-5">
-              <span className="text-xs text-muted-foreground">{c("Win Rate", "平仓胜率")}</span>
-              <div className="figure mt-1.5 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                {winRate != null ? `${winRate.toFixed(1)}%` : "—"}
-              </div>
-              <span className="mt-1 block text-xs text-muted-foreground">
-                {winCount}W / {closedTrades.length - winCount}L
-              </span>
-            </Card>
-
-            <Card className="p-4 sm:p-5">
-              <span className="text-xs text-muted-foreground">
-                {c("Round Trips", "往返交易数")}
-              </span>
-              <div className="figure mt-1.5 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                {totalTrades}
-              </div>
-              <span className="mt-1 block text-xs text-muted-foreground">
-                {c("FIFO Reconciled", "先进先出对账")}
-              </span>
-            </Card>
-          </div>
-
-          {/* Recent Trades List */}
-          <section className="space-y-3">
-            <div className="flex items-center justify-between px-1">
-              <h2 className="text-base font-semibold text-foreground">
-                {c("Recent Round-Trip Trades", "最近往返交易")}
-              </h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                asChild
-                className="h-8 text-xs text-muted-foreground hover:text-foreground"
-              >
-                <Link href="/dashboard/trade-os/settings">
-                  {c("View all & exceptions", "查看全部与异常")} →
-                </Link>
-              </Button>
-            </div>
-
-            <ListCard>
-              {tradeGroups.length === 0 ? (
-                <ListEmptyState
-                  title={c("No trades reconciled yet", "暂无已归集的交易")}
-                  description={c(
-                    "Import historical executions in CSV format to track FIFO round trips and trade reviews.",
-                    "在「设置与导入」中上传券商成交流水 CSV，系统将自动归集往返交易并生成复盘。",
-                  )}
-                  action={
-                    <Button variant="outline" size="sm" asChild className="rounded-full">
-                      <Link href="/dashboard/trade-os/settings">
-                        {c("Import Trades", "导入流水")}
-                      </Link>
-                    </Button>
-                  }
-                />
-              ) : (
-                <ListRows>
-                  {tradeGroups.slice(0, 8).map((tg) => {
-                    const pnl = Number(tg.realized_pnl);
-                    const isPositive = pnl > 0;
-                    const isNegative = pnl < 0;
-
-                    return (
-                      <ListRow
-                        key={tg.id}
-                        className="flex items-center justify-between py-3 px-3 sm:px-4"
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="font-semibold text-foreground text-sm tracking-tight">
-                            {tg.symbol}
-                          </span>
-                          <span className="text-[0.6875rem] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                            {tg.status === "closed" ? c("Closed", "已平仓") : c("Open", "持仓中")}
-                          </span>
-                          <span className="figure text-xs text-muted-foreground">
-                            {Number(tg.total_buy_quantity)} shs @ $
-                            {Number(tg.average_entry_price).toFixed(2)}
-                          </span>
-                        </div>
-                        <div className="text-right">
-                          <span
-                            className={cn(
-                              "figure text-sm font-semibold",
-                              isPositive
-                                ? "text-positive"
-                                : isNegative
-                                  ? "text-negative"
-                                  : "text-muted-foreground",
-                            )}
-                          >
-                            {withSign(pnl, (m) => `$${m.toFixed(2)}`)}
-                          </span>
-                        </div>
-                      </ListRow>
-                    );
-                  })}
-                </ListRows>
+      {/* 3. What am I holding and how much risk? */}
+      <section className="space-y-3">
+        <h2 className="text-base font-semibold text-foreground">
+          {c("Positions & risk", "持仓与风险")}
+        </h2>
+        {!accountsLoading && accounts.length === 0 ? (
+          <Card className="flex flex-wrap items-center justify-between gap-3 p-5">
+            <p className="text-sm text-foreground">
+              {c(
+                "Add an account to size trades and track risk.",
+                "添加交易账户后才能计算仓位和风险。",
               )}
-            </ListCard>
-          </section>
-        </>
-      )}
+            </p>
+            <Button size="sm" asChild className="rounded-full">
+              <Link href="/dashboard/trade-os/settings">{c("Add account", "添加账户")}</Link>
+            </Button>
+          </Card>
+        ) : riskError ? (
+          <Card className="p-5 text-sm text-negative">
+            {c("Risk data failed to load.", "风险数据加载失败。")}
+          </Card>
+        ) : !risk ? (
+          <div className="h-40 animate-pulse rounded-3xl border border-foreground/10 bg-card-glass" />
+        ) : (
+          <>
+            {risk.drawdownPct == null && (
+              <p className="text-xs text-negative">
+                {c("Drawdown couldn't be calculated.", "回撤无法计算。")}
+              </p>
+            )}
+            <PortfolioRiskDashboard
+              summary={risk.summary}
+              riskConfig={risk.config}
+              riskState={risk.state}
+              drawdownPct={risk.drawdownPct ?? 0}
+            />
+          </>
+        )}
+      </section>
 
-      {/* Quiet Footer Disclaimer */}
-      <footer className="pt-6 pb-2 text-center text-xs text-muted-foreground">
+      <footer className="pb-2 text-center text-xs text-muted-foreground">
         {c(
-          "Kolvex Trade OS is an experimental personal risk system (PRD V1.0). Past performance and model rules do not guarantee future returns.",
-          "Kolvex Trade OS 为实验性个人风控系统（PRD V1.0）。历史回测与规则试算不代表未来投资收益承诺。",
+          "Trade OS is experimental. It does not place orders; backtests and rules do not promise future returns.",
+          "Trade OS 为实验功能，不会替你下单；回测与规则试算不代表未来收益。",
         )}
       </footer>
     </div>

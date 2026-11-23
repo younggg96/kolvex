@@ -14,8 +14,13 @@ from app.core.supabase import get_supabase_service
 from app.services.trade_os.account_service import AccountService
 from app.services.trade_os.decimal_utils import ZERO, d
 from app.services.trade_os.drawdown import compute_cash_flow_adjusted_drawdown
+from app.services.trade_os.market_regime import get_latest_market_regime
 from app.services.trade_os.position_service import PositionService
-from app.services.trade_os.risk_engine import assess_trade_plan
+from app.services.trade_os.risk_engine import (
+    assess_trade_plan,
+    compute_period_returns,
+    count_consecutive_losses,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -134,7 +139,6 @@ class TradePlanService:
         self,
         user_id: str,
         plan_id: str,
-        market_regime: str = "risk_on",
     ) -> Dict[str, Any]:
         """
         Server-side gatekeeper: assesses trade plan against all risk constraints.
@@ -183,8 +187,25 @@ class TradePlanService:
         )
         account_risk_state = state_res.data[0]["state"] if state_res.data else "normal"
 
-        # 4. Open positions
-        positions = self.position_service.get_open_positions(user_id, account_id)
+        # 4. Open positions plus approved, not-yet-filled plans (PRD §12.2: reserve their risk too)
+        positions = list(self.position_service.get_open_positions(user_id, account_id))
+        pending = [
+            p for p in self.list_plans(user_id, account_id, "approved") if p.get("id") != plan_id
+        ]
+        for p in pending:
+            positions.append(
+                {
+                    "symbol": p["symbol"],
+                    "status": "open",
+                    "quantity": p["planned_quantity"],
+                    "average_cost": p["planned_entry"],
+                    "current_stop": p["planned_stop"],
+                }
+            )
+
+        # 4b. Market regime always comes from the server, never from the client.
+        regime = get_latest_market_regime()
+        market_regime = regime["regime"]
 
         # 5. Calculate drawdown
         snaps = self.account_service.get_equity_history(user_id, account_id, limit=60)
@@ -195,6 +216,26 @@ class TradePlanService:
         init_eq = d(account.get("initial_equity") or equity_val)
         dd_metrics = compute_cash_flow_adjusted_drawdown(init_eq, snaps, cfs)
         drawdown_pct = dd_metrics["current_drawdown_pct"]
+
+        # 5b. Weekly / monthly change, losing streak, available cash
+        period_returns = compute_period_returns(snaps)
+        closed = (
+            self.supabase.table("trade_groups")
+            .select("realized_pnl, closed_at")
+            .eq("account_id", account_id)
+            .eq("user_id", user_id)
+            .eq("status", "closed")
+            .order("closed_at", desc=True)
+            .limit(20)
+            .execute()
+        ).data or []
+        consecutive_losses = count_consecutive_losses(closed)
+        available_cash = None
+        if latest_equity_snap and latest_equity_snap.get("cash_balance") is not None:
+            reserved = sum(
+                (d(p["planned_entry"]) * d(p["planned_quantity"]) for p in pending), ZERO
+            )
+            available_cash = d(latest_equity_snap["cash_balance"]) - reserved
 
         # 6. Execute Risk Engine Assessment
         assessment = assess_trade_plan(
@@ -210,6 +251,9 @@ class TradePlanService:
             account_risk_state=account_risk_state,
             current_positions=positions,
             current_drawdown_pct=drawdown_pct,
+            available_cash=available_cash,
+            period_returns=period_returns,
+            consecutive_losses=consecutive_losses,
         )
 
         now = datetime.now(timezone.utc)
@@ -229,6 +273,9 @@ class TradePlanService:
             },
             "market_snapshot": {
                 "regime": market_regime,
+                "evaluated_at": regime.get("evaluated_at"),
+                "data_as_of": regime.get("data_as_of"),
+                "rule_version": regime.get("rule_version"),
             },
             "decision": decision,
             "checks": assessment["checks"],

@@ -22,12 +22,13 @@ export function BacktestRunner() {
   const c = useCopy();
   const [symbol, setSymbol] = useState("NVDA");
   const [period, setPeriod] = useState("2y");
+  const [marketFilter, setMarketFilter] = useState(true);
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<BacktestResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const t = {
-    title: c("Strategy Backtester (Trend Breakout 20D)", "策略回测引擎（20日趋势突破）"),
+    title: c("Backtest Swing V3.0 on one stock", "用 Swing V3.0 回测单只股票"),
     subtitle: c(
       "Simulate historical performance with strict position sizing and ATR stop brackets.",
       "基于历史日线全真模拟，执行严格的头寸缩放与 ATR 止损止盈几何结构。",
@@ -60,6 +61,7 @@ export function BacktestRunner() {
       const res = await runBacktest({
         symbol: symbol.trim().toUpperCase(),
         period,
+        use_market_filter: marketFilter,
       });
       if (res.error) {
         setError(res.error);
@@ -117,6 +119,16 @@ export function BacktestRunner() {
             </Select>
           </div>
 
+          <label className="flex h-9 items-center gap-2 text-xs text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={marketFilter}
+              onChange={(e) => setMarketFilter(e.target.checked)}
+              className="h-4 w-4 accent-[rgb(var(--primary))]"
+            />
+            {c("Apply SPY/QQQ market filter", "启用 SPY/QQQ 市场过滤")}
+          </label>
+
           <Button
             type="submit"
             disabled={running || !symbol}
@@ -132,7 +144,7 @@ export function BacktestRunner() {
           </Button>
 
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground ml-auto self-center">
-            <span>Quick:</span>
+            <span>{c("Quick:", "快速选择：")}</span>
             {["NVDA", "AAPL", "MSFT", "AMZN", "TSLA"].map((sym) => (
               <Button
                 key={sym}
@@ -174,9 +186,13 @@ export function BacktestRunner() {
             <Card className="p-4 sm:p-5 space-y-1">
               <span className="text-xs text-muted-foreground block">{t.profitFactor}</span>
               <div className="figure text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-                {result.summary.profit_factor.toFixed(2)}
+                {result.summary.profit_factor == null
+                  ? "—"
+                  : result.summary.profit_factor.toFixed(2)}
               </div>
-              <span className="text-[11px] text-muted-foreground">Gross Win/Loss</span>
+              <span className="text-[11px] text-muted-foreground">
+                {c("Target ≥ 1.30", "研究门槛 ≥ 1.30")}
+              </span>
             </Card>
 
             <Card className="p-4 sm:p-5 space-y-1">
@@ -189,7 +205,9 @@ export function BacktestRunner() {
               >
                 {withSign(result.summary.expectancy_r, (m) => `${m.toFixed(2)}R`)}
               </div>
-              <span className="text-[11px] text-muted-foreground">Per Trade Return</span>
+              <span className="text-[11px] text-muted-foreground">
+                {c("Target ≥ +0.15R", "研究门槛 ≥ +0.15R")}
+              </span>
             </Card>
 
             <Card className="p-4 sm:p-5 space-y-1">
@@ -197,7 +215,9 @@ export function BacktestRunner() {
               <div className="figure text-xl font-semibold tracking-tight text-negative sm:text-2xl">
                 {result.summary.max_drawdown_pct.toFixed(2)}%
               </div>
-              <span className="text-[11px] text-muted-foreground">From Peak Equity</span>
+              <span className="text-[11px] text-muted-foreground">
+                {c("Target ≤ 10%", "研究门槛 ≤ 10%")}
+              </span>
             </Card>
 
             <Card className="p-4 sm:p-5 space-y-1">
@@ -211,7 +231,7 @@ export function BacktestRunner() {
                 {withSign(parseFloat(result.summary.net_pnl), (m) => `$${m.toFixed(2)}`)}
               </div>
               <span className="figure text-[11px] text-muted-foreground">
-                Return: {result.summary.total_return_pct.toFixed(1)}%
+                {c("Return", "收益率")}: {result.summary.total_return_pct.toFixed(1)}%
               </span>
             </Card>
 
@@ -221,10 +241,19 @@ export function BacktestRunner() {
                 {result.summary.total_trades}
               </div>
               <span className="figure text-[11px] text-muted-foreground">
-                Sharpe: {result.summary.sharpe_ratio}
+                {result.summary.total_trades < 100
+                  ? c("Under 100 trades: low confidence", "少于 100 笔：样本不足")
+                  : `Sharpe ${result.summary.sharpe_ratio}`}
               </span>
             </Card>
           </div>
+
+          <p className="px-1 text-xs text-muted-foreground">
+            {c(
+              `Max losing streak ${result.summary.max_consecutive_losses} · avg hold ${result.summary.avg_holding_days} days · gap losses ${result.summary.gap_loss_count} · ${result.skipped_signals.length} signals not traded · earnings, dividends and delisted stocks are not modelled.`,
+              `最长连亏 ${result.summary.max_consecutive_losses} 笔 · 平均持有 ${result.summary.avg_holding_days} 天 · 跳空止损 ${result.summary.gap_loss_count} 次 · ${result.skipped_signals.length} 个信号未成交 · 未模拟财报、分红和退市股票。`,
+            )}
+          </p>
 
           {/* Trade Logs Table inside ListCard */}
           <section className="space-y-3">
@@ -237,10 +266,12 @@ export function BacktestRunner() {
                 <table className="w-full text-left text-xs">
                   <thead className="text-muted-foreground border-b border-border/40">
                     <tr>
-                      <th className="px-3 py-2.5 font-medium">Dates (Entry &rarr; Exit)</th>
+                      <th className="px-3 py-2.5 font-medium">
+                        {c("Entry → Exit", "入场 → 出场")}
+                      </th>
                       <th className="px-3 py-2.5 font-medium">{t.entry}</th>
                       <th className="px-3 py-2.5 font-medium">{t.exit}</th>
-                      <th className="px-3 py-2.5 font-medium">Shares</th>
+                      <th className="px-3 py-2.5 font-medium">{c("Shares", "股数")}</th>
                       <th className="px-3 py-2.5 font-medium">{t.pnl}</th>
                       <th className="px-3 py-2.5 font-medium">{t.rMult}</th>
                       <th className="px-3 py-2.5 font-medium">{t.reason}</th>
@@ -277,14 +308,22 @@ export function BacktestRunner() {
                             <span
                               className={cn(
                                 "px-2 py-0.5 rounded-full text-[11px] font-medium uppercase",
-                                tr.exit_reason === "take_profit"
-                                  ? "bg-emerald-500/10 text-positive"
-                                  : tr.exit_reason === "stop_loss"
+                                tr.exit_reason === "TARGET"
+                                  ? "bg-positive/10 text-positive"
+                                  : tr.exit_reason === "STOP" || tr.exit_reason === "GAP_STOP"
                                     ? "bg-negative/10 text-negative"
                                     : "bg-muted text-muted-foreground",
                               )}
                             >
-                              {tr.exit_reason}
+                              {
+                                {
+                                  TARGET: c("Target", "止盈"),
+                                  STOP: c("Stop", "止损"),
+                                  GAP_STOP: c("Gap stop", "跳空止损"),
+                                  TIME_EXIT: c("Day 16 exit", "第 16 天退出"),
+                                  END_OF_DATA: c("Still open", "数据截止"),
+                                }[tr.exit_reason]
+                              }
                             </span>
                           </td>
                         </tr>

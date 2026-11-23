@@ -4,9 +4,10 @@ Trade OS Scanner API Routes
 
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from app.api.dependencies.auth import get_current_user_id
 from app.services.trade_os.scanner import (
     get_latest_scanner_run,
     run_opportunity_scanner,
@@ -30,7 +31,9 @@ async def get_latest_scan() -> Dict[str, Any]:
 
 
 @router.post("/run")
-async def trigger_scanner_run(body: Optional[ScannerRunRequest] = None) -> Dict[str, Any]:
+async def trigger_scanner_run(
+    body: Optional[ScannerRunRequest] = None, _user_id: str = Depends(get_current_user_id)
+) -> Dict[str, Any]:
     """Executes the Trend Breakout 20D scanner on liquid growth universe."""
     try:
         symbols = body.symbols if body else None

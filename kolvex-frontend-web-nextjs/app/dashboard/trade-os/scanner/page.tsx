@@ -1,11 +1,6 @@
-import { Metadata } from "next";
-import { ScannerView } from "@/components/trade-os/scanner/ScannerView";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Opportunity Scanner - Trade OS | Kolvex",
-  description: "Deterministic stock opportunity scanner for Trend Breakout 20D setups.",
-};
-
-export default function ScannerPage() {
-  return <ScannerView />;
+// Merged into the Today page.
+export default function MovedPage() {
+  redirect("/dashboard/trade-os");
 }

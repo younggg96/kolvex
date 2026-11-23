@@ -1,11 +1,6 @@
-import { Metadata } from "next";
-import { AnalyticsView } from "@/components/trade-os/analytics/AnalyticsView";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Performance Analytics - Trade OS | Kolvex",
-  description: "Trading discipline metrics, Expectancy R, and R-Multiple distributions.",
-};
-
-export default function AnalyticsPage() {
-  return <AnalyticsView />;
+// Merged into the Trades page.
+export default function MovedPage() {
+  redirect("/dashboard/trade-os/trades");
 }

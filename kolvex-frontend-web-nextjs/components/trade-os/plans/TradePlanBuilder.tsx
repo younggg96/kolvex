@@ -138,7 +138,7 @@ export function TradePlanBuilder({
       });
 
       // 2. Submit for server-side risk assessment
-      const approval = await approveTradePlan(plan.id, "risk_on");
+      const approval = await approveTradePlan(plan.id);
       onPlanCreated(approval.assessment);
     } catch (err: any) {
       setError(

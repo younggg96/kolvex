@@ -1,7 +1,4 @@
-from app.services.trade_os.market_regime import (
-    compute_market_regime,
-    evaluate_benchmark_bars,
-)
+from app.services.trade_os.market_regime import evaluate_benchmark_bars
 
 
 def _generate_bars(num_bars: int, start_price: float, step: float):
@@ -49,32 +46,4 @@ def test_evaluate_benchmark_bearish():
     assert res["is_above_sma200"] is False
 
 
-def test_compute_market_regime_risk_on():
-    spy_eval = {"valid": True, "status": "bullish", "symbol": "SPY"}
-    qqq_eval = {"valid": True, "status": "bullish", "symbol": "QQQ"}
-
-    regime = compute_market_regime(spy_eval, qqq_eval)
-    assert regime["regime"] == "risk_on"
-    assert regime["allow_new_entries"] is True
-    assert regime["effective_risk_pct"] == "0.0050"
-
-
-def test_compute_market_regime_risk_off():
-    # If one is bearish (< 200 SMA), regime is risk_off
-    spy_eval = {"valid": True, "status": "bullish", "symbol": "SPY"}
-    qqq_eval = {"valid": True, "status": "bearish", "symbol": "QQQ"}
-
-    regime = compute_market_regime(spy_eval, qqq_eval)
-    assert regime["regime"] == "risk_off"
-    assert regime["allow_new_entries"] is False
-    assert regime["effective_risk_pct"] == "0.0000"
-
-
-def test_compute_market_regime_neutral():
-    spy_eval = {"valid": True, "status": "bullish", "symbol": "SPY"}
-    qqq_eval = {"valid": True, "status": "neutral", "symbol": "QQQ"}
-
-    regime = compute_market_regime(spy_eval, qqq_eval)
-    assert regime["regime"] == "neutral"
-    assert regime["allow_new_entries"] is True
-    assert regime["effective_risk_pct"] == "0.0025"
+# compute_market_regime rules (Swing V3.0, PRD §6.3) are covered in test_trade_os_swing_v3.py.

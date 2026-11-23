@@ -5,42 +5,46 @@
 
 ---
 
-## 1. 核心价值与模块分期
+## 1. 策略：Swing Trading Strategy V3.0（PRD v1.0，2026-11-23）
 
-| 阶段 | 核心模块 | 状态 | 关键交付 |
+产品规格以《Kolvex Trade OS PRD v1.0 / Swing Trading Strategy V3.0》为准。旧的 Trend Breakout 20D 已被替换；用户已有的旧策略版本保留不动（版本不可变），系统为每个用户追加 `SWING_V3_TREND_PULLBACK` v3.0.0，状态为 `research`。
+
+| PRD 章节 | 规则 | 代码 | 状态 |
 |---|---|---|---|
-| **Phase 0** | **数据基础** | **已完成** | 交易账户管理、Robinhood CSV 导入、幂等去重、FIFO 成交归集、权益快照 |
-| **Phase 1** | **风险优先 MVP** | **已完成** | 策略版本快照、确定性头寸计算、出入金调整回撤、Trade Plan Builder、服务端 Risk Engine（单笔/组合/回撤风控）、持仓风控面板 |
-| **Phase 2** | **策略与扫描** | **已完成** | Market Regime Engine (SPY/QQQ 双基准 50/200 SMA)、Trend Breakout 20D 扫描引擎、ATR(14) 价格区间、一键转计划 |
-| **Phase 3** | **回测与复盘** | **已完成** | 事件驱动策略回测引擎（Trend Breakout 20D）、Trade Journal 对账日志与复盘标注、R-Multiple 分布统计、AI 结构性复盘解释 |
+| §6 市场环境 | 进攻 / 谨慎 / 防守 / 未知；数据缺失或收盘超过 5 天 → 未知、禁止开仓；不再默认「进攻」 | `services/trade_os/market_regime.py` | ✅ |
+| §7 扫描四层 | $10 + 2000 万成交额；EMA20>SMA50>SMA200 且收盘>SMA50；RS20>0 并排序；5 个交易日内财报拦截，财报日期未知也拦截 | `services/trade_os/scanner.py` | ✅（财报窗口按 NYSE 交易日计算） |
+| §8 回调状态机 | 20 日 Pivot、回调 3–10 天 / 3–10%、触及 EMA20±ATR、跌破 SMA50 失效、确认 K 线四条件 | `services/trade_os/setup_detection.py` | ✅ |
+| §9.2 计划价格 | 入场 = 信号高点 + 0.01；止损 = 回调低点 − 0.25×ATR；目标 2R；止损距离 2.5%–10% | `setup_detection.build_plan_levels` | ✅ |
+| §9.3 仓位 | min(风险预算、10% 仓位、可用现金、组合剩余风险) | `services/trade_os/position_sizing.py` | ✅（现金取最新权益快照的 `cash_balance`） |
+| §10 入场执行 | t+1/t+2 有效；跳空 >0.5R 取消；同一根 K 线同时触及止损与入场按不利处理 | `setup_detection.py`、`backtester.py` | ✅ |
+| §11 持仓退出 | 固定 2R、第 16 天开盘时间退出、跳空止损按开盘价 | `backtester.py` | ◐ 仅回测；实盘持仓页尚未按此提示 |
+| §12 风控 | 市场档位限额、回撤 6/8/10% 三级、周 2% / 月 5% 亏损、连亏 3 笔、重复持仓、最大持仓数、已批准未成交计划计入组合风险、标准拒绝码 | `services/trade_os/risk_engine.py`、`trade_plan_service.py` | ✅（周/月收益暂未剔除期内出入金） |
+| §13 回测 | 与扫描共用状态机；按历史日期计算市场状态；滑点；配置哈希可复现；跳空/连亏/MFE/MAE | `services/trade_os/backtester.py` | ◐ 单股票；未做财报退出、分红、历史股票池、样本内外分区、异步任务 |
+| §22.1 | 前端不能决定市场状态：审批接口忽略客户端传入的 regime | `api/routes/trade_os/plans.py` | ✅ |
+| §23 收盘后任务 | 每个 NYSE 交易日收盘 45 分钟后：确认 SPY 已有当天日线 → 保存当日市场状态 → 用该状态跑扫描并保存；节假日、提前收盘按交易所日历；Redis 租约保证多副本只跑一次，数据未到就下个周期重试 | `services/trade_os/daily_job.py`、`trading_calendar.py`、`main.py` | ✅ 生产环境默认开启；本地用 `TRADE_OS_DAILY_JOB_ENABLED=true` 打开 |
+| §6.4 / §8.7 只用完整收盘 | 盘中 Yahoo 的「今天」日线会被丢弃；过期判断按交易日（落后超过 1 个交易日 = 未知） | `trading_calendar.completed_bars`、`is_stale` | ✅ |
+| §6.5 每日存档 | 市场状态和定时扫描按交易日唯一存一条，带规则版本和判断条件，不覆盖历史 | 迁移 `20261123140000_trade_os_daily_job.sql` | ◐ 迁移文件已写，**尚未在数据库执行**；执行前写入会自动退回旧字段 |
+| §14 模拟交易、§16 提醒、§5 持仓/今日信号卡片 | — | — | ❌ 未开始 |
 
----
+验收测试：`tests/test_trade_os_swing_v3.py`（AC-01–03、05–12、15–19、21、24、26、28 与 §25.1 数值例）、`test_trade_os_scanner.py`、`test_trade_os_backtester.py`。
 
-## 1.1 怎么用（Web 导航与总览引导）
+## 1.1 怎么用（Web 三个页面）
 
-页面按一笔交易的生命周期分成 4 个阶段，顶部分段控件对应阶段，阶段内多页时再显示二级入口：
+| 页面 | 路由 | 回答的问题 | 内容 |
+|---|---|---|---|
+| 今天 | `/dashboard/trade-os` | 今天能不能开仓？哪些股票有信号？手上有多少风险？ | 大字结论（可开 / 不开及原因）+ 可展开的 SPY/QQQ 明细；今日信号（每个带「生成计划」）；持仓与风险 |
+| 交易 | `/dashboard/trade-os/trades` | 这笔怎么做？做得怎么样？ | 计划（新建、审批、列表）/ 复盘 / 统计 三个视图 |
+| 策略 | `/dashboard/trade-os/strategies` | 这套规则过去有没有用？ | Swing V3.0 回测与策略版本 |
 
-| 阶段 | 页面 | 做什么 |
-|---|---|---|
-| 1 准备 | 账户与导入、策略实验室 | 建账户填期初资金 → 导入券商 CSV → 可选：回测策略 |
-| 2 开仓前 | 市场状态、机会扫描、交易计划 | 先看市场能不能开仓 → 扫描候选 → 写入场/止损/目标，系统算仓位并审批 |
-| 3 持仓中 | 持仓风控 | 看单笔、组合、回撤是否超限 |
-| 4 复盘 | 交易复盘、绩效统计 | 标注失误、看纪律与 R 期望 |
-
-总览页顶部的 5 步清单按数据自动打勾（账户 → 导入 → 市场 → 计划 → 复盘），第一个未完成的步骤高亮。Trade OS 不下单，只做计划、审批与复盘。
+账户与 CSV 导入在右上角齿轮（`/dashboard/trade-os/settings`）。选中的账户在三个页面间共用（只记在本机浏览器）。旧路由 `market`、`scanner`、`risk` 跳到「今天」，`plans`、`journal`、`analytics` 跳到「交易」（`plans?symbol=…` 的参数会保留）。
 
 ## 2. 路由与接口
 
 ### Web 路由
-- 总览工作台：`/dashboard/trade-os`
+- 今天：`/dashboard/trade-os`
+- 交易：`/dashboard/trade-os/trades`
+- 策略：`/dashboard/trade-os/strategies`
 - 账户与导入：`/dashboard/trade-os/settings`
-- 交易计划：`/dashboard/trade-os/plans`
-- 持仓风控：`/dashboard/trade-os/risk`
-- 策略实验室与回测：`/dashboard/trade-os/strategies`
-- 市场宏观状态：`/dashboard/trade-os/market`
-- 机会扫描：`/dashboard/trade-os/scanner`
-- 交易日志与复盘：`/dashboard/trade-os/journal`
-- 绩效与纪律统计：`/dashboard/trade-os/analytics`
 
 ### 后端 API 前缀
 `/api/v1/trade-os/*`
@@ -66,6 +70,9 @@
 - `kolvex-backend-py/supabase/migrations/20261122123000_trade_os_risk_mvp.sql`
 - `kolvex-backend-py/supabase/migrations/20261122130000_trade_os_market_and_scanner.sql`
 - `kolvex-backend-py/supabase/migrations/20261122133000_trade_os_phase3.sql`
+- `kolvex-backend-py/supabase/migrations/20261123150000_trade_os_rls_hardening.sql`：收紧 RLS（客户端不能再写市场状态 / 扫描 / 回测 / 复盘表；回测和复盘只能读自己的）。所有写入走后端 service role。
+
+**接口鉴权（2026-11-23 修复）**：`/journal/*`、`/analytics/{account_id}` 原本没有登录校验，任何人凭账户 id 就能读交易和盈亏、写复盘。现在需要登录，并校验账户 / 交易组属于本人（`app/api/routes/trade_os/ownership.py`），不属于本人返回 404。`POST /market/evaluate`、`POST /scanner/run` 需要登录。`POST /backtests/run` 仍未加登录（只读行情、不读用户数据，但会消耗计算）。
 
 核心表结构：
 - `trading_accounts`：交易账户主表

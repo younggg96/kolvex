@@ -144,6 +144,8 @@ export interface RiskCheckItem {
   threshold: string;
   message: string;
   severity: "error" | "warning";
+  /** Standard reject code (PRD §12.8), e.g. MARKET_RISK_OFF. */
+  code?: string | null;
 }
 
 export interface RiskAssessment {
@@ -165,7 +167,13 @@ export interface RiskAssessment {
     allowed_risk_budget: string;
     current_portfolio_risk: string;
     total_portfolio_risk: string;
+    portfolio_risk_budget?: string;
+    binding_limit?: string | null;
+    effective_risk_pct?: string;
+    max_positions?: number;
+    drawdown_level?: number;
   };
+  reject_codes?: string[];
   input_hash: string;
   created_at: string;
 }
@@ -402,19 +410,14 @@ export async function createTradePlan(data: {
   });
 }
 
-export async function approveTradePlan(
-  planId: string,
-  marketRegime: string = "risk_on",
-): Promise<{
+/** The server picks the market regime itself; the client never supplies it. */
+export async function approveTradePlan(planId: string): Promise<{
   plan_id: string;
   status: string;
   decision: string;
   assessment: RiskAssessment;
 }> {
-  return apiRequest(`/plans/${planId}/approve`, {
-    method: "POST",
-    body: JSON.stringify({ market_regime: marketRegime }),
-  });
+  return apiRequest(`/plans/${planId}/approve`, { method: "POST" });
 }
 
 export async function cancelTradePlan(planId: string): Promise<TradePlan> {
@@ -474,43 +477,81 @@ export interface BenchmarkMetrics {
   message?: string;
 }
 
+/** Swing V3.0 market states (PRD §6.3). */
+export type MarketRegime = "risk_on" | "cautious" | "risk_off" | "unknown";
+
 export interface MarketRegimeResponse {
-  regime: "risk_on" | "neutral" | "risk_off" | "stale_data";
+  regime: MarketRegime;
   allow_new_entries: boolean;
   effective_risk_pct: string;
+  max_positions: number;
+  max_open_risk_pct: string;
+  conditions: { code: string; passed: boolean }[];
+  rule_version: string;
+  /** Date of the daily close the state was computed from. */
+  data_as_of: string | null;
   summary: string;
   spy: BenchmarkMetrics;
   qqq: BenchmarkMetrics;
   evaluated_at: string;
 }
 
+/** PRD §7.7 scanner statuses. */
+export type ScannerStatus =
+  | "INELIGIBLE"
+  | "TREND_VALID"
+  | "PULLBACK_ACTIVE"
+  | "SIGNAL_CONFIRMED"
+  | "ENTRY_PENDING"
+  | "TRIGGERED"
+  | "EXPIRED"
+  | "INVALIDATED"
+  | "BLOCKED";
+
 export interface ScannerCandidate {
   symbol: string;
   strategy_code: string;
-  current_price: string;
-  current_high: string;
-  breakout_level: string;
-  sma50: string;
-  sma200: string;
-  distance_to_sma50_pct: string;
-  atr14: string;
-  suggested_entry: string;
-  suggested_stop: string;
-  suggested_target_2r: string;
-  suggested_target_3r: string;
-  risk_per_share: string;
-  volume_surge_ratio: string;
-  avg_volume_20d: number;
-  rank_score: number;
-  matched_criteria: string[];
+  strategy_version?: string;
+  status: ScannerStatus;
+  status_reason: string | null;
+  checks: { code: string; passed: boolean }[];
+  current_price?: string;
+  data_as_of?: string;
+  avg_dollar_volume_20d?: string;
+  ema20?: string;
+  sma50?: string;
+  sma200?: string;
+  atr14?: string | null;
+  rs20_pct?: string | null;
+  pivot_high?: string | null;
+  pivot_date?: string | null;
+  pullback_low?: string | null;
+  pullback_days?: number | null;
+  pullback_depth_pct?: string | null;
+  signal_date?: string;
+  suggested_entry?: string;
+  suggested_stop?: string;
+  suggested_target?: string;
+  risk_per_share?: string;
+  stop_distance_pct?: string;
+  reward_risk?: string;
+  earnings_date?: string | null;
+  earnings_status?: "clear" | "blackout" | "unavailable" | "not_applicable";
 }
 
 export interface ScannerRunResponse {
   strategy_code: string;
+  strategy_version?: string;
   run_at: string;
+  /** NYSE session of the after-close job; null for a manual run. */
+  trading_date?: string | null;
   universe_type: string;
+  market_regime: MarketRegime | null;
   total_scanned: number;
+  /** Symbols with a live signal (SIGNAL_CONFIRMED / ENTRY_PENDING). */
   candidates_count: number;
+  failed_symbols?: string[];
+  /** Every scanned symbol with its status, best first. */
   candidates: ScannerCandidate[];
 }
 
@@ -524,8 +565,9 @@ export async function evaluateMarketRegime(): Promise<MarketRegimeResponse> {
   });
 }
 
-export async function fetchLatestScannerRun(): Promise<ScannerRunResponse> {
-  return apiRequest<ScannerRunResponse>("/scanner/latest");
+/** Null when no Swing V3.0 scan has run yet. */
+export async function fetchLatestScannerRun(): Promise<ScannerRunResponse | null> {
+  return apiRequest<ScannerRunResponse | null>("/scanner/latest");
 }
 
 export async function runOpportunityScanner(symbols?: string[]): Promise<ScannerRunResponse> {
@@ -545,7 +587,8 @@ export interface BacktestSummary {
   winning_trades: number;
   losing_trades: number;
   win_rate_pct: number;
-  profit_factor: number;
+  /** Null when there were no losing trades. */
+  profit_factor: number | null;
   expectancy_r: number;
   avg_win_pnl: string;
   avg_loss_pnl: string;
@@ -554,6 +597,10 @@ export interface BacktestSummary {
   net_pnl: string;
   total_return_pct: number;
   max_drawdown_pct: number;
+  max_consecutive_losses: number;
+  avg_holding_days: number;
+  gap_loss_count: number;
+  market_exposure_pct: number;
   sharpe_ratio: number;
   initial_capital: string;
   ending_capital: string;
@@ -561,21 +608,33 @@ export interface BacktestSummary {
 
 export interface BacktestTrade {
   symbol: string;
+  signal_date: string;
   entry_date: string;
   exit_date: string;
   entry_price: string;
+  stop_price: string;
+  target_price: string;
   exit_price: string;
   shares: number;
+  planned_risk: string;
   pnl: string;
   r_multiple: number;
-  exit_reason: "stop_loss" | "take_profit" | "time_stop";
-  holding_bars: number;
+  mfe_r: number;
+  mae_r: number;
+  exit_reason: "TARGET" | "STOP" | "GAP_STOP" | "TIME_EXIT" | "END_OF_DATA";
+  holding_days: number;
+  gap_loss: boolean;
+  path_uncertain: boolean;
 }
 
 export interface BacktestResult {
   symbol: string;
+  config?: Record<string, unknown>;
+  config_hash?: string;
+  assumptions?: Record<string, string>;
   summary: BacktestSummary;
   trades: BacktestTrade[];
+  skipped_signals: { signal_date: string; reason: string }[];
   equity_curve: {
     date: string;
     equity: string;
@@ -643,8 +702,11 @@ export interface AccountAnalytics {
 export async function runBacktest(params: {
   symbol: string;
   initial_capital?: number;
-  risk_per_trade_pct?: number;
   period?: string;
+  use_market_filter?: boolean;
+  slippage_bps?: number;
+  /** Only used when the market filter is off. */
+  risk_per_trade_pct?: number;
 }): Promise<BacktestResult> {
   return apiRequest<BacktestResult>("/backtests/run", {
     method: "POST",

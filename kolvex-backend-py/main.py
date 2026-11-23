@@ -121,6 +121,13 @@ async def lifespan(app: FastAPI):
     plaid_history_worker = (
         asyncio.create_task(run_plaid_snapshot_worker()) if worker_enabled() else None
     )
+    from app.services.trade_os.daily_job import run_trade_os_daily_worker
+    from app.services.trade_os.daily_job import worker_enabled as trade_os_job_enabled
+
+    # Stores each NYSE session's market state and Swing V3.0 scan after the close.
+    trade_os_worker = (
+        asyncio.create_task(run_trade_os_daily_worker()) if trade_os_job_enabled() else None
+    )
     from app.services.content_translation import run_content_translation_worker
 
     translation_worker = (
@@ -128,11 +135,24 @@ async def lifespan(app: FastAPI):
         if os.getenv("CONTENT_TRANSLATION_WORKER_ENABLED", "false").lower() == "true"
         else None
     )
+    from app.services.market_risk.worker import run_market_risk_worker
+    from app.services.market_risk.worker import worker_enabled as market_risk_enabled
+
+    # Ingests Cboe volatility closes each evening; off unless MARKET_RISK_WORKER_ENABLED=true.
+    market_risk_worker = (
+        asyncio.create_task(run_market_risk_worker()) if market_risk_enabled() else None
+    )
     try:
         yield
     finally:
+        if market_risk_worker:
+            market_risk_worker.cancel()
+            await asyncio.gather(market_risk_worker, return_exceptions=True)
         managers_refresher.cancel()
         await asyncio.gather(managers_refresher, return_exceptions=True)
+        if trade_os_worker:
+            trade_os_worker.cancel()
+            await asyncio.gather(trade_os_worker, return_exceptions=True)
         if translation_worker:
             translation_worker.cancel()
             await asyncio.gather(translation_worker, return_exceptions=True)

@@ -9,6 +9,8 @@ from pydantic import BaseModel
 
 from app.services.trade_os.backtester import run_strategy_backtest
 from app.services.trade_os.decimal_utils import d
+from app.services.trade_os.market_regime import regime_by_date
+from app.services.trade_os.trading_calendar import completed_bars
 from app.services.yfinance.client import get_yfinance_service
 
 router = APIRouter(prefix="/backtests", tags=["Trade OS Backtests"])
@@ -17,37 +19,44 @@ router = APIRouter(prefix="/backtests", tags=["Trade OS Backtests"])
 class BacktestRunRequest(BaseModel):
     symbol: str = "NVDA"
     initial_capital: float = 100000.0
-    risk_per_trade_pct: float = 0.0050
-    breakout_period: int = 20
-    atr_period: int = 14
-    stop_atr_mult: float = 2.0
-    target_r_mult: float = 2.5
     period: str = "2y"
+    use_market_filter: bool = True
+    slippage_bps: float = 5.0
+    # Only used when the market filter is off.
+    risk_per_trade_pct: float = 0.0050
 
 
 @router.post("/run")
 async def trigger_backtest(body: BacktestRunRequest) -> Dict[str, Any]:
-    """Runs a historical simulation of the Trend Breakout 20D strategy."""
+    """Replays Swing V3.0 (trend pullback) on one symbol's daily history."""
     try:
         yf_svc = get_yfinance_service()
-        bars = yf_svc.get_history(body.symbol.upper(), period=body.period)
+        symbol = body.symbol.upper()
+        bars = completed_bars(yf_svc.get_history(symbol, period=body.period))
         if not bars or len(bars) < 220:
             raise HTTPException(
                 status_code=400,
-                detail=f"Insufficient historical data for {body.symbol} ({len(bars)} bars). Minimum 220 required.",
+                detail=f"Insufficient historical data for {symbol} ({len(bars or [])} bars). Minimum 220 required.",
             )
 
-        res = run_strategy_backtest(
-            symbol=body.symbol.upper(),
+        regimes = None
+        if body.use_market_filter:
+            spy = completed_bars(yf_svc.get_history("SPY", period=body.period))
+            qqq = completed_bars(yf_svc.get_history("QQQ", period=body.period))
+            if not spy or not qqq:
+                raise HTTPException(
+                    status_code=503, detail="SPY/QQQ history unavailable for the market filter."
+                )
+            regimes = regime_by_date(spy, qqq)
+
+        return run_strategy_backtest(
+            symbol=symbol,
             bars=bars,
             initial_capital=d(body.initial_capital),
+            regimes=regimes,
+            slippage_bps=d(body.slippage_bps),
             risk_per_trade_pct=d(body.risk_per_trade_pct),
-            breakout_period=body.breakout_period,
-            atr_period=body.atr_period,
-            stop_atr_mult=d(body.stop_atr_mult),
-            target_r_mult=d(body.target_r_mult),
         )
-        return res
     except HTTPException:
         raise
     except Exception as e:

@@ -5,12 +5,13 @@ using dual-benchmark (SPY and QQQ) 200-day and 50-day moving average confirmatio
 """
 
 import logging
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Any, Callable, Dict, List, Optional
 
 from app.services.trade_os.decimal_utils import ZERO, d, quantize_money
 from app.services.trade_os.indicators import calculate_sma
+from app.services.trade_os.trading_calendar import completed_bars, is_stale
 
 logger = logging.getLogger(__name__)
 
@@ -100,67 +101,187 @@ def evaluate_benchmark_bars(
     }
 
 
-def compute_market_regime(
+RULE_VERSION = "swing-v3.0/regime-1"
+
+# PRD §6.3 / §12.2 — limits that follow from each market state.
+REGIME_LIMITS: Dict[str, Dict[str, Any]] = {
+    "risk_on": {
+        "allow_new_entries": True,
+        "risk_pct": Decimal("0.0050"),
+        "max_positions": 4,
+        "max_open_risk_pct": Decimal("0.0200"),
+    },
+    "cautious": {
+        "allow_new_entries": True,
+        "risk_pct": Decimal("0.0025"),
+        "max_positions": 2,
+        "max_open_risk_pct": Decimal("0.0050"),
+    },
+    "risk_off": {
+        "allow_new_entries": False,
+        "risk_pct": Decimal("0"),
+        "max_positions": 0,
+        "max_open_risk_pct": Decimal("0"),
+    },
+    "unknown": {
+        "allow_new_entries": False,
+        "risk_pct": Decimal("0"),
+        "max_positions": 0,
+        "max_open_risk_pct": Decimal("0"),
+    },
+}
+
+# Older rows and clients used these names.
+_LEGACY_REGIMES = {"neutral": "cautious", "stale_data": "unknown"}
+
+# A daily close more than this many completed NYSE sessions old is stale (PRD §6.4).
+MAX_SESSION_LAG = 1
+
+LEGACY_REGIME_COLUMNS = (
+    "regime",
+    "summary",
+    "spy_metrics",
+    "qqq_metrics",
+    "allow_new_entries",
+    "effective_risk_pct",
+)
+
+
+def normalize_regime(value: Optional[str]) -> str:
+    v = (value or "unknown").strip().lower()
+    v = _LEGACY_REGIMES.get(v, v)
+    return v if v in REGIME_LIMITS else "unknown"
+
+
+def regime_limits(value: Optional[str]) -> Dict[str, Any]:
+    return REGIME_LIMITS[normalize_regime(value)]
+
+
+def _bar_date(raw: Any) -> Optional[datetime]:
+    if raw is None:
+        return None
+    if isinstance(raw, datetime):
+        return raw if raw.tzinfo else raw.replace(tzinfo=timezone.utc)
+    try:
+        parsed = datetime.fromisoformat(str(raw)[:10])
+        return parsed.replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+
+
+def _result(
+    regime: str,
+    summary: str,
     spy_eval: Dict[str, Any],
     qqq_eval: Dict[str, Any],
+    conditions: List[Dict[str, Any]],
+    now: datetime,
 ) -> Dict[str, Any]:
-    """
-    Combines SPY and QQQ evaluations to determine overall Market Regime.
-    Rules:
-    - If either has stale/invalid data -> 'stale_data'
-    - If either is bearish (< 200 SMA) -> 'risk_off'
-    - If both are bullish (> 50 SMA > 200 SMA) -> 'risk_on'
-    - Otherwise -> 'neutral'
-    """
-    if not spy_eval.get("valid") or not qqq_eval.get("valid"):
-        return {
-            "regime": "stale_data",
-            "allow_new_entries": False,
-            "effective_risk_pct": "0.0000",
-            "summary": "Market benchmark data is unconfirmed or stale. New trade plan approvals are suspended.",
-            "spy": spy_eval,
-            "qqq": qqq_eval,
-            "evaluated_at": datetime.now(timezone.utc).isoformat(),
-        }
-
-    spy_status = spy_eval["status"]
-    qqq_status = qqq_eval["status"]
-
-    if spy_status == "bearish" or qqq_status == "bearish":
-        regime = "risk_off"
-        allow_new_entries = False
-        effective_risk = Decimal("0.0000")
-        summary = (
-            "SPY or QQQ is below 200 SMA. Risk Off regime active: all new long entries prohibited."
-        )
-    elif spy_status == "bullish" and qqq_status == "bullish":
-        regime = "risk_on"
-        allow_new_entries = True
-        effective_risk = Decimal("0.0050")
-        summary = "Both SPY and QQQ are in healthy bull market structure (Price > 50 SMA > 200 SMA). Full 0.50% risk budget."
-    else:
-        regime = "neutral"
-        allow_new_entries = True
-        effective_risk = Decimal("0.0025")
-        summary = "Mixed benchmark signals. Neutral regime active: new trade entries allowed at half risk (0.25%)."
-
+    limits = REGIME_LIMITS[regime]
     return {
         "regime": regime,
-        "allow_new_entries": allow_new_entries,
-        "effective_risk_pct": str(effective_risk),
+        "allow_new_entries": limits["allow_new_entries"],
+        "effective_risk_pct": str(limits["risk_pct"]),
+        "max_positions": limits["max_positions"],
+        "max_open_risk_pct": str(limits["max_open_risk_pct"]),
+        "conditions": conditions,
+        "rule_version": RULE_VERSION,
+        "data_as_of": spy_eval.get("last_bar_date") if spy_eval.get("valid") else None,
         "summary": summary,
         "spy": spy_eval,
         "qqq": qqq_eval,
-        "evaluated_at": datetime.now(timezone.utc).isoformat(),
+        "evaluated_at": now.isoformat(),
     }
+
+
+def compute_market_regime(
+    spy_eval: Dict[str, Any],
+    qqq_eval: Dict[str, Any],
+    now: Optional[datetime] = None,
+) -> Dict[str, Any]:
+    """
+    Swing V3.0 market state (PRD §6.3):
+    - RISK_ON:  SPY close > SMA200 AND SPY SMA50 > SMA200 AND QQQ close > QQQ SMA50
+    - CAUTIOUS: SPY close > SMA200 but not all RISK_ON conditions
+    - RISK_OFF: SPY close <= SMA200
+    - UNKNOWN:  missing / insufficient / stale data -> no new entries (PRD §6.4)
+    """
+    now = now or datetime.now(timezone.utc)
+
+    if not spy_eval.get("valid") or not qqq_eval.get("valid"):
+        return _result(
+            "unknown",
+            "Benchmark data is missing or too short for SMA200. New entries are blocked until data recovers.",
+            spy_eval,
+            qqq_eval,
+            [],
+            now,
+        )
+
+    for ev in (spy_eval, qqq_eval):
+        last = _bar_date(ev.get("last_bar_date"))
+        if last is not None and is_stale(last.date(), now, MAX_SESSION_LAG):
+            return _result(
+                "unknown",
+                f"{ev['symbol']} last daily close is {ev.get('last_bar_date')}, more than "
+                f"{MAX_SESSION_LAG} trading session behind. New entries are blocked.",
+                spy_eval,
+                qqq_eval,
+                [],
+                now,
+            )
+
+    spy_price, spy50, spy200 = d(spy_eval["price"]), d(spy_eval["sma50"]), d(spy_eval["sma200"])
+    qqq_price, qqq50 = d(qqq_eval["price"]), d(qqq_eval["sma50"])
+    conditions = [
+        {"code": "SPY_CLOSE_ABOVE_SMA200", "passed": spy_price > spy200},
+        {"code": "SPY_SMA50_ABOVE_SMA200", "passed": spy50 > spy200},
+        {"code": "QQQ_CLOSE_ABOVE_SMA50", "passed": qqq_price > qqq50},
+    ]
+
+    if not conditions[0]["passed"]:
+        regime = "risk_off"
+        summary = "SPY closed at or below its 200-day SMA. New long entries are prohibited."
+    elif all(cond["passed"] for cond in conditions):
+        regime = "risk_on"
+        summary = "All Risk On conditions hold. 0.50% risk per trade, up to 4 positions, 2% total open risk."
+    else:
+        regime = "cautious"
+        summary = "SPY is above its 200-day SMA but not every Risk On condition holds. 0.25% per trade, up to 2 positions, 0.5% total open risk."
+
+    return _result(regime, summary, spy_eval, qqq_eval, conditions, now)
+
+
+def regime_by_date(
+    spy_bars: List[Dict[str, Any]], qqq_bars: List[Dict[str, Any]]
+) -> Dict[str, str]:
+    """
+    Historical market state for every SPY date, using only bars up to that date
+    (for backtests; PRD §13.4 time correctness).
+    """
+    qqq_index = {b.get("date"): i for i, b in enumerate(qqq_bars)}
+    out: Dict[str, str] = {}
+    for k, spy_bar in enumerate(spy_bars):
+        day = spy_bar.get("date")
+        q = qqq_index.get(day)
+        if q is None:
+            out[day] = "unknown"
+            continue
+        spy_eval = evaluate_benchmark_bars("SPY", spy_bars[: k + 1])
+        qqq_eval = evaluate_benchmark_bars("QQQ", qqq_bars[: q + 1])
+        as_of = _bar_date(day) or datetime.now(timezone.utc)
+        out[day] = compute_market_regime(spy_eval, qqq_eval, now=as_of)["regime"]
+    return out
 
 
 async def evaluate_market_regime(
     bar_fetcher: Optional[Callable[[str], List[Dict[str, Any]]]] = None,
     save_to_db: bool = True,
+    trading_date: Optional[date] = None,
 ) -> Dict[str, Any]:
     """
     Fetches 1y history for SPY and QQQ, computes market regime, and saves to database.
+    ``trading_date`` is set by the after-close job; it makes the stored row unique per day.
     """
     global _CACHED_REGIME
 
@@ -170,7 +291,7 @@ async def evaluate_market_regime(
         yf_svc = get_yfinance_service()
 
         def default_bar_fetcher(sym: str) -> List[Dict[str, Any]]:
-            return yf_svc.get_history(sym, period="1y")
+            return completed_bars(yf_svc.get_history(sym, period="1y"))
 
         bar_fetcher = default_bar_fetcher
 
@@ -193,33 +314,40 @@ async def evaluate_market_regime(
     _CACHED_REGIME = regime_result
 
     if save_to_db:
-        try:
-            from app.core.supabase import get_supabase_service
+        from app.services.trade_os.persistence import save_row
 
-            client = get_supabase_service()
-            if client:
-                client.table("trade_os_market_regimes").insert(
-                    {
-                        "regime": regime_result["regime"],
-                        "summary": regime_result["summary"],
-                        "spy_metrics": spy_eval,
-                        "qqq_metrics": qqq_eval,
-                        "allow_new_entries": regime_result["allow_new_entries"],
-                        "effective_risk_pct": float(regime_result["effective_risk_pct"]),
-                    }
-                ).execute()
-        except Exception as err:
-            logger.warning(f"Could not persist market regime to database: {err}")
+        row = {
+            "regime": regime_result["regime"],
+            "summary": regime_result["summary"],
+            "spy_metrics": spy_eval,
+            "qqq_metrics": qqq_eval,
+            "allow_new_entries": regime_result["allow_new_entries"],
+            "effective_risk_pct": float(regime_result["effective_risk_pct"]),
+            "rule_version": regime_result["rule_version"],
+            "conditions": regime_result["conditions"],
+            "data_as_of": regime_result["data_as_of"],
+            "max_positions": regime_result["max_positions"],
+            "max_open_risk_pct": float(regime_result["max_open_risk_pct"]),
+        }
+        if trading_date is not None:
+            row["trading_date"] = trading_date.isoformat()
+        save_row(
+            "trade_os_market_regimes",
+            row,
+            LEGACY_REGIME_COLUMNS,
+            on_conflict="trading_date,rule_version" if trading_date else None,
+        )
 
     return regime_result
 
 
 def get_latest_market_regime() -> Dict[str, Any]:
-    """Returns the cached regime evaluation or a fallback."""
-    if _CACHED_REGIME is not None:
-        return _CACHED_REGIME
-
-    # Check database
+    """
+    Newest stored evaluation (from the after-close job or a manual recalculation),
+    falling back to this process's cache. Staleness is re-checked on every read, so a
+    Friday close never reads as current the following Thursday.
+    """
+    candidates: List[Dict[str, Any]] = []
     try:
         from app.core.supabase import get_supabase_service
 
@@ -232,27 +360,33 @@ def get_latest_market_regime() -> Dict[str, Any]:
                 .limit(1)
                 .execute()
             )
-            if res.data and len(res.data) > 0:
+            if res.data:
                 row = res.data[0]
-                return {
-                    "regime": row["regime"],
-                    "summary": row.get("summary", ""),
-                    "spy": row.get("spy_metrics", {}),
-                    "qqq": row.get("qqq_metrics", {}),
-                    "allow_new_entries": row.get("allow_new_entries", False),
-                    "effective_risk_pct": str(row.get("effective_risk_pct", "0.0050")),
-                    "evaluated_at": row.get("evaluated_at"),
-                }
-    except Exception:
-        pass
+                candidates.append(
+                    {
+                        "spy": row.get("spy_metrics") or {},
+                        "qqq": row.get("qqq_metrics") or {},
+                        "evaluated_at": row.get("evaluated_at"),
+                    }
+                )
+    except Exception as err:  # noqa: BLE001
+        logger.warning(f"Could not read stored market regime: {err}")
 
-    # Default fallback
-    return {
-        "regime": "risk_on",
-        "summary": "Defaulting to Risk On (initial setup)",
-        "allow_new_entries": True,
-        "effective_risk_pct": "0.0050",
-        "spy": {"symbol": "SPY", "status": "bullish", "valid": True},
-        "qqq": {"symbol": "QQQ", "status": "bullish", "valid": True},
-        "evaluated_at": datetime.now(timezone.utc).isoformat(),
-    }
+    if _CACHED_REGIME is not None:
+        candidates.append(_CACHED_REGIME)
+
+    if candidates:
+        newest = max(candidates, key=lambda r: str(r.get("evaluated_at") or ""))
+        result = compute_market_regime(newest["spy"], newest["qqq"])
+        result["evaluated_at"] = newest.get("evaluated_at")
+        return result
+
+    # No evaluation yet: never pretend the market is Risk On.
+    return _result(
+        "unknown",
+        "No market regime has been evaluated yet. New entries are blocked until one is.",
+        {"symbol": "SPY", "valid": False, "status": "stale_data"},
+        {"symbol": "QQQ", "valid": False, "status": "stale_data"},
+        [],
+        datetime.now(timezone.utc),
+    )

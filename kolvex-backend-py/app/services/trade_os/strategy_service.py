@@ -24,33 +24,48 @@ def compute_canonical_config_hash(config_dict: Dict[str, Any]) -> str:
     return hashlib.sha256(canonical_json.encode("utf-8")).hexdigest()
 
 
-DEFAULT_STRATEGY_TREND_BREAKOUT_20D = {
-    "strategy_key": "TREND_BREAKOUT_20D",
-    "version": "1.0.0",
-    "display_name": "Trend Breakout 20D",
-    "description": "Momentum trend breakout for US liquid equities. Entry on 20-day high with volume confirmation.",
+# Swing Trading Strategy V3.0 (PRD). Values mirror setup_detection.DEFAULT_PARAMS and
+# market_regime.REGIME_LIMITS; those modules are what actually runs.
+DEFAULT_STRATEGY_SWING_V3 = {
+    "strategy_key": "SWING_V3_TREND_PULLBACK",
+    "version": "3.0.0",
+    "display_name": "Swing V3.0 · Trend Pullback",
+    "description": "Long-only swing trades: buy the first strong close after a 3–10 day, 3–10% pullback to the EMA20 inside an EMA20 > SMA50 > SMA200 uptrend.",
     "parameters": {
-        "holding_period_days": 20,
-        "atr_period": 14,
-        "atr_stop_multiplier": 2.0,
+        "pivot_lookback": 20,
+        "pullback_days": [3, 10],
+        "pullback_depth": [0.03, 0.10],
+        "stop_atr_buffer": 0.25,
         "target_r_multiple": 2.0,
-        "volume_surge_multiplier": 1.2,
-        "min_avg_dollar_volume": 20000000,  # $20M
+        "stop_distance": [0.025, 0.10],
+        "entry_window_days": 2,
+        "max_gap_r": 0.5,
+        "time_exit_day": 16,
+        "min_price": 10,
+        "min_avg_dollar_volume": 20000000,
+        "earnings_blackout_trading_days": 5,
     },
     "entry_rules": [
-        {"indicator": "close_vs_sma50", "operator": ">", "value": "SMA50"},
+        {"indicator": "ema20_vs_sma50", "operator": ">", "value": "SMA50"},
         {"indicator": "sma50_vs_sma200", "operator": ">", "value": "SMA200"},
-        {"indicator": "close_vs_highest20", "operator": ">", "value": "HighestHigh(20)"},
-        {"indicator": "volume_vs_avg20", "operator": ">=", "value": "1.2 * AvgVolume(20)"},
+        {"indicator": "close_vs_sma50", "operator": ">", "value": "SMA50"},
+        {"indicator": "rs20_vs_spy", "operator": ">", "value": "0"},
+        {"indicator": "pivot_high", "operator": ">", "value": "HighestHigh(20) prior"},
+        {"indicator": "pullback_low_vs_ema20", "operator": "<=", "value": "ATR14"},
+        {"indicator": "signal_close", "operator": ">", "value": "High(t-1), Open(t), EMA20(t)"},
     ],
     "exit_rules": [
-        {"type": "stop_loss", "distance": "2 * ATR(14)"},
+        {"type": "stop_loss", "distance": "Pullback Low - 0.25 * ATR14"},
         {"type": "take_profit", "target": "2R"},
-        {"type": "time_expiry", "max_holding_sessions": 20},
+        {"type": "time_expiry", "exit": "open of holding day 16"},
+        {"type": "earnings", "exit": "last session before the report"},
     ],
     "risk_rules": {
-        "max_risk_pct": 0.005,
+        "max_risk_pct": {"risk_on": 0.005, "cautious": 0.0025, "risk_off": 0},
+        "max_positions": {"risk_on": 4, "cautious": 2},
+        "max_open_risk_pct": {"risk_on": 0.02, "cautious": 0.005},
         "max_notional_pct": 0.10,
+        "max_sector_pct": 0.20,
     },
 }
 
@@ -69,21 +84,24 @@ class StrategyService:
             .execute()
         )
         data = res.data or []
-        # If user has no strategies, auto-seed the default TREND_BREAKOUT_20D v1.0.0
-        if not data:
-            default_strat = self.create_strategy_version(
+        # Seed Swing V3.0 once per user. Older versions stay as they are (versions are immutable).
+        if not any(
+            row.get("strategy_key") == DEFAULT_STRATEGY_SWING_V3["strategy_key"] for row in data
+        ):
+            seeded = self.create_strategy_version(
                 user_id=user_id,
-                strategy_key=DEFAULT_STRATEGY_TREND_BREAKOUT_20D["strategy_key"],
-                version=DEFAULT_STRATEGY_TREND_BREAKOUT_20D["version"],
-                display_name=DEFAULT_STRATEGY_TREND_BREAKOUT_20D["display_name"],
-                description=DEFAULT_STRATEGY_TREND_BREAKOUT_20D["description"],
-                parameters=DEFAULT_STRATEGY_TREND_BREAKOUT_20D["parameters"],
-                entry_rules=DEFAULT_STRATEGY_TREND_BREAKOUT_20D["entry_rules"],
-                exit_rules=DEFAULT_STRATEGY_TREND_BREAKOUT_20D["exit_rules"],
-                risk_rules=DEFAULT_STRATEGY_TREND_BREAKOUT_20D["risk_rules"],
-                status="live_eligible",
+                strategy_key=DEFAULT_STRATEGY_SWING_V3["strategy_key"],
+                version=DEFAULT_STRATEGY_SWING_V3["version"],
+                display_name=DEFAULT_STRATEGY_SWING_V3["display_name"],
+                description=DEFAULT_STRATEGY_SWING_V3["description"],
+                parameters=DEFAULT_STRATEGY_SWING_V3["parameters"],
+                entry_rules=DEFAULT_STRATEGY_SWING_V3["entry_rules"],
+                exit_rules=DEFAULT_STRATEGY_SWING_V3["exit_rules"],
+                risk_rules=DEFAULT_STRATEGY_SWING_V3["risk_rules"],
+                # Not live until it has passed the PRD backtest and paper-trading gates.
+                status="research",
             )
-            data = [default_strat]
+            data = [seeded] + data
         return data
 
     def get_strategy_version(self, user_id: str, version_id: str) -> Optional[Dict[str, Any]]:

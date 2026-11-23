@@ -39,7 +39,8 @@ class SizingCalculateRequest(BaseModel):
 
 
 class PlanApproveRequest(BaseModel):
-    market_regime: Optional[str] = "risk_on"
+    # Ignored: the server always uses its own latest market regime (PRD §22.1).
+    market_regime: Optional[str] = None
 
 
 def get_plan_service() -> TradePlanService:
@@ -60,7 +61,7 @@ def calculate_sizing(req: SizingCalculateRequest):
             max_position_notional_pct=req.max_position_notional_pct,
             side=req.side or "long",
         )
-        return {k: str(v) for k, v in res.items()}
+        return {k: (None if v is None else str(v)) for k, v in res.items()}
     except PositionSizingError as pe:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(pe))
 
@@ -139,9 +140,8 @@ def approve_plan(
     Submits a trade plan for server-side Risk Assessment.
     If compliant, marks plan approved; otherwise marks blocked.
     """
-    regime = req.market_regime if req and req.market_regime else "risk_on"
     try:
-        return service.validate_and_approve_plan(user_id, plan_id, market_regime=regime)
+        return service.validate_and_approve_plan(user_id, plan_id)
     except TradePlanError as te:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(te))
     except Exception as e:

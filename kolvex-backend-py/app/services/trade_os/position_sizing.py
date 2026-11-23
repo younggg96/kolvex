@@ -25,6 +25,8 @@ def calculate_position_size(
     allowed_risk_pct: Any = Decimal("0.0050"),  # Default: 0.5%
     max_position_notional_pct: Any = Decimal("0.1000"),  # Default: 10%
     side: str = "long",
+    available_cash: Any = None,
+    remaining_risk_budget: Any = None,
 ) -> Dict[str, Any]:
     """
     Computes exact allowed quantities and dollar risks.
@@ -34,7 +36,9 @@ def calculate_position_size(
       Risk Per Share = Entry Price - Stop Price (for long)
       Quantity by Risk = floor(Risk Budget / Risk Per Share)
       Quantity by Notional = floor(Account Equity * Max Notional % / Entry Price)
-      Final Quantity = min(Quantity by Risk, Quantity by Notional)
+      Quantity by Cash = floor(Available Cash / Entry Price)            (if given)
+      Quantity by Portfolio = floor(Remaining Risk Budget / Risk/Share) (if given)
+      Final Quantity = min(all of the above)   (PRD Swing V3.0 §9.3)
 
     Example (PRD 10.3):
       Equity: $30,000, Risk%: 0.5%, Entry: $180, Stop: $171, Notional%: 10%
@@ -90,8 +94,25 @@ def calculate_position_size(
         (notional_budget / entry).quantize(Decimal("1"), rounding=ROUND_DOWN)
     )
 
+    limits = {"risk": quantity_by_risk, "notional": quantity_by_notional}
+
+    quantity_by_cash = None
+    if available_cash is not None:
+        cash = max(ZERO, d(available_cash))
+        quantity_by_cash = int((cash / entry).quantize(Decimal("1"), rounding=ROUND_DOWN))
+        limits["cash"] = quantity_by_cash
+
+    quantity_by_portfolio = None
+    if remaining_risk_budget is not None:
+        remaining = max(ZERO, d(remaining_risk_budget))
+        quantity_by_portfolio = int(
+            (remaining / risk_per_share).quantize(Decimal("1"), rounding=ROUND_DOWN)
+        )
+        limits["portfolio_risk"] = quantity_by_portfolio
+
     # Overall max shares allowed
-    max_allowed_quantity = max(0, min(quantity_by_risk, quantity_by_notional))
+    max_allowed_quantity = max(0, min(limits.values()))
+    binding_limit = min(limits, key=lambda k: limits[k])
 
     planned_risk_amount = Decimal(max_allowed_quantity) * risk_per_share
     planned_notional = Decimal(max_allowed_quantity) * entry
@@ -104,6 +125,9 @@ def calculate_position_size(
         "risk_budget": risk_budget,
         "quantity_by_risk": quantity_by_risk,
         "quantity_by_notional": quantity_by_notional,
+        "quantity_by_cash": quantity_by_cash,
+        "quantity_by_portfolio_risk": quantity_by_portfolio,
+        "binding_limit": binding_limit,
         "max_allowed_quantity": max_allowed_quantity,
         "planned_risk_amount": planned_risk_amount,
         "planned_notional": planned_notional,

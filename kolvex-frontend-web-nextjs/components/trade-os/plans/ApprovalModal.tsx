@@ -2,6 +2,7 @@
 
 import { useCopy } from "@/components/decision/shared";
 import { RiskAssessment } from "@/lib/tradeOsApi";
+import { reasonText } from "@/components/trade-os/shared";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, AlertTriangle, ShieldCheck, X } from "lucide-react";
 
@@ -130,9 +131,15 @@ export function ApprovalModal({ assessment, onClose }: ApprovalModalProps) {
               {assessment.checks.map((chk, i) => (
                 <div key={i} className="p-3 text-xs flex items-start gap-3">
                   {chk.passed ? (
-                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500 mt-0.5" />
+                    <CheckCircle2
+                      className="h-4 w-4 shrink-0 text-positive mt-0.5"
+                      aria-label={c("Passed", "通过")}
+                    />
                   ) : (
-                    <XCircle className="h-4 w-4 shrink-0 text-red-500 mt-0.5" />
+                    <XCircle
+                      className="h-4 w-4 shrink-0 text-negative mt-0.5"
+                      aria-label={c("Failed", "未通过")}
+                    />
                   )}
                   <div className="flex-1 space-y-0.5">
                     <div className="flex items-center justify-between">
@@ -145,10 +152,11 @@ export function ApprovalModal({ assessment, onClose }: ApprovalModalProps) {
                     </div>
                     <p
                       className={`text-[0.6875rem] ${
-                        chk.passed ? "text-muted-foreground" : "text-red-500 font-medium"
+                        chk.passed ? "text-muted-foreground" : "text-negative font-medium"
                       }`}
                     >
-                      {chk.message}
+                      {/* Failed checks lead with the plain-language reason for their code. */}
+                      {!chk.passed && chk.code ? reasonText(chk.code, c) : chk.message}
                     </p>
                   </div>
                 </div>

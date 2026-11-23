@@ -107,8 +107,19 @@ async def get_journal_entries(account_id: str) -> List[Dict[str, Any]]:
     plans = plans_res.data or []
 
     # 3. Fetch existing journal reviews
-    reviews_res = client.table("trade_os_journal_reviews").select("*").execute()
-    reviews_map = {r["trade_group_id"]: r for r in (reviews_res.data or [])}
+    # Only this account's trade groups: the service-role client bypasses RLS.
+    group_ids = [tg["id"] for tg in trade_groups if tg.get("id")]
+    reviews = []
+    if group_ids:
+        reviews = (
+            client.table("trade_os_journal_reviews")
+            .select("*")
+            .in_("trade_group_id", group_ids)
+            .execute()
+            .data
+            or []
+        )
+    reviews_map = {r["trade_group_id"]: r for r in reviews}
 
     journal_items: List[Dict[str, Any]] = []
 
