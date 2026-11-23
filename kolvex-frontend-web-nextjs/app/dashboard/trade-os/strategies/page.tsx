@@ -6,6 +6,7 @@ import { StrategyVersion, fetchStrategies } from "@/lib/tradeOsApi";
 import { Card } from "@/components/ui/card";
 import { FlaskConical, ShieldCheck, GitCommit, CheckCircle2, Lock } from "lucide-react";
 import { BacktestRunner } from "@/components/trade-os/strategies/BacktestRunner";
+import { PortfolioBacktest } from "@/components/trade-os/strategies/PortfolioBacktest";
 
 export default function TradeOsStrategiesPage() {
   const c = useCopy();
@@ -28,8 +29,17 @@ export default function TradeOsStrategiesPage() {
 
   return (
     <div className="space-y-6">
-      {/* Historical Backtester */}
-      <BacktestRunner />
+      {/* Portfolio backtest first: it answers whether the strategy has an edge */}
+      <PortfolioBacktest />
+
+      <details className="group rounded-3xl border border-foreground/10 p-4 sm:p-5">
+        <summary className="cursor-pointer text-sm font-semibold text-foreground">
+          {c("Single-stock backtest", "单只股票回测")}
+        </summary>
+        <div className="pt-4">
+          <BacktestRunner />
+        </div>
+      </details>
 
       {/* Strategies Registry Section */}
       <section className="space-y-3 pt-2">

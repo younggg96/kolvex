@@ -173,6 +173,13 @@ export function reasonText(code: string | null | undefined, c: Copy): string | n
       "同一天触及入场和止损，按不利情况处理。",
     ),
     INSUFFICIENT_INDICATOR_HISTORY: c("Not enough history for indicators.", "指标所需历史不足。"),
+    MAX_POSITIONS: c("Already at the max number of positions.", "持仓数已满。"),
+    INVALID_STOP_AFTER_GAP: c(
+      "After the gap the stop was outside 2.5%–10%.",
+      "跳空后止损距离不在 2.5%–10% 之间。",
+    ),
+    SIZE_BELOW_ONE_SHARE: c("Limits allowed less than one share.", "各项上限下连 1 股都买不了。"),
+    NOT_TRIGGERED: c("Entry never triggered.", "未触发入场。"),
     ENTRY_TRIGGERED: c("Price reached the entry trigger.", "价格已触及入场价。"),
   };
   return map[code] ?? code;

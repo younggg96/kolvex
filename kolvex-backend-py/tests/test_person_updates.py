@@ -103,6 +103,14 @@ class _Query:
         self.calls.append(("delete",))
         return self
 
+    def upsert(self, row, on_conflict):
+        self.calls.append(("upsert", row, on_conflict))
+        return self
+
+    def select(self, columns):
+        self.calls.append(("select", columns))
+        return self
+
     def eq(self, column, value):
         self.calls.append(("eq", column, value))
         return self
@@ -140,3 +148,77 @@ def test_admin_delete_reports_missing_and_rejects_bad_ids():
     assert missing.status_code == 404
     assert missing.json()["detail"] == "这条动态不存在或已删除。"
     assert client.delete("/person-updates/Bad_ID").status_code == 422
+
+
+PORTRAIT = "https://upload.wikimedia.org/wikipedia/commons/a/a0/Trump.jpg"
+
+
+def test_admin_sets_and_clears_a_portrait_by_person_key():
+    db = _Query([])
+    client = _admin_client(db)
+    saved = client.put(
+        "/person-updates/avatars", json={"person": " Donald  J. Trump", "avatar_url": PORTRAIT}
+    )
+    assert saved.status_code == 200
+    assert saved.json() == {"person_key": "donald trump", "avatar_url": PORTRAIT}
+    upsert = next(call for call in db.calls if call[0] == "upsert")
+    assert upsert[1]["person_key"] == "donald trump"
+    assert upsert[1]["avatar_url"] == PORTRAIT
+    assert upsert[2] == "person_key"
+
+    db.calls.clear()
+    cleared = client.put(
+        "/person-updates/avatars", json={"person": "Donald Trump", "avatar_url": None}
+    )
+    assert cleared.status_code == 200
+    assert ("delete",) in db.calls
+    assert ("eq", "person_key", "donald trump") in db.calls
+
+
+def test_admin_portrait_rejects_non_https():
+    client = _admin_client(_Query([]))
+    response = client.put(
+        "/person-updates/avatars",
+        json={"person": "Donald Trump", "avatar_url": "http://example.com/a.jpg"},
+        headers={"Accept-Language": "zh"},
+    )
+    assert response.status_code == 422
+    assert "HTTPS" in response.json()["detail"]
+
+
+class _Timeline:
+    """Returns the updates for person_updates and the portraits for person_avatars."""
+
+    def __init__(self, updates, portraits):
+        self.tables = {"person_updates": updates, "person_avatars": portraits}
+
+    def table(self, name):
+        rows = self.tables[name]
+        query = _Query([] if isinstance(rows, Exception) else rows)
+        if isinstance(rows, Exception):
+
+            def fail():
+                raise rows
+
+            query.execute = fail
+        for method in ("order", "range"):
+            setattr(query, method, lambda *args, **kwargs: query)
+        return query
+
+
+def test_timeline_prefers_admin_portrait_and_survives_missing_table():
+    from postgrest.exceptions import APIError
+
+    from app.api.routes.person_updates import timeline
+
+    rows = [{**ENTRY, "avatar_url": None}, {**ENTRY, "id": "other", "person": "Jensen Huang"}]
+    result = timeline(
+        _Timeline(
+            [dict(row) for row in rows], [{"person_key": "donald trump", "avatar_url": PORTRAIT}]
+        )
+    )
+    assert [item["profile_avatar_url"] for item in result["items"]] == [PORTRAIT, None]
+
+    missing = APIError({"message": "relation does not exist", "code": "42P01"})
+    result = timeline(_Timeline([dict(row) for row in rows], missing))
+    assert [item["profile_avatar_url"] for item in result["items"]] == [None, None]

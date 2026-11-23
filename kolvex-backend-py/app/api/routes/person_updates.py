@@ -1,15 +1,16 @@
-"""Public timeline and admin-only import, edit and delete for key-person updates."""
+"""Public timeline and admin-only import, edit and delete for key-person updates and portraits."""
 
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Request
+from fastapi import APIRouter, Body, Depends, HTTPException, Path, Request
 from postgrest.exceptions import APIError
+from pydantic import ValidationError
 
 from app.api.dependencies.auth import verify_admin
 from app.core.supabase import get_supabase_service
-from app.schemas.person_updates import ID_PATTERN, validate_import
+from app.schemas.person_updates import ID_PATTERN, PersonAvatar, person_key, validate_import
 from supabase import Client
 
 router = APIRouter(prefix="/person-updates", tags=["Person updates"])
@@ -59,6 +60,46 @@ async def save(
     return {"count": len(items), "ids": [item["id"] for item in items]}
 
 
+@admin_router.put("/avatars")
+async def set_avatar(
+    request: Request,
+    body: dict = Body(...),
+    _admin: str = Depends(verify_admin),
+    db: Client = Depends(get_supabase_service),
+):
+    """Set or clear (avatar_url: null) one person's portrait. Imported updates never touch it."""
+    chinese = not request.headers.get("accept-language", "").lower().startswith("en")
+    try:
+        avatar = PersonAvatar.model_validate(body)
+    except ValidationError as exc:
+        raise HTTPException(
+            422,
+            "头像须为不含账号密码的绝对 HTTPS 链接。"
+            if chinese and any(error["loc"] == ("avatar_url",) for error in exc.errors())
+            else ("人物名不能为空。" if chinese else "Enter a name and an HTTPS image URL."),
+        ) from exc
+    key = person_key(avatar.person)
+    table = db.table("person_avatars")
+    query = (
+        table.upsert(
+            {
+                "person_key": key,
+                "avatar_url": avatar.avatar_url,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            },
+            on_conflict="person_key",
+        )
+        if avatar.avatar_url
+        else table.delete().eq("person_key", key)
+    )
+    try:
+        await asyncio.to_thread(query.execute)
+    except APIError as exc:
+        logger.exception("Person avatar save failed")
+        raise HTTPException(503, detail=exc.message) from exc
+    return {"person_key": key, "avatar_url": avatar.avatar_url}
+
+
 @admin_router.delete("/{item_id}")
 async def delete(
     request: Request,
@@ -97,8 +138,22 @@ def timeline(db: Client = Depends(get_supabase_service)):
             )
             items.extend(response.data)
             if len(response.data) < READ_BATCH:
-                return {"items": items}
+                break
             offset += READ_BATCH
     except APIError as exc:
         logger.exception("Person updates timeline failed")
         raise HTTPException(503, detail="Person updates are temporarily unavailable") from exc
+    portraits = person_avatars(db)
+    for item in items:
+        item["profile_avatar_url"] = portraits.get(person_key(item["person"]))
+    return {"items": items}
+
+
+def person_avatars(db: Client) -> dict[str, str]:
+    """Admin-set portraits by person key. A failure only costs the portraits, not the timeline."""
+    try:
+        rows = db.table("person_avatars").select("person_key,avatar_url").execute().data
+    except APIError:
+        logger.exception("Person avatars unavailable")
+        return {}
+    return {row["person_key"]: row["avatar_url"] for row in rows}

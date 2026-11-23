@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { AdminRowsSkeleton } from "@/components/admin/AdminSkeletons";
+import PersonAvatarsEditor from "@/components/admin/PersonAvatarsEditor";
 import PersonUpdatesImporter from "@/components/admin/PersonUpdatesImporter";
 import { useCopy } from "@/components/decision/shared";
 import { PersonUpdateAvatar } from "@/components/person-updates/PersonUpdateAvatar";
@@ -300,6 +301,8 @@ export default function PersonUpdatesManager() {
           ))}
         </ul>
       )}
+
+      {items && <PersonAvatarsEditor items={items} onSaved={load} />}
 
       <Dialog open={draft !== null} onOpenChange={(open) => !open && !busy && setDraft(null)}>
         <DialogContent

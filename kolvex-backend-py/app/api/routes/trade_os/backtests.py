@@ -2,11 +2,13 @@
 Trade OS Backtests API Routes
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from app.api.dependencies.auth import get_current_user_id
+from app.services.trade_os import backtest_jobs
 from app.services.trade_os.backtester import run_strategy_backtest
 from app.services.trade_os.decimal_utils import d
 from app.services.trade_os.market_regime import regime_by_date
@@ -61,3 +63,40 @@ async def trigger_backtest(body: BacktestRunRequest) -> Dict[str, Any]:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+class PortfolioBacktestRequest(BaseModel):
+    # Default: the scanner's admin universe. Today's list applied to the past
+    # (survivorship bias is reported in the result's assumptions).
+    symbols: Optional[List[str]] = None
+    # 2017 gives SMA200 warm-up before the PRD development window (2018–2023).
+    start_date: str = "2017-01-01"
+    end_date: Optional[str] = None
+    initial_capital: float = 100000.0
+    use_market_filter: bool = True
+    slippage_bps: float = 5.0
+
+
+@router.post("/portfolio")
+async def start_portfolio_backtest(
+    body: PortfolioBacktestRequest, user_id: str = Depends(get_current_user_id)
+) -> Dict[str, Any]:
+    """Queues a Swing V3.0 portfolio backtest; poll GET /backtests/{id}."""
+    try:
+        return backtest_jobs.start_portfolio_job(user_id=user_id, **body.model_dump())
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
+
+@router.get("")
+def list_backtests(user_id: str = Depends(get_current_user_id)) -> List[Dict[str, Any]]:
+    """Your recent Swing V3.0 backtests (summaries only)."""
+    return backtest_jobs.list_jobs(user_id)
+
+
+@router.get("/{job_id}")
+def get_backtest(job_id: str, user_id: str = Depends(get_current_user_id)) -> Dict[str, Any]:
+    job = backtest_jobs.get_job(user_id, job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Backtest not found")
+    return job

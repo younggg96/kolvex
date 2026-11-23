@@ -714,6 +714,60 @@ export async function runBacktest(params: {
   });
 }
 
+export interface ResearchGates {
+  checks: Record<"expectancy_r" | "profit_factor" | "max_drawdown_pct" | "min_trades", boolean>;
+  passed: boolean;
+  thresholds: Record<string, number>;
+}
+
+export interface BacktestSegment {
+  name: "development" | "validation" | "holdout" | string;
+  start: string;
+  end: string;
+  summary: BacktestSummary;
+  gates: ResearchGates;
+}
+
+export interface PortfolioBacktestJob {
+  id: string;
+  status: "queued" | "running" | "completed" | "failed";
+  error?: string | null;
+  start_date: string;
+  end_date: string;
+  initial_capital: number;
+  parameters: { symbols: string[]; use_market_filter: boolean; [k: string]: unknown };
+  summary_metrics?: BacktestSummary | Record<string, never>;
+  gates?: ResearchGates | Record<string, never>;
+  segments?: BacktestSegment[];
+  benchmark?: { symbol: string; total_return_pct: number; basis: string } | null;
+  equity_curve?: { date: string; equity: string; drawdown_pct: string }[];
+  trades?: BacktestTrade[];
+  skipped_signals?: { symbol?: string; signal_date: string; reason: string }[];
+  excluded_symbols?: string[];
+  assumptions?: Record<string, string>;
+  config_hash?: string | null;
+  created_at: string;
+  completed_at?: string | null;
+}
+
+export async function startPortfolioBacktest(params: {
+  symbols?: string[];
+  start_date?: string;
+  end_date?: string;
+  initial_capital?: number;
+  use_market_filter?: boolean;
+}): Promise<{ id: string; status: string }> {
+  return apiRequest("/backtests/portfolio", { method: "POST", body: JSON.stringify(params) });
+}
+
+export async function fetchBacktestJob(id: string): Promise<PortfolioBacktestJob> {
+  return apiRequest<PortfolioBacktestJob>(`/backtests/${id}`);
+}
+
+export async function fetchBacktestJobs(): Promise<PortfolioBacktestJob[]> {
+  return apiRequest<PortfolioBacktestJob[]>("/backtests");
+}
+
 export async function fetchJournal(accountId: string): Promise<JournalEntry[]> {
   return apiRequest<JournalEntry[]>(`/journal/${accountId}`);
 }

@@ -91,3 +91,83 @@ def test_ac21_same_input_same_result_and_hash():
     b = run_strategy_backtest("NVDA", bars)
     assert a["config_hash"] == b["config_hash"]
     assert a["trades"] == b["trades"]
+
+
+# --- Portfolio (PRD §13.3–13.4) ---------------------------------------------
+
+from datetime import date, timedelta  # noqa: E402
+
+from app.services.trade_os.backtester import research_gates, run_portfolio_backtest  # noqa: E402
+
+
+def dated(bars, start=date(2023, 6, 1)):
+    return [{**b, "date": (start + timedelta(days=i)).isoformat()} for i, b in enumerate(bars)]
+
+
+WIN = [TRIGGER, (155, 170, 154.5, 168)]
+
+
+def test_same_day_signals_respect_max_positions_and_symbol_order():
+    bars = dated(history(WIN))
+    regimes = {b["date"]: "cautious" for b in bars}
+    res = run_portfolio_backtest({"CCC": bars, "AAA": bars, "BBB": bars}, regimes=regimes)
+    assert sorted(t["symbol"] for t in res["trades"]) == ["AAA", "BBB"]
+    assert {"symbol": "CCC", "reason": "MAX_POSITIONS"}.items() <= next(
+        s for s in res["skipped_signals"] if s["symbol"] == "CCC"
+    ).items()
+
+
+def test_risk_on_takes_all_three_on_one_account():
+    bars = dated(history(WIN))
+    res = run_portfolio_backtest(
+        {"AAA": bars, "BBB": bars, "CCC": bars}, regimes={b["date"]: "risk_on" for b in bars}
+    )
+    assert len(res["trades"]) == 3
+    # cash is shared: three 10% positions, never more than the account
+    assert float(res["summary"]["ending_capital"]) > 100000
+
+
+def test_segments_split_trades_by_entry_date():
+    bars = dated(history(WIN), start=date(2023, 5, 1))  # entry lands in Jan 2024
+    res = run_portfolio_backtest({"AAA": bars})
+    names = {s["name"]: s["summary"]["total_trades"] for s in res["segments"]}
+    assert names["development"] == 0
+    assert names["validation"] == 1
+
+
+def test_short_history_symbols_are_excluded_not_faked():
+    res = run_portfolio_backtest({"AAA": dated(history(WIN)), "NEW": dated(history([]))[:50]})
+    assert res["excluded_symbols"] == ["NEW"]
+
+
+def test_research_gates_report_failures():
+    gates = research_gates(
+        {"expectancy_r": 0.1, "profit_factor": None, "max_drawdown_pct": 4, "total_trades": 120}
+    )
+    assert gates["passed"] is False
+    assert gates["checks"] == {
+        "expectancy_r": False,
+        "profit_factor": False,
+        "max_drawdown_pct": True,
+        "min_trades": True,
+    }
+
+
+def test_job_execution_with_market_filter_and_failed_fetch():
+    from app.services.trade_os.backtest_jobs import _mark_stale, execute_portfolio_backtest
+
+    bars = dated(history(WIN))
+    flat = [{**b, "open": 500, "high": 501, "low": 499, "close": 500} for b in bars]
+
+    def fetch(sym, start, end):
+        if sym == "BAD":
+            raise RuntimeError("boom")
+        return flat if sym in ("SPY", "QQQ") else bars
+
+    res = execute_portfolio_backtest(
+        {"symbols": ["AAA", "BAD"], "start_date": "2023-01-01", "use_market_filter": True}, fetch
+    )
+    assert "BAD" in res["excluded_symbols"]
+    assert res["gates"]["passed"] is False  # one trade is far below the 100-trade gate
+    old = {"status": "running", "created_at": "2020-01-01T00:00:00+00:00"}
+    assert _mark_stale(old)["status"] == "failed"

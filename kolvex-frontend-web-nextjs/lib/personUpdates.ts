@@ -10,6 +10,8 @@ export interface PersonUpdate {
   tags: string[];
   tickers: string[];
   avatar_url?: string | null;
+  /** Admin-set portrait for this person (person_avatars); imports never change it. */
+  profile_avatar_url?: string | null;
   image_url: string | null;
   image_alt: string | null;
 }
@@ -73,7 +75,7 @@ function personKey(person: string) {
     .replace(/ [a-z]\.?(?= )/g, "");
 }
 
-// Matched by English or Chinese name. Local portraits take priority over the feed's avatar_url.
+// Matched by English or Chinese name. Used when the admin has not set a portrait for the person.
 const PERSON_AVATARS: Record<string, string> = {
   "kevin warsh": "/person-updates/kevin-warsh.jpg",
   "jensen huang": "/person-updates/jensen-huang.jpg",
@@ -85,13 +87,20 @@ const PERSON_AVATARS: Record<string, string> = {
 };
 export const FED_SEAL_AVATAR = "/person-updates/fed-seal.jpg";
 
-/** Local portrait, else the feed's avatar; Fed officials without a portrait get the Board seal. */
+/**
+ * Admin-set portrait, else a bundled portrait; Fed officials without one get the Board seal;
+ * the update's own avatar_url comes last.
+ */
 export function personAvatar({
   person,
   person_cn,
   tags,
   avatar_url,
-}: Pick<PersonUpdate, "person" | "tags" | "avatar_url"> & { person_cn?: string }): string | null {
+  profile_avatar_url,
+}: Pick<PersonUpdate, "person" | "tags" | "avatar_url" | "profile_avatar_url"> & {
+  person_cn?: string;
+}): string | null {
+  if (profile_avatar_url) return profile_avatar_url;
   const local =
     PERSON_AVATARS[personKey(person)] ??
     (person_cn ? PERSON_AVATARS[personKey(person_cn)] : undefined);

@@ -162,3 +162,22 @@ test("Fed officials sharing the seal collapse into one rail entry that filters a
   assert.equal(matchesPersonFilter({ person: "Scott Bessent", tags: [] }, FED_GROUP), false);
   assert.equal(matchesPersonFilter({ person: "Scott Bessent", tags: [] }, ""), true);
 });
+
+test("an admin-set portrait wins over bundled portraits, the Fed seal and the update's avatar", () => {
+  const profile = "https://upload.wikimedia.org/portrait.jpg";
+  for (const person of ["Jensen Huang", "Jerome Powell", "Donald Trump"]) {
+    assert.equal(
+      personAvatar({
+        person,
+        tags: [],
+        avatar_url: "https://example.test/feed.jpg",
+        profile_avatar_url: profile,
+      }),
+      profile,
+    );
+  }
+  assert.equal(
+    personAvatar({ person: "Jensen Huang", tags: [], profile_avatar_url: null }),
+    "/person-updates/jensen-huang.jpg",
+  );
+});

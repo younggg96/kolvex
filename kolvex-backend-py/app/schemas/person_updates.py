@@ -33,6 +33,42 @@ TIMESTAMP = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[
 HTTP_URL = TypeAdapter(AnyHttpUrl)
 
 
+def _https_url(value: str) -> str:
+    try:
+        url = HTTP_URL.validate_python(value)
+    except ValidationError:
+        url = None
+    if (
+        url is None
+        or not re.match(r"^https://[^/?#]", value, re.IGNORECASE)
+        or not url.host
+        or url.username is not None
+        or url.password is not None
+        or any(char.isspace() or char == "\\" or ord(char) < 32 for char in value)
+    ):
+        raise PydanticCustomError("https_url", "Use an absolute HTTPS URL without credentials")
+    return value
+
+
+def person_key(person: str) -> str:
+    """Same key as the web's personKey: case/spacing-insensitive, middle initials dropped."""
+    return re.sub(r" [a-z]\.?(?= )", "", " ".join(person.split()).lower())
+
+
+class PersonAvatar(BaseModel):
+    """Admin-set portrait for one person, kept apart from the updates feed."""
+
+    model_config = ConfigDict(strict=True, extra="forbid")
+
+    person: Annotated[NonEmpty, StringConstraints(max_length=200)]
+    avatar_url: Annotated[NonEmpty, StringConstraints(max_length=2048)] | None
+
+    @field_validator("avatar_url")
+    @classmethod
+    def validate_url(cls, value: str | None) -> str | None:
+        return None if value is None else _https_url(value)
+
+
 class PersonUpdate(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid", validate_default=True)
 
@@ -66,22 +102,7 @@ class PersonUpdate(BaseModel):
     @field_validator("source_url", "avatar_url", "image_url")
     @classmethod
     def validate_url(cls, value: str | None) -> str | None:
-        if value is None:
-            return None
-        try:
-            url = HTTP_URL.validate_python(value)
-        except ValidationError:
-            url = None
-        if (
-            url is None
-            or not re.match(r"^https://[^/?#]", value, re.IGNORECASE)
-            or not url.host
-            or url.username is not None
-            or url.password is not None
-            or any(char.isspace() or char == "\\" or ord(char) < 32 for char in value)
-        ):
-            raise PydanticCustomError("https_url", "Use an absolute HTTPS URL without credentials")
-        return value
+        return None if value is None else _https_url(value)
 
     @field_validator("image_alt")
     @classmethod
