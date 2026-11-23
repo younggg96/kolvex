@@ -152,7 +152,10 @@ export function ChatDetailContainer({
   const [streamingContent, setStreamingContent] = useState("");
   const [streamingRevenueEvidence, setStreamingRevenueEvidence] = useState<RevenueEvidence[]>([]);
   const [streamingQuoteEvidence, setStreamingQuoteEvidence] = useState<QuoteEvidence[]>([]);
-  const [pendingUserMessage, setPendingUserMessage] = useState("");
+  // A question carried over from the welcome page shows on the first paint, not after the send starts.
+  const [pendingUserMessage, setPendingUserMessage] = useState(() =>
+    firstMessage ? visibleQuestion(firstMessage).trim() : "",
+  );
   const [agentStatus, setAgentStatus] = useState<AgentStatus | null>(null);
   const [streamError, setStreamError] = useState<string | null>(null);
   const [lastSubmittedMessage, setLastSubmittedMessage] = useState("");
@@ -639,7 +642,11 @@ export function ChatDetailContainer({
     if (sentFirstMessageRef.current === dedupKey) return;
 
     const timeout = window.setTimeout(() => {
-      if (isLoadingRef.current || isBlocked) return;
+      if (isLoadingRef.current) return;
+      if (isBlocked) {
+        setPendingUserMessage("");
+        return;
+      }
       sentFirstMessageRef.current = dedupKey;
       // Preserve Next.js history state when removing the one-shot query params.
       if (pathname) window.history.replaceState(window.history.state, "", pathname);

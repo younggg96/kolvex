@@ -16,9 +16,7 @@ export default function ChatPage() {
   useEffect(() => {
     if (pending !== "1") return;
     try {
-      const message = sessionStorage.getItem(
-        `kolvex:pending:${conversationId}`,
-      );
+      const message = sessionStorage.getItem(`kolvex:pending:${conversationId}`);
       if (message) {
         setPendingMessage(visibleQuestion(message));
         sessionStorage.removeItem(`kolvex:pending:${conversationId}`);
@@ -43,7 +41,8 @@ export default function ChatPage() {
   );
 
   return (
-    <DashboardLayout title={conversationTitle}>
+    // The thread opens straight from the composer, so a page-enter fade reads as a flash.
+    <DashboardLayout title={conversationTitle} noTransition>
       <ChatDetailContainer
         key={conversationId}
         className="flex-1"

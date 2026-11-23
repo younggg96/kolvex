@@ -74,10 +74,8 @@ export function ChatWelcome({
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (isBlocked || isLoading) return;
-    if (query.trim()) {
-      onSubmit(query.trim());
-      setQuery("");
-    }
+    // The text stays in the composer until the thread opens, so nothing blanks out while it starts.
+    if (query.trim()) onSubmit(query.trim());
   };
 
   const handleSuggestionClick = (suggestion: Suggestion) => {
