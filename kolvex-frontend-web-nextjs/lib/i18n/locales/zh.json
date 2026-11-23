@@ -479,7 +479,7 @@
     },
     "quoteEvidence": {
       "collapse": "收起",
-      "expand": "展开其余 {count} 条行情",
+      "expandAll": "展开行情证据",
       "title": "行情证据",
       "unknownTime": "报价时间未知",
       "unknownCurrency": "币种未知",

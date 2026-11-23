@@ -85,3 +85,14 @@ test("opinion links open creator intelligence and preserve only a market-list re
     "/dashboard",
   );
 });
+
+test("cash indices name a tracking ETF for extended hours; VIX keeps its own session", () => {
+  const proxies = Object.fromEntries(BENCHMARKS.map((item) => [item.symbol, item.extendedProxy]));
+  assert.deepEqual(proxies, {
+    "^GSPC": "SPY",
+    "^IXIC": "QQQ",
+    "^DJI": "DIA",
+    "^RUT": "IWM",
+    "^VIX": undefined,
+  });
+});

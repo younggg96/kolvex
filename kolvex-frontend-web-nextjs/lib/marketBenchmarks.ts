@@ -1,8 +1,12 @@
+/**
+ * Cash indices are only calculated 09:30–16:00 ET. Outside it, their cards show the
+ * tracking ETF's own pre-market, after-hours or overnight trades, labelled as the ETF.
+ */
 export const BENCHMARKS = [
-  { symbol: "^GSPC", en: "S&P 500", zh: "标普 500" },
-  { symbol: "^IXIC", en: "NASDAQ", zh: "纳斯达克" },
-  { symbol: "^DJI", en: "Dow Jones", zh: "道琼斯" },
-  { symbol: "^RUT", en: "Russell 2000", zh: "罗素 2000" },
+  { symbol: "^GSPC", en: "S&P 500", zh: "标普 500", extendedProxy: "SPY" },
+  { symbol: "^IXIC", en: "NASDAQ", zh: "纳斯达克", extendedProxy: "QQQ" },
+  { symbol: "^DJI", en: "Dow Jones", zh: "道琼斯", extendedProxy: "DIA" },
+  { symbol: "^RUT", en: "Russell 2000", zh: "罗素 2000", extendedProxy: "IWM" },
   { symbol: "^VIX", en: "VIX", zh: "VIX" },
 ] as const;
 
@@ -15,6 +19,8 @@ export type MarketInstrument = {
   source?: "fred";
   sourceUrl?: string;
   note?: { en: string; zh: string };
+  /** ETF whose extended-hours trades stand in, clearly labelled, while the index is not calculated. */
+  extendedProxy?: string;
 };
 
 /** ETF prices represent the sectors; they are not the underlying index levels. */

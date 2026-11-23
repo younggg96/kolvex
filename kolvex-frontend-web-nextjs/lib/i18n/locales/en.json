@@ -496,7 +496,7 @@
     },
     "quoteEvidence": {
       "collapse": "Collapse",
-      "expand": "Show {count} more quotes",
+      "expandAll": "Show quote evidence",
       "title": "Quote evidence",
       "unknownTime": "Quote time unavailable",
       "unknownCurrency": "Currency unavailable",

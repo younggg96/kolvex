@@ -42,12 +42,21 @@ import FundHoldingsDialog from "./FundHoldingsDialog";
 import { MarketInfoButton } from "./MarketToolbar";
 import { signedPercent, withSign } from "@/lib/format";
 import { latestChartQuote, sessionLabel } from "@/lib/chart/quote";
-import { augmentTrendWithQuote } from "@/lib/stockTrends";
+import {
+  augmentTrendWithQuote,
+  currentTradingDay,
+  loadStockTrend,
+  type TrendPoint,
+} from "@/lib/stockTrends";
 
 const OVERVIEW_GROUPS = MARKET_GROUPS.filter((group) => group.key === "indices");
 const TREND_GROUPS = MARKET_GROUPS.filter((group) => group.key !== "indices");
 const TREND_QUOTE_SYMBOLS = TREND_GROUPS.flatMap((group) =>
   group.instruments.filter((item) => item.source !== "fred").map((item) => item.symbol),
+);
+/** Index cards also need their tracking ETFs' extended-hours quotes. */
+const OVERVIEW_QUOTE_SYMBOLS = BENCHMARKS.flatMap((item) =>
+  "extendedProxy" in item ? [item.symbol, item.extendedProxy] : [item.symbol],
 );
 const RANGES = MARKET_RANGES;
 /** Equity ETF groups whose cards open the fund's top holdings. */
@@ -66,8 +75,11 @@ function MarketInstrumentCard({
   attempt,
   onRetry,
   onOpen,
+  proxyQuote,
 }: {
   benchmark: MarketInstrument;
+  /** Quote of `benchmark.extendedProxy`, for the ETF's extended-hours change. */
+  proxyQuote?: StockQuote;
   /** When set, the card opens this (e.g. the holdings sheet) instead of navigating. */
   onOpen?: () => void;
   quote?: StockQuote;
@@ -143,6 +155,49 @@ function MarketInstrumentCard({
       });
     return () => controller.abort();
   }, [benchmark, range, attempt, near, seriesKey, seriesRevision]);
+
+  // Cash indices have no extended-hours prints: load the tracking ETF's current trading day.
+  const proxySymbol = range === "1D" ? benchmark.extendedProxy : undefined;
+  const [proxySeries, setProxySeries] = useState<TrendPoint[] | null>(null);
+  const proxyAttempt = useRef(attempt);
+  useEffect(() => setProxySeries(null), [proxySymbol]);
+  useEffect(() => {
+    if (!proxySymbol || !near) return;
+    const controller = new AbortController();
+    const force = seriesRevision > 0 || proxyAttempt.current !== attempt;
+    proxyAttempt.current = attempt;
+    loadStockTrend(proxySymbol, { period: "1d", interval: "5m" }, controller.signal, force)
+      .then((points) => {
+        if (!controller.signal.aborted) setProxySeries(points);
+      })
+      .catch(() => {
+        // The index's own regular-session line remains; nothing stands in for missing ETF data.
+      });
+    return () => controller.abort();
+  }, [proxySymbol, near, seriesRevision, attempt]);
+  const proxyLive = proxySymbol ? latestChartQuote(proxyQuote) : null;
+  const proxyDay = useMemo(
+    () => (proxySeries ? currentTradingDay(augmentTrendWithQuote(proxySeries, proxyLive)) : null),
+    [proxySeries, proxyLive],
+  );
+  const indexLast = series.at(-1)?.date;
+  const proxyLast = proxyDay?.at(-1);
+  // Only once the ETF trades after the index's last calculated value, outside regular hours.
+  const proxyActive = Boolean(
+    proxyDay &&
+    proxyDay.length > 1 &&
+    proxyLast?.session &&
+    proxyLast.session !== "regular" &&
+    indexLast &&
+    Date.parse(proxyLast.date) > Date.parse(indexLast),
+  );
+  const proxySession = proxyActive ? proxyLast!.session! : null;
+  const proxyPercent =
+    proxyActive && proxyDay
+      ? proxyLive && proxyLive.session !== "regular" && proxyLive.changePercent != null
+        ? proxyLive.changePercent
+        : ((proxyDay.at(-1)!.value - proxyDay[0].value) / proxyDay[0].value) * 100
+      : null;
 
   const live =
     !benchmark.daily && (range === "1D" || range === "1W") ? latestChartQuote(quote) : null;
@@ -240,7 +295,13 @@ function MarketInstrumentCard({
       )}
     </>
   );
-  const effectiveSeries = useMemo(() => augmentTrendWithQuote(series, live), [series, live]);
+  const effectiveSeries = useMemo(() => {
+    const withQuote = augmentTrendWithQuote(series, live);
+    // A cash index's 16:00 print is its close, not after-hours trading.
+    if (isIndex) return withQuote.map(({ date, value }) => ({ date, value }));
+    return range === "1D" && !benchmark.daily ? currentTradingDay(withQuote) : withQuote;
+  }, [series, live, range, benchmark.daily, isIndex]);
+  const proxySessionName = proxySession ? sessionLabel(proxySession, c("en", "zh")) : "";
   const chartDisplay = (
     <>
       {seriesState === "loading" ? (
@@ -254,13 +315,30 @@ function MarketInstrumentCard({
           <span aria-hidden className="h-7" />
         </div>
       ) : (
-        <ScrubChart
-          data={effectiveSeries}
-          positive={positive}
-          height="100%"
-          onScrub={setScrub}
-          label={c(`${benchmark.en} trend, ${spec.en}`, `${benchmark.zh}走势，${spec.zh}`)}
-        />
+        <>
+          {proxyActive && proxyDay ? (
+            // ETF prices are not index points: no scrubbing into the index headline.
+            <ScrubChart
+              data={proxyDay}
+              positive={(proxyPercent ?? 0) >= 0}
+              baseline={proxyDay[0].value}
+              height="100%"
+              onScrub={() => {}}
+              label={c(
+                `${proxySymbol} ETF ${proxySessionName} trend, shown while ${benchmark.en} is not calculated`,
+                `${proxySymbol} ETF ${proxySessionName}走势，指数非计算时段参考`,
+              )}
+            />
+          ) : (
+            <ScrubChart
+              data={effectiveSeries}
+              positive={positive}
+              height="100%"
+              onScrub={setScrub}
+              label={c(`${benchmark.en} trend, ${spec.en}`, `${benchmark.zh}走势，${spec.zh}`)}
+            />
+          )}
+        </>
       )}
     </>
   );
@@ -312,7 +390,27 @@ function MarketInstrumentCard({
         >
           {changeDisplay}
         </div>
-        <div className="mt-2 h-16 max-md:h-10" aria-busy={seriesState === "loading"}>
+        {proxyActive && proxyPercent !== null && (
+          <p
+            className={cn(
+              "figure mt-1 truncate text-[11px] font-medium",
+              proxyPercent >= 0 ? "text-positive" : "text-negative",
+            )}
+            title={c(
+              `${benchmark.en} is calculated 09:30–16:00 ET; the line is the ${proxySymbol} ETF's ${proxySessionName.toLowerCase()} trades, versus its last close.`,
+              `${benchmark.zh}只在美东 09:30–16:00 计算；走势为 ${proxySymbol} ETF 的${proxySessionName}成交，较其上一收盘。`,
+            )}
+          >
+            <span className="text-muted-foreground">
+              {proxySymbol} ETF · {proxySessionName}{" "}
+            </span>
+            {signedPercent(proxyPercent)}
+          </p>
+        )}
+        <div
+          className={cn("mt-2 max-md:h-10", proxyActive ? "h-12" : "h-16")}
+          aria-busy={seriesState === "loading"}
+        >
           {chartDisplay}
         </div>
       </CardTarget>
@@ -566,6 +664,7 @@ function MarketCharts({
                   attempt={attempt}
                   onRetry={onRetry}
                   onOpen={HOLDINGS_GROUPS.has(group.key) ? () => setHoldingsOf(item) : undefined}
+                  proxyQuote={item.extendedProxy ? quotes[item.extendedProxy] : undefined}
                 />
               ))}
             </div>
@@ -648,11 +747,7 @@ function MarketOverview({
     quotes,
     loading,
     unavailable: failed,
-  } = useMarketQuotes(
-    BENCHMARKS.map((item) => item.symbol),
-    true,
-    attempt,
-  );
+  } = useMarketQuotes(OVERVIEW_QUOTE_SYMBOLS, true, attempt);
 
   const held = useHeldTickers(attempt);
   const catalogue = useCreatorCatalogue(attempt);
