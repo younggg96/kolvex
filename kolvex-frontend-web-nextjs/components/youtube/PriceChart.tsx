@@ -1,7 +1,7 @@
 "use client";
 import { useCachedResource } from "@/hooks/useCachedResource";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   Dialog,
@@ -93,7 +93,7 @@ export default function PriceChart({
    * 看盘 page: render only the advanced chart, filling its container. The page owns the
    * symbol (it lives in the URL), so the watchlist panel reports picks instead of switching here.
    */
-  terminal?: { onSelectSymbol: (symbol: string) => void; headerActions?: ReactNode };
+  terminal?: { onSelectSymbol: (symbol: string) => void };
 }) {
   /**
    * The full-screen chart can switch to another stock from its watchlist panel without leaving
@@ -426,7 +426,7 @@ export default function PriceChart({
 
   if (terminal)
     return (
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:overflow-hidden sm:px-4 sm:pb-3">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain bg-background p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:overflow-hidden sm:px-4 sm:pb-3">
         <ChartView
           mode="advanced"
           {...shared}
@@ -434,7 +434,6 @@ export default function PriceChart({
           renderSidePanels={(ai) => (
             <AdvancedSidePanels symbol={symbol} ai={ai} onSelectSymbol={terminal.onSelectSymbol} />
           )}
-          headerActions={terminal.headerActions}
         />
       </div>
     );

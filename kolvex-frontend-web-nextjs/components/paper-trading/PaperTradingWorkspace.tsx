@@ -860,7 +860,7 @@ function EquityChart({ snapshots }: { snapshots: { at: string; equity: string }[
         viewBox="0 0 800 192"
         role="img"
         aria-label={`${c("Equity from", "净值从")} ${money(values[0])} ${c("to", "到")} ${money(values[values.length - 1])}`}
-        className="h-40 w-full text-foreground sm:h-48"
+        className="h-40 w-full bg-background text-foreground sm:h-48"
         preserveAspectRatio="none"
       >
         <line x1="16" x2="784" y1="176" y2="176" stroke="currentColor" opacity=".15" />

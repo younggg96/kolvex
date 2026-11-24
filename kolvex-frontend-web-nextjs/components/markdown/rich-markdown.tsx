@@ -285,7 +285,7 @@ function BarChart({ spec }: { spec: ChartSpec }) {
 
   return (
     <figure
-      className="not-prose my-4 rounded-2xl border border-foreground/10 bg-foreground/[0.03] p-3.5"
+      className="not-prose my-4 rounded-2xl border border-foreground/10 bg-background p-3.5"
       aria-label={spec.title ? `${spec.title} ${c("chart", "图表")}` : c("Chart", "图表")}
     >
       {(spec.title || spec.unit) && (
@@ -362,7 +362,7 @@ function LineChart({ spec }: { spec: ChartSpec }) {
     .join(" ");
 
   return (
-    <figure className="not-prose my-4 rounded-2xl border border-foreground/10 bg-foreground/[0.03] p-3.5">
+    <figure className="not-prose my-4 rounded-2xl border border-foreground/10 bg-background p-3.5">
       {(spec.title || spec.unit) && (
         <figcaption className="mb-2 flex items-baseline justify-between gap-3">
           {spec.title && (

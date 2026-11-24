@@ -413,7 +413,9 @@ export interface PriceGraphProps {
   activeIndex: number | null;
   onActiveChange: (index: number | null) => void;
   onOpenAdvanced?: () => void;
-  /** Absolutely positioned nodes inside the plot box: AI drawing layers, indicator legends. */
+  /** Content above the drawing surface, in the normal layout flow. */
+  plotHeader?: ReactNode;
+  /** Absolutely positioned nodes inside the plot box. */
   overlay?: ReactNode;
   /** Drawing layer rendered inside the plot, clipped to the plot box. */
   drawingLayer?: ReactNode | ((geometry: GraphGeometry) => ReactNode);
@@ -498,6 +500,7 @@ export default function PriceGraph({
   activeIndex,
   onActiveChange,
   onOpenAdvanced,
+  plotHeader,
   overlay,
   drawingLayer,
   drawingInteraction,
@@ -1476,6 +1479,7 @@ export default function PriceGraph({
 
       {/* Phones give the plot every spare pixel (no gap above the controls); panes stack right under it. */}
       <div className={cn("mt-1.5", advanced && "flex flex-1 flex-col sm:mt-1 sm:min-h-0")}>
+        {!error && count > 0 && plotHeader}
         {body}
       </div>
 
@@ -1679,7 +1683,7 @@ export function PriceGraphPlot({
       onDoubleClick={onDoubleClick}
       onKeyDown={onKeyDown}
       className={cn(
-        "relative select-none overflow-hidden rounded-2xl focus-visible:outline-none focus-visible:bg-muted/20",
+        "relative select-none overflow-hidden rounded-2xl bg-background focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary",
         heightClass,
         advanced ? "touch-none cursor-crosshair" : "touch-pan-y",
         dragging && "cursor-grabbing",

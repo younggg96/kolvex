@@ -57,6 +57,20 @@ const optionsHref = (symbol: string) => `${marketStockHref(symbol)}?tab=options`
 
 const chip = "rounded bg-foreground/[0.06] px-1.5 py-0.5 text-[0.6875rem] text-muted-foreground";
 
+/**
+ * Secondary contract columns collapse to zero width on phones instead of `display: none`,
+ * so every row keeps all 8 cells and the details row can span the full table.
+ */
+const sideCol = {
+  sm: "w-0 overflow-hidden p-0 sm:px-2 sm:py-2.5",
+  smContent: "hidden sm:inline",
+  md: "w-0 overflow-hidden p-0 md:px-2 md:py-2.5",
+  mdContent: "hidden md:inline",
+  lg: "w-0 overflow-hidden p-0 lg:px-2 lg:py-2.5",
+  lgContent: "hidden lg:inline",
+};
+const CONTRACT_COLUMNS = 8;
+
 /** Why a symbol joined this run beyond the fixed watchlist. Core-only symbols show nothing. */
 function SourceTags({ sources }: { sources?: SymbolSource[] }) {
   const c = useCopy();
@@ -439,53 +453,64 @@ function ContractRow({
         <th scope="row" className="py-2.5 pl-3 pr-2 text-left font-semibold">
           <Link
             href={optionsHref(item.underlying)}
-            className="inline-flex items-center gap-2 rounded-full underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            className="inline-flex max-w-full items-center gap-1.5 rounded-full underline-offset-4 sm:gap-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
             <span aria-hidden="true">
               <CompanyLogo symbol={item.underlying} size="xs" />
             </span>
-            <span className="figure text-[0.9375rem]">{item.underlying}</span>
+            <span className="figure truncate text-[0.9375rem]">{item.underlying}</span>
           </Link>
         </th>
         <td className="px-2 py-2.5">
-          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-            <span className="figure text-[0.9375rem] font-medium">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <span className="figure whitespace-nowrap text-[0.9375rem] font-medium">
               ${item.strike}{" "}
               <span className={call ? "text-positive" : "text-negative"}>{call ? "C" : "P"}</span>
             </span>
-            <span className="figure text-xs text-muted-foreground">
+            <span className="figure whitespace-nowrap text-xs text-muted-foreground">
               {expiry(item.expiration)} · {c(`${item.dte}d`, `${item.dte} 天`)}
             </span>
-            {item.flags.new_positions && <span className={chip}>{c("New", "新开仓")}</span>}
-            {item.flags.crosses_earnings && <span className={chip}>{c("Earnings", "跨财报")}</span>}
-            <SourceTags sources={sources} />
           </div>
+          {(item.flags.new_positions ||
+            item.flags.crosses_earnings ||
+            sources?.some((s) => s !== "core")) && (
+            <div className="mt-1 flex flex-wrap gap-1">
+              {item.flags.new_positions && (
+                <span className={cn(chip, "whitespace-nowrap")}>{c("New", "新开仓")}</span>
+              )}
+              {item.flags.crosses_earnings && (
+                <span className={cn(chip, "whitespace-nowrap")}>{c("Earnings", "跨财报")}</span>
+              )}
+              <SourceTags sources={sources} />
+            </div>
+          )}
         </td>
-        <td className="w-[5.5rem] px-2 py-2.5 text-right sm:w-[7.5rem]">
+        <td className="px-2 py-2.5 text-right">
           <span className="figure text-[0.9375rem] font-semibold">
             {formatPremium(item.premium)}
           </span>
         </td>
-        <td className="hidden w-[5rem] px-2 py-2.5 text-right text-sm text-muted-foreground sm:table-cell">
-          <span className="figure">${fixed(item.price)}</span>
+        <td className={cn(sideCol.sm, "text-right text-sm text-muted-foreground")}>
+          <span className={cn("figure", sideCol.smContent)}>${fixed(item.price)}</span>
         </td>
-        <td className="hidden w-[5.5rem] px-2 py-2.5 text-right text-sm text-muted-foreground md:table-cell">
-          <span className="figure">{count(item.volume)}</span>
+        <td className={cn(sideCol.md, "text-right text-sm text-muted-foreground")}>
+          <span className={cn("figure", sideCol.mdContent)}>{count(item.volume)}</span>
         </td>
-        <td className="hidden w-[5.5rem] px-2 py-2.5 text-right text-sm text-muted-foreground lg:table-cell">
-          <span className="figure">{count(item.open_interest)}</span>
+        <td className={cn(sideCol.lg, "text-right text-sm text-muted-foreground")}>
+          <span className={cn("figure", sideCol.lgContent)}>{count(item.open_interest)}</span>
         </td>
-        <td className="hidden w-[4.5rem] px-2 py-2.5 text-right text-sm sm:table-cell">
+        <td className={cn(sideCol.sm, "text-right text-sm")}>
           <span
             className={cn(
               "figure",
+              sideCol.smContent,
               heavyVolume ? "font-medium text-foreground" : "text-muted-foreground",
             )}
           >
             {item.vol_oi === null ? "—" : `${fixed(item.vol_oi, 1)}×`}
           </span>
         </td>
-        <td className="w-10 py-2.5 pl-1 pr-2 text-right">
+        <td className="py-2.5 pl-1 pr-2 text-right">
           <button
             type="button"
             aria-expanded={open}
@@ -509,7 +534,7 @@ function ContractRow({
       </tr>
       {open && (
         <tr id={detailsId} className="border-t border-border bg-foreground/[0.02]">
-          <td colSpan={6} className="px-3 pb-4 pt-3">
+          <td colSpan={CONTRACT_COLUMNS} className="px-3 pb-4 pt-3">
             <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-4">
               {detail.map(([label, value]) => (
                 <div key={label} className="min-w-0">
@@ -609,42 +634,27 @@ export function UnusualContracts({
             <tr className="border-b border-border">
               <th
                 scope="col"
-                className="w-[4.5rem] py-2.5 pl-3 pr-2 text-left font-medium sm:w-[5.5rem]"
+                className="w-[5.75rem] py-2.5 pl-3 pr-2 text-left font-medium sm:w-[6.5rem]"
               >
                 {c("Symbol", "标的")}
               </th>
               <th scope="col" className="px-2 py-2.5 text-left font-medium">
                 {c("Contract", "合约")}
               </th>
-              <th
-                scope="col"
-                className="w-[5.5rem] px-2 py-2.5 text-right font-medium sm:w-[7.5rem]"
-              >
+              <th scope="col" className="w-[5rem] px-2 py-2.5 text-right font-medium sm:w-[7.5rem]">
                 {c("Premium", "权利金")}
               </th>
-              <th
-                scope="col"
-                className="hidden w-[5rem] px-2 py-2.5 text-right font-medium sm:table-cell"
-              >
-                {c("Avg price", "均价")}
+              <th scope="col" className={cn(sideCol.sm, "text-right font-medium sm:w-[5rem]")}>
+                <span className={sideCol.smContent}>{c("Avg price", "均价")}</span>
               </th>
-              <th
-                scope="col"
-                className="hidden w-[5.5rem] px-2 py-2.5 text-right font-medium md:table-cell"
-              >
-                {c("Volume", "成交量")}
+              <th scope="col" className={cn(sideCol.md, "text-right font-medium md:w-[5.5rem]")}>
+                <span className={sideCol.mdContent}>{c("Volume", "成交量")}</span>
               </th>
-              <th
-                scope="col"
-                className="hidden w-[5.5rem] px-2 py-2.5 text-right font-medium lg:table-cell"
-              >
-                {c("Open interest", "持仓量")}
+              <th scope="col" className={cn(sideCol.lg, "text-right font-medium lg:w-[5.5rem]")}>
+                <span className={sideCol.lgContent}>{c("Open interest", "持仓量")}</span>
               </th>
-              <th
-                scope="col"
-                className="hidden w-[4.5rem] px-2 py-2.5 text-right font-medium sm:table-cell"
-              >
-                Vol/OI
+              <th scope="col" className={cn(sideCol.sm, "text-right font-medium sm:w-[4.5rem]")}>
+                <span className={sideCol.smContent}>Vol/OI</span>
               </th>
               <th scope="col" className="w-10 py-2.5 pl-1 pr-2">
                 <span className="sr-only">{c("Details", "详情")}</span>
@@ -654,7 +664,10 @@ export function UnusualContracts({
           <tbody>
             {shown.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-3 py-8 text-center text-sm text-muted-foreground">
+                <td
+                  colSpan={CONTRACT_COLUMNS}
+                  className="px-3 py-8 text-center text-sm text-muted-foreground"
+                >
                   {c("No contracts in this group for this run.", "这个分类本次没有合约。")}
                 </td>
               </tr>

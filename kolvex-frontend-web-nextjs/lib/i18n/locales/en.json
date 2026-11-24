@@ -51,13 +51,6 @@
       "select": "Select a model"
     }
   },
-  "chartTerminal": {
-    "symbolPlaceholder": "Symbol",
-    "symbolLabel": "Switch symbol, press Enter",
-    "symbolInvalid": "Not a valid symbol",
-    "stockPage": "Stock page",
-    "openStock": "Open the {symbol} stock page"
-  },
   "sidebar": {
     "chart": "Chart",
     "tradeOs": "Trade OS",

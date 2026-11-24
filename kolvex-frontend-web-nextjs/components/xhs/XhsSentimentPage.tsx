@@ -187,12 +187,12 @@ export function TrendChart({
                     cy={cy}
                     r={isActive ? 5 : 3}
                     fill={negColor}
-                    stroke={isActive ? "var(--background, #000)" : "none"}
+                    stroke={isActive ? "rgb(var(--background))" : "none"}
                     strokeWidth={isActive ? 2 : 0}
                   />
                 );
               }}
-              activeDot={{ r: 5, strokeWidth: 2, stroke: "var(--background, #000)" }}
+              activeDot={{ r: 5, strokeWidth: 2, stroke: "rgb(var(--background))" }}
             />
             <Area
               type="monotone"
@@ -215,12 +215,12 @@ export function TrendChart({
                     cy={cy}
                     r={isActive ? 5 : 3}
                     fill={posColor}
-                    stroke={isActive ? "var(--background, #000)" : "none"}
+                    stroke={isActive ? "rgb(var(--background))" : "none"}
                     strokeWidth={isActive ? 2 : 0}
                   />
                 );
               }}
-              activeDot={{ r: 5, strokeWidth: 2, stroke: "var(--background, #000)" }}
+              activeDot={{ r: 5, strokeWidth: 2, stroke: "rgb(var(--background))" }}
             />
           </AreaChart>
         </ResponsiveContainer>

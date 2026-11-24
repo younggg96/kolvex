@@ -2,8 +2,9 @@ import type { StockQuote } from "./stockApi";
 import type { YouTubeStockSummary } from "./youtubeOpinionsApi";
 import { opinionDay } from "./opinionDates";
 import { validTicker } from "./decision";
-import type { DiscoveryStock } from "./marketDiscovery";
+import type { DiscoveryBoard, DiscoveryStock } from "./marketDiscovery";
 import { STOCK_SOURCES, type SocialBuzz, type StockSource } from "./socialBuzz";
+import { latestChartQuote } from "./chart/quote";
 import { signedPercent } from "@/lib/format";
 export type { StockSource } from "./socialBuzz";
 
@@ -183,6 +184,44 @@ function creatorHeat(stocks: readonly YouTubeStockSummary[], social: SocialBuzz,
   return { youtube: rank(youtube), reddit: rank(reddit), x: rank(x) };
 }
 
+type RankingSnapshot = { symbols: string[]; board?: DiscoveryBoard };
+export type StockObservationRanking = {
+  key: string;
+  applied: RankingSnapshot;
+  pending: RankingSnapshot | null;
+};
+
+function sameOrder(left: string[], right: string[]) {
+  return left.length === right.length && left.every((symbol, index) => symbol === right[index]);
+}
+
+/** Background data can propose a new order without replacing the applied rows. */
+export function reconcileStockObservationRanking(
+  current: StockObservationRanking | null,
+  key: string,
+  latest: RankingSnapshot,
+): StockObservationRanking {
+  if (current?.key !== key) return { key, applied: latest, pending: null };
+
+  const { applied, pending } = current;
+  if (sameOrder(applied.symbols, latest.symbols)) {
+    return pending || applied.board !== latest.board
+      ? { ...current, applied: { ...applied, board: latest.board }, pending: null }
+      : current;
+  }
+  if (pending && sameOrder(pending.symbols, latest.symbols) && pending.board === latest.board)
+    return current;
+  return { ...current, pending: latest };
+}
+
+export function stockObservationExtendedQuote(
+  quote: StockQuote | undefined,
+  includeExtended: boolean,
+) {
+  const display = includeExtended ? latestChartQuote(quote) : null;
+  return display && display.session !== "regular" ? display : null;
+}
+
 export function selectObservationSymbols(
   state: StockObservationState,
   stocks: readonly YouTubeStockSummary[],
@@ -191,6 +230,7 @@ export function selectObservationSymbols(
   now = Date.now(),
   discovered: readonly DiscoveryStock[] = [],
   social: SocialBuzz = {},
+  includeExtended = false,
 ) {
   const coverage = new Map(stocks.map((stock) => [stock.ticker, stock]));
   const marketScope = state.scope === "movers" || state.scope === "active";
@@ -247,6 +287,12 @@ export function selectObservationSymbols(
         ].some((value) => value?.toLocaleLowerCase().includes(search)),
       )
     : symbols;
+  const change = (symbol: string) => {
+    if (marketScope) return discovery.get(symbol)?.changePercent;
+    const quote = quotes[symbol];
+    const extended = stockObservationExtendedQuote(quote, includeExtended);
+    return extended ? extended.changePercent : quote?.changePercent;
+  };
   return matching.sort((a, b) => {
     if (state.sort === "default") return 0;
     if (state.sort === "volume")
@@ -256,8 +302,8 @@ export function selectObservationSymbols(
       );
     if (state.sort === "heat") return fused(b) - fused(a) || a.localeCompare(b);
     if (state.sort === "latest") return latest(b)! - latest(a)! || a.localeCompare(b);
-    const left = marketScope ? discovery.get(a)?.changePercent : quotes[a]?.changePercent;
-    const right = marketScope ? discovery.get(b)?.changePercent : quotes[b]?.changePercent;
+    const left = change(a);
+    const right = change(b);
     if (
       typeof left !== "number" ||
       !Number.isFinite(left) ||

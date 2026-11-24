@@ -64,7 +64,7 @@ function TrendSparkline({ points }: { points: number[] }) {
       viewBox={`0 0 ${width} ${height}`}
       width={width}
       height={height}
-      className="mx-auto block text-primary"
+      className="mx-auto block bg-background text-primary"
       aria-hidden="true"
     >
       <polygon

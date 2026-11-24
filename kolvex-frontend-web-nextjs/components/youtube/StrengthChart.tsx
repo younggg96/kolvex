@@ -43,7 +43,9 @@ export default function StrengthChart({
   const count = points.length;
   const x = (index: number) => (count === 1 ? WIDTH / 2 : (index / (count - 1)) * WIDTH);
   const path = points
-    .map((point, index) => `${index ? "L" : "M"}${x(index).toFixed(1)},${y(point.value).toFixed(1)}`)
+    .map(
+      (point, index) => `${index ? "L" : "M"}${x(index).toFixed(1)},${y(point.value).toFixed(1)}`,
+    )
     .join(" ");
   const stroke = toneStroke[tone];
 
@@ -88,7 +90,7 @@ export default function StrengthChart({
         onKeyDown={handleKey}
         onBlur={() => select(null)}
         className={cn(
-          "relative cursor-crosshair touch-pan-y select-none rounded-2xl focus-visible:outline-none ",
+          "relative cursor-crosshair touch-pan-y select-none rounded-2xl bg-background focus-visible:outline-none ",
           compact ? "h-[6rem]" : "h-[9.375rem] sm:h-[11.875rem]",
         )}
       >
@@ -124,7 +126,10 @@ export default function StrengthChart({
             <path
               d={points
                 .slice(0, active + 1)
-                .map((point, index) => `${index ? "L" : "M"}${x(index).toFixed(1)},${y(point.value).toFixed(1)}`)
+                .map(
+                  (point, index) =>
+                    `${index ? "L" : "M"}${x(index).toFixed(1)},${y(point.value).toFixed(1)}`,
+                )
                 .join(" ")}
               fill="none"
               stroke={stroke}

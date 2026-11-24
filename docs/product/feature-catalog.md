@@ -22,13 +22,13 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 
 | 功能 | Web 入口 | App 入口 | 后端（`app/api/routes/`） | 文档 | App |
 | --- | --- | --- | --- | --- | --- |
-| 行情总览、指数 / 板块 / 跨资产（股票、ETF 分时图含可用的盘前、盘后及已授权的 BOATS 夜盘，1 天小走势图只画当前交易日并淡化扩展时段，指数卡片在非计算时段显示跟踪 ETF 的扩展时段走势，指数 ETF 单独显示） | `/dashboard` | `(tabs)/index`、`/markets` | `market_data.py` | [decision-workspace.md](../decision-workspace.md) | ✅ |
+| 行情总览、指数 / 板块 / 跨资产（股票、ETF 分时图含可用的盘前、盘后及已授权的 BOATS 夜盘（实时历史请求被拒时尝试延迟 15 分钟的 K 线），1 天小走势图只画当前交易日并淡化扩展时段，指数卡片在非计算时段显示跟踪 ETF 的扩展时段走势，指数 ETF 单独显示） | `/dashboard` | `(tabs)/index`、`/markets` | `market_data.py` | [decision-workspace.md](../decision-workspace.md) | ✅ |
 | CNN 恐慌与贪婪指数（管理员手动导入） | `/dashboard`、`/dashboard/admin?tab=fear-greed` | 待跟进 | `fear_greed.py` | [fear-greed.md](../fear-greed.md) | ◐ |
-| 股票观察（今日异动 / 放量活跃 / 博主热议…） | `/dashboard` | 首页 | `market_data.py`（`/market/discovery`） | [stock-discovery.md](../stock-discovery.md) | ✅ |
+| 股票观察（今日异动 / 放量活跃 / 博主热议…；Web 报价原位刷新、手动应用新排名） | `/dashboard` | 首页 | `market_data.py`（`/market/discovery`） | [stock-discovery.md](../stock-discovery.md) | ◐（手动应用排名待同步） |
 | 宏观指标 | `/dashboard?tab=macro` | `/macro` | `economic_indicators.py`、`market_observations.py` | `kolvex-backend-py/docs/macro-data.md` | ✅ |
 | 重大事件日历 | `/dashboard?tab=calendar` | `/calendar` | `market_events.py` | [market-events.md](../market-events.md) | ✅ |
 | 个股工作台（概览、财报、盈利、指标趋势、同行、持股、分析师、简介） | `/dashboard/market/[ticker]?tab=…` | `/stock/[symbol]?tab=…` | `market_data.py` | [decision-workspace.md](../decision-workspace.md) | ✅ |
-| 技术图表、画线、AI 技术分析（Web 已存结论和条件计划可按需翻译；高级图表有十字线、1分钟至月线 9 种周期（选不兼容的周期自动切换区间）、MA 5–250 / EMA 5–200 / VWAP / 布林线 / KDJ / MACD / RSI 指标、默认拖动平移、⚙ 图表设置：缩放锚点、十字线吸附、盘前、盘后、夜盘与时段高亮、K 线颜色；独立「看盘」页 `/dashboard/chart?symbol=`（侧栏「盯盘」分组，行情与自选股之间；整页高级图表，代码输入框 / 自选面板切换股票，记住上次股票）；桌面端右侧看盘面板：自选（TradingView 式紧凑表：最新价 / 涨跌 / 涨跌幅，按行业分组可折叠，列头排序，底部固定当前股票详情；点选切换图表股票）、AI 分析、新闻、财报，可显示 / 隐藏 / 排序 / 折叠） | 个股 `?tab=technical` | `/technical/[symbol]` | `chart_drawings.py`、`market_data.py`（ai-technical、chart-jobs） | [technical-analysis-focus.md](../technical-analysis-focus.md) | ◐ |
+| 技术图表、画线、AI 技术分析（Web 已存结论和条件计划可按需翻译；Web 图表使用不透明主题底色；高级图表有十字线、1分钟至月线 9 种周期（选不兼容的周期自动切换区间）、MA 5–250 / EMA 5–200 / VWAP / 布林线 / KDJ / MACD / RSI 指标（图例在绘图区上方，避免挡住画线标签）、默认拖动平移、⚙ 图表设置：缩放锚点、十字线吸附、盘前、盘后、夜盘与时段高亮、K 线颜色；独立「看盘」页 `/dashboard/chart?symbol=`（侧栏「盯盘」分组，行情与自选股之间；整页高级图表，自选面板切换股票，记住上次股票）；桌面端右侧看盘面板：自选（TradingView 式紧凑表：最新价 / 涨跌 / 涨跌幅，按行业分组可折叠，列头排序，底部固定当前股票详情；点选切换图表股票）、AI 分析、新闻、财报，可显示 / 隐藏 / 排序 / 折叠） | 个股 `?tab=technical` | `/technical/[symbol]` | `chart_drawings.py`、`market_data.py`（ai-technical、chart-jobs） | [technical-analysis-focus.md](../technical-analysis-focus.md) | ◐ |
 | 估值（PE 区间、情景模拟、公司估值计算器） | 个股 `?tab=valuation` | 个股 `valuation` tab | `valuation.py` | [stock-valuation/PRD.md](../stock-valuation/PRD.md)、[README.md](../stock-valuation/README.md) | ◐ |
 | 期权链 | 个股 `?tab=options` | 个股 `options` tab | `options.py` | `PRODUCT.md` | ✅ |
 | AI 基本面分析 | 个股概览 | 个股 `summary` tab | `market_data.py`（ai-fundamentals） | — | ✅ |
@@ -41,7 +41,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 | 功能 | ID | Web 入口 | App 入口 | 后端 | 文档 | App |
 | --- | --- | --- | --- | --- | --- | --- |
 | YouTube 博主观点、博主 / 股票目录（Web 博主大头像栏标记近 24 小时新视频，可切换为完整列表，英文界面自动翻译中文观点） | `youtubeOpinions` | `/dashboard/youtube-opinions` | `(tabs)/opinions`、`/creators`、`/creator/youtube/[id]` | `youtube_opinions.py` | [youtube-channel-profiles.md](../youtube-channel-profiles.md)、[内容翻译](../content-translation.md) | ◐ |
-| X 博主内容与翻译（每 2 小时采集至本地，获准入库后可逐帖生成 DeepSeek 摘要并标注股票低相关，Web 展示已归档的原帖媒体，优先读取后台中文译文） | `youtubeOpinions` | `/dashboard/x-opinions` | `opinions` 的 X tab、`/creator/x/[id]` | `x_content.py` | [x-content.md](../x-content.md)、[内容翻译](../content-translation.md) | ◐ |
+| X 博主内容与翻译（每 2 小时采集入库，逐帖生成 DeepSeek 摘要并标注股票低相关，Web 展示已归档的原帖媒体，优先读取后台中文译文） | `youtubeOpinions` | `/dashboard/x-opinions` | `opinions` 的 X tab、`/creator/x/[id]` | `x_content.py` | [x-content.md](../x-content.md)、[内容翻译](../content-translation.md) | ◐ |
 | Reddit 热度榜（含 30 日相对趋势，App 未跟进趋势） | `youtubeOpinions` | `/dashboard/reddit-opinions` | `opinions` 的 Reddit tab | `reddit_opinions.py` | `PRODUCT.md` | ✅ |
 | 小红书每日情绪（管理员每天导入一份：五档情绪分布、讨论话题及出处帖子、传言；不提供帖子 feed；英文界面显示 RedNote） | `youtubeOpinions` | `/dashboard/xhs-sentiment`、`/dashboard/admin?tab=xhs` | 待跟进 | `xhs_sentiment.py`（需迁移 `20261121040000_xhs_daily_sentiment.sql`） | [xhs-sentiment.md](../xhs-sentiment.md) | — |
 | 观点事后表现（发布后 5 / 20 个交易日股价，对比 SPY；只陈述事实，不判对错） | `youtubeOpinions` | 股票页和博主 × 股票页的观点卡片（含「其他博主的看法」） | — | `youtube_opinions.py`（`/stocks/{ticker}/outcomes`） | [opinion-backtest.md](../opinion-backtest.md) | — |

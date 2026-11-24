@@ -475,6 +475,12 @@ test("advanced mode hands its candles to renderPlot on the graph geometry", () =
   assert.equal(graph.onOpenAdvanced, undefined, "advanced mode does not reopen itself");
 });
 
+test("the indicator legend is passed above the plot so it cannot cover drawing labels", () => {
+  const { graph } = render({ mode: "advanced" });
+  assert.match(renderToStaticMarkup(graph.plotHeader), /EMA/);
+  assert.doesNotMatch(renderToStaticMarkup(graph.overlay), /EMA/);
+});
+
 test("advanced mode keeps its own range and interval state out of the host props", () => {
   const { graph } = render({
     mode: "advanced",

@@ -697,6 +697,9 @@ chart itself is the result.
 
 ## Chart controls and result reading
 
+Web chart surfaces use the opaque theme background token in light and dark
+modes, including thumbnails, embedded charts and fullscreen chart workspaces.
+
 `ChartView` places the primary AI analysis and secondary AI drawings actions
 first, with a quiet AI settings action aligned right. Phones keep the two
 generation actions and icon settings action on one row with 44px minimum touch

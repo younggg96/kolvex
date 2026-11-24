@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Info, X, RotateCcw } from "lucide-react";
+import { Info, X, RotateCcw, RefreshCw } from "lucide-react";
 import { FilterSheet, FilterSheetGroup } from "@/components/ui/filter-sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
@@ -41,11 +41,14 @@ import {
   STOCK_PREFERENCE_KEY,
   STOCK_SECTORS,
   readStockObservationState,
+  reconcileStockObservationRanking,
   selectObservationSymbols,
   stockSorts,
   stockEntryReason,
   stockEntryTag,
+  stockObservationExtendedQuote,
   writeStockObservationState,
+  type StockObservationRanking,
   type StockObservationState,
   type StockScope,
   type StockSector,
@@ -81,9 +84,9 @@ const scopes: { key: StockScope; en: string; zh: string }[] = [
   { key: "holdings", en: "My holdings", zh: "我的持仓" },
 ];
 const sortLabels: Record<StockSort, [string, string]> = {
-  move: ["Daily move", "今日波动"],
-  gainers: ["Gainers first", "涨幅优先"],
-  losers: ["Losers first", "跌幅优先"],
+  move: ["Quote move", "报价波动"],
+  gainers: ["Quote gainers", "报价涨幅优先"],
+  losers: ["Quote losers", "报价跌幅优先"],
   default: ["List order", "名单顺序"],
   heat: ["Discussion · 7 days", "近期讨论 · 7 天"],
   latest: ["Latest opinion", "最新观点"],
@@ -95,8 +98,19 @@ const heatLabels: Record<StockSource, [string, string]> = {
   reddit: ["Reddit mentions · 24h", "Reddit 提及 · 24 小时"],
   x: ["X posts · 7 days", "X 帖子 · 7 天"],
 };
-const sortLabel = (sort: StockSort, source: StockSource) =>
-  sort === "heat" ? heatLabels[source] : sortLabels[sort];
+const sortLabel = (
+  sort: StockSort,
+  source: StockSource,
+  fromScreener: boolean,
+): readonly [string, string] => {
+  if (sort === "heat") return heatLabels[source];
+  if (fromScreener) {
+    if (sort === "move") return ["Snapshot move", "快照波动"];
+    if (sort === "gainers") return ["Snapshot gainers", "快照涨幅优先"];
+    if (sort === "losers") return ["Snapshot losers", "快照跌幅优先"];
+  }
+  return sortLabels[sort];
+};
 const coreNames = new Map<string, string>(CORE_STOCKS.map((stock) => [stock.symbol, stock.name]));
 const EMPTY_STOCKS: YouTubeStockSummary[] = [];
 const EMPTY_DISCOVERY: DiscoveryStock[] = [];
@@ -148,10 +162,6 @@ export default function StockObservationList({
         ? discovery.data?.active
         : undefined;
   const discovered = board?.items ?? EMPTY_DISCOVERY;
-  const discoveryBySymbol = useMemo(
-    () => new Map(discovered.map((item) => [item.symbol, item])),
-    [discovered],
-  );
   const creatorScope = state.scope === "creators";
   const buzz = useSocialBuzz(ready && creatorScope && state.source !== "youtube");
   const social = creatorScope ? buzz.social : undefined;
@@ -203,7 +213,22 @@ export default function StockObservationList({
     };
   }, []);
 
-  // Quote batches never reorder visible rows halfway through a refresh.
+  const quoteRanked =
+    !marketScope && (state.sort === "move" || state.sort === "gainers" || state.sort === "losers");
+  const includeExtended = range === "1D";
+  const needsQuotes = quoteRanked || Boolean(state.search);
+  const rankingKey = JSON.stringify([
+    state.scope,
+    state.sector,
+    state.source,
+    state.sort,
+    state.search,
+    quoteRanked && includeExtended,
+  ]);
+  const [ranking, setRanking] = useState<StockObservationRanking | null>(null);
+  const currentRanking = ranking?.key === rankingKey ? ranking : null;
+
+  // Fetch every candidate only where quotes determine order or are needed for name search.
   const sourceSymbols = selectObservationSymbols(
     {
       ...state,
@@ -223,25 +248,38 @@ export default function StockObservationList({
     discovered,
     social,
   );
-  const quoteSymbols =
-    marketScope ||
-    (state.scope === "creators" && (state.sort === "heat" || state.sort === "latest"))
-      ? sourceSymbols.slice(0, state.rows)
-      : sourceSymbols;
+  const visibleQuotesOnly = marketScope || (creatorScope && !quoteRanked);
+  const quoteSymbols = visibleQuotesOnly
+    ? (currentRanking?.applied.symbols ?? sourceSymbols).slice(0, state.rows)
+    : [...new Set([...sourceSymbols, ...(currentRanking?.applied.symbols ?? [])])];
   const symbolKey = quoteSymbols.slice().sort().join(",");
   const {
     quotes,
     loading: quoteLoading,
     refreshing: quoteRefreshing,
     unavailable: quoteError,
-  } = useMarketQuotes(quoteSymbols, ready, attempt + refreshToken);
+  } = useMarketQuotes(
+    quoteSymbols,
+    ready,
+    attempt + refreshToken,
+    needsQuotes && !currentRanking ? 0 : undefined,
+  );
   const settledQuoteKey = quoteRefreshing ? null : symbolKey;
 
-  const symbols = useMemo(
-    () => selectObservationSymbols(state, stocks, held.tickers, quotes, now, discovered, social),
-    [state, stocks, held.tickers, quotes, now, discovered, social],
+  const nextSymbols = useMemo(
+    () =>
+      selectObservationSymbols(
+        state,
+        stocks,
+        held.tickers,
+        quotes,
+        now,
+        discovered,
+        social,
+        includeExtended,
+      ),
+    [state, stocks, held.tickers, quotes, now, discovered, social, includeExtended],
   );
-  const visible = symbols.slice(0, state.rows);
   const sourceLoading = marketScope
     ? discovery.loading
     : creatorScope
@@ -273,7 +311,34 @@ export default function StockObservationList({
           buzz.x.error && !buzz.social.x && "X",
         ].filter(Boolean)
       : [];
-  const blocking = !ready || sourceLoading;
+  const rankingReady =
+    ready &&
+    !sourceLoading &&
+    (!sourceError || nextSymbols.length > 0) &&
+    (!needsQuotes || settledQuoteKey === symbolKey);
+  useEffect(() => {
+    if (!rankingReady || (sourceError && currentRanking)) return;
+
+    setRanking((previous) =>
+      reconcileStockObservationRanking(previous, rankingKey, { symbols: nextSymbols, board }),
+    );
+  }, [currentRanking, rankingReady, rankingKey, nextSymbols, board, sourceError]);
+
+  const symbols = currentRanking?.applied.symbols ?? nextSymbols;
+  const visible = symbols.slice(0, state.rows);
+  const displayedBoard = currentRanking ? currentRanking.applied.board : board;
+  const displayedDiscovery = displayedBoard?.items ?? EMPTY_DISCOVERY;
+  const discoveryBySymbol = useMemo(
+    () => new Map(displayedDiscovery.map((item) => [item.symbol, item])),
+    [displayedDiscovery],
+  );
+  const pendingRanking = sourceError ? null : currentRanking?.pending;
+  const applyRanking = () => {
+    if (pendingRanking) setRanking({ key: rankingKey, applied: pendingRanking, pending: null });
+  };
+  const blocking =
+    !currentRanking &&
+    (!ready || sourceLoading || (!rankingReady && (!sourceError || nextSymbols.length > 0)));
   const returnParams = writeStockObservationState(
     new URLSearchParams(searchParams.toString()),
     state,
@@ -391,8 +456,8 @@ export default function StockObservationList({
     <>
       <p className="mt-2">
         {c(
-          "Yahoo Finance screener candidates, not a complete market ranking. US equities in USD, price ≥ $5, market cap ≥ $2B, session volume ≥ 20,000. Up to 100 candidates per source list; refreshed every minute while visible. Prices on the right refresh separately.",
-          "来自 Yahoo Finance 筛选候选，并非全市场完整排名。范围为美元美股，股价至少5美元、市值至少20亿美元、当日成交量至少2万股；每个来源榜单最多100只，页面可见时每分钟更新。右侧报价单独刷新。",
+          "Yahoo Finance screener candidates. Eligible US equities trade in USD, with price ≥ $5, market cap ≥ $2B and session volume ≥ 20,000. Up to 100 candidates per source list; checked every minute while visible. Price sorts use the screener snapshot. Prices on the right refresh separately.",
+          "候选来自 Yahoo Finance 筛选器。范围为美元美股，股价至少5美元、市值至少20亿美元、当日成交量至少2万股；每个来源榜单最多100只，页面可见时每分钟检查。涨跌幅排序采用筛选快照，右侧报价单独刷新。",
         )}
       </p>
       {state.scope === "active" && (
@@ -403,7 +468,7 @@ export default function StockObservationList({
           )}
         </p>
       )}
-      {board?.fetchedAt && (
+      {displayedBoard?.fetchedAt && (
         <p className="mt-1">
           {c("Snapshot fetched", "榜单获取时间")} ·{" "}
           {new Intl.DateTimeFormat(c("en-US", "zh-CN"), {
@@ -413,7 +478,7 @@ export default function StockObservationList({
             hour: "2-digit",
             minute: "2-digit",
             hour12: false,
-          }).format(new Date(board.fetchedAt))}{" "}
+          }).format(new Date(displayedBoard.fetchedAt))}{" "}
           {c("New York", "纽约时间")}
         </p>
       )}
@@ -422,8 +487,24 @@ export default function StockObservationList({
   const listInfo = (
     <>
       <p className="text-foreground">{listDescription}</p>
-      {board?.sessionDate && (
-        <p className="mt-1">{c(`Session ${board.sessionDate}`, `交易日 ${board.sessionDate}`)}</p>
+      {displayedBoard?.sessionDate && (
+        <p className="mt-1">
+          {c(`Session ${displayedBoard.sessionDate}`, `交易日 ${displayedBoard.sessionDate}`)}
+        </p>
+      )}
+      <p className="mt-1">
+        {c(
+          "Quotes update in place. Use Update ranking to apply changes to the list.",
+          "报价原位更新。名单或顺序有变化时，点「更新排名」应用。",
+        )}
+      </p>
+      {quoteRanked && (
+        <p className="mt-1">
+          {c(
+            "Price ranking uses the displayed percentage change when the ranking is applied.",
+            "涨跌幅排序采用更新排名时右侧显示的涨跌幅，时段见报价旁标签。",
+          )}
+        </p>
       )}
       {rankingNotes}
     </>
@@ -436,7 +517,18 @@ export default function StockObservationList({
         surface="card"
         action={
           <>
-            <div className="ml-auto flex min-w-0 items-center gap-1 lg:hidden">
+            <div className="ml-auto flex min-h-11 min-w-0 items-center gap-1 lg:hidden">
+              {pendingRanking && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="min-h-11 shrink-0 max-[374px]:min-w-11 max-[374px]:px-2"
+                  onClick={applyRanking}
+                >
+                  <RefreshCw className="h-4 w-4 min-[375px]:hidden" aria-hidden="true" />
+                  <span className="max-[374px]:sr-only">{c("Update ranking", "更新排名")}</span>
+                </Button>
+              )}
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -494,7 +586,7 @@ export default function StockObservationList({
                   label={c("Sort", "排序")}
                   options={stockSorts(state.scope, state.source).map((sort) => ({
                     value: sort,
-                    label: c(...sortLabel(sort, state.source)),
+                    label: c(...sortLabel(sort, state.source, marketScope)),
                   }))}
                   value={state.sort}
                   onChange={(sort) => update({ ...state, sort, rows: STOCK_PAGE_SIZE })}
@@ -533,19 +625,8 @@ export default function StockObservationList({
           </>
         }
       >
-        <div
-          id="stock-filters"
-          className={cn(
-            "mb-3 grid grid-cols-2 items-end gap-3",
-            state.scope === "core"
-              ? "lg:grid-cols-[minmax(0,1fr)_9rem_9rem]"
-              : creatorScope
-                ? "lg:grid-cols-[minmax(0,1fr)_9rem_11rem]"
-                : "lg:grid-cols-[minmax(0,1fr)_10rem]",
-            "max-lg:hidden",
-          )}
-        >
-          <div className="hidden min-w-0 lg:block">
+        <div id="stock-filters" className="mb-3 hidden items-end gap-3 lg:flex">
+          <div className="min-w-0 flex-1">
             <label htmlFor="stock-search" className="sr-only">
               {c("Search this list", "搜索当前名单")}
             </label>
@@ -611,7 +692,7 @@ export default function StockObservationList({
             </CommandSearch>
           </div>
           {state.scope === "core" && (
-            <div className="min-w-0">
+            <div className="w-36 shrink-0">
               <label htmlFor="stock-sector" className="sr-only">
                 {c("Sector", "行业")}
               </label>
@@ -635,7 +716,7 @@ export default function StockObservationList({
             </div>
           )}
           {creatorScope && (
-            <div className="min-w-0">
+            <div className="w-36 shrink-0">
               <label htmlFor="stock-source" className="sr-only">
                 {c("Discussion source", "讨论来源")}
               </label>
@@ -656,7 +737,7 @@ export default function StockObservationList({
               </Select>
             </div>
           )}
-          <div className="min-w-0">
+          <div className={cn("shrink-0", creatorScope ? "w-44" : "w-40")}>
             <label htmlFor="stock-sort" className="sr-only">
               {c("Sort", "排序")}
             </label>
@@ -672,12 +753,18 @@ export default function StockObservationList({
               <SelectContent align="end" className="!rounded-2xl">
                 {stockSorts(state.scope, state.source).map((sort) => (
                   <SelectItem key={sort} value={sort} className="min-h-11">
-                    {c(...sortLabel(sort, state.source))}
+                    {c(...sortLabel(sort, state.source, marketScope))}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+          {pendingRanking && (
+            <Button variant="outline" className="h-11 shrink-0 gap-2" onClick={applyRanking}>
+              <RefreshCw className="h-4 w-4" aria-hidden="true" />
+              {c("Update ranking", "更新排名")}
+            </Button>
+          )}
         </div>
         {marketScope && ((board?.partial && !board.unavailable) || board?.stale) && (
           <div
@@ -757,10 +844,12 @@ export default function StockObservationList({
             <p>
               {marketScope
                 ? c(
-                    board?.items.length
-                      ? "Ranking refresh failed. Showing the last snapshot."
+                    symbols.length
+                      ? "Ranking refresh failed. Showing the last applied ranking."
                       : "Could not load this ranking.",
-                    board?.items.length ? "榜单更新失败，保留上次快照。" : "暂时无法加载这个榜单。",
+                    symbols.length
+                      ? "榜单更新失败，保留上次应用的排名。"
+                      : "暂时无法加载这个榜单。",
                   )
                 : c(
                     catalogue.data
@@ -935,9 +1024,8 @@ export default function StockObservationList({
                           ) : (
                             (() => {
                               const q = quotes[symbol];
-                              const ext = q ? latestChartQuote(q) : null;
-                              const isExtended = range === "1D" && ext && ext.session !== "regular";
-                              if (isExtended && ext) {
+                              const ext = stockObservationExtendedQuote(q, includeExtended);
+                              if (q && ext) {
                                 return (
                                   <>
                                     <span className="figure block text-base font-medium">

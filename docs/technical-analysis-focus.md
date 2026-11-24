@@ -50,6 +50,8 @@ sent to the server, and **恢复默认 / Reset** restores the defaults:
 - Extended hours (default on): minute and hour intervals request `prepost=true` from
   `GET /api/v1/market/history/{symbol}` for available pre-market, after-hours and
   [Blue Ocean ATS overnight bars](decision-workspace.md#美股盘前盘后和夜盘走势).
+  If Alpaca rejects access to recent historical bars, the backend retries with a
+  15-minute delay. The same history feed serves Web and App.
   Daily and longer intervals use the instrument's regular historical bars.
   AI analysis requests never send `prepost`, so it always reads regular-session bars.
 - Highlight trading session (default on, needs extended hours): shades pre-market,
@@ -66,7 +68,8 @@ The 技术指标 menu groups the overlays: **均线 MA** (simple average) 5 / 10
 (20, 2) and volume; 副图指标 (KDJ / MACD / RSI) follows. Periods are toggle chips; each line keeps
 one colour in the plot, the legend and the menu (`components/youtube/chart/indicators.ts`).
 The selection is saved per browser under `kolvex:chart-indicators:advanced`; defaults stay
-volume, VWAP and EMA 20 / 50 / 200.
+volume, VWAP and EMA 20 / 50 / 200. The indicator legend sits above the plot so it
+leaves drawing labels visible, with an expand control in narrow charts.
 
 ## Advanced chart rendering (zoom / pan performance)
 
@@ -96,12 +99,13 @@ can't hold switches the range (`rangeForInterval`: 1m and 5m → 1日, 15m and 3
 
 ## 看盘 page (`/dashboard/chart`)
 
+The Web chart workspace and its plots use a solid background from the active theme.
+
 The sidebar's 盯盘 group has **看盘** between 行情 and 自选股. It opens the advanced chart as a
 page of its own (`components/decision/ChartTerminal.tsx` → `PriceChart` with `terminal`), with
 the same side panels, drawings, AI and settings as the stock page's full-screen chart. The
 symbol lives in the URL (`?symbol=NVDA`); without one it reopens the last symbol charted there
-(this browser), else SPY. Switch stocks with the symbol box (type, Enter) or a 自选 row; both
-replace the URL instead of adding history. 个股页 opens the stock's full page. Feature flag: it
+(this browser), else SPY. Select a 自选 row to switch stocks and replace the chart URL. The page
 belongs to `home` (行情) in `lib/productFeatures.ts`.
 
 ## Advanced chart side panels (看盘)

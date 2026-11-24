@@ -4,7 +4,7 @@ import logging
 import math
 import os
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 import httpx
@@ -125,10 +125,17 @@ def history(symbol, period, interval, start, end):
         "sort": "desc",
     }
     points = []
+    delayed_end = (now.astimezone(timezone.utc) - timedelta(minutes=15)).astimezone(NEW_YORK)
+    bars_url = f"{DATA_URL}/bars"
     try:
         with httpx.Client(headers=headers, timeout=4) as client:
-            for _ in range(3):
-                response = client.get(f"{DATA_URL}/bars", params=params)
+            for page in range(3):
+                response = client.get(bars_url, params=params)
+                # Alpaca allows delayed BOATS history when the requested end is old enough.
+                if page == 0 and response.status_code == 403 and start_at < delayed_end < end_at:
+                    end_at = delayed_end
+                    params["end"] = end_at.isoformat()
+                    response = client.get(bars_url, params=params)
                 response.raise_for_status()
                 data = response.json()
                 for bar in (data.get("bars") or {}).get(symbol, []):

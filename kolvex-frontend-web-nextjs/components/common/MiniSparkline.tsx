@@ -41,7 +41,12 @@ export default function MiniSparkline({
   if (!data || data.length === 0) {
     return (
       <div className={className} style={{ width, height }}>
-        <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+        <svg
+          className="bg-background"
+          width={width}
+          height={height}
+          viewBox={`0 0 ${width} ${height}`}
+        >
           <line
             x1="0"
             y1={height / 2}
@@ -59,6 +64,7 @@ export default function MiniSparkline({
   return (
     <div className={className} style={{ width, height }}>
       <svg
+        className="bg-background"
         width={width}
         height={height}
         viewBox={`0 0 ${width} ${height}`}

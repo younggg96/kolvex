@@ -184,7 +184,7 @@ export default function OscillatorPane({
           aria-valuemax={Math.max(first, last)}
           aria-valuenow={Math.max(first, Math.min(selected, last))}
           aria-valuetext={label}
-          className="block touch-pan-y focus-visible:bg-muted/30 focus-visible:outline-none"
+          className="block touch-pan-y bg-background focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
           onPointerMove={(event) => {
             const rect = event.currentTarget.getBoundingClientRect();
             const px = ((event.clientX - rect.left) * width) / rect.width;

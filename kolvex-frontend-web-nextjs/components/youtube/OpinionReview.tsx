@@ -465,7 +465,7 @@ function MarketContext({ review, t }: { review: Review; t: T }) {
         <svg
           viewBox="0 0 100 40"
           preserveAspectRatio="none"
-          className="mt-4 h-40 w-full overflow-visible"
+          className="mt-4 h-40 w-full overflow-visible bg-background"
           role="img"
           aria-label={t("youtubeOpinions.review.marketTitle", { benchmark: review.benchmark })}
         >

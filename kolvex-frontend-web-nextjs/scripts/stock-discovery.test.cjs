@@ -23,6 +23,7 @@ function load(relative, mocks = {}) {
 const discovery = load("lib/stockDiscovery.ts", {
   [FORMAT]: format,
   "./socialBuzz": load("lib/socialBuzz.ts"),
+  "./chart/quote": load("lib/chart/quote.ts"),
   "./opinionDates": load("lib/opinionDates.ts"),
   "./decision": load("lib/decision.ts"),
 });
@@ -32,6 +33,7 @@ const {
   readStockObservationState,
   writeStockObservationState,
   selectObservationSymbols,
+  reconcileStockObservationRanking,
   latestStockOpinionDate,
   recentStockOpinionCount,
   stockObservationReturnHref,
@@ -146,6 +148,51 @@ test("price sorts rank within the selected scope and place unavailable quotes la
     ),
     ["NVDA", "JPM", "COST"],
   );
+});
+test("quote-based ranking uses the displayed session and moves unavailable quotes to the end", () => {
+  const regular = { price: 100, marketTime: 100, changePercent: 5 };
+  const quotes = {
+    NVDA: { ...regular, postMarketPrice: 98, postMarketTime: 110 },
+    JPM: { ...regular, changePercent: 1, postMarketPrice: 103, postMarketTime: 110 },
+    COST: { ...regular, changePercent: 0, postMarketPrice: 120, postMarketTime: 90 },
+  };
+  const ranked = (sort, includeExtended) =>
+    selectObservationSymbols(
+      state({ scope: "holdings", sort }),
+      [],
+      ["AMD", "NVDA", "JPM", "COST"],
+      quotes,
+      now,
+      [],
+      {},
+      includeExtended,
+    );
+  assert.deepEqual(ranked("gainers", true), ["JPM", "COST", "NVDA", "AMD"]);
+  assert.deepEqual(ranked("losers", true), ["NVDA", "COST", "JPM", "AMD"]);
+  assert.deepEqual(ranked("move", true), ["JPM", "NVDA", "COST", "AMD"]);
+  assert.deepEqual(ranked("gainers", false), ["NVDA", "JPM", "COST", "AMD"]);
+});
+test("background ranking updates preserve the applied order and replace pending changes", () => {
+  const initial = { symbols: ["NVDA", "JPM", "COST"], board: { fetchedAt: "initial" } };
+  const sameOrder = { ...initial, board: { fetchedAt: "refreshed" } };
+  const reshuffled = { symbols: ["JPM", "NVDA", "AMD"], board: { fetchedAt: "reshuffled" } };
+  const next = { symbols: ["COST", "AMD"], board: { fetchedAt: "next" } };
+  const rank = (latest, current = null, key = "movers") =>
+    reconcileStockObservationRanking(current, key, latest);
+
+  const opened = rank(initial);
+  const unchanged = rank(sameOrder, opened);
+  assert.equal(unchanged.applied.symbols, initial.symbols);
+  assert.equal(unchanged.applied.board, sameOrder.board);
+  assert.equal(unchanged.pending, null);
+
+  const pending = rank(reshuffled, unchanged);
+  assert.equal(pending.applied, unchanged.applied);
+  assert.equal(pending.pending, reshuffled);
+  assert.equal(rank(reshuffled, pending), pending);
+  assert.equal(rank(next, pending).pending, next);
+  assert.equal(rank(sameOrder, pending).pending, null);
+  assert.equal(rank(next, pending, "creators").applied, next);
 });
 test("list state round trips without overwriting other market tabs and normalizes invalid filters", () => {
   const original = new URLSearchParams("tab=overview&view=list");

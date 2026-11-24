@@ -1853,7 +1853,39 @@ export default function ChartView({
     return value === null || value === undefined ? "—" : value.toFixed(2);
   };
 
-  /** Backgrounded nodes over the advanced plot: indicator values and the creator-call popover. */
+  const indicatorLegend = legend.length > 0 && (
+    <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-0.5 px-1.5 pb-1 text-[0.6875rem] tabular-nums">
+      {/* Phones show one line ("EMA 20, EMA 50, +2"), expanding on tap. */}
+      {(narrowChart && !legendOpen ? legend.slice(0, LEGEND_PREVIEW) : legend).map((key) => (
+        <span key={key} className="whitespace-nowrap">
+          <span className="text-muted-foreground">{indicatorMeta[key].label}</span>{" "}
+          <span className="font-semibold" style={{ color: indicatorMeta[key].color }}>
+            {legendValue(key)}
+          </span>
+        </span>
+      ))}
+      {narrowChart && legend.length > LEGEND_PREVIEW && (
+        <button
+          type="button"
+          aria-expanded={legendOpen}
+          onClick={() => setLegendOpen((open) => !open)}
+          className="inline-flex min-h-8 items-center gap-0.5 rounded font-semibold text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+        >
+          {legendOpen
+            ? t("youtubeOpinions.legendLess")
+            : t("youtubeOpinions.legendMore", {
+                count: String(legend.length - LEGEND_PREVIEW),
+              })}
+          <ChevronDown
+            className={cn("h-3.5 w-3.5 transition-transform", legendOpen && "rotate-180")}
+            aria-hidden="true"
+          />
+        </button>
+      )}
+    </div>
+  );
+
+  /** Backgrounded nodes over the advanced plot: forecast summary and the creator-call popover. */
   const advancedOverlay = (
     <>
       {forecastOn && (forecast || forecastErrorCode) && (
@@ -1892,41 +1924,6 @@ export default function ChartView({
                 `youtubeOpinions.forecast.errors.${forecastErrorCode === "not_configured" || forecastErrorCode === "unauthorized" ? forecastErrorCode : "unavailable"}`,
               )}
             </span>
-          )}
-        </div>
-      )}
-      {legend.length > 0 && (
-        <div
-          className="pointer-events-none absolute left-2 top-1 z-10 flex flex-wrap items-center gap-x-3 gap-y-0.5 rounded-md bg-background/70 px-1.5 py-0.5 text-[0.6875rem] tabular-nums backdrop-blur-sm"
-          style={{ maxWidth: Math.max(size.width - GRAPH_AXIS_WIDTH - 16, 120) }}
-        >
-          {/* Phones show one line ("EMA 20, EMA 50, +2"), expanding on tap. */}
-          {(narrowChart && !legendOpen ? legend.slice(0, LEGEND_PREVIEW) : legend).map((key) => (
-            <span key={key} className="whitespace-nowrap">
-              <span className="text-muted-foreground">{indicatorMeta[key].label}</span>{" "}
-              <span className="font-semibold" style={{ color: indicatorMeta[key].color }}>
-                {legendValue(key)}
-              </span>
-            </span>
-          ))}
-          {narrowChart && legend.length > LEGEND_PREVIEW && (
-            <button
-              type="button"
-              aria-expanded={legendOpen}
-              onPointerDown={(event) => event.stopPropagation()}
-              onClick={() => setLegendOpen((open) => !open)}
-              className="pointer-events-auto -my-2 inline-flex min-h-8 items-center gap-0.5 font-semibold text-muted-foreground"
-            >
-              {legendOpen
-                ? t("youtubeOpinions.legendLess")
-                : t("youtubeOpinions.legendMore", {
-                    count: String(legend.length - LEGEND_PREVIEW),
-                  })}
-              <ChevronDown
-                className={cn("h-3.5 w-3.5 transition-transform", legendOpen && "rotate-180")}
-                aria-hidden="true"
-              />
-            </button>
           )}
         </div>
       )}
@@ -2264,6 +2261,7 @@ export default function ChartView({
             }
           : undefined
       }
+      plotHeader={advanced ? indicatorLegend : null}
       overlay={advanced ? advancedOverlay : null}
       subPane={
         <>

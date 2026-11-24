@@ -4,6 +4,7 @@ import unittest
 from datetime import datetime
 from unittest.mock import Mock, patch
 
+import httpx
 import pandas as pd
 
 from app.services.yfinance import overnight
@@ -155,6 +156,50 @@ class OvernightHistoryTests(unittest.TestCase):
             get.return_value.json.return_value = {"trade": {"p": 104, "t": "2026-11-23T05:55:00Z"}}
             self.assertEqual(overnight.latest_trade("AAPL"), (104, int(now.timestamp()) - 300))
             self.assertEqual(get.call_args.kwargs["params"], {"feed": "boats"})
+
+    def test_boats_history_retries_permission_denial_with_delayed_end(self):
+        now = datetime(2026, 11, 23, 1, tzinfo=overnight.NEW_YORK)
+        requests = []
+
+        def get(url, *, params):
+            requests.append(dict(params))
+            request = httpx.Request("GET", url)
+            if len(requests) == 1:
+                return httpx.Response(403, request=request)
+            return httpx.Response(
+                200,
+                request=request,
+                json={
+                    "bars": {
+                        "META": [
+                            {
+                                "t": "2026-11-23T05:40:00Z",
+                                "o": 100,
+                                "h": 103,
+                                "l": 99,
+                                "c": 102,
+                                "v": 10,
+                            }
+                        ]
+                    }
+                },
+            )
+
+        with (
+            patch.object(overnight, "_headers", return_value={"test": "test"}),
+            patch.object(overnight, "datetime", wraps=datetime) as clock,
+            patch.object(overnight.httpx, "Client") as http,
+        ):
+            clock.now.return_value = now
+            http.return_value.__enter__.return_value.get.side_effect = get
+            bars = overnight.history("META", "1mo", "5m", None, None)
+
+        self.assertEqual(
+            [request["end"] for request in requests],
+            ["2026-11-23T01:00:00-05:00", "2026-11-23T00:45:00-05:00"],
+        )
+        self.assertEqual(bars[0]["Datetime"].isoformat(), "2026-11-23T00:40:00-05:00")
+        self.assertEqual(bars[0]["Source"], "boats")
 
 
 class HistoryRoutePrepostTests(unittest.TestCase):

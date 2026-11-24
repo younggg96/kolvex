@@ -66,7 +66,7 @@
 
 ## 当前边界
 
-默认采集入口为 Codex 自动化 `x-kolvex`，每 2 小时通过 cua_repl 操作已登录的日常 Chrome。每轮通过 `sync.py plan` 读取采集名单和检查点，公开正文与媒体保存在本地。独立 Playwright LaunchAgent 保持暂停。说明见 [本地工作流](../side-projects/x-posts/README.md#默认-ai-定时同步)。
+默认采集入口为 Codex 自动化 `x-kolvex`，每 2 小时通过 cua_repl 操作已登录的日常 Chrome。每轮通过 `sync.py prepare` 读取采集名单和检查点，通过 `sync.py finish` 导入公开正文、执行 DeepSeek 分析并归档媒体。独立 Playwright LaunchAgent 保持暂停。说明见 [本地工作流](../side-projects/x-posts/README.md#默认-ai-定时同步)。
 
 名单合并 `sources.json` 和数据库 `x_creators`。仅在获准导入时写入生产数据库，数据库确认后才更新检查点。采集失败仍处理已完成导出；登录失效、正文缺失和未达到旧边界都保留旧检查点。工作流详见 [采集规程](../side-projects/x-posts/COLLECTOR.md)。
 
