@@ -8,18 +8,10 @@ export type ChartSession = "regular" | "pre" | "post" | "overnight";
 export function sessionLabel(
   session: ChartSession,
   locale?: string,
-  delayMinutes?: number | null,
-  delayDetail: "duration" | "status" = "duration",
+  _delayMinutes?: number | null,
+  _delayDetail: "duration" | "status" = "duration",
 ): string {
-  if (session === "overnight" && positive(delayMinutes ?? undefined)) {
-    if (delayDetail === "status") {
-      return locale?.startsWith("zh") ? "夜盘 · 延迟" : "Overnight · delayed";
-    }
-    return locale?.startsWith("zh")
-      ? `夜盘 · 延迟 ${delayMinutes} 分钟`
-      : `Overnight · ${delayMinutes}m delayed`;
-  }
-  if (locale === "zh") {
+  if (locale?.startsWith("zh")) {
     switch (session) {
       case "pre":
         return "盘前";

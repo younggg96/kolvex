@@ -70,7 +70,7 @@ Per-post X analysis is implemented on both mobile timelines. Its verification is
 
 The Web video cards also support selecting opinions from one video and exporting the selection as text or PNGs. The share entry is an icon at the right end of the video title row, the whole-video summary (taken from the opinion rows' `video_summary`) is an optional first item placed before the opinions, and phones get a bottom sheet with an Image / Text segmented switch. This flow is pending on mobile.
 
-Delayed Alpaca overnight trades carry a delay label. Web Stock Watch and Watchlist rows show a compact delay status. Native rows still show the duration and can adopt the compact label when their copy is next aligned.
+Overnight quote badges on both Web and native show clean session labels (「夜盘」 / 「夜盘 · 较收盘」; "Overnight" / "Overnight · vs close") without delay duration or status suffixes.
 
 ## Native material and layout
 

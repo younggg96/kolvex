@@ -1357,10 +1357,7 @@ export default function PriceGraph({
       </span>
       {extended && showExtended && extended.time ? (
         <span className="block">
-          {extended.delayMinutes
-            ? sessionLabel(extended.session, locale, extended.delayMinutes)
-            : t(`youtubeOpinions.quoteSession.${extended.session}`)}{" "}
-          ·{" "}
+          {t(`youtubeOpinions.quoteSession.${extended.session}`)} ·{" "}
           {extended.session === "overnight" && quote?.overnightMarketSource
             ? `${quote.overnightMarketSource} · `
             : ""}
@@ -1388,10 +1385,7 @@ export default function PriceGraph({
       <>
         {showExtended && extended && (
           <span className="tabular-nums">
-            {extended.delayMinutes
-              ? sessionLabel(extended.session, locale, extended.delayMinutes)
-              : t(`youtubeOpinions.quoteSession.${extended.session}`)}{" "}
-            {formatPrice(extended.price)}
+            {t(`youtubeOpinions.quoteSession.${extended.session}`)} {formatPrice(extended.price)}
             {extended.changePercent !== null && ` (${formatChangePercent(extended.changePercent)})`}
           </span>
         )}

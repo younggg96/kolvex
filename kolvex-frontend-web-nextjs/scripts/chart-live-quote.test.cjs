@@ -187,13 +187,14 @@ test("Yahoo POSTPOST stays after-hours and a newer sourced overnight trade gets 
   assert.match(markup, /Blue Ocean ATS/);
   const delayed = { ...overnight, overnightMarketDelayMinutes: 15 };
   assert.equal(latestChartQuote(delayed).delayMinutes, 15);
-  assert.match(render({ quote: delayed, extendedHours: true }), /Overnight · 15m delayed/);
+  assert.match(render({ quote: delayed, extendedHours: true }), /Overnight · vs close/);
+  assert.doesNotMatch(render({ quote: delayed, extendedHours: true }), /15m delayed/);
   assert.doesNotMatch(markup, /Chart shows regular hours/);
 });
 
-test("compact quote labels show delay status without the duration", () => {
-  assert.equal(sessionLabel("overnight", "zh", 15, "status"), "夜盘 · 延迟");
-  assert.equal(sessionLabel("overnight", "en", 15, "status"), "Overnight · delayed");
+test("compact quote labels show session without delay", () => {
+  assert.equal(sessionLabel("overnight", "zh", 15, "status"), "夜盘");
+  assert.equal(sessionLabel("overnight", "en", 15, "status"), "Overnight");
   assert.equal(sessionLabel("overnight", "zh", undefined, "status"), "夜盘");
   assert.equal(sessionLabel("post", "zh", 15, "status"), "盘后");
 });

@@ -22,7 +22,8 @@ test("overnight quotes use their own timestamps and do not replace newer pre-mar
   const overnight = latestQuote(quote);
   assert.ok(overnight);
   assert.equal(overnight.session, "overnight");
-  assert.equal(quoteSessionLabel(overnight), "夜盘 · 延迟 15 分钟");
+  assert.equal(quoteSessionLabel(overnight), "夜盘");
+  assert.equal(quoteSessionLabel(overnight, true), "夜盘 · 较收盘");
   assert.equal(latestQuote(quote, false)?.session, "regular");
   assert.equal(
     latestQuote({ ...quote, pre_market_time: 103, pre_market_price: 103 })

@@ -91,11 +91,6 @@ export function quoteSessionLabel(
   quote: NonNullable<ReturnType<typeof latestQuote>>,
   withBaseline = false,
 ) {
-  if (quote.session === "overnight" && quote.delayMinutes === 15) {
-    return withBaseline
-      ? "夜盘 · 延迟 15 分钟 · 较收盘"
-      : "夜盘 · 延迟 15 分钟";
-  }
   return withBaseline || quote.session === "regular"
     ? sessionLabels[quote.session]
     : shortSessionLabels[quote.session];
