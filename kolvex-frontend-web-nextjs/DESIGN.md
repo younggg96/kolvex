@@ -1078,9 +1078,12 @@ proxy preserves cached successes and never turns failures into zero prices.
 The backend bounds quote workers and batch wait time so an unavailable symbol
 cannot block the full catalogue or the server event loop.
 
-A 160px wrapper bounds the shared Select so its default full width cannot expand
-the header. List filters and the result count sit inside the canonical list card
-(see **Canonical list cards**); the column header precedes 80px hover rows without
+The Stock watch header places its title on the left, the existing segmented lists
+in the center and the search and filter actions on the right. On narrow screens
+the segmented lists move to a second row and scroll horizontally when needed.
+The search icon links to dashboard search. The shared FilterSheet holds the
+current-list search and applicable Select controls at all viewport widths.
+The column header in the canonical list card precedes 80px hover rows without
 per-row separators. A passive sparkline sits between creator consensus
 and price, following the shared 1D/1W/1M/3M range. Desktop fixed columns are
 120px consensus, 88px trend, 88px price and 72px change. On phones, the trend

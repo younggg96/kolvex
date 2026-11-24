@@ -34,7 +34,7 @@ function compile(file) {
   vm.runInNewContext(source, { module, exports: module.exports, require: load, console });
   return module.exports;
 }
-const { latestChartQuote } = compile("lib/chart/quote.ts");
+const { latestChartQuote, sessionLabel } = compile("lib/chart/quote.ts");
 const PriceGraph = compile("components/youtube/chart/PriceGraph.tsx").default;
 const quotes = {
   symbol: "NVDA",
@@ -189,4 +189,11 @@ test("Yahoo POSTPOST stays after-hours and a newer sourced overnight trade gets 
   assert.equal(latestChartQuote(delayed).delayMinutes, 15);
   assert.match(render({ quote: delayed, extendedHours: true }), /Overnight · 15m delayed/);
   assert.doesNotMatch(markup, /Chart shows regular hours/);
+});
+
+test("compact quote labels show delay status without the duration", () => {
+  assert.equal(sessionLabel("overnight", "zh", 15, "status"), "夜盘 · 延迟");
+  assert.equal(sessionLabel("overnight", "en", 15, "status"), "Overnight · delayed");
+  assert.equal(sessionLabel("overnight", "zh", undefined, "status"), "夜盘");
+  assert.equal(sessionLabel("post", "zh", 15, "status"), "盘后");
 });

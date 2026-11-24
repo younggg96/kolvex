@@ -9,8 +9,12 @@ export function sessionLabel(
   session: ChartSession,
   locale?: string,
   delayMinutes?: number | null,
+  delayDetail: "duration" | "status" = "duration",
 ): string {
   if (session === "overnight" && positive(delayMinutes ?? undefined)) {
+    if (delayDetail === "status") {
+      return locale?.startsWith("zh") ? "夜盘 · 延迟" : "Overnight · delayed";
+    }
     return locale?.startsWith("zh")
       ? `夜盘 · 延迟 ${delayMinutes} 分钟`
       : `Overnight · ${delayMinutes}m delayed`;

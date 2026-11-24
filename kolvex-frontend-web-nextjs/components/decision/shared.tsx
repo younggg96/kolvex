@@ -73,6 +73,7 @@ export function Panel({
   action,
   description,
   className = "",
+  headerClassName,
   id,
   surface = "plain",
 }: {
@@ -81,6 +82,7 @@ export function Panel({
   action?: ReactNode;
   description?: ReactNode;
   className?: string;
+  headerClassName?: string;
   id?: string;
   surface?: "plain" | "card";
 }) {
@@ -97,6 +99,7 @@ export function Panel({
             (surface === "card"
               ? "mb-3 min-h-14 items-center max-md:min-h-0"
               : "border-b border-border pb-3"),
+          headerClassName,
         )}
       >
         <div className="min-w-0">

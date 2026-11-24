@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Info, X, RotateCcw, RefreshCw } from "lucide-react";
-import { FilterSheet, FilterSheetGroup } from "@/components/ui/filter-sheet";
+import { Info, Search, X, RotateCcw, RefreshCw } from "lucide-react";
+import { FilterSheet } from "@/components/ui/filter-sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { SearchFieldIcon } from "@/components/ui/search-input";
-import { CommandSearch } from "@/components/ui/command-search";
+import { SEARCH_HREF } from "@/components/layout/navItems";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -72,7 +72,6 @@ import {
 } from "./shared";
 import StockTrend from "./StockTrend";
 import WatchlistButton from "./WatchlistButton";
-import StockSearchSuggestions from "./StockSearchSuggestions";
 
 const ROW_GRID =
   "grid grid-cols-[minmax(0,1fr)_80px] gap-x-2 min-[360px]:grid-cols-[minmax(0,1fr)_60px_80px] sm:grid-cols-[minmax(0,1fr)_100px_100px] sm:gap-x-4";
@@ -140,7 +139,6 @@ export default function StockObservationList({
   const [searchDraft, setSearchDraft] = useState(state.search ?? "");
   const searchRef = useRef<HTMLInputElement>(null);
   const composing = useRef(false);
-  const [suggestOpen, setSuggestOpen] = useState(false);
   useEffect(() => {
     if (!composing.current) setSearchDraft(state.search ?? "");
   }, [state.search]);
@@ -402,7 +400,6 @@ export default function StockObservationList({
   const clearSearch = () => {
     setSearchDraft("");
     commitSearch("");
-    searchRef.current?.focus();
   };
   const scopeOptions = scopes
     .filter((scope) => scope.key !== "holdings" || holdingsEnabled)
@@ -512,18 +509,29 @@ export default function StockObservationList({
         title={c("Stock watch", "股票观察")}
         id="market-movers"
         surface="card"
+        headerClassName="grid grid-cols-[minmax(0,1fr)_auto] gap-x-2 lg:grid-cols-[minmax(max-content,1fr)_auto_minmax(max-content,1fr)]"
         action={
           <>
-            <div className="ml-auto flex min-h-11 min-w-0 items-center gap-1 lg:hidden">
+            <SegmentedControl
+              label={c("Stock list", "股票列表")}
+              value={state.scope}
+              onChange={changeScope}
+              className="col-span-2 row-start-2 w-fit min-w-0 justify-self-center border border-border lg:col-span-1 lg:col-start-2 lg:row-start-1"
+              itemClassName="min-h-9 px-3"
+              options={scopeOptions}
+            />
+            <div className="col-start-2 row-start-1 flex items-center justify-self-end gap-1 lg:col-start-3">
               {pendingRanking && (
                 <Button
+                  type="button"
                   variant="outline"
-                  size="sm"
-                  className="min-h-11 shrink-0 max-[374px]:min-w-11 max-[374px]:px-2"
+                  size="icon"
+                  className="h-10 w-10 shrink-0 rounded-full"
                   onClick={applyRanking}
+                  aria-label={c("Update ranking", "更新排名")}
+                  title={c("Update ranking", "更新排名")}
                 >
-                  <RefreshCw className="h-4 w-4 min-[375px]:hidden" aria-hidden="true" />
-                  <span className="max-[374px]:sr-only">{c("Update ranking", "更新排名")}</span>
+                  <RefreshCw className="h-4 w-4" aria-hidden="true" />
                 </Button>
               )}
               <Popover>
@@ -532,7 +540,7 @@ export default function StockObservationList({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-9 w-9 shrink-0 rounded-full text-muted-foreground"
+                    className="h-10 w-10 shrink-0 rounded-full text-muted-foreground"
                     aria-label={c("About this list", "名单说明")}
                   >
                     <Info className="h-4 w-4" aria-hidden="true" />
@@ -545,224 +553,158 @@ export default function StockObservationList({
                   {listInfo}
                 </PopoverContent>
               </Popover>
+              <Button
+                asChild
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 shrink-0 rounded-full"
+              >
+                <Link
+                  href={SEARCH_HREF}
+                  aria-label={c("Open search page", "打开搜索页")}
+                  title={c("Search", "搜索")}
+                  onClick={rememberScroll}
+                >
+                  <Search className="h-4 w-4" aria-hidden="true" />
+                </Link>
+              </Button>
               <FilterSheet
+                allScreens
                 title={c("Filter stocks", "筛选股票")}
                 summary={scopeOptions.find((option) => option.value === state.scope)?.label}
                 active={filtered}
                 onReset={resetAll}
               >
-                <FilterSheetGroup
-                  label={c("List", "名单")}
-                  options={scopeOptions}
-                  value={state.scope}
-                  onChange={changeScope}
-                />
+                <div>
+                  <label
+                    htmlFor="stock-search"
+                    className="mb-2 block text-xs font-medium text-muted-foreground"
+                  >
+                    {c("Search this list", "搜索当前名单")}
+                  </label>
+                  <div className="relative">
+                    <SearchFieldIcon />
+                    <Input
+                      shape="pill"
+                      ref={searchRef}
+                      id="stock-search"
+                      type="text"
+                      autoComplete="off"
+                      maxLength={100}
+                      placeholder={c("Ticker or company name", "股票代码或公司名称")}
+                      value={searchDraft}
+                      className="h-11 pl-10 pr-12"
+                      onChange={(event) => {
+                        setSearchDraft(event.target.value);
+                        if (!composing.current) commitSearch(event.target.value);
+                      }}
+                      onCompositionStart={() => {
+                        composing.current = true;
+                      }}
+                      onCompositionEnd={(event) => {
+                        composing.current = false;
+                        commitSearch(event.currentTarget.value);
+                      }}
+                    />
+                    {searchDraft && (
+                      <Button
+                        type="button"
+                        variant="icon"
+                        size="icon"
+                        onClick={() => {
+                          clearSearch();
+                          searchRef.current?.focus();
+                        }}
+                        aria-label={c("Clear stock search", "清除股票搜索")}
+                        className="absolute right-1 top-1 h-9 w-9 shadow-sm"
+                      >
+                        <X className="h-4 w-4" aria-hidden="true" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
                 {state.scope === "core" && (
-                  <FilterSheetGroup
-                    label={c("Sector", "行业")}
-                    options={STOCK_SECTORS.map((sector) => ({
-                      value: sector.key,
-                      label: c(sector.en, sector.zh),
-                    }))}
-                    value={state.sector}
-                    onChange={(sector) => update({ ...state, sector, rows: STOCK_PAGE_SIZE })}
-                  />
+                  <div className="min-w-0">
+                    <label
+                      htmlFor="stock-sector"
+                      className="mb-2 block text-xs font-medium text-muted-foreground"
+                    >
+                      {c("Sector", "行业")}
+                    </label>
+                    <Select
+                      value={state.sector}
+                      onValueChange={(value) =>
+                        update({ ...state, sector: value as StockSector, rows: STOCK_PAGE_SIZE })
+                      }
+                    >
+                      <SelectTrigger shape="pill" id="stock-sector" className="h-11">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="!rounded-2xl">
+                        {STOCK_SECTORS.map((sector) => (
+                          <SelectItem key={sector.key} value={sector.key} className="min-h-11">
+                            {c(sector.en, sector.zh)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 )}
                 {creatorScope && (
-                  <FilterSheetGroup
-                    label={c("Source", "来源")}
-                    options={STOCK_SOURCES.map((source) => ({
-                      value: source.key,
-                      label: c(source.en, source.zh),
-                    }))}
-                    value={state.source}
-                    onChange={changeSource}
-                  />
+                  <div className="min-w-0">
+                    <label
+                      htmlFor="stock-source"
+                      className="mb-2 block text-xs font-medium text-muted-foreground"
+                    >
+                      {c("Discussion source", "讨论来源")}
+                    </label>
+                    <Select
+                      value={state.source}
+                      onValueChange={(value) => changeSource(value as StockSource)}
+                    >
+                      <SelectTrigger shape="pill" id="stock-source" className="h-11">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="!rounded-2xl">
+                        {STOCK_SOURCES.map((source) => (
+                          <SelectItem key={source.key} value={source.key} className="min-h-11">
+                            {c(source.en, source.zh)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 )}
-                <FilterSheetGroup
-                  label={c("Sort", "排序")}
-                  options={stockSorts(state.scope, state.source).map((sort) => ({
-                    value: sort,
-                    label: c(...sortLabel(sort, state.source, marketScope)),
-                  }))}
-                  value={state.sort}
-                  onChange={(sort) => update({ ...state, sort, rows: STOCK_PAGE_SIZE })}
-                />
-              </FilterSheet>
-            </div>
-            <div className="ml-auto hidden items-center gap-1 lg:flex">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 shrink-0 rounded-full text-muted-foreground"
-                    aria-label={c("About this list", "名单说明")}
+                <div className="min-w-0">
+                  <label
+                    htmlFor="stock-sort"
+                    className="mb-2 block text-xs font-medium text-muted-foreground"
                   >
-                    <Info className="h-4 w-4" aria-hidden="true" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                  align="end"
-                  className="!w-72 max-w-[calc(100vw-2rem)] p-3 text-xs leading-5 text-muted-foreground"
-                >
-                  {listInfo}
-                </PopoverContent>
-              </Popover>
-              <SegmentedControl
-                label={c("Stock list", "股票列表")}
-                value={state.scope}
-                onChange={changeScope}
-                className="max-w-full border border-border"
-                itemClassName="min-h-9 px-3"
-                options={scopeOptions}
-              />
+                    {c("Sort", "排序")}
+                  </label>
+                  <Select
+                    value={state.sort}
+                    onValueChange={(value) =>
+                      update({ ...state, sort: value as StockSort, rows: STOCK_PAGE_SIZE })
+                    }
+                  >
+                    <SelectTrigger shape="pill" id="stock-sort" className="h-11">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent align="end" className="!rounded-2xl">
+                      {stockSorts(state.scope, state.source).map((sort) => (
+                        <SelectItem key={sort} value={sort} className="min-h-11">
+                          {c(...sortLabel(sort, state.source, marketScope))}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </FilterSheet>
             </div>
           </>
         }
       >
-        <div id="stock-filters" className="mb-3 hidden items-end gap-3 lg:flex">
-          <div className="min-w-0 flex-1">
-            <label htmlFor="stock-search" className="sr-only">
-              {c("Search this list", "搜索当前名单")}
-            </label>
-            <CommandSearch className="w-full" hasValue={!!searchDraft} shortcut="mod+k">
-              <div className="relative">
-                <SearchFieldIcon />
-                <Input
-                  shape="pill"
-                  ref={searchRef}
-                  id="stock-search"
-                  type="text"
-                  autoComplete="off"
-                  maxLength={100}
-                  placeholder={c("Ticker or company name", "股票代码或公司名称")}
-                  value={searchDraft}
-                  className="h-11 pl-10 pr-12"
-                  onChange={(event) => {
-                    setSearchDraft(event.target.value);
-                    if (!composing.current) commitSearch(event.target.value);
-                  }}
-                  onCompositionStart={() => {
-                    composing.current = true;
-                  }}
-                  onCompositionEnd={(event) => {
-                    composing.current = false;
-                    commitSearch(event.currentTarget.value);
-                  }}
-                  onFocus={() => setSuggestOpen(true)}
-                  onBlur={(event) => {
-                    if (
-                      !event.currentTarget.parentElement?.contains(
-                        event.relatedTarget as Node | null,
-                      )
-                    )
-                      setSuggestOpen(false);
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === "Escape" && !composing.current) {
-                      setSuggestOpen(false);
-                      clearSearch();
-                    }
-                  }}
-                />
-                {suggestOpen && (
-                  <StockSearchSuggestions
-                    query={searchDraft}
-                    onPick={() => setSuggestOpen(false)}
-                  />
-                )}
-                {searchDraft && (
-                  <Button
-                    type="button"
-                    variant="icon"
-                    size="icon"
-                    onClick={clearSearch}
-                    aria-label={c("Clear stock search", "清除股票搜索")}
-                    className="absolute right-1 top-1 h-9 w-9 shadow-sm"
-                  >
-                    <X className="h-4 w-4" aria-hidden="true" />
-                  </Button>
-                )}
-              </div>
-            </CommandSearch>
-          </div>
-          {state.scope === "core" && (
-            <div className="w-36 shrink-0">
-              <label htmlFor="stock-sector" className="sr-only">
-                {c("Sector", "行业")}
-              </label>
-              <Select
-                value={state.sector}
-                onValueChange={(value) =>
-                  update({ ...state, sector: value as StockSector, rows: STOCK_PAGE_SIZE })
-                }
-              >
-                <SelectTrigger shape="pill" id="stock-sector" className="h-11">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="!rounded-2xl">
-                  {STOCK_SECTORS.map((sector) => (
-                    <SelectItem key={sector.key} value={sector.key} className="min-h-11">
-                      {c(sector.en, sector.zh)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-          {creatorScope && (
-            <div className="w-36 shrink-0">
-              <label htmlFor="stock-source" className="sr-only">
-                {c("Discussion source", "讨论来源")}
-              </label>
-              <Select
-                value={state.source}
-                onValueChange={(value) => changeSource(value as StockSource)}
-              >
-                <SelectTrigger shape="pill" id="stock-source" className="h-11">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="!rounded-2xl">
-                  {STOCK_SOURCES.map((source) => (
-                    <SelectItem key={source.key} value={source.key} className="min-h-11">
-                      {c(source.en, source.zh)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-          <div className={cn("shrink-0", creatorScope ? "w-44" : "w-40")}>
-            <label htmlFor="stock-sort" className="sr-only">
-              {c("Sort", "排序")}
-            </label>
-            <Select
-              value={state.sort}
-              onValueChange={(value) =>
-                update({ ...state, sort: value as StockSort, rows: STOCK_PAGE_SIZE })
-              }
-            >
-              <SelectTrigger shape="pill" id="stock-sort" className="h-11">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent align="end" className="!rounded-2xl">
-                {stockSorts(state.scope, state.source).map((sort) => (
-                  <SelectItem key={sort} value={sort} className="min-h-11">
-                    {c(...sortLabel(sort, state.source, marketScope))}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {pendingRanking && (
-            <Button variant="outline" className="h-11 shrink-0 gap-2" onClick={applyRanking}>
-              <RefreshCw className="h-4 w-4" aria-hidden="true" />
-              {c("Update ranking", "更新排名")}
-            </Button>
-          )}
-        </div>
         {marketScope && ((board?.partial && !board.unavailable) || board?.stale) && (
           <div
             role="status"
@@ -1028,19 +970,24 @@ export default function StockObservationList({
                                     <span className="figure block text-base font-medium">
                                       {money(ext.price)}
                                     </span>
-                                    <span className="mt-1 flex items-center justify-end gap-1">
+                                    <span className="mt-1 flex flex-wrap items-center justify-end gap-x-1">
                                       <Change
                                         value={ext.changePercent}
                                         className="text-xs font-semibold"
                                       />
                                       <span
-                                        className="rounded bg-muted px-1 py-0.5 text-[10px] font-medium text-muted-foreground"
+                                        className="whitespace-nowrap rounded bg-muted px-1 py-0.5 text-[10px] font-medium text-muted-foreground"
                                         title={c(
                                           `Regular close: ${money(q.price)} (${signedPercent(q.changePercent)})`,
                                           `收盘价: ${money(q.price)} (${signedPercent(q.changePercent)})`,
                                         )}
                                       >
-                                        {sessionLabel(ext.session, c("en", "zh"), ext.delayMinutes)}
+                                        {sessionLabel(
+                                          ext.session,
+                                          c("en", "zh"),
+                                          ext.delayMinutes,
+                                          "status",
+                                        )}
                                       </span>
                                     </span>
                                   </>

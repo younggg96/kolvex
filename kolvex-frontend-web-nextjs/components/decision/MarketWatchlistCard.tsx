@@ -130,7 +130,12 @@ export default function MarketWatchlistCard() {
                                         `收盘: ${money(q.price)} (${signedPercent(q.changePercent)})`,
                                       )}
                                     >
-                                      {sessionLabel(ext.session, c("en", "zh"), ext.delayMinutes)}
+                                      {sessionLabel(
+                                        ext.session,
+                                        c("en", "zh"),
+                                        ext.delayMinutes,
+                                        "status",
+                                      )}
                                     </span>
                                   </span>
                                 </>

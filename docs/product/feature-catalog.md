@@ -24,7 +24,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 | --- | --- | --- | --- | --- | --- |
 | 行情总览、指数 / 板块 / 跨资产（股票、ETF 分时图含可用的盘前、盘后及已授权的 BOATS 夜盘（实时历史请求被拒时尝试延迟 15 分钟的 K 线），1 天小走势图只画当前交易日并淡化扩展时段，指数卡片在非计算时段显示跟踪 ETF 的扩展时段走势，指数 ETF 单独显示，Yahoo K 线限流后暂停请求 60 秒） | `/dashboard` | `(tabs)/index`、`/markets` | `market_data.py` | [decision-workspace.md](../decision-workspace.md) | ✅ |
 | CNN 恐慌与贪婪指数（管理员手动导入） | `/dashboard`、`/dashboard/admin?tab=fear-greed` | 待跟进 | `fear_greed.py` | [fear-greed.md](../fear-greed.md) | ◐ |
-| 股票观察（今日异动 / 放量活跃 / 博主热议…；Web 报价原位刷新，超出当前行数的候选每 60 秒检查，手动应用新排名） | `/dashboard` | 首页 | `market_data.py`（`/market/discovery`） | [stock-discovery.md](../stock-discovery.md) | ◐（手动应用排名待同步） |
+| 股票观察（今日异动 / 放量活跃 / 博主热议…；Web 报价原位刷新，超出当前行数的候选每 60 秒检查，手动应用新排名，夜盘延迟用短标签；页头可打开搜索页和榜单筛选弹窗） | `/dashboard` | 首页 | `market_data.py`（`/market/discovery`） | [stock-discovery.md](../stock-discovery.md) | ◐（手动应用排名待同步） |
 | 宏观指标 | `/dashboard?tab=macro` | `/macro` | `economic_indicators.py`、`market_observations.py` | `kolvex-backend-py/docs/macro-data.md` | ✅ |
 | 重大事件日历 | `/dashboard?tab=calendar` | `/calendar` | `market_events.py` | [market-events.md](../market-events.md) | ✅ |
 | 个股工作台（概览、财报、盈利、指标趋势、同行、持股、分析师、简介） | `/dashboard/market/[ticker]?tab=…` | `/stock/[symbol]?tab=…` | `market_data.py` | [decision-workspace.md](../decision-workspace.md) | ✅ |
@@ -65,7 +65,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 
 | 功能 | ID | Web 入口 | App 入口 | 后端 | 文档 | App |
 | --- | --- | --- | --- | --- | --- | --- |
-| 自选股 | `watchlist` | `/dashboard/watchlist` | `(more)/watchlist` | Supabase 直连 + RLS | [watchlist-sync.md](../watchlist-sync.md) | ✅ |
+| 自选股（Web 夜盘延迟用短标签） | `watchlist` | `/dashboard/watchlist` | `(more)/watchlist` | Supabase 直连 + RLS | [watchlist-sync.md](../watchlist-sync.md) | ✅ |
 | 投资组合（Plaid + 手动导入：复制提示词交给 Codex / Muse 生成 JSON 后粘贴导入，每次整体替换上一次手动导入；可逐个移除账户；AI 洞察可选模型（用户自己的 API Key）并保存历史分析） | `portfolio` | `/dashboard/portfolio`、公开页 `/portfolio/[userId]` | `/portfolio`（只读持仓快照，含手动导入的账户） | `portfolio/`（含 `manual_routes.py`、`account_routes.py`；需迁移 `20261118000000_portfolio_manual_provider.sql`、`20261118010000_portfolio_removed_accounts.sql`、`20261119000000_portfolio_ai_analyses.sql`）、`plaid.py`、`portfolio_ai_analysis.py` | `kolvex-frontend-web-nextjs/FEATURE_INVENTORY.md`「Plaid」「手动导入」「移除账户」「AI 洞察」 | ◐（持仓价格叠加实时行情；Web 本人收益图按当前持仓 × K 线收盘价估算（4小时 / 1日 / 1周为分时），公开页用收盘后自动采集的 Plaid 收益快照，手动导入不生成快照；App 缺 Plaid 授权、手动导入、移除账户、交易、配置、收益图、AI 分析、股票观察「我的持仓」） |
 | 虚拟交易 | `paperTrading` | `/dashboard/paper-trading`、个股 `?tab=paper-trading` | `(more)/paper-trading`、个股 tab | `paper_trading.py` | [paper-trading/PLAN.md](../paper-trading/PLAN.md)、[README.md](../paper-trading/README.md)、Web `UX-CONTRACT.md` | ✅ |
 | Trade OS（交易决策与风控系统【实验性 · Beta】：账户管理、Robinhood CSV 导入、FIFO 成交归集、权益快照、Trade Plan 计划制定、服务端风险引擎审批、持仓风控监控、Swing V3.0 回调策略：SPY/QQQ 进攻/谨慎/防守/未知市场状态、四层扫描 + 回调状态机、多套扫描逻辑（默认 Swing V3.1 只读；可新建 / 复制 / 编辑 / 删除自定义逻辑并选择其一扫描）、PRD 风控拒绝码、同源回测与复盘分析；页面合并为「今天 / 交易 / 策略」三页） | `tradeOS` | `/dashboard/trade-os`（今天）、`/trades`（交易）、`/strategies`（策略）、`/settings`（账户与导入） | — | `trade_os/`（含 `accounts.py`, `import_.py`, `equity.py`, `executions.py`, `strategies.py`, `plans.py`, `portfolio.py`, `risk.py`, `market.py`, `scanner.py`, `backtests.py`, `journal.py`, `analytics.py`） | [trade-os/README.md](../trade-os/README.md) | ❌（Web 先行，App 待 Phase 4 规划） |

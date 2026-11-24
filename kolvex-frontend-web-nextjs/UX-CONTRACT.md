@@ -8,9 +8,11 @@ new virtual-trading workflow; it does not retrofit behavior onto unrelated route
 
 Source: `../docs/stock-discovery.md` and backend `app/services/stock_discovery.py`.
 `StockObservationList` owns all five scopes, local search, ordering, load more,
-URL state and detail return. Shared SegmentedControl (desktop), Radix Select
-(narrow), ListRow, WatchlistButton, ContentLoading and inline live feedback retain
-their canonical behavior. No selection/bulk writes are introduced.
+URL state and detail return. The header uses the shared SegmentedControl at all
+widths and links to the dashboard search page. The shared FilterSheet and Radix
+Select own current-list query, source or sector, and sort controls. Changes apply
+immediately and Done closes the modal. ListRow, WatchlistButton, ContentLoading
+and inline live feedback retain their canonical behavior.
 
 `useMarketDiscovery` uses `useCachedResource` and `useVisiblePolling` for bounded
 read caching, stale-request cancellation and minute polling while visible.
@@ -21,7 +23,8 @@ falls back to the curated list. Quote reads still use shared per-symbol snapshot
 Entry reasons distinguish dated price moves, full-day average volume multiples,
 seven-day opinion counts and curated sector membership in both zh and en.
 Node component-state tests cover empty/error/retry/loading, locale, scope state
-and detail returns. Real browser geometry/keyboard verification remains pending.
+and detail returns. Local Chrome fixtures cover the header and filter modal at
+390, 1024 and 1440 px, including keyboard dismissal and focus restoration.
 
 | Capability | Canonical owner | Source of truth | Allowed variants | Verification |
 | --- | --- | --- | --- | --- |

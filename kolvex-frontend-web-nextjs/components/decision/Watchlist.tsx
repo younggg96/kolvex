@@ -373,13 +373,13 @@ export default function Watchlist() {
                                             <span className="figure block text-base font-medium">
                                               {money(ext.price)}
                                             </span>
-                                            <span className="mt-1 flex items-center justify-end gap-1">
+                                            <span className="mt-1 flex flex-wrap items-center justify-end gap-x-1">
                                               <Change
                                                 value={ext.changePercent}
                                                 className="text-xs font-semibold"
                                               />
                                               <span
-                                                className="rounded bg-muted px-1 py-0.5 text-[10px] font-medium text-muted-foreground"
+                                                className="whitespace-nowrap rounded bg-muted px-1 py-0.5 text-[10px] font-medium text-muted-foreground"
                                                 title={c(
                                                   `Regular close: ${money(q.price)} (${signedPercent(q.changePercent)})`,
                                                   `收盘价: ${money(q.price)} (${signedPercent(q.changePercent)})`,
@@ -389,6 +389,7 @@ export default function Watchlist() {
                                                   ext.session,
                                                   c("en", "zh"),
                                                   ext.delayMinutes,
+                                                  "status",
                                                 )}
                                               </span>
                                             </span>

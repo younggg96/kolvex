@@ -101,6 +101,9 @@ function fixture(
       useSearchParams: () => new URLSearchParams(query),
     },
     "next/link": { default: "Link" },
+    "@/components/layout/navItems": { SEARCH_HREF: "/dashboard/search" },
+    "@/components/ui/filter-sheet": { FilterSheet: "FilterSheet" },
+    "@/components/ui/input": { Input: "Input" },
     "@/components/ui/button": { Button: "Button" },
     "@/components/ui/select": {
       Select: "Select",
@@ -206,7 +209,9 @@ test("new scope renders dated reasons, only requests visible quotes and preserve
   assert.equal(h.enabled, true);
   assert.deepEqual(h.requested, ["PLTR"]);
   assert.match(h.text, /2026-10-29 · 涨跌 \+8.00%/);
-  const link = h.nodes.find((node) => node.type === "Link");
+  const link = h.nodes.find(
+    (node) => node.type === "Link" && node.props.href.startsWith("/dashboard/market/"),
+  );
   assert.ok(link.props.href.startsWith("/dashboard/market/PLTR?from="));
   const from = new URL(
     new URL(link.props.href, "https://test").searchParams.get("from"),
@@ -238,7 +243,12 @@ test("unavailable ranking shows retry and never displays the curated list as mar
     selected: board({ items: [], unavailable: true, partial: true }),
   });
   assert.match(h.text, /暂时无法加载这个榜单/);
-  assert.equal(h.nodes.filter((node) => node.type === "Link").length, 0);
+  assert.equal(
+    h.nodes.filter(
+      (node) => node.type === "Link" && node.props.href.startsWith("/dashboard/market/"),
+    ).length,
+    0,
+  );
   h.nodes.find((node) => node.type === "Button" && node.props.children === "重试").props.onClick();
   assert.equal(h.rankingRetries(), 1);
 });
@@ -283,4 +293,33 @@ test("initial loading renders the canonical loading state and core scope avoids 
     ),
   );
   assert.equal(fixture("stocks=core").enabled, false);
+});
+
+test("stock watch links to global search and keeps list search and dropdowns in the filter modal", () => {
+  const h = fixture("stocks=creators&stockSort=heat");
+  const header = h.nodes.find((node) => node.type === "Panel").props.action;
+  const actions = header.props.children.find((node) => node.type === "div").props.children;
+  const search = actions.find((node) => node?.props.children?.type === "Link");
+  assert.equal(search.props.children.props.href, "/dashboard/search");
+  const filter = actions.find((node) => node?.type === "FilterSheet");
+  assert.equal(filter.props.allScreens, true);
+
+  const input = h.nodes.find((node) => node.type === "Input" && node.props.id === "stock-search");
+  input.props.onChange({ target: { value: "NVDA" } });
+  assert.equal(new URL(h.url(), "https://test").searchParams.get("stockSearch"), "NVDA");
+
+  const source = h.nodes.find(
+    (node) => node.type === "Select" && node.props.children[0].props.id === "stock-source",
+  );
+  assert.ok(source);
+  source.props.onValueChange("reddit");
+  assert.equal(new URL(h.url(), "https://test").searchParams.get("stockSource"), "reddit");
+  assert.ok(
+    h.nodes.some((node) => node.type === "SelectTrigger" && node.props.id === "stock-sort"),
+  );
+  assert.ok(
+    fixture("stocks=core").nodes.some(
+      (node) => node.type === "SelectTrigger" && node.props.id === "stock-sector",
+    ),
+  );
 });
