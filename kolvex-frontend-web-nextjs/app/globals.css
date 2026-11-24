@@ -3098,3 +3098,38 @@ html[data-chat-history-open] .app-workbench .app-sidebar {
     animation: none;
   }
 }
+
+/* Live price tick: the value's background flashes the market up/down fill, then fades.
+   box-shadow widens the wash past the glyphs without shifting layout. */
+@keyframes price-flash-up {
+  from {
+    background-color: rgb(var(--positive-fill) / 0.28);
+    box-shadow: 0 0 0 3px rgb(var(--positive-fill) / 0.28);
+  }
+  to {
+    background-color: transparent;
+    box-shadow: 0 0 0 3px transparent;
+  }
+}
+@keyframes price-flash-down {
+  from {
+    background-color: rgb(var(--negative-fill) / 0.28);
+    box-shadow: 0 0 0 3px rgb(var(--negative-fill) / 0.28);
+  }
+  to {
+    background-color: transparent;
+    box-shadow: 0 0 0 3px transparent;
+  }
+}
+.price-flash-up,
+.price-flash-down {
+  border-radius: 3px;
+  animation-duration: 1s;
+  animation-timing-function: ease-out;
+}
+.price-flash-up {
+  animation-name: price-flash-up;
+}
+.price-flash-down {
+  animation-name: price-flash-down;
+}

@@ -15,6 +15,7 @@ import { Change, money, useCopy } from "./shared";
 import { Skeleton } from "../ui/skeleton";
 import { latestChartQuote, sessionLabel } from "@/lib/chart/quote";
 import { signedPercent } from "@/lib/format";
+import { PriceFlash } from "@/components/ui/price-flash";
 
 const PREVIEW_SIZE = 6;
 
@@ -117,12 +118,20 @@ export default function MarketWatchlistCard() {
                             if (isExtended && ext) {
                               return (
                                 <>
-                                  <span className="figure text-right">{money(ext.price)}</span>
+                                  <PriceFlash
+                                    value={ext.price}
+                                    identity={symbol}
+                                    className="figure justify-self-end text-right"
+                                  >
+                                    {money(ext.price)}
+                                  </PriceFlash>
                                   <span className="flex items-center justify-end gap-1">
-                                    <Change
-                                      value={ext.changePercent}
-                                      className="min-w-14 text-right text-xs"
-                                    />
+                                    <PriceFlash value={ext.price} identity={symbol}>
+                                      <Change
+                                        value={ext.changePercent}
+                                        className="inline-block min-w-14 text-right text-xs"
+                                      />
+                                    </PriceFlash>
                                     <span
                                       className="rounded bg-muted px-1 py-0.2 text-[9px] font-medium text-muted-foreground"
                                       title={c(
@@ -143,11 +152,23 @@ export default function MarketWatchlistCard() {
                             }
                             return (
                               <>
-                                <span className="figure text-right">{money(q?.price)}</span>
-                                <Change
-                                  value={q?.changePercent}
-                                  className="min-w-14 text-right text-xs"
-                                />
+                                <PriceFlash
+                                  value={q?.price}
+                                  identity={symbol}
+                                  className="figure justify-self-end text-right"
+                                >
+                                  {money(q?.price)}
+                                </PriceFlash>
+                                <PriceFlash
+                                  value={q?.price}
+                                  identity={symbol}
+                                  className="justify-self-end"
+                                >
+                                  <Change
+                                    value={q?.changePercent}
+                                    className="inline-block min-w-14 text-right text-xs"
+                                  />
+                                </PriceFlash>
                               </>
                             );
                           })()

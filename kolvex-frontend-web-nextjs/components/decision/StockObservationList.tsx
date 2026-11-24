@@ -72,6 +72,7 @@ import {
 } from "./shared";
 import StockTrend from "./StockTrend";
 import WatchlistButton from "./WatchlistButton";
+import { PriceFlash } from "@/components/ui/price-flash";
 
 const ROW_GRID =
   "grid grid-cols-[minmax(0,1fr)_80px] gap-x-2 min-[360px]:grid-cols-[minmax(0,1fr)_60px_80px] sm:grid-cols-[minmax(0,1fr)_100px_100px] sm:gap-x-4";
@@ -967,14 +968,20 @@ export default function StockObservationList({
                               if (q && ext) {
                                 return (
                                   <>
-                                    <span className="figure block text-base font-medium">
+                                    <PriceFlash
+                                      value={ext.price}
+                                      identity={symbol}
+                                      className="figure inline-block text-base font-medium"
+                                    >
                                       {money(ext.price)}
-                                    </span>
+                                    </PriceFlash>
                                     <span className="mt-1 flex flex-wrap items-center justify-end gap-x-1">
-                                      <Change
-                                        value={ext.changePercent}
-                                        className="text-xs font-semibold"
-                                      />
+                                      <PriceFlash value={ext.price} identity={symbol}>
+                                        <Change
+                                          value={ext.changePercent}
+                                          className="text-xs font-semibold"
+                                        />
+                                      </PriceFlash>
                                       <span
                                         className="whitespace-nowrap rounded bg-muted px-1 py-0.5 text-[10px] font-medium text-muted-foreground"
                                         title={c(
@@ -995,13 +1002,21 @@ export default function StockObservationList({
                               }
                               return (
                                 <>
-                                  <span className="figure block text-base font-medium">
+                                  <PriceFlash
+                                    value={quotes[symbol]?.price}
+                                    identity={symbol}
+                                    className="figure inline-block text-base font-medium"
+                                  >
                                     {money(quotes[symbol]?.price)}
+                                  </PriceFlash>
+                                  <span className="mt-1 block">
+                                    <PriceFlash value={quotes[symbol]?.price} identity={symbol}>
+                                      <Change
+                                        value={quotes[symbol]?.changePercent}
+                                        className="text-xs font-semibold"
+                                      />
+                                    </PriceFlash>
                                   </span>
-                                  <Change
-                                    value={quotes[symbol]?.changePercent}
-                                    className="mt-1 block text-xs font-semibold"
-                                  />
                                 </>
                               );
                             })()

@@ -21,6 +21,12 @@ from pathlib import Path
 BACKEND = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND))
 
+from dotenv import load_dotenv  # noqa: E402
+
+# Docker injects .env into the container; run on the host, the script reads it itself.
+# Variables already set in the shell win.
+load_dotenv(BACKEND / ".env", override=False)
+
 from app.services.market_risk import ingest  # noqa: E402
 
 # VIX9D, the shortest series, starts in 2011; earlier VVIX history is sparse and noisy.

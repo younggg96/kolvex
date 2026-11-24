@@ -29,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import CompanyLogo from "@/components/ui/company-logo";
+import { PriceFlash } from "@/components/ui/price-flash";
 import WatchlistButton from "@/components/decision/WatchlistButton";
 import { Change, money, useCopy, useHeldTickers } from "@/components/decision/shared";
 import { useStockNews } from "@/components/decision/useStockNews";
@@ -696,17 +697,27 @@ function WatchlistRow({
         </>
       ) : (
         <>
-          <span className="truncate text-right tabular-nums">
+          <PriceFlash
+            value={live?.price}
+            identity={symbol}
+            className="truncate text-right tabular-nums"
+          >
             {live ? live.price.toFixed(2) : "—"}
-          </span>
-          <span
+          </PriceFlash>
+          <PriceFlash
+            value={live?.price}
+            identity={symbol}
             className={cn("hidden truncate text-right tabular-nums xl:block", tone(live?.change))}
           >
             {signedPrice(live?.change)}
-          </span>
-          <span className={cn("truncate text-right tabular-nums", tone(live?.changePercent))}>
+          </PriceFlash>
+          <PriceFlash
+            value={live?.price}
+            identity={symbol}
+            className={cn("truncate text-right tabular-nums", tone(live?.changePercent))}
+          >
             {live?.changePercent == null ? "—" : signedPercent(live.changePercent)}
-          </span>
+          </PriceFlash>
         </>
       )}
     </>
@@ -776,14 +787,22 @@ function SymbolDetails({
         <Skeleton className="mt-2 h-7 w-40 rounded" />
       ) : (
         <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-          <span className="text-2xl font-semibold tabular-nums tracking-tight">
+          <PriceFlash
+            value={live?.price}
+            identity={symbol}
+            className="text-2xl font-semibold tabular-nums tracking-tight"
+          >
             {live ? live.price.toFixed(2) : "—"}
-          </span>
+          </PriceFlash>
           <span className="text-[0.6875rem] text-muted-foreground">USD</span>
-          <span className={cn("text-sm font-medium tabular-nums", tone(live?.change))}>
+          <PriceFlash
+            value={live?.price}
+            identity={symbol}
+            className={cn("text-sm font-medium tabular-nums", tone(live?.change))}
+          >
             {signedPrice(live?.change)}{" "}
             {live?.changePercent == null ? "" : `(${signedPercent(live.changePercent)})`}
-          </span>
+          </PriceFlash>
           {live && (
             <span className="text-[0.6875rem] text-muted-foreground">
               {sessionLabel(live.session, locale, live.delayMinutes)}

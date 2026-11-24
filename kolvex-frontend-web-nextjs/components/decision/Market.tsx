@@ -48,6 +48,7 @@ import {
   loadStockTrend,
   type TrendPoint,
 } from "@/lib/stockTrends";
+import { PriceFlash } from "@/components/ui/price-flash";
 
 const OVERVIEW_GROUPS = MARKET_GROUPS.filter((group) => group.key === "indices");
 const TREND_GROUPS = MARKET_GROUPS.filter((group) => group.key !== "indices");
@@ -211,6 +212,9 @@ function MarketInstrumentCard({
       : isExtended && ext
         ? ext.price
         : (quote?.price ?? series.at(-1)?.value));
+  // Only live ticks flash: scrubbing the chart or a closed daily series is not a price change.
+  const liveValue = scrub || benchmark.daily ? undefined : value;
+  const flashIdentity = `${benchmark.symbol}:${range}`;
   // 1D compares with the prior close; longer ranges compare with the close before the range starts.
   const versusPriorClose = range === "1D" && !benchmark.daily;
   const quoteDelta = versusPriorClose && !scrub && quote;
@@ -378,7 +382,9 @@ function MarketInstrumentCard({
           {benchmark.symbol}
         </p>
         <div className="figure mt-3 min-h-8 text-2xl font-semibold tracking-tight max-md:mt-1.5 max-md:min-h-0 max-md:text-xl">
-          {valueDisplay}
+          <PriceFlash value={liveValue} identity={flashIdentity}>
+            {valueDisplay}
+          </PriceFlash>
         </div>
         <div
           className={cn(
@@ -390,7 +396,9 @@ function MarketInstrumentCard({
                 : "text-negative",
           )}
         >
-          {changeDisplay}
+          <PriceFlash value={liveValue} identity={flashIdentity}>
+            {changeDisplay}
+          </PriceFlash>
         </div>
         {proxyActive && proxyPercent !== null && (
           <p
