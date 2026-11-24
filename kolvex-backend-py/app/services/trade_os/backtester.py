@@ -16,6 +16,9 @@ Portfolio replay over many symbols on one shared account:
 - Open through the stop exits at the open (gap loss is recorded).
 - Stop and target on the same daily bar: the stop is assumed (conservative, AC-18).
 - Time exit at the open of holding day 60 (V3.1; ``time_exit_day``; entry day = day 1).
+- ``drawdown_tiers`` (PRD §12.4, on by default so the backtest follows the live risk rules): drawdown >= 6% cuts risk to 0.25% and open risk to
+  1%; >= 8% pauses new entries for ``drawdown_pause_sessions`` sessions (a manual review is
+  assumed after that), reset once drawdown is back under 6%.
 - Slippage applied against the trader on both sides.
 
 Not modelled yet (reported in ``assumptions``): earnings exits, dividends,
@@ -38,7 +41,7 @@ from app.services.trade_os.setup_detection import (
     detect_pullback_setup,
 )
 
-ENGINE_VERSION = "swing-v3-portfolio-2"
+ENGINE_VERSION = "swing-v3-portfolio-3"
 MIN_BARS = 220
 MAX_POSITION_PCT = Decimal("0.10")
 # Used when the market filter is off.
@@ -78,6 +81,7 @@ def run_portfolio_backtest(
     segments: Sequence[Tuple[str, Optional[str], Optional[str]]] = DEFAULT_SEGMENTS,
     params: Optional[Dict[str, Any]] = None,
     earnings: Optional[Dict[str, Optional[List[str]]]] = None,
+    groups: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
     """
     ``params`` overrides strategy parameters (setup_detection.DEFAULT_PARAMS plus
@@ -85,10 +89,17 @@ def run_portfolio_backtest(
     ``regimes`` maps date (YYYY-MM-DD) -> market state; None turns the market filter off
     (then ``risk_per_trade_pct``, default 0.5%, 4 positions, 2% open risk).
     ``benchmark_bars`` (SPY) is used for RS20 ranking and the buy-and-hold comparison.
+    ``groups`` maps symbol -> concentration group; with ``params["max_per_group"]`` set, a
+    signal is skipped (GROUP_LIMIT) when that many positions in its group are already open.
     ``earnings`` maps symbol -> report timestamps (ISO, New York time); None turns the
     earnings rules off. A symbol mapped to None has unknown dates and is not traded.
     """
-    p = {**DEFAULT_PARAMS, **(params or {})}
+    p = {
+        **DEFAULT_PARAMS,
+        "drawdown_tiers": True,
+        "drawdown_pause_sessions": 20,
+        **(params or {}),
+    }
     slip = d(slippage_bps) / Decimal(10000)
     flat_risk = d(risk_per_trade_pct) if risk_per_trade_pct is not None else Decimal("0.0050")
     regime_map = {k[:10]: v for k, v in (regimes or {}).items()}
@@ -213,7 +224,8 @@ def run_portfolio_backtest(
             }
         )
 
-    for day in all_days:
+    pause_start: Optional[int] = None  # day index when drawdown first reached the pause level
+    for di, day in enumerate(all_days):
         # 1. Manage open positions on symbols that traded today
         for sym in list(positions):
             i = data[sym]["index"].get(day)
@@ -240,6 +252,21 @@ def run_portfolio_backtest(
         equity_now = cash + sum(
             p["shares"] * last_close.get(s, p["entry"]) for s, p in positions.items()
         )
+        # Account risk tiers (PRD §12.4): the same drawdown rules the live risk engine applies.
+        dd_now = (peak - equity_now) / peak if peak > ZERO else ZERO
+        tier_risk_cap, tier_open_cap, paused = None, None, False
+        if p.get("drawdown_tiers"):
+            if dd_now < Decimal("0.06"):
+                pause_start = None
+            elif dd_now >= Decimal("0.08") and pause_start is None:
+                pause_start = di
+            if dd_now >= Decimal("0.06"):
+                tier_risk_cap, tier_open_cap = Decimal("0.0025"), Decimal("0.0100")
+            # Level 2/3 stop new entries; a manual review is assumed after this many sessions.
+            paused = pause_start is not None and di - pause_start < int(
+                p["drawdown_pause_sessions"]
+            )
+
         for cand in sorted(fills_by_day.get(day, []), key=lambda c: (-c["rs20"], c["symbol"])):
             sym, sig = cand["symbol"], cand["sig"]
             i = sig["fill_index"]
@@ -259,8 +286,14 @@ def run_portfolio_backtest(
 
             reason = None
             si = sig["signal_index"]
+            max_open_pct = limits["max_open_risk_pct"]
+            if tier_risk_cap is not None:
+                risk_pct = min(risk_pct, tier_risk_cap)
+                max_open_pct = min(max_open_pct, tier_open_cap)
             if sym in positions:
                 reason = "DUPLICATE_POSITION"
+            elif paused:
+                reason = "DRAWDOWN_LIMIT"
             elif data[sym]["earnings_unknown"]:
                 reason = "EVENT_DATA_UNAVAILABLE"
             elif any(si < k <= si + blackout_days for k in data[sym]["earnings_exit"]):
@@ -269,6 +302,13 @@ def run_portfolio_backtest(
                 reason = "MARKET_RISK_OFF" if regime == "risk_off" else "STALE_MARKET_DATA"
             elif len(positions) >= limits["max_positions"]:
                 reason = "MAX_POSITIONS"
+            elif (
+                p.get("max_per_group")
+                and groups
+                and sum(1 for held in positions if groups.get(held) == groups.get(sym))
+                >= int(p["max_per_group"])
+            ):
+                reason = "GROUP_LIMIT"
             elif not (p["min_stop_distance"] <= r / fill <= p["max_stop_distance"]):
                 reason = "INVALID_STOP_AFTER_GAP"
 
@@ -280,9 +320,7 @@ def run_portfolio_backtest(
                     risk_pct,
                     MAX_POSITION_PCT,
                     available_cash=cash,
-                    remaining_risk_budget=max(
-                        ZERO, equity_now * limits["max_open_risk_pct"] - open_risk
-                    ),
+                    remaining_risk_budget=max(ZERO, equity_now * max_open_pct - open_risk),
                 )
                 shares = sizing["max_allowed_quantity"]
                 if shares < 1:

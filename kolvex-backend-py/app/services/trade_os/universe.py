@@ -265,3 +265,25 @@ def default_product_lookup(symbol: str) -> Dict[str, bool]:
 
 
 _FIXED_STOCKS = frozenset(CORE_STOCKS) | frozenset(s for m in SECTOR_STOCKS.values() for s in m)
+
+
+# Core stocks that are not tech/growth by business; everything else in CORE_STOCKS is "tech".
+_CORE_GROUP_OVERRIDES = {
+    "LLY": "healthcare",
+    "COIN": "financials",
+    "UBER": "consumer",
+    "TSLA": "autos",
+}
+
+
+def group_of(symbol: str) -> str:
+    """Concentration group for position caps: ETFs share one group; stocks go by industry."""
+    sym = symbol.upper()
+    if sym in ETF_SET:
+        return "etf"
+    if sym in _CORE_GROUP_OVERRIDES:
+        return _CORE_GROUP_OVERRIDES[sym]
+    sector = sector_of(sym)
+    if sector:
+        return "tech" if sector == "tech_other" else sector
+    return "tech" if sym in CORE_STOCKS else "other"

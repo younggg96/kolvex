@@ -212,3 +212,40 @@ def test_v3_1_defaults_use_3r_target_and_60_day_exit():
     assert t["exit_reason"] == "TIME_EXIT"
     assert t["holding_days"] == 60
     assert abs(float(t["target_price"]) - (154.01 + 3 * (154.01 - float(t["stop_price"])))) < 0.02
+
+
+# --- Concentration cap and account risk tiers --------------------------------
+
+
+def test_group_cap_skips_extra_positions_in_the_same_group():
+    bars = dated(history(WIN))
+    groups = {"AAA": "tech", "BBB": "tech", "CCC": "tech"}
+    regimes = {b["date"]: "risk_on" for b in bars}
+    res = run_portfolio_backtest(
+        {"AAA": bars, "BBB": bars, "CCC": bars},
+        regimes=regimes,
+        params={"max_per_group": 2},
+        groups=groups,
+        segments=(),
+    )
+    assert [t["symbol"] for t in res["trades"]] == ["AAA", "BBB"]
+    assert {s["symbol"]: s["reason"] for s in res["skipped_signals"]}["CCC"] == "GROUP_LIMIT"
+
+
+def test_group_cap_is_off_by_default():
+    bars = dated(history(WIN))
+    res = run_portfolio_backtest(
+        {"AAA": bars, "BBB": bars},
+        regimes={b["date"]: "risk_on" for b in bars},
+        groups={"AAA": "tech", "BBB": "tech"},
+        segments=(),
+    )
+    assert len(res["trades"]) == 2
+
+
+def test_drawdown_tiers_are_on_by_default_and_recorded_in_the_config_hash():
+    bars = dated(history(WIN))
+    on = run_portfolio_backtest({"AAA": bars}, segments=())
+    off = run_portfolio_backtest({"AAA": bars}, segments=(), params={"drawdown_tiers": False})
+    assert on["config"]["params"]["drawdown_tiers"] == "True"
+    assert on["config_hash"] != off["config_hash"]
