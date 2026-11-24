@@ -59,19 +59,76 @@ sent to the server, and **恢复默认 / Reset** restores the defaults:
   `--foreground`, `--muted-foreground`), plus 绿涨红跌 / 红涨绿跌 presets. Turning a part
   off keeps candles visible (hollow body, neutral wick or outline).
 
+## Advanced chart indicators (技术指标)
+
+The 技术指标 menu groups the overlays: **均线 MA** (simple average) 5 / 10 / 20 / 30 / 60 /
+120 / 250, **指数均线 EMA** 5 / 10 / 12 / 20 / 26 / 50 / 100 / 200, and **其他** VWAP, Bollinger
+(20, 2) and volume; 副图指标 (KDJ / MACD / RSI) follows. Periods are toggle chips; each line keeps
+one colour in the plot, the legend and the menu (`components/youtube/chart/indicators.ts`).
+The selection is saved per browser under `kolvex:chart-indicators:advanced`; defaults stay
+volume, VWAP and EMA 20 / 50 / 200.
+
+## Advanced chart rendering (zoom / pan performance)
+
+Grid, extended-session shading, volume and candles are painted on one `<canvas>`
+(`components/youtube/chart/PlotCanvas.tsx`, fed by `paintAdvancedCanvas` in `ChartView`); the
+SVG above it keeps indicator lines, price tags, creator-call markers and AI drawings. Colours
+come from the same CSS tokens (resolved at paint time) and the canvas repaints when the theme
+changes. Wheel, pinch and drag steps build on the latest requested view and reach React at most
+once per animation frame (`queueView` in `PriceGraph`). The watchlist, news, earnings and AI
+analysis panels are memoized so a zoom frame doesn't re-render them.
+
+Volume: the volume bars scale to the typical visible bar (3× the 95th percentile, capped at the
+largest), so an opening or closing auction print reaches the top of the volume area instead of
+flattening every other bar. The backend (`_drop_cumulative_volume` in
+`kolvex-backend-py/app/services/yfinance/client.py`) blanks intraday bars where Yahoo reports
+the day's running volume total on one bar (seen on NVDA 1m, 2026-11-23: 512M–616M on scattered
+minutes); those bars return `volume: null`, never an estimate, and a 4h bar built from one is
+`null` too.
+
+## Advanced chart intervals (周期)
+
+The interval menu always lists every interval: 1分钟 / 5分钟 / 15分钟 / 30分钟 / 1小时 / 4小时 /
+日线 / 周线 / 月线 (`CHART_INTERVALS` in `lib/chart/range.ts`). Picking one the current range
+can't hold switches the range (`rangeForInterval`: 1m and 5m → 1日, 15m and 30m → 1周, 1h → 1月,
+4h → 3月, 1d → 6月, 1wk → 5年, 1mo → 全部), TradingView-style. History limits follow yfinance:
+1m loads 5 days, 5m–30m one month, hourly (4h is resampled from 60m) about two years.
+
 ## Advanced chart side panels (看盘)
 
 On desktop (≥ `lg`) the advanced chart keeps the K-line on the left and a column of
-stacked panels on the right (`components/youtube/chart/AdvancedSidePanels.tsx`). The
-**面板 / Panels** menu shows, hides and reorders them; each panel's header collapses it
-or closes it. The layout is saved per browser under `kolvex:advanced-chart-panels`
-(`lib/chart/sidePanels.ts`) and is never sent to the server. The header button
-**收起面板 / Hide panels** hides the whole column.
+flat, divider-separated panels on the right (`components/youtube/chart/AdvancedSidePanels.tsx`),
+with a 44px icon rail on the far edge (TradingView-inspired). Each rail icon (自选 / AI 分析 /
+新闻 / 财报) shows or hides its panel; the last icon, **排列面板 / Arrange panels**, reorders
+them. Each panel's header collapses it or closes it. With every panel off only the rail
+remains, so the chart takes the width. The layout is saved per browser under
+`kolvex:advanced-chart-panels` (`lib/chart/sidePanels.ts`) and is never sent to the server.
 
-- **自选 / Watchlist** (default, first): the account-synced watchlist with delayed price
-  and signed change. Selecting a row charts that stock inside the dialog; closing the
-  dialog returns to the page's stock. The star adds or removes the charted stock.
-  Signed-out readers see a sign-in action.
+Desktop chart chrome is dense: the symbol and the hovered bar's OHLC share one header line
+(phones wrap OHLC to its own line), the drawing toolbar uses 28px buttons, the price line
+carries the extended-hours quote inline, the range / interval / toggle strip is a 28px row
+ruled off from the plot, and on desktop **画线图层 / Drawing layers** is a button in that strip
+(shown / total count) opening the layer toggles in a popover — phones keep the 画线图层 row
+and its bottom sheet. The oscillator pane is 80px tall and prints its values on its tab line. The plot has a
+TradingView-style grid (a price rule about every 48px, a labelled vertical rule about every
+110px) and the current price as a dotted line with a `SYMBOL | price` axis tag in the day's
+up/down colour; a newer pre-market / after-hours / overnight quote adds its own dotted line
+and `盘前 / 盘后 / 夜盘 | price` tag in `--chart-extended`. Below `xl` the 自选 table drops
+the absolute 涨跌 column so tickers stay readable.
+Phones keep 44px touch targets.
+
+- **自选 / Watchlist** (default, first): the account-synced watchlist as a dense,
+  TradingView-style table — 代码 / 最新价 / 涨跌 / 涨跌幅 (Symbol / Last / Chg / Chg%),
+  using the newest session price (a 盘前 / 盘后 / 夜盘 tag marks extended hours).
+  Rows stay grouped by sector (same grouping as the Watchlist page); each sector header
+  folds its rows. Clicking a column header sorts within each sector (descending →
+  ascending → saved order); stocks without a quote sink to the bottom. The charted row
+  is highlighted with a left accent bar. A details block pinned under the list shows the
+  charted stock's price, signed change, session, open / prev close / high / low /
+  volume / market cap (— when the source has no value) and a link to its quote page.
+  Selecting a row charts that stock inside the dialog; closing the dialog returns to the
+  page's stock. The star adds or removes the charted stock. Signed-out readers see a
+  sign-in action.
 - **AI 分析 / AI analysis** (default, second): the AI actions and results that used to
   fill the column. Only offered when the chart has AI.
 - **新闻 / News**: the charted stock's latest related news (same source as the stock

@@ -67,6 +67,18 @@
 - **回测只用固定名单**，热门榜不回测（前视偏差，且没有历史榜单存档）。所以 YouTube/Reddit 来源的信号没有回测依据，只是额外的候选，是否值得交易靠这套规则本身判断。
 - 手动输入股票代码的扫描只扫你输入的，不含热门榜。
 
+## 1.3 扫描逻辑（默认 + 自定义）
+
+扫描的代码路径只有一条（四层筛选 + 回调状态机）；「扫描逻辑」是它使用的一组数值。
+
+- **默认逻辑**：内置的 Swing V3.1，数值就是上面表格里的，只读，不能编辑或删除。每个交易日收盘后的定时扫描只跑它，结果所有人共用。
+- **自定义逻辑**：在「今天」页今日信号右上角「管理逻辑」里新建、复制、编辑、删除；下拉框选中哪个，「运行扫描」就用哪个。选择只记在本机浏览器；选中的逻辑被删除后自动回到默认。
+- **可改的数值**（`services/trade_os/scanner_params.py` 的 `PARAM_SPEC`，含默认值和允许范围）：最低股价、20 日均成交额、20 日相对 SPY 下限、新高回看天数、回调天数 / 幅度上下限、回踩 EMA20 的 ATR 倍数、止损 ATR 缓冲、目标 R、止损距离上下限、入场有效天数、跳空作废 R、财报回避交易日、最长持有天数。超出范围或下限大于上限直接报错（指明哪个字段），不会自动改成别的值。
+- **存储**：复用 `strategy_versions` 表，不需要新迁移。自定义逻辑的 `strategy_key` 是 `CUSTOM_<12位>`；**编辑 = 插入下一个版本**（1、2、3…），旧版本不动，所以用旧版本建的交易计划仍指向当时的数值；**删除 = 所有版本标为 `retired`**，交易计划的关联保留，策略列表不再显示。
+- **扫描结果**：自定义逻辑的结果存进 `trade_os_scanner_runs`，`strategy_code` 为 `CUSTOM:<key>`、带 `user_id`；`GET /scanner/latest?logic=<key>` 只返回本人的结果（需要登录）。默认逻辑的 `/scanner/latest` 仍不需要登录。
+- **接口**：`GET /scanner/logics`、`GET /scanner/logics/spec`、`POST /scanner/logics`、`PUT /scanner/logics/{key}`、`DELETE /scanner/logics/{key}`；`POST /scanner/run` 的 `logic` 字段选逻辑（默认 `"default"`）。
+- **注意**：自定义逻辑没有经过回测，扫出的信号不代表有回测背书；回测接口目前仍只跑默认逻辑。测试：`tests/test_trade_os_scanner_logics.py`。
+
 ## 1.1 怎么用（Web 三个页面）
 
 | 页面 | 路由 | 回答的问题 | 内容 |
@@ -97,7 +109,7 @@
 - `POST /plans/{id}/approve`：服务端开仓前风控审批
 - `GET /portfolio/risk-summary/{accountId}`：实时持仓风险与主题敞口
 - `GET /market/regime`, `POST /market/evaluate`：SPY/QQQ 宏观状态与开仓权限
-- `GET/POST /scanner/*`：20日突破机会扫描与候选标的生成
+- `GET/POST /scanner/*`：机会扫描与候选标的生成；`/scanner/logics*` 管理自定义扫描逻辑（见 §1.3）
 - `POST /backtests/run`：历史全真事件驱动策略回测
 - `GET /journal/{accountId}`, `POST /journal/review`：交易日志、违纪标记与 AI 复盘
 - `GET /analytics/{accountId}`：期望收益 R、盈亏比与纪律覆盖率统计

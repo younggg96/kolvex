@@ -59,7 +59,6 @@ import {
   MoveHorizontal,
   TrendingUp,
   RectangleHorizontal,
-  RotateCcw,
   Ruler,
   ScanSearch,
   SlidersHorizontal,
@@ -68,8 +67,6 @@ import {
   Trash2,
   Undo2,
   X,
-  ZoomIn,
-  ZoomOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -125,8 +122,11 @@ import {
   computeIndicators,
   indicatorMeta,
   indicatorOrder,
+  LINE_KEYS,
   vwap,
+  type IndicatorGroup,
   type IndicatorKey,
+  type LineKey,
   type Series,
 } from "./indicators";
 import {
@@ -137,11 +137,14 @@ import {
   isPresetRange,
   priceRanges,
   rangeIntervals,
+  rangeForInterval,
+  CHART_INTERVALS,
   windowStartFor,
   type AdvancedRange,
   type ChartInterval,
 } from "@/lib/chart/range";
 import PriceGraph, { defaultGraphView, type GraphGeometry } from "./PriceGraph";
+import type { CanvasPainter } from "./PlotCanvas";
 import ChartSettingsDialog from "./ChartSettingsDialog";
 import {
   DEFAULT_CHART_SETTINGS,
@@ -155,10 +158,8 @@ import {
 import { ExtremeTag } from "./ChartMarkers";
 import {
   GRAPH_AXIS_WIDTH,
-  GRAPH_MIN_BARS,
   clampGraphView,
   priceDomain,
-  zoomGraphView,
   type GraphView,
   type PriceRangeKey,
 } from "@/lib/chart/graph";
@@ -187,7 +188,6 @@ type Calls = {
 };
 
 const SNAP_PX = 12;
-const MIN_BARS = GRAPH_MIN_BARS;
 /** Indicators named on the collapsed phone legend line before "+N". */
 const LEGEND_PREVIEW = 2;
 
@@ -561,27 +561,42 @@ export default function ChartView({
   }
 
   const lastHistoryAttempt = useRef(attempt);
+  /** What is on screen now, so a range / interval switch can keep it up while the next loads. */
+  const shownBars = useRef<{ symbol: string; bars: PriceBar[] | null }>({ symbol, bars });
+  const shownView = useRef<View | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   useEffect(() => {
     const force = lastHistoryAttempt.current !== attempt;
     lastHistoryAttempt.current = attempt;
     const controller = new AbortController();
-    setBars(snapshotBars ?? peekClientCache<PriceBar[]>(chartCacheKey) ?? null);
+    const cached = snapshotBars ?? peekClientCache<PriceBar[]>(chartCacheKey) ?? null;
+    const showNew = (next: PriceBar[] | null) => {
+      setBars(next);
+      setRefreshing(false);
+      setActive(null);
+      setView(null);
+      setPriceDomainOverride(null);
+    };
     setError(false);
     setHistoryStale(false);
-    setActive(null);
-    setView(null);
-    setPriceDomainOverride(null);
-    if (snapshotBars) {
-      setBars(snapshotBars);
-      return () => controller.abort();
+    // Same stock, nothing cached yet: keep the current candles and window on screen (dimmed)
+    // instead of blanking the chart. Another stock never shows the previous stock's bars.
+    const previous = shownBars.current;
+    if (!cached && previous.symbol === symbol && previous.bars?.length && shownView.current) {
+      setView(shownView.current);
+      setRefreshing(true);
+    } else {
+      showNew(cached);
     }
+    if (snapshotBars) return () => controller.abort();
     getStockHistory(symbol, JSON.parse(paramsKey), controller.signal, force)
       .then((data) => {
-        if (!controller.signal.aborted) setBars(data);
+        if (!controller.signal.aborted) showNew(data);
       })
       .catch((reason) => {
         if (!controller.signal.aborted) {
           console.error("Failed to load price history:", reason);
+          setRefreshing(false);
           setError(true);
         }
       });
@@ -629,6 +644,9 @@ export default function ChartView({
   }, [symbol]);
 
   const count = bars?.length ?? 0;
+  /** Dates / sessions as flat arrays, rebuilt only when the bars change (not on every zoom frame). */
+  const barDates = useMemo(() => (bars ?? []).map((bar) => bar.date), [bars]);
+  const barSessions = useMemo(() => (bars ?? []).map((bar) => bar.session), [bars]);
   const times = useMemo(() => (bars || []).map((bar) => Date.parse(bar.date)), [bars]);
   const series = useMemo(() => computeIndicators(bars || [], intraday), [bars, intraday]);
   /**
@@ -666,6 +684,8 @@ export default function ChartView({
     );
   }, [advanced, count, range, times, extendedWindowStart]);
   const current = view || defaultView;
+  shownBars.current = { symbol, bars };
+  shownView.current = bars?.length ? current : null;
   /** Once per loaded forecast, widen the window so the band past the last bar is in view; turning it off gives the room back. */
   const revealedForecast = useRef<string | null>(null);
   useEffect(() => {
@@ -762,10 +782,6 @@ export default function ChartView({
     [rangeOptions, t],
   );
 
-  function zoom(factor: number, anchorRatio: number) {
-    setView(zoomGraphView(current, factor, anchorRatio, count, MIN_BARS));
-  }
-
   const activeIndicators = new Set(advanced ? indicators : []);
   const showVolume = activeIndicators.has("volume");
   const plotW = Math.max(size.width - GRAPH_AXIS_WIDTH, 1);
@@ -779,7 +795,7 @@ export default function ChartView({
     () => vwap(bars || [], intraday, vwapAnchor),
     [bars, intraday, vwapAnchor],
   );
-  const lines: Record<"vwap" | "ema5" | "ema20" | "ema50" | "ema200", Series> = {
+  const lines: Record<LineKey, Series> = {
     ...series,
     vwap: vwapSeries,
   };
@@ -810,6 +826,14 @@ export default function ChartView({
     // Uses the same visible window, independently of text analysis.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drawingRequest, count, aiBusy]);
+
+  /**
+   * Stable handlers for the memoized AI panel, so the zoom / pan re-render of every frame skips it.
+   * `runAi` is declared below and changes each render; the ref always holds the latest one.
+   */
+  const runAiRef = useRef<(operation?: "analysis" | "drawings") => Promise<void>>();
+  const retryAnalysis = useCallback(() => void runAiRef.current?.("analysis"), []);
+  const toggleForecast = useCallback(() => setShowForecast((value) => !value), []);
 
   if (error) {
     return (
@@ -899,11 +923,6 @@ export default function ChartView({
     } catch {
       // Preference only.
     }
-  }
-
-  function resetView() {
-    setView(null);
-    setPriceDomainOverride(null);
   }
 
   function handlePointerDown(event: PointerEvent<HTMLDivElement>, plot: GraphGeometry) {
@@ -1004,6 +1023,7 @@ export default function ChartView({
     event.preventDefault();
   }
 
+  runAiRef.current = runAi;
   async function runAi(operation: "analysis" | "drawings" = "analysis") {
     if (!bars || !count || aiBusy || ai.status === "loading" || drawingAi.status === "loading")
       return;
@@ -1491,12 +1511,11 @@ export default function ChartView({
           state={ai.status === "done" ? ai : { status: "done", result: savedAnalysis! }}
           busy={aiBusy}
           version={savedAnalysisVersion}
-          onRetry={() => void runAi("analysis")}
+          onRetry={retryAnalysis}
           forecastVisible={forecastOn}
-          onToggleForecast={
-            analysisForecast && forecastable ? () => setShowForecast((value) => !value) : undefined
-          }
+          onToggleForecast={analysisForecast && forecastable ? toggleForecast : undefined}
           showRetry={advanced}
+          dense={advanced}
           t={t}
           className={stackedResults ? "order-first" : "mt-5"}
         />
@@ -1583,6 +1602,118 @@ export default function ChartView({
     );
   }
 
+  const shadeSessions =
+    extendedHours &&
+    chartSettings.highlightSession &&
+    quoteResource.data?.exchangeTimezone === "America/New_York" &&
+    /^[A-Z][A-Z0-9]*(?:-[A-Z])?$/.test(symbol.toUpperCase());
+
+  /**
+   * Advanced mode's bitmap layer (see PlotCanvas): session shading, volume and candles. One
+   * canvas repaint per frame instead of four SVG nodes per bar is what keeps zoom / pan smooth.
+   */
+  const paintAdvancedCanvas: CanvasPainter = (ctx, current, color) => {
+    if (!bars || !count) return;
+    const firstVisible = current.firstIndex;
+    const lastVisible = current.lastIndex;
+    const plotH = current.plotHeight;
+    const slot = current.plotWidth / Math.max(current.view.end - current.view.start, 1e-6);
+    const volumeH = showVolume ? Math.max(current.priceBottom - current.priceTop, 1) * 0.18 : 0;
+    if (shadeSessions) {
+      for (const run of extendedRuns(
+        barDates,
+        effectiveInterval,
+        firstVisible - 1,
+        lastVisible + 1,
+        barSessions,
+      )) {
+        const alpha = run.session === "overnight" ? 0.09 : run.session === "pre" ? 0.045 : 0.06;
+        ctx.fillStyle = color(`rgb(var(--foreground) / ${alpha})`);
+        ctx.fillRect(current.xOf(run.start) - slot / 2, 0, (run.end - run.start + 1) * slot, plotH);
+      }
+    }
+    // Scale to the typical visible bar, not the single largest: an opening or closing auction
+    // can be 50–100× a normal minute and would flatten every other bar. Bars above the scale are
+    // drawn at full height (clipped), so they still read as the spikes they are.
+    let maxVolume = 1;
+    if (showVolume) {
+      const visibleVolumes: number[] = [];
+      for (let index = firstVisible; index <= lastVisible; index++) {
+        const volume = bars[index]?.volume;
+        if (volume && volume > 0) visibleVolumes.push(volume);
+      }
+      if (visibleVolumes.length) {
+        visibleVolumes.sort((a, b) => a - b);
+        const largest = visibleVolumes[visibleVolumes.length - 1];
+        const typical = visibleVolumes[Math.floor((visibleVolumes.length - 1) * 0.95)];
+        maxVolume = Math.max(Math.min(largest, typical * 3), 1);
+      }
+    }
+    const width = Math.max(slot * 0.62, 1);
+    const paints = {
+      up: candlePaint(chartSettings, true),
+      down: candlePaint(chartSettings, false),
+    };
+    const resolved = {
+      up: {
+        volume: color("rgb(var(--chart-up))"),
+        fill: paints.up.fill === "none" ? null : color(paints.up.fill),
+        stroke: paints.up.stroke === "none" ? null : color(paints.up.stroke),
+        wick: color(paints.up.wick),
+      },
+      down: {
+        volume: color("rgb(var(--chart-down))"),
+        fill: paints.down.fill === "none" ? null : color(paints.down.fill),
+        stroke: paints.down.stroke === "none" ? null : color(paints.down.stroke),
+        wick: color(paints.down.wick),
+      },
+    };
+    // Volume first, at low alpha, so candles always read on top of it.
+    if (showVolume) {
+      ctx.globalAlpha = 0.28;
+      for (let index = firstVisible; index <= lastVisible; index++) {
+        const bar = bars[index];
+        if (!bar) continue;
+        const volume = Math.min((bar.volume || 0) / maxVolume, 1) * volumeH;
+        ctx.fillStyle = bar.close >= bar.open ? resolved.up.volume : resolved.down.volume;
+        ctx.fillRect(current.xOf(index) - width / 2, plotH - volume, width, volume);
+      }
+      ctx.globalAlpha = 1;
+    }
+    ctx.lineWidth = 1;
+    for (let index = firstVisible; index <= lastVisible; index++) {
+      const bar = bars[index];
+      if (!bar) continue;
+      const paint = bar.close >= bar.open ? resolved.up : resolved.down;
+      const top = current.yOf(Math.max(bar.open, bar.close));
+      const bottom = current.yOf(Math.min(bar.open, bar.close));
+      const cx = current.xOf(index);
+      // Half-pixel wick on a whole pixel stays crisp at any zoom.
+      const wickX = Math.round(cx) + 0.5;
+      ctx.strokeStyle = paint.wick;
+      ctx.beginPath();
+      ctx.moveTo(wickX, current.yOf(bar.high));
+      ctx.lineTo(wickX, top);
+      ctx.moveTo(wickX, bottom);
+      ctx.lineTo(wickX, current.yOf(bar.low));
+      ctx.stroke();
+      const bodyHeight = Math.max(bottom - top, 1);
+      if (paint.fill) {
+        ctx.fillStyle = paint.fill;
+        ctx.fillRect(cx - width / 2, top, width, bodyHeight);
+      }
+      if (paint.stroke) {
+        ctx.strokeStyle = paint.stroke;
+        ctx.strokeRect(
+          cx - width / 2 + 0.5,
+          top + 0.5,
+          Math.max(width - 1, 1),
+          Math.max(bodyHeight - 1, 1),
+        );
+      }
+    }
+  };
+
   function renderAdvancedPlot(current: GraphGeometry): ReactNode {
     if (!bars || !count) return null;
     const firstVisible = current.firstIndex;
@@ -1591,7 +1722,6 @@ export default function ChartView({
     const plotH = current.plotHeight;
     const slot = plotW / Math.max(current.view.end - current.view.start, 1e-6);
     const priceBottom = current.priceBottom;
-    const volumeH = showVolume ? Math.max(priceBottom - current.priceTop, 1) * 0.18 : 0;
     /** Candle bodies, indicator paths and volume all key off the graph's own scale. */
     const y = (price: number) => current.yOf(price);
     const x = (index: number) => current.xOf(index);
@@ -1641,21 +1771,6 @@ export default function ChartView({
     })();
     const lastTone =
       last && last.close >= (bars[count - 2]?.close ?? last.open) ? "positive" : "negative";
-    const visibleBars = bars.slice(firstVisible, lastVisible + 1);
-    const sessionRuns =
-      extendedHours &&
-      chartSettings.highlightSession &&
-      quoteResource.data?.exchangeTimezone === "America/New_York" &&
-      /^[A-Z][A-Z0-9]*(?:-[A-Z])?$/.test(symbol.toUpperCase())
-        ? extendedRuns(
-            bars.map((bar) => bar.date),
-            effectiveInterval,
-            firstVisible - 1,
-            lastVisible + 1,
-            bars.map((bar) => bar.session),
-          )
-        : [];
-    const maxVolume = visibleBars.reduce((maximum, bar) => Math.max(maximum, bar.volume || 0), 1);
     return (
       <>
         {activeIndicators.has("bb") && (
@@ -1682,62 +1797,7 @@ export default function ChartView({
             />
           </>
         )}
-        {sessionRuns.map((run) => (
-          <rect
-            key={`session-${run.start}`}
-            data-session={run.session}
-            x={x(run.start) - slot / 2}
-            y={0}
-            width={(run.end - run.start + 1) * slot}
-            height={plotH}
-            fill="rgb(var(--foreground))"
-            fillOpacity={run.session === "overnight" ? 0.09 : run.session === "pre" ? 0.045 : 0.06}
-          />
-        ))}
-        {visibleBars.map((bar, offset) => {
-          const index = firstVisible + offset;
-          const up = bar.close >= bar.open;
-          const fill = up ? "rgb(var(--chart-up))" : "rgb(var(--chart-down))";
-          const paint = candlePaint(chartSettings, up);
-          const top = y(Math.max(bar.open, bar.close));
-          const bottom = y(Math.min(bar.open, bar.close));
-          const cx = x(index);
-          const width = Math.max(slot * 0.62, 1);
-          const volume = showVolume ? ((bar.volume || 0) / maxVolume) * volumeH : 0;
-          return (
-            <g key={bar.date}>
-              {showVolume && (
-                <rect
-                  x={cx - width / 2}
-                  y={plotH - volume}
-                  width={width}
-                  height={volume}
-                  fill={fill}
-                  opacity={0.28}
-                />
-              )}
-              <line x1={cx} x2={cx} y1={y(bar.high)} y2={top} stroke={paint.wick} strokeWidth={1} />
-              <line
-                x1={cx}
-                x2={cx}
-                y1={bottom}
-                y2={y(bar.low)}
-                stroke={paint.wick}
-                strokeWidth={1}
-              />
-              <rect
-                x={cx - width / 2 + (paint.stroke === "none" ? 0 : 0.5)}
-                y={top}
-                width={Math.max(width - (paint.stroke === "none" ? 0 : 1), 1)}
-                height={Math.max(bottom - top, 1)}
-                fill={paint.fill}
-                stroke={paint.stroke}
-                strokeWidth={paint.stroke === "none" ? 0 : 1}
-              />
-            </g>
-          );
-        })}
-        {(["vwap", "ema5", "ema20", "ema50", "ema200"] as const).map((key) =>
+        {LINE_KEYS.map((key) =>
           activeIndicators.has(key) ? (
             <path
               key={key}
@@ -1967,23 +2027,28 @@ export default function ChartView({
     <Select
       disabled={Boolean(snapshotBars)}
       value={snapshotBars ? compactParams.interval : interval}
-      onValueChange={(value) => setChartInterval(value as ChartInterval)}
+      onValueChange={(value) => {
+        const next = value as ChartInterval;
+        // Every interval is listed; one the range can't hold moves to a range that can.
+        if (!rangeIntervals[range].includes(next)) setRangeState(rangeForInterval[next]);
+        setChartInterval(next);
+        setView(null);
+      }}
     >
       <SelectTrigger
-        className="!h-8 !w-auto shrink-0 gap-1 rounded-full px-2.5 text-[0.8125rem] font-semibold sm:!w-[5.75rem] sm:px-3"
+        className="!h-8 !w-auto shrink-0 gap-1 rounded-full px-2.5 text-[0.8125rem] font-semibold sm:!h-7 sm:!w-[5rem] sm:px-2.5 sm:text-xs"
         aria-label={t("youtubeOpinions.interval")}
       >
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        {(snapshotBars && compactParams.interval
-          ? [compactParams.interval]
-          : rangeIntervals[range]
-        ).map((item) => (
-          <SelectItem key={item} value={item}>
-            {t(`youtubeOpinions.intervals.${item}`)}
-          </SelectItem>
-        ))}
+        {(snapshotBars && compactParams.interval ? [compactParams.interval] : CHART_INTERVALS).map(
+          (item) => (
+            <SelectItem key={item} value={item}>
+              {t(`youtubeOpinions.intervals.${item}`)}
+            </SelectItem>
+          ),
+        )}
       </SelectContent>
     </Select>
   );
@@ -2031,10 +2096,32 @@ export default function ChartView({
    * AI layers as one summary line under the plot ("AI 画线 · 交易计划、支撑阻力 ⌄"), Robinhood's
    * collapsed-legend pattern: the line always says what is on, and taps open the toggles.
    */
+  const layerToggles = (
+    <div className="flex flex-wrap items-center gap-2">
+      <div role="group" aria-label={t("youtubeOpinions.ai.layers.label")} className="contents">
+        {presentGroups.map((group) => (
+          <button
+            key={group}
+            type="button"
+            aria-pressed={layerOn(group)}
+            onClick={() => toggleLayer(group)}
+            className={cn(pill(layerOn(group)), "h-9 sm:h-8", !layerOn(group) && offChip)}
+          >
+            {t(`youtubeOpinions.ai.layers.${group}`)}
+          </button>
+        ))}
+      </div>
+      {showAi && drawingAi.status === "done" && (
+        <div className="contents sm:hidden">{hideDrawingsControl(false, true)}</div>
+      )}
+    </div>
+  );
   const layersRow =
     presentGroups.length > 0 || (drawingsHidden && hideDrawingsSlot) ? (
       <ChartSection
-        className="mt-1"
+        // Desktop advanced charts carry the layers in the control strip's popover instead.
+        className={advanced ? "border-t border-border sm:hidden" : "mt-1"}
+        dense={advanced}
         icon={<Layers />}
         label={t("youtubeOpinions.ai.layers.label")}
         summary={
@@ -2047,26 +2134,41 @@ export default function ChartView({
         onOpenChange={setLayersOpen}
         closeLabel={t("common.close")}
       >
-        <div className="flex flex-wrap items-center gap-2">
-          <div role="group" aria-label={t("youtubeOpinions.ai.layers.label")} className="contents">
-            {presentGroups.map((group) => (
-              <button
-                key={group}
-                type="button"
-                aria-pressed={layerOn(group)}
-                onClick={() => toggleLayer(group)}
-                className={cn(pill(layerOn(group)), "h-9 sm:h-8", !layerOn(group) && offChip)}
-              >
-                {t(`youtubeOpinions.ai.layers.${group}`)}
-              </button>
-            ))}
-          </div>
-          {showAi && drawingAi.status === "done" && (
-            <div className="contents sm:hidden">{hideDrawingsControl(false, true)}</div>
-          )}
-        </div>
+        {layerToggles}
         {callsLegend && <div className="mt-3">{callsLegend}</div>}
       </ChartSection>
+    ) : null;
+  /** Desktop advanced: the same layer toggles as one control-strip button (TradingView-style). */
+  const layersOn = drawingsHidden ? 0 : shownGroups.length;
+  const layersPopover =
+    advanced && presentGroups.length > 0 ? (
+      <Popover>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className={cn(pill(false), "gap-1.5")}
+            title={
+              layersOn
+                ? shownGroups.map((group) => t(`youtubeOpinions.ai.layers.${group}`)).join("、")
+                : t("youtubeOpinions.ai.layers.allOff")
+            }
+          >
+            <Layers className="h-3.5 w-3.5" aria-hidden="true" />
+            {t("youtubeOpinions.ai.layers.label")}
+            <span
+              className={cn("tabular-nums", layersOn ? "text-muted-foreground" : "text-negative")}
+            >
+              {layersOn}/{presentGroups.length}
+            </span>
+            <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent side="top" align="end" className="w-80 max-w-[calc(100vw-2rem)] p-3">
+          <p className="mb-2 text-xs font-semibold">{t("youtubeOpinions.ai.layers.label")}</p>
+          {layerToggles}
+          {callsLegend && <div className="mt-3">{callsLegend}</div>}
+        </PopoverContent>
+      </Popover>
     ) : null;
   const forecastControl = forecastable ? (
     <button
@@ -2111,6 +2213,7 @@ export default function ChartView({
       onQuoteRetry={quoteResource.refresh}
       historyStale={historyStale}
       loading={!bars && !error}
+      refreshing={refreshing}
       error={error}
       onRetry={() => setAttempt((value) => value + 1)}
       view={view}
@@ -2145,6 +2248,7 @@ export default function ChartView({
       onActiveChange={setActive}
       onOpenAdvanced={advanced ? undefined : onOpenAdvanced}
       renderPlot={advanced ? renderAdvancedPlot : undefined}
+      renderCanvas={advanced ? paintAdvancedCanvas : undefined}
       onGeometry={receiveGraphGeometry}
       priceExtent={priceExtent}
       priceDomainOverride={priceDomainOverride}
@@ -2171,6 +2275,7 @@ export default function ChartView({
       trailingControls={
         advanced ? (
           <>
+            {layersPopover && <div className="hidden sm:contents">{layersPopover}</div>}
             {autoScaleControl}
             {forecastControl}
             {hideDrawingsSlot && <div className="hidden sm:contents">{hideDrawingsSlot}</div>}
@@ -2204,11 +2309,11 @@ export default function ChartView({
     ) : null;
 
   return (
-    <div className={cn("min-w-0", advanced && "flex min-h-full gap-4 sm:h-full sm:min-h-0")}>
+    <div className={cn("min-w-0", advanced && "flex min-h-full gap-3 sm:h-full sm:min-h-0")}>
       <div className={cn("min-w-0", advanced && "flex min-h-0 flex-1 flex-col")}>
         {advanced && (
-          <div className="flex shrink-0 items-center gap-3">
-            <h2 className="text-lg font-semibold">{symbol}</h2>
+          <div className="flex shrink-0 flex-wrap items-center gap-x-3 sm:flex-nowrap">
+            <h2 className="text-base font-semibold">{symbol}</h2>
             {last && snapshotBars && (
               <span className="flex items-baseline gap-2 text-sm tabular-nums">
                 <span className="font-semibold">{formatPrice(last.close)}</span>
@@ -2217,8 +2322,44 @@ export default function ChartView({
                 </span>
               </span>
             )}
+            <div
+              className="flex min-h-8 min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-0.5 text-xs tabular-nums max-sm:order-last max-sm:basis-full"
+              aria-live="polite"
+            >
+              {shownBar ? (
+                <>
+                  <span className="font-medium text-foreground">{barLabel(shownBar)}</span>
+                  {stat(t("youtubeOpinions.priceOpen"), formatPrice(shownBar.open))}
+                  {stat(t("youtubeOpinions.priceHigh"), formatPrice(shownBar.high))}
+                  {stat(t("youtubeOpinions.priceLow"), formatPrice(shownBar.low))}
+                  {stat(
+                    t("youtubeOpinions.priceClose"),
+                    formatPrice(shownBar.close),
+                    shownBar.close >= shownBar.open ? "text-positive" : "text-negative",
+                  )}
+                  {shownBar.volume
+                    ? stat(t("youtubeOpinions.priceVolume"), formatVolume(shownBar.volume))
+                    : null}
+                  {activeCalls &&
+                    (["bullish", "bearish", "other"] as const).map((key) =>
+                      activeCalls[key].length ? (
+                        <span
+                          key={key}
+                          className={cn("whitespace-nowrap font-medium", toneText[callTone[key]])}
+                        >
+                          {t(`youtubeOpinions.callCount.${key}`, {
+                            count: String(activeCalls[key].length),
+                          })}
+                        </span>
+                      ) : null,
+                    )}
+                </>
+              ) : (
+                <Skeleton className="h-4 w-48" />
+              )}
+            </div>
             <div className="ml-auto flex shrink-0 items-center gap-2">
-              {(showAi || renderSidePanels) && (
+              {showAi && !renderSidePanels && (
                 <Button
                   type="button"
                   size="sm"
@@ -2234,13 +2375,9 @@ export default function ChartView({
                     <PanelRightOpen className="h-4 w-4" aria-hidden="true" />
                   )}
                   {t(
-                    renderSidePanels
-                      ? aiPanelOpen
-                        ? "youtubeOpinions.sidePanels.collapse"
-                        : "youtubeOpinions.sidePanels.expand"
-                      : aiPanelOpen
-                        ? "youtubeOpinions.ai.collapsePanel"
-                        : "youtubeOpinions.ai.expandPanel",
+                    aiPanelOpen
+                      ? "youtubeOpinions.ai.collapsePanel"
+                      : "youtubeOpinions.ai.expandPanel",
                   )}
                 </Button>
               )}
@@ -2365,46 +2502,6 @@ export default function ChartView({
 
         {showAi && advanced && <div className="lg:hidden">{aiStatus}</div>}
 
-        {/* active-bar numbers: the graph prints the header line, advanced mode adds OHLC + calls */}
-        {advanced && (
-          <div
-            className="mt-1 flex min-h-8 min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-[0.8125rem] tabular-nums"
-            aria-live="polite"
-          >
-            {shownBar ? (
-              <>
-                <span className="font-medium text-foreground">{barLabel(shownBar)}</span>
-                {stat(t("youtubeOpinions.priceOpen"), formatPrice(shownBar.open))}
-                {stat(t("youtubeOpinions.priceHigh"), formatPrice(shownBar.high))}
-                {stat(t("youtubeOpinions.priceLow"), formatPrice(shownBar.low))}
-                {stat(
-                  t("youtubeOpinions.priceClose"),
-                  formatPrice(shownBar.close),
-                  shownBar.close >= shownBar.open ? "text-positive" : "text-negative",
-                )}
-                {shownBar.volume
-                  ? stat(t("youtubeOpinions.priceVolume"), formatVolume(shownBar.volume))
-                  : null}
-                {activeCalls &&
-                  (["bullish", "bearish", "other"] as const).map((key) =>
-                    activeCalls[key].length ? (
-                      <span
-                        key={key}
-                        className={cn("whitespace-nowrap font-medium", toneText[callTone[key]])}
-                      >
-                        {t(`youtubeOpinions.callCount.${key}`, {
-                          count: String(activeCalls[key].length),
-                        })}
-                      </span>
-                    ) : null,
-                  )}
-              </>
-            ) : (
-              <Skeleton className="h-4 w-48" />
-            )}
-          </div>
-        )}
-
         {showAi && !advanced && aiStatus}
 
         <div
@@ -2413,7 +2510,9 @@ export default function ChartView({
           aria-label={t("youtubeOpinions.drawTools")}
           className={cn(
             "shrink-0 flex-nowrap items-center gap-0.5 overflow-x-auto overscroll-x-contain border-b border-border scrollbar-hide sm:gap-1",
-            advanced ? "flex my-1 pb-1" : "hidden",
+            advanced
+              ? "my-0.5 flex pb-0.5 sm:[&_button]:!h-7 sm:[&_button]:!min-h-7 sm:[&_button_svg]:h-3.5 sm:[&_button_svg]:w-3.5"
+              : "hidden",
           )}
         >
           <Popover>
@@ -2570,38 +2669,86 @@ export default function ChartView({
                 <Activity className="h-4 w-4" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent align="start" className="w-56 p-1.5">
+            <PopoverContent
+              align="start"
+              className="max-h-[min(32rem,70vh)] w-64 overflow-y-auto overscroll-contain p-1.5"
+            >
               <p className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
                 {t("youtubeOpinions.indicators")}
               </p>
-              {indicatorOrder.map((key) => (
-                <button
-                  key={key}
-                  type="button"
-                  aria-pressed={activeIndicators.has(key)}
-                  onClick={() => toggleIndicator(key)}
-                  className="flex w-full items-center gap-2.5 rounded-full px-2 py-1.5 text-sm transition-colors hover:bg-foreground/[0.06] focus-visible:outline-none"
-                >
-                  <span
-                    className={cn(
-                      "flex h-4 w-4 items-center justify-center rounded border border-border text-[0.625rem]",
-                      activeIndicators.has(key) &&
-                        "border-primary bg-primary text-primary-foreground",
-                    )}
-                    aria-hidden="true"
+              {(["ma", "ema", "other"] as IndicatorGroup[]).map((group) => {
+                const keys = indicatorOrder.filter((key) => indicatorMeta[key].group === group);
+                const lineGroup = group !== "other";
+                return (
+                  <div
+                    key={group}
+                    role="group"
+                    aria-label={t(`youtubeOpinions.indicatorGroups.${group}`)}
+                    className="border-t border-border py-1 first-of-type:border-t-0"
                   >
-                    {activeIndicators.has(key) ? "✓" : ""}
-                  </span>
-                  <span
-                    className="h-0.5 w-3 rounded-full"
-                    style={{ backgroundColor: indicatorMeta[key].color }}
-                    aria-hidden="true"
-                  />
-                  {key === "volume"
-                    ? t("youtubeOpinions.priceVolumeFull")
-                    : indicatorMeta[key].label}
-                </button>
-              ))}
+                    <p className="px-2 pb-1 pt-1 text-[0.6875rem] text-muted-foreground">
+                      {t(`youtubeOpinions.indicatorGroups.${group}`)}
+                    </p>
+                    {/* Periods sit as compact chips; VWAP / Bollinger / volume keep full rows. */}
+                    <div className={lineGroup ? "flex flex-wrap gap-1 px-1.5 pb-1" : undefined}>
+                      {keys.map((key) => {
+                        const on = activeIndicators.has(key);
+                        const label =
+                          key === "volume"
+                            ? t("youtubeOpinions.priceVolumeFull")
+                            : indicatorMeta[key].label;
+                        return lineGroup ? (
+                          <button
+                            key={key}
+                            type="button"
+                            aria-pressed={on}
+                            aria-label={label}
+                            title={label}
+                            onClick={() => toggleIndicator(key)}
+                            className={cn(
+                              "inline-flex h-7 items-center gap-1.5 rounded-md border px-2 text-xs tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                              on
+                                ? "border-foreground/25 bg-foreground/[0.06] font-semibold text-foreground"
+                                : "border-border text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground",
+                            )}
+                          >
+                            <span
+                              className="h-0.5 w-2.5 rounded-full"
+                              style={{ backgroundColor: indicatorMeta[key].color }}
+                              aria-hidden="true"
+                            />
+                            {key.replace(/^(ma|ema)/, "")}
+                          </button>
+                        ) : (
+                          <button
+                            key={key}
+                            type="button"
+                            aria-pressed={on}
+                            onClick={() => toggleIndicator(key)}
+                            className="flex w-full items-center gap-2.5 rounded-full px-2 py-1.5 text-sm transition-colors hover:bg-foreground/[0.06] focus-visible:outline-none"
+                          >
+                            <span
+                              className={cn(
+                                "flex h-4 w-4 items-center justify-center rounded border border-border text-[0.625rem]",
+                                on && "border-primary bg-primary text-primary-foreground",
+                              )}
+                              aria-hidden="true"
+                            >
+                              {on ? "✓" : ""}
+                            </span>
+                            <span
+                              className="h-0.5 w-3 rounded-full"
+                              style={{ backgroundColor: indicatorMeta[key].color }}
+                              aria-hidden="true"
+                            />
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
               <div
                 className="mt-1 border-t border-border pt-1"
                 role="group"
@@ -2638,45 +2785,7 @@ export default function ChartView({
                 t={t}
               />
             )}
-            <Button
-              type="button"
-              title={t("youtubeOpinions.zoomIn")}
-              aria-label={t("youtubeOpinions.zoomIn")}
-              disabled={!loaded}
-              onClick={() => zoom(0.7, chartSettings.zoomAnchor === "right" ? 1 : 0.85)}
-              variant="toolbar"
-              size="toolbar"
-              selected={false}
-              className={"max-sm:hidden"}
-            >
-              <ZoomIn className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              title={t("youtubeOpinions.zoomOut")}
-              aria-label={t("youtubeOpinions.zoomOut")}
-              disabled={!loaded}
-              onClick={() => zoom(1.4, chartSettings.zoomAnchor === "right" ? 1 : 0.85)}
-              variant="toolbar"
-              size="toolbar"
-              selected={false}
-              className={"max-sm:hidden"}
-            >
-              <ZoomOut className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              title={t("youtubeOpinions.resetZoom")}
-              aria-label={t("youtubeOpinions.resetZoom")}
-              disabled={!view && autoScale}
-              onClick={resetView}
-              variant="toolbar"
-              size="toolbar"
-              selected={false}
-              className={"max-sm:hidden"}
-            >
-              <RotateCcw className="h-4 w-4" />
-            </Button>
+            {/* Zoom in / out / reset live once, in the control strip under the plot. */}
             <span className="mx-1 h-5 w-px shrink-0 bg-border max-sm:hidden" aria-hidden="true" />
             <span
               role="status"
@@ -2768,9 +2877,14 @@ export default function ChartView({
             renderSidePanels ? "youtubeOpinions.sidePanels.label" : "youtubeOpinions.ai.actions",
           )}
           className={cn(
-            "hidden min-h-0 w-[clamp(22rem,28vw,30rem)] shrink-0 overscroll-contain border-l border-border pl-4",
-            renderSidePanels ? "overflow-hidden" : "overflow-y-auto",
-            aiPanelOpen && "lg:block",
+            "hidden min-h-0 shrink-0",
+            renderSidePanels
+              ? // Panels and their icon rail run flush to the dialog's right, top and bottom edges.
+                "-my-3 -mr-4 overflow-hidden lg:flex"
+              : cn(
+                  "w-[clamp(22rem,28vw,30rem)] overflow-y-auto overscroll-contain border-l border-border pl-4",
+                  aiPanelOpen && "lg:block",
+                ),
           )}
         >
           {renderSidePanels ? renderSidePanels(advancedAiPanel) : advancedAiPanel}

@@ -222,3 +222,29 @@ test("new drawings render single-anchor time lines, bidirectional lines and mirr
     />1\.618 38\.20</,
   );
 });
+
+test("MA and EMA periods: simple average, every key has meta, menu groups cover all", () => {
+  const indicators = compile("components/youtube/chart/indicators.ts");
+  const sma = Array.from(indicators.sma([1, 2, 3, 4, 5, 6], 3));
+  assert.deepEqual(sma, [null, null, 2, 3, 4, 5]);
+  assert.deepEqual(Array.from(indicators.MA_PERIODS), [5, 10, 20, 30, 60, 120, 250]);
+  assert.deepEqual(Array.from(indicators.EMA_PERIODS), [5, 10, 12, 20, 26, 50, 100, 200]);
+  for (const key of indicators.indicatorOrder) {
+    assert.ok(indicators.indicatorMeta[key], `${key} has meta`);
+    assert.ok(["ma", "ema", "other"].includes(indicators.indicatorMeta[key].group));
+  }
+  assert.equal(indicators.indicatorOrder.length, Object.keys(indicators.indicatorMeta).length);
+  const bars = Array.from({ length: 300 }, (_, index) => ({
+    date: `2026-01-${String((index % 28) + 1).padStart(2, "0")}`,
+    open: 100 + index,
+    high: 101 + index,
+    low: 99 + index,
+    close: 100 + index,
+    volume: 1000,
+  }));
+  const computed = indicators.computeIndicators(bars, false);
+  for (const key of indicators.LINE_KEYS) assert.equal(computed[key].length, 300, key);
+  assert.equal(computed.ma250[248], null);
+  assert.equal(computed.ma250[249], (100 + 349) / 2);
+  assert.equal(computed.bb.middle.length, 300);
+});

@@ -161,6 +161,57 @@ def _history_point(row) -> Dict[str, Any]:
     }
 
 
+_INTRADAY_INTERVALS = {"1m", "2m", "5m", "15m", "30m", "60m", "90m", "1h"}
+
+# A minute bar this many times the day's typical regular-session minute is a candidate glitch.
+_CUMULATIVE_VOLUME_RATIO = 50
+
+
+def _drop_cumulative_volume(df):
+    """
+    Yahoo's intraday feed sometimes reports the day's running volume total on a single bar
+    (NVDA 2026-11-23 1m: 512M … 616M on scattered minutes, against ~0.7M per minute). One such
+    bar flattens every other volume bar and inflates any sum. The true minute volume can't be
+    recovered (the total doesn't match the bars before it), so the bar's volume becomes unknown.
+    A bar is treated as a running total only when it is both far above the day's typical
+    regular-session bar and at least the day's volume so far — real spikes such as the opening
+    print or the closing auction are a small fraction of the day, so they stay.
+    """
+    if df.empty or "Volume" not in df:
+        return df
+    volume = df["Volume"].astype("float64")
+    cleaned = volume.copy()
+    index = df.index
+    minutes = index.hour * 60 + index.minute
+    regular = (minutes >= 570) & (minutes < 960)
+    for day in pd.unique(index.date):
+        in_day = index.date == day
+        day_volume = volume[in_day]
+        typical = day_volume[regular[in_day] & (day_volume > 0)].median()
+        if pd.isna(typical):
+            typical = day_volume[day_volume > 0].median()
+        if pd.isna(typical) or typical <= 0:
+            continue
+        running = 0.0
+        for stamp, value in day_volume.items():
+            if pd.isna(value):
+                continue
+            if value >= _CUMULATIVE_VOLUME_RATIO * typical and running > 0 and value >= running:
+                cleaned[stamp] = float("nan")
+                continue
+            running += value
+    if cleaned.isna().sum() == volume.isna().sum():
+        return df
+    df = df.copy()
+    df["Volume"] = cleaned
+    return df
+
+
+def _sum_known(values):
+    """A merged bar's volume is unknown when any of its source bars' volume is unknown."""
+    return values.sum() if values.notna().all() else float("nan")
+
+
 def _group_session_bars(df, size: int):
     """
     Merge consecutive hourly bars into `size`-hour bars without crossing sessions,
@@ -190,7 +241,7 @@ def _group_session_bars(df, size: int):
             "High": "max",
             "Low": "min",
             "Close": "last",
-            "Volume": "sum",
+            "Volume": _sum_known,
             **({"Source": "first"} if "Source" in df else {}),
             **({"Dividends": "sum"} if "Dividends" in df else {}),
             **({"Stock Splits": "sum"} if "Stock Splits" in df else {}),
@@ -534,6 +585,9 @@ class YFinanceService:
             df = ticker.history(
                 period=yahoo_period, interval=source_interval, auto_adjust=False, prepost=prepost
             )
+
+        if not df.empty and source_interval in _INTRADAY_INTERVALS:
+            df = _drop_cumulative_volume(df)
 
         if (
             prepost

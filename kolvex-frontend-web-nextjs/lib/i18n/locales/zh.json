@@ -1680,6 +1680,11 @@
     },
     "indicators": "技术指标",
     "oscillators": "副图指标",
+    "indicatorGroups": {
+      "ma": "均线 MA",
+      "ema": "指数均线 EMA",
+      "other": "其他"
+    },
     "hideOscillator": "收起副图指标",
     "indicatorWarmup": "历史数据不足，暂无法计算该指标。",
     "toolExtended": "双向延长线",
@@ -1719,8 +1724,10 @@
       "ALL": "全部"
     },
     "intervals": {
+      "1m": "1分钟",
       "5m": "5分钟",
       "15m": "15分钟",
+      "30m": "30分钟",
       "1h": "1小时",
       "4h": "4小时",
       "1d": "日线",

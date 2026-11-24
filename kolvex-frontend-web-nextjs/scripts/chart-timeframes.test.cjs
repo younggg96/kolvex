@@ -94,3 +94,41 @@ test("the advanced 1D view retains Sunday night while keeping the longer history
   assert.equal(timeframes.extendedDayStart([fri, night, pre], "5m"), Date.parse(fri));
   assert.equal(timeframes.extendedDayStart([fri, night, pre, open], "5m"), Date.parse(night));
 });
+
+test("every interval is offered and maps to a range that can hold it", () => {
+  assert.deepEqual(Array.from(timeframes.CHART_INTERVALS), [
+    "1m",
+    "5m",
+    "15m",
+    "30m",
+    "1h",
+    "4h",
+    "1d",
+    "1wk",
+    "1mo",
+  ]);
+  for (const interval of timeframes.CHART_INTERVALS) {
+    const range = timeframes.rangeForInterval[interval];
+    assert.ok(
+      timeframes.rangeIntervals[range].includes(interval),
+      `${interval} → ${range} must be a valid pair`,
+    );
+  }
+  assert.equal(timeframes.rangeForInterval["1m"], "1D");
+});
+
+test("1m stays within yfinance's 7-day limit; 30m shares the 60-day intraday window", () => {
+  assert.deepEqual(
+    { ...timeframes.advancedHistoryParams("1D", "1m") },
+    { interval: "1m", period: "5d" },
+  );
+  assert.deepEqual(
+    { ...timeframes.advancedHistoryParams("1W", "30m") },
+    {
+      interval: "30m",
+      period: "1mo",
+    },
+  );
+  assert.ok(timeframes.isIntraday("1m"));
+  assert.ok(timeframes.isIntraday("30m"));
+});

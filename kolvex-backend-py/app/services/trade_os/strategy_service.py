@@ -108,6 +108,9 @@ class StrategyService:
             .execute()
         )
         data = res.data or []
+        # Seed against every row (a retired key still holds its version), then hide retired
+        # ones — deleted scanner logics keep their rows only for linked trade plans.
+        visible = [row for row in data if row.get("status") != "retired"]
         # Seed each Swing version once per user. Existing versions are never edited.
         have = {(row.get("strategy_key"), row.get("version")) for row in data}
         for spec in SEEDED_STRATEGY_VERSIONS:
@@ -126,8 +129,8 @@ class StrategyService:
                 # Not live until it has passed paper trading (PRD §14.4).
                 status="research",
             )
-            data = [seeded] + data
-        return data
+            visible = [seeded] + visible
+        return visible
 
     def get_strategy_version(self, user_id: str, version_id: str) -> Optional[Dict[str, Any]]:
         """Fetch a specific strategy version by UUID."""

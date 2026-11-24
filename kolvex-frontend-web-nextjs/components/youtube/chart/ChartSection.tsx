@@ -3,7 +3,13 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { ChevronDown, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 /** Same breakpoint as Tailwind's `sm`: below it a section opens as a bottom sheet. */
@@ -24,6 +30,7 @@ export default function ChartSection({
   dismissKey,
   closeLabel,
   className,
+  dense = false,
   children,
 }: {
   icon: ReactNode;
@@ -37,14 +44,22 @@ export default function ChartSection({
   dismissKey?: unknown;
   closeLabel: string;
   className?: string;
+  /** Desktop chart chrome: a 32px row with small type (phones keep the 44px target). */
+  dense?: boolean;
   children: ReactNode;
 }) {
   const [sheetOpen, setSheetOpen] = useState(false);
-  useEffect(() => { setSheetOpen(false); }, [dismissKey]);
+  useEffect(() => {
+    setSheetOpen(false);
+  }, [dismissKey]);
 
   function toggle() {
     let phone = false;
-    try { phone = window.matchMedia(PHONE_QUERY).matches; } catch { /* Treat as desktop. */ }
+    try {
+      phone = window.matchMedia(PHONE_QUERY).matches;
+    } catch {
+      /* Treat as desktop. */
+    }
     if (phone) setSheetOpen(true);
     else onOpenChange(!open);
   }
@@ -56,29 +71,64 @@ export default function ChartSection({
         aria-expanded={open || sheetOpen}
         aria-haspopup="dialog"
         onClick={toggle}
-        className="flex min-h-11 w-full min-w-0 items-center gap-2 rounded-xl px-2 text-left text-sm transition-colors hover:bg-foreground/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className={cn(
+          "flex min-h-11 w-full min-w-0 items-center gap-2 rounded-xl px-2 text-left text-sm transition-colors hover:bg-foreground/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          dense && "sm:min-h-8 sm:rounded-md sm:text-xs [&_svg]:sm:h-3.5 [&_svg]:sm:w-3.5",
+        )}
       >
-        <span className="shrink-0 text-muted-foreground [&_svg]:h-4 [&_svg]:w-4" aria-hidden="true">{icon}</span>
+        <span className="shrink-0 text-muted-foreground [&_svg]:h-4 [&_svg]:w-4" aria-hidden="true">
+          {icon}
+        </span>
         <span className="shrink-0 font-medium">{label}</span>
-        {summary && <span className={cn("min-w-0 truncate text-muted-foreground", summaryClassName)}>{summary}</span>}
-        <ChevronDown className={cn("ml-auto h-4 w-4 shrink-0 text-muted-foreground transition-transform", open && "sm:rotate-180")} aria-hidden="true" />
+        {summary && (
+          <span className={cn("min-w-0 truncate text-muted-foreground", summaryClassName)}>
+            {summary}
+          </span>
+        )}
+        <ChevronDown
+          className={cn(
+            "ml-auto h-4 w-4 shrink-0 text-muted-foreground transition-transform",
+            open && "sm:rotate-180",
+          )}
+          aria-hidden="true"
+        />
       </button>
       {open && <div className="px-2 pb-2 pt-1 max-sm:hidden">{children}</div>}
 
       <Dialog open={sheetOpen} onOpenChange={setSheetOpen}>
-        <DialogContent layout="sheet" showCloseButton={false} className="flex flex-col px-4 pt-2" onEscapeKeyDown={(event) => event.stopPropagation()}>
-          <div className="mx-auto mb-2 h-1 w-9 shrink-0 rounded-full bg-foreground/20 sm:hidden" aria-hidden="true" />
+        <DialogContent
+          layout="sheet"
+          showCloseButton={false}
+          className="flex flex-col px-4 pt-2"
+          onEscapeKeyDown={(event) => event.stopPropagation()}
+        >
+          <div
+            className="mx-auto mb-2 h-1 w-9 shrink-0 rounded-full bg-foreground/20 sm:hidden"
+            aria-hidden="true"
+          />
           <div className="flex shrink-0 items-center gap-2 pb-3">
-            <span className="text-muted-foreground [&_svg]:h-4 [&_svg]:w-4" aria-hidden="true">{icon}</span>
+            <span className="text-muted-foreground [&_svg]:h-4 [&_svg]:w-4" aria-hidden="true">
+              {icon}
+            </span>
             <DialogTitle className="text-base font-semibold">{label}</DialogTitle>
-            <DialogDescription className="sr-only">{typeof summary === "string" ? summary : label}</DialogDescription>
+            <DialogDescription className="sr-only">
+              {typeof summary === "string" ? summary : label}
+            </DialogDescription>
             <DialogClose asChild>
-              <Button type="button" variant="icon" size="icon" className="-mr-2 ml-auto min-h-11 min-w-11" aria-label={closeLabel}>
+              <Button
+                type="button"
+                variant="icon"
+                size="icon"
+                className="-mr-2 ml-auto min-h-11 min-w-11"
+                aria-label={closeLabel}
+              >
                 <X className="h-4 w-4" aria-hidden="true" />
               </Button>
             </DialogClose>
           </div>
-          <div className="-mx-4 min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-2">{children}</div>
+          <div className="-mx-4 min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-2">
+            {children}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

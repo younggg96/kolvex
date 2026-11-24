@@ -19,8 +19,8 @@ from typing import Any, Callable, Dict, List, Optional
 
 from app.services.trade_os.decimal_utils import ZERO, d, quantize_money
 from app.services.trade_os.market_regime import get_latest_market_regime, normalize_regime
+from app.services.trade_os.scanner_params import default_params, detection_params, filter_params
 from app.services.trade_os.setup_detection import (
-    DEFAULT_PARAMS,
     STRATEGY_CODE,
     STRATEGY_VERSION,
     detect_pullback_setup,
@@ -43,9 +43,6 @@ logger = logging.getLogger(__name__)
 # The scan universe (core, sector, ETF, YouTube and Reddit lists) lives in universe.py.
 
 SCAN_CONCURRENCY = 8
-MIN_PRICE = Decimal("10")
-MIN_DOLLAR_VOLUME = Decimal("20000000")
-EARNINGS_WINDOW_TRADING_DAYS = 5
 
 SIGNAL_STATES = ("SIGNAL_CONFIRMED", "ENTRY_PENDING")
 _STATUS_ORDER = {
@@ -60,7 +57,8 @@ _STATUS_ORDER = {
     "INELIGIBLE": 8,
 }
 
-_CACHED_SCAN_RUN: Optional[Dict[str, Any]] = None
+# Latest run per (scan code, user): the default's shared run is keyed (STRATEGY_CODE, None).
+_CACHED_SCAN_RUNS: Dict[tuple, Dict[str, Any]] = {}
 
 
 def _pct(value: Optional[Decimal]) -> Optional[str]:
@@ -85,8 +83,15 @@ def evaluate_symbol(
     earnings_lookup: Optional[Callable[[str], Dict[str, Any]]] = None,
     today: Optional[date] = None,
     product_lookup: Optional[Callable[[str], Dict[str, bool]]] = None,
+    logic: Optional[Dict[str, float]] = None,
 ) -> Dict[str, Any]:
-    """Runs all four layers plus the setup state machine for one symbol."""
+    """
+    Runs all four layers plus the setup state machine for one symbol. ``logic`` is a
+    validated scanner logic (scanner_params); omitted, the built-in Swing V3.1 numbers run.
+    """
+    clean_logic = logic or default_params()
+    limits = filter_params(clean_logic)
+    setup_params = detection_params(clean_logic)
     sym = symbol.upper()
     row: Dict[str, Any] = {
         "symbol": sym,
@@ -128,8 +133,8 @@ def evaluate_symbol(
         return passed
 
     # Layer 1: liquidity
-    liquid = check("PRICE_AT_LEAST_10", close >= MIN_PRICE) & check(
-        "DOLLAR_VOLUME_20M", dollar_vol >= MIN_DOLLAR_VOLUME
+    liquid = check("PRICE_AT_LEAST_10", close >= limits["min_price"]) & check(
+        "DOLLAR_VOLUME_20M", dollar_vol >= limits["min_dollar_volume"]
     )
     # Layer 2: trend
     trend = (
@@ -143,7 +148,7 @@ def evaluate_symbol(
     spy_ret = _return_20d(spy_closes)
     rs20 = None if stock_ret is None or spy_ret is None else stock_ret - spy_ret
     row["rs20_pct"] = _pct(rs20)
-    strong = check("RS20_POSITIVE", rs20 is not None and rs20 > ZERO)
+    strong = check("RS20_POSITIVE", rs20 is not None and rs20 > limits["rs20_min"])
 
     if not liquid:
         row["status_reason"] = "LIQUIDITY_FILTER"
@@ -159,7 +164,7 @@ def evaluate_symbol(
         return row
 
     # Setup state machine
-    setup = detect_pullback_setup(clean)
+    setup = detect_pullback_setup(clean, setup_params)
     state = setup["state"]
     row.update(
         {
@@ -189,7 +194,7 @@ def evaluate_symbol(
                 "suggested_target": _money(sig["target"]),
                 "risk_per_share": _money(sig["risk_per_share"]),
                 "stop_distance_pct": _pct(sig["stop_distance_pct"]),
-                "reward_risk": str(quantize_money(DEFAULT_PARAMS["target_r_multiple"])),
+                "reward_risk": str(quantize_money(setup_params["target_r_multiple"])),
             }
         )
 
@@ -211,7 +216,7 @@ def evaluate_symbol(
             row["earnings_status"] = "unavailable"
         else:
             gap = sessions_after(today or last_completed_session(), next_date)
-            row["earnings_status"] = "blackout" if gap <= EARNINGS_WINDOW_TRADING_DAYS else "clear"
+            row["earnings_status"] = "blackout" if gap <= limits["earnings_window"] else "clear"
 
     # Market and event gates turn a valid signal into BLOCKED, with the reason kept.
     regime = normalize_regime(market_regime)
@@ -266,9 +271,17 @@ async def run_opportunity_scanner(
     market_regime: Optional[str] = None,
     earnings_lookup: Optional[Callable[[str], Dict[str, Any]]] = None,
     trading_date: Optional[date] = None,
+    logic: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
-    """Runs the Swing V3.0 scanner across the universe and returns every symbol's status."""
-    global _CACHED_SCAN_RUN
+    """
+    Runs the scanner across the universe and returns every symbol's status.
+
+    ``logic`` selects a custom scanner logic: ``{"key", "name", "version", "version_id",
+    "params"}`` with validated params. Its runs are stored under ``CUSTOM:<key>`` for the
+    user who ran them; without it the built-in Swing V3.1 default runs, shared by everyone.
+    """
+    scan_code = f"CUSTOM:{logic['key']}" if logic else STRATEGY_CODE
+    params = logic["params"] if logic else None
 
     if symbols:
         target_symbols = [s.strip().upper() for s in symbols if s.strip()]
@@ -310,7 +323,12 @@ async def run_opportunity_scanner(
             try:
                 row = await asyncio.to_thread(
                     lambda: evaluate_symbol(
-                        sym, bar_fetcher(sym) or [], spy_bars, market_regime, earnings_lookup
+                        sym,
+                        bar_fetcher(sym) or [],
+                        spy_bars,
+                        market_regime,
+                        earnings_lookup,
+                        logic=params,
                     )
                 )
             except Exception as e:
@@ -334,8 +352,9 @@ async def run_opportunity_scanner(
     signals = [r for r in rows if r["status"] in SIGNAL_STATES]
 
     scan_result = {
-        "strategy_code": STRATEGY_CODE,
-        "strategy_version": STRATEGY_VERSION,
+        "strategy_code": scan_code,
+        "strategy_version": logic["version"] if logic else STRATEGY_VERSION,
+        "logic": _logic_meta(logic),
         "run_at": datetime.now(timezone.utc).isoformat(),
         "trading_date": trading_date.isoformat() if trading_date else None,
         "universe_type": "mixed" if not symbols else "manual",
@@ -347,7 +366,7 @@ async def run_opportunity_scanner(
         "candidates": rows,
     }
 
-    _CACHED_SCAN_RUN = scan_result
+    _CACHED_SCAN_RUNS[(scan_code, user_id if logic else None)] = scan_result
 
     if save_to_db:
         from app.services.trade_os.persistence import save_row
@@ -359,7 +378,7 @@ async def run_opportunity_scanner(
             "total_scanned": scan_result["total_scanned"],
             "candidates_count": scan_result["candidates_count"],
             "candidates": scan_result["candidates"],
-            "strategy_version": STRATEGY_VERSION,
+            "strategy_version": scan_result["strategy_version"],
             "market_regime": scan_result["market_regime"],
             "failed_symbols": errors,
             "universe": scan_result["universe"],
@@ -392,28 +411,48 @@ def _universe_from_rows(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
     return {"counts": {**counts, "total": len(rows)}, "errors": {}}
 
 
-def get_latest_scanner_run() -> Optional[Dict[str, Any]]:
-    """Latest Swing V3.0 run, or None when there is none (older breakout runs are ignored)."""
+def _logic_meta(logic: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """Which logic produced a run, for the page header ("default" for the built-in one)."""
+    if not logic:
+        return {"key": "default", "name": None, "version": STRATEGY_VERSION, "builtin": True}
+    return {
+        "key": logic["key"],
+        "name": logic.get("name"),
+        "version": logic.get("version"),
+        "version_id": logic.get("version_id"),
+        "params": logic.get("params"),
+        "builtin": False,
+    }
+
+
+def get_latest_scanner_run(
+    logic_key: Optional[str] = None, user_id: Optional[str] = None
+) -> Optional[Dict[str, Any]]:
+    """
+    Latest run of a logic, or None when it has never run. Without ``logic_key`` this is the
+    shared Swing V3.1 default run; a custom logic only ever returns its owner's runs.
+    """
+    custom = bool(logic_key and logic_key != "default")
+    if custom and not user_id:
+        return None
+    scan_code = f"CUSTOM:{logic_key}" if custom else STRATEGY_CODE
     stored: Optional[Dict[str, Any]] = None
     try:
         from app.core.supabase import get_supabase_service
 
         client = get_supabase_service()
         if client:
-            res = (
-                client.table("trade_os_scanner_runs")
-                .select("*")
-                .eq("strategy_code", STRATEGY_CODE)
-                .order("run_at", desc=True)
-                .limit(1)
-                .execute()
-            )
+            query = client.table("trade_os_scanner_runs").select("*").eq("strategy_code", scan_code)
+            if custom:
+                query = query.eq("user_id", user_id)
+            res = query.order("run_at", desc=True).limit(1).execute()
             if res.data:
                 row = res.data[0]
                 cands = row.get("candidates", []) or []
                 stored = {
                     "strategy_code": row.get("strategy_code"),
-                    "strategy_version": STRATEGY_VERSION,
+                    "strategy_version": row.get("strategy_version") or STRATEGY_VERSION,
+                    "logic": {"key": logic_key, "builtin": False} if custom else _logic_meta(None),
                     "run_at": row.get("run_at"),
                     "universe_type": row.get("universe_type"),
                     "market_regime": row.get("market_regime"),
@@ -428,7 +467,8 @@ def get_latest_scanner_run() -> Optional[Dict[str, Any]]:
         logger.warning(f"Could not read latest scanner run: {e}")
 
     # Prefer whichever is newer: the stored run (maybe from another replica) or our own.
-    runs = [r for r in (stored, _CACHED_SCAN_RUN) if r is not None]
+    cached = _CACHED_SCAN_RUNS.get((scan_code, user_id if custom else None))
+    runs = [r for r in (stored, cached) if r is not None]
     if not runs:
         return None
     return max(runs, key=lambda r: str(r.get("run_at") or ""))

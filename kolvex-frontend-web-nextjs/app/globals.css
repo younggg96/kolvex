@@ -212,6 +212,8 @@ html {
   --chart-up: var(--market-up);
   --chart-down: var(--market-down);
   --chart-level: 148 112 48;
+  /* Extended-hours (pre / post / overnight) price line and axis tag. */
+  --chart-extended: var(--compare-4);
   --destructive: var(--negative);
   --destructive-foreground: 255 255 255;
 

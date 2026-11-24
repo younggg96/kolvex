@@ -192,3 +192,48 @@ class HistoryRoutePrepostTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CumulativeVolumeTests(unittest.TestCase):
+    """Yahoo sometimes puts the day's running volume total on a single intraday bar."""
+
+    def _minutes(self, volumes, start="2026-11-23 09:30"):
+        index = pd.date_range(start, periods=len(volumes), freq="1min", tz="America/New_York")
+        return pd.DataFrame(
+            {
+                "Open": 1.0,
+                "High": 1.0,
+                "Low": 1.0,
+                "Close": 1.0,
+                "Volume": volumes,
+            },
+            index=index,
+        )
+
+    def test_running_total_bar_becomes_unknown(self):
+        from app.services.yfinance.client import _drop_cumulative_volume
+
+        volumes = [1_000_000] * 60
+        volumes[40] = 500_000_000  # far above the ~40M traded so far: a running total
+        cleaned = _drop_cumulative_volume(self._minutes(volumes))
+
+        self.assertTrue(pd.isna(cleaned["Volume"].iloc[40]))
+        self.assertEqual(int(cleaned["Volume"].drop(cleaned.index[40]).sum()), 59_000_000)
+        self.assertIsNone(_history_point(cleaned.reset_index().iloc[40])["volume"])
+
+    def test_real_spikes_are_kept(self):
+        from app.services.yfinance.client import _drop_cumulative_volume
+
+        # Opening auction (first print of the day) and a closing auction far below the day's total.
+        volumes = [120_000_000] + [1_000_000] * 389 + [38_000_000]
+        frame = self._minutes(volumes)
+        cleaned = _drop_cumulative_volume(frame)
+
+        self.assertIs(cleaned, frame)
+        self.assertFalse(cleaned["Volume"].isna().any())
+
+    def test_grouped_bar_with_unknown_volume_is_unknown(self):
+        from app.services.yfinance.client import _sum_known
+
+        self.assertTrue(math.isnan(_sum_known(pd.Series([1.0, float("nan"), 2.0]))))
+        self.assertEqual(_sum_known(pd.Series([1.0, 2.0])), 3.0)

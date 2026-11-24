@@ -35,6 +35,7 @@
 import {
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -48,14 +49,8 @@ import { snapCrosshair, type CrosshairSnap, type ZoomAnchor } from "@/lib/chart/
 import { Skeleton } from "@/components/ui/skeleton";
 import { InfoTip } from "@/components/ui/info-tip";
 import { cn } from "@/lib/utils";
-import {
-  formatChangePercent,
-  formatPrice,
-  formatVolume,
-  type PriceBar,
-  type StockQuote,
-} from "@/lib/stockApi";
-import { latestChartQuote } from "@/lib/chart/quote";
+import { formatChangePercent, formatPrice, type PriceBar, type StockQuote } from "@/lib/stockApi";
+import { latestChartQuote, sessionLabel } from "@/lib/chart/quote";
 import {
   GRAPH_AXIS_WIDTH,
   GRAPH_MIN_BARS,
@@ -75,6 +70,7 @@ import {
 import type { Anchor } from "../chartDrawings";
 import type { StrengthTone } from "../strength";
 import { CallMarker, ExtremeTag, PriceTag } from "./ChartMarkers";
+import PlotCanvas, { type CanvasPainter } from "./PlotCanvas";
 import {
   SPRING_RESPONSE,
   VelocityTracker,
@@ -393,6 +389,8 @@ export interface PriceGraphProps {
   onQuoteRetry?: () => void;
   historyStale?: boolean;
   loading?: boolean;
+  /** New bars are loading while the previous ones stay on screen (range / interval switch). */
+  refreshing?: boolean;
   error?: boolean;
   onRetry?: () => void;
   /** Controlled horizontal window (bars); `null` = "the selected range's own window". */
@@ -428,6 +426,8 @@ export interface PriceGraphProps {
   };
   /** Advanced: candles / indicators on the shared geometry, drawn instead of the close line. */
   renderPlot?: (geometry: GraphGeometry) => ReactNode;
+  /** Advanced: bitmap layer under `renderPlot` (candles, volume); it also takes over the grid. */
+  renderCanvas?: CanvasPainter;
   /** Rendered under the time axis (advanced: oscillator pane). */
   subPane?: ReactNode;
   /** Sits at the end of the range row (the interval pill), Robinhood-style. */
@@ -480,6 +480,7 @@ export default function PriceGraph({
   onQuoteRetry,
   historyStale = false,
   loading = false,
+  refreshing = false,
   error = false,
   onRetry,
   view,
@@ -501,6 +502,7 @@ export default function PriceGraph({
   drawingLayer,
   drawingInteraction,
   renderPlot,
+  renderCanvas,
   subPane,
   rangeTrailing,
   leadingControls,
@@ -666,19 +668,48 @@ export default function PriceGraph({
 
   /* ---------------------------------------------------------------- views */
 
-  const commit = (next: GraphView) => onViewChange(clampGraphView(next, count));
+  /**
+   * Gestures fire faster than React paints (a trackpad sends several wheel events per frame).
+   * Each step builds on `liveView` — the latest view asked for, not the last one rendered — so
+   * no step is lost, and `queueView` hands React at most one view per animation frame.
+   */
+  const liveView = useRef<GraphView>(current);
+  const queuedView = useRef<{ view: GraphView | null } | null>(null);
+  const viewFrame = useRef(0);
+  useLayoutEffect(() => {
+    if (!queuedView.current) liveView.current = current;
+  });
+  useEffect(() => () => cancelAnimationFrame(viewFrame.current), []);
+  const queueView = (next: GraphView | null) => {
+    queuedView.current = { view: next };
+    if (next) liveView.current = next;
+    if (viewFrame.current) return;
+    viewFrame.current = requestAnimationFrame(() => {
+      viewFrame.current = 0;
+      const queued = queuedView.current;
+      queuedView.current = null;
+      if (queued) onViewChange(queued.view);
+    });
+  };
+  const commit = (next: GraphView) => queueView(clampGraphView(next, count));
   const zoomBy = (factor: number, anchorRatio: number) => {
     if (!count) return;
     const anchor = advanced && zoomAnchor === "right" ? 1 : anchorRatio;
-    commit(zoomGraphView(current, factor, Math.min(Math.max(anchor, 0), 1), count));
+    commit(zoomGraphView(liveView.current, factor, Math.min(Math.max(anchor, 0), 1), count));
   };
   const panBy = (bars: number) => {
     if (!count) return;
-    commit({ start: current.start + bars, end: current.end + bars });
+    const base = liveView.current;
+    commit({ start: base.start + bars, end: base.end + bars });
   };
   const resetAxis = (axis?: ScaleAxis) => {
     stopSettling();
-    if (axis !== "price") onViewChange(null);
+    if (axis !== "price") {
+      cancelAnimationFrame(viewFrame.current);
+      viewFrame.current = 0;
+      queuedView.current = null;
+      onViewChange(null);
+    }
     if (axis !== "time") onPriceDomainChange?.(null);
     onActiveChange(null);
   };
@@ -698,7 +729,7 @@ export default function PriceGraph({
     if (wheelPan.current) window.clearTimeout(wheelPan.current.timer);
     wheelPan.current = null;
   }
-  const showStart = (start: number, span: number) => onViewChange({ start, end: start + span });
+  const showStart = (start: number, span: number) => queueView({ start, end: start + span });
   const elastic = (start: number, span: number) => {
     const { min, max } = graphPanBounds(span, count);
     return rubberBandClamp(start, min, max, span);
@@ -755,14 +786,15 @@ export default function PriceGraph({
         }
         return;
       }
-      const span = current.end - current.start || 1;
+      const base = liveView.current;
+      const span = base.end - base.start || 1;
       if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
         event.preventDefault();
         if (!count) return;
         settling.current?.stop();
         settling.current = null;
         // Trackpad scrolling past an edge stretches, then springs back once the scroll stops.
-        const pan = wheelPan.current ?? { raw: current.start, timer: 0 };
+        const pan = wheelPan.current ?? { raw: base.start, timer: 0 };
         window.clearTimeout(pan.timer);
         pan.raw += (event.deltaX / geometry.plotWidth) * span;
         const shown = elastic(pan.raw, span);
@@ -1073,14 +1105,23 @@ export default function PriceGraph({
     // `geometry` is memoized on the box/data/view triple, so depending on it is stable.
   }, [bars, count, geometry]);
 
+  // Advanced charts get a TradingView-style grid: a price rule roughly every 48px.
   const axisRules = useMemo(
-    () => priceTickValues(geometry.priceLow, geometry.priceHigh, 4),
-    [geometry.priceLow, geometry.priceHigh],
+    () =>
+      priceTickValues(
+        geometry.priceLow,
+        geometry.priceHigh,
+        advanced ? Math.max(Math.round(geometry.plotHeight / 48), 4) : 4,
+      ),
+    [geometry.priceLow, geometry.priceHigh, geometry.plotHeight, advanced],
   );
 
   const timeTicks = useMemo(() => {
     if (!loaded || !bars?.length || geometry.plotWidth < 140) return [];
-    const slots = Math.max(Math.min(Math.floor(geometry.plotWidth / BARS_PER_LABEL), 4), 2);
+    // Advanced: a labelled vertical grid line roughly every 110px; compact keeps 2–4 quiet dates.
+    const slots = advanced
+      ? Math.max(Math.min(Math.floor(geometry.plotWidth / 110), 12), 2)
+      : Math.max(Math.min(Math.floor(geometry.plotWidth / BARS_PER_LABEL), 4), 2);
     return dateTickIndices(current, count, slots)
       .filter((index) => Boolean(bars[index]))
       .map((index) => ({
@@ -1089,7 +1130,7 @@ export default function PriceGraph({
         label: tickLabel(bars[index], intraday, interval, locale),
       }))
       .filter((tick) => tick.x > 20 && tick.x < geometry.plotWidth - 14);
-  }, [loaded, bars, current, count, geometry, intraday, interval, locale]);
+  }, [loaded, bars, current, count, geometry, intraday, interval, locale, advanced]);
 
   const extremes = useMemo(() => {
     if (!bars?.length || geometry.lastIndex < geometry.firstIndex) return null;
@@ -1203,6 +1244,19 @@ export default function PriceGraph({
     };
   })();
 
+  /** Advanced: a second axis tag for a newer pre/post/overnight quote, like TradingView's. */
+  const sessionTag =
+    advanced &&
+    extended &&
+    extended.session !== "regular" &&
+    lastBar &&
+    Math.abs(extended.price - lastBar.close) >= 0.005
+      ? {
+          label: sessionLabel(extended.session, locale.startsWith("zh") ? "zh" : "en"),
+          price: extended.price,
+        }
+      : null;
+
   const body = error ? (
     <div
       className={cn(
@@ -1225,6 +1279,8 @@ export default function PriceGraph({
   ) : (
     <PriceGraphPlot
       advanced={advanced}
+      symbol={symbol}
+      sessionTag={sessionTag}
       size={size}
       geometry={geometry}
       bars={bars}
@@ -1233,6 +1289,7 @@ export default function PriceGraph({
       heightClass={heightClass}
       loaded={loaded}
       plotRef={plotRef}
+      refreshing={refreshing}
       plotTone={plotTone}
       gradientId={gradientId}
       clipId={clipId}
@@ -1250,6 +1307,7 @@ export default function PriceGraph({
       activeLabel={headerBar ? barLabel(headerBar) : ""}
       timeTicks={timeTicks}
       renderPlot={renderPlot}
+      renderCanvas={renderCanvas}
       renderEventPopover={renderEventPopover}
       eventsAt={eventsAt}
       drawingLayer={drawingLayer}
@@ -1314,6 +1372,34 @@ export default function PriceGraph({
     </InfoTip>
   ) : null;
 
+  /** Extended-hours price and quote problems; advanced charts keep them on the price line. */
+  const quoteStatus =
+    quoteEnabled && (showExtended || quoteProblem || (!latest && quoteLoading)) ? (
+      <>
+        {showExtended && extended && (
+          <span className="tabular-nums">
+            {t(`youtubeOpinions.quoteSession.${extended.session}`)} {formatPrice(extended.price)}
+            {extended.changePercent !== null && ` (${formatChangePercent(extended.changePercent)})`}
+          </span>
+        )}
+        {!latest && quoteLoading && <span>{t("youtubeOpinions.quoteLoading")}</span>}
+        {quoteProblem && (
+          <span role="status">
+            {t(latest ? "youtubeOpinions.quoteRefreshFailed" : "youtubeOpinions.quoteUnavailable")}
+          </span>
+        )}
+        {quoteProblem && onQuoteRetry && (
+          <button
+            type="button"
+            onClick={onQuoteRetry}
+            className="rounded px-1 font-semibold text-foreground underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
+            {t("common.retry")}
+          </button>
+        )}
+      </>
+    ) : null;
+
   return (
     <div className={cn("min-w-0", advanced && "flex min-h-0 flex-1 flex-col")}>
       {/* header: price · change · window label, as in the reference */}
@@ -1354,6 +1440,11 @@ export default function PriceGraph({
           ) : loading || !bars ? (
             <Skeleton className="h-5 w-32" aria-hidden="true" />
           ) : null}
+          {advanced && quoteStatus && (
+            <span className="flex flex-wrap items-baseline gap-x-2 text-xs text-muted-foreground">
+              {quoteStatus}
+            </span>
+          )}
           {activeBar && activeIndex !== null && (
             <span className="text-[0.6875rem] tabular-nums text-muted-foreground">
               {barLabel(activeBar)}
@@ -1372,32 +1463,9 @@ export default function PriceGraph({
           </button>
         )}
       </div>
-      {quoteEnabled && (showExtended || quoteProblem || (!latest && quoteLoading)) && (
+      {!advanced && quoteStatus && (
         <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-xs text-muted-foreground">
-          {showExtended && extended && (
-            <span className="tabular-nums">
-              {t(`youtubeOpinions.quoteSession.${extended.session}`)} {formatPrice(extended.price)}
-              {extended.changePercent !== null &&
-                ` (${formatChangePercent(extended.changePercent)})`}
-            </span>
-          )}
-          {!latest && quoteLoading && <span>{t("youtubeOpinions.quoteLoading")}</span>}
-          {quoteProblem && (
-            <span role="status">
-              {t(
-                latest ? "youtubeOpinions.quoteRefreshFailed" : "youtubeOpinions.quoteUnavailable",
-              )}
-            </span>
-          )}
-          {quoteProblem && onQuoteRetry && (
-            <button
-              type="button"
-              onClick={onQuoteRetry}
-              className="rounded px-1 font-semibold text-foreground underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-            >
-              {t("common.retry")}
-            </button>
-          )}
+          {quoteStatus}
         </div>
       )}
       {historyStale && (
@@ -1407,10 +1475,19 @@ export default function PriceGraph({
       )}
 
       {/* Phones give the plot every spare pixel (no gap above the controls); panes stack right under it. */}
-      <div className={cn("mt-1.5", advanced && "flex flex-1 flex-col sm:min-h-0")}>{body}</div>
+      <div className={cn("mt-1.5", advanced && "flex flex-1 flex-col sm:mt-1 sm:min-h-0")}>
+        {body}
+      </div>
 
       {/* Phones stack the range bar over the icon row so a long label never hides the icons. */}
-      <div className="my-1.5 flex shrink-0 flex-col items-stretch gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-2">
+      <div
+        className={cn(
+          "my-1.5 flex shrink-0 flex-col items-stretch gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-2",
+          // Desktop advanced chart: one 28px control strip ruled off from the plot.
+          advanced &&
+            "sm:my-0 sm:border-t sm:border-border sm:py-1 sm:[&_.glass-track]:p-0 sm:[&_button]:!h-7 sm:[&_button]:!min-h-7 sm:[&_button]:text-xs sm:[&_button_svg]:h-3.5 sm:[&_button_svg]:w-3.5",
+        )}
+      >
         <div className="flex w-full min-w-0 flex-1 items-center gap-1 sm:w-auto">
           {leadingControls}
           {rangeBar}
@@ -1502,6 +1579,7 @@ export function PriceGraphPlot({
   activeLabel,
   timeTicks,
   renderPlot,
+  renderCanvas,
   renderEventPopover,
   eventsAt,
   drawingLayer,
@@ -1519,8 +1597,15 @@ export function PriceGraphPlot({
   crosshair = null,
   timeScaleLabel,
   priceScaleLabel,
+  refreshing = false,
+  symbol,
+  sessionTag = null,
 }: {
   advanced: boolean;
+  /** Advanced: names the current-price tag on the axis. */
+  symbol?: string;
+  /** Advanced: extended-hours quote drawn as its own dotted line and axis tag. */
+  sessionTag?: { label: string; price: number } | null;
   size: { width: number; height: number };
   geometry: GraphGeometry;
   bars: PriceBar[] | null;
@@ -1547,6 +1632,7 @@ export function PriceGraphPlot({
   activeLabel: string;
   timeTicks: Array<{ index: number; x: number; label: string }>;
   renderPlot?: (geometry: GraphGeometry) => ReactNode;
+  renderCanvas?: CanvasPainter;
   renderEventPopover?: (index: number) => ReactNode;
   eventsAt?: (index: number) => ReactNode;
   drawingLayer?: ReactNode | ((geometry: GraphGeometry) => ReactNode);
@@ -1565,10 +1651,12 @@ export function PriceGraphPlot({
   crosshair?: { x: number; y: number; price: number; label: string } | null;
   timeScaleLabel?: string;
   priceScaleLabel?: string;
+  refreshing?: boolean;
 }) {
   return (
     <div
       ref={plotRef}
+      aria-busy={refreshing || undefined}
       role={advanced ? "slider" : "group"}
       tabIndex={advanced ? 0 : undefined}
       aria-label={ariaLabel}
@@ -1581,6 +1669,7 @@ export function PriceGraphPlot({
         advanced && activeBar ? `${activeLabel} ${formatPrice(activeBar.close)}` : undefined
       }
       data-price-graph={advanced ? "advanced" : "compact"}
+      data-refreshing={refreshing || undefined}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
@@ -1596,12 +1685,31 @@ export function PriceGraphPlot({
         dragging && "cursor-grabbing",
         draggingAxis === "time" && "cursor-ew-resize",
         draggingAxis === "price" && "cursor-ns-resize",
+        // The previous bars stay readable but quieter until the new ones arrive.
+        refreshing &&
+          "[&>canvas]:opacity-50 [&>svg]:opacity-50 [&>canvas]:transition-opacity [&>svg]:transition-opacity",
       )}
     >
       {!loaded ? (
         <Skeleton className="absolute inset-0 rounded-none" aria-hidden="true" />
       ) : (
         <>
+          {refreshing && (
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 top-0 z-30 h-0.5 animate-pulse bg-primary/70"
+            />
+          )}
+          {renderCanvas && (
+            <PlotCanvas
+              geometry={geometry}
+              width={size.width}
+              height={size.height}
+              gridPrices={axisRules}
+              gridTimes={timeTicks.map((tick) => tick.x)}
+              paint={renderCanvas}
+            />
+          )}
           <svg
             width={size.width}
             height={size.height}
@@ -1619,19 +1727,32 @@ export function PriceGraphPlot({
               </linearGradient>
             </defs>
             <g clipPath={`url(#${clipId})`}>
-              {axisRules.map((value) => {
-                const y = geometry.yOf(value);
-                return (
+              {!renderCanvas &&
+                axisRules.map((value) => {
+                  const y = geometry.yOf(value);
+                  return (
+                    <line
+                      key={`rule-${value}`}
+                      x1={0}
+                      x2={geometry.plotWidth}
+                      y1={y}
+                      y2={y}
+                      stroke={`rgb(var(--foreground) / ${advanced ? 0.075 : 0.055})`}
+                    />
+                  );
+                })}
+              {advanced &&
+                !renderCanvas &&
+                timeTicks.map((tick) => (
                   <line
-                    key={`rule-${value}`}
-                    x1={0}
-                    x2={geometry.plotWidth}
-                    y1={y}
-                    y2={y}
-                    stroke="rgb(var(--foreground) / 0.055)"
+                    key={`grid-${tick.index}`}
+                    x1={tick.x}
+                    x2={tick.x}
+                    y1={0}
+                    y2={geometry.plotHeight}
+                    stroke="rgb(var(--foreground) / 0.075)"
                   />
-                );
-              })}
+                ))}
               {baselinePrice !== undefined && (
                 <line
                   x1={0}
@@ -1681,6 +1802,34 @@ export function PriceGraphPlot({
                 />
               )}
               {fading && <FadingLine geometry={geometry} bars={fading.bars} view={fading.view} />}
+              {advanced && sessionTag && (
+                <line
+                  x1={0}
+                  x2={geometry.plotWidth}
+                  y1={geometry.yOf(sessionTag.price)}
+                  y2={geometry.yOf(sessionTag.price)}
+                  stroke="rgb(var(--chart-extended))"
+                  strokeDasharray="1 3"
+                  opacity={0.8}
+                />
+              )}
+              {advanced && lastBar && (
+                <line
+                  x1={0}
+                  x2={geometry.plotWidth}
+                  y1={geometry.yOf(lastBar.close)}
+                  y2={geometry.yOf(lastBar.close)}
+                  stroke={
+                    tone === "positive"
+                      ? "rgb(var(--chart-up))"
+                      : tone === "negative"
+                        ? "rgb(var(--chart-down))"
+                        : "rgb(var(--foreground) / 0.5)"
+                  }
+                  strokeDasharray="1 3"
+                  opacity={0.8}
+                />
+              )}
             </g>
           </svg>
 
@@ -1744,6 +1893,7 @@ export function PriceGraphPlot({
             const currentValue = lastBar?.close;
             if (currentValue !== undefined && Math.abs(geometry.yOf(currentValue) - y) < 12)
               return null;
+            if (sessionTag && Math.abs(geometry.yOf(sessionTag.price) - y) < 12) return null;
             if (y < geometry.priceTop || y > geometry.priceBottom) return null;
             return (
               <span
@@ -1756,15 +1906,79 @@ export function PriceGraphPlot({
               </span>
             );
           })}
-          {lastBar && (
-            <PriceTag
-              value={lastBar.close}
-              x={geometry.plotWidth + 1}
-              y={Math.min(Math.max(geometry.yOf(lastBar.close), 10), geometry.plotHeight - 10)}
-              tone={tone}
-              decimals={2}
-            />
-          )}
+          {lastBar &&
+            (() => {
+              const clampY = (price: number) =>
+                Math.min(Math.max(geometry.yOf(price), 10), geometry.plotHeight - 10);
+              const lastY = clampY(lastBar.close);
+              // Keep the two tags from overlapping: the session tag steps away from the close.
+              let sessionY = sessionTag ? clampY(sessionTag.price) : 0;
+              if (sessionTag && Math.abs(sessionY - lastY) < 18)
+                sessionY = sessionY >= lastY ? lastY + 18 : lastY - 18;
+              const fill =
+                tone === "positive"
+                  ? "rgb(var(--chart-up))"
+                  : tone === "negative"
+                    ? "rgb(var(--chart-down))"
+                    : "rgb(var(--foreground))";
+              const tagText = "text-[0.6875rem] font-semibold leading-4";
+              return (
+                <>
+                  {advanced && symbol && (
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        "pointer-events-none absolute -translate-x-full -translate-y-1/2 rounded-l-[0.3125rem] px-1.5 py-0.5",
+                        tagText,
+                        tone === "neutral" ? "text-background" : "text-white",
+                      )}
+                      style={{ left: geometry.plotWidth + 1, top: lastY, backgroundColor: fill }}
+                    >
+                      {symbol}
+                    </span>
+                  )}
+                  <PriceTag
+                    value={lastBar.close}
+                    x={geometry.plotWidth + 1}
+                    y={lastY}
+                    tone={tone}
+                    decimals={2}
+                  />
+                  {sessionTag && (
+                    <>
+                      <span
+                        aria-hidden="true"
+                        className={cn(
+                          "pointer-events-none absolute -translate-x-full -translate-y-1/2 rounded-l-[0.3125rem] px-1.5 py-0.5 text-white",
+                          tagText,
+                        )}
+                        style={{
+                          left: geometry.plotWidth + 1,
+                          top: sessionY,
+                          backgroundColor: "rgb(var(--chart-extended))",
+                        }}
+                      >
+                        {sessionTag.label}
+                      </span>
+                      <span
+                        aria-hidden="true"
+                        className={cn(
+                          "pointer-events-none absolute -translate-y-1/2 rounded-r-[0.3125rem] px-1.5 py-0.5 tabular-nums text-white",
+                          tagText,
+                        )}
+                        style={{
+                          left: geometry.plotWidth + 1,
+                          top: sessionY,
+                          backgroundColor: "rgb(var(--chart-extended))",
+                        }}
+                      >
+                        {sessionTag.price.toFixed(2)}
+                      </span>
+                    </>
+                  )}
+                </>
+              );
+            })()}
           {tooltipPill(
             activeBar,
             activeIndex,
@@ -1918,24 +2132,27 @@ function tooltipPill(
         className="pointer-events-none absolute top-0 w-px border-l border-dashed border-foreground/30"
         style={{ left: point.x, height: geometry.plotHeight }}
       />
-      <span
-        aria-hidden="true"
-        className="pointer-events-none absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-background"
-        style={{ left: point.x, top: point.y, backgroundColor: color }}
-      />
-      <span
-        aria-hidden="true"
-        className="pointer-events-none absolute z-20 inline-flex items-baseline gap-1.5 whitespace-nowrap rounded-full bg-foreground px-2 py-1 text-[0.6875rem] font-medium leading-none tabular-nums text-background shadow-sm"
-        style={
-          right ? { right: geometry.plotWidth - point.x + 12, top } : { left: point.x + 12, top }
-        }
-      >
-        <span className="opacity-75">{label}</span>
-        <span className="font-semibold">{formatPrice(bar.close)}</span>
-        {advanced && bar.volume != null && bar.volume > 0 && (
-          <span className="opacity-70">{formatVolume(bar.volume)}</span>
-        )}
-      </span>
+      {/* Candles need no dot: the crosshair already marks the bar. The line chart keeps it. */}
+      {!advanced && (
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-background"
+          style={{ left: point.x, top: point.y, backgroundColor: color }}
+        />
+      )}
+      {/* K-line: the header OHLC line and the crosshair's axis tags already name the bar. */}
+      {!advanced && (
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute z-20 inline-flex items-baseline gap-1.5 whitespace-nowrap rounded-full bg-foreground px-2 py-1 text-[0.6875rem] font-medium leading-none tabular-nums text-background shadow-sm"
+          style={
+            right ? { right: geometry.plotWidth - point.x + 12, top } : { left: point.x + 12, top }
+          }
+        >
+          <span className="opacity-75">{label}</span>
+          <span className="font-semibold">{formatPrice(bar.close)}</span>
+        </span>
+      )}
     </>
   );
 }

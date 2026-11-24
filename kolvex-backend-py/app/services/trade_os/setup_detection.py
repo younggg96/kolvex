@@ -36,6 +36,8 @@ V3_0_PARAMS: Dict[str, Any] = {
     "max_stop_distance": Decimal("0.10"),
     "entry_window_days": 2,
     "max_gap_r": Decimal("0.5"),
+    # A pullback "touches" the EMA20 when a low comes within this many ATR14 of it.
+    "ema_touch_atr": Decimal("1"),
     "earnings_blackout_sessions": 5,
     "tick": Decimal("0.01"),
 }
@@ -281,7 +283,7 @@ def detect_pullback_setup(
         if depth > p["pullback_max_depth"]:
             finish("INVALIDATED", i, "PULLBACK_TOO_DEEP")
             continue
-        if abs(lo[i] - ema20[i]) <= atr14[i]:
+        if abs(lo[i] - ema20[i]) <= p["ema_touch_atr"] * atr14[i]:
             st.ema_touched = True
 
         in_window = p["pullback_min_days"] <= st.pullback_days <= p["pullback_max_days"]

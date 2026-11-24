@@ -302,13 +302,26 @@ export function rangeLabelFor(
  * Advanced chart: the user picks a bar interval inside the selected range.
  * ------------------------------------------------------------------------------------- */
 
-export type ChartInterval = "5m" | "15m" | "1h" | "4h" | "1d" | "1wk" | "1mo";
+export type ChartInterval = "1m" | "5m" | "15m" | "30m" | "1h" | "4h" | "1d" | "1wk" | "1mo";
+
+/** Every interval the advanced chart offers, shortest first (the interval menu's order). */
+export const CHART_INTERVALS: readonly ChartInterval[] = [
+  "1m",
+  "5m",
+  "15m",
+  "30m",
+  "1h",
+  "4h",
+  "1d",
+  "1wk",
+  "1mo",
+];
 
 /** Intervals that give a readable number of bars for each range, within yfinance's intraday limits. */
 export const rangeIntervals: Record<AdvancedRange, ChartInterval[]> = {
-  "1D": ["5m", "15m", "1h"],
-  "1W": ["5m", "15m", "1h", "4h"],
-  "1M": ["15m", "1h", "4h", "1d"],
+  "1D": ["1m", "5m", "15m", "30m", "1h"],
+  "1W": ["1m", "5m", "15m", "30m", "1h", "4h"],
+  "1M": ["5m", "15m", "30m", "1h", "4h", "1d"],
   "3M": ["1h", "4h", "1d"],
   "6M": ["1h", "4h", "1d", "1wk"],
   YTD: ["1h", "4h", "1d", "1wk"],
@@ -329,11 +342,27 @@ export const defaultInterval: Record<AdvancedRange, ChartInterval> = {
   ALL: "1mo",
 };
 
+/**
+ * Picking an interval the current range can't hold moves to this range (TradingView-style:
+ * the interval menu always lists every interval). 1m stays within yfinance's 7-day limit.
+ */
+export const rangeForInterval: Record<ChartInterval, AdvancedRange> = {
+  "1m": "1D",
+  "5m": "1D",
+  "15m": "1W",
+  "30m": "1W",
+  "1h": "1M",
+  "4h": "3M",
+  "1d": "6M",
+  "1wk": "5Y",
+  "1mo": "ALL",
+};
+
 export const isIntraday = (interval: string) => /m$|h$/.test(interval) && interval !== "1mo";
 
 /**
  * More history than the range is loaded so long EMAs are warmed up and the user can pan
- * back; yfinance caps 5m/15m at 60 days and hourly at 730 days.
+ * back; yfinance caps 1m at 7 days, 5m–30m at 60 days and hourly at 730 days.
  */
 export function advancedHistoryParams(
   range: AdvancedRange,
@@ -341,8 +370,11 @@ export function advancedHistoryParams(
 ): PriceHistoryParams {
   const tomorrow = iso(addDays(new Date(), 1));
   switch (interval) {
+    case "1m":
+      return { interval, period: "5d" };
     case "5m":
     case "15m":
+    case "30m":
       return { interval, period: "1mo" };
     case "1h":
     case "4h":

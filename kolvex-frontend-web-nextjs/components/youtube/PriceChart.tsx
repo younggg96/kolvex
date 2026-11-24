@@ -520,11 +520,11 @@ export default function PriceChart({
                       type="button"
                       variant="icon"
                       size="icon"
-                      className="shrink-0"
+                      className="shrink-0 sm:h-8 sm:min-h-8 sm:w-8 sm:min-w-8"
                       aria-label={t("common.close")}
                       title={t("common.close")}
                     >
-                      <X className="h-5 w-5" aria-hidden="true" />
+                      <X className="h-5 w-5 sm:h-4 sm:w-4" aria-hidden="true" />
                     </Button>
                   </DialogClose>
                 }

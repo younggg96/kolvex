@@ -60,7 +60,11 @@ async function proxy(request: NextRequest, { params }: Context) {
                 ? "unauthorized"
                 : typeof data.detail === "string"
                   ? data.detail
-                  : data.error || `Request failed with status ${upstream.status}`,
+                  : typeof data.detail?.message === "string"
+                    ? data.detail.message
+                    : data.error || `Request failed with status ${upstream.status}`,
+            // Validation errors name the field to fix (e.g. a scanner logic's parameter).
+            ...(typeof data.detail?.field === "string" ? { field: data.detail.field } : {}),
           },
       { status: upstream.status },
     );
@@ -75,4 +79,5 @@ async function proxy(request: NextRequest, { params }: Context) {
 export const GET = proxy;
 export const POST = proxy;
 export const PATCH = proxy;
+export const PUT = proxy;
 export const DELETE = proxy;

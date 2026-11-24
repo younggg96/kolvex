@@ -4,6 +4,7 @@ import {
   SavedAnalysisLanguage,
   useSavedAnalysisLanguage,
 } from "@/components/trading-analysis/SavedAnalysisLanguage";
+import { memo } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, RefreshCw } from "lucide-react";
 import { ContentLoading } from "@/components/ui/content-loading";
@@ -42,7 +43,7 @@ function indicatorLabel(key: string) {
 
 const percent = (value: number) => signedPercent(value * 100, 1);
 
-export default function AiAnalysisPanel({
+function AiAnalysisPanel({
   state,
   busy = false,
   onRetry,
@@ -52,6 +53,7 @@ export default function AiAnalysisPanel({
   version,
   forecastVisible = false,
   onToggleForecast,
+  dense = false,
 }: {
   state: AiPanelState;
   busy?: boolean;
@@ -64,6 +66,8 @@ export default function AiAnalysisPanel({
   forecastVisible?: boolean;
   /** Absent when this chart cannot draw the saved forecast (compact view or another interval). */
   onToggleForecast?: () => void;
+  /** Side-column layout: tighter rhythm, flat callouts, one-line level rows. */
+  dense?: boolean;
 }) {
   const c = useCopy();
   const result = state.result;
@@ -172,7 +176,7 @@ export default function AiAnalysisPanel({
       )}
 
       {state.status === "done" && result && (
-        <div className="mt-5">
+        <div className={dense ? "mt-2.5" : "mt-5"}>
           <SavedAnalysisLanguage control={language} />
           <AnalysisSummary
             key={language.read(result.summary)}
@@ -181,13 +185,22 @@ export default function AiAnalysisPanel({
             t={t}
           />
           {result.invalidation && (
-            <div className="mt-4 rounded-3xl bg-muted/60 p-4">
+            <div
+              className={
+                dense
+                  ? "mt-2.5 border-l-2 border-warning bg-muted/40 py-1.5 pl-2.5 pr-2"
+                  : "mt-4 rounded-3xl bg-muted/60 p-4"
+              }
+            >
               <h4 className="text-sm font-semibold text-warning">
                 {t("youtubeOpinions.ai.invalidation")}
               </h4>
               <p
                 lang={language.lang}
-                className="mt-2 max-w-[90ch] whitespace-pre-line break-words text-[13px] leading-6 text-muted-foreground"
+                className={cn(
+                  "max-w-[90ch] whitespace-pre-line break-words text-[13px] text-muted-foreground",
+                  dense ? "mt-0.5 leading-5" : "mt-2 leading-6",
+                )}
               >
                 {language.read(result.invalidation)}
               </p>
@@ -196,7 +209,11 @@ export default function AiAnalysisPanel({
 
           {forecast && (
             <section
-              className="mt-4 rounded-3xl bg-muted/60 p-4"
+              className={
+                dense
+                  ? "mt-2.5 border-l-2 border-border bg-muted/40 py-1.5 pl-2.5 pr-2"
+                  : "mt-4 rounded-3xl bg-muted/60 p-4"
+              }
               aria-label={t("youtubeOpinions.forecast.panelTitle")}
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -225,7 +242,12 @@ export default function AiAnalysisPanel({
                   </Button>
                 )}
               </div>
-              <dl className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-3">
+              <dl
+                className={cn(
+                  "grid grid-cols-2 sm:grid-cols-3",
+                  dense ? "mt-1.5 gap-2" : "mt-3 gap-4",
+                )}
+              >
                 <div>
                   <dt className="text-xs text-muted-foreground">
                     {t("youtubeOpinions.forecast.median", { days: String(forecast.horizon) })}
@@ -257,36 +279,57 @@ export default function AiAnalysisPanel({
           )}
 
           {levels.length > 0 && (
-            <section className="mt-7" aria-label={t("youtubeOpinions.ai.levels")}>
+            <section
+              className={dense ? "mt-3.5" : "mt-7"}
+              aria-label={t("youtubeOpinions.ai.levels")}
+            >
               <h4 className="text-sm font-semibold">{t("youtubeOpinions.ai.levels")}</h4>
-              <ul className="mt-2 space-y-2">
+              <ul className={dense ? "mt-1 divide-y divide-border" : "mt-2 space-y-2"}>
                 {levels.map((level) => (
                   <li
                     key={`${level.kind}-${level.price}`}
-                    className="flex flex-wrap items-center gap-x-3 gap-y-1.5 py-2.5"
+                    className={
+                      dense
+                        ? "grid grid-cols-[4.25rem_minmax(0,1fr)_auto] items-start gap-x-2 py-1.5"
+                        : "flex flex-wrap items-center gap-x-3 gap-y-1.5 py-2.5"
+                    }
                   >
-                    <div className="flex shrink-0 items-center gap-2">
+                    <div
+                      className={cn(
+                        "flex shrink-0",
+                        dense ? "flex-col items-start leading-tight" : "items-center gap-2",
+                      )}
+                    >
                       <span
                         className={cn(
-                          "shrink-0 text-base font-semibold tabular-nums tracking-tight",
+                          "shrink-0 font-semibold tabular-nums tracking-tight",
+                          dense ? "text-sm" : "text-base",
                           toneText[level.kind === "support" ? "positive" : "negative"],
                         )}
                       >
                         {formatPrice(level.price)}
                       </span>
-                      <span className="text-[13px] font-medium">
+                      <span
+                        className={
+                          dense ? "text-[11px] text-muted-foreground" : "text-[13px] font-medium"
+                        }
+                      >
                         {t(`youtubeOpinions.ai.${level.kind}`)}
                       </span>
                     </div>
                     <p
                       lang={language.lang}
-                      className="min-w-[10rem] flex-1 break-words text-[13px] leading-5 text-muted-foreground"
+                      className={cn(
+                        "break-words text-[13px] leading-5 text-muted-foreground",
+                        dense ? "min-w-0" : "min-w-[10rem] flex-1",
+                      )}
                     >
                       {language.read(level.reason)}
                     </p>
                     <span
                       className={cn(
-                        "ml-auto shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold",
+                        "ml-auto shrink-0 rounded-full border text-[11px] font-semibold",
+                        dense ? "px-1.5 py-px leading-4" : "px-2.5 py-1",
                         level.strength === "strong"
                           ? "border-positive/25 bg-positive/10 text-positive"
                           : level.strength === "weak"
@@ -304,8 +347,11 @@ export default function AiAnalysisPanel({
 
           <TechnicalFindings result={result} t={t} read={language.read} lang={language.lang} />
           {hasDetails && (
-            <Disclosure title={t("youtubeOpinions.ai.supportingDetails")} className="mt-0 py-3">
-              <div className="space-y-5 pb-4 pt-2">
+            <Disclosure
+              title={t("youtubeOpinions.ai.supportingDetails")}
+              className={dense ? "mt-0 py-0.5" : "mt-0 py-3"}
+            >
+              <div className={dense ? "space-y-3 pb-2 pt-1" : "space-y-5 pb-4 pt-2"}>
                 {indicators.length > 0 && (
                   <dl className="grid grid-cols-2 gap-4">
                     {indicators.map((item) => (
@@ -370,7 +416,12 @@ export default function AiAnalysisPanel({
       )}
 
       {showRetry && (
-        <footer className="mt-4 flex flex-wrap items-center gap-2 border-t border-border py-3">
+        <footer
+          className={cn(
+            "flex flex-wrap items-center gap-2 border-t border-border",
+            dense ? "mt-1 py-2" : "mt-4 py-3",
+          )}
+        >
           <Button
             type="button"
             size="sm"
@@ -387,3 +438,26 @@ export default function AiAnalysisPanel({
     </section>
   );
 }
+
+type AiAnalysisPanelProps = Parameters<typeof AiAnalysisPanel>[0];
+
+/**
+ * The advanced chart re-renders on every zoom / pan frame. Hosts rebuild `state` as a fresh
+ * object, so it is compared by its contents; every other prop must be stable to skip a render.
+ */
+export default memo(
+  AiAnalysisPanel,
+  (previous: AiAnalysisPanelProps, next: AiAnalysisPanelProps) => {
+    for (const key of Object.keys(next) as (keyof AiAnalysisPanelProps)[]) {
+      if (key === "state") continue;
+      if (previous[key] !== next[key]) return false;
+    }
+    return (
+      Object.keys(previous).length === Object.keys(next).length &&
+      previous.state.status === next.state.status &&
+      previous.state.result === next.state.result &&
+      ("error" in previous.state ? previous.state.error : undefined) ===
+        ("error" in next.state ? next.state.error : undefined)
+    );
+  },
+);

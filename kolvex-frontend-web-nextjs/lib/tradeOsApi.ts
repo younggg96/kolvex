@@ -230,6 +230,7 @@ async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promi
     const error = await response.json().catch(() => ({}));
     throw Object.assign(new Error(error.error || `Request failed: ${response.status}`), {
       status: response.status,
+      field: typeof error.field === "string" ? error.field : undefined,
     });
   }
 
@@ -542,9 +543,49 @@ export interface ScannerCandidate {
   sector?: string;
 }
 
+/** Editable numbers of a scanner logic. Percentages are fractions (0.03 = 3%). */
+export interface ScannerLogicParams {
+  min_price: number;
+  min_avg_dollar_volume: number;
+  rs20_min: number;
+  pivot_lookback: number;
+  pullback_min_days: number;
+  pullback_max_days: number;
+  pullback_min_depth: number;
+  pullback_max_depth: number;
+  ema_touch_atr: number;
+  stop_atr_buffer: number;
+  target_r_multiple: number;
+  min_stop_distance: number;
+  max_stop_distance: number;
+  entry_window_days: number;
+  max_gap_r: number;
+  earnings_blackout_sessions: number;
+  time_exit_day: number;
+}
+
+export type ScannerLogicSpec = Record<
+  keyof ScannerLogicParams,
+  { default: number; min: number; max: number; integer: boolean }
+>;
+
+/** "default" is the built-in Swing V3.1 (read-only); others are the user's own. */
+export interface ScannerLogic {
+  key: string;
+  name: string;
+  description: string | null;
+  version: string;
+  version_id: string | null;
+  params: ScannerLogicParams;
+  builtin: boolean;
+  updated_at: string | null;
+}
+
 export interface ScannerRunResponse {
   strategy_code: string;
   strategy_version?: string;
+  /** Which logic produced this run. */
+  logic?: { key: string; name?: string | null; version?: string; builtin: boolean };
   run_at: string;
   /** NYSE session of the after-close job; null for a manual run. */
   trading_date?: string | null;
@@ -570,15 +611,56 @@ export async function evaluateMarketRegime(): Promise<MarketRegimeResponse> {
   });
 }
 
-/** Null when no Swing V3.0 scan has run yet. */
-export async function fetchLatestScannerRun(): Promise<ScannerRunResponse | null> {
-  return apiRequest<ScannerRunResponse | null>("/scanner/latest");
+/** Null when the logic has not run yet. */
+export async function fetchLatestScannerRun(logic = "default"): Promise<ScannerRunResponse | null> {
+  return apiRequest<ScannerRunResponse | null>(
+    `/scanner/latest?logic=${encodeURIComponent(logic)}`,
+  );
 }
 
-export async function runOpportunityScanner(symbols?: string[]): Promise<ScannerRunResponse> {
+export async function runOpportunityScanner(
+  logic = "default",
+  symbols?: string[],
+): Promise<ScannerRunResponse> {
   return apiRequest<ScannerRunResponse>("/scanner/run", {
     method: "POST",
-    body: JSON.stringify({ symbols, save_to_db: true }),
+    body: JSON.stringify({ symbols, save_to_db: true, logic }),
+  });
+}
+
+export async function fetchScannerLogics(): Promise<ScannerLogic[]> {
+  return apiRequest<ScannerLogic[]>("/scanner/logics");
+}
+
+export async function fetchScannerLogicSpec(): Promise<ScannerLogicSpec> {
+  return apiRequest<ScannerLogicSpec>("/scanner/logics/spec");
+}
+
+export async function createScannerLogic(data: {
+  name: string;
+  description?: string | null;
+  params: ScannerLogicParams;
+}): Promise<ScannerLogic> {
+  return apiRequest<ScannerLogic>("/scanner/logics", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+/** Saves the edit as the logic's next version. */
+export async function updateScannerLogic(
+  key: string,
+  data: { name: string; description?: string | null; params: ScannerLogicParams },
+): Promise<ScannerLogic> {
+  return apiRequest<ScannerLogic>(`/scanner/logics/${encodeURIComponent(key)}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteScannerLogic(key: string): Promise<void> {
+  await apiRequest<{ deleted: string }>(`/scanner/logics/${encodeURIComponent(key)}`, {
+    method: "DELETE",
   });
 }
 
