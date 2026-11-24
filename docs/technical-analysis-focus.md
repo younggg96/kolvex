@@ -94,6 +94,16 @@ can't hold switches the range (`rangeForInterval`: 1m and 5m → 1日, 15m and 3
 4h → 3月, 1d → 6月, 1wk → 5年, 1mo → 全部), TradingView-style. History limits follow yfinance:
 1m loads 5 days, 5m–30m one month, hourly (4h is resampled from 60m) about two years.
 
+## 看盘 page (`/dashboard/chart`)
+
+The sidebar's 盯盘 group has **看盘** between 行情 and 自选股. It opens the advanced chart as a
+page of its own (`components/decision/ChartTerminal.tsx` → `PriceChart` with `terminal`), with
+the same side panels, drawings, AI and settings as the stock page's full-screen chart. The
+symbol lives in the URL (`?symbol=NVDA`); without one it reopens the last symbol charted there
+(this browser), else SPY. Switch stocks with the symbol box (type, Enter) or a 自选 row; both
+replace the URL instead of adding history. 个股页 opens the stock's full page. Feature flag: it
+belongs to `home` (行情) in `lib/productFeatures.ts`.
+
 ## Advanced chart side panels (看盘)
 
 On desktop (≥ `lg`) the advanced chart keeps the K-line on the left and a column of

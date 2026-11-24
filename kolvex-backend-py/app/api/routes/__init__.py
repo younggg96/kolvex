@@ -18,6 +18,7 @@ from app.api.routes.forecast import router as forecast_router
 from app.api.routes.free_research import router as free_research_router
 from app.api.routes.market_events import router as market_events_router
 from app.api.routes.market_observations import router as market_observations_router
+from app.api.routes.market_risk import router as market_risk_router
 from app.api.routes.news_feed import router as news_feed_router
 from app.api.routes.options import router as options_router
 from app.api.routes.options_activity import router as options_activity_router
@@ -49,6 +50,7 @@ api_router.include_router(upload_router)
 api_router.include_router(users.router)
 api_router.include_router(market_data.router)
 api_router.include_router(fear_greed_router)
+api_router.include_router(market_risk_router)
 api_router.include_router(economic_indicators_router)
 api_router.include_router(free_research_router)
 api_router.include_router(valuation_router)

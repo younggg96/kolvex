@@ -93,3 +93,119 @@ def start_run(db: Client, data_source: str, job_type: str) -> str:
 def finish_run(db: Client, run_id: str, **fields) -> None:
     fields["finished_at"] = datetime.now(timezone.utc).isoformat()
     db.table(RUNS).update(fields).eq("id", run_id).execute()
+
+
+def load_series(db: Client) -> dict[str, dict[date, tuple[float, str]]]:
+    """Every metric's latest-revision value and quality per trading date."""
+    from app.services.market_risk.metrics import METRICS
+
+    latest: dict[tuple[str, date], tuple[str, float, str]] = {}
+    offset = 0
+    while True:
+        rows = (
+            db.table(OBSERVATIONS)
+            .select("metric_key,source,trading_date,value,quality_status,retrieved_at")
+            .eq("market", MARKET)
+            .in_("metric_key", list(METRICS))
+            .order("id")
+            .range(offset, offset + PAGE - 1)
+            .execute()
+            .data
+        )
+        for row in rows:
+            if METRICS[row["metric_key"]].source != row["source"]:
+                continue
+            key = (row["metric_key"], date.fromisoformat(row["trading_date"]))
+            if key not in latest or row["retrieved_at"] > latest[key][0]:
+                latest[key] = (row["retrieved_at"], float(row["value"]), row["quality_status"])
+        if len(rows) < PAGE:
+            break
+        offset += PAGE
+    series: dict[str, dict[date, tuple[float, str]]] = {}
+    for (metric_key, day), (_, value, quality) in latest.items():
+        series.setdefault(metric_key, {})[day] = (value, quality)
+    return series
+
+
+SNAPSHOTS = "market_risk_snapshots"
+SIGNALS = "market_risk_signals"
+REGIME_EVENTS = "market_risk_regime_events"
+
+
+def plan_snapshot(day, existing: list[dict], freshness: str) -> dict | None:
+    """Snapshot row for ``day``, or None when one with the same inputs is stored.
+
+    Published snapshots are never edited: changed inputs get the next revision.
+    """
+    from app.services.market_risk.engine import MODEL_VERSION
+
+    if any(row["inputs_hash"] == day.inputs_hash for row in existing):
+        return None
+    revision = max((row["snapshot_revision"] for row in existing), default=0) + 1
+    return {
+        "market": MARKET,
+        "trading_date": day.trading_date.isoformat(),
+        "snapshot_revision": revision,
+        "model_version": MODEL_VERSION,
+        "risk_score": day.score,
+        "risk_level": day.level,
+        "regime": day.stage,
+        "score_components_json": {"components": day.components},
+        "data_coverage": day.coverage,
+        "confidence_status": day.confidence,
+        "quality_status": freshness,
+        "is_complete": day.confidence == "complete",
+        "inputs_hash": day.inputs_hash,
+    }
+
+
+def store_snapshot(db: Client, evaluation, freshness: str) -> str | None:
+    """Insert the latest scored day's snapshot, its checklist and any stage change."""
+    from app.services.market_risk import engine
+
+    day = evaluation.latest
+    if day is None:
+        return None
+    existing = (
+        db.table(SNAPSHOTS)
+        .select("id,snapshot_revision,inputs_hash")
+        .eq("market", MARKET)
+        .eq("trading_date", day.trading_date.isoformat())
+        .eq("model_version", engine.MODEL_VERSION)
+        .execute()
+        .data
+    )
+    row = plan_snapshot(day, existing, freshness)
+    if row is None:
+        return None
+    snapshot_id = db.table(SNAPSHOTS).insert(row).execute().data[0]["id"]
+    signals = [
+        {
+            "snapshot_id": snapshot_id,
+            "rule_key": item["rule_key"],
+            "rule_version": engine.MODEL_VERSION,
+            "rule_type": item["rule_type"],
+            "status": item["status"],
+            "observed_values_json": {k: day.values.get(k) for k in engine.KEY_METRICS},
+        }
+        for item in engine.checklist(evaluation)
+    ]
+    if signals:
+        db.table(SIGNALS).insert(signals, returning="minimal").execute()
+    for event in evaluation.events:
+        if event.effective_date == day.trading_date:
+            db.table(REGIME_EVENTS).insert(
+                {
+                    "market": MARKET,
+                    "previous_regime": event.previous,
+                    "new_regime": event.new,
+                    "effective_date": event.effective_date.isoformat(),
+                    "effective_at": datetime.now(timezone.utc).isoformat(),
+                    "risk_score": event.score,
+                    "model_version": engine.MODEL_VERSION,
+                    "snapshot_id": snapshot_id,
+                    "triggered_rules_json": event.rules,
+                },
+                returning="minimal",
+            ).execute()
+    return snapshot_id

@@ -1,6 +1,6 @@
 # Market Risk Monitor — 开发记录
 
-> 规划与评审见 [technical-review.md](technical-review.md)。目前只有后端数据层（M1a），没有接口和页面，因此未进入 `feature-catalog.md`。
+> 规划与评审见 [technical-review.md](technical-review.md)。功能总表行：`marketRisk`（实验性）。
 
 ## 当前状态
 
@@ -8,8 +8,9 @@
 | --- | --- |
 | M1a 数据层 | 代码与测试完成；迁移未应用；未写入任何数据库 |
 | M1b 定时采集 | 代码与测试完成；默认关闭（`MARKET_RISK_WORKER_ENABLED`） |
-| M2 评分 / 阶段 / 接口 | 未开始 |
-| M3 页面 | 未开始 |
+| M2 评分 / 阶段 / 接口 | 代码与测试完成；worker 在当日数据齐全后写入快照 |
+| M3 页面 | `/dashboard/market-risk` 完成（实验开关，侧边栏「资金动向」组，Beta） |
+| M4 回测 | 未开始 |
 
 开工时按评审里的建议默认值执行（未经产品确认，如需调整请改这里）：实验开关上线；`v1.0` 评分不含 P/C；不做提醒。
 
@@ -78,10 +79,60 @@ cd kolvex-backend-py && venv/bin/python scripts/backfill_market_risk.py
 ### 测试
 
 ```bash
-cd kolvex-backend-py && venv/bin/python -m pytest tests/test_market_risk_data.py tests/test_market_risk_worker.py
+cd kolvex-backend-py && venv/bin/python -m pytest tests/test_market_risk_data.py tests/test_market_risk_worker.py tests/test_market_risk_engine.py
+cd kolvex-frontend-web-nextjs && node --test scripts/market-risk.test.cjs
 ```
 
 数据层覆盖：假日与顺延规则、提前收盘与夏令时、格式变化报错、各类拒绝 / 跳过、重复、跳变、交叉校验、比值对齐、修订版本、单个 / 全部来源失败时的状态（不补值）。外部请求全部 mock。worker 覆盖：发布时间与提前收盘、完成后不重复跑、不完整时按间隔重试、来源错误永不算完成、lease 被占时跳过、默认关闭。
+
+## 评分与阶段（M2，模型 `v1.0`）
+
+代码：`engine.py`（纯函数、确定性）、`service.py`（接口数据）、`app/api/routes/market_risk.py`。改动 `engine.py` 中任何常量都必须升 `MODEL_VERSION`。
+
+**评分**：每个指标与自身**之前** 756 个交易日（至少 252 个）比较得到分位数（当天不进自己的样本，无前视），加权平均为 0–100。
+
+| 指标 | 维度 | 权重 |
+| --- | --- | --- |
+| VIX | 波动率水平 | 25 / 70 |
+| VVIX | 波动率的波动 | 20 / 70 |
+| VIX / VIX3M | 期限结构 | 15 / 70 |
+| VIX9D / VIX | 期限结构 | 10 / 70 |
+
+PRD 的 Options Activity（20%）和 Tail Risk（10%）在 v1.0 没有数据，按 PRD 比例在剩余 70 上归一化，不悄悄挪权重。四个关键指标任一缺失 → 当天不评分，页面显示最近一个已评分交易日并提示「数据不全，未评分」。等级：<40 低、<60 中等、<75 偏高、<90 高、≥90 极高。
+
+**阶段**（PRD 留空的数字在这里定，均为待回测的初始值）：
+
+| 规则 | 值 |
+| --- | --- |
+| 压力积累 | 评分 ≥ 60 进入；跌破 55 才回平稳（滞后区间） |
+| 压力加速 | 评分 ≥ 75 且至少 2 个压力条件（VIX>28、VVIX>110、VIX9D/VIX>1、VIX/VIX3M>1）；维持需 ≥70 且条件仍 ≥2 |
+| 压力后修复 | 前序为积累或加速；评分比近 20 个交易日高点低 ≥15，且至少 2 个修复条件（VVIX<110、VIX/VIX3M<1、VIX9D/VIX<1） |
+| 修复结束 | 评分 <60 且修复条件 ≥2 → 平稳；评分 ≥75，或修复条件不足且 ≥60 → 压力积累 |
+| 确认 | 每次切换连续 2 个已评分交易日；修复 → 平稳需 5 个 |
+| 缺数据 | 保留最后确认的阶段，确认计数清零 |
+
+**检查清单**：RISK-001~003、RECOVERY-001~004 按收盘自动判定，连续 2 天成立为「触发」，1 天为「待确认」；RISK-004（P/C）显示「未启用」；V2 的 GEX 规则不显示。
+
+**指标状态**（只用于展示，不进评分）：VIX 20 / 28 / 35；VVIX 100 / 110 / 120；比值 0.95 / 1.00 / 1.10。评分是相对分位数、状态是绝对区间，两者可能不一致（页面 ⓘ 有说明）。
+
+**真实数据演练（2011–2026，评分从 2012 年起；2026-11-23）**：2020-03 全月为压力加速（评分 98–99）；2026-11-23 评分 94.3、压力加速。约每年 20 次阶段切换，偏频繁——是 M4 回测要校准的首要问题。
+
+### 接口
+
+| 接口 | 说明 |
+| --- | --- |
+| `GET /api/v1/market-risk/latest` | 最新已评分日：评分与构成、阶段与条件、6 个指标、检查清单、最近 8 次阶段变化、数据新鲜度（日终 / 延迟 / 已过期） |
+| `GET /api/v1/market-risk/history?range=1M\|3M\|6M\|1Y\|3Y\|MAX` | 每日评分、阶段、VIX / VIX9D / VIX3M，以及区间内阶段变化 |
+
+都要求登录（Cboe 公开展示授权未确认）。读不到数据返回 503 `unavailable`；没有任何已评分日返回 503 `no_score`；页面显示失败，不用替代数值。结果在进程内缓存 15 分钟。Web 走 `app/api/market-risk/[...path]` 代理。
+
+**本地开发**：迁移应用前可设 `MARKET_RISK_DATA_SOURCE=live`，接口直接读 Cboe 公开 CSV 计算（同一校验流程），页面会显示「直接读取 Cboe」。生产保持默认 `database`。
+
+**快照**：worker 在当日四个指标齐全后，用库中全部历史重新评分，向 `market_risk_snapshots` 插入当日快照（`inputs_hash` 相同则跳过，不同则 `snapshot_revision + 1`），同时写 `market_risk_signals` 与当日的 `market_risk_regime_events`。
+
+## 页面（M3）
+
+`/dashboard/market-risk`：数据状态 → 评分卡（构成条）+ 阶段卡（压力条件）→ 四个阶段 → 期限结构图（今天 vs 上一交易日）+ 指标表 → 升级 / 修复检查 → 历史图（评分线 + VIX 面积 + 阶段底色，1月~全部）与阶段变化 → 页脚免责与数据日期。颜色只用 `positive / warning / negative / muted` token，每处都带文字或图标。没有提醒、AI 摘要、情景模拟和 P/C 图（见评审）。
 
 ## 未完成 / 未验证
 
@@ -89,3 +140,6 @@ cd kolvex-backend-py && venv/bin/python -m pytest tests/test_market_risk_data.py
 - 迁移没有在任何 Supabase 环境执行；`--write` 路径（`repository.py` 的读写）只有纯函数部分有单测，没有对真实数据库跑过。
 - Cboe 数据公开展示授权未确认（见评审第 3 节），`license_scope` 统一为 `internal_pending_review`。
 - 1990 年以前和未来新增的临时休市需要手动加入 `SPECIAL_CLOSURES`。
+- 页面只在临时的免登录预览页上用真实 Cboe 数据截图过（390px 深色 / 浅色、1280px 深色），没有登录后经真实代理和后端走过一遍；加载失败、`no_score`、延迟 / 过期、部分评分这些状态只有代码和后端测试，没有截图。
+- 阶段切换频率、阈值都未回测（M4）；页面页脚写明「尚未经回测充分验证」。
+- App 未移植（见 `kolvex-mobile/MIGRATION.md` 第 18 条）。

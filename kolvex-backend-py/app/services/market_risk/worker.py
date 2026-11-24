@@ -13,7 +13,7 @@ import os
 from datetime import date, datetime, time, timedelta, timezone
 from uuid import uuid4
 
-from app.services.market_risk import ingest
+from app.services.market_risk import engine, ingest, repository
 from app.services.market_risk.calendar import latest_completed_trading_day
 from app.services.market_risk.metrics import OBSERVED
 
@@ -50,6 +50,16 @@ def is_complete(report: ingest.IngestReport, session: date) -> bool:
     )
 
 
+def publish_snapshot(db, session: date) -> str | None:
+    """Score the stored history and insert the latest snapshot (insert-only)."""
+    evaluation = engine.evaluate(repository.load_series(db))
+    latest = evaluation.latest
+    if latest is None:
+        return None
+    freshness = "fresh" if latest.trading_date >= session else "delayed"
+    return repository.store_snapshot(db, evaluation, freshness)
+
+
 def _done_key(session: date) -> str:
     return f"market_risk:ingest:done:{session.isoformat()}"
 
@@ -58,7 +68,14 @@ def _retry_key(session: date) -> str:
     return f"market_risk:ingest:retry:{session.isoformat()}"
 
 
-async def run_tick(now: datetime, redis, db_factory, collect=ingest.collect, store=ingest.store):
+async def run_tick(
+    now: datetime,
+    redis,
+    db_factory,
+    collect=ingest.collect,
+    store=ingest.store,
+    publish=publish_snapshot,
+):
     """One scheduling check. Returns the report when an ingestion ran, else None."""
     session = target_session(now)
     if await redis.get(_done_key(session)) or await redis.get(_retry_key(session)):
@@ -71,8 +88,11 @@ async def run_tick(now: datetime, redis, db_factory, collect=ingest.collect, sto
             return None
         start = session - timedelta(days=LOOKBACK_DAYS)
         report = await collect(now=now, start=start)
-        await asyncio.to_thread(store, db_factory(), report, "daily", start)
+        db = db_factory()
+        await asyncio.to_thread(store, db, report, "daily", start)
         if is_complete(report, session):
+            # The day is scored only once every key input is in (PRD §7.4).
+            await asyncio.to_thread(publish, db, session)
             await redis.set(_done_key(session), "1", ttl=DONE_TTL)
         else:
             await redis.set(_retry_key(session), "1", ttl=RETRY_SECONDS)

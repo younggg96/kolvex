@@ -43,7 +43,7 @@ def _report(session: date, missing: set[str] = frozenset(), errors=None) -> Inge
 
 
 def _run(now, redis, report):
-    calls = {"collect": [], "store": []}
+    calls = {"collect": [], "store": [], "publish": []}
 
     async def collect(now, start):
         calls["collect"].append(start)
@@ -53,7 +53,12 @@ def _run(now, redis, report):
         calls["store"].append((db, job_type, since))
         return rep
 
-    result = asyncio.run(worker.run_tick(now, redis, lambda: "db", collect=collect, store=store))
+    def publish(db, session):
+        calls["publish"].append(session)
+
+    result = asyncio.run(
+        worker.run_tick(now, redis, lambda: "db", collect=collect, store=store, publish=publish)
+    )
     return result, calls
 
 
@@ -73,6 +78,7 @@ def test_complete_day_marks_done_and_skips_later_ticks():
     result, calls = _run(now, redis, _report(session))
     assert result is not None
     assert calls["store"] == [("db", "daily", date(2026, 10, 21))]
+    assert calls["publish"] == [session]
     assert redis.values == {f"market_risk:ingest:done:{session}": "1"}
     assert not redis.locked
     again, calls = _run(now, redis, _report(session))
@@ -81,7 +87,8 @@ def test_complete_day_marks_done_and_skips_later_ticks():
 
 def test_incomplete_day_retries_later_without_marking_done():
     now, session, redis = datetime(2026, 11, 21, 0, 0, tzinfo=UTC), date(2026, 11, 20), FakeRedis()
-    _run(now, redis, _report(session, missing={"vvix"}))
+    _, calls = _run(now, redis, _report(session, missing={"vvix"}))
+    assert calls["publish"] == []  # an incomplete day is never scored
     assert f"market_risk:ingest:done:{session}" not in redis.values
     assert redis.ttls[f"market_risk:ingest:retry:{session}"] == worker.RETRY_SECONDS
     result, calls = _run(now, redis, _report(session))

@@ -26,6 +26,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { ScannerLogicPicker, useLogicSummary, useScannerLogics } from "./ScannerLogicManager";
 import CompanyLogo from "@/components/ui/company-logo";
+import { marketStockHref } from "@/lib/stockLinks";
 import {
   Select,
   SelectContent,
@@ -516,13 +517,22 @@ export function ScannerView({ embedded = false }: { embedded?: boolean } = {}) {
                       )}
                     >
                       <div className="flex min-w-0 items-start gap-2.5">
-                        <span className="mt-0.5 shrink-0" aria-hidden="true">
+                        {/* Logo and symbol open the stock page, like every other company mark. */}
+                        <Link
+                          href={marketStockHref(r.symbol, "/dashboard/trade-os")}
+                          className="mt-0.5 shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          aria-label={c(`Open ${r.symbol}`, `打开 ${r.symbol}`)}
+                          tabIndex={-1}
+                        >
                           <CompanyLogo symbol={r.symbol} size="sm" shape="circle" />
-                        </span>
+                        </Link>
                         <div className="min-w-0">
-                          <span className="block text-sm font-semibold tracking-tight text-foreground">
+                          <Link
+                            href={marketStockHref(r.symbol, "/dashboard/trade-os")}
+                            className="block text-sm font-semibold tracking-tight text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          >
                             {r.symbol}
-                          </span>
+                          </Link>
                           <span className="figure block text-xs text-muted-foreground">
                             {money(r.current_price)}
                           </span>

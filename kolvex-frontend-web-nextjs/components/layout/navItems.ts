@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  CandlestickChart,
   Star,
   PieChart,
   BookOpen,
@@ -15,6 +16,7 @@ import {
   MessagesSquare,
   BookHeart,
   ShieldCheck,
+  Gauge,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -81,6 +83,15 @@ export const MAIN_NAV_ITEMS: MainNavItem[] = [
     titleKey: "sidebar.markets",
     shortTitleKey: "tabBar.markets",
     href: "/dashboard",
+    type: "link",
+    featureId: "home",
+    group: "track",
+  },
+  {
+    icon: CandlestickChart,
+    titleKey: "sidebar.chart",
+    shortTitleKey: "tabBar.chart",
+    href: "/dashboard/chart",
     type: "link",
     featureId: "home",
     group: "track",
@@ -157,6 +168,16 @@ export const MAIN_NAV_ITEMS: MainNavItem[] = [
     type: "link",
     featureId: "optionsActivity",
     group: "signals",
+  },
+  {
+    icon: Gauge,
+    titleKey: "sidebar.marketRisk",
+    shortTitleKey: "tabBar.marketRisk",
+    href: "/dashboard/market-risk",
+    type: "link",
+    featureId: "marketRisk",
+    group: "signals",
+    badge: "Beta",
   },
   {
     icon: MessagesSquare,

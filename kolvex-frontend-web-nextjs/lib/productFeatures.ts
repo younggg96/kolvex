@@ -14,6 +14,7 @@ export type ProductFeatureId =
   | "congressTrades"
   | "optionsActivity"
   | "tradeOS"
+  | "marketRisk"
   | "settings"
   | "admin";
 
@@ -38,6 +39,16 @@ export const PRODUCT_FEATURES = [
     apiPrefixes: ["/api/trade-os"],
     componentDirs: ["components/trade-os"],
     libFiles: ["lib/tradeOsApi.ts"],
+  },
+  {
+    id: "marketRisk",
+    label: "Market risk (Experimental)",
+    enabled: true,
+    experimental: true,
+    routePrefixes: ["/dashboard/market-risk"],
+    apiPrefixes: ["/api/market-risk"],
+    componentDirs: ["components/market-risk"],
+    libFiles: ["lib/marketRisk.ts"],
   },
   {
     id: "paperTrading",
@@ -84,7 +95,7 @@ export const PRODUCT_FEATURES = [
     id: "home",
     label: "Markets",
     enabled: true,
-    routePrefixes: ["/dashboard", "/dashboard/market"],
+    routePrefixes: ["/dashboard", "/dashboard/market", "/dashboard/chart"],
   },
   {
     id: "journal",

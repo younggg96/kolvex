@@ -51,8 +51,17 @@
       "select": "选择模型"
     }
   },
+  "chartTerminal": {
+    "symbolPlaceholder": "输入代码",
+    "symbolLabel": "切换股票代码，回车确认",
+    "symbolInvalid": "代码格式不对",
+    "stockPage": "个股页",
+    "openStock": "打开 {symbol} 个股页"
+  },
   "sidebar": {
+    "chart": "看盘",
     "tradeOs": "Trade OS",
+    "marketRisk": "市场风险",
     "paperTrading": "虚拟交易",
     "watchlist": "自选股",
     "markets": "行情",
@@ -91,7 +100,9 @@
     }
   },
   "tabBar": {
+    "chart": "看盘",
     "tradeOs": "Trade OS",
+    "marketRisk": "市场风险",
     "paperTrading": "虚拟交易",
     "superinvestors": "超级投资者",
     "congressTrades": "国会议员交易",

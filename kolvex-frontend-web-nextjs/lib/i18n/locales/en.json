@@ -51,8 +51,17 @@
       "select": "Select a model"
     }
   },
+  "chartTerminal": {
+    "symbolPlaceholder": "Symbol",
+    "symbolLabel": "Switch symbol, press Enter",
+    "symbolInvalid": "Not a valid symbol",
+    "stockPage": "Stock page",
+    "openStock": "Open the {symbol} stock page"
+  },
   "sidebar": {
+    "chart": "Chart",
     "tradeOs": "Trade OS",
+    "marketRisk": "Market risk",
     "paperTrading": "Paper trading",
     "watchlist": "Watchlist",
     "markets": "Markets",
@@ -91,7 +100,9 @@
     }
   },
   "tabBar": {
+    "chart": "Chart",
     "tradeOs": "Trade OS",
+    "marketRisk": "Market risk",
     "superinvestors": "Superinvestors",
     "congressTrades": "Congress trades",
     "optionsActivity": "Options activity",
