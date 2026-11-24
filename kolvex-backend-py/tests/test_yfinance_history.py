@@ -6,6 +6,8 @@ from unittest.mock import Mock, patch
 
 import httpx
 import pandas as pd
+from fastapi import HTTPException
+from yfinance.exceptions import YFRateLimitError
 
 from app.services.yfinance import overnight
 from app.services.yfinance.client import YFinanceService, _history_point
@@ -154,8 +156,31 @@ class OvernightHistoryTests(unittest.TestCase):
             get.return_value.json.return_value = {"trade": {"p": 102, "t": "2026-11-20T04:55:00Z"}}
             self.assertIsNone(overnight.latest_trade("AAPL"))
             get.return_value.json.return_value = {"trade": {"p": 104, "t": "2026-11-23T05:55:00Z"}}
-            self.assertEqual(overnight.latest_trade("AAPL"), (104, int(now.timestamp()) - 300))
+            self.assertEqual(
+                overnight.latest_trade("AAPL"), (104, int(now.timestamp()) - 300, None)
+            )
             self.assertEqual(get.call_args.kwargs["params"], {"feed": "boats"})
+
+    def test_latest_trade_uses_delayed_feed_when_boats_is_forbidden(self):
+        now = datetime(2026, 11, 23, 1, tzinfo=overnight.NEW_YORK)
+        request = httpx.Request("GET", "https://data.alpaca.markets/v2/stocks/AAPL/trades/latest")
+        with (
+            patch.object(overnight, "_headers", return_value={"test": "test"}),
+            patch.object(overnight, "datetime", wraps=datetime) as clock,
+            patch.object(overnight.httpx, "get") as get,
+        ):
+            clock.now.return_value = now
+            get.side_effect = [
+                httpx.Response(403, request=request),
+                httpx.Response(
+                    200, request=request, json={"trade": {"p": 104, "t": "2026-11-23T05:44:00Z"}}
+                ),
+            ]
+            self.assertEqual(overnight.latest_trade("AAPL"), (104, int(now.timestamp()) - 960, 15))
+            self.assertEqual(
+                [call.kwargs["params"]["feed"] for call in get.call_args_list],
+                ["boats", "overnight"],
+            )
 
     def test_boats_history_retries_permission_denial_with_delayed_end(self):
         now = datetime(2026, 11, 23, 1, tzinfo=overnight.NEW_YORK)
@@ -200,6 +225,43 @@ class OvernightHistoryTests(unittest.TestCase):
         )
         self.assertEqual(bars[0]["Datetime"].isoformat(), "2026-11-23T00:40:00-05:00")
         self.assertEqual(bars[0]["Source"], "boats")
+
+
+class HistoryRateLimitTests(unittest.TestCase):
+    def test_history_and_intraday_share_a_cooldown_and_recover(self):
+        from app.api.routes import market_data
+
+        service = YFinanceService()
+        ticker = Mock()
+        ticker.history.side_effect = [YFRateLimitError(), pd.DataFrame()]
+        with (
+            patch.object(market_data, "get_yfinance_service", return_value=service),
+            patch.object(service, "get_ticker", return_value=ticker) as get_ticker,
+            patch("app.services.yfinance.client.time.monotonic", return_value=100) as clock,
+        ):
+            with self.assertRaises(HTTPException) as limited:
+                market_data.get_history(
+                    "SPY",
+                    period=market_data.HistoryPeriod.ONE_DAY,
+                    interval=market_data.HistoryInterval.FIVE_MIN,
+                    start=None,
+                    end=None,
+                    prepost=True,
+                )
+            self.assertEqual(limited.exception.status_code, 429)
+            self.assertEqual(limited.exception.headers["Retry-After"], "60")
+            self.assertEqual(limited.exception.headers["Cache-Control"], "no-store")
+
+            clock.return_value = 130
+            with self.assertRaises(HTTPException) as remaining:
+                market_data.get_intraday("QQQ", "5m", True)
+            self.assertEqual(remaining.exception.status_code, 429)
+            self.assertEqual(remaining.exception.headers["Retry-After"], "30")
+            get_ticker.assert_called_once_with("SPY")
+
+            clock.return_value = 160
+            self.assertEqual(market_data.get_intraday("QQQ", "5m", True).data, [])
+            self.assertEqual(ticker.history.call_count, 2)
 
 
 class HistoryRoutePrepostTests(unittest.TestCase):

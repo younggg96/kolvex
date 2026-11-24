@@ -7,6 +7,7 @@ import threading
 import unittest
 from pathlib import Path
 from typing import Any, Dict, List
+from unittest.mock import patch
 
 SOURCE = Path(__file__).resolve().parents[1] / "app/services/yfinance/client.py"
 
@@ -79,7 +80,7 @@ class QuoteFallbackTests(unittest.TestCase):
                 "get_ticker": lambda self, symbol: Ticker(),
                 "get_info": lambda self, symbol: Ticker().info,
                 "get_quote": scope["get_quote"],
-                "_overnight_quote": lambda self, symbol, info: (None, None),
+                "_overnight_quote": lambda self, symbol, info: (105.0, 1_795_412_644, 15),
             },
         )()
         quote = service.get_quote("NVDA")
@@ -91,12 +92,17 @@ class QuoteFallbackTests(unittest.TestCase):
         self.assertEqual(quote["pre_market_time"], Ticker.info["preMarketTime"])
         self.assertEqual(quote["post_market_time"], Ticker.info["postMarketTime"])
         self.assertEqual(quote["quote_source"], "Yahoo Finance")
+        self.assertEqual(quote["overnight_market_price"], 105.0)
+        self.assertEqual(quote["overnight_market_time"], 1_795_412_644)
+        self.assertEqual(quote["overnight_market_delay_minutes"], 15)
         Ticker.info.pop("regularMarketPrice")
         fallback_quote = service.get_quote("NVDA")
         self.assertEqual(fallback_quote["current_price"], 199)
         self.assertIsNone(fallback_quote["market_time"])
 
     def test_history_explicitly_uses_unadjusted_regular_session_prices(self):
+        from app.services.yfinance.client import YFinanceService
+
         calls = []
 
         class Ticker:
@@ -104,28 +110,12 @@ class QuoteFallbackTests(unittest.TestCase):
                 calls.append(kwargs)
                 return type("Frame", (), {"empty": True})()
 
-        source = ast.parse(SOURCE.read_text())
-        cls = next(
-            node
-            for node in source.body
-            if isinstance(node, ast.ClassDef) and node.name == "YFinanceService"
-        )
-        method = next(
-            node
-            for node in cls.body
-            if isinstance(node, ast.FunctionDef) and node.name == "get_history"
-        )
-        from typing import Optional
+        service = YFinanceService()
+        with patch.object(service, "get_ticker", return_value=Ticker()):
+            service.get_history("NVDA", period="1d", interval="5m")
+            service.get_history("NVDA", start="2026-10-01", end="2026-11-01")
 
-        scope = {"Dict": Dict, "Any": Any, "List": List, "Optional": Optional}
-        exec(compile(ast.Module(body=[method], type_ignores=[]), str(SOURCE), "exec"), scope)
-        service = type(
-            "Fixture",
-            (),
-            {"get_ticker": lambda self, symbol: Ticker(), "get_history": scope["get_history"]},
-        )()
-        service.get_history("NVDA", period="1d", interval="5m")
-        service.get_history("NVDA", start="2026-10-01", end="2026-11-01")
+        self.assertEqual(len(calls), 2)
         for call in calls:
             self.assertIs(call["auto_adjust"], False)
             self.assertIs(call["prepost"], False)
@@ -158,7 +148,7 @@ class QuoteFallbackTests(unittest.TestCase):
                 "get_ticker": lambda self, symbol: Ticker(),
                 "get_info": lambda self, symbol: Ticker().info,
                 "get_quote": scope["get_quote"],
-                "_overnight_quote": lambda self, symbol, info: (None, None),
+                "_overnight_quote": lambda self, symbol, info: (None, None, None),
             },
         )()
         quote = service.get_quote("^GSPC")

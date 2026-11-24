@@ -587,28 +587,38 @@ function WatchlistRow({
   const { locale } = useTranslation();
   const live = latestChartQuote(quote);
   const extended = live && live.session !== "regular" ? live.session : null;
+  const delayMinutes = live?.delayMinutes;
+  const delayLabelId = useId();
+  const label = extended ? sessionLabel(extended, locale, delayMinutes) : null;
   const className = cn(
     WATCHLIST_GRID,
     "relative min-h-8 w-full px-3 text-left text-[0.8125rem] transition-colors hover:bg-foreground/[0.05] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring",
+    delayMinutes && "py-0.5",
     active &&
       "bg-primary/10 before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:bg-primary hover:bg-primary/15",
   );
   const content = (
     <>
-      <span className="flex min-w-0 items-center gap-2">
-        <span className="shrink-0" aria-hidden="true">
-          <CompanyLogo symbol={symbol} size="xs" shape="circle" />
+      <span className={cn("flex min-w-0 gap-x-2", delayMinutes ? "flex-wrap" : "items-center")}>
+        <span className="flex shrink-0 items-center gap-2">
+          <span aria-hidden="true">
+            <CompanyLogo symbol={symbol} size="xs" shape="circle" />
+          </span>
+          <span className="font-semibold">{symbol}</span>
         </span>
-        <span className="shrink-0 font-semibold">{symbol}</span>
-        {extended && (
+        {label && (
           <span
-            className="min-w-0 truncate rounded-sm bg-muted px-1 text-[0.5625rem] font-medium leading-4 text-muted-foreground"
+            id={delayMinutes ? delayLabelId : undefined}
+            className={cn(
+              "min-w-0 rounded-sm bg-muted px-1 text-[0.5625rem] font-medium text-muted-foreground",
+              delayMinutes ? "max-w-full leading-tight" : "truncate leading-4",
+            )}
             title={c(
               `Regular close ${money(quote?.price)} (${signedPercent(quote?.changePercent)})`,
               `收盘价 ${money(quote?.price)}（${signedPercent(quote?.changePercent)}）`,
             )}
           >
-            {sessionLabel(extended, locale)}
+            {label}
           </span>
         )}
       </span>
@@ -642,6 +652,7 @@ function WatchlistRow({
           type="button"
           onClick={() => onSelect(symbol)}
           aria-label={c(`Chart ${symbol}`, `在图表中查看 ${symbol}`)}
+          aria-describedby={delayMinutes ? delayLabelId : undefined}
           className={className}
         >
           {content}
@@ -710,7 +721,7 @@ function SymbolDetails({
           </span>
           {live && (
             <span className="text-[0.6875rem] text-muted-foreground">
-              {sessionLabel(live.session, locale)}
+              {sessionLabel(live.session, locale, live.delayMinutes)}
             </span>
           )}
         </div>

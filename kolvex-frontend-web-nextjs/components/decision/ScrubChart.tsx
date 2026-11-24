@@ -63,7 +63,7 @@ export default function ScrubChart({
 
   return (
     <div role="img" aria-label={label} style={{ height }} className="touch-pan-y select-none">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" className="!bg-transparent">
         <LineChart
           data={points}
           margin={{ top: 8, right: 2, left: 2, bottom: 8 }}

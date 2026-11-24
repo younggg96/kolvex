@@ -21,7 +21,7 @@ from app.services.stock_discovery import DiscoveryUnavailable, get_stock_discove
 from app.services.technical_analysis import AiNotConfigured, analyze_chart
 from app.services.technical_focus import TechnicalFocus
 from app.services.user_api_keys_service import UserApiKeysService, get_user_api_keys_service
-from app.services.yfinance.client import get_yfinance_service
+from app.services.yfinance.client import HistoryRateLimited, get_yfinance_service
 from app.services.yfinance.overview_metrics import get_overview_metrics
 
 logger = logging.getLogger(__name__)
@@ -115,6 +115,7 @@ class QuoteResponse(BaseModel):
     overnight_market_price: Optional[float] = None
     overnight_market_time: Optional[int] = None
     overnight_market_source: Optional[str] = None
+    overnight_market_delay_minutes: Optional[int] = None
 
 
 class HistoryDataPoint(BaseModel):
@@ -483,6 +484,14 @@ async def get_market_performance(
         raise HTTPException(status_code=502, detail="Market performance unavailable") from error
 
 
+def _history_rate_limit_response(error: HistoryRateLimited) -> HTTPException:
+    return HTTPException(
+        status_code=429,
+        detail="market_history_rate_limited",
+        headers={"Retry-After": str(error.retry_after), "Cache-Control": "no-store"},
+    )
+
+
 @router.get(
     "/history/{symbol}",
     response_model=HistoryResponse,
@@ -515,6 +524,8 @@ def get_history(
             data=[HistoryDataPoint(**d) for d in data],
             count=len(data),
         )
+    except HistoryRateLimited as error:
+        raise _history_rate_limit_response(error) from error
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取历史数据失败: {str(e)}")
 
@@ -783,6 +794,8 @@ def get_intraday(
             data=[HistoryDataPoint(**d) for d in data],
             count=len(data),
         )
+    except HistoryRateLimited as error:
+        raise _history_rate_limit_response(error) from error
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取日内数据失败: {str(e)}")
 

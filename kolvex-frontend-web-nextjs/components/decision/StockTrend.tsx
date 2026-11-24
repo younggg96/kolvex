@@ -126,7 +126,7 @@ export default function StockTrend({
           aria-label={`${label} · ${change > 0 ? c("rising", "上升") : change < 0 ? c("falling", "下降") : c("unchanged", "持平")}`}
           viewBox="0 0 100 40"
           preserveAspectRatio="none"
-          className="h-9 w-full overflow-visible bg-background"
+          className="h-9 w-full overflow-visible"
         >
           {baselineY && (
             <line

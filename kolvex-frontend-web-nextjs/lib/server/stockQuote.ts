@@ -29,6 +29,7 @@ export interface BackendQuote {
   overnight_market_price?: number;
   overnight_market_time?: number;
   overnight_market_source?: string;
+  overnight_market_delay_minutes?: number | null;
   post_market_change?: number;
   post_market_change_percent?: number;
 }
@@ -68,6 +69,7 @@ export function transformQuote(quote: BackendQuote) {
     overnightMarketPrice: quote.overnight_market_price,
     overnightMarketTime: quote.overnight_market_time,
     overnightMarketSource: quote.overnight_market_source,
+    overnightMarketDelayMinutes: quote.overnight_market_delay_minutes,
     postMarketChange: quote.post_market_change,
     postMarketChangePercent: quote.post_market_change_percent,
   };

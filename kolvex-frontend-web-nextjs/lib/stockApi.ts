@@ -38,6 +38,7 @@ export interface StockQuote {
   overnightMarketPrice?: number;
   overnightMarketTime?: number;
   overnightMarketSource?: string;
+  overnightMarketDelayMinutes?: number | null;
   postMarketChange?: number;
   postMarketChangePercent?: number;
 }
@@ -237,6 +238,8 @@ export function stockHistoryKey(symbol: string, params: PriceHistoryParams = {})
   return `/api/market/history/${encodeURIComponent(symbol.trim().toUpperCase())}${qs ? `?${qs}` : ""}`;
 }
 
+let historyRetryAt = 0;
+
 export async function getStockHistory(
   symbol: string,
   params: PriceHistoryParams = {},
@@ -248,8 +251,18 @@ export async function getStockHistory(
     key,
     async (requestSignal) => {
       for (let attempt = 0; ; attempt++) {
+        if (Date.now() < historyRetryAt) {
+          throw Object.assign(new Error("Market history is temporarily rate limited"), {
+            status: 429,
+          });
+        }
         try {
           const response = await fetch(key, { signal: requestSignal, cache: "no-store" });
+          if (response.status === 429) {
+            const seconds = Number(response.headers.get("Retry-After"));
+            const delay = seconds > 0 && Number.isFinite(seconds) ? Math.min(seconds, 300) : 60;
+            historyRetryAt = Math.max(historyRetryAt, Date.now() + delay * 1_000);
+          }
           const data = await response.json().catch(() => ({}));
           if (!response.ok) {
             throw Object.assign(new Error(data.error || `API error: ${response.status}`), {
@@ -268,8 +281,7 @@ export async function getStockHistory(
           return bars;
         } catch (error) {
           const status = (error as { status?: number }).status;
-          if (requestSignal.aborted || attempt > 0 || (status && status < 500 && status !== 429))
-            throw error;
+          if (requestSignal.aborted || attempt > 0 || (status && status < 500)) throw error;
         }
       }
     },

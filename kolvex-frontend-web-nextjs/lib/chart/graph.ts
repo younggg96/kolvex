@@ -17,7 +17,8 @@ export const GRAPH_TOP_PAD = 28;
 export const GRAPH_MIN_BARS = 8;
 
 export type GraphView = { start: number; end: number };
-export type PriceRangeKey = "1D" | "1W" | "1M" | "3M" | "6M" | "YTD" | "1Y" | "5Y" | "ALL" | "CUSTOM";
+export type PriceRangeKey =
+  "1D" | "1W" | "1M" | "3M" | "6M" | "YTD" | "1Y" | "5Y" | "ALL" | "CUSTOM";
 
 export interface ViewInput {
   /** Number of loaded bars. */
@@ -39,8 +40,9 @@ export interface ViewInput {
  * The window is snapped to the first bar at or after `startMs`.
  */
 export function firstIndexAt(times: number[], startMs: number | null | undefined): number {
-  if (!times.length || startMs === null || startMs === undefined || !Number.isFinite(startMs)) return 0;
-  const index = times.findIndex(time => time >= startMs);
+  if (!times.length || startMs === null || startMs === undefined || !Number.isFinite(startMs))
+    return 0;
+  const index = times.findIndex((time) => time >= startMs);
   return index === -1 ? 0 : index;
 }
 
@@ -58,13 +60,14 @@ export function viewForRange(input: ViewInput): GraphView {
   if (count <= 0) return { start: 0, end: 1 };
   if (kind === "anchor" && anchor) {
     const start = firstIndexAt(times, anchor.start);
-    const endIndex = times.findLastIndex(time => time <= anchor.end);
+    const endIndex = times.findLastIndex((time) => time <= anchor.end);
     const end = (endIndex === -1 ? count - 1 : endIndex) + 1 + (anchor.barsChange || 0);
     return clampGraphView({ start: start - (anchor.barsChange || 0), end }, count, minBars);
   }
   const first = firstIndexAt(times, input.rangeStart);
   const visibleCount = count - first;
-  if (visibleCount >= Math.min(minBars, count)) return clampGraphView({ start: first, end: count }, count, minBars);
+  if (visibleCount >= Math.min(minBars, count))
+    return clampGraphView({ start: first, end: count }, count, minBars);
   return clampGraphView({ start: count - Math.min(minBars, count), end: count }, count, minBars);
 }
 
@@ -73,7 +76,11 @@ function clampGraphSpan(span: number, count: number, minBars: number) {
 }
 
 /** Keep the view inside the data with a little scroll room, as Apple Stocks does while panning. */
-export function clampGraphView(view: GraphView, count: number, minBars = GRAPH_MIN_BARS): GraphView {
+export function clampGraphView(
+  view: GraphView,
+  count: number,
+  minBars = GRAPH_MIN_BARS,
+): GraphView {
   if (count <= 0) return { start: 0, end: 1 };
   const span = clampGraphSpan(view.end - view.start, count, minBars);
   const { min, max } = graphPanBounds(span, count);
@@ -87,11 +94,21 @@ export function graphPanBounds(span: number, count: number) {
 }
 
 /** Zoom around an anchor ratio (0 = left edge, 1 = right edge). */
-export function zoomGraphView(view: GraphView, factor: number, anchorRatio: number, count: number, minBars = GRAPH_MIN_BARS): GraphView {
+export function zoomGraphView(
+  view: GraphView,
+  factor: number,
+  anchorRatio: number,
+  count: number,
+  minBars = GRAPH_MIN_BARS,
+): GraphView {
   const span = view.end - view.start;
   const anchor = view.start + span * anchorRatio;
   const nextSpan = clampGraphSpan(span * factor, count, minBars);
-  return clampGraphView({ start: anchor - nextSpan * anchorRatio, end: anchor - nextSpan * anchorRatio + nextSpan }, count, minBars);
+  return clampGraphView(
+    { start: anchor - nextSpan * anchorRatio, end: anchor - nextSpan * anchorRatio + nextSpan },
+    count,
+    minBars,
+  );
 }
 
 /** Indices whose date labels should be drawn: the visible window split into up to `maxTicks` even slots. */
@@ -124,6 +141,16 @@ export function priceTickValues(lo: number, hi: number, target = 5): number[] {
   return ticks;
 }
 
+/** Place labelled grid rules across the visible plot, including room outside the candle range. */
+export function advancedPriceTickValues(priceAt: (y: number) => number, plotHeight: number) {
+  const edge = Math.min(8, plotHeight / 4);
+  return priceTickValues(
+    priceAt(plotHeight - edge),
+    priceAt(edge),
+    Math.max(Math.round(plotHeight / 48), 4),
+  );
+}
+
 /** Padded y domain so the line never touches the top tag or the zero baseline. */
 export function priceDomain(
   bars: Array<{ close: number }>,
@@ -151,7 +178,12 @@ export function priceDomain(
 }
 
 /** Resize a linear price scale around a vertical anchor (0 = top, 1 = bottom). */
-export function zoomPriceDomain(domain: { lo: number; hi: number }, factor: number, ratio: number, referenceSpan: number) {
+export function zoomPriceDomain(
+  domain: { lo: number; hi: number },
+  factor: number,
+  ratio: number,
+  referenceSpan: number,
+) {
   const span = domain.hi - domain.lo;
   const nextSpan = Math.min(Math.max(span * factor, referenceSpan / 100), referenceSpan * 100);
   const anchor = domain.hi - span * ratio;

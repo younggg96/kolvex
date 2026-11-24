@@ -5,7 +5,16 @@ const positive = (value: number | undefined): value is number =>
 
 export type ChartSession = "regular" | "pre" | "post" | "overnight";
 
-export function sessionLabel(session: ChartSession, locale?: string): string {
+export function sessionLabel(
+  session: ChartSession,
+  locale?: string,
+  delayMinutes?: number | null,
+): string {
+  if (session === "overnight" && positive(delayMinutes ?? undefined)) {
+    return locale?.startsWith("zh")
+      ? `夜盘 · 延迟 ${delayMinutes} 分钟`
+      : `Overnight · ${delayMinutes}m delayed`;
+  }
   if (locale === "zh") {
     switch (session) {
       case "pre":
@@ -70,5 +79,6 @@ export function latestChartQuote(quote: StockQuote | null | undefined, includeEx
     change,
     changePercent,
     regularPrice: quote.price,
+    delayMinutes: session === "overnight" ? quote.overnightMarketDelayMinutes : undefined,
   };
 }

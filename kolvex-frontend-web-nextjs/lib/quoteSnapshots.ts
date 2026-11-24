@@ -26,8 +26,10 @@ export function publishQuote(incoming: StockQuote): StockQuote {
     const newest =
       saved && timestamp(saved[timeKey]) > timestamp(incoming[timeKey]) ? saved : incoming;
     quote = { ...quote, [timeKey]: newest[timeKey], [priceKey]: newest[priceKey] };
-    if (session === "overnight") quote.overnightMarketSource = newest.overnightMarketSource;
-    else {
+    if (session === "overnight") {
+      quote.overnightMarketSource = newest.overnightMarketSource;
+      quote.overnightMarketDelayMinutes = newest.overnightMarketDelayMinutes;
+    } else {
       const changeKey = `${session}MarketChange` as const;
       const percentKey = `${session}MarketChangePercent` as const;
       quote[changeKey] = newest[changeKey];

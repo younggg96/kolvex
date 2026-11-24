@@ -70,6 +70,8 @@ Per-post X analysis is implemented on both mobile timelines. Its verification is
 
 The Web video cards also support selecting opinions from one video and exporting the selection as text or PNGs. The share entry is an icon at the right end of the video title row, the whole-video summary (taken from the opinion rows' `video_summary`) is an optional first item placed before the opinions, and phones get a bottom sheet with an Image / Text segmented switch. This flow is pending on mobile.
 
+Web and App show a 15-minute delay label when the backend falls back to Alpaca overnight trades after a BOATS permission error.
+
 ## Native material and layout
 
 | Requirement                    | State                                                                                                                                                                            |

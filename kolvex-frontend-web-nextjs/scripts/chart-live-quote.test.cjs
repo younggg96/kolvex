@@ -185,5 +185,8 @@ test("Yahoo POSTPOST stays after-hours and a newer sourced overnight trade gets 
   const markup = render({ quote: overnight, extendedHours: true });
   assert.match(markup, /Overnight · vs close/);
   assert.match(markup, /Blue Ocean ATS/);
+  const delayed = { ...overnight, overnightMarketDelayMinutes: 15 };
+  assert.equal(latestChartQuote(delayed).delayMinutes, 15);
+  assert.match(render({ quote: delayed, extendedHours: true }), /Overnight · 15m delayed/);
   assert.doesNotMatch(markup, /Chart shows regular hours/);
 });

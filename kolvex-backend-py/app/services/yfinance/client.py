@@ -19,6 +19,7 @@ from xml.etree import ElementTree
 import httpx
 import pandas as pd
 import yfinance as yf
+from yfinance.exceptions import YFRateLimitError
 
 from app.services.yfinance import overnight
 
@@ -77,6 +78,7 @@ def _cached(ttl: int):
 
 _QUOTE_EXECUTOR = ThreadPoolExecutor(max_workers=6, thread_name_prefix="market-quotes")
 _QUOTE_BATCH_TIMEOUT = 12
+_HISTORY_RATE_LIMIT_COOLDOWN = 60
 _FUND_HOLDINGS_TTL = timedelta(hours=6)
 _FUND_HOLDINGS_CACHE: Dict[str, tuple] = {}
 
@@ -285,11 +287,18 @@ def _parse_option_row(row) -> Dict[str, Any]:
     }
 
 
+class HistoryRateLimited(Exception):
+    def __init__(self, retry_after: int):
+        super().__init__("Yahoo Finance history is temporarily rate limited")
+        self.retry_after = retry_after
+
+
 class YFinanceService:
     """YFinance 数据服务"""
 
     def __init__(self):
-        pass
+        self._history_retry_at = 0.0
+        self._history_rate_limit_lock = threading.Lock()
 
     def get_ticker(self, symbol: str) -> yf.Ticker:
         """获取股票 Ticker 对象"""
@@ -500,7 +509,7 @@ class YFinanceService:
         post_market_change_percent = info.get("postMarketChangePercent")
         market_state = info.get("marketState")
 
-        overnight_price, overnight_time = self._overnight_quote(symbol, info)
+        overnight_price, overnight_time, overnight_delay = self._overnight_quote(symbol, info)
 
         return {
             "symbol": symbol.upper(),
@@ -541,6 +550,7 @@ class YFinanceService:
             "overnight_market_price": overnight_price,
             "overnight_market_time": overnight_time,
             "overnight_market_source": "Alpaca / Blue Ocean ATS" if overnight_time else None,
+            "overnight_market_delay_minutes": overnight_delay,
         }
 
     def get_history(
@@ -565,7 +575,11 @@ class YFinanceService:
         Returns:
             历史价格数据列表
         """
-        ticker = self.get_ticker(symbol)
+        with self._history_rate_limit_lock:
+            remaining = self._history_retry_at - time.monotonic()
+        if remaining > 0:
+            raise HistoryRateLimited(math.ceil(remaining))
+
         source_interval = "60m" if interval == "4h" else interval
         # Ask for enough Yahoo history to retain the prior cash close after midnight.
         latest_session = (
@@ -577,14 +591,15 @@ class YFinanceService:
         )
         yahoo_period = "5d" if latest_session else period
 
-        if start and end:
-            df = ticker.history(
-                start=start, end=end, interval=source_interval, auto_adjust=False, prepost=prepost
+        window = {"start": start, "end": end} if start and end else {"period": yahoo_period}
+        try:
+            df = self.get_ticker(symbol).history(
+                **window, interval=source_interval, auto_adjust=False, prepost=prepost
             )
-        else:
-            df = ticker.history(
-                period=yahoo_period, interval=source_interval, auto_adjust=False, prepost=prepost
-            )
+        except YFRateLimitError as error:
+            with self._history_rate_limit_lock:
+                self._history_retry_at = time.monotonic() + _HISTORY_RATE_LIMIT_COOLDOWN
+            raise HistoryRateLimited(_HISTORY_RATE_LIMIT_COOLDOWN) from error
 
         if not df.empty and source_interval in _INTRADAY_INTERVALS:
             df = _drop_cumulative_volume(df)
@@ -636,8 +651,8 @@ class YFinanceService:
 
     def _overnight_quote(self, symbol: str, info: dict):
         if info.get("exchangeTimezoneName") != "America/New_York":
-            return None, None
-        return self._latest_overnight_trade(symbol) or (None, None)
+            return None, None, None
+        return self._latest_overnight_trade(symbol) or (None, None, None)
 
     @_cached(15)
     def _latest_overnight_trade(self, symbol: str):

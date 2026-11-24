@@ -253,17 +253,14 @@ export default function StockObservationList({
     ? (currentRanking?.applied.symbols ?? sourceSymbols).slice(0, state.rows)
     : [...new Set([...sourceSymbols, ...(currentRanking?.applied.symbols ?? [])])];
   const symbolKey = quoteSymbols.slice().sort().join(",");
+  const quoteInterval =
+    needsQuotes && !currentRanking ? 0 : quoteSymbols.length > state.rows ? 60_000 : 15_000;
   const {
     quotes,
     loading: quoteLoading,
     refreshing: quoteRefreshing,
     unavailable: quoteError,
-  } = useMarketQuotes(
-    quoteSymbols,
-    ready,
-    attempt + refreshToken,
-    needsQuotes && !currentRanking ? 0 : undefined,
-  );
+  } = useMarketQuotes(quoteSymbols, ready, attempt + refreshToken, quoteInterval);
   const settledQuoteKey = quoteRefreshing ? null : symbolKey;
 
   const nextSymbols = useMemo(
@@ -1043,7 +1040,7 @@ export default function StockObservationList({
                                           `收盘价: ${money(q.price)} (${signedPercent(q.changePercent)})`,
                                         )}
                                       >
-                                        {sessionLabel(ext.session, c("en", "zh"))}
+                                        {sessionLabel(ext.session, c("en", "zh"), ext.delayMinutes)}
                                       </span>
                                     </span>
                                   </>

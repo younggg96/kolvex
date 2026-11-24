@@ -385,7 +385,11 @@ export default function Watchlist() {
                                                   `收盘价: ${money(q.price)} (${signedPercent(q.changePercent)})`,
                                                 )}
                                               >
-                                                {sessionLabel(ext.session, c("en", "zh"))}
+                                                {sessionLabel(
+                                                  ext.session,
+                                                  c("en", "zh"),
+                                                  ext.delayMinutes,
+                                                )}
                                               </span>
                                             </span>
                                           </>

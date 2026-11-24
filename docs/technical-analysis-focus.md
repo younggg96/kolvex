@@ -75,7 +75,8 @@ leaves drawing labels visible, with an expand control in narrow charts.
 
 Grid, extended-session shading, volume and candles are painted on one `<canvas>`
 (`components/youtube/chart/PlotCanvas.tsx`, fed by `paintAdvancedCanvas` in `ChartView`); the
-SVG above it keeps indicator lines, price tags, creator-call markers and AI drawings. Colours
+SVG above it keeps indicator lines, price tags, creator-call markers and AI drawings. Horizontal grid lines
+and price ticks cover the visible price scale, including space beyond the candles. Colours
 come from the same CSS tokens (resolved at paint time) and the canvas repaints when the theme
 changes. Wheel, pinch and drag steps build on the latest requested view and reach React at most
 once per animation frame (`queueView` in `PriceGraph`). The watchlist, news, earnings and AI
@@ -127,7 +128,7 @@ and its bottom sheet. The oscillator pane is 80px tall and prints its values on 
 TradingView-style grid (a price rule about every 48px, a labelled vertical rule about every
 110px) and the current price as a dotted line with a `SYMBOL | price` axis tag in the day's
 up/down colour; a newer pre-market / after-hours / overnight quote adds its own dotted line
-and `盘前 / 盘后 / 夜盘 | price` tag in `--chart-extended`. Below `xl` the 自选 table drops
+and `盘前 / 盘后 / 夜盘 | price` tag in `--chart-extended`. The axis tag and watchlist mark the 15-minute delay when a quote comes from Alpaca’s delayed overnight feed. Below `xl` the 自选 table drops
 the absolute 涨跌 column so tickers stay readable.
 Phones keep 44px touch targets.
 

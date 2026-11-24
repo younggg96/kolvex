@@ -1,7 +1,7 @@
 import {
   latestQuote,
   positive,
-  sessionLabels,
+  quoteSessionLabel,
   type ChartQuote,
 } from "../../lib/chartQuote";
 import { useMarketPolling } from "../../lib/useMarketPolling";
@@ -779,7 +779,7 @@ function Workspace({ symbol }: { symbol: string }) {
           </Copy>
         ) : showExtended && extended ? (
           <Copy size={11} muted localize={false} lines={1}>
-            {`${text("所选区间")} · ${text(sessionLabels[extended.session])} ${formatPrice(extended.price)}${extended.changePercent !== null ? ` (${signedPercent(extended.changePercent)})` : ""}`}
+            {`${text("所选区间")} · ${text(quoteSessionLabel(extended, true))} ${formatPrice(extended.price)}${extended.changePercent !== null ? ` (${signedPercent(extended.changePercent)})` : ""}`}
           </Copy>
         ) : null}
       </View>

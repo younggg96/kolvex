@@ -72,12 +72,14 @@ def latest_trade(symbol):
     if open_time is None or (9 * 60 + 30 <= now.hour * 60 + now.minute < 20 * 60):
         return None
     try:
-        response = httpx.get(
-            f"{DATA_URL}/{symbol}/trades/latest",
-            params={"feed": "boats"},
-            headers=headers,
-            timeout=3,
-        )
+        trade_url = f"{DATA_URL}/{symbol}/trades/latest"
+        response = httpx.get(trade_url, params={"feed": "boats"}, headers=headers, timeout=3)
+        delay_minutes = None
+        if response.status_code == 403:
+            response = httpx.get(
+                trade_url, params={"feed": "overnight"}, headers=headers, timeout=3
+            )
+            delay_minutes = 15
         response.raise_for_status()
         trade = response.json()["trade"]
         price = float(trade["p"])
@@ -88,7 +90,7 @@ def latest_trade(symbol):
             and stamp <= now
             and _session_start(stamp) == open_time
         ):
-            return price, int(stamp.timestamp())
+            return price, int(stamp.timestamp()), delay_minutes
     except (httpx.HTTPError, ValueError, KeyError, TypeError) as error:
         logger.debug("BOATS latest trade unavailable for %s (%s)", symbol, type(error).__name__)
     return None

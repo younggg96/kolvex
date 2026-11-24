@@ -43,7 +43,10 @@ export async function GET(
       } catch {
         detail = errorBody || detail;
       }
-      return NextResponse.json({ error: detail }, { status: response.status });
+      const headers: Record<string, string> = { "Cache-Control": "no-store" };
+      const retryAfter = response.headers.get("Retry-After");
+      if (retryAfter) headers["Retry-After"] = retryAfter;
+      return NextResponse.json({ error: detail }, { status: response.status, headers });
     }
 
     const data = await response.json();

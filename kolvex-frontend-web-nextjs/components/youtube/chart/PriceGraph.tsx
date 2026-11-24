@@ -57,6 +57,7 @@ import {
   GRAPH_TIME_AXIS,
   GRAPH_TOP_PAD,
   clampGraphView,
+  advancedPriceTickValues,
   dateTickIndices,
   graphPanBounds,
   priceDomain,
@@ -1108,15 +1109,14 @@ export default function PriceGraph({
     // `geometry` is memoized on the box/data/view triple, so depending on it is stable.
   }, [bars, count, geometry]);
 
-  // Advanced charts get a TradingView-style grid: a price rule roughly every 48px.
+  // Use the visible price scale for the advanced grid even where no candles are drawn.
+  const { priceAt, priceLow, priceHigh, plotHeight } = geometry;
   const axisRules = useMemo(
     () =>
-      priceTickValues(
-        geometry.priceLow,
-        geometry.priceHigh,
-        advanced ? Math.max(Math.round(geometry.plotHeight / 48), 4) : 4,
-      ),
-    [geometry.priceLow, geometry.priceHigh, geometry.plotHeight, advanced],
+      advanced
+        ? advancedPriceTickValues(priceAt, plotHeight)
+        : priceTickValues(priceLow, priceHigh, 4),
+    [advanced, priceAt, plotHeight, priceLow, priceHigh],
   );
 
   const timeTicks = useMemo(() => {
@@ -1255,7 +1255,11 @@ export default function PriceGraph({
     lastBar &&
     Math.abs(extended.price - lastBar.close) >= 0.005
       ? {
-          label: sessionLabel(extended.session, locale.startsWith("zh") ? "zh" : "en"),
+          label: sessionLabel(
+            extended.session,
+            locale.startsWith("zh") ? "zh" : "en",
+            extended.delayMinutes,
+          ),
           price: extended.price,
         }
       : null;
@@ -1353,7 +1357,10 @@ export default function PriceGraph({
       </span>
       {extended && showExtended && extended.time ? (
         <span className="block">
-          {t(`youtubeOpinions.quoteSession.${extended.session}`)} ·{" "}
+          {extended.delayMinutes
+            ? sessionLabel(extended.session, locale, extended.delayMinutes)
+            : t(`youtubeOpinions.quoteSession.${extended.session}`)}{" "}
+          ·{" "}
           {extended.session === "overnight" && quote?.overnightMarketSource
             ? `${quote.overnightMarketSource} · `
             : ""}
@@ -1381,7 +1388,10 @@ export default function PriceGraph({
       <>
         {showExtended && extended && (
           <span className="tabular-nums">
-            {t(`youtubeOpinions.quoteSession.${extended.session}`)} {formatPrice(extended.price)}
+            {extended.delayMinutes
+              ? sessionLabel(extended.session, locale, extended.delayMinutes)
+              : t(`youtubeOpinions.quoteSession.${extended.session}`)}{" "}
+            {formatPrice(extended.price)}
             {extended.changePercent !== null && ` (${formatChangePercent(extended.changePercent)})`}
           </span>
         )}
@@ -1898,7 +1908,7 @@ export function PriceGraphPlot({
             if (currentValue !== undefined && Math.abs(geometry.yOf(currentValue) - y) < 12)
               return null;
             if (sessionTag && Math.abs(geometry.yOf(sessionTag.price) - y) < 12) return null;
-            if (y < geometry.priceTop || y > geometry.priceBottom) return null;
+            if (!advanced && (y < geometry.priceTop || y > geometry.priceBottom)) return null;
             return (
               <span
                 key={`axis-${value}`}
@@ -1953,7 +1963,7 @@ export function PriceGraphPlot({
                       <span
                         aria-hidden="true"
                         className={cn(
-                          "pointer-events-none absolute -translate-x-full -translate-y-1/2 rounded-l-[0.3125rem] px-1.5 py-0.5 text-white",
+                          "pointer-events-none absolute -translate-x-full -translate-y-1/2 whitespace-nowrap rounded-l-[0.3125rem] px-1.5 py-0.5 text-white",
                           tagText,
                         )}
                         style={{

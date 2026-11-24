@@ -170,6 +170,46 @@ test("lists share detail updates immediately; polling pauses when hidden and res
   assert.equal(h.listeners.size, 0);
 });
 
+test("timer and focus refreshes let a slow quote scan finish all of its batches", async () => {
+  const pending = [];
+  const h = fixture(
+    (url) =>
+      new Promise((resolve) => {
+        pending.push(() => resolve(Response.json(symbolsAt(url).map((symbol) => quote(symbol)))));
+      }),
+  );
+  const symbols = Array.from({ length: 20 }, (_, i) => `S${i}`);
+  h.render(symbols);
+  h.effects();
+  assert.equal(h.requests.length, 3);
+
+  pending.splice(0, 2).forEach((finish) => finish());
+  await tick();
+  assert.equal(h.requests.length, 4);
+
+  h.advance(16_000);
+  [...h.timers][0]();
+  h.listeners.get("focus")();
+  h.render(symbols);
+  h.effects();
+  assert.equal(h.requests.length, 4, "early batches must not be requested again");
+
+  pending.splice(0).forEach((finish) => finish());
+  await tick();
+  const state = h.render(symbols);
+  assert.equal(state.refreshing, false);
+  assert.equal(Object.keys(state.quotes).length, 20);
+  assert.deepEqual(h.requests.flatMap(({ url }) => symbolsAt(url)).sort(), [...symbols].sort());
+
+  h.advance(16_000);
+  [...h.timers][0]();
+  h.render(symbols);
+  h.effects();
+  assert.equal(h.requests.length, 7, "the next scheduled scan still runs");
+  h.unmount();
+  pending.splice(0).forEach((finish) => finish());
+});
+
 test("refresh failures retain genuine last quotes and missing symbols stay unavailable", async () => {
   let offline = false;
   const h = fixture(() =>

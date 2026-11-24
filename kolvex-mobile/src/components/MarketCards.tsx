@@ -1,6 +1,6 @@
 import {
   latestQuote,
-  shortSessionLabels,
+  quoteSessionLabel,
   withChartQuote,
 } from "../lib/chartQuote";
 import { useMarketPolling } from "../lib/useMarketPolling";
@@ -252,7 +252,7 @@ export function InstrumentCard({
         )}
         {(session || rangeLabel) && (
           <Copy size={12} muted lines={1}>
-            {session ? shortSessionLabels[session] : rangeLabel}
+            {session && extended ? quoteSessionLabel(extended) : rangeLabel}
           </Copy>
         )}
         <View style={{ marginTop: 8 }}>

@@ -16,18 +16,19 @@ export type ChartQuote = {
   overnight_market_price?: number | null;
   overnight_market_time?: number | null;
   overnight_market_source?: string | null;
+  overnight_market_delay_minutes?: number | null;
   source?: string | null;
   exchange_timezone_name?: string | null;
 };
 
-export const sessionLabels = {
+const sessionLabels = {
   regular: "常规交易 · 较昨收",
   pre: "盘前 · 较收盘",
   post: "盘后 · 较收盘",
   overnight: "夜盘 · 较收盘",
 } as const;
 
-export const shortSessionLabels = {
+const shortSessionLabels = {
   pre: "盘前",
   post: "盘后",
   overnight: "夜盘",
@@ -76,7 +77,28 @@ export function latestQuote(
       : positive(baseline)
         ? ((price - baseline) / baseline) * 100
         : null;
-  return { price, time, session, changePercent };
+  return {
+    price,
+    time,
+    session,
+    changePercent,
+    delayMinutes:
+      session === "overnight" ? quote.overnight_market_delay_minutes : null,
+  };
+}
+
+export function quoteSessionLabel(
+  quote: NonNullable<ReturnType<typeof latestQuote>>,
+  withBaseline = false,
+) {
+  if (quote.session === "overnight" && quote.delayMinutes === 15) {
+    return withBaseline
+      ? "夜盘 · 延迟 15 分钟 · 较收盘"
+      : "夜盘 · 延迟 15 分钟";
+  }
+  return withBaseline || quote.session === "regular"
+    ? sessionLabels[quote.session]
+    : shortSessionLabels[quote.session];
 }
 
 export function withChartQuote(

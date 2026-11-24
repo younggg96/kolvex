@@ -1,4 +1,4 @@
-import { latestQuote, shortSessionLabels } from "../lib/chartQuote";
+import { latestQuote, quoteSessionLabel } from "../lib/chartQuote";
 import { useMarketPolling } from "../lib/useMarketPolling";
 // The Web's "Stock watch" panel (components/decision/StockObservationList.tsx) for the
 // market-wide lists: today's movers, volume surges and the curated core list.
@@ -423,7 +423,7 @@ function WatchRow({
         </Copy>
         {latest && latest.session !== "regular" && (
           <Copy size={10} muted>
-            {shortSessionLabels[latest.session]}
+            {quoteSessionLabel(latest)}
           </Copy>
         )}
       </View>

@@ -1,6 +1,6 @@
 import {
   latestQuote,
-  shortSessionLabels,
+  quoteSessionLabel,
   type ChartQuote,
 } from "../../lib/chartQuote";
 import { useMarketPolling } from "../../lib/useMarketPolling";
@@ -210,7 +210,7 @@ export default function Stock() {
                 }}
               >
                 <Copy size={12} muted>
-                  {shortSessionLabels[extended.session]}
+                  {quoteSessionLabel(extended)}
                 </Copy>
                 <Copy size={13} bold localize={false}>
                   {money(extended.price, currency, locale)}

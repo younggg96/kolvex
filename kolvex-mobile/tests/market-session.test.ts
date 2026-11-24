@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { latestQuote, withChartQuote } from "../src/lib/chartQuote";
+import {
+  latestQuote,
+  quoteSessionLabel,
+  withChartQuote,
+} from "../src/lib/chartQuote";
 import { extendedDayStart } from "../src/lib/chartTimeframes";
 import { usMarketsClosed } from "../src/lib/pollingSchedule";
 
@@ -13,8 +17,12 @@ test("overnight quotes use their own timestamps and do not replace newer pre-mar
     post_market_price: 101,
     overnight_market_time: 102,
     overnight_market_price: 102,
+    overnight_market_delay_minutes: 15,
   };
-  assert.equal(latestQuote(quote)?.session, "overnight");
+  const overnight = latestQuote(quote);
+  assert.ok(overnight);
+  assert.equal(overnight.session, "overnight");
+  assert.equal(quoteSessionLabel(overnight), "夜盘 · 延迟 15 分钟");
   assert.equal(latestQuote(quote, false)?.session, "regular");
   assert.equal(
     latestQuote({ ...quote, pre_market_time: 103, pre_market_price: 103 })
@@ -31,6 +39,7 @@ test("a live point crosses midnight without replacing a newer candle", () => {
     time: at,
     session: "overnight" as const,
     changePercent: 1,
+    delayMinutes: null,
   };
   assert.equal(withChartQuote(points, latest).at(-1)?.close, 101);
   assert.equal(withChartQuote(points, { ...latest, time: at - 900 }), points);

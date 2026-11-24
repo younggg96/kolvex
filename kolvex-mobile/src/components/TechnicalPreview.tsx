@@ -18,7 +18,7 @@ import { analysisDrawings, planDrawings } from "../lib/aiDrawings";
 import {
   latestQuote,
   positive,
-  sessionLabels,
+  quoteSessionLabel,
   useSavedChartAnalysis,
   type ChartQuote,
 } from "../lib/chartQuote";
@@ -215,7 +215,7 @@ export function TechnicalPreview({ symbol }: { symbol: string }) {
         </View>
         {showExtended && extended && (
           <Copy size={12} muted localize={false}>
-            {`${text(sessionLabels[extended.session])} ${formatPrice(extended.price)}${extended.changePercent !== null ? ` (${signedPercent(extended.changePercent)})` : ""}`}
+            {`${text(quoteSessionLabel(extended, true))} ${formatPrice(extended.price)}${extended.changePercent !== null ? ` (${signedPercent(extended.changePercent)})` : ""}`}
           </Copy>
         )}
 

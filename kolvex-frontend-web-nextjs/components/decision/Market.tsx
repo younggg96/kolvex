@@ -263,7 +263,7 @@ function MarketInstrumentCard({
             `收盘价: ${indexValue(quote?.price ?? 0)} (${signedPercent(quote?.changePercent ?? 0)})`,
           )}
         >
-          {sessionLabel(ext.session, c("en", "zh"))}
+          {sessionLabel(ext.session, c("en", "zh"), ext.delayMinutes)}
         </span>
       )}
     </>
@@ -301,7 +301,9 @@ function MarketInstrumentCard({
     if (isIndex) return withQuote.map(({ date, value }) => ({ date, value }));
     return range === "1D" && !benchmark.daily ? currentTradingDay(withQuote) : withQuote;
   }, [series, live, range, benchmark.daily, isIndex]);
-  const proxySessionName = proxySession ? sessionLabel(proxySession, c("en", "zh")) : "";
+  const proxySessionName = proxySession
+    ? sessionLabel(proxySession, c("en", "zh"), proxyLive?.delayMinutes)
+    : "";
   const chartDisplay = (
     <>
       {seriesState === "loading" ? (

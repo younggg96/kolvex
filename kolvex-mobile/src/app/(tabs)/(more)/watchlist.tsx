@@ -1,4 +1,4 @@
-import { latestQuote, shortSessionLabels } from "../../../lib/chartQuote";
+import { latestQuote, quoteSessionLabel } from "../../../lib/chartQuote";
 import { useMarketPolling } from "../../../lib/useMarketPolling";
 import { router, useLocalSearchParams } from "expo-router";
 import { SymbolView, type SymbolViewProps } from "expo-symbols";
@@ -394,7 +394,7 @@ export default function Watchlist() {
                             </Copy>
                             {latest && latest.session !== "regular" && (
                               <Copy size={10} muted>
-                                {shortSessionLabels[latest.session]}
+                                {quoteSessionLabel(latest)}
                               </Copy>
                             )}
                           </>

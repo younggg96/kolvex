@@ -34,6 +34,7 @@ function model(file, mocks = {}) {
 const discovery = model("lib/stockDiscovery.ts", {
   [FORMAT]: format,
   "./socialBuzz": model("lib/socialBuzz.ts"),
+  "./chart/quote": model("lib/chart/quote.ts"),
   "./opinionDates": model("lib/opinionDates.ts"),
   "./decision": model("lib/decision.ts"),
 });
@@ -64,10 +65,12 @@ function fixture(
     refreshing = false,
     loading = false,
     ready = true,
+    ranking = null,
   } = {},
 ) {
   let rankingRetries = 0,
     requested,
+    quoteInterval,
     enabled,
     url;
   const element = (type, props) => ({ type, props });
@@ -86,10 +89,11 @@ function fixture(
       useCallback: (fn) => fn,
       useEffect() {},
       useRef: (current) => ({ current }),
-      useState: (value) => [
-        typeof value === "function" ? value() : typeof value === "boolean" ? ready : value,
-        () => {},
-      ],
+      useState: (value) => {
+        if (typeof value === "function") return [value(), () => {}];
+        if (typeof value === "boolean") return [ready, () => {}];
+        return [value === null ? ranking : value, () => {}];
+      },
     },
     "react/jsx-runtime": { jsx: element, jsxs: element },
     "next/navigation": {
@@ -120,8 +124,9 @@ function fixture(
     "@/lib/productFeatures": { isProductFeatureEnabled: () => false },
     "@/lib/stockDiscovery": discovery,
     "@/hooks/useMarketQuotes": {
-      useMarketQuotes: (symbols) => {
+      useMarketQuotes: (symbols, _enabled, _token, interval) => {
         requested = symbols;
+        quoteInterval = interval;
         return { quotes: {}, loading: false, unavailable: false };
       },
     },
@@ -189,6 +194,7 @@ function fixture(
     nodes,
     text: nodes.filter((value) => typeof value === "string").join(" "),
     requested,
+    quoteInterval,
     enabled,
     rankingRetries: () => rankingRetries,
     url: () => url,
@@ -213,6 +219,20 @@ test("new scope renders dated reasons, only requests visible quotes and preserve
     h.nodes.some((node) => node.type === "SegmentedControl" && node.props.label === "股票列表"),
   );
 });
+test("quote-ranked lists pause polling until ranked and check wide candidate lists every minute", () => {
+  const initial = fixture("stocks=core&stockSort=move");
+  assert.ok(initial.requested.length > 10);
+  assert.equal(initial.quoteInterval, 0);
+
+  const ranking = {
+    key: JSON.stringify(["core", "all", "all", "move", null, true]),
+    applied: { symbols: initial.requested },
+    pending: null,
+  };
+  assert.equal(fixture("stocks=core&stockSort=move", { ranking }).quoteInterval, 60_000);
+  assert.equal(fixture("stocks=movers").quoteInterval, 15_000);
+});
+
 test("unavailable ranking shows retry and never displays the curated list as market movers", () => {
   const h = fixture("stocks=movers", {
     selected: board({ items: [], unavailable: true, partial: true }),
@@ -230,7 +250,7 @@ test("no volume candidates is an honest empty state with the full-day basis visi
 });
 test("refresh errors retain dated entries and retry targets the ranking resource", () => {
   const h = fixture("stocks=movers", { error: new Error("Offline") });
-  assert.match(h.text, /榜单更新失败，保留上次快照/);
+  assert.match(h.text, /榜单更新失败，保留上次应用的排名/);
   assert.match(h.text, /涨跌 \+8.00%/);
   h.nodes.find((node) => node.type === "Button" && node.props.children === "重试").props.onClick();
   assert.equal(h.rankingRetries(), 1);

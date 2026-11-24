@@ -5,6 +5,12 @@ const path = require("node:path");
 const vm = require("node:vm");
 const ts = require("typescript");
 const { BACKEND_CONFIG, backendConfig } = require("./helpers/backend-config.cjs");
+const createCache = require("./helpers/client-cache.cjs");
+const stockApi = ts.transpileModule(
+  fs.readFileSync(path.join(__dirname, "../lib/stockApi.ts"), "utf8"),
+  { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } },
+).outputText;
+
 function fixture(fetch) {
   const module = { exports: {} };
   vm.runInNewContext(
@@ -80,4 +86,49 @@ test("empty HTTP 200 histories are not cached as successful charts", async () =>
   })("^VIX");
   assert.equal(response.status, 503);
   assert.equal(response.headers.get("Cache-Control"), "no-store");
+});
+
+test("market history forwards the upstream cooldown without caching the response", async () => {
+  const response = await fixture(async () =>
+    Response.json(
+      { detail: "market_history_rate_limited" },
+      { status: 429, headers: { "Retry-After": "45" } },
+    ),
+  )("SPY");
+  assert.equal(response.status, 429);
+  assert.equal(response.headers.get("Retry-After"), "45");
+  assert.equal(response.headers.get("Cache-Control"), "no-store");
+  assert.deepEqual(await response.json(), { error: "market_history_rate_limited" });
+});
+
+test("history cooldown skips immediate retries and other symbols while preserving fresh cache hits", async () => {
+  const seen = [];
+  let now = 100_000;
+  const fetch = async (url) => {
+    seen.push(url);
+    if (seen.length === 2) {
+      return Response.json({}, { status: 429, headers: { "Retry-After": "60" } });
+    }
+    return Response.json({
+      data: [{ date: "2026-10-28", open: 1, high: 2, low: 1, close: 2 }],
+    });
+  };
+  const cache = createCache();
+  const api = {};
+  vm.runInNewContext(stockApi, {
+    exports: api,
+    fetch,
+    Date: { now: () => now },
+    URLSearchParams,
+    require: () => cache,
+  });
+  await api.getStockHistory("SPY");
+  await assert.rejects(api.getStockHistory("QQQ"), { status: 429 });
+  await assert.rejects(api.getStockHistory("IWM", {}, undefined, true), { status: 429 });
+  assert.equal((await api.getStockHistory("SPY")).length, 1);
+  assert.equal(seen.length, 2);
+
+  now += 60_000;
+  assert.equal((await api.getStockHistory("IWM")).length, 1);
+  assert.equal(seen.length, 3);
 });

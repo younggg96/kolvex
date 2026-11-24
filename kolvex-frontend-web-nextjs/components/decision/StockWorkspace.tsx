@@ -344,7 +344,7 @@ export default function StockWorkspace({
                       className="mt-1 text-[0.6875rem] text-muted-foreground sm:mt-2 sm:text-xs"
                       suppressHydrationWarning
                     >
-                      {sessionLabel(latestQuote.session, c("en", "zh"))}
+                      {sessionLabel(latestQuote.session, c("en", "zh"), latestQuote.delayMinutes)}
                       {" · "}
                       {latestQuote.time &&
                         new Date(latestQuote.time * 1000).toLocaleTimeString(
