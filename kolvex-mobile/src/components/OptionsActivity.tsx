@@ -796,7 +796,7 @@ export function ResearchCandidates({
     <View style={{ gap: 12 }}>
       <Header
         title="AI 研究候选"
-        note="由 AI 从本轮实际成交的合约中挑选，到期日至少在 7 天后。所有用户看到的内容相同，不基于你的持仓，是值得进一步研究的合约，而不是下单指令。延迟数据没有主动买卖方向，成交额不代表买入信号，大额 Put 常常是对冲。"
+        note="由 AI 从本轮实际成交的合约中挑选，到期日至少在 7 天后。所有用户看到的内容相同，不基于你的持仓，是值得进一步研究的合约，而不是下单指令。数据源未提供主动买卖方向，成交额不代表买入信号，大额 Put 常常是对冲。"
       />
       {candidates.status === "ok" && candidates.items.length > 0 ? (
         candidates.items.map((item) => (

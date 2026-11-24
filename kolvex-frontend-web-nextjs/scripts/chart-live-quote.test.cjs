@@ -20,7 +20,9 @@ function compile(file) {
     // Radix popovers render nothing on the server; render the ⓘ contents inline so they can be read.
     if (key === "@/components/ui/popover") {
       const passthrough = ({ children }) => React.createElement("span", null, children);
-      return { Popover: passthrough, PopoverTrigger: passthrough, PopoverContent: passthrough };
+      const trigger = ({ children, "aria-label": label }) =>
+        React.createElement("button", { "aria-label": label }, children);
+      return { Popover: passthrough, PopoverTrigger: trigger, PopoverContent: passthrough };
     }
     if (key.startsWith("@/") || key.startsWith(".")) {
       const base = key.startsWith("@/") ? key.slice(2) : path.join(path.dirname(file), key);
@@ -86,7 +88,7 @@ test("default price comes from the quote; 1D compares with the previous close, o
     assert.match(markup, /\$203\.36/);
     assert.match(markup, /Yahoo Finance/);
     assert.match(markup, /EST/);
-    assert.match(markup, /Quotes may be delayed/);
+    assert.match(markup, /Quote source and time/);
     assert.doesNotMatch(markup, /\+1\.03%/);
     if (range === "1D") {
       assert.match(markup, /−1\.61%/);

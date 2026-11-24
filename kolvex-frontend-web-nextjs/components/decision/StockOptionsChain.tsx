@@ -343,7 +343,7 @@ export default function StockOptionsChain({ symbol }: { symbol: string }) {
               <span className="figure text-foreground">{f.price(spot)}</span>
               {" · "}
               {c("As of", "数据时间")} {f.time(chain.as_of)}
-              {chain.source.delayed && ` · ${c("Delayed", "延迟")} (${chain.source.feed})`}
+              {chain.source.delayed && ` · ${c("Indicative", "参考报价")} (${chain.source.feed})`}
             </p>
           )}
         </div>
@@ -587,8 +587,8 @@ export default function StockOptionsChain({ symbol }: { symbol: string }) {
 
       <SourceNote>
         {c(
-          "Source: Alpaca options market data (indicative feed, delayed and not the consolidated OPRA tape). Open interest and the contract close update once a day. Greeks and IV come from the source. Max pain, expected move and put/call ratios are derived from this expiration only. For personal reference, not investment advice.",
-          "来源：Alpaca 期权行情（indicative 数据源，有延迟，并非 OPRA 全市场汇总报价）。持仓量和合约收盘价每日更新一次。希腊值和隐含波动率由数据源提供。最大痛点、预期波动和看跌/看涨比率仅基于当前到期日计算。仅供个人参考，不构成投资建议。",
+          "Source: Alpaca options market data (indicative feed with partial market coverage). Open interest and the contract close update once a day. Greeks and IV come from the source. Max pain, expected move and put/call ratios are derived from this expiration only. For personal reference, not investment advice.",
+          "来源：Alpaca 期权行情（indicative 参考报价，覆盖部分市场）。持仓量和合约收盘价每日更新一次。希腊值和隐含波动率由数据源提供。最大痛点、预期波动和看跌/看涨比率仅基于当前到期日计算。仅供个人参考，不构成投资建议。",
         )}
       </SourceNote>
 

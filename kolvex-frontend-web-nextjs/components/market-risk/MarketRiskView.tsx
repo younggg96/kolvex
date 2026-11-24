@@ -347,7 +347,7 @@ function DataStatus({ latest }: { latest: MarketRiskLatest }) {
         : "negative";
   const label = {
     fresh: c("End of day", "日终"),
-    delayed: c("Delayed", "延迟"),
+    delayed: c("Awaiting update", "待更新"),
     stale: c("Stale", "已过期"),
   }[latest.freshness];
   return (

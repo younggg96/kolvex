@@ -892,7 +892,7 @@
       "postMarketPrice": "After hours",
       "brokerPrice": "Broker · {date}",
       "brokerPriceHint": "Live quote unavailable; showing the price from the broker's last sync ({date})",
-      "marketPriceHint": "Yahoo Finance quote, {date} (may be delayed)"
+      "marketPriceHint": "Yahoo Finance quote as of {date}"
     },
     "privacy": {
       "title": "Privacy Settings",
@@ -1672,7 +1672,7 @@
       "overnight": "Overnight · vs close"
     },
     "quoteTimeUnknown": "Quote time unavailable",
-    "quoteMayBeDelayed": "Quotes may be delayed",
+    "quoteSourceAndTime": "Quote source and time",
     "quoteLoading": "Fetching latest quote…",
     "quoteUnavailable": "Latest quote unavailable. Showing historical candles.",
     "quoteRefreshFailed": "Quote refresh failed. Showing the last quote.",

@@ -190,8 +190,8 @@ export function SummaryCard({ run }: { run: ActivityRun }) {
       </p>
       <p className="mt-2 text-xs leading-5 text-muted-foreground">
         {c(
-          "Net premium = call premium traded − put premium traded. The free delayed data has no buy/sell side, so this shows where money traded, not whether it was bought or sold. Large puts are often hedges.",
-          "净权利金 = Call 成交额 − Put 成交额。免费的延迟数据没有主动买卖方向，所以这里反映资金成交在哪里，而不是买入还是卖出。大额 Put 常常是对冲。",
+          "Net premium = call premium traded − put premium traded. The source omits buy/sell side, so this shows where money traded, not whether it was bought or sold. Large puts are often hedges.",
+          "净权利金 = Call 成交额 − Put 成交额。数据源未提供主动买卖方向，所以这里反映资金成交在哪里，而不是买入还是卖出。大额 Put 常常是对冲。",
         )}
       </p>
     </section>
@@ -803,8 +803,8 @@ export function ResearchCandidates({
       <SectionHeader
         title={title}
         note={c(
-          "Picked by AI from contracts in this run, with expirations at least 7 days out. The same for every reader and not based on your holdings: contracts to research, not orders to place. The delayed data has no buy/sell side, so premium traded is not a buy signal, and large puts are often hedges.",
-          "由 AI 从本轮实际成交的合约中挑选，到期日至少在 7 天后。所有用户看到的内容相同，不基于你的持仓，是值得进一步研究的合约，而不是下单指令。延迟数据没有主动买卖方向，成交额不代表买入信号，大额 Put 常常是对冲。",
+          "Picked by AI from contracts in this run, with expirations at least 7 days out. The same for every reader and not based on your holdings: contracts to research, not orders to place. The source omits buy/sell side, so premium traded is not a buy signal, and large puts are often hedges.",
+          "由 AI 从本轮实际成交的合约中挑选，到期日至少在 7 天后。所有用户看到的内容相同，不基于你的持仓，是值得进一步研究的合约，而不是下单指令。数据源未提供主动买卖方向，成交额不代表买入信号，大额 Put 常常是对冲。",
         )}
       />
       {candidates.status === "ok" && candidates.items.length > 0 ? (

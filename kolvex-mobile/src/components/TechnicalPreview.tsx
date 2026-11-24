@@ -173,11 +173,11 @@ export function TechnicalPreview({ symbol }: { symbol: string }) {
             {latest && (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={text("行情可能延迟")}
+                accessibilityLabel={text("报价来源和时间")}
                 hitSlop={12}
                 onPress={() =>
                   Alert.alert(
-                    text("行情可能延迟"),
+                    text("报价来源和时间"),
                     `${quote.data?.source || "Yahoo Finance"}${latest.time ? ` · ${new Date(latest.time * 1000).toLocaleString()}` : ""}`,
                   )
                 }

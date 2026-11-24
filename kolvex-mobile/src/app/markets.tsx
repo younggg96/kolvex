@@ -151,7 +151,7 @@ export default function MarketBoard() {
       }
       footer={
         <Copy size={12} muted>
-          来源可能延迟或停更，区间前缺少有效基准时以 — 显示。FRED
+          请以数据所属期为准，区间前缺少有效基准时以 — 显示。FRED
           为每日观测数据，不提供盘中走势。
         </Copy>
       }

@@ -1348,10 +1348,10 @@ export default function PriceGraph({
 
   const showExtended = Boolean(extended && extended.session !== "regular");
   const quoteProblem = Boolean(quoteError || (!latest && !quoteLoading));
-  /** Source, timestamps and the delay notice stay one tap away instead of two lines over the chart. */
+  /** Quote sources and timestamps are available in the info tip. */
   // Only next to the live quote: while scrubbing, the header shows a candle, not this quote.
   const quoteDetails = showQuote ? (
-    <InfoTip label={t("youtubeOpinions.quoteMayBeDelayed")} className="self-center">
+    <InfoTip label={t("youtubeOpinions.quoteSourceAndTime")} className="self-center">
       <span className="block">
         {quote?.source || "Yahoo Finance"} · {quoteTime}
       </span>
@@ -1372,10 +1372,9 @@ export default function PriceGraph({
           })}
         </span>
       ) : null}
-      <span className="block">
-        {t("youtubeOpinions.quoteMayBeDelayed")}
-        {showExtended && !extendedHours ? ` · ${t("youtubeOpinions.regularSessionChart")}` : ""}
-      </span>
+      {showExtended && !extendedHours && (
+        <span className="block">{t("youtubeOpinions.regularSessionChart")}</span>
+      )}
     </InfoTip>
   ) : null;
 

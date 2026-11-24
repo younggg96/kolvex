@@ -61,6 +61,8 @@ sent to the server, and **恢复默认 / Reset** restores the defaults:
   `--foreground`, `--muted-foreground`), plus 绿涨红跌 / 红涨绿跌 presets. Turning a part
   off keeps candles visible (hollow body, neutral wick or outline).
 
+The quote information tip shows the source and quote timestamp. Session badges use session names.
+
 ## Advanced chart indicators (技术指标)
 
 The 技术指标 menu groups the overlays: **均线 MA** (simple average) 5 / 10 / 20 / 30 / 60 /
@@ -130,6 +132,7 @@ TradingView-style grid (a price rule about every 48px, a labelled vertical rule 
 up/down colour; a newer pre-market / after-hours / overnight quote adds its own dotted line
 and `盘前 / 盘后 / 夜盘 | price` tag in `--chart-extended`. The axis tag and watchlist mark the 15-minute delay when a quote comes from Alpaca’s delayed overnight feed. Below `xl` the 自选 table drops
 the absolute 涨跌 column so tickers stay readable.
+A 我的持仓 group leads the 自选 table: the signed-in user's held stocks (options left out), with the same quotes, sorting and click-to-chart as the sector groups; it is hidden when nothing is held and shows a retry line if holdings fail to load.
 Phones keep 44px touch targets.
 
 - **自选 / Watchlist** (default, first): the account-synced watchlist as a dense,

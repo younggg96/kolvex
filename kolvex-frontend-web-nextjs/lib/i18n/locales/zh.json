@@ -875,7 +875,7 @@
       "postMarketPrice": "盘后",
       "brokerPrice": "券商价 · {date}",
       "brokerPriceHint": "实时行情暂不可用，显示券商最近一次同步的价格（{date}）",
-      "marketPriceHint": "Yahoo Finance 行情，{date}（可能有延迟）"
+      "marketPriceHint": "Yahoo Finance 行情，截至 {date}"
     },
     "privacy": {
       "title": "隐私设置",
@@ -1655,7 +1655,7 @@
       "overnight": "夜盘 · 较收盘"
     },
     "quoteTimeUnknown": "报价时间未提供",
-    "quoteMayBeDelayed": "行情可能延迟",
+    "quoteSourceAndTime": "报价来源和时间",
     "quoteLoading": "正在获取最新报价…",
     "quoteUnavailable": "最新报价暂不可用，当前显示历史 K 线。",
     "quoteRefreshFailed": "报价更新失败，当前保留上次报价。",

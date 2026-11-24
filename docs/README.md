@@ -72,7 +72,7 @@
 | [content-sharing.md](content-sharing.md) | 内容分享（AI 回答 / 选段、观点、动态、期权异动、研究的分享链接与分享图） |
 | [paper-trading/PLAN.md](paper-trading/PLAN.md) · [README.md](paper-trading/README.md) | 虚拟交易（规划 + 运行验证） |
 | [trade-os/README.md](trade-os/README.md) | Trade OS 交易决策与风控系统（Phase 0 数据基础 + 路线图） |
-| [market-risk/README.md](market-risk/README.md) · [technical-review.md](market-risk/technical-review.md) | 市场风险监控（规划 + 开发记录；目前只有后端数据层） |
+| [market-risk/README.md](market-risk/README.md) · [technical-review.md](market-risk/technical-review.md) · [backtest-v1.0.md](market-risk/backtest-v1.0.md) | 市场风险监控（规划、开发记录、历史分析；实验性页面 `/dashboard/market-risk`） |
 | [model-catalog.md](model-catalog.md) | 可选 AI 模型目录 |
 | [free-llm-allowance.md](free-llm-allowance.md) | 免费 AI 额度（`deepseek-flash`，每人每周 ¥1） |
 | [mcp-content-admin.md](mcp-content-admin.md) | 内容管理 MCP 服务 |

@@ -147,7 +147,7 @@ function Chain({ symbol }: { symbol: string }) {
           {`数据时间 ${f.time(chain.as_of)}`}
         </Copy>
         {chain.source.delayed && (
-          <Copy size={12} muted>{`延迟 (${chain.source.feed})`}</Copy>
+          <Copy size={12} muted>{`参考报价 (${chain.source.feed})`}</Copy>
         )}
       </View>
       <Filters
@@ -271,7 +271,7 @@ function Chain({ symbol }: { symbol: string }) {
         </Glass>
       )}
       <Copy size={12} muted>
-        深色单元格为价内。来源：Alpaca 期权行情（参考报价，延迟，非完整 OPRA
+        深色单元格为价内。来源：Alpaca 期权行情（参考报价，非完整 OPRA
         行情）。持仓量与合约收盘价每日更新一次；希腊值与隐含波动率来自数据源；最大痛点、预期波动与看跌/看涨比仅按当前到期日计算。仅供研究，不提供下单。
       </Copy>
       <ContractSheet

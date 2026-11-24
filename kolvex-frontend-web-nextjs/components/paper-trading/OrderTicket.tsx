@@ -67,9 +67,7 @@ export default function OrderTicket({
       ?.match(/^[A-Za-z][A-Za-z0-9.\-]{0,15}$/)?.[0]
       .toUpperCase() || "AAPL",
   );
-  const [side, setSide] = useState<Side>(
-    query.get("side") === "short" ? "short" : "long",
-  );
+  const [side, setSide] = useState<Side>(query.get("side") === "short" ? "short" : "long");
   const [kind, setKind] = useState<"market" | "limit" | "stop">(
     positive("entry") ? "limit" : "market",
   );
@@ -92,8 +90,12 @@ export default function OrderTicket({
   const chosenSymbol = closePosition?.symbol || fixedSymbol || symbol;
   const chosenSide = closePosition?.side || side;
   const quoteSymbol = useRef<string | null>(null);
-  const refreshQuote = useCallback(() => setQuoteAttempt(value => value + 1), []);
-  useVisiblePolling(refreshQuote, 15_000, active && !busy && !draft && /^[A-Z][A-Z0-9.\-]{0,15}$/.test(chosenSymbol));
+  const refreshQuote = useCallback(() => setQuoteAttempt((value) => value + 1), []);
+  useVisiblePolling(
+    refreshQuote,
+    15_000,
+    active && !busy && !draft && /^[A-Z][A-Z0-9.\-]{0,15}$/.test(chosenSymbol),
+  );
 
   useEffect(() => {
     if (closePosition) {
@@ -108,7 +110,7 @@ export default function OrderTicket({
 
   useEffect(() => {
     const controller = new AbortController();
-    setQuote(previous => quoteSymbol.current === chosenSymbol ? previous : null);
+    setQuote((previous) => (quoteSymbol.current === chosenSymbol ? previous : null));
     if (quoteSymbol.current !== chosenSymbol) setQuoteError("");
     setQuoteLoading(false);
     if (!active || !/^[A-Z][A-Z0-9.\-]{0,15}$/.test(chosenSymbol)) return;
@@ -117,8 +119,12 @@ export default function OrderTicket({
       paperRequest<Quote>(`quote/${encodeURIComponent(chosenSymbol)}`, {
         signal: controller.signal,
       })
-        .then(next => {
-          if (!controller.signal.aborted) { quoteSymbol.current = chosenSymbol; setQuote(next); setQuoteError(""); }
+        .then((next) => {
+          if (!controller.signal.aborted) {
+            quoteSymbol.current = chosenSymbol;
+            setQuote(next);
+            setQuoteError("");
+          }
         })
         .catch((error) => {
           if (!controller.signal.aborted) setQuoteError(errorText(error));
@@ -138,13 +144,10 @@ export default function OrderTicket({
   const q = Number(quantity),
     reference = kind === "market" ? Number(quote?.price) : Number(price);
   const estimate = q > 0 && reference > 0 ? q * reference : 0;
-  const risk =
-    stop && reference > 0 ? Math.abs(reference - Number(stop)) * q : null;
+  const risk = stop && reference > 0 ? Math.abs(reference - Number(stop)) * q : null;
   const reservedQuantity = closePosition
     ? account.state.orders
-        .filter(
-          (o) => o.status === "pending" && o.position_id === closePosition.id,
-        )
+        .filter((o) => o.status === "pending" && o.position_id === closePosition.id)
         .reduce((sum, o) => sum + o.quantity, 0)
     : 0;
 
@@ -167,15 +170,11 @@ export default function OrderTicket({
       [
         !quote,
         "paper-symbol",
-        c(
-          "Load a valid USD stock quote first.",
-          "请先获取有效的美元股票报价。",
-        ),
+        c("Load a valid USD stock quote first.", "请先获取有效的美元股票报价。"),
       ],
       [
         kind === "market" &&
-          (!quote?.tradable ||
-            Date.now() - new Date(quote.at).getTime() > 1200000),
+          (!quote?.tradable || Date.now() - new Date(quote.at).getTime() > 1200000),
         "paper-kind",
         c(
           "Market orders require a fresh regular-session quote. Use a pending order or refresh during market hours.",
@@ -196,8 +195,7 @@ export default function OrderTicket({
         ),
       ],
       [
-        !closePosition &&
-          estimate * 1.00060005 > Number(account.summary.available),
+        !closePosition && estimate * 1.00060005 > Number(account.summary.available),
         "paper-quantity",
         c(
           "Insufficient available funds, including estimated fees and slippage.",
@@ -209,9 +207,7 @@ export default function OrderTicket({
           !!stop &&
           (!Number.isFinite(Number(stop)) ||
             Number(stop) <= 0 ||
-            (chosenSide === "long"
-              ? Number(stop) >= reference
-              : Number(stop) <= reference)),
+            (chosenSide === "long" ? Number(stop) >= reference : Number(stop) <= reference)),
         "paper-stop",
         c(
           "Stop loss must be below a long entry or above a short entry.",
@@ -223,9 +219,7 @@ export default function OrderTicket({
           !!target &&
           (!Number.isFinite(Number(target)) ||
             Number(target) <= 0 ||
-            (chosenSide === "long"
-              ? Number(target) <= reference
-              : Number(target) >= reference)),
+            (chosenSide === "long" ? Number(target) <= reference : Number(target) >= reference)),
         "paper-target",
         c(
           "Take profit must be above a long entry or below a short entry.",
@@ -287,21 +281,14 @@ export default function OrderTicket({
               {c("Close", "平仓")} {chosenSymbol} ·{" "}
               {chosenSide === "long" ? c("Long", "多单") : c("Short", "空单")}
             </p>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={clearClose}
-            >
+            <Button type="button" variant="ghost" size="sm" onClick={clearClose}>
               {c("Back to open", "返回开仓")}
             </Button>
           </div>
         ) : (
           <>
             <div className="space-y-2">
-              <Label htmlFor="paper-symbol">
-                {c("Stock symbol", "股票代码")}
-              </Label>
+              <Label htmlFor="paper-symbol">{c("Stock symbol", "股票代码")}</Label>
               <Input
                 id="paper-symbol"
                 {...fieldError("paper-symbol")}
@@ -329,51 +316,41 @@ export default function OrderTicket({
                   aria-pressed={chosenSide === value}
                   onClick={() => setSide(value)}
                 >
-                  {value === "long"
-                    ? c("Buy / Long", "买入做多")
-                    : c("Sell short", "卖出做空")}
+                  {value === "long" ? c("Buy / Long", "买入做多") : c("Sell short", "卖出做空")}
                 </Button>
               ))}
             </div>
           </>
         )}
-        <div
-          className="min-h-20 text-sm"
-          aria-live="polite"
-          aria-busy={quoteLoading}
-        >
+        <div className="min-h-20 text-sm" aria-live="polite" aria-busy={quoteLoading}>
           {quoteLoading && !quote ? (
-            <p className="text-muted-foreground">
-              {c("Loading quote…", "正在获取报价…")}
-            </p>
+            <p className="text-muted-foreground">{c("Loading quote…", "正在获取报价…")}</p>
           ) : quote ? (
             <>
-              <p className="text-xl font-semibold tabular-nums">
-                {money(Number(quote.price))}
-              </p>
+              <p className="text-xl font-semibold tabular-nums">{money(Number(quote.price))}</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 {c("Quote time", "报价时间")}：
                 {new Date(quote.at).toLocaleString(c("en-US", "zh-CN"))} ·{" "}
                 {quote.session === "post"
-                  ? c("After hours · valuation only · pending orders only", "盘后 · 计入估值 · 仅挂单")
+                  ? c(
+                      "After hours · valuation only · pending orders only",
+                      "盘后 · 计入估值 · 仅挂单",
+                    )
                   : quote.tradable
-                  ? c("Regular session · may be delayed", "常规时段 · 可能延迟")
-                  : c(
-                      "Closed or stale · pending orders only",
-                      "休市或报价过期 · 仅挂单",
-                    )}
+                    ? c("Regular session", "常规时段")
+                    : c("Closed or stale · pending orders only", "休市或报价过期 · 仅挂单")}
               </p>
             </>
           ) : (
             <p className="text-negative">
-              {quoteError ||
-                c(
-                  "Enter a stock symbol to load a quote.",
-                  "输入股票代码获取报价。",
-                )}
+              {quoteError || c("Enter a stock symbol to load a quote.", "输入股票代码获取报价。")}
             </p>
           )}
-          {quote && quoteError && <p role="status" className="mt-1 text-xs text-negative">{quoteError} · {c("Showing the last quote", "当前保留上次报价")}</p>}
+          {quote && quoteError && (
+            <p role="status" className="mt-1 text-xs text-negative">
+              {quoteError} · {c("Showing the last quote", "当前保留上次报价")}
+            </p>
+          )}
           <Button
             type="button"
             variant="link"
@@ -387,21 +364,14 @@ export default function OrderTicket({
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="paper-kind">{c("Order type", "订单类型")}</Label>
-            <Select
-              value={kind}
-              onValueChange={(v) => setKind(v as typeof kind)}
-            >
+            <Select value={kind} onValueChange={(v) => setKind(v as typeof kind)}>
               <SelectTrigger id="paper-kind" {...fieldError("paper-kind")}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="market">{c("Market", "市价单")}</SelectItem>
-                <SelectItem value="limit">
-                  {c("Limit · GTC", "限价单 · GTC")}
-                </SelectItem>
-                <SelectItem value="stop">
-                  {c("Stop · GTC", "突破单 · GTC")}
-                </SelectItem>
+                <SelectItem value="limit">{c("Limit · GTC", "限价单 · GTC")}</SelectItem>
+                <SelectItem value="stop">{c("Stop · GTC", "突破单 · GTC")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -453,18 +423,8 @@ export default function OrderTicket({
         {!closePosition && (
           <div className="grid grid-cols-2 gap-4">
             {[
-              [
-                "paper-stop",
-                c("Stop loss · optional", "止损价 · 选填"),
-                stop,
-                setStop,
-              ],
-              [
-                "paper-target",
-                c("Take profit · optional", "止盈价 · 选填"),
-                target,
-                setTarget,
-              ],
+              ["paper-stop", c("Stop loss · optional", "止损价 · 选填"), stop, setStop],
+              ["paper-target", c("Take profit · optional", "止盈价 · 选填"), target, setTarget],
             ].map(([id, label, value, setter]) => (
               <div key={id as string} className="space-y-2">
                 <Label htmlFor={id as string}>{label as string}</Label>
@@ -476,9 +436,7 @@ export default function OrderTicket({
                   min="0.000001"
                   step="any"
                   value={value as string}
-                  onChange={(e) =>
-                    (setter as (v: string) => void)(e.target.value)
-                  }
+                  onChange={(e) => (setter as (v: string) => void)(e.target.value)}
                 />
               </div>
             ))}
@@ -500,17 +458,11 @@ export default function OrderTicket({
         </div>
         <dl className="space-y-2 border-t border-border pt-4 text-sm">
           <div className="flex justify-between gap-4">
-            <dt className="text-muted-foreground">
-              {c("Available", "可用资金")}
-            </dt>
-            <dd className="tabular-nums">
-              {money(Number(account.summary.available))}
-            </dd>
+            <dt className="text-muted-foreground">{c("Available", "可用资金")}</dt>
+            <dd className="tabular-nums">{money(Number(account.summary.available))}</dd>
           </div>
           <div className="flex justify-between gap-4">
-            <dt className="text-muted-foreground">
-              {c("Estimated notional", "预计交易金额")}
-            </dt>
+            <dt className="text-muted-foreground">{c("Estimated notional", "预计交易金额")}</dt>
             <dd className="tabular-nums">{money(estimate)}</dd>
           </div>
           {!closePosition && risk !== null && (
@@ -519,8 +471,7 @@ export default function OrderTicket({
                 {c("Risk to stop · before costs", "到止损的风险 · 未计费用")}
               </dt>
               <dd className="tabular-nums">
-                {money(risk)} ·{" "}
-                {((risk / Number(account.summary.equity)) * 100).toFixed(2)}%
+                {money(risk)} · {((risk / Number(account.summary.equity)) * 100).toFixed(2)}%
               </dd>
             </div>
           )}
@@ -531,18 +482,10 @@ export default function OrderTicket({
             "每次成交收取 0.01% 模拟费用。市价与突破成交增加 0.05% 不利滑点。空单使用 100% 现金抵押，止损可能跳空。",
           )}
         </p>
-        <p
-          id="paper-validation"
-          role="alert"
-          className="min-h-5 text-sm text-negative"
-        >
+        <p id="paper-validation" role="alert" className="min-h-5 text-sm text-negative">
           {validation}
         </p>
-        <Button
-          className="w-full"
-          type="submit"
-          disabled={busy || quoteLoading || !quote}
-        >
+        <Button className="w-full" type="submit" disabled={busy || quoteLoading || !quote}>
           {c("Review virtual order", "检查虚拟订单")}
         </Button>
         <Button asChild variant="link" className="w-full">
@@ -559,9 +502,7 @@ export default function OrderTicket({
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {c("Place virtual order", "提交虚拟订单")}
-            </DialogTitle>
+            <DialogTitle>{c("Place virtual order", "提交虚拟订单")}</DialogTitle>
             <DialogDescription>
               {c(
                 "This uses virtual funds. Prices and fills may differ from a broker.",
@@ -591,10 +532,8 @@ export default function OrderTicket({
                   : c("at the next valid observed price", "按有效观察报价成交")}
               </p>
               <p>
-                {c("Stop loss", "止损")}：
-                {draft.stop_loss ? money(draft.stop_loss) : "—"} ·{" "}
-                {c("Take profit", "止盈")}：
-                {draft.take_profit ? money(draft.take_profit) : "—"}
+                {c("Stop loss", "止损")}：{draft.stop_loss ? money(draft.stop_loss) : "—"} ·{" "}
+                {c("Take profit", "止盈")}：{draft.take_profit ? money(draft.take_profit) : "—"}
               </p>
               <p className="text-muted-foreground">
                 {c(
@@ -608,12 +547,7 @@ export default function OrderTicket({
             {mutationError}
           </p>
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={busy}
-              onClick={() => setDraft(null)}
-            >
+            <Button type="button" variant="outline" disabled={busy} onClick={() => setDraft(null)}>
               {c("Back", "返回修改")}
             </Button>
             <Button
@@ -627,9 +561,7 @@ export default function OrderTicket({
                 }
               }}
             >
-              {busy
-                ? c("Placing…", "提交中…")
-                : c("Place virtual order", "提交虚拟订单")}
+              {busy ? c("Placing…", "提交中…") : c("Place virtual order", "提交虚拟订单")}
             </Button>
           </DialogFooter>
         </DialogContent>

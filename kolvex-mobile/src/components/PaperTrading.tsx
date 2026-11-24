@@ -576,7 +576,7 @@ export function OrderTicketSheet({
               {quote.session === "post"
                 ? "盘后 · 计入估值 · 仅挂单"
                 : quote.tradable
-                  ? "常规时段 · 可能延迟"
+                  ? "常规时段"
                   : "休市或报价过期 · 仅挂单"}
             </Copy>
             {!!quoteError && (

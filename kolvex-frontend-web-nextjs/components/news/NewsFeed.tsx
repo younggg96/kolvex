@@ -93,10 +93,7 @@ export default function NewsFeed() {
                   {translation.pending > 0 ? c("Translating…", "正在切换为中文…") : status}
                 </span>
                 <InfoTip label={c("About these headlines", "关于快讯")}>
-                  {c(
-                    `Delayed headlines. Updated at ${time}, local time.`,
-                    `延迟快讯。更新于 ${time}，本地时间。`,
-                  )}
+                  {c(`Headlines updated at ${time}, local time.`, `快讯更新于 ${time}，本地时间。`)}
                 </InfoTip>
                 <Button
                   variant="outline"

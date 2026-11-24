@@ -449,7 +449,7 @@ export default function Watchlist() {
               )}
             </Glass>
             <Copy size={12} muted>
-              报价来自现有行情数据源，可能存在延迟；缺失报价显示为横线。
+              报价以数据源最近提供的价格为准，缺失报价显示为横线。
             </Copy>
           </View>
         )}

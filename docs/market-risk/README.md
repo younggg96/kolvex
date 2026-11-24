@@ -1,6 +1,6 @@
 # Market Risk Monitor — 开发记录
 
-> 规划与评审见 [technical-review.md](technical-review.md)。功能总表行：`marketRisk`（实验性）。
+> 规划与评审见 [technical-review.md](technical-review.md)，历史分析见 [backtest-v1.0.md](backtest-v1.0.md)。功能总表行：`marketRisk`（实验性）。
 
 ## 当前状态
 
@@ -10,7 +10,7 @@
 | M1b 定时采集 | 代码与测试完成；默认关闭（`MARKET_RISK_WORKER_ENABLED`） |
 | M2 评分 / 阶段 / 接口 | 代码与测试完成；worker 在当日数据齐全后写入快照 |
 | M3 页面 | `/dashboard/market-risk` 完成（实验开关，侧边栏「资金动向」组，Beta） |
-| M4 回测 | 未开始 |
+| M4 历史分析 | 完成，报告见 [backtest-v1.0.md](backtest-v1.0.md)；未改模型 |
 
 开工时按评审里的建议默认值执行（未经产品确认，如需调整请改这里）：实验开关上线；`v1.0` 评分不含 P/C；不做提醒。
 
@@ -79,7 +79,7 @@ cd kolvex-backend-py && venv/bin/python scripts/backfill_market_risk.py
 ### 测试
 
 ```bash
-cd kolvex-backend-py && venv/bin/python -m pytest tests/test_market_risk_data.py tests/test_market_risk_worker.py tests/test_market_risk_engine.py
+cd kolvex-backend-py && venv/bin/python -m pytest tests/test_market_risk_data.py tests/test_market_risk_worker.py tests/test_market_risk_engine.py tests/test_market_risk_backtest.py
 cd kolvex-frontend-web-nextjs && node --test scripts/market-risk.test.cjs
 ```
 
@@ -115,7 +115,7 @@ PRD 的 Options Activity（20%）和 Tail Risk（10%）在 v1.0 没有数据，�
 
 **指标状态**（只用于展示，不进评分）：VIX 20 / 28 / 35；VVIX 100 / 110 / 120；比值 0.95 / 1.00 / 1.10。评分是相对分位数、状态是绝对区间，两者可能不一致（页面 ⓘ 有说明）。
 
-**真实数据演练（2011–2026，评分从 2012 年起；2026-11-23）**：2020-03 全月为压力加速（评分 98–99）；2026-11-23 评分 94.3、压力加速。约每年 20 次阶段切换，偏频繁——是 M4 回测要校准的首要问题。
+**真实数据演练（2011–2026，评分从 2012 年起；2026-11-23）**：2020-03 全月为压力加速（评分 98–99）；2026-11-23 评分 94.3、压力加速。约每年 21 次阶段切换，偏频繁，见 M4。
 
 ### 接口
 
@@ -134,12 +134,28 @@ PRD 的 Options Activity（20%）和 Tail Risk（10%）在 v1.0 没有数据，�
 
 `/dashboard/market-risk`：数据状态 → 评分卡（构成条）+ 阶段卡（压力条件）→ 四个阶段 → 期限结构图（今天 vs 上一交易日）+ 指标表 → 升级 / 修复检查 → 历史图（评分线 + VIX 面积 + 阶段底色，1月~全部）与阶段变化 → 页脚免责与数据日期。颜色只用 `positive / warning / negative / muted` token，每处都带文字或图标。没有提醒、AI 摘要、情景模拟和 P/C 图（见评审）。
 
+## 历史分析（M4）
+
+`app/services/market_risk/backtest.py`（纯函数）+ `scripts/backtest_market_risk.py`（只读公开 Cboe 数据，生成 [backtest-v1.0.md](backtest-v1.0.md)）。用 Cboe `SPX` 收盘价看每个评分日之后 5 / 20 / 60 个交易日的收益与回撤，按阶段、等级、2012–2019 / 2020 起分开统计，并用确认 2 / 3 / 5 个交易日做敏感性对比。
+
+```bash
+cd kolvex-backend-py && venv/bin/python scripts/backtest_market_risk.py --out ../docs/market-risk/backtest-v1.0.md
+```
+
+要点（详见报告）：
+
+1. 评分衡量的是波动和回撤风险，不是方向：压力加速之后 20 日收益均值反而更高（+3.2% vs 全样本 +1.0%），但 20 日内回撤 ≥5% 的比例约是平稳阶段的两倍。页面不能把高分写成「看空」。
+2. 7 次 ≥10% 回撤都在跌破 −10% 前出现过压力阶段，但随机 21 日窗口出现压力阶段的基准就有 58%，且多数是在下跌开始后才进入，更像确认而不是预警。
+3. 阶段切换每年约 21 次。确认改为 3 个交易日可降到约 14 次、回撤覆盖不变；改为 5 个交易日约 7 次，但漏掉 2 次回撤。
+
+**待产品决定**：是否发布 `v1.1`（确认周期改 3 个交易日）。v1.0 尚未写入任何快照，现在改动成本最低；改了要同时更新 `MODEL_VERSION`、本文、页面 ⓘ 文案和测试。
+
 ## 未完成 / 未验证
 
 - worker 没有在真实 Redis / Supabase 上跑过；上线前先应用迁移、跑一次 `--write` 回填，再打开开关。
 - 迁移没有在任何 Supabase 环境执行；`--write` 路径（`repository.py` 的读写）只有纯函数部分有单测，没有对真实数据库跑过。
 - Cboe 数据公开展示授权未确认（见评审第 3 节），`license_scope` 统一为 `internal_pending_review`。
 - 1990 年以前和未来新增的临时休市需要手动加入 `SPECIAL_CLOSURES`。
-- 页面只在临时的免登录预览页上用真实 Cboe 数据截图过（390px 深色 / 浅色、1280px 深色），没有登录后经真实代理和后端走过一遍；加载失败、`no_score`、延迟 / 过期、部分评分这些状态只有代码和后端测试，没有截图。
-- 阶段切换频率、阈值都未回测（M4）；页面页脚写明「尚未经回测充分验证」。
+- 页面截图（2026-11-24）：有数据的完整页面用临时预览页 + 真实 Cboe 数据（390px 深色 / 浅色、1280px 深色）；部分评分、待更新、来源失败、可疑值、待确认阶段、历史加载失败用同一预览页改数据截图；浏览器面板里已有的登录会话打开 `/dashboard/market-risk`，经真实代理到本地后端（8080）返回 `503 no_score`，页面显示「还没有发布风险评分」，侧边栏入口正常高亮。说明本地后端连的库里已有表但没有数据。`unavailable`（读库失败）文案只有代码，没有截图。
+- 阈值只做了历史分析，没有调参；页面页脚仍写「尚未经回测充分验证」，等产品决定 v1.1 后再改。
 - App 未移植（见 `kolvex-mobile/MIGRATION.md` 第 18 条）。

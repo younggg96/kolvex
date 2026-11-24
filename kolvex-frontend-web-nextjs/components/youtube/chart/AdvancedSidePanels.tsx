@@ -30,7 +30,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Skeleton } from "@/components/ui/skeleton";
 import CompanyLogo from "@/components/ui/company-logo";
 import WatchlistButton from "@/components/decision/WatchlistButton";
-import { Change, money, useCopy } from "@/components/decision/shared";
+import { Change, money, useCopy, useHeldTickers } from "@/components/decision/shared";
 import { useStockNews } from "@/components/decision/useStockNews";
 import { useFinancialFormat } from "@/components/decision/StockFinancialData";
 import { useNewsTranslations } from "@/components/news/useNewsTranslations";
@@ -392,6 +392,9 @@ const compact = (value: number | null | undefined) =>
     : "—";
 
 /** Narrow columns (below `xl`) drop the absolute change and keep Symbol / Last / Chg%. */
+/** Fold key for the holdings group; sector keys come from `groupBySector` and never start with "@". */
+const HOLDINGS_GROUP = "@holdings";
+
 const WATCHLIST_GRID =
   "grid grid-cols-[minmax(0,1fr)_4.25rem_4rem] items-center gap-x-2 xl:grid-cols-[minmax(0,1fr)_4.75rem_4rem_4.25rem]";
 
@@ -404,21 +407,27 @@ function WatchlistPanelBody({
 }) {
   const c = useCopy();
   const { watchlist, ready, userId, error, refresh } = useWatchlist();
-  // The charted symbol is quoted too, so its details show even when it isn't saved.
+  const [heldAttempt, setHeldAttempt] = useState(0);
+  const held = useHeldTickers(heldAttempt);
+  const heldKey = held.tickers.join(",");
+  // Keyed by content: the hook returns a new array every render.
+  const holdings = useMemo(() => (heldKey ? heldKey.split(",") : []), [heldKey]);
+  // Held and charted symbols are quoted too, so their rows and details show even when not saved.
   const quoted = useMemo(
-    () => (watchlist.includes(symbol) ? watchlist : [...watchlist, symbol]),
-    [watchlist, symbol],
+    () => [...new Set([...holdings, ...watchlist, symbol])],
+    [holdings, watchlist, symbol],
   );
   const { quotes, loading, unavailable } = useMarketQuotes(quoted, ready && !!userId);
   const { sectors } = useStockSectors(watchlist);
   const [sort, setSort] = useState<Sort>(null);
   const [folded, setFolded] = useState<ReadonlySet<string>>(() => new Set());
 
-  const groups = useMemo(() => {
-    const ordered = [...watchlist];
-    if (sort) {
+  const sorted = useCallback(
+    (list: readonly string[]) => {
+      const ordered = [...list];
+      if (!sort) return ordered;
       const sign = sort.dir === "asc" ? 1 : -1;
-      ordered.sort((a, b) => {
+      return ordered.sort((a, b) => {
         if (sort.key === "symbol") return a.localeCompare(b) * sign;
         const left = sortValue(quotes[a], sort.key);
         const right = sortValue(quotes[b], sort.key);
@@ -426,9 +435,15 @@ function WatchlistPanelBody({
         if (left === null || right === null) return left === null ? (right === null ? 0 : 1) : -1;
         return (left - right) * sign;
       });
-    }
-    return groupBySector(ordered, sectors);
-  }, [watchlist, sectors, quotes, sort]);
+    },
+    [quotes, sort],
+  );
+  const groups = useMemo(
+    () => groupBySector(sorted(watchlist), sectors),
+    [watchlist, sectors, sorted],
+  );
+  const heldRows = useMemo(() => sorted(holdings), [holdings, sorted]);
+  const showHoldings = heldRows.length > 0 || held.error;
 
   if (!ready)
     return (
@@ -448,7 +463,7 @@ function WatchlistPanelBody({
         </Button>
       </div>
     );
-  if (error && !watchlist.length)
+  if (error && !watchlist.length && !holdings.length)
     return (
       <div role="alert" className="flex flex-col items-center gap-3 px-3 py-6 text-center text-sm">
         <p className="text-muted-foreground">
@@ -459,7 +474,7 @@ function WatchlistPanelBody({
         </Button>
       </div>
     );
-  if (!watchlist.length)
+  if (!watchlist.length && !showHoldings && !held.loading)
     return (
       <div className="flex flex-col items-center gap-3 px-3 py-6 text-center text-sm">
         <p className="text-muted-foreground">
@@ -517,6 +532,46 @@ function WatchlistPanelBody({
         })}
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-1">
+        {showHoldings && (
+          <ul aria-label={c("Holdings", "我的持仓")}>
+            <li>
+              <GroupHeader
+                label={c("Holdings", "我的持仓")}
+                count={heldRows.length}
+                folded={folded.has(HOLDINGS_GROUP)}
+                onToggle={() => toggleGroup(HOLDINGS_GROUP)}
+              />
+              {!folded.has(HOLDINGS_GROUP) &&
+                (held.error && !heldRows.length ? (
+                  <div role="alert" className="flex items-center gap-2 px-3 py-1.5 text-xs">
+                    <span className="text-muted-foreground">
+                      {c("Holdings could not be loaded.", "持仓暂时无法加载。")}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setHeldAttempt((n) => n + 1)}
+                      className="rounded font-medium text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                      {c("Retry", "重试")}
+                    </button>
+                  </div>
+                ) : (
+                  <ul>
+                    {heldRows.map((item) => (
+                      <WatchlistRow
+                        key={item}
+                        symbol={item}
+                        quote={quotes[item]}
+                        loading={loading && !quotes[item]}
+                        active={item === symbol}
+                        onSelect={onSelectSymbol}
+                      />
+                    ))}
+                  </ul>
+                ))}
+            </li>
+          </ul>
+        )}
         <ul aria-label={c("Watchlist", "自选股")}>
           {groups.map(([sector, symbols]) => {
             const label = sectorLabel(sector);
@@ -524,22 +579,12 @@ function WatchlistPanelBody({
             return (
               <li key={sector}>
                 {sector !== "pending" && (
-                  <button
-                    type="button"
-                    aria-expanded={!isFolded}
-                    onClick={() => toggleGroup(sector)}
-                    className="flex min-h-8 w-full items-center gap-1 px-2 text-left text-[0.6875rem] font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:bg-foreground/[0.04] hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
-                  >
-                    <ChevronDown
-                      className={cn(
-                        "h-3.5 w-3.5 shrink-0 transition-transform",
-                        isFolded && "-rotate-90",
-                      )}
-                      aria-hidden="true"
-                    />
-                    <span className="truncate">{c(label.en, label.zh)}</span>
-                    <span className="ml-auto font-normal tabular-nums">{symbols.length}</span>
-                  </button>
+                  <GroupHeader
+                    label={c(label.en, label.zh)}
+                    count={symbols.length}
+                    folded={isFolded}
+                    onToggle={() => toggleGroup(sector)}
+                  />
                 )}
                 {!isFolded && (
                   <ul>
@@ -567,6 +612,34 @@ function WatchlistPanelBody({
       </div>
       <SymbolDetails symbol={symbol} quote={quotes[symbol]} loading={loading && !quotes[symbol]} />
     </div>
+  );
+}
+
+function GroupHeader({
+  label,
+  count,
+  folded,
+  onToggle,
+}: {
+  label: string;
+  count: number;
+  folded: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-expanded={!folded}
+      onClick={onToggle}
+      className="flex min-h-8 w-full items-center gap-1 px-2 text-left text-[0.6875rem] font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:bg-foreground/[0.04] hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
+    >
+      <ChevronDown
+        className={cn("h-3.5 w-3.5 shrink-0 transition-transform", folded && "-rotate-90")}
+        aria-hidden="true"
+      />
+      <span className="truncate">{label}</span>
+      <span className="ml-auto font-normal tabular-nums">{count}</span>
+    </button>
   );
 }
 

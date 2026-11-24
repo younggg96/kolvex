@@ -154,9 +154,7 @@ function IndicatorRow({
           )}
           {indicator.status !== "ready" && (
             <Copy size={12} muted>
-              {indicator.value === null
-                ? "数据暂不可用"
-                : "延迟数据 · 请以数据所属期为准"}
+              {indicator.value === null ? "数据暂不可用" : "请以数据所属期为准"}
             </Copy>
           )}
           <SourceLink url={indicator.source_url}>
@@ -268,7 +266,7 @@ function MacroContent() {
         message="暂无可用宏观数据"
       />
       {data?.status !== "ready" && data && (
-        <Copy muted>部分数据可能延迟或尚未准备完成，请以数据所属期为准。</Copy>
+        <Copy muted>请以各项数据的所属期为准。</Copy>
       )}
       {data && (
         <Glass style={{ paddingHorizontal: 12 }}>
