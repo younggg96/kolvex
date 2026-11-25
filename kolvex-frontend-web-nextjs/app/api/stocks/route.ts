@@ -34,7 +34,10 @@ export async function GET(request: NextRequest) {
     switch (action) {
       case "quote":
         if (!symbol) {
-          return NextResponse.json({ error: "Symbol is required" }, { status: 400 });
+          return NextResponse.json(
+            { error: "Symbol is required" },
+            { status: 400, headers: { "Cache-Control": "no-store" } },
+          );
         }
 
         try {
@@ -52,7 +55,10 @@ export async function GET(request: NextRequest) {
 
       case "multiple":
         if (!symbols) {
-          return NextResponse.json({ error: "Symbols are required" }, { status: 400 });
+          return NextResponse.json(
+            { error: "Symbols are required" },
+            { status: 400, headers: { "Cache-Control": "no-store" } },
+          );
         }
         const symbolArray = [
           ...new Set(
@@ -63,7 +69,7 @@ export async function GET(request: NextRequest) {
           ),
         ];
         if (symbolArray.length === 0) {
-          return NextResponse.json([], { status: 200 });
+          return NextResponse.json([], { status: 200, headers: { "Cache-Control": "no-store" } });
         }
 
         // 检查缓存，找出需要从后端获取的股票
@@ -153,7 +159,10 @@ export async function GET(request: NextRequest) {
 
       case "chart":
         if (!symbol) {
-          return NextResponse.json({ error: "Symbol is required" }, { status: 400 });
+          return NextResponse.json(
+            { error: "Symbol is required" },
+            { status: 400, headers: { "Cache-Control": "no-store" } },
+          );
         }
 
         const interval = searchParams.get("interval") || "5m";
@@ -203,9 +212,56 @@ export async function GET(request: NextRequest) {
           return NextResponse.json([], { status: 503, headers: { "Cache-Control": "no-store" } });
         }
 
+      case "sparklines": {
+        const list = [
+          ...new Set(
+            (symbols ?? "")
+              .split(",")
+              .map((value) => value.trim().toUpperCase())
+              .filter(Boolean),
+          ),
+        ];
+        if (list.length === 0 || list.length > 60) {
+          return NextResponse.json(
+            { error: "1–60 symbols are required" },
+            { status: 400, headers: { "Cache-Control": "no-store" } },
+          );
+        }
+        const sparklineInterval = searchParams.get("interval") || "5m";
+        const query = new URLSearchParams(list.map((value) => ["symbols", value]));
+        query.set("interval", sparklineInterval);
+        try {
+          const response = await fetch(`${BACKEND_API_URL}/api/v1/market/sparklines?${query}`, {
+            cache: "no-store",
+            signal: AbortSignal.timeout(20_000),
+          });
+          if (!response.ok) {
+            // 404 means the backend predates the batch route; the client falls back.
+            return NextResponse.json(
+              { error: "Sparklines unavailable" },
+              {
+                status: response.status === 404 ? 404 : 503,
+                headers: { "Cache-Control": "no-store" },
+              },
+            );
+          }
+          const body: { data?: Record<string, number[]> } = await response.json();
+          return NextResponse.json(body.data ?? {}, { headers: { "Cache-Control": "no-store" } });
+        } catch (error) {
+          console.error("Failed to fetch sparklines from backend:", error);
+          return NextResponse.json(
+            { error: "Sparklines unavailable" },
+            { status: 503, headers: { "Cache-Control": "no-store" } },
+          );
+        }
+      }
+
       case "overview":
         if (!symbol) {
-          return NextResponse.json({ error: "Symbol is required" }, { status: 400 });
+          return NextResponse.json(
+            { error: "Symbol is required" },
+            { status: 400, headers: { "Cache-Control": "no-store" } },
+          );
         }
 
         const overviewCacheKey = getCacheKey("overview", symbol);
@@ -245,11 +301,17 @@ export async function GET(request: NextRequest) {
           });
         } catch (error) {
           console.error("Failed to fetch stock overview from backend:", error);
-          return NextResponse.json({ error: "Failed to fetch stock overview" }, { status: 500 });
+          return NextResponse.json(
+            { error: "Failed to fetch stock overview" },
+            { status: 500, headers: { "Cache-Control": "no-store" } },
+          );
         }
 
       default:
-        return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+        return NextResponse.json(
+          { error: "Invalid action" },
+          { status: 400, headers: { "Cache-Control": "no-store" } },
+        );
     }
   } catch (error) {
     console.error("Stock API Error:", error);
@@ -258,7 +320,7 @@ export async function GET(request: NextRequest) {
         error: "Failed to fetch stock data",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 },
+      { status: 500, headers: { "Cache-Control": "no-store" } },
     );
   }
 }

@@ -27,23 +27,15 @@ import {
   type ActivityCandidates,
   type ActivityContract,
   type ActivityRun,
-  type ActivitySession,
   type Contributor,
   type SymbolSource,
 } from "@/lib/optionsActivity";
 import { marketStockHref } from "@/lib/stockLinks";
 import { cn } from "@/lib/utils";
 import { withSign } from "@/lib/format";
+import { useSessionLabel } from "./sessionLabel";
 
-export function useSessionLabel() {
-  const c = useCopy();
-  return (session: ActivitySession) =>
-    ({
-      pre: c("Pre-market", "盘前"),
-      intraday: c("Midday", "盘中"),
-      post: c("After close", "盘后"),
-    })[session];
-}
+export { useSessionLabel };
 
 const tone = (value: number | null | undefined) =>
   !value ? "" : value > 0 ? "text-positive" : "text-negative";

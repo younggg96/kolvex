@@ -15,8 +15,13 @@ export async function GET(request: NextRequest) {
       },
     );
     if (!response.ok) throw new Error("unavailable");
-    return NextResponse.json(await response.json(), { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json(await response.json(), {
+      headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400" },
+    });
   } catch {
-    return NextResponse.json({ results: [], error: "Search unavailable" }, { status: 503 });
+    return NextResponse.json(
+      { results: [], error: "Search unavailable" },
+      { status: 503, headers: { "Cache-Control": "no-store" } },
+    );
   }
 }

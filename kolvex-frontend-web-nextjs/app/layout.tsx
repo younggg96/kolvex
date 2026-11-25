@@ -6,8 +6,6 @@ import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { MarketPaletteSync } from "@/components/theme/MarketPaletteSync";
 import { LanguageProvider } from "@/lib/i18n";
-import { UserProfileProvider } from "@/components/user/UserProfileProvider";
-import { StockDataCacheProvider } from "@/components/portfolio/hooks/useStockDataCache";
 import NavigationProgress from "@/components/layout/NavigationProgress";
 import SiteBackground from "@/components/layout/SiteBackground";
 import { THEME_PALETTE_BOOT_SCRIPT } from "@/lib/themePalettes";
@@ -65,12 +63,8 @@ export default function RootLayout({
           <SiteBackground />
           <MarketPaletteSync />
           <LanguageProvider>
-            <UserProfileProvider>
-              <StockDataCacheProvider>
-                {children}
-                <Toaster />
-              </StockDataCacheProvider>
-            </UserProfileProvider>
+            {children}
+            <Toaster />
           </LanguageProvider>
         </ThemeProvider>
         <NavigationProgress />

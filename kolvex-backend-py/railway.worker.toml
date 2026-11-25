@@ -1,0 +1,15 @@
+# Background-jobs service (13F sync, chart jobs, options activity, email, Plaid snapshots…).
+# Railway: new service from this repo, root directory /kolvex-backend-py,
+# config file path /kolvex-backend-py/railway.worker.toml, no public domain.
+# Variables: copy the API service's variables and set PROCESS_ROLE=worker.
+# Then set PROCESS_ROLE=web on the API service so the jobs run only here.
+[build]
+builder = "nixpacks"
+
+[deploy]
+# Same app, so /health keeps working; it serves no user traffic.
+startCommand = "sh -c 'uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}'"
+healthcheckPath = "/health"
+healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10

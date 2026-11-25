@@ -9,7 +9,7 @@ import { createPortal } from "react-dom";
 import { MOBILE_DOCK_SLOT_ID } from "@/components/layout/MobileTabBar";
 import { Activity, Landmark, ScrollText, Star, UserRound, X } from "lucide-react";
 import { PersonUpdateAvatar } from "@/components/person-updates/PersonUpdateAvatar";
-import { useSessionLabel } from "@/components/options-activity/sections";
+import { useSessionLabel } from "@/components/options-activity/sessionLabel";
 import {
   InvestorAvatar,
   superinvestorHref,

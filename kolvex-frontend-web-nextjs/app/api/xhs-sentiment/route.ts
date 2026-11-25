@@ -12,7 +12,10 @@ export async function GET() {
       status: upstream.status,
       headers: {
         "Content-Type": upstream.headers.get("Content-Type") || "text/plain",
-        "Cache-Control": "no-store",
+        // Daily reports: share successful reads through the CDN for a few minutes.
+        "Cache-Control": upstream.ok
+          ? "public, s-maxage=300, stale-while-revalidate=900"
+          : "no-store",
       },
     });
   } catch {

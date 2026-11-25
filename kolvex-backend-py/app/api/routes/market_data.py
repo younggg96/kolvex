@@ -15,6 +15,8 @@ from pydantic import BaseModel, Field
 from app.api.dependencies.auth import get_current_user_id
 from app.core.supabase import get_supabase_service
 from app.services.market_performance import TooManySymbolsError, get_stock_performance
+from app.services.market_sparklines import TooManySymbolsError as SparklineTooManySymbols
+from app.services.market_sparklines import get_sparklines
 from app.services.stock_analysis_history import StockAnalysisHistory
 from app.services.stock_chart_jobs import StockChartJobs
 from app.services.stock_discovery import DiscoveryUnavailable, get_stock_discovery
@@ -798,6 +800,29 @@ def get_intraday(
         raise _history_rate_limit_response(error) from error
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取日内数据失败: {str(e)}")
+
+
+@router.get(
+    "/sparklines",
+    summary="批量获取日内迷你走势",
+    description="一次返回多只股票的日内收盘价序列，用于持仓列表迷你走势图；最多 60 个代码，取不到的代码不返回",
+)
+async def get_market_sparklines(
+    symbols: List[str] = Query(..., description="股票代码，支持逗号分隔或重复参数"),
+    interval: Literal["1m", "2m", "5m", "15m", "30m", "60m"] = Query("5m"),
+):
+    service = get_yfinance_service()
+    try:
+        data = await get_sparklines(
+            symbols,
+            interval,
+            lambda symbol, bar_interval: service.get_intraday(
+                symbol, interval=bar_interval, prepost=True
+            ),
+        )
+    except SparklineTooManySymbols as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    return {"interval": interval, "data": data}
 
 
 # ============================================================

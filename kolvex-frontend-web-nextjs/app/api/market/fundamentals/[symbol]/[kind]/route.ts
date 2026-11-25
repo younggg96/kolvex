@@ -16,7 +16,10 @@ export async function GET(
 ) {
   const symbol = params.symbol.toUpperCase();
   if (!/^[A-Z0-9.^-]{1,12}$/.test(symbol) || !kinds.has(params.kind)) {
-    return NextResponse.json({ error: "Invalid fundamentals request" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid fundamentals request" },
+      { status: 400, headers: { "Cache-Control": "no-store" } },
+    );
   }
   const quarterly = new URL(request.url).searchParams.get("quarterly") === "true";
   try {
@@ -28,7 +31,10 @@ export async function GET(
       },
     );
     if (!response.ok)
-      return NextResponse.json({ error: "Fundamentals unavailable" }, { status: response.status });
+      return NextResponse.json(
+        { error: "Fundamentals unavailable" },
+        { status: response.status, headers: { "Cache-Control": "no-store" } },
+      );
     const data = await response.json();
     if (
       params.kind === "overview-metrics"
@@ -52,6 +58,9 @@ export async function GET(
       },
     });
   } catch {
-    return NextResponse.json({ error: "Fundamentals unavailable" }, { status: 502 });
+    return NextResponse.json(
+      { error: "Fundamentals unavailable" },
+      { status: 502, headers: { "Cache-Control": "no-store" } },
+    );
   }
 }

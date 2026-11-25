@@ -56,6 +56,9 @@ interface StockDataCacheContextValue {
   clearCache: () => void;
 }
 
+// Matches the backend /market/sparklines limit.
+const SPARKLINE_BATCH_SIZE = 60;
+
 const StockDataCacheContext = createContext<StockDataCacheContextValue | null>(null);
 
 interface StockDataCacheProviderProps {
@@ -85,200 +88,228 @@ export function StockDataCacheProvider({ children }: StockDataCacheProviderProps
   }, []);
 
   // Get cached sector
-  const getCachedSector = useCallback((symbol: string): string | null => {
-    const key = normalizeSymbol(symbol);
-    const entry = cacheRef.current.sectors.get(key);
-    return isValidCache(entry) ? entry!.data : null;
-  }, [normalizeSymbol, isValidCache]);
+  const getCachedSector = useCallback(
+    (symbol: string): string | null => {
+      const key = normalizeSymbol(symbol);
+      const entry = cacheRef.current.sectors.get(key);
+      return isValidCache(entry) ? entry!.data : null;
+    },
+    [normalizeSymbol, isValidCache],
+  );
 
   // Get cached sparkline
-  const getCachedSparkline = useCallback((symbol: string): number[] | null => {
-    const key = normalizeSymbol(symbol);
-    const entry = cacheRef.current.sparklines.get(key);
-    return isValidCache(entry) ? entry!.data : null;
-  }, [normalizeSymbol, isValidCache]);
+  const getCachedSparkline = useCallback(
+    (symbol: string): number[] | null => {
+      const key = normalizeSymbol(symbol);
+      const entry = cacheRef.current.sparklines.get(key);
+      return isValidCache(entry) ? entry!.data : null;
+    },
+    [normalizeSymbol, isValidCache],
+  );
 
   // Get cached overview
-  const getCachedOverview = useCallback((symbol: string): StockOverview | null => {
-    const key = normalizeSymbol(symbol);
-    const entry = cacheRef.current.overviews.get(key);
-    return isValidCache(entry) ? entry!.data : null;
-  }, [normalizeSymbol, isValidCache]);
+  const getCachedOverview = useCallback(
+    (symbol: string): StockOverview | null => {
+      const key = normalizeSymbol(symbol);
+      const entry = cacheRef.current.overviews.get(key);
+      return isValidCache(entry) ? entry!.data : null;
+    },
+    [normalizeSymbol, isValidCache],
+  );
 
   // Fetch sectors for multiple symbols
-  const fetchSectors = useCallback(async (
-    symbols: string[],
-    forceRefresh = false
-  ): Promise<Map<string, string>> => {
-    const result = new Map<string, string>();
-    const symbolsToFetch: string[] = [];
+  const fetchSectors = useCallback(
+    async (symbols: string[], forceRefresh = false): Promise<Map<string, string>> => {
+      const result = new Map<string, string>();
+      const symbolsToFetch: string[] = [];
 
-    // Check cache first
-    for (const sym of symbols) {
-      const key = normalizeSymbol(sym);
-      const cached = getCachedSector(key);
-      if (!forceRefresh && cached) {
-        result.set(key, cached);
-      } else {
-        symbolsToFetch.push(key);
+      // Check cache first
+      for (const sym of symbols) {
+        const key = normalizeSymbol(sym);
+        const cached = getCachedSector(key);
+        if (!forceRefresh && cached) {
+          result.set(key, cached);
+        } else {
+          symbolsToFetch.push(key);
+        }
       }
-    }
 
-    // Fetch missing symbols in batches
-    if (symbolsToFetch.length > 0) {
-      setIsLoading(true);
-      const batchSize = 5;
+      // Fetch missing symbols in batches
+      if (symbolsToFetch.length > 0) {
+        setIsLoading(true);
+        const batchSize = 5;
 
-      try {
-        for (let i = 0; i < symbolsToFetch.length; i += batchSize) {
-          const batch = symbolsToFetch.slice(i, i + batchSize);
-          await Promise.all(
-            batch.map(async (symbol) => {
-              try {
-                const res = await fetch(`/api/stocks?action=overview&symbol=${symbol}`);
-                if (res.ok) {
-                  const data: StockOverview = await res.json();
-                  const now = Date.now();
+        try {
+          for (let i = 0; i < symbolsToFetch.length; i += batchSize) {
+            const batch = symbolsToFetch.slice(i, i + batchSize);
+            await Promise.all(
+              batch.map(async (symbol) => {
+                try {
+                  const res = await fetch(`/api/stocks?action=overview&symbol=${symbol}`);
+                  if (res.ok) {
+                    const data: StockOverview = await res.json();
+                    const now = Date.now();
 
-                  // Cache the overview
-                  cacheRef.current.overviews.set(symbol, {
-                    data,
-                    timestamp: now,
-                  });
-
-                  // Cache the sector
-                  if (data.company?.sector) {
-                    cacheRef.current.sectors.set(symbol, {
-                      data: data.company.sector,
+                    // Cache the overview
+                    cacheRef.current.overviews.set(symbol, {
+                      data,
                       timestamp: now,
                     });
-                    result.set(symbol, data.company.sector);
-                  }
-                }
-              } catch (error) {
-                console.error(`Failed to fetch sector for ${symbol}:`, error);
-              }
-            })
-          );
-        }
-        setLastRefreshTime(Date.now());
-      } finally {
-        setIsLoading(false);
-      }
-    }
 
-    return result;
-  }, [normalizeSymbol, getCachedSector]);
+                    // Cache the sector
+                    if (data.company?.sector) {
+                      cacheRef.current.sectors.set(symbol, {
+                        data: data.company.sector,
+                        timestamp: now,
+                      });
+                      result.set(symbol, data.company.sector);
+                    }
+                  }
+                } catch (error) {
+                  console.error(`Failed to fetch sector for ${symbol}:`, error);
+                }
+              }),
+            );
+          }
+          setLastRefreshTime(Date.now());
+        } finally {
+          setIsLoading(false);
+        }
+      }
+
+      return result;
+    },
+    [normalizeSymbol, getCachedSector],
+  );
 
   // Fetch sparklines for multiple symbols
-  const fetchSparklines = useCallback(async (
-    symbols: string[],
-    forceRefresh = false
-  ): Promise<Map<string, number[]>> => {
-    const result = new Map<string, number[]>();
-    const symbolsToFetch: string[] = [];
+  const fetchSparklines = useCallback(
+    async (symbols: string[], forceRefresh = false): Promise<Map<string, number[]>> => {
+      const result = new Map<string, number[]>();
+      const symbolsToFetch: string[] = [];
 
-    // Check cache first
-    for (const sym of symbols) {
-      const key = normalizeSymbol(sym);
-      const cached = getCachedSparkline(key);
-      if (!forceRefresh && cached) {
-        result.set(key, cached);
-      } else {
-        symbolsToFetch.push(key);
+      // Check cache first
+      for (const sym of symbols) {
+        const key = normalizeSymbol(sym);
+        const cached = getCachedSparkline(key);
+        if (!forceRefresh && cached) {
+          result.set(key, cached);
+        } else {
+          symbolsToFetch.push(key);
+        }
       }
-    }
 
-    // Fetch missing symbols in parallel
-    if (symbolsToFetch.length > 0) {
-      setIsLoading(true);
+      if (symbolsToFetch.length > 0) {
+        setIsLoading(true);
+        const store = (symbol: string, values: number[]) => {
+          cacheRef.current.sparklines.set(symbol, { data: values, timestamp: Date.now() });
+          result.set(symbol, values);
+        };
+        // Older backends lack the batch route; fall back to one chart request per symbol.
+        const fetchOne = async (symbol: string) => {
+          try {
+            const res = await fetch(`/api/stocks?action=chart&symbol=${symbol}&interval=5m`);
+            if (res.ok) {
+              const data: { value: number }[] = await res.json();
+              store(
+                symbol,
+                data.map((point) => point.value),
+              );
+            }
+          } catch (error) {
+            console.error(`Failed to fetch sparkline for ${symbol}:`, error);
+          }
+        };
 
-      try {
-        await Promise.all(
-          symbolsToFetch.map(async (symbol) => {
+        try {
+          for (let i = 0; i < symbolsToFetch.length; i += SPARKLINE_BATCH_SIZE) {
+            const batch = symbolsToFetch.slice(i, i + SPARKLINE_BATCH_SIZE);
             try {
-              const res = await fetch(`/api/stocks?action=chart&symbol=${symbol}&interval=5m`);
-              if (res.ok) {
-                const data = await res.json();
-                const values = data.map((d: { value: number }) => d.value);
-                const now = Date.now();
-
-                // Cache the sparkline
-                cacheRef.current.sparklines.set(symbol, {
-                  data: values,
-                  timestamp: now,
-                });
-                result.set(symbol, values);
+              const res = await fetch(
+                `/api/stocks?action=sparklines&interval=5m&symbols=${encodeURIComponent(batch.join(","))}`,
+              );
+              if (res.status === 404) {
+                await Promise.all(batch.map(fetchOne));
+                continue;
+              }
+              if (!res.ok) continue; // Missing sparklines stay blank rather than flat zeros.
+              const data: Record<string, number[]> = await res.json();
+              for (const symbol of batch) {
+                if (data[symbol]?.length) store(symbol, data[symbol]);
               }
             } catch (error) {
-              console.error(`Failed to fetch sparkline for ${symbol}:`, error);
+              console.error("Failed to fetch sparklines:", error);
             }
-          })
-        );
+          }
+          setLastRefreshTime(Date.now());
+        } finally {
+          setIsLoading(false);
+        }
+      }
+
+      return result;
+    },
+    [normalizeSymbol, getCachedSparkline],
+  );
+
+  // Fetch single overview
+  const fetchOverview = useCallback(
+    async (symbol: string, forceRefresh = false): Promise<StockOverview | null> => {
+      const key = normalizeSymbol(symbol);
+      const cached = getCachedOverview(key);
+
+      if (!forceRefresh && cached) {
+        return cached;
+      }
+
+      setIsLoading(true);
+      try {
+        const res = await fetch(`/api/stocks?action=overview&symbol=${key}`);
+        if (res.ok) {
+          const data: StockOverview = await res.json();
+          const now = Date.now();
+
+          // Cache everything
+          cacheRef.current.overviews.set(key, { data, timestamp: now });
+          if (data.company?.sector) {
+            cacheRef.current.sectors.set(key, {
+              data: data.company.sector,
+              timestamp: now,
+            });
+          }
+          setLastRefreshTime(now);
+          return data;
+        }
+      } catch (error) {
+        console.error(`Failed to fetch overview for ${key}:`, error);
+      } finally {
+        setIsLoading(false);
+      }
+
+      return null;
+    },
+    [normalizeSymbol, getCachedOverview],
+  );
+
+  // Force refresh all data for given symbols
+  const refreshAllData = useCallback(
+    async (symbols: string[]): Promise<void> => {
+      const normalizedSymbols = symbols.map(normalizeSymbol);
+
+      setIsLoading(true);
+      try {
+        // Fetch all data in parallel with force refresh
+        await Promise.all([
+          fetchSectors(normalizedSymbols, true),
+          fetchSparklines(normalizedSymbols, true),
+        ]);
         setLastRefreshTime(Date.now());
       } finally {
         setIsLoading(false);
       }
-    }
-
-    return result;
-  }, [normalizeSymbol, getCachedSparkline]);
-
-  // Fetch single overview
-  const fetchOverview = useCallback(async (
-    symbol: string,
-    forceRefresh = false
-  ): Promise<StockOverview | null> => {
-    const key = normalizeSymbol(symbol);
-    const cached = getCachedOverview(key);
-
-    if (!forceRefresh && cached) {
-      return cached;
-    }
-
-    setIsLoading(true);
-    try {
-      const res = await fetch(`/api/stocks?action=overview&symbol=${key}`);
-      if (res.ok) {
-        const data: StockOverview = await res.json();
-        const now = Date.now();
-
-        // Cache everything
-        cacheRef.current.overviews.set(key, { data, timestamp: now });
-        if (data.company?.sector) {
-          cacheRef.current.sectors.set(key, {
-            data: data.company.sector,
-            timestamp: now,
-          });
-        }
-        setLastRefreshTime(now);
-        return data;
-      }
-    } catch (error) {
-      console.error(`Failed to fetch overview for ${key}:`, error);
-    } finally {
-      setIsLoading(false);
-    }
-
-    return null;
-  }, [normalizeSymbol, getCachedOverview]);
-
-  // Force refresh all data for given symbols
-  const refreshAllData = useCallback(async (symbols: string[]): Promise<void> => {
-    const normalizedSymbols = symbols.map(normalizeSymbol);
-
-    setIsLoading(true);
-    try {
-      // Fetch all data in parallel with force refresh
-      await Promise.all([
-        fetchSectors(normalizedSymbols, true),
-        fetchSparklines(normalizedSymbols, true),
-      ]);
-      setLastRefreshTime(Date.now());
-    } finally {
-      setIsLoading(false);
-    }
-  }, [normalizeSymbol, fetchSectors, fetchSparklines]);
+    },
+    [normalizeSymbol, fetchSectors, fetchSparklines],
+  );
 
   // Clear all cache
   const clearCache = useCallback(() => {
@@ -303,11 +334,7 @@ export function StockDataCacheProvider({ children }: StockDataCacheProviderProps
     clearCache,
   };
 
-  return (
-    <StockDataCacheContext.Provider value={value}>
-      {children}
-    </StockDataCacheContext.Provider>
-  );
+  return <StockDataCacheContext.Provider value={value}>{children}</StockDataCacheContext.Provider>;
 }
 
 export function useStockDataCache(): StockDataCacheContextValue {
@@ -329,7 +356,7 @@ export function usePortfolioSymbols(
           is_hidden?: boolean;
         }>;
       }>
-    | undefined
+    | undefined,
 ): string[] {
   return useMemo(() => {
     if (!accounts) return [];
@@ -339,9 +366,7 @@ export function usePortfolioSymbols(
       account.portfolio_positions?.forEach((pos) => {
         if (pos.is_hidden) return;
         const symbol =
-          pos.position_type === "option"
-            ? pos.underlying_symbol || pos.symbol
-            : pos.symbol;
+          pos.position_type === "option" ? pos.underlying_symbol || pos.symbol : pos.symbol;
         if (symbol) symbols.add(symbol.trim().toUpperCase());
       });
     });

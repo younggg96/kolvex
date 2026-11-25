@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import PortfolioHoldings from "@/components/portfolio/PortfolioHoldings";
+import { StockDataCacheProvider } from "@/components/portfolio/hooks/useStockDataCache";
 
 type Props = { params: { userId: string } };
 
@@ -14,5 +15,9 @@ export const metadata: Metadata = {
 
 export default function PublicPortfolioPage({ params }: Props) {
   if (!UUID_PATTERN.test(params.userId)) notFound();
-  return <PortfolioHoldings userId={params.userId} isOwner={false} />;
+  return (
+    <StockDataCacheProvider>
+      <PortfolioHoldings userId={params.userId} isOwner={false} />
+    </StockDataCacheProvider>
+  );
 }

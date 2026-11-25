@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Activity, Landmark, ScrollText, UserRound } from "lucide-react";
 import { cleanAssetName } from "@/components/congress/CongressTrades";
-import { useSessionLabel } from "@/components/options-activity/sections";
+import { useSessionLabel } from "@/components/options-activity/sessionLabel";
 import { PersonUpdateAvatar } from "@/components/person-updates/PersonUpdateAvatar";
 import {
   InvestorAvatar,

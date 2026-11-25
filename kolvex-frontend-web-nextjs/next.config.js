@@ -239,9 +239,12 @@ const nextConfig = {
           },
         ],
       },
-      // The image proxy returns immutable images that the CDN must cache; keep it out of no-store.
+      // Routes that set their own Cache-Control (public market data, the image proxy) stay
+      // out of this blanket rule: a second header would add `no-store` and cancel their
+      // CDN/browser caching. Each of them still sends `no-store` on its own live responses.
       {
-        source: "/api/:path((?!image-proxy$).*)",
+        source:
+          "/api/:path((?!image-proxy$|stocks$|xhs-sentiment(?:/|$)|market/(?:observations|fundamentals|fund-holdings|fear-greed|search)(?:/|$)).*)",
         headers: [
           {
             key: "Cache-Control",
@@ -287,4 +290,10 @@ const nextConfig = {
   },
 };
 
-module.exports = withPWA(nextConfig);
+// `npm run analyze` writes per-page bundle reports to .next/analyze/.
+const withBundleAnalyzer = require("@next/bundle-analyzer")({
+  enabled: process.env.ANALYZE === "true",
+  openAnalyzer: false,
+});
+
+module.exports = withBundleAnalyzer(withPWA(nextConfig));

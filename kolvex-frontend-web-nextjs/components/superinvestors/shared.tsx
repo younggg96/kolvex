@@ -387,6 +387,8 @@ export function InvestorAvatar({
       <img
         src={`/superinvestors/${logo}.png`}
         alt=""
+        loading="lazy"
+        decoding="async"
         className="h-full w-full object-cover"
         onError={() => setFailed(true)}
       />

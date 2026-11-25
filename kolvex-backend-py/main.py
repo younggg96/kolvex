@@ -29,12 +29,36 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+def process_role() -> str:
+    """PROCESS_ROLE splits HTTP serving from background jobs across Railway services.
+
+    - ``all`` (default, unchanged behaviour): one process serves the API and runs every job.
+    - ``web``: serves the API only; the jobs run in a separate ``worker`` service, so a
+      heavy 13F sync or chart job no longer competes with requests for the event loop
+      and the I/O thread pool.
+    - ``worker``: runs the jobs only. It skips the startup cleanups, which mark the web
+      process's in-flight analyses as failed and must only run when that process restarts.
+    """
+    role = os.getenv("PROCESS_ROLE", "all").strip().lower()
+    if role not in ("all", "web", "worker"):
+        logger.warning("Unknown PROCESS_ROLE=%r; running as 'all'", role)
+        return "all"
+    return role
+
+
+def _env_on(name: str, default: str) -> bool:
+    return os.getenv(name, default).lower() == "true"
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期管理"""
+    role = process_role()
+    serves_http = role in ("all", "web")
+    runs_jobs = role in ("all", "worker")
     # 启动时执行
     print("🚀 Starting Kolvex Backend API...")
-    print(f"📝 API Version: {settings.APP_VERSION}")
+    print(f"📝 API Version: {settings.APP_VERSION} · role={role}")
     print(f"🌐 CORS Origins: {settings.ALLOWED_ORIGINS}")
 
     # 同步 I/O（Supabase、yfinance）都放在线程中执行，避免阻塞事件循环。
@@ -48,165 +72,74 @@ async def lifespan(app: FastAPI):
     # 初始化 Redis
     await init_redis()
 
-    # 清理上次残留的 running 状态分析
-    from app.services.trading_analysis_service import get_trading_analysis_service
+    if serves_http:
+        # 清理上次残留的 running 状态分析（这些分析跑在提供 HTTP 的进程里）
+        from app.services.trading_analysis_service import get_trading_analysis_service
 
-    get_trading_analysis_service().cleanup_stale_analyses()
-    try:
-        from app.core.supabase import get_supabase_service
-        from app.services.research_workspace import fail_stale_runs
+        get_trading_analysis_service().cleanup_stale_analyses()
+        try:
+            from app.core.supabase import get_supabase_service
+            from app.services.research_workspace import fail_stale_runs
 
-        fail_stale_runs(get_supabase_service())
-    except Exception as error:  # noqa: BLE001 — tables may not exist before the migration
-        logger.warning("Research workspace cleanup skipped: %s", error)
-    from app.services.stock_chart_jobs import run_worker
+            fail_stale_runs(get_supabase_service())
+        except Exception as error:  # noqa: BLE001 — tables may not exist before the migration
+            logger.warning("Research workspace cleanup skipped: %s", error)
 
-    worker = (
-        asyncio.create_task(run_worker())
-        if os.getenv("CHART_WORKER_ENABLED", "true").lower() == "true"
-        else None
-    )
-    from app.services.economic_indicators import run_economic_indicators_worker
+    tasks: list[asyncio.Task] = []
 
-    indicators_worker = (
-        asyncio.create_task(run_economic_indicators_worker())
-        if settings.ECONOMIC_INDICATORS_WORKER_ENABLED
-        else None
-    )
-    traffic_reporter = asyncio.create_task(run_traffic_reporter())
-    from app.services.paper_trading.service import run_worker as run_paper_worker
+    def start(factory, enabled: bool = True) -> None:
+        if enabled:
+            tasks.append(asyncio.create_task(factory()))
 
-    paper_worker = asyncio.create_task(run_paper_worker())
-    from app.services.sec.holdings_store import institution_store
+    start(run_traffic_reporter)
     from app.services.sec.managers import manager_registry
 
-    # Reads the admin-edited coverage list now and every few minutes; the built-in list serves until then.
-    managers_refresher = asyncio.create_task(manager_registry.run_refresher())
+    # Reads the admin-edited coverage list now and every few minutes; the built-in list
+    # serves until then. Both roles need it: the API lists managers, the 13F jobs sync them.
+    start(manager_registry.run_refresher)
 
-    holdings_worker = (
-        asyncio.create_task(institution_store.run_worker())
-        if os.getenv("SEC_13F_SYNC_ENABLED", "true").lower() == "true"
-        else None
-    )
-    from app.services.sec.performance import performance_store
+    if runs_jobs:
+        from app.services.agent_signal_evaluation import run_signal_evaluation_worker
+        from app.services.congress_trades import run_congress_trades_worker
+        from app.services.content_translation import run_content_translation_worker
+        from app.services.economic_indicators import run_economic_indicators_worker
+        from app.services.email_service import run_email_worker
+        from app.services.market_risk.worker import run_market_risk_worker
+        from app.services.market_risk.worker import worker_enabled as market_risk_enabled
+        from app.services.options_activity.service import run_options_activity_worker
+        from app.services.paper_trading.service import run_worker as run_paper_worker
+        from app.services.plaid_snapshot_worker import run_plaid_snapshot_worker, worker_enabled
+        from app.services.sec.holdings_store import institution_store
+        from app.services.sec.performance import performance_store
+        from app.services.stock_chart_jobs import run_worker
+        from app.services.trade_os.daily_job import run_trade_os_daily_worker
+        from app.services.trade_os.daily_job import worker_enabled as trade_os_job_enabled
 
-    # Backfills past 13F quarters and recomputes the simulated return curves about once a day.
-    performance_worker = (
-        asyncio.create_task(performance_store.run_worker())
-        if os.getenv("SEC_13F_PERFORMANCE_ENABLED", "true").lower() == "true"
-        else None
-    )
-    from app.services.options_activity.service import run_options_activity_worker
-
-    options_activity_worker = (
-        asyncio.create_task(run_options_activity_worker())
-        if settings.OPTIONS_ACTIVITY_WORKER_ENABLED
-        else None
-    )
-    from app.services.agent_signal_evaluation import run_signal_evaluation_worker
-
-    signal_eval_worker = asyncio.create_task(run_signal_evaluation_worker())
-    from app.services.congress_trades import run_congress_trades_worker
-
-    congress_worker = (
-        asyncio.create_task(run_congress_trades_worker())
-        if os.getenv("CONGRESS_TRADES_SYNC_ENABLED", "").lower() == "true"
-        else None
-    )
-    from app.services.email_service import run_email_worker
-
-    email_worker = asyncio.create_task(run_email_worker())
-    from app.services.plaid_snapshot_worker import run_plaid_snapshot_worker, worker_enabled
-
-    plaid_history_worker = (
-        asyncio.create_task(run_plaid_snapshot_worker()) if worker_enabled() else None
-    )
-    from app.services.trade_os.daily_job import run_trade_os_daily_worker
-    from app.services.trade_os.daily_job import worker_enabled as trade_os_job_enabled
-
-    # Stores each NYSE session's market state and Swing V3.0 scan after the close.
-    trade_os_worker = (
-        asyncio.create_task(run_trade_os_daily_worker()) if trade_os_job_enabled() else None
-    )
-    from app.services.content_translation import run_content_translation_worker
-
-    translation_worker = (
-        asyncio.create_task(run_content_translation_worker())
-        if os.getenv("CONTENT_TRANSLATION_WORKER_ENABLED", "false").lower() == "true"
-        else None
-    )
-    from app.services.market_risk.worker import run_market_risk_worker
-    from app.services.market_risk.worker import worker_enabled as market_risk_enabled
-
-    # Ingests Cboe volatility closes each evening; off unless MARKET_RISK_WORKER_ENABLED=true.
-    market_risk_worker = (
-        asyncio.create_task(run_market_risk_worker()) if market_risk_enabled() else None
-    )
+        start(run_worker, _env_on("CHART_WORKER_ENABLED", "true"))
+        start(run_economic_indicators_worker, settings.ECONOMIC_INDICATORS_WORKER_ENABLED)
+        start(run_paper_worker)
+        start(institution_store.run_worker, _env_on("SEC_13F_SYNC_ENABLED", "true"))
+        # Backfills past 13F quarters and recomputes the simulated return curves about once a day.
+        start(performance_store.run_worker, _env_on("SEC_13F_PERFORMANCE_ENABLED", "true"))
+        start(run_options_activity_worker, settings.OPTIONS_ACTIVITY_WORKER_ENABLED)
+        start(run_signal_evaluation_worker)
+        start(run_congress_trades_worker, _env_on("CONGRESS_TRADES_SYNC_ENABLED", ""))
+        start(run_email_worker)
+        start(run_plaid_snapshot_worker, worker_enabled())
+        # Stores each NYSE session's market state and Swing V3.0 scan after the close.
+        start(run_trade_os_daily_worker, trade_os_job_enabled())
+        start(
+            run_content_translation_worker,
+            _env_on("CONTENT_TRANSLATION_WORKER_ENABLED", "false"),
+        )
+        # Ingests Cboe volatility closes each evening; off unless MARKET_RISK_WORKER_ENABLED=true.
+        start(run_market_risk_worker, market_risk_enabled())
     try:
         yield
     finally:
-        if market_risk_worker:
-            market_risk_worker.cancel()
-            await asyncio.gather(market_risk_worker, return_exceptions=True)
-        managers_refresher.cancel()
-        await asyncio.gather(managers_refresher, return_exceptions=True)
-        if trade_os_worker:
-            trade_os_worker.cancel()
-            await asyncio.gather(trade_os_worker, return_exceptions=True)
-        if translation_worker:
-            translation_worker.cancel()
-            await asyncio.gather(translation_worker, return_exceptions=True)
-        if plaid_history_worker:
-            plaid_history_worker.cancel()
-            await asyncio.gather(plaid_history_worker, return_exceptions=True)
-        email_worker.cancel()
-        await asyncio.gather(email_worker, return_exceptions=True)
-        if congress_worker:
-            congress_worker.cancel()
-            await asyncio.gather(congress_worker, return_exceptions=True)
-        signal_eval_worker.cancel()
-        try:
-            await signal_eval_worker
-        except asyncio.CancelledError:
-            pass
-        if options_activity_worker:
-            options_activity_worker.cancel()
-            try:
-                await options_activity_worker
-            except asyncio.CancelledError:
-                pass
-        if performance_worker:
-            performance_worker.cancel()
-            await asyncio.gather(performance_worker, return_exceptions=True)
-        if holdings_worker:
-            holdings_worker.cancel()
-            try:
-                await holdings_worker
-            except asyncio.CancelledError:
-                pass
-        paper_worker.cancel()
-        try:
-            await paper_worker
-        except asyncio.CancelledError:
-            pass
-        if indicators_worker:
-            indicators_worker.cancel()
-            try:
-                await indicators_worker
-            except asyncio.CancelledError:
-                pass
-        if worker:
-            worker.cancel()
-            try:
-                await worker
-            except asyncio.CancelledError:
-                pass
-
-        traffic_reporter.cancel()
-        try:
-            await traffic_reporter
-        except asyncio.CancelledError:
-            pass
+        for task in reversed(tasks):
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
 
     # 关闭时执行
     await close_redis()

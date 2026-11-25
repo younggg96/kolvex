@@ -4,7 +4,10 @@ import { BACKEND_API_URL } from "@/lib/config/backend";
 export async function GET(_request: Request, { params }: { params: { symbol: string } }) {
   const symbol = params.symbol.toUpperCase();
   if (!/^[A-Z0-9.-]{1,12}$/.test(symbol)) {
-    return NextResponse.json({ error: "Invalid symbol" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid symbol" },
+      { status: 400, headers: { "Cache-Control": "no-store" } },
+    );
   }
   try {
     const response = await fetch(
@@ -12,13 +15,19 @@ export async function GET(_request: Request, { params }: { params: { symbol: str
       { cache: "no-store", signal: AbortSignal.timeout(20_000) },
     );
     if (!response.ok) {
-      return NextResponse.json({ error: "Holdings unavailable" }, { status: 502 });
+      return NextResponse.json(
+        { error: "Holdings unavailable" },
+        { status: 502, headers: { "Cache-Control": "no-store" } },
+      );
     }
     const data = await response.json();
     if (!Array.isArray(data.holdings)) throw new Error("Invalid holdings response");
     // Fund filings change slowly; let the browser reuse a response for an hour.
     return NextResponse.json(data, { headers: { "Cache-Control": "private, max-age=3600" } });
   } catch {
-    return NextResponse.json({ error: "Holdings unavailable" }, { status: 502 });
+    return NextResponse.json(
+      { error: "Holdings unavailable" },
+      { status: 502, headers: { "Cache-Control": "no-store" } },
+    );
   }
 }

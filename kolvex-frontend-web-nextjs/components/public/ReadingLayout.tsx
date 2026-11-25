@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { useCopy } from "@/components/decision/shared";
+import "@/lib/i18n/zhStatic";
 import { FixedLocale, useTranslation } from "@/lib/i18n";
 import { ReadingHeader } from "./ReadingHeader";
 import { ReadingMotion } from "./ReadingMotion";

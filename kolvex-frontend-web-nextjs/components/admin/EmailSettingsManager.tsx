@@ -188,6 +188,10 @@ function CreatorPicker({
                 <img
                   src={creator.avatar_url}
                   alt=""
+                  width={20}
+                  height={20}
+                  loading="lazy"
+                  decoding="async"
                   referrerPolicy="no-referrer"
                   className="h-5 w-5 rounded-full"
                 />

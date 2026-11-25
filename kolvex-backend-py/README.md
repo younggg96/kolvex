@@ -148,6 +148,15 @@ docker compose down
 
 生产编排位于 `docker-compose.prod.yml`，包括 Ollama 容器；模型需要另行安装。Railway 配置位于 `railway.toml`，通过 `$PORT` 启动，未设置时使用 `8000`，健康检查路径为 `/health`。这些配置文件的存在不代表已完成部署验证。
 
+### 接口与后台任务分开运行（`PROCESS_ROLE`）
+
+默认 `PROCESS_ROLE=all`：同一个进程既提供接口，又运行全部后台任务（13F 同步、图表任务、期权异动、邮件、Plaid 快照等），和以前一样。拆分步骤：
+
+1. 在 Railway 用同一仓库新建服务，根目录 `/kolvex-backend-py`，配置文件 `/kolvex-backend-py/railway.worker.toml`，不绑定公开域名；复制接口服务的变量，并设置 `PROCESS_ROLE=worker`。
+2. 新服务正常运行后，把接口服务设为 `PROCESS_ROLE=web`。
+
+`web` 只提供接口，并在启动时清理残留的运行中分析；`worker` 只跑后台任务，不做这些清理，避免它重启时把接口进程里正在进行的分析标记为失败。两种角色都会刷新机构名单，也都会上报自己的流量。各任务原有的开关变量（如 `SEC_13F_SYNC_ENABLED`）只在 `worker` 和 `all` 角色下生效。
+
 部分 Makefile 和启动脚本仍使用旧的 `8000` 提示或 Alembic 命令；本地操作优先使用本文的直接命令。
 
 ## 测试

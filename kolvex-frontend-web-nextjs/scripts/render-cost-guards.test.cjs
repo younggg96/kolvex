@@ -44,5 +44,8 @@ test("middleware never runs on API routes", () => {
 
 test("image proxy responses are cacheable by the CDN", () => {
   assert.match(read("app/api/image-proxy/route.ts"), /"CDN-Cache-Control": "public, max-age=\d+/);
-  assert.match(read("next.config.js"), /source: "\/api\/:path\(\(\?!image-proxy\$\)\.\*\)"/);
+  // The blanket /api no-store rule must skip the image proxy, or a second header cancels its caching.
+  const blanket = read("next.config.js").match(/source:\s*"\/api\/:path\(\(\?!([^"]*)\)\.\*\)"/);
+  assert.ok(blanket, "the /api no-store rule uses a negative lookahead");
+  assert.match(blanket[1], /(^|\|)image-proxy\$/);
 });

@@ -585,7 +585,7 @@ function SettingsContent() {
 
   const handleLanguageChange = async (newLocale: string) => {
     if ((newLocale !== "en" && newLocale !== "zh") || savingLanguage) return;
-    setLocale(newLocale);
+    await setLocale(newLocale);
     const language = SUPPORTED_LOCALES.find((option) => option.value === newLocale)?.nativeLabel;
     if (profile) {
       setSavingLanguage(true);
