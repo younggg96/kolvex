@@ -35,6 +35,7 @@ import { useMarketDiscovery } from "@/hooks/useMarketDiscovery";
 import { useSocialBuzz } from "@/hooks/useSocialBuzz";
 import { STOCK_SOURCES, type StockSource } from "@/lib/socialBuzz";
 import type { DiscoveryStock } from "@/lib/marketDiscovery";
+import type { StockQuote } from "@/lib/stockApi";
 import {
   CORE_STOCKS,
   STOCK_PAGE_SIZE,
@@ -114,6 +115,7 @@ const sortLabel = (
 const coreNames = new Map<string, string>(CORE_STOCKS.map((stock) => [stock.symbol, stock.name]));
 const EMPTY_STOCKS: YouTubeStockSummary[] = [];
 const EMPTY_DISCOVERY: DiscoveryStock[] = [];
+const EMPTY_QUOTES: Record<string, StockQuote> = {};
 
 export default function StockObservationList({
   range,
@@ -228,24 +230,28 @@ export default function StockObservationList({
   const currentRanking = ranking?.key === rankingKey ? ranking : null;
 
   // Fetch every candidate only where quotes determine order or are needed for name search.
-  const sourceSymbols = selectObservationSymbols(
-    {
-      ...state,
-      search: marketScope || state.scope === "creators" ? state.search : undefined,
-      sort: marketScope
-        ? state.sort
-        : state.scope === "creators"
-          ? state.sort === "latest"
-            ? "latest"
-            : "heat"
-          : "default",
-    },
-    stocks,
-    held.tickers,
-    {},
-    now,
-    discovered,
-    social,
+  const sourceSymbols = useMemo(
+    () =>
+      selectObservationSymbols(
+        {
+          ...state,
+          search: marketScope || state.scope === "creators" ? state.search : undefined,
+          sort: marketScope
+            ? state.sort
+            : state.scope === "creators"
+              ? state.sort === "latest"
+                ? "latest"
+                : "heat"
+              : "default",
+        },
+        stocks,
+        held.tickers,
+        EMPTY_QUOTES,
+        now,
+        discovered,
+        social,
+      ),
+    [state, marketScope, stocks, held.tickers, now, discovered, social],
   );
   const visibleQuotesOnly = marketScope || (creatorScope && !quoteRanked);
   const quoteSymbols = visibleQuotesOnly

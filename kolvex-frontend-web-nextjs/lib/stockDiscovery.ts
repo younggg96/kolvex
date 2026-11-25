@@ -161,15 +161,18 @@ const FUSION_K = 10;
 
 /** Per-source heat ranks for the creator-buzz list; 0 is the hottest. */
 function creatorHeat(stocks: readonly YouTubeStockSummary[], social: SocialBuzz, now: number) {
+  // Compute each stock's keys once; date parsing inside the comparator stalls the main thread.
   const youtube = stocks
-    .filter((stock) => validTicker(stock.ticker) && (recentStockOpinionCount(stock, now) ?? 0) > 0)
+    .filter((stock) => validTicker(stock.ticker))
+    .map((stock) => ({
+      ticker: stock.ticker,
+      count: recentStockOpinionCount(stock, now) ?? 0,
+      latest: latestStockOpinionDate(stock, now) ?? "",
+    }))
+    .filter((stock) => stock.count > 0)
     .sort(
       (a, b) =>
-        (recentStockOpinionCount(b, now) ?? 0) - (recentStockOpinionCount(a, now) ?? 0) ||
-        (latestStockOpinionDate(b, now) ?? "").localeCompare(
-          latestStockOpinionDate(a, now) ?? "",
-        ) ||
-        a.ticker.localeCompare(b.ticker),
+        b.count - a.count || b.latest.localeCompare(a.latest) || a.ticker.localeCompare(b.ticker),
     )
     .map((stock) => stock.ticker);
   const reddit = (social.reddit ?? [])
@@ -245,7 +248,12 @@ export function selectObservationSymbols(
   const xLatest = new Map((social.x ?? []).map((stock) => [stock.ticker, stock.latest]));
   const redditNames = new Map((social.reddit ?? []).map((stock) => [stock.ticker, stock.name]));
   // Latest dated evidence among the selected sources; Reddit rankings have no dates.
+  const latestCache = new Map<string, number | null>();
   const latest = (symbol: string) => {
+    if (!latestCache.has(symbol)) latestCache.set(symbol, latestUncached(symbol));
+    return latestCache.get(symbol)!;
+  };
+  const latestUncached = (symbol: string) => {
     const dates = [
       source !== "x" ? latestStockOpinionDate(coverage.get(symbol), now) : null,
       source !== "youtube" ? xLatest.get(symbol) : null,
@@ -256,7 +264,12 @@ export function selectObservationSymbols(
         )
       : null;
   };
-  const fused = (symbol: string) =>
+  const fusedCache = new Map<string, number>();
+  const fused = (symbol: string) => {
+    if (!fusedCache.has(symbol)) fusedCache.set(symbol, fusedUncached(symbol));
+    return fusedCache.get(symbol)!;
+  };
+  const fusedUncached = (symbol: string) =>
     sources.reduce(
       (score, ranks) => score + (ranks.has(symbol) ? 1 / (FUSION_K + ranks.get(symbol)!) : 0),
       0,
