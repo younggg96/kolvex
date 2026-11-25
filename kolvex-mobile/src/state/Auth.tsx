@@ -9,6 +9,7 @@ import { AppState } from "react-native";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 import { configureIdentity } from "../lib/http";
+import { forgetResources } from "../lib/useResource";
 type Auth = {
   session: Session | null;
   ready: boolean;
@@ -27,6 +28,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     let active = true;
     let authEvents = 0;
+    // Cached resources belong to one account: forget them whenever the user changes.
+    let user: string | null | undefined;
+    const observe = (next: Session | null) => {
+      const id = next?.user.id ?? null;
+      if (user !== undefined && user !== id) forgetResources();
+      user = id;
+    };
     configureIdentity(async () => {
       const result = await supabase?.auth.getSession();
       const s = result?.data.session;
@@ -38,6 +46,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       if (active) {
         authEvents += 1;
         if (value) setError(undefined);
+        observe(value);
         setSession(value);
         setReady(true);
       }
@@ -47,6 +56,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       .then((result) => {
         if (!active || authEvents > 0) return;
         if (result.error) setError("会话恢复失败，请重新登录。");
+        observe(result.data.session);
         setSession(result.data.session);
         setReady(true);
       })

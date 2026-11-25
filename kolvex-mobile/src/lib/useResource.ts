@@ -11,6 +11,11 @@ export function peekResource<T>(key: string): T | undefined {
   return cache.get(key) as T | undefined;
 }
 
+/** Drop every cached result, so a signed-out or switched account keeps no private snapshot. */
+export function forgetResources() {
+  cache.clear();
+}
+
 export function useResource<T>(
   key: string,
   load: (signal: AbortSignal) => Promise<T>,
