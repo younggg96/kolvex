@@ -74,6 +74,8 @@ function renderExplorer(overrides = {}, locale = "zh") {
       useHeldTickers: () => ({ tickers: [] }),
       HeldMark: wrapper,
     },
+    // Lazy chunks never resolve during a static render; the stub renders nothing.
+    "next/dynamic": { default: () => () => null },
     "./strength": {
       describeStrength: () => ({ tone: "neutral", label: "Neutral" }),
       toneText: { neutral: "" },

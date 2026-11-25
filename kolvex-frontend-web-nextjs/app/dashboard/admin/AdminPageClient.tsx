@@ -14,7 +14,6 @@ import YouTubeOpinionImporter from "@/components/admin/YouTubeOpinionImporter";
 import YouTubeAutoImportPanel from "@/components/admin/YouTubeAutoImportPanel";
 import YouTubeCreatorManager from "@/components/admin/YouTubeCreatorManager";
 import XContentManager from "@/components/admin/XContentManager";
-import OptionsActivityManager from "@/components/admin/OptionsActivityManager";
 import EmailSettingsManager from "@/components/admin/EmailSettingsManager";
 import InstitutionManager from "@/components/admin/InstitutionManager";
 import { useUserProfileContext } from "@/components/user/UserProfileProvider";
@@ -22,6 +21,12 @@ import { Button } from "@/components/ui/button";
 import { SettingsGroup, SettingsRow } from "@/components/ui/settings-group";
 import { SearchInput } from "@/components/ui/search-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import dynamic from "next/dynamic";
+
+// The options tab is the only admin tab that draws charts; keep recharts out of the page's first load.
+const OptionsActivityManager = dynamic(() => import("@/components/admin/OptionsActivityManager"), {
+  loading: () => <Skeleton className="h-64 w-full rounded-xl" />,
+});
 
 const DIRECT_ADMIN_TABS = new Set([
   "x",

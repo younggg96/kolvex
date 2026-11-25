@@ -76,7 +76,8 @@ import CreatorReviewCard from "./CreatorReviewCard";
 import OpinionDistribution from "./OpinionDistribution";
 import OpinionStrength from "./OpinionStrength";
 import StockDirectoryInsight from "./StockDirectoryRow";
-import PriceChart, { type PriceRange } from "./PriceChart";
+import type { PriceRange } from "./PriceChart";
+import dynamic from "next/dynamic";
 import { legacyRangeToPriceRange, priceRangeToLegacyRange, rangeStartDay } from "@/lib/chart/range";
 import StrengthChart, { type StrengthPoint } from "./StrengthChart";
 import VideoOpinionCard from "./VideoOpinionCard";
@@ -87,6 +88,12 @@ import CreatorShare from "./CreatorShare";
 import { describeStrength, toneText, type StrengthTone } from "./strength";
 import { HeldMark, useHeldTickers, useCopy } from "@/components/decision/shared";
 import { signedPercent } from "@/lib/format";
+
+// The price chart only shows after a ticker is picked; load it on demand so the explorer opens faster.
+const PriceChart = dynamic(() => import("./PriceChart"), {
+  ssr: false,
+  loading: () => <Skeleton className="h-[21rem] w-full rounded-xl sm:h-[23rem]" />,
+});
 
 type DirectoryTone = "all" | StrengthTone;
 type HistoryView = "videos" | "opinions";
