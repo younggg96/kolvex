@@ -568,7 +568,7 @@ export default function SearchPage() {
       <main
         ref={page}
         data-search-page
-        className="group/search mx-auto min-h-0 w-full max-w-[1280px] flex-1 [overflow-y:auto] px-8 pb-16 pt-8 max-lg:flex max-lg:flex-col max-lg:overflow-hidden max-lg:p-0 max-lg:pb-[var(--search-keyboard-inset,0px)]"
+        className="group/search mx-auto min-h-0 w-full max-w-[100rem] flex-1 [overflow-y:auto] px-8 pb-16 pt-8 max-lg:flex max-lg:flex-col max-lg:overflow-hidden max-lg:p-0 max-lg:pb-[var(--search-keyboard-inset,0px)]"
       >
         <header className="mb-5 max-lg:m-0 max-lg:shrink-0 max-lg:px-[16px] max-lg:pb-1 max-lg:pt-4">
           <h1 className="text-xl font-semibold tracking-tight lg:text-3xl">

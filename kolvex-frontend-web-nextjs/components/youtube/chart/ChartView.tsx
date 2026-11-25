@@ -3,6 +3,7 @@ import { peekClientCache } from "@/lib/clientCache";
 import { stockHistoryKey } from "@/lib/stockApi";
 import { useStockQuote } from "@/hooks/useStockData";
 import { useCachedResource } from "@/hooks/useCachedResource";
+import { useMinWidth } from "@/hooks/useMinWidth";
 import {
   forecastExtent,
   getKlineForecast,
@@ -301,6 +302,12 @@ export interface ChartViewProps {
    * returns the column content, e.g. a stack of watchlist / AI / news / earnings panels.
    */
   renderSidePanels?: (ai: ReactNode | null) => ReactNode;
+  /**
+   * Advanced mode only: what phones (< lg) get instead of the right column. Receives the same AI
+   * panel, which then leaves the header's AI sheet. Only one of the two is mounted at a time, so
+   * the AI panel (and the model dialog inside it) never exists twice.
+   */
+  renderMobilePanels?: (ai: ReactNode | null) => ReactNode;
 }
 
 /**
@@ -351,8 +358,11 @@ export default function ChartView({
   drawingVersionControls,
   escapeRef,
   renderSidePanels,
+  renderMobilePanels,
 }: ChartViewProps) {
   const advanced = mode === "advanced";
+  const wide = useMinWidth(1024);
+  const mobilePanels = advanced && renderMobilePanels && !wide;
   const heightClass =
     !advanced && compactLayout === "workspace" ? "h-[20rem] sm:h-[26.25rem]" : HEIGHT_CLASS[mode];
   const drawingToolbarId = useId();
@@ -2379,7 +2389,7 @@ export default function ChartView({
                   )}
                 </Button>
               )}
-              {showAi && (
+              {showAi && !renderMobilePanels && (
                 <div className="lg:hidden">
                   {/* Phones: one sheet over the chart. Settings are a step inside this sheet, never a second stacked sheet. */}
                   <Dialog
@@ -2868,7 +2878,8 @@ export default function ChartView({
           resultsContainer &&
           createPortal(aiResults, resultsContainer)}
       </div>
-      {advanced && (showAi || renderSidePanels) && (
+      {mobilePanels && renderMobilePanels(advancedAiPanel)}
+      {advanced && (showAi || renderSidePanels) && !mobilePanels && (
         <aside
           id={aiPanelId}
           aria-label={t(

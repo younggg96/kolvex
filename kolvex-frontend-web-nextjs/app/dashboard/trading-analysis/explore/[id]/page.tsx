@@ -6,21 +6,13 @@ import { useEffect } from "react";
 import { useCachedResource } from "@/hooks/useCachedResource";
 import { Button } from "@/components/ui/button";
 import { useParams, useSearchParams } from "next/navigation";
-import {
-  Clock,
-  Calendar,
-  XCircle,
-  Globe,
-  User,
-} from "lucide-react";
+import { Clock, Calendar, XCircle, Globe, User } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import { marketStockHref } from "@/lib/stockLinks";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { deepResearchPagePath, parseDeepResearchPage } from "@/lib/researchRoutes";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import {
-  getPublishedAnalysis,
-} from "@/lib/tradingAnalysisApi";
+import { getPublishedAnalysis } from "@/lib/tradingAnalysisApi";
 import { DecisionBadge } from "@/components/trading-analysis/badges";
 import { ResearchReportContent } from "@/components/trading-analysis/ResearchReportContent";
 import { DetailSkeleton } from "@/components/trading-analysis/skeletons";
@@ -34,7 +26,11 @@ export default function PublishedAnalysisDetailPage() {
   const analysisId = params.id as string;
   const listPath = deepResearchPagePath(parseDeepResearchPage(searchParams.get("page")));
 
-  const resource = useCachedResource(`/api/trading-analysis/published/${encodeURIComponent(analysisId)}`, signal => getPublishedAnalysis(analysisId, signal), { ttl: 60_000 });
+  const resource = useCachedResource(
+    `/api/trading-analysis/published/${encodeURIComponent(analysisId)}`,
+    (signal) => getPublishedAnalysis(analysisId, signal),
+    { ttl: 60_000 },
+  );
   const analysis = resource.data ?? null;
   const loading = resource.loading;
 
@@ -46,17 +42,19 @@ export default function PublishedAnalysisDetailPage() {
   }, [analysis?.ticker, t]);
 
   const breadcrumb = (
-    <PageBreadcrumb items={[
-      { label: t("tradingAnalysis.title"), href: listPath },
-      ...(analysis ? [{ label: analysis.ticker }] : []),
-    ]} />
+    <PageBreadcrumb
+      items={[
+        { label: t("tradingAnalysis.title"), href: listPath },
+        ...(analysis ? [{ label: analysis.ticker }] : []),
+      ]}
+    />
   );
 
   if (loading) {
     return (
       <DashboardLayout title={t("tradingAnalysis.explore.title")} breadcrumb={breadcrumb}>
         <div className="relative flex-1 overflow-y-auto">
-          <div className="mx-auto w-full max-w-[70rem]">
+          <div className="mx-auto w-full max-w-[100rem]">
             <DetailSkeleton />
           </div>
         </div>
@@ -73,7 +71,11 @@ export default function PublishedAnalysisDetailPage() {
             <p className="text-muted-foreground">
               {resource.error ? t("common.error") : t("tradingAnalysis.notFound")}
             </p>
-            {Boolean(resource.error) && <Button variant="outline" onClick={resource.refresh}>{t("common.retry")}</Button>}
+            {Boolean(resource.error) && (
+              <Button variant="outline" onClick={resource.refresh}>
+                {t("common.retry")}
+              </Button>
+            )}
           </div>
         </div>
       </DashboardLayout>
@@ -86,12 +88,20 @@ export default function PublishedAnalysisDetailPage() {
       breadcrumb={breadcrumb}
     >
       <div className="relative flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-[70rem] space-y-10 px-[16px] pb-10 pt-6 md:px-8 md:pt-8">
+        <div className="mx-auto w-full max-w-[100rem] space-y-10 px-[16px] pb-10 pt-6 md:px-8 md:pt-8">
           {/* Header */}
           <div className="border-b border-border pb-6">
             <div>
               <div className="flex flex-wrap items-center gap-3">
-                <Link href={marketStockHref(analysis.ticker)} className="group flex min-h-11 min-w-11 items-center gap-3 rounded-2xl px-1 transition-colors duration-150 hover:text-foreground focus-visible:outline-none " aria-label={locale === "zh" ? `打开 ${analysis.ticker} 行情页` : `Open ${analysis.ticker} quotes`}>
+                <Link
+                  href={marketStockHref(analysis.ticker)}
+                  className="group flex min-h-11 min-w-11 items-center gap-3 rounded-2xl px-1 transition-colors duration-150 hover:text-foreground focus-visible:outline-none "
+                  aria-label={
+                    locale === "zh"
+                      ? `打开 ${analysis.ticker} 行情页`
+                      : `Open ${analysis.ticker} quotes`
+                  }
+                >
                   <CompanyLogo symbol={analysis.ticker} size="lg" />
                   <h1 className="text-[1.75rem] font-bold leading-tight text-foreground underline-offset-4 group-hover:underline md:text-[2rem]">
                     {analysis.ticker}
@@ -119,7 +129,9 @@ export default function PublishedAnalysisDetailPage() {
                       </AvatarFallback>
                     </Avatar>
                     <span className="text-sm font-medium text-muted-foreground">
-                      {analysis.author.full_name || analysis.author.username || t("research.author")}
+                      {analysis.author.full_name ||
+                        analysis.author.username ||
+                        t("research.author")}
                     </span>
                   </span>
                 )}
@@ -136,9 +148,7 @@ export default function PublishedAnalysisDetailPage() {
                   </span>
                 )}
                 {analysis.llm_provider && (
-                  <span className="capitalize">
-                    {analysis.llm_provider}
-                  </span>
+                  <span className="capitalize">{analysis.llm_provider}</span>
                 )}
               </div>
             </div>

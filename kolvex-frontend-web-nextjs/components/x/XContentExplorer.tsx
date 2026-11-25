@@ -91,7 +91,7 @@ export default function XContentExplorer() {
         data-nav-underlay
         className="min-h-0 flex-1 overflow-y-auto bg-background px-4 pb-10 pt-4 md:px-8 md:pt-8 dark:bg-transparent"
       >
-        <div className="mx-auto w-full max-w-[1440px] space-y-6">
+        <div className="mx-auto w-full max-w-[100rem] space-y-6">
           <div className="space-y-3">
             <header>
               <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{title}</h1>

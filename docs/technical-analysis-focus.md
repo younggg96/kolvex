@@ -111,6 +111,17 @@ symbol lives in the URL (`?symbol=NVDA`); without one it reopens the last symbol
 (this browser), else SPY. Select a 自选 row to switch stocks and replace the chart URL. The page
 belongs to `home` (行情) in `lib/productFeatures.ts`.
 
+On phones (< `lg`) the side column is replaced by a floating sheet docked just above the tab bar
+(`MobileChartSheet` in `AdvancedSidePanels.tsx`). Collapsed it is one row of tabs — **自选 / AI / 新闻 /
+财报** — and a tab opens it with that panel (same watchlist, AI, news and earnings bodies as desktop).
+Tapping the open tab, the collapse button, Escape, or dragging the handle down closes it; dragging
+up opens it. Choosing a stock from 自选 switches the chart and closes the sheet. Panels load only after
+the sheet is first opened. On this page the header has no **AI 图表操作** button on phones; the AI
+panel is mounted in either the sheet or the desktop column, never both (`renderMobilePanels` on
+`ChartView`, switched by `useMinWidth(1024)`), so its settings dialog opens once. Escape closes that
+dialog before the sheet. The stock page's full-screen chart keeps its header AI sheet. The page pads its bottom so
+the collapsed sheet never covers the chart.
+
 ## Advanced chart side panels (看盘)
 
 On desktop (≥ `lg`) the advanced chart keeps the K-line on the left and a column of

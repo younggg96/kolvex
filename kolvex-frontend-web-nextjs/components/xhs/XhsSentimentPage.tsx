@@ -357,7 +357,7 @@ export default function XhsSentimentPage() {
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
-      <div className="mx-auto max-w-4xl space-y-5 px-[16px] pb-8 pt-[12px] md:px-8 md:py-8">
+      <div className="mx-auto max-w-[100rem] space-y-5 px-[16px] pb-8 pt-[12px] md:px-8 md:py-8">
         <div className="flex items-center justify-between gap-3">
           <h1 className="min-w-0 text-2xl font-semibold tracking-tight md:text-[2rem]">
             {c("Xiaohongshu sentiment", "小红书情绪")}

@@ -321,7 +321,7 @@ export function WorkspacePanel({
   // Page: the work (next round, current round, agent panels) on the left; what to switch
   // to (chats, earlier rounds) in a sticky rail on the right. Stacks below lg.
   return (
-    <div className={cn("mx-auto w-full min-w-0 max-w-7xl px-4 pb-10 pt-5 md:px-5", className)}>
+    <div className={cn("mx-auto w-full min-w-0 max-w-[100rem] px-4 pb-10 pt-5 md:px-5", className)}>
       {header}
       <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem] xl:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="min-w-0 space-y-8">

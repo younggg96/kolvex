@@ -63,15 +63,10 @@ function getProgressEventKey(event: ProgressEvent, index: number) {
   ].join("|");
 }
 
-function mergeProgressEvents(
-  current: ProgressEvent[],
-  incoming: ProgressEvent[],
-) {
+function mergeProgressEvents(current: ProgressEvent[], incoming: ProgressEvent[]) {
   if (incoming.length === 0) return current;
 
-  const seen = new Set(
-    current.map((event, index) => getProgressEventKey(event, index)),
-  );
+  const seen = new Set(current.map((event, index) => getProgressEventKey(event, index)));
   const next = [...current];
 
   incoming.forEach((event, index) => {
@@ -110,9 +105,7 @@ export default function TradingAnalysisDetailPage() {
     try {
       const data = await getAnalysis(analysisId);
       setAnalysis(data);
-      const storedEvents = Array.isArray(data.progress_events)
-        ? data.progress_events
-        : [];
+      const storedEvents = Array.isArray(data.progress_events) ? data.progress_events : [];
       if (storedEvents.length > 0) {
         setProgressEvents((prev) => {
           const next = mergeProgressEvents(prev, storedEvents);
@@ -125,8 +118,7 @@ export default function TradingAnalysisDetailPage() {
             {
               stage: data.progress_stage!,
               message:
-                data.progress_message ||
-                t(`tradingAnalysis.stageDesc.${data.progress_stage}`),
+                data.progress_message || t(`tradingAnalysis.stageDesc.${data.progress_stage}`),
             },
           ]),
         );
@@ -250,18 +242,20 @@ export default function TradingAnalysisDetailPage() {
   );
 
   const breadcrumb = (
-    <PageBreadcrumb items={[
-      { label: t("tradingAnalysis.title"), href: DEEP_RESEARCH_PATH },
-      { label: t("research.manageReports"), href: RESEARCH_AUTHORING_PATH },
-      ...(analysis ? [{ label: analysis.ticker }] : []),
-    ]} />
+    <PageBreadcrumb
+      items={[
+        { label: t("tradingAnalysis.title"), href: DEEP_RESEARCH_PATH },
+        { label: t("research.manageReports"), href: RESEARCH_AUTHORING_PATH },
+        ...(analysis ? [{ label: analysis.ticker }] : []),
+      ]}
+    />
   );
 
   if (loading) {
     return (
       <DashboardLayout title={t("tradingAnalysis.title")} breadcrumb={breadcrumb}>
         <div className="relative flex-1 overflow-y-auto">
-          <div className="mx-auto w-full max-w-[70rem]">
+          <div className="mx-auto w-full max-w-[100rem]">
             <DetailSkeleton />
           </div>
         </div>
@@ -275,9 +269,7 @@ export default function TradingAnalysisDetailPage() {
         <div className="relative flex-1 overflow-y-auto">
           <div className="flex flex-col items-center justify-center flex-1 min-h-[25rem] gap-4">
             <XCircle className="h-10 w-10 text-muted-foreground" />
-            <p className="text-muted-foreground">
-              {t("tradingAnalysis.notFound")}
-            </p>
+            <p className="text-muted-foreground">{t("tradingAnalysis.notFound")}</p>
           </div>
         </div>
       </DashboardLayout>
@@ -291,10 +283,7 @@ export default function TradingAnalysisDetailPage() {
   const elapsedSeconds = Number.isFinite(startedAt)
     ? Math.max(0, Math.floor((now - startedAt) / 1000))
     : 0;
-  const activityIdleSeconds = Math.max(
-    0,
-    Math.floor((now - lastActivityAt) / 1000),
-  );
+  const activityIdleSeconds = Math.max(0, Math.floor((now - lastActivityAt) / 1000));
   const isWaitingForModel = isRunning && activityIdleSeconds >= 20;
 
   return (
@@ -303,12 +292,20 @@ export default function TradingAnalysisDetailPage() {
       breadcrumb={breadcrumb}
     >
       <div className="relative flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-[70rem] space-y-8 px-[16px] pb-10 pt-6 md:px-8 md:pt-8">
+        <div className="mx-auto w-full max-w-[100rem] space-y-8 px-[16px] pb-10 pt-6 md:px-8 md:pt-8">
           {/* Header */}
           <div className="animate-fade-in-up">
             <div>
               <div className="flex flex-wrap items-center gap-3">
-                <Link href={marketStockHref(analysis.ticker)} className="group flex min-h-11 min-w-11 items-center gap-3 rounded-2xl px-1 transition-colors duration-150 hover:text-foreground focus-visible:outline-none " aria-label={locale === "zh" ? `打开 ${analysis.ticker} 行情页` : `Open ${analysis.ticker} quotes`}>
+                <Link
+                  href={marketStockHref(analysis.ticker)}
+                  className="group flex min-h-11 min-w-11 items-center gap-3 rounded-2xl px-1 transition-colors duration-150 hover:text-foreground focus-visible:outline-none "
+                  aria-label={
+                    locale === "zh"
+                      ? `打开 ${analysis.ticker} 行情页`
+                      : `Open ${analysis.ticker} quotes`
+                  }
+                >
                   <CompanyLogo symbol={analysis.ticker} size="lg" />
                   <h1 className="text-[1.75rem] font-bold leading-tight text-foreground underline-offset-4 group-hover:underline md:text-[2rem]">
                     {analysis.ticker}
@@ -337,10 +334,7 @@ export default function TradingAnalysisDetailPage() {
               </div>
               {isCompleted && (
                 <div className="mt-5">
-                  <DecisionBadgeLarge
-                    decision={analysis.final_decision}
-                    t={t}
-                  />
+                  <DecisionBadgeLarge decision={analysis.final_decision} t={t} />
                 </div>
               )}
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
@@ -384,18 +378,15 @@ export default function TradingAnalysisDetailPage() {
 
           {/* Error */}
           {isFailed && analysis.error_message && (
-            <div
-              role="alert"
-              className="rounded-3xl bg-negative/10 p-4 animate-fade-in-up"
-            >
-              <p className="text-sm text-foreground">
-                {analysis.error_message}
-              </p>
+            <div role="alert" className="rounded-3xl bg-negative/10 p-4 animate-fade-in-up">
+              <p className="text-sm text-foreground">{analysis.error_message}</p>
             </div>
           )}
 
           {/* Completed reports use the same reading order as the published library. */}
-          {isCompleted && <ResearchReportContent key={analysis.id} analysis={analysis} locale={locale} t={t} />}
+          {isCompleted && (
+            <ResearchReportContent key={analysis.id} analysis={analysis} locale={locale} t={t} />
+          )}
         </div>
       </div>
     </DashboardLayout>

@@ -2003,10 +2003,6 @@ html[data-chat-history-open] .app-workbench .app-sidebar {
   }
 }
 
-.recharts-responsive-container {
-  @apply bg-background;
-}
-
 .dashboard-content .recharts-line-curve {
   animation: rh-chart-reveal 700ms var(--ease-out-quart) both;
 }

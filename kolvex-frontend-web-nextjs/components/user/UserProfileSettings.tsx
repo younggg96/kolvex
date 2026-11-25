@@ -12,13 +12,7 @@ import type { UserProfileUpdate } from "@/lib/api/userApi";
 import { Button } from "@/components/ui/button";
 
 export default function UserProfileSettings() {
-  const {
-    profile,
-    loading,
-    error,
-    updateProfile,
-    updateTheme,
-  } = useCurrentUserProfile();
+  const { profile, loading, error, updateProfile, updateTheme } = useCurrentUserProfile();
 
   // 表单状态
   const [formData, setFormData] = useState<UserProfileUpdate>({
@@ -80,16 +74,23 @@ export default function UserProfileSettings() {
     }
   };
 
-
-
   if (loading) {
     return (
-      <ContentLoading className="mx-auto min-h-0 max-w-4xl p-6">
+      <ContentLoading className="mx-auto min-h-0 max-w-[100rem] p-6">
         <Skeleton className="mb-8 h-9 w-36 rounded-lg" />
-        {[3, 2, 1].map((fields, section) => <div key={section} className="mb-6 rounded-2xl border border-border p-6">
-          <Skeleton className="mb-4 h-6 w-24 rounded-md" />
-          <div className="space-y-4">{Array.from({ length: fields }, (_, i) => <div key={i}><Skeleton className="mb-2 h-4 w-16 rounded-md" /><Skeleton className="h-10 w-full rounded-full" /></div>)}</div>
-        </div>)}
+        {[3, 2, 1].map((fields, section) => (
+          <div key={section} className="mb-6 rounded-2xl border border-border p-6">
+            <Skeleton className="mb-4 h-6 w-24 rounded-md" />
+            <div className="space-y-4">
+              {Array.from({ length: fields }, (_, i) => (
+                <div key={i}>
+                  <Skeleton className="mb-2 h-4 w-16 rounded-md" />
+                  <Skeleton className="h-10 w-full rounded-full" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </ContentLoading>
     );
   }
@@ -106,7 +107,7 @@ export default function UserProfileSettings() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-[100rem] mx-auto p-6">
       <h1 className="text-3xl font-bold mb-8">个人设置</h1>
 
       {/* 消息提示 */}
@@ -128,9 +129,7 @@ export default function UserProfileSettings() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
-              邮箱
-            </label>
+            <label className="block text-sm font-medium text-foreground mb-2">邮箱</label>
             <input
               type="email"
               value={profile?.email || ""}
@@ -141,9 +140,7 @@ export default function UserProfileSettings() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
-              用户名
-            </label>
+            <label className="block text-sm font-medium text-foreground mb-2">用户名</label>
             <input
               type="text"
               name="username"
@@ -155,9 +152,7 @@ export default function UserProfileSettings() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
-              全名
-            </label>
+            <label className="block text-sm font-medium text-foreground mb-2">全名</label>
             <input
               type="text"
               name="full_name"
@@ -169,9 +164,7 @@ export default function UserProfileSettings() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
-              手机号
-            </label>
+            <label className="block text-sm font-medium text-foreground mb-2">手机号</label>
             <input
               type="tel"
               name="phone_e164"
@@ -185,11 +178,7 @@ export default function UserProfileSettings() {
             </p>
           </div>
 
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full"
-          >
+          <Button type="submit" disabled={isSubmitting} className="w-full">
             {isSubmitting ? "保存中..." : "保存更改"}
           </Button>
         </form>
@@ -257,8 +246,7 @@ export default function UserProfileSettings() {
           <div>
             <p className="text-muted-foreground">注册时间</p>
             <p className="mt-1">
-              {profile?.created_at &&
-                new Date(profile.created_at).toLocaleDateString("zh-CN")}
+              {profile?.created_at && new Date(profile.created_at).toLocaleDateString("zh-CN")}
             </p>
           </div>
         </div>

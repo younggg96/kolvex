@@ -15,7 +15,7 @@ export default function PersonUpdatesPage() {
   return (
     <DashboardLayout>
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-5xl space-y-6 px-4 pb-8 pt-6 md:px-8 md:pt-8">
+        <div className="mx-auto w-full max-w-[100rem] space-y-6 px-4 pb-8 pt-6 md:px-8 md:pt-8">
           <PersonUpdatesTitle />
           <Suspense fallback={<PersonUpdatesLoading />}>
             <PersonUpdatesReader />

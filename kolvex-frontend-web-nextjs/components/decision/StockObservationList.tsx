@@ -890,7 +890,6 @@ export default function StockObservationList({
               grid={ROW_GRID}
               trendClass="hidden min-[360px]:block"
               watchClass="max-md:hidden"
-              reason
               label={c("Loading stocks", "正在加载股票")}
             />
           ) : (
@@ -936,13 +935,36 @@ export default function StockObservationList({
                                 );
                               })()}
                             </span>
-                            <span className="mt-1 block truncate text-xs text-muted-foreground">
-                              {quotes[symbol]?.name ||
-                                discoveryBySymbol.get(symbol)?.name ||
-                                stock?.company_name ||
-                                coreNames.get(symbol) ||
-                                redditNames.get(symbol) ||
-                                symbol}
+                            <span className="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                              <span className="truncate">
+                                {quotes[symbol]?.name ||
+                                  discoveryBySymbol.get(symbol)?.name ||
+                                  stock?.company_name ||
+                                  coreNames.get(symbol) ||
+                                  redditNames.get(symbol) ||
+                                  symbol}
+                              </span>
+                              {(() => {
+                                const reason = c(
+                                  ...stockEntryReason(
+                                    state.scope,
+                                    symbol,
+                                    stock,
+                                    discoveryBySymbol.get(symbol),
+                                    now,
+                                    social,
+                                    state.source,
+                                  ),
+                                );
+                                return (
+                                  <span
+                                    title={reason}
+                                    className="min-w-0 max-w-[60%] shrink truncate rounded-full bg-foreground/[0.08] px-1.5 py-px text-[0.6875rem] font-medium max-lg:hidden"
+                                  >
+                                    {reason}
+                                  </span>
+                                );
+                              })()}
                             </span>
                           </span>
                         </span>
@@ -1020,19 +1042,6 @@ export default function StockObservationList({
                                 </>
                               );
                             })()
-                          )}
-                        </span>
-                        <span className="col-span-full text-xs leading-5 text-muted-foreground max-lg:hidden">
-                          {c(
-                            ...stockEntryReason(
-                              state.scope,
-                              symbol,
-                              stock,
-                              discoveryBySymbol.get(symbol),
-                              now,
-                              social,
-                              state.source,
-                            ),
                           )}
                         </span>
                       </Link>

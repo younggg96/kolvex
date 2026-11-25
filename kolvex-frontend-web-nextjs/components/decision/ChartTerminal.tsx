@@ -67,8 +67,9 @@ export default function ChartTerminal() {
   );
 
   return (
-    // Phones: leave room for the floating tab bar so the oscillator isn't hidden under it.
-    <div className="flex h-[calc(100dvh-var(--app-header-height,0px))] min-h-[32rem] min-w-0 flex-1 flex-col max-lg:pb-[calc(5.5rem+env(safe-area-inset-bottom))]">
+    // Phones: leave room for the floating tab bar and the panel sheet docked above it, so the
+    // oscillator isn't hidden under them.
+    <div className="flex h-[calc(100dvh-var(--app-header-height,0px))] min-h-[32rem] min-w-0 flex-1 flex-col max-lg:pb-[calc(8.5rem+env(safe-area-inset-bottom))]">
       <h1 className="sr-only">{t("sidebar.chart")}</h1>
       {symbol && (
         <PriceChart

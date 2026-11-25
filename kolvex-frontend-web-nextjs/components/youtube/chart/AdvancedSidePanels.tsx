@@ -26,6 +26,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { floatingSurfaceClass } from "@/components/ui/floating-bar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import CompanyLogo from "@/components/ui/company-logo";
@@ -1019,3 +1020,194 @@ function EarningsPanelBody({ symbol }: { symbol: string }) {
 const WatchlistPanel = memo(WatchlistPanelBody);
 const NewsPanel = memo(NewsPanelBody);
 const EarningsPanel = memo(EarningsPanelBody);
+
+/**
+ * Phones: the side column's panels (自选 / AI / 新闻 / 财报) as one floating sheet docked above the
+ * tab bar. Collapsed it is a single row of tabs; a tab opens it, the handle drags it shut, and
+ * picking a stock closes it so the new chart is in view.
+ */
+export function MobileChartSheet({
+  symbol,
+  ai,
+  onSelectSymbol,
+}: {
+  symbol: string;
+  /** The chart's AI actions and results; null when this chart offers no AI. */
+  ai: ReactNode | null;
+  onSelectSymbol?: (symbol: string) => void;
+}) {
+  const c = useCopy();
+  const panels = SIDE_PANEL_IDS.filter((id) => id !== "ai" || ai !== null);
+  const [panel, setPanel] = useState<SidePanelId>("watchlist");
+  const [open, setOpen] = useState(false);
+  const bodyId = useId();
+  // Panels fetch on mount, so nothing loads until the sheet is first opened.
+  const [opened, setOpened] = useState(false);
+  useEffect(() => {
+    if (open) setOpened(true);
+  }, [open]);
+  const drag = useRef<{ y: number; moved: boolean } | null>(null);
+  const selectRef = useRef(onSelectSymbol);
+  selectRef.current = onSelectSymbol;
+  const hasSelect = Boolean(onSelectSymbol);
+  const selectSymbol = useCallback((next: string) => {
+    selectRef.current?.(next);
+    setOpen(false);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      // Escape closes a dialog opened from the sheet (AI settings) first, not the sheet under it.
+      if (event.key !== "Escape" || document.querySelector('[role="dialog"][data-state="open"]'))
+        return;
+      setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  const choose = (id: SidePanelId) => {
+    if (open && id === panel) {
+      setOpen(false);
+      return;
+    }
+    setPanel(id);
+    setOpen(true);
+  };
+
+  return (
+    <section
+      aria-label={c("Chart panels", "看盘面板")}
+      className="pointer-events-none fixed inset-x-0 bottom-[calc(max(1rem,env(safe-area-inset-bottom))+4.25rem)] z-30 px-4 lg:hidden"
+    >
+      <div className={cn(floatingSurfaceClass, "pointer-events-auto mx-auto w-full max-w-md p-1")}>
+        <div
+          className="flex cursor-grab touch-none justify-center pb-0.5 pt-1 active:cursor-grabbing"
+          aria-hidden="true"
+          onPointerDown={(event) => {
+            drag.current = { y: event.clientY, moved: false };
+            event.currentTarget.setPointerCapture(event.pointerId);
+          }}
+          onPointerMove={(event) => {
+            const start = drag.current;
+            if (!start || start.moved) return;
+            const delta = event.clientY - start.y;
+            if (Math.abs(delta) < 24) return;
+            start.moved = true;
+            setOpen(delta < 0);
+          }}
+          onPointerUp={() => {
+            if (drag.current && !drag.current.moved) setOpen((value) => !value);
+            drag.current = null;
+          }}
+          onPointerCancel={() => {
+            drag.current = null;
+          }}
+        >
+          <span className="h-1 w-9 rounded-full bg-foreground/20" />
+        </div>
+        <div
+          id={bodyId}
+          className={cn(
+            "grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none",
+            open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+          )}
+        >
+          <div
+            // Open, the panel reads on an opaque card inside the glass frame, apart from the tabs.
+            className="min-h-0 overflow-hidden rounded-[1.25rem] bg-card"
+            // React 18 only writes `inert` as a string attribute, though the types say boolean.
+            {...(open ? {} : { inert: "" as unknown as boolean })}
+          >
+            <div
+              className={cn(
+                "flex flex-col",
+                // The watchlist scrolls inside a fixed height; news and earnings shrink to fit.
+                panel === "watchlist" ? "h-[min(58dvh,34rem)]" : "max-h-[min(58dvh,34rem)]",
+              )}
+            >
+              <div className="flex h-11 shrink-0 items-center gap-1 pl-4 pr-1.5">
+                <h2 className="min-w-0 flex-1 truncate text-[0.9375rem] font-semibold">
+                  {panelTitle(panel, c)}
+                </h2>
+                {panel === "watchlist" && (
+                  <div className="[&_button]:h-9 [&_button]:min-h-9 [&_button]:w-9 [&_button]:min-w-9">
+                    <WatchlistButton ticker={symbol} />
+                  </div>
+                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 shrink-0 text-muted-foreground"
+                  aria-label={c("Collapse panel", "收起面板")}
+                  onClick={() => setOpen(false)}
+                >
+                  <ChevronDown className="h-4 w-4" aria-hidden="true" />
+                </Button>
+              </div>
+              <div
+                className={cn(
+                  "min-h-0 flex-1 overflow-hidden border-t border-border",
+                  panel === "watchlist"
+                    ? "flex flex-col [&_ul_a]:min-h-11 [&_ul_button]:min-h-11"
+                    : cn("overflow-y-auto overscroll-contain px-4 pb-3", panel !== "ai" && "pt-1"),
+                )}
+              >
+                {!opened ? null : panel === "watchlist" ? (
+                  <WatchlistPanel
+                    symbol={symbol}
+                    onSelectSymbol={hasSelect ? selectSymbol : undefined}
+                  />
+                ) : panel === "ai" ? (
+                  // The AI action row (分析 / 画线 / 设置) stays pinned while results scroll under it.
+                  <div className="[&>[role=group]:first-child]:sticky [&>[role=group]:first-child]:top-0 [&>[role=group]:first-child]:z-10 [&>[role=group]:first-child]:-mx-4 [&>[role=group]:first-child]:border-b [&>[role=group]:first-child]:border-border [&>[role=group]:first-child]:bg-card [&>[role=group]:first-child]:px-4 [&>[role=group]:first-child]:py-2.5">
+                    {ai}
+                  </div>
+                ) : panel === "news" ? (
+                  <NewsPanel key={symbol} symbol={symbol} />
+                ) : (
+                  <EarningsPanel symbol={symbol} />
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          role="group"
+          aria-label={c("Panels", "面板")}
+          className={cn(
+            "grid gap-1",
+            open && "pt-1",
+            panels.length === 4 ? "grid-cols-4" : "grid-cols-3",
+          )}
+        >
+          {panels.map((id) => {
+            const Icon = PANEL_ICONS[id];
+            const active = open && id === panel;
+            return (
+              <button
+                key={id}
+                type="button"
+                aria-expanded={active}
+                aria-controls={bodyId}
+                onClick={() => choose(id)}
+                className={cn(
+                  "flex min-h-11 min-w-0 items-center justify-center gap-1.5 rounded-[1.25rem] px-1 text-[0.8125rem] font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                  active
+                    ? "bg-foreground/[0.1] text-foreground"
+                    : "text-foreground/70 hover:bg-foreground/[0.06] hover:text-foreground",
+                )}
+              >
+                <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                {/* Four tabs share a phone's width, so AI 分析 is just "AI" here. */}
+                <span className="truncate">{id === "ai" ? "AI" : panelTitle(id, c)}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}

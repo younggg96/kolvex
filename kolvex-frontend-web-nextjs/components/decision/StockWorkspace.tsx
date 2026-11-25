@@ -267,7 +267,7 @@ export default function StockWorkspace({
   return (
     <DashboardLayout title={c("Markets", "行情")}>
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-[112.5rem] px-[16px] pb-10 pt-4 md:px-8 md:pt-6">
+        <div className="mx-auto max-w-[100rem] px-[16px] pb-10 pt-4 md:px-8 md:pt-6">
           <div className="min-w-0 space-y-6">
             <section className="min-w-0" aria-labelledby="stock-title">
               <PageBreadcrumb

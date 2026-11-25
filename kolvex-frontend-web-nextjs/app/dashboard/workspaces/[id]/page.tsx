@@ -64,7 +64,7 @@ function WorkspaceSkeleton({ label }: { label: string }) {
     <div
       role="status"
       aria-busy="true"
-      className="mx-auto w-full min-w-0 max-w-7xl px-4 pb-10 pt-5 md:px-5 md:pt-2"
+      className="mx-auto w-full min-w-0 max-w-[100rem] px-4 pb-10 pt-5 md:px-5 md:pt-2"
     >
       <span className="sr-only">{label}</span>
       <div className="space-y-3">

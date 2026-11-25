@@ -31,7 +31,7 @@ export default function TradeOsLayout({ children }: { children: React.ReactNode 
   return (
     <DashboardLayout title={c("Trade OS", "交易系统")}>
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-6xl space-y-5 px-[16px] pb-14 pt-4 md:px-8 md:pt-6">
+        <div className="mx-auto w-full max-w-[100rem] space-y-5 px-[16px] pb-14 pt-4 md:px-8 md:pt-6">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">

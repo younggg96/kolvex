@@ -32,7 +32,7 @@ import { analysisDrawings, planDrawings } from "./aiDrawings";
 import type { AnalysisVersion } from "@/lib/stockAnalysisHistory";
 import ChartView from "./chart/ChartView";
 import TechnicalFocusSelector from "./chart/TechnicalFocusSelector";
-import AdvancedSidePanels from "./chart/AdvancedSidePanels";
+import AdvancedSidePanels, { MobileChartSheet } from "./chart/AdvancedSidePanels";
 import {
   DEFAULT_TECHNICAL_FOCUS,
   DEFAULT_DRAWING_FOCUS,
@@ -433,6 +433,9 @@ export default function PriceChart({
           escapeRef={escapeRef}
           renderSidePanels={(ai) => (
             <AdvancedSidePanels symbol={symbol} ai={ai} onSelectSymbol={terminal.onSelectSymbol} />
+          )}
+          renderMobilePanels={(ai) => (
+            <MobileChartSheet symbol={symbol} ai={ai} onSelectSymbol={terminal.onSelectSymbol} />
           )}
         />
       </div>

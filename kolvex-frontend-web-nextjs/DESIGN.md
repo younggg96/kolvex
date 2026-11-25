@@ -697,10 +697,11 @@ chart itself is the result.
 
 ## Chart controls and result reading
 
-Full chart surfaces, including embedded and fullscreen charts, use the opaque
-theme background token in light and dark modes. Sparklines in rows and market
-cards use transparent backgrounds so the enclosing surface shows through on
-hover and keyboard focus.
+The K-line chart surface (`ChartView`, embedded and fullscreen) uses the opaque
+theme background token in light and dark modes. Recharts line, area, bar and
+donut charts have no background of their own: they sit directly on the card or
+page surface around them. Sparklines in rows and market cards are transparent
+too, so the enclosing surface shows through on hover and keyboard focus.
 
 `ChartView` places the primary AI analysis and secondary AI drawings actions
 first, with a quiet AI settings action aligned right. Phones keep the two

@@ -8,15 +8,39 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useCopy } from "@/components/decision/shared";
 import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/ui/segmented-control";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCachedResource } from "@/hooks/useCachedResource";
 import { useTranslation } from "@/lib/i18n";
-import { ACTIVITY_SESSIONS, runKey, runsKey, type ActivityRun, type RunList } from "@/lib/optionsActivity";
-import { ContributionBoard, MarketOverview, ResearchCandidates, SummaryCard, TickerLevels, UnusualContracts, useSessionLabel, type Filter } from "./sections";
+import {
+  ACTIVITY_SESSIONS,
+  runKey,
+  runsKey,
+  type ActivityRun,
+  type RunList,
+} from "@/lib/optionsActivity";
+import {
+  ContributionBoard,
+  MarketOverview,
+  ResearchCandidates,
+  SummaryCard,
+  TickerLevels,
+  UnusualContracts,
+  useSessionLabel,
+  type Filter,
+} from "./sections";
 
 class ActivityError extends Error {
-  constructor(public code: string, public status: number) {
+  constructor(
+    public code: string,
+    public status: number,
+  ) {
     super(code);
   }
 }
@@ -24,7 +48,11 @@ class ActivityError extends Error {
 async function load<T>(key: string, signal: AbortSignal): Promise<T> {
   const response = await fetch(key, { signal, cache: "no-store" });
   const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new ActivityError(typeof body?.error === "string" ? body.error : "unavailable", response.status);
+  if (!response.ok)
+    throw new ActivityError(
+      typeof body?.error === "string" ? body.error : "unavailable",
+      response.status,
+    );
   return body;
 }
 
@@ -39,7 +67,8 @@ export default function OptionsActivityPage() {
   const [date, setDate] = useState<string | null>(() => searchParams.get("date"));
   const [runId, setRunId] = useState<string | null>(null);
   const kindParam = searchParams.get("kind");
-  const kind: Filter = kindParam === "etf" || kindParam === "stock" || kindParam === "earnings" ? kindParam : "all";
+  const kind: Filter =
+    kindParam === "etf" || kindParam === "stock" || kindParam === "earnings" ? kindParam : "all";
 
   const setQuery = useCallback(
     (updates: Record<string, string | null>) => {
@@ -54,30 +83,38 @@ export default function OptionsActivityPage() {
     [router, searchParams],
   );
 
-  const list = useCachedResource<RunList>(runsKey(date), (signal) => load(runsKey(date), signal), { ttl: 60_000, timeout: 25_000 });
-  // A picked date with no explicit run shows that day's latest run.
-  const dayRuns = list.data?.runs ?? [];
-  const effectiveId = runId ?? (date ? dayRuns[dayRuns.length - 1]?.id ?? null : null);
-  const waitingForDay = Boolean(date && !runId && !list.data);
-  const run = useCachedResource<ActivityRun>(runKey(effectiveId), (signal) => load(runKey(effectiveId), signal), {
+  const list = useCachedResource<RunList>(runsKey(date), (signal) => load(runsKey(date), signal), {
     ttl: 60_000,
     timeout: 25_000,
-    enabled: !waitingForDay,
   });
+  // A picked date with no explicit run shows that day's latest run.
+  const dayRuns = list.data?.runs ?? [];
+  const effectiveId = runId ?? (date ? (dayRuns[dayRuns.length - 1]?.id ?? null) : null);
+  const waitingForDay = Boolean(date && !runId && !list.data);
+  const run = useCachedResource<ActivityRun>(
+    runKey(effectiveId),
+    (signal) => load(runKey(effectiveId), signal),
+    {
+      ttl: 60_000,
+      timeout: 25_000,
+      enabled: !waitingForDay,
+    },
+  );
   const data = run.data;
-  const runsForPicker = date ? dayRuns : data?.day_runs ?? [];
+  const runsForPicker = date ? dayRuns : (data?.day_runs ?? []);
   const wantedSession = searchParams.get("session");
 
   // A session in the URL picks that run once the day's runs are known.
   useEffect(() => {
     if (!wantedSession || data?.session === wantedSession) return;
-    const runs = date ? list.data?.runs ?? [] : data?.day_runs ?? [];
+    const runs = date ? (list.data?.runs ?? []) : (data?.day_runs ?? []);
     const match = runs.find((r) => r.session === wantedSession);
     if (match && match.id !== runId) setRunId(match.id);
   }, [wantedSession, data, date, list.data, runId]);
   const activeDate = data?.trade_date ?? date ?? list.data?.date ?? null;
 
-  const failure = run.error instanceof ActivityError ? run.error.code : run.error ? "unavailable" : null;
+  const failure =
+    run.error instanceof ActivityError ? run.error.code : run.error ? "unavailable" : null;
   const errorText: Record<string, string> = {
     no_runs: c(
       "No report yet. The first one appears after the next scheduled run (09:00, 12:30 or 16:20 ET on trading days).",
@@ -97,14 +134,17 @@ export default function OptionsActivityPage() {
   return (
     <DashboardLayout title={c("Options activity", "期权异动")}>
       <div className="min-h-0 flex-1 overflow-y-auto bg-background dark:bg-transparent">
-        <div className="mx-auto max-w-6xl px-[16px] pb-12 pt-3 max-md:flex max-md:flex-col md:px-8 md:py-8">
+        <div className="mx-auto max-w-[100rem] px-[16px] pb-12 pt-3 max-md:flex max-md:flex-col md:px-8 md:py-8">
           {/* On phones the header dissolves so the toolbar can lead the page and stay pinned while it scrolls. */}
           <header className="flex flex-col gap-5 max-md:contents md:mb-10 md:flex-row md:items-end md:justify-between">
             <div className="min-w-0 max-md:mb-[16px]">
               <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight md:text-[2rem]">
                 {c("Options activity", "期权异动")}
                 <InfoTip label={c("About options activity", "关于期权异动")}>
-                  {c("Where options money traded across a watchlist of liquid ETFs and stocks, three times each trading day. A starting point for research, not a trading signal.", "每个交易日三次，扫描一组高流动性 ETF 和个股的期权成交，看资金集中在哪里。这是研究的起点，不是交易信号。")}
+                  {c(
+                    "Where options money traded across a watchlist of liquid ETFs and stocks, three times each trading day. A starting point for research, not a trading signal.",
+                    "每个交易日三次，扫描一组高流动性 ETF 和个股的期权成交，看资金集中在哪里。这是研究的起点，不是交易信号。",
+                  )}
                 </InfoTip>
               </h1>
             </div>
@@ -119,7 +159,10 @@ export default function OptionsActivityPage() {
                   }}
                   disabled={!list.data?.dates.length}
                 >
-                  <SelectTrigger aria-label={c("Trading day", "交易日")} className="h-10 border-foreground/10 bg-foreground/[0.04]">
+                  <SelectTrigger
+                    aria-label={c("Trading day", "交易日")}
+                    className="h-10 border-foreground/10 bg-foreground/[0.04]"
+                  >
                     <SelectValue placeholder={c("Trading day", "交易日")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -157,9 +200,14 @@ export default function OptionsActivityPage() {
                   run.refresh();
                 }}
               >
-                {run.refreshing
-                  ? <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
-                  : <RefreshCw className="h-4 w-4" aria-hidden="true" />}
+                {run.refreshing ? (
+                  <Loader2
+                    className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <RefreshCw className="h-4 w-4" aria-hidden="true" />
+                )}
               </Button>
             </div>
           </header>
@@ -170,15 +218,24 @@ export default function OptionsActivityPage() {
               <ResearchCandidates candidates={data.summary?.candidates} run={data} />
               <MarketOverview run={data} />
               <ContributionBoard run={data} />
-              <UnusualContracts run={data} filter={kind} onFilterChange={(next) => setQuery({ kind: next === "all" ? null : next })} />
+              <UnusualContracts
+                run={data}
+                filter={kind}
+                onFilterChange={(next) => setQuery({ kind: next === "all" ? null : next })}
+              />
               <TickerLevels run={data} />
             </div>
           ) : failure && !run.loading ? (
-            <div role="alert" className="flex min-h-44 flex-col items-center justify-center rounded-3xl border border-foreground/10 glass-card bg-card-glass px-6 py-10 text-center">
+            <div
+              role="alert"
+              className="flex min-h-44 flex-col items-center justify-center rounded-3xl border border-foreground/10 glass-card bg-card-glass px-6 py-10 text-center"
+            >
               <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
                 <AlertCircle className="h-5 w-5" aria-hidden="true" />
               </span>
-              <p className="max-w-lg text-sm leading-6 text-muted-foreground">{errorText[failure] ?? errorText.unavailable}</p>
+              <p className="max-w-lg text-sm leading-6 text-muted-foreground">
+                {errorText[failure] ?? errorText.unavailable}
+              </p>
               {failure === "unavailable" && (
                 <Button variant="outline" size="sm" className="mt-5" onClick={run.refresh}>
                   {c("Try again", "重试")}
@@ -186,7 +243,12 @@ export default function OptionsActivityPage() {
               )}
             </div>
           ) : (
-            <div className="space-y-8 md:space-y-10" aria-busy="true" role="status" aria-label={c("Loading options activity", "正在加载期权异动")}>
+            <div
+              className="space-y-8 md:space-y-10"
+              aria-busy="true"
+              role="status"
+              aria-label={c("Loading options activity", "正在加载期权异动")}
+            >
               <div className="space-y-4 rounded-3xl border border-foreground/10 glass-card bg-card-glass p-5 md:p-6">
                 <Skeleton className="h-5 w-32 rounded-md" />
                 <div className="space-y-3">
@@ -199,12 +261,21 @@ export default function OptionsActivityPage() {
               <div className="space-y-5">
                 <Skeleton className="h-6 w-40 rounded-md" />
                 <div className="grid grid-cols-2 gap-4 rounded-3xl border border-foreground/10 glass-card bg-card-glass p-5 sm:grid-cols-4 md:p-6">
-                  {[0, 1, 2, 3].map((item) => <div key={item} className="space-y-2"><Skeleton className="h-3 w-20 rounded-md" /><Skeleton className="h-6 w-24 rounded-md" /></div>)}
+                  {[0, 1, 2, 3].map((item) => (
+                    <div key={item} className="space-y-2">
+                      <Skeleton className="h-3 w-20 rounded-md" />
+                      <Skeleton className="h-6 w-24 rounded-md" />
+                    </div>
+                  ))}
                 </div>
               </div>
               <div className="space-y-4">
                 <Skeleton className="h-6 w-44 rounded-md" />
-                <div className="space-y-2">{[0, 1, 2, 3].map((item) => <Skeleton key={item} className="h-14 w-full rounded-2xl" />)}</div>
+                <div className="space-y-2">
+                  {[0, 1, 2, 3].map((item) => (
+                    <Skeleton key={item} className="h-14 w-full rounded-2xl" />
+                  ))}
+                </div>
               </div>
             </div>
           )}

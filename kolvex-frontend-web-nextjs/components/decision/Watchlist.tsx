@@ -167,7 +167,7 @@ export default function Watchlist() {
   return (
     <DashboardLayout title={c("Watchlist", "自选股")}>
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-6xl space-y-6 px-[16px] pb-10 pt-6 md:px-8 md:pt-8">
+        <div className="mx-auto max-w-[100rem] space-y-6 px-[16px] pb-10 pt-6 md:px-8 md:pt-8">
           {!ready ? (
             <WatchlistCardSkeleton />
           ) : (!userId || error) && !watchlist.length ? null : !watchlist.length ? (
@@ -512,7 +512,7 @@ export function WatchlistPageSkeleton({ noTransition = false }: { noTransition?:
   return (
     <DashboardLayout title={c("Watchlist", "自选股")} noTransition={noTransition}>
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-6xl space-y-6 px-[16px] pb-10 pt-6 md:px-8 md:pt-8">
+        <div className="mx-auto max-w-[100rem] space-y-6 px-[16px] pb-10 pt-6 md:px-8 md:pt-8">
           <div className="flex items-start justify-between gap-4">
             <div className="flex flex-col gap-3">
               <Skeleton className="h-8 w-28 rounded-lg sm:h-9" />

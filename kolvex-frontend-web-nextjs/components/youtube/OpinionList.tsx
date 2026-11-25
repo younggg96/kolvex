@@ -8,12 +8,7 @@ import PageBreadcrumb from "@/components/layout/PageBreadcrumb";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Empty, useCopy } from "@/components/decision/shared";
-import {
-  ListCard,
-  ListLoadMore,
-  ListRows,
-  listFeedGroupRowClass,
-} from "@/components/ui/list-card";
+import { ListCard, ListLoadMore, ListRows, listFeedGroupRowClass } from "@/components/ui/list-card";
 import { useTranslation } from "@/lib/i18n";
 import { getYouTubeVideoFeed } from "@/lib/youtubeOpinionsApi";
 import VideoOpinionCard from "./VideoOpinionCard";
@@ -50,9 +45,17 @@ export default function OpinionList() {
         offset.current = result.videos.length;
         setHasMore(result.pagination.has_more);
       })
-      .catch(() => { if (alive) setError(true); })
-      .finally(() => { if (alive) setLoading(false); });
-    return () => { alive = false; active.current = false; controller.abort(); };
+      .catch(() => {
+        if (alive) setError(true);
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+    return () => {
+      alive = false;
+      active.current = false;
+      controller.abort();
+    };
   }, [revision]);
 
   async function loadMore() {
@@ -79,32 +82,90 @@ export default function OpinionList() {
   }
 
   return (
-    <DashboardLayout title={c("All opinions", "全部观点")} breadcrumb={<PageBreadcrumb items={[
-      { label: t("youtubeOpinions.title"), href: "/dashboard/youtube-opinions" },
-      { label: c("All opinions", "全部观点") },
-    ]} />}>
+    <DashboardLayout
+      title={c("All opinions", "全部观点")}
+      breadcrumb={
+        <PageBreadcrumb
+          items={[
+            { label: t("youtubeOpinions.title"), href: "/dashboard/youtube-opinions" },
+            { label: c("All opinions", "全部观点") },
+          ]}
+        />
+      }
+    >
       <main className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-6xl px-[16px] pb-10 pt-6 md:px-8 md:pt-8">
+        <div className="mx-auto max-w-[100rem] px-[16px] pb-10 pt-6 md:px-8 md:pt-8">
           <header className="mb-6">
-            <h1 className="text-[1.75rem] font-semibold tracking-tight sm:text-[2rem]">{c("All opinions", "全部观点")}</h1>
+            <h1 className="text-[1.75rem] font-semibold tracking-tight sm:text-[2rem]">
+              {c("All opinions", "全部观点")}
+            </h1>
           </header>
           <ListCard>
             <div aria-busy={loading || moreLoading}>
               {loading ? (
-                <><Skeleton className="mb-1 h-3.5 w-28 rounded-md" /><div className="border-t border-border" /><VideoGroupsSkeleton showCreator label={t("common.loadingStatus")} /></>
+                <>
+                  <Skeleton className="mb-1 h-3.5 w-28 rounded-md" />
+                  <div className="border-t border-border" />
+                  <VideoGroupsSkeleton showCreator label={t("common.loadingStatus")} />
+                </>
               ) : (
                 <>
-                  {!error && <p role="status" className="mb-1 border-b border-border pb-3 text-xs tabular-nums text-muted-foreground">{c(`${videos.length} of ${total} videos`, `已显示 ${videos.length} / ${total} 期视频`)}</p>}
+                  {!error && (
+                    <p
+                      role="status"
+                      className="mb-1 border-b border-border pb-3 text-xs tabular-nums text-muted-foreground"
+                    >
+                      {c(
+                        `${videos.length} of ${total} videos`,
+                        `已显示 ${videos.length} / ${total} 期视频`,
+                      )}
+                    </p>
+                  )}
                   {videos.length ? (
                     <ListRows aria-label={c("All opinions", "全部观点")}>
-                      {videos.map((group) => <li key={group.videoId} className={listFeedGroupRowClass}><VideoOpinionCard group={group} t={t} showCreator onStock={(ticker) => router.push(`/dashboard/youtube-opinions?tab=stocks&stock=${encodeURIComponent(ticker)}`)} /></li>)}
+                      {videos.map((group) => (
+                        <li key={group.videoId} className={listFeedGroupRowClass}>
+                          <VideoOpinionCard
+                            group={group}
+                            t={t}
+                            showCreator
+                            onStock={(ticker) =>
+                              router.push(
+                                `/dashboard/youtube-opinions?tab=stocks&stock=${encodeURIComponent(ticker)}`,
+                              )
+                            }
+                          />
+                        </li>
+                      ))}
                     </ListRows>
-                  ) : !error ? <Empty>{t("youtubeOpinions.noOpinionsYet")}</Empty> : null}
+                  ) : !error ? (
+                    <Empty>{t("youtubeOpinions.noOpinionsYet")}</Empty>
+                  ) : null}
                 </>
               )}
             </div>
-            {!loading && error && <div role="alert" className="flex flex-wrap items-center gap-3 py-6"><p className="text-sm text-muted-foreground">{c("Opinions could not be loaded. Try again.", "暂时无法加载观点，请重试。")}</p><Button variant="outline" onClick={() => videos.length ? loadMore() : setRevision((value) => value + 1)}>{t("common.retry")}</Button></div>}
-            {!loading && !error && hasMore && <ListLoadMore loading={moreLoading} skeleton={<VideoGroupsSkeleton showCreator rows={2} />} onClick={loadMore}>{c("Load more videos", "加载更多视频")}</ListLoadMore>}
+            {!loading && error && (
+              <div role="alert" className="flex flex-wrap items-center gap-3 py-6">
+                <p className="text-sm text-muted-foreground">
+                  {c("Opinions could not be loaded. Try again.", "暂时无法加载观点，请重试。")}
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() => (videos.length ? loadMore() : setRevision((value) => value + 1))}
+                >
+                  {t("common.retry")}
+                </Button>
+              </div>
+            )}
+            {!loading && !error && hasMore && (
+              <ListLoadMore
+                loading={moreLoading}
+                skeleton={<VideoGroupsSkeleton showCreator rows={2} />}
+                onClick={loadMore}
+              >
+                {c("Load more videos", "加载更多视频")}
+              </ListLoadMore>
+            )}
           </ListCard>
         </div>
       </main>

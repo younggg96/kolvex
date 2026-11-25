@@ -180,7 +180,7 @@ export default function RedditOpinionsPage() {
   return (
     <DashboardLayout title={t("redditOpinions.header")}>
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-6xl px-[16px] pb-6 pt-[12px] md:px-8 md:py-8">
+        <div className="mx-auto max-w-[100rem] px-[16px] pb-6 pt-[12px] md:px-8 md:py-8">
           <div className="flex items-center justify-between gap-3">
             <h1 className="flex min-w-0 items-center gap-2 text-2xl font-semibold tracking-tight md:text-[2rem]">
               {t("redditOpinions.title")}

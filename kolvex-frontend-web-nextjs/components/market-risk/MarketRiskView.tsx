@@ -11,6 +11,7 @@ import {
   ReferenceArea,
   ReferenceLine,
   ResponsiveContainer,
+  LabelList,
   Tooltip,
   XAxis,
   YAxis,
@@ -64,19 +65,26 @@ const TONE_TEXT: Record<Tone, string> = {
   negative: "text-negative",
   muted: "text-muted-foreground",
 };
+/*
+ * Colour is spent in one place: the current level / stage (score number, stage name, the current
+ * stretch of the stage strip). Everything else is neutral and ordered by weight, so chips, gauges
+ * and chart fills read calm → stressed as light → dark, and their text says which is which.
+ */
 const TONE_CHIP: Record<Tone, string> = {
-  positive: "border-positive/30 bg-positive/10 text-positive",
-  warning: "border-warning/30 bg-warning/10 text-warning",
-  negative: "border-negative/30 bg-negative/10 text-negative",
-  muted: "border-foreground/15 bg-muted text-muted-foreground",
+  positive: "border-foreground/15 text-muted-foreground",
+  muted: "border-foreground/15 text-muted-foreground",
+  warning: "border-foreground/25 text-foreground",
+  negative: "border-foreground/40 bg-foreground/[0.07] font-semibold text-foreground",
 };
-// Chart fills come from the same semantic tokens as the chips.
-const STAGE_FILL: Record<RiskStage, string> = {
-  stable: "rgb(var(--positive) / 0.08)",
-  stress_build_up: "rgb(var(--warning) / 0.14)",
-  stress_acceleration: "rgb(var(--negative) / 0.16)",
-  post_stress_normalization: "rgb(var(--muted-foreground) / 0.12)",
+/** Stage weight on the neutral ladder (foreground opacity): stable lightest, acceleration darkest. */
+const STAGE_WEIGHT: Record<RiskStage, number> = {
+  stable: 0.1,
+  post_stress_normalization: 0.18,
+  stress_build_up: 0.28,
+  stress_acceleration: 0.42,
 };
+const stageGray = (stage: RiskStage, scale = 1) =>
+  `rgb(var(--foreground) / ${(STAGE_WEIGHT[stage] * scale).toFixed(3)})`;
 
 function useDate() {
   const { locale } = useTranslation();
@@ -194,7 +202,7 @@ function Chip({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold",
+        "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium",
         TONE_CHIP[tone],
         className,
       )}
@@ -302,10 +310,11 @@ export function MarketRiskContent({
   return (
     <div className="space-y-8">
       <DataStatus latest={latest} />
-      <div className="grid gap-4 md:grid-cols-2">
+      {/* One panel split by a rule: the score and the stage it puts the market in are read together. */}
+      <Card className="grid divide-y divide-border overflow-hidden md:grid-cols-2 md:divide-x md:divide-y-0">
         <ScoreCard latest={latest} />
         <StageCard latest={latest} />
-      </div>
+      </Card>
       <StageTimeline latest={latest} />
       <div className="grid gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
         <TermStructure latest={latest} />
@@ -326,9 +335,14 @@ export function MarketRiskContent({
             "模型估算，尚未经回测充分验证，不构成投资建议。等级描述压力程度，不代表下跌概率。",
           )}
         </p>
-        <p className="figure">
-          {c("Cboe daily closes", "Cboe 日终收盘")} · {c("Data through", "数据截至")}{" "}
-          {date(latest.as_of)} · {c("Model", "模型")} {latest.model_version}
+        <p className="figure flex flex-wrap gap-x-4">
+          <span>{c("Cboe daily closes", "Cboe 日终收盘")}</span>
+          <span>
+            {c("Data through", "数据截至")} {date(latest.as_of)}
+          </span>
+          <span>
+            {c("Model", "模型")} {latest.model_version}
+          </span>
         </p>
       </footer>
     </div>
@@ -380,8 +394,88 @@ function DataStatus({ latest }: { latest: MarketRiskLatest }) {
   );
 }
 
+const TONE_BG: Record<Tone, string> = {
+  positive: "bg-positive",
+  warning: "bg-warning",
+  negative: "bg-negative",
+  muted: "bg-foreground",
+};
+/** Level bands of the 0–100 score, matching the backend (<40 low … ≥90 extreme). */
+const LEVEL_BANDS: { level: RiskLevel; from: number; to: number }[] = [
+  { level: "low", from: 0, to: 40 },
+  { level: "moderate", from: 40, to: 60 },
+  { level: "elevated", from: 60, to: 75 },
+  { level: "high", from: 75, to: 90 },
+  { level: "extreme", from: 90, to: 100 },
+];
+const LEVEL_FILL = [0.07, 0.12, 0.2, 0.3, 0.42];
+
+/** The score on its own 0–100 scale: the level bands, today's position and the prior session's. */
+function ScoreScale({ latest }: { latest: MarketRiskLatest }) {
+  const c = useCopy();
+  const { score } = latest;
+  const tone = levelTone(score.level);
+  const clamp = (value: number) => Math.min(100, Math.max(0, value));
+  const band = LEVEL_BANDS.find((item) => item.level === score.level);
+  return (
+    <div
+      role="img"
+      aria-label={c(
+        `Score ${score.value.toFixed(1)} on a 0–100 scale, in the ${levelLabel(score.level, c)} band${band ? ` (${band.from}–${band.to})` : ""}`,
+        `评分 ${score.value.toFixed(1)}（0–100），位于${levelLabel(score.level, c)}区间${band ? `（${band.from}–${band.to}）` : ""}`,
+      )}
+    >
+      <div className="relative">
+        <div className="flex h-2.5 gap-px overflow-hidden rounded-full">
+          {LEVEL_BANDS.map((item, i) => (
+            <span
+              key={item.level}
+              style={{
+                width: `${item.to - item.from}%`,
+                background: `rgb(var(--foreground) / ${LEVEL_FILL[i]})`,
+              }}
+            />
+          ))}
+        </div>
+        {score.previous_value !== null && (
+          <span
+            className="absolute top-1/2 h-4 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-muted-foreground"
+            style={{ left: `${clamp(score.previous_value)}%` }}
+          />
+        )}
+        <span
+          className={cn(
+            "absolute top-1/2 h-5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-card",
+            TONE_BG[tone],
+          )}
+          style={{ left: `${clamp(score.value)}%` }}
+        />
+      </div>
+      <div className="mt-2 flex text-[0.6875rem] leading-4" aria-hidden>
+        {LEVEL_BANDS.map((item) => {
+          const current = item.level === score.level;
+          return (
+            <span
+              key={item.level}
+              className={cn(
+                "min-w-0 truncate border-l border-border pl-1.5 first:border-l-0 first:pl-0",
+                current ? "font-semibold text-foreground" : "text-muted-foreground",
+              )}
+              style={{ width: `${item.to - item.from}%` }}
+            >
+              <span className="figure block">{item.from}</span>
+              {levelLabel(item.level, c)}
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function ScoreCard({ latest }: { latest: MarketRiskLatest }) {
   const c = useCopy();
+  const date = useDate();
   const { score } = latest;
   const tone = levelTone(score.level);
   const change = score.previous_value === null ? null : score.value - score.previous_value;
@@ -393,7 +487,7 @@ function ScoreCard({ latest }: { latest: MarketRiskLatest }) {
       term_structure: c("Term structure", "期限结构"),
     })[key] ?? key;
   return (
-    <Card className="space-y-4 p-5">
+    <section className="min-w-0 space-y-5 p-5 sm:p-6">
       <div className="flex items-center gap-1.5">
         <h2 className="text-base font-semibold">{c("Market stress score", "市场压力评分")}</h2>
         <InfoTip label={c("How the score works", "评分说明")}>
@@ -403,17 +497,24 @@ function ScoreCard({ latest }: { latest: MarketRiskLatest }) {
           )}
         </InfoTip>
       </div>
-      <div className="flex flex-wrap items-end gap-x-3 gap-y-1">
-        <span className={cn("figure text-5xl font-semibold leading-none", TONE_TEXT[tone])}>
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <span
+          className={cn(
+            "figure text-5xl font-semibold leading-none tracking-tight",
+            TONE_TEXT[tone],
+          )}
+        >
           {score.value.toFixed(1)}
         </span>
-        <Chip tone={tone} className="mb-1">
+        <span className={cn("text-lg font-semibold", TONE_TEXT[tone])}>
           {levelLabel(score.level, c)}
-        </Chip>
+        </span>
         {change !== null && (
-          <span className="figure mb-1 text-sm text-muted-foreground">
-            {withSign(change, (m) => m.toFixed(1), { digits: 1 })}{" "}
-            {c("vs prior session", "较上一交易日")}
+          <span className="figure text-sm text-muted-foreground">
+            {c(
+              `${withSign(change, (m) => m.toFixed(1), { digits: 1 })} from ${date(score.previous_date, true)}`,
+              `较 ${date(score.previous_date, true)} ${withSign(change, (m) => m.toFixed(1), { digits: 1 })}`,
+            )}
           </span>
         )}
       </div>
@@ -425,31 +526,46 @@ function ScoreCard({ latest }: { latest: MarketRiskLatest }) {
           )}
         </p>
       )}
-      <ul className="space-y-2.5" aria-label={c("Score contributions", "评分构成")}>
-        {top.map((component) => (
-          <li key={component.metric_key} className="space-y-1">
-            <div className="flex items-baseline justify-between gap-3 text-sm">
-              <span>
-                <span className="font-medium">{metricName(component, c)}</span>{" "}
-                <span className="text-muted-foreground">
-                  {dimension(component.dimension)} · {Math.round(component.weight * 100)}%
+      <ScoreScale latest={latest} />
+      <table className="w-full text-sm">
+        <caption className="sr-only">{c("Score contributions", "评分构成")}</caption>
+        <thead>
+          <tr className="text-left text-[0.6875rem] text-muted-foreground">
+            <th scope="col" className="pb-1.5 font-normal">
+              {c("Input", "指标")}
+            </th>
+            <th scope="col" className="pb-1.5 text-right font-normal">
+              {c("Weight", "权重")}
+            </th>
+            <th scope="col" className="pb-1.5 text-right font-normal">
+              {c("Percentile", "分位")}
+            </th>
+            <th scope="col" className="pb-1.5 text-right font-normal">
+              {c("Points", "贡献")}
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border border-t border-border">
+          {top.map((component) => (
+            <tr key={component.metric_key}>
+              <th scope="row" className="py-2 pr-3 text-left font-normal">
+                <span className="font-medium">{metricName(component, c)}</span>
+                <span className="block text-xs text-muted-foreground">
+                  {dimension(component.dimension)}
                 </span>
-              </span>
-              <span className="figure shrink-0 text-muted-foreground">
-                {c("pct", "分位")} {component.percentile.toFixed(0)} · +
-                {component.contribution.toFixed(1)}
-              </span>
-            </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden>
-              <div
-                className="h-full rounded-full bg-foreground/60"
-                style={{ width: `${component.percentile}%` }}
-              />
-            </div>
-          </li>
-        ))}
-      </ul>
-    </Card>
+              </th>
+              <td className="figure py-2 text-right text-muted-foreground">
+                {Math.round(component.weight * 100)}%
+              </td>
+              <td className="figure py-2 pl-3 text-right">{component.percentile.toFixed(0)}</td>
+              <td className="figure py-2 pl-3 text-right font-medium">
+                +{component.contribution.toFixed(1)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
   );
 }
 
@@ -460,8 +576,10 @@ function StageCard({ latest }: { latest: MarketRiskLatest }) {
   const meta = stageCopy(stage.current, c);
   const tone = stageTone(stage.current);
   const conditions = Object.entries(stage.stress_conditions);
+  const met = conditions.filter(([, value]) => value === true).length;
+  const days = daysBetween(stage.since, latest.as_of);
   return (
-    <Card className="space-y-4 p-5">
+    <section className="min-w-0 space-y-4 p-5 sm:p-6">
       <div className="flex items-center gap-1.5">
         <h2 className="text-base font-semibold">{c("Risk stage", "风险阶段")}</h2>
         <InfoTip label={c("How stages change", "阶段如何切换")}>
@@ -477,11 +595,12 @@ function StageCard({ latest }: { latest: MarketRiskLatest }) {
           {meta.label}
         </p>
         <p className="figure text-sm text-muted-foreground">
-          {c("Since", "始于")} {date(stage.since)}
+          {c(`Since ${date(stage.since)}`, `始于 ${date(stage.since)}`)}
+          {days !== null && c(`, ${days} days so far`, `，已持续 ${days} 天`)}
         </p>
       </div>
       {stage.pending && (
-        <p className="flex items-center gap-1.5 text-sm text-warning">
+        <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
           <CircleDashed className="h-4 w-4" aria-hidden />
           {c(
             `Pending: ${stageCopy(stage.pending, c).label} (${stage.pending_sessions}/${stage.sessions_to_confirm} sessions)`,
@@ -491,131 +610,248 @@ function StageCard({ latest }: { latest: MarketRiskLatest }) {
       )}
       <div className="space-y-2">
         <h3 className="text-sm font-medium text-muted-foreground">
-          {c("Stress conditions", "压力条件")}
+          {c(
+            `Stress conditions: ${met} of ${conditions.length} met`,
+            `压力条件：${conditions.length} 条中 ${met} 条成立`,
+          )}
         </h3>
         <ul className="grid gap-1.5 sm:grid-cols-2">
-          {conditions.map(([key, met]) => (
+          {conditions.map(([key, isMet]) => (
             <li key={key} className="flex items-center gap-2 text-sm">
-              {met === null ? (
+              {isMet === null ? (
                 <Minus
                   className="h-4 w-4 text-muted-foreground"
                   aria-label={c("No data", "无数据")}
                 />
-              ) : met ? (
-                <AlertTriangle className="h-4 w-4 text-negative" aria-label={c("Met", "成立")} />
+              ) : isMet ? (
+                <AlertTriangle className="h-4 w-4 text-foreground" aria-label={c("Met", "成立")} />
               ) : (
                 <Check
                   className="h-4 w-4 text-muted-foreground"
                   aria-label={c("Not met", "未成立")}
                 />
               )}
-              <span className={met ? "text-foreground" : "text-muted-foreground"}>
+              <span className={isMet ? "text-foreground" : "text-muted-foreground"}>
                 {conditionLabel(key, c)}
               </span>
             </li>
           ))}
         </ul>
       </div>
-    </Card>
+    </section>
   );
 }
 
+// Strip fills: past stretches are quiet, the current one is solid. Swatches in the key match.
+// Only the current stretch carries the stage colour; past stretches sit on the neutral ladder.
+const STAGE_NOW: Record<RiskStage, string> = {
+  stable: "bg-positive text-background",
+  stress_build_up: "bg-warning text-background",
+  stress_acceleration: "bg-negative text-background",
+  post_stress_normalization: "bg-foreground/70 text-background",
+};
+
+/** Whole calendar days from `from` to `to` (both YYYY-MM-DD…). */
+function daysBetween(from: string, to: string) {
+  const start = Date.parse(`${from.slice(0, 10)}T00:00:00Z`);
+  const end = Date.parse(`${to.slice(0, 10)}T00:00:00Z`);
+  return Number.isFinite(start) && Number.isFinite(end)
+    ? Math.max(0, Math.round((end - start) / 86_400_000))
+    : null;
+}
+
+/** Stage stretches from the recorded switches up to the evaluation date, oldest first. */
+function stageStretches(latest: MarketRiskLatest) {
+  const switches = [...latest.recent_events]
+    .filter((event) => event.effective_date <= latest.as_of)
+    .sort((a, b) => a.effective_date.localeCompare(b.effective_date));
+  if (!switches.length || switches[switches.length - 1].new_stage !== latest.stage.current)
+    switches.push({
+      effective_date: latest.stage.since,
+      previous_stage: null,
+      new_stage: latest.stage.current,
+      risk_score: null,
+      rules: [],
+    });
+  return switches.map((event, i) => ({
+    stage: event.new_stage,
+    start: event.effective_date,
+    end: switches[i + 1]?.effective_date ?? latest.as_of,
+  }));
+}
+
+/**
+ * The stages as time actually spent in them: a strip from the first recorded switch to the latest
+ * close, each stretch as wide as it lasted, then a key that says what each stage means.
+ */
 function StageTimeline({ latest }: { latest: MarketRiskLatest }) {
   const c = useCopy();
   const date = useDate();
-  const entered = (stage: RiskStage) =>
-    latest.recent_events.find((e) => e.new_stage === stage)?.effective_date;
+  const { stage } = latest;
+  const meta = stageCopy(stage.current, c);
+  const days = daysBetween(stage.since, latest.as_of);
+  const stretches = stageStretches(latest);
+  const from = stretches[0].start;
+  const total = Math.max(1, daysBetween(from, latest.as_of) ?? 1);
   return (
-    <section className="space-y-3">
-      <h2 className="text-lg font-semibold">{c("Stages", "四个阶段")}</h2>
-      <ol className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        {STAGE_ORDER.map((stage, index) => {
-          const meta = stageCopy(stage, c);
-          const current = latest.stage.current === stage;
-          const last = entered(stage);
-          return (
-            <li
-              key={stage}
-              aria-current={current ? "step" : undefined}
-              className={cn(
-                "space-y-1.5 rounded-2xl border p-4",
-                current
-                  ? cn("border-2", TONE_CHIP[stageTone(stage)].split(" ")[0])
-                  : "border-border",
-              )}
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span className="figure text-xs text-muted-foreground">{index + 1}</span>
-                {current && <Chip tone={stageTone(stage)}>{c("Now", "当前")}</Chip>}
-              </div>
-              <p
-                className={cn(
-                  "flex items-center gap-1.5 font-semibold",
-                  current && TONE_TEXT[stageTone(stage)],
-                )}
+    <section className="space-y-4">
+      <h2 className="flex items-center gap-1.5 text-lg font-semibold">
+        {c("Stages", "四个阶段")}
+        <InfoTip label={c("About the stages", "阶段说明")}>
+          {c(
+            "Stress usually moves stable → build-up → acceleration → normalization, then back to stable. It can also step back early, e.g. from build-up straight to stable. The strip shows the switches recorded so far.",
+            "压力通常按 平稳 → 压力积累 → 压力加速 → 压力后修复 → 平稳 的顺序变化，也可能中途回退（例如压力积累直接回到平稳）。色带显示目前记录到的阶段切换。",
+          )}
+        </InfoTip>
+      </h2>
+
+      <Card className="space-y-5 p-5 sm:p-6">
+        <div>
+          <ol
+            className="flex h-9 gap-0.5 overflow-hidden rounded-lg bg-card"
+            aria-label={c("Stage history", "阶段历史")}
+          >
+            {stretches.map((stretch, i) => {
+              const now = i === stretches.length - 1;
+              const span = Math.max(1, daysBetween(stretch.start, stretch.end) ?? 1);
+              const share = (span / total) * 100;
+              const label = stageCopy(stretch.stage, c).label;
+              const range = `${date(stretch.start, true)} – ${now ? c("now", "至今") : date(stretch.end, true)}`;
+              return (
+                <li
+                  key={`${stretch.stage}-${stretch.start}`}
+                  title={`${label} ${range}`}
+                  className={cn(
+                    "flex min-w-[6px] items-center overflow-hidden px-2 text-xs font-medium",
+                    now ? STAGE_NOW[stretch.stage] : "text-foreground/80",
+                  )}
+                  style={{
+                    flexGrow: share,
+                    flexBasis: 0,
+                    background: now ? undefined : stageGray(stretch.stage),
+                  }}
+                >
+                  <span className="sr-only">
+                    {label} {range}
+                  </span>
+                  {share >= 14 && (
+                    <span aria-hidden className="truncate">
+                      {label}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+          <div
+            className="figure mt-1.5 flex justify-between text-[0.6875rem] text-muted-foreground"
+            aria-hidden
+          >
+            <span>{date(from, true)}</span>
+            <span>{date(latest.as_of, true)}</span>
+          </div>
+        </div>
+
+        <dl className="grid grid-cols-2 gap-x-5 gap-y-4 lg:grid-cols-4">
+          {STAGE_ORDER.map((key) => {
+            const item = stageCopy(key, c);
+            const current = key === stage.current;
+            return (
+              <div
+                key={key}
+                className={cn("border-t-2 pt-2.5", current ? "border-foreground" : "border-border")}
               >
-                <meta.Icon className="h-4 w-4" aria-hidden />
-                {meta.label}
-              </p>
-              <p className="text-sm leading-5 text-muted-foreground">{meta.description}</p>
-              {last && (
-                <p className="figure text-xs text-muted-foreground">
-                  {c("Last entered", "最近进入")} {date(last)}
-                </p>
-              )}
-            </li>
-          );
-        })}
-      </ol>
+                <dt className="flex items-center gap-2 text-sm font-semibold">
+                  <span
+                    className={cn("h-2.5 w-2.5 shrink-0 rounded-sm", current && STAGE_NOW[key])}
+                    style={current ? undefined : { background: stageGray(key) }}
+                    aria-hidden
+                  />
+                  <span className={current ? TONE_TEXT[stageTone(key)] : undefined}>
+                    {item.label}
+                  </span>
+                  {current && <span className="sr-only">{c("(current)", "（当前）")}</span>}
+                </dt>
+                <dd className="mt-1 text-xs leading-5 text-muted-foreground">{item.description}</dd>
+              </div>
+            );
+          })}
+        </dl>
+      </Card>
     </section>
   );
+}
+
+/** Plain reading of the curve: is the 30-day index above or below the 3-month one? */
+function termReading(
+  shape: ReturnType<typeof termStructureShape>,
+  c: Copy,
+): { title: string; body: string } | null {
+  if (shape === "backwardation")
+    return {
+      title: c("Inverted", "倒挂"),
+      body: c(
+        "30-day volatility is above 3-month: the market is more worried about the next few weeks than the months after.",
+        "30 天波动率高于 3 个月：市场对未来几周的担心大于更远的将来。",
+      ),
+    };
+  if (shape === "contango")
+    return {
+      title: c("Normal", "正常"),
+      body: c(
+        "30-day volatility is below 3-month: the curve slopes up as usual; no special near-term worry.",
+        "30 天波动率低于 3 个月：曲线正常向上倾斜，市场没有特别担心短期。",
+      ),
+    };
+  if (shape === "flat")
+    return {
+      title: c("Flat", "持平"),
+      body: c("30-day and 3-month volatility are about equal.", "30 天与 3 个月波动率基本持平。"),
+    };
+  return null;
 }
 
 function TermStructure({ latest }: { latest: MarketRiskLatest }) {
   const c = useCopy();
   const date = useDate();
   const row = (key: string) => latest.metrics.find((m) => m.metric_key === key);
-  const legs = ["vix9d", "vix", "vix3m"].map((key) => row(key));
+  const legs = (["vix9d", "vix", "vix3m"] as const).map((key) => row(key));
+  const names = [c("9D", "9天"), c("30D", "30天"), c("3M", "3个月")];
   const data = legs.map((m, i) => ({
-    name: ["9D", "30D", "3M"][i],
+    name: names[i],
     today: m?.value ?? null,
     prior: m?.previous_value ?? null,
   }));
   const shape = termStructureShape(row("vix")?.value, row("vix3m")?.value);
-  const shapeLabel =
-    shape === "backwardation"
-      ? c("Backwardation", "倒挂")
-      : shape === "contango"
-        ? c("Contango", "正向")
-        : shape === "flat"
-          ? c("Flat", "持平")
-          : "—";
+  const reading = termReading(shape, c);
+  const inverted = shape === "backwardation";
+  const todayColor = "rgb(var(--foreground))";
   const prior = row("vix")?.previous_date;
   return (
-    <Card className="min-w-0 space-y-3 p-5">
+    <Card className="min-w-0 space-y-4 p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="flex items-center gap-1.5 text-base font-semibold">
-          {c("Implied volatility term structure", "隐含波动率期限结构")}
+          {c("Volatility curve", "波动率期限结构")}
           <InfoTip label={c("About the term structure", "期限结构说明")}>
             {c(
-              "Cboe's 9-day, 30-day (VIX) and 3-month implied volatility indexes. When near-term volatility is above longer-term (backwardation), the market is paying up for short-term protection. These are index values, not VIX futures.",
-              "Cboe 的 9 天、30 天（VIX）与 3 个月隐含波动率指数。短期高于长期（倒挂）说明市场在为近期保护付出更高价格。这里是指数值，不是 VIX 期货。",
+              "Cboe's 9-day, 30-day (VIX) and 3-month implied volatility indexes, i.e. how much movement options price in over each horizon. Normally the curve slopes up; when near-term is above longer-term (inverted), the market is paying up for short-term protection. These are index values, not VIX futures.",
+              "Cboe 的 9 天、30 天（VIX）与 3 个月隐含波动率指数，即期权市场对不同期限内波动幅度的定价。正常时曲线向上倾斜；短期高于长期（倒挂）说明市场在为近期保护付出更高价格。这里是指数值，不是 VIX 期货。",
             )}
           </InfoTip>
         </h2>
-        {shape && (
-          <Chip tone={shape === "backwardation" ? "negative" : "muted"}>
-            {shape === "backwardation" && <AlertTriangle className="h-3.5 w-3.5" aria-hidden />}
-            {shapeLabel}
+        {reading && (
+          <Chip tone={inverted ? "negative" : "muted"}>
+            {inverted && <AlertTriangle className="h-3.5 w-3.5" aria-hidden />}
+            {reading.title}
           </Chip>
         )}
       </div>
-      <div className="h-52 min-w-0">
+      {reading && <p className="text-sm leading-6 text-foreground/90">{reading.body}</p>}
+      <div className="h-44 min-w-0">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart
+          <ComposedChart
             data={data}
-            margin={{ top: 8, right: 4, bottom: 0, left: -12 }}
-            barGap={4}
+            margin={{ top: 22, right: 24, bottom: 0, left: 24 }}
             accessibilityLayer
           >
             <CartesianGrid vertical={false} stroke="rgb(var(--border))" />
@@ -623,16 +859,13 @@ function TermStructure({ latest }: { latest: MarketRiskLatest }) {
               dataKey="name"
               tickLine={false}
               axisLine={false}
+              interval={0}
+              padding={{ left: 8, right: 8 }}
               tick={{ fill: "rgb(var(--muted-foreground))", fontSize: 12 }}
             />
-            <YAxis
-              tickLine={false}
-              axisLine={false}
-              width={40}
-              tick={{ fill: "rgb(var(--muted-foreground))", fontSize: 11 }}
-            />
+            <YAxis hide domain={["dataMin - 2", "dataMax + 2"]} />
             <Tooltip
-              cursor={{ fill: "rgb(var(--muted) / 0.5)" }}
+              cursor={{ stroke: "rgb(var(--border))" }}
               formatter={(value: number) => value?.toFixed(2)}
               contentStyle={{
                 background: "rgb(var(--background))",
@@ -641,31 +874,42 @@ function TermStructure({ latest }: { latest: MarketRiskLatest }) {
                 borderRadius: 12,
               }}
             />
-            <Bar
+            <Line
               dataKey="prior"
-              name={c("Prior session", "上一交易日")}
-              fill="rgb(var(--muted-foreground) / 0.35)"
-              radius={[6, 6, 0, 0]}
+              name={prior ? date(prior, true) : c("Prior session", "上一交易日")}
+              stroke="rgb(var(--muted-foreground))"
+              strokeDasharray="4 4"
+              strokeWidth={1.5}
+              dot={{ r: 3, fill: "rgb(var(--muted-foreground))", strokeWidth: 0 }}
               isAnimationActive={false}
             />
-            <Bar
+            <Line
               dataKey="today"
               name={date(latest.as_of, true)}
-              fill="rgb(var(--foreground) / 0.75)"
-              radius={[6, 6, 0, 0]}
+              stroke={todayColor}
+              strokeWidth={2.5}
+              dot={{ r: 4, fill: todayColor, strokeWidth: 0 }}
               isAnimationActive={false}
-            />
-          </BarChart>
+            >
+              <LabelList
+                dataKey="today"
+                position="top"
+                offset={10}
+                formatter={(value: number | null) => (value == null ? "" : value.toFixed(2))}
+                style={{ fill: "rgb(var(--foreground))", fontSize: 12, fontWeight: 600 }}
+              />
+            </Line>
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
-      <p className="flex flex-wrap gap-x-4 text-xs text-muted-foreground">
+      <p className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-sm bg-foreground/75" aria-hidden />
+          <span className="h-0.5 w-4 rounded-full bg-foreground" aria-hidden />
           {date(latest.as_of)}
         </span>
         {prior && (
           <span className="inline-flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-sm bg-muted-foreground/35" aria-hidden />
+            <span className="w-4 border-t border-dashed border-muted-foreground" aria-hidden />
             {date(prior)}
           </span>
         )}
@@ -674,9 +918,79 @@ function TermStructure({ latest }: { latest: MarketRiskLatest }) {
   );
 }
 
+function metricMeaning(key: string, c: Copy) {
+  return (
+    {
+      vix: c("S&P 500 expected move, next 30 days", "标普 500 未来 30 天预期波动"),
+      vvix: c("How unsettled VIX itself is", "VIX 自身的波动，恐慌是否不稳定"),
+      vix9d: c("Expected move, next 9 days", "未来 9 天预期波动"),
+      vix3m: c("Expected move, next 3 months", "未来 3 个月预期波动"),
+      vix9d_vix_ratio: c(
+        "9-day vs 30-day; above 1 = near-term stress",
+        "9 天 ÷ 30 天，高于 1 表示短期更紧张",
+      ),
+      vix_vix3m_ratio: c(
+        "30-day vs 3-month; above 1 = inverted",
+        "30 天 ÷ 3 个月，高于 1 表示期限倒挂",
+      ),
+    }[key] ?? null
+  );
+}
+
+const BAND_TONES: Tone[] = ["positive", "muted", "warning", "negative"];
+// Bands on the neutral ladder, light → dark; the legend and the axis numbers name them.
+const BAND_FILL: Record<Tone, string> = {
+  positive: "bg-foreground/[0.08]",
+  muted: "bg-foreground/[0.18]",
+  warning: "bg-foreground/[0.32]",
+  negative: "bg-foreground/[0.5]",
+};
+
+/**
+ * Where a value sits against its fixed display bands: four zones (normal / watch / elevated /
+ * critical) with a marker at the value. The scale pads 60% of the band span on each side.
+ */
+function BandGauge({ row, label }: { row: MetricRow; label: string }) {
+  const bands = row.bands;
+  if (!bands || row.value === null) return null;
+  const span = bands[2] - bands[0];
+  const min = bands[0] - span * 0.6;
+  const max = bands[2] + span * 0.6;
+  const at = (value: number) => Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100));
+  const stops = [0, at(bands[0]), at(bands[1]), at(bands[2]), 100];
+  const digits = row.unit === "ratio" ? 2 : 0;
+  return (
+    <div className="min-w-0" role="img" aria-label={label}>
+      <div className="relative h-2">
+        <div className="flex h-full overflow-hidden rounded-full">
+          {BAND_TONES.map((tone, i) => (
+            <span
+              key={tone}
+              className={BAND_FILL[tone]}
+              style={{ width: `${stops[i + 1] - stops[i]}%` }}
+            />
+          ))}
+        </div>
+        <span
+          className="absolute top-1/2 h-4 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground ring-2 ring-card"
+          style={{ left: `${at(row.value)}%` }}
+        />
+      </div>
+      <div className="figure relative mt-1 h-3.5 text-[0.625rem] text-muted-foreground" aria-hidden>
+        {bands.map((band, i) => (
+          <span key={i} className="absolute -translate-x-1/2" style={{ left: `${stops[i + 1]}%` }}>
+            {band.toFixed(digits)}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function Metrics({ latest }: { latest: MarketRiskLatest }) {
   const c = useCopy();
   const date = useDate();
+  const sessions = latest.score.history_window;
   const statusLabel = (status: MetricRow["status"]) =>
     status
       ? {
@@ -687,29 +1001,63 @@ function Metrics({ latest }: { latest: MarketRiskLatest }) {
         }[status]
       : null;
   return (
-    <Card className="min-w-0 space-y-2 p-5">
-      <h2 className="flex items-center gap-1.5 text-base font-semibold">
-        {c("Indicators", "指标")}
-        <InfoTip label={c("About indicator status", "指标状态说明")}>
-          {c(
-            "Status uses fixed display bands (for VIX: 20 / 28 / 35; VVIX: 100 / 110 / 120; ratios: 0.95 / 1.00 / 1.10). The score uses percentiles instead, so the two can differ.",
-            "状态按固定展示区间（VIX：20 / 28 / 35；VVIX：100 / 110 / 120；比值：0.95 / 1.00 / 1.10）。评分用的是历史分位数，所以两者可能不一致。",
-          )}
-        </InfoTip>
-      </h2>
+    <Card className="min-w-0 space-y-3 p-5">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+        <h2 className="flex items-center gap-1.5 text-base font-semibold">
+          {c("Indicators", "指标")}
+          <InfoTip label={c("About indicator status", "指标状态说明")}>
+            {c(
+              `The bar shows where today's value sits in fixed bands (VIX: 20 / 28 / 35; VVIX: 100 / 110 / 120; ratios: 0.95 / 1.00 / 1.10). The percentile compares it with its own last ${sessions} sessions and is what the score uses, so the two can differ.`,
+              `色条表示当前值落在哪个固定区间（VIX：20 / 28 / 35；VVIX：100 / 110 / 120；比值：0.95 / 1.00 / 1.10）。分位数是与自身过去 ${sessions} 个交易日比较，评分用的是分位数，所以两者可能不一致。`,
+            )}
+          </InfoTip>
+        </h2>
+        <ul
+          className="flex flex-wrap gap-x-3 gap-y-1 text-[0.6875rem] text-muted-foreground"
+          aria-label={c("Bands", "区间")}
+        >
+          {BAND_TONES.map((tone, i) => (
+            <li key={tone} className="inline-flex items-center gap-1">
+              <span className={cn("h-2 w-2 rounded-full", BAND_FILL[tone])} aria-hidden />
+              {
+                [
+                  c("Normal", "正常"),
+                  c("Watch", "观察"),
+                  c("Elevated", "偏高"),
+                  c("Critical", "高压"),
+                ][i]
+              }
+            </li>
+          ))}
+        </ul>
+      </div>
       <ul className="divide-y divide-border">
         {latest.metrics.map((row) => {
           const change = metricChange(row);
           const digits = row.unit === "ratio" ? 3 : 2;
           const lagging = row.latest_date && row.latest_date !== latest.as_of;
+          const name = metricName(row, c);
+          const status = statusLabel(row.status);
           return (
-            <li key={row.metric_key} className="flex items-center justify-between gap-3 py-2.5">
+            <li
+              key={row.metric_key}
+              className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 py-3 sm:grid-cols-[minmax(0,1.15fr)_minmax(7rem,1fr)_auto]"
+            >
               <div className="min-w-0">
-                <p className="font-medium">{metricName(row, c)}</p>
-                <p className="truncate text-xs text-muted-foreground">
+                <p className="flex items-center gap-2">
+                  <span className="font-semibold">{name}</span>
+                  {row.status && <Chip tone={statusTone(row.status)}>{status}</Chip>}
+                </p>
+                <p className="text-xs leading-5 text-muted-foreground">
+                  {metricMeaning(row.metric_key, c)}
+                </p>
+                <p className="figure text-[0.6875rem] leading-4 text-muted-foreground">
                   {row.percentile !== null
-                    ? `${c("Percentile", "分位")} ${row.percentile.toFixed(0)}`
-                    : c("Not scored", "不计分")}
+                    ? c(
+                        `Higher than ${row.percentile.toFixed(0)}% of the last ${sessions} sessions`,
+                        `高于过去 ${sessions} 个交易日中 ${row.percentile.toFixed(0)}% 的时候`,
+                      )
+                    : c("Not in the score", "不计入评分")}
                   {row.quality === "suspect" && (
                     <span className="text-warning"> · {c("Suspect value", "可疑值")}</span>
                   )}
@@ -724,18 +1072,20 @@ function Metrics({ latest }: { latest: MarketRiskLatest }) {
                   )}
                 </p>
               </div>
-              <div className="flex shrink-0 items-center gap-3">
-                <div className="text-right">
-                  <p className="figure font-semibold">{formatMetric(row.value, row.unit)}</p>
-                  <p className="figure text-xs text-muted-foreground">
-                    {change === null ? "—" : withSign(change, (m) => m.toFixed(digits), { digits })}
-                  </p>
-                </div>
-                <span className="w-14 text-right">
-                  {row.status && (
-                    <Chip tone={statusTone(row.status)}>{statusLabel(row.status)}</Chip>
+              <div className="col-span-2 row-start-2 min-w-0 sm:col-span-1 sm:col-start-2 sm:row-start-1">
+                <BandGauge
+                  row={row}
+                  label={c(
+                    `${name} ${formatMetric(row.value, row.unit)}${status ? `, ${status}` : ""}`,
+                    `${name} ${formatMetric(row.value, row.unit)}${status ? `，${status}` : ""}`,
                   )}
-                </span>
+                />
+              </div>
+              <div className="col-start-2 row-start-1 text-right sm:col-start-3">
+                <p className="figure font-semibold">{formatMetric(row.value, row.unit)}</p>
+                <p className="figure text-xs text-muted-foreground">
+                  {change === null ? "—" : withSign(change, (m) => m.toFixed(digits), { digits })}
+                </p>
               </div>
             </li>
           );
@@ -770,7 +1120,7 @@ function Checklist({ latest }: { latest: MarketRiskLatest }) {
     }
   };
   const column = (type: ChecklistItem["rule_type"], title: string) => (
-    <Card className="space-y-1 p-5">
+    <div className="min-w-0 space-y-1 p-5 sm:p-6">
       <h3 className="text-base font-semibold">{title}</h3>
       <ul className="divide-y divide-border">
         {latest.checklist
@@ -788,10 +1138,16 @@ function Checklist({ latest }: { latest: MarketRiskLatest }) {
               >
                 <div className="min-w-0">
                   <p className="font-medium">{name}</p>
-                  <p className="figure text-xs text-muted-foreground">
-                    {rule}
-                    {item.first_triggered_on &&
-                      ` · ${c("since", "自")} ${date(item.first_triggered_on, true)}`}
+                  <p className="figure flex flex-wrap gap-x-3 text-xs text-muted-foreground">
+                    <span>{rule}</span>
+                    {item.first_triggered_on && (
+                      <span>
+                        {c(
+                          `since ${date(item.first_triggered_on, true)}`,
+                          `自 ${date(item.first_triggered_on, true)}`,
+                        )}
+                      </span>
+                    )}
                   </p>
                 </div>
                 <Chip tone={meta.tone} className="shrink-0">
@@ -801,7 +1157,7 @@ function Checklist({ latest }: { latest: MarketRiskLatest }) {
             );
           })}
       </ul>
-    </Card>
+    </div>
   );
   return (
     <section className="space-y-3">
@@ -814,10 +1170,10 @@ function Checklist({ latest }: { latest: MarketRiskLatest }) {
           )}
         </InfoTip>
       </h2>
-      <div className="grid gap-4 md:grid-cols-2">
+      <Card className="grid divide-y divide-border overflow-hidden md:grid-cols-2 md:divide-x md:divide-y-0">
         {column("escalation", c("Escalation signals", "风险升级信号"))}
         {column("recovery", c("Recovery signals", "风险修复信号"))}
-      </div>
+      </Card>
     </section>
   );
 }
@@ -880,7 +1236,7 @@ function HistorySection({
                       yAxisId="score"
                       x1={span.start}
                       x2={span.end}
-                      fill={STAGE_FILL[span.stage]}
+                      fill={stageGray(span.stage, 0.22)}
                       fillOpacity={1}
                       strokeOpacity={0}
                     />
@@ -964,7 +1320,7 @@ function HistorySection({
                 <li key={stage} className="inline-flex items-center gap-1.5">
                   <span
                     className="h-2.5 w-2.5 rounded-sm"
-                    style={{ background: STAGE_FILL[stage].replace(/0\.\d+\)$/, "0.5)") }}
+                    style={{ background: stageGray(stage) }}
                     aria-hidden
                   />
                   {stageCopy(stage, c).label}
@@ -986,13 +1342,13 @@ function HistorySection({
                         {event.previous_stage
                           ? `${stageCopy(event.previous_stage, c).label} → `
                           : ""}
-                        <span className={cn("font-medium", TONE_TEXT[stageTone(event.new_stage)])}>
-                          {stageCopy(event.new_stage, c).label}
-                        </span>
+                        <span className="font-medium">{stageCopy(event.new_stage, c).label}</span>
                       </span>
-                      <span className="figure text-muted-foreground">
-                        {date(event.effective_date)} · {c("score", "评分")}{" "}
-                        {event.risk_score?.toFixed(1) ?? "—"}
+                      <span className="figure flex gap-4 text-muted-foreground">
+                        <span>{date(event.effective_date)}</span>
+                        <span className="w-20 text-right">
+                          {c("score", "评分")} {event.risk_score?.toFixed(1) ?? "—"}
+                        </span>
                       </span>
                     </li>
                   ))}

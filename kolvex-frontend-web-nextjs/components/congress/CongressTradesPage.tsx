@@ -157,7 +157,7 @@ export default function CongressTradesPage({
   return (
     <DashboardLayout title={title}>
       <div className="min-h-0 min-w-0 flex-1 overflow-y-auto bg-background dark:bg-transparent">
-        <div className="mx-auto max-w-6xl space-y-4 px-[16px] pb-10 pt-4 md:px-8 md:py-8">
+        <div className="mx-auto max-w-[100rem] space-y-4 px-[16px] pb-10 pt-4 md:px-8 md:py-8">
           <header className="mb-2 md:mb-4">
             <h1 className="text-2xl font-semibold tracking-tight md:text-[2rem]">{title}</h1>
           </header>
