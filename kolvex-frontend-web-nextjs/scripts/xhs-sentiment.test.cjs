@@ -189,3 +189,25 @@ test("sources open only when Xiaohongshu will show them", () => {
   );
   assert.equal(lib.canOpenXhsSource("not a url"), false);
 });
+
+test("marketWindow reaches the close before the first digest date", () => {
+  assert.equal(lib.marketWindow([]), null);
+  const window = lib.marketWindow(["2026-11-24", "2026-11-20", "bad"]);
+  assert.equal(window.start, "2026-11-10");
+  assert.equal(window.end, "2026-11-25");
+});
+
+test("dailyChanges is close-to-close per exchange date and skips the first bar", () => {
+  const changes = lib.dailyChanges([
+    { date: "2026-11-23T00:00:00-05:00", close: 110 },
+    { date: "2026-11-20T00:00:00-05:00", close: 100 },
+    { date: "2026-11-24T00:00:00-05:00", close: 99 },
+    { date: "2026-11-24T00:00:00-05:00", close: 99 },
+    { date: "2026-11-25T00:00:00-05:00", close: 0 },
+  ]);
+  assert.deepEqual(Object.keys(changes), ["2026-11-23", "2026-11-24"]);
+  assert.ok(Math.abs(changes["2026-11-23"] - 10) < 1e-9);
+  assert.ok(Math.abs(changes["2026-11-24"] - -10) < 1e-9);
+  assert.equal(changes["2026-11-20"], undefined);
+  assert.equal(changes["2026-11-21"], undefined);
+});

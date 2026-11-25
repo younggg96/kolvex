@@ -313,3 +313,32 @@ export function combineDigestFiles(
   }
   return { json: JSON.stringify(days.length === 1 ? days[0] : days, null, 2), days: days.length };
 }
+
+/** Daily-bar window that covers every digest date plus the close before the first one. */
+export function marketWindow(dates: string[]): { start: string; end: string } | null {
+  const valid = dates.filter(isIsoDate).sort();
+  if (!valid.length) return null;
+  const shift = (iso: string, days: number) => {
+    const time = Date.parse(`${iso}T12:00:00Z`) + days * 86_400_000;
+    return new Date(time).toISOString().slice(0, 10);
+  };
+  // Ten calendar days back always reaches the previous trading close, even across long holidays.
+  return { start: shift(valid[0], -10), end: shift(valid[valid.length - 1], 1) };
+}
+
+/**
+ * Close-to-close % change for each trading date (YYYY-MM-DD, the bar's own exchange date).
+ * The first bar has no previous close, so it gets no change; non-trading dates are simply absent.
+ */
+export function dailyChanges(bars: { date: string; close: number }[]): Record<string, number> {
+  const ordered = bars
+    .map((bar) => ({ date: bar.date.slice(0, 10), close: bar.close }))
+    .filter((bar) => isIsoDate(bar.date) && Number.isFinite(bar.close) && bar.close > 0)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const changes: Record<string, number> = {};
+  for (let i = 1; i < ordered.length; i++) {
+    if (ordered[i].date === ordered[i - 1].date) continue;
+    changes[ordered[i].date] = (ordered[i].close / ordered[i - 1].close - 1) * 100;
+  }
+  return changes;
+}

@@ -5,8 +5,12 @@ import { ChevronLeft, ChevronRight, Loader2, RefreshCw } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Area,
-  AreaChart,
+  Bar,
+  BarChart,
   CartesianGrid,
+  Cell,
+  ComposedChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -20,19 +24,27 @@ import { ContentLoading } from "@/components/ui/content-loading";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCachedResource } from "@/hooks/useCachedResource";
 import { useTranslation } from "@/lib/i18n";
+import { signedPercent } from "@/lib/format";
+import { getStockHistory } from "@/lib/stockApi";
+import { cn } from "@/lib/utils";
 import {
   XHS_DAYS_PATH,
   XhsNotFound,
   countsTotal,
+  dailyChanges,
+  dominantStance,
   isIsoDate,
+  marketWindow,
   negativeCount,
   neighbours,
   readXhsDay,
   readXhsDays,
+  stanceLabel,
   xhsDayPath,
   type XhsDaySummary,
+  type XhsStance,
 } from "@/lib/xhsSentiment";
-import XhsDayView, { formatPtDate } from "./XhsDayView";
+import XhsDayView, { STANCE_TEXT, formatPtDate } from "./XhsDayView";
 
 const CACHE = { ttl: 60_000, maxAge: 10 * 60_000, timeout: 20_000 };
 
@@ -54,18 +66,46 @@ interface TrendPoint {
   negative: number;
   bullish: number;
   total: number;
+  /** The stance most posts took that day (as on the day's card); null when two tie. */
+  stance: XhsStance | null;
+  /** Index close-to-close % change that day; null when the market was closed or data is missing. */
+  spy: number | null;
+  qqq: number | null;
+}
+
+const MARKET_SYMBOLS = ["SPY", "QQQ"] as const;
+type MarketChanges = Record<(typeof MARKET_SYMBOLS)[number], Record<string, number>>;
+
+async function loadMarketChanges(start: string, end: string, signal: AbortSignal) {
+  const [spy, qqq] = await Promise.all(
+    MARKET_SYMBOLS.map((symbol) => getStockHistory(symbol, { interval: "1d", start, end }, signal)),
+  );
+  return { SPY: dailyChanges(spy), QQQ: dailyChanges(qqq) } satisfies MarketChanges;
 }
 
 function TrendTooltip({
   active,
   payload,
   c,
-}: TooltipProps<number, string> & { c: (en: string, zh: string) => string }) {
+  lang,
+  marketState,
+}: TooltipProps<number, string> & {
+  c: (en: string, zh: string) => string;
+  lang: "en" | "zh";
+  marketState: "loading" | "error" | "ready" | "hidden";
+}) {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload as TrendPoint;
   return (
-    <div className="rounded-lg border border-border bg-popover px-3 py-2 text-sm shadow-md">
+    // Opaque card surface: the chart lines must not show through the tooltip.
+    <div className="rounded-lg border border-border bg-card px-3 py-2 text-sm shadow-lg">
       <p className="font-medium">{d.label}</p>
+      <p className="mt-0.5 text-xs text-muted-foreground">
+        {c("Most posts", "多数帖子")}{" "}
+        <span className={cn("text-sm font-semibold", d.stance && STANCE_TEXT[d.stance])}>
+          {d.stance ? stanceLabel(d.stance, lang) : c("No single lean", "没有单一倾向")}
+        </span>
+      </p>
       <p className="mt-1 tabular-nums text-negative">
         {c("Fear + Bearish", "恐慌 + 看空")} {d.negative}%
       </p>
@@ -73,6 +113,35 @@ function TrendTooltip({
         {c("Bullish", "看多")} {d.bullish}%
       </p>
       <p className="text-xs text-muted-foreground">{c(`${d.total} posts`, `共 ${d.total} 条`)}</p>
+      {marketState !== "hidden" && (
+        <div className="mt-1.5 space-y-0.5 border-t border-border pt-1.5 tabular-nums">
+          {(["spy", "qqq"] as const).map((key) => (
+            <p key={key} className="flex items-baseline justify-between gap-4">
+              <span className="text-muted-foreground">{key.toUpperCase()}</span>
+              <span
+                className={cn(
+                  "font-semibold",
+                  marketState === "ready" && d[key] !== null
+                    ? (d[key] as number) > 0
+                      ? "text-positive"
+                      : (d[key] as number) < 0
+                        ? "text-negative"
+                        : undefined
+                    : "font-normal text-muted-foreground",
+                )}
+              >
+                {marketState === "loading"
+                  ? "…"
+                  : marketState === "error"
+                    ? c("Unavailable", "暂不可用")
+                    : d[key] === null
+                      ? c("Market closed", "休市")
+                      : signedPercent(d[key])}
+              </span>
+            </p>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -91,6 +160,21 @@ export function TrendChart({
   const { locale } = useTranslation();
   const lang = locale === "zh" ? "zh" : "en";
 
+  const marketRange = useMemo(() => marketWindow(days.map((day) => day.date_pt)), [days]);
+  const market = useCachedResource(
+    marketRange ? `xhs-market:${marketRange.start}:${marketRange.end}` : "xhs-market:none",
+    (signal) =>
+      marketRange
+        ? loadMarketChanges(marketRange.start, marketRange.end, signal)
+        : Promise.reject(new Error()),
+    { ttl: 5 * 60_000, maxAge: 30 * 60_000, timeout: 20_000, enabled: Boolean(marketRange) },
+  );
+  const marketState: "loading" | "error" | "ready" = market.data
+    ? "ready"
+    : market.error
+      ? "error"
+      : "loading";
+
   const data = useMemo(() => {
     return [...days].reverse().map((day): TrendPoint => {
       const counts = day.sentiment.all;
@@ -103,9 +187,18 @@ export function TrendChart({
         negative: neg,
         bullish: bull,
         total,
+        stance: dominantStance(counts),
+        spy: market.data?.SPY[day.date_pt] ?? null,
+        qqq: market.data?.QQQ[day.date_pt] ?? null,
       };
     });
-  }, [days, lang]);
+  }, [days, lang, market.data]);
+  const showStrip = marketState !== "error";
+  // Symmetric axis around 0 so up and down days read at the same scale; at least ±1%.
+  const marketMax = useMemo(() => {
+    const values = data.flatMap((point) => [point.spy, point.qqq]).filter((v) => v !== null);
+    return Math.max(1, Math.ceil(Math.max(0, ...values.map((v) => Math.abs(v as number)))));
+  }, [data]);
 
   const negColor = useMemo(() => cssVar("--negative"), []);
   const posColor = useMemo(() => cssVar("--positive"), []);
@@ -135,10 +228,16 @@ export function TrendChart({
         </span>
       </div>
 
-      {/* Chart */}
-      <div className="mt-3 h-48 w-full md:h-56">
+      {/* Sentiment chart; with the market strip below it, the date axis moves to the strip. */}
+      <div className="mt-3 h-44 w-full md:h-52">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} onClick={handleClick} style={{ cursor: "pointer" }}>
+          <ComposedChart
+            data={data}
+            onClick={handleClick}
+            style={{ cursor: "pointer" }}
+            margin={CHART_MARGIN}
+            syncId="xhs-trend"
+          >
             <defs>
               <linearGradient id="negGrad" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={negColor} stopOpacity={0.25} />
@@ -156,8 +255,12 @@ export function TrendChart({
               tickLine={false}
               axisLine={false}
               interval="preserveStartEnd"
+              scale="point"
+              padding={X_PADDING}
+              hide={showStrip}
             />
             <YAxis
+              yAxisId="sentiment"
               domain={[0, 100]}
               tickFormatter={(v: number) => `${v}%`}
               tick={{ fontSize: 11, fill: mutedColor }}
@@ -165,8 +268,9 @@ export function TrendChart({
               axisLine={false}
               width={40}
             />
-            <Tooltip content={<TrendTooltip c={c} />} />
+            <Tooltip content={<TrendTooltip c={c} lang={lang} marketState={marketState} />} />
             <Area
+              yAxisId="sentiment"
               type="monotone"
               dataKey="negative"
               name={c("Fear + Bearish", "恐慌 + 看空")}
@@ -195,6 +299,7 @@ export function TrendChart({
               activeDot={{ r: 5, strokeWidth: 2, stroke: "rgb(var(--background))" }}
             />
             <Area
+              yAxisId="sentiment"
               type="monotone"
               dataKey="bullish"
               name={c("Bullish", "看多")}
@@ -222,12 +327,96 @@ export function TrendChart({
               }}
               activeDot={{ r: 5, strokeWidth: 2, stroke: "rgb(var(--background))" }}
             />
-          </AreaChart>
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
+
+      {/* Market strip: SPY / QQQ close-to-close move per day, on the same dates as the chart. */}
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+        <span className="font-medium">{c("SPY / QQQ daily move", "SPY / QQQ 当日涨跌")}</span>
+        <span className="flex items-center gap-1.5 text-muted-foreground">
+          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-foreground/80" aria-hidden />
+          SPY
+        </span>
+        <span className="flex items-center gap-1.5 text-muted-foreground">
+          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-foreground/35" aria-hidden />
+          {c("QQQ (lighter)", "QQQ（浅色）")}
+        </span>
+        <span className="text-muted-foreground">
+          {c("Green up, red down; weekends closed", "绿涨红跌，周末休市")}
+        </span>
+      </div>
+      {marketState === "error" ? (
+        <p role="status" className="mt-2 text-xs text-muted-foreground">
+          {c("SPY / QQQ moves are unavailable right now.", "SPY / QQQ 涨跌暂不可用。")}
+        </p>
+      ) : marketState === "loading" ? (
+        <Skeleton className="mt-2 h-24 w-full rounded-lg md:h-28" />
+      ) : (
+        <div className="mt-1 h-28 w-full md:h-32">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={data}
+              onClick={handleClick}
+              style={{ cursor: "pointer" }}
+              margin={{ ...CHART_MARGIN, top: 16, bottom: 0 }}
+              syncId="xhs-trend"
+              barGap={2}
+              barCategoryGap="30%"
+            >
+              <XAxis
+                dataKey="label"
+                tick={{ fontSize: 11, fill: mutedColor }}
+                tickLine={false}
+                axisLine={false}
+                interval="preserveStartEnd"
+                scale="point"
+                padding={X_PADDING}
+              />
+              <YAxis
+                domain={[-marketMax, marketMax]}
+                ticks={[-marketMax, 0, marketMax]}
+                tickFormatter={(v: number) => (v > 0 ? `+${v}%` : `${v}%`)}
+                tick={{ fontSize: 11, fill: mutedColor }}
+                tickLine={false}
+                axisLine={false}
+                width={40}
+              />
+              <ReferenceLine y={0} stroke={mutedColor} strokeOpacity={0.4} />
+              {/* Hover highlights the day here; the synced chart above shows the one tooltip. */}
+              <Tooltip cursor={{ fill: "rgb(var(--foreground) / 0.06)" }} content={() => null} />
+              {(["spy", "qqq"] as const).map((key) => (
+                <Bar
+                  key={key}
+                  dataKey={key}
+                  name={key.toUpperCase()}
+                  barSize={12}
+                  radius={2}
+                  isAnimationActive={false}
+                >
+                  {data.map((point) => {
+                    const value = point[key];
+                    return (
+                      <Cell
+                        key={point.date}
+                        fill={value !== null && value < 0 ? negColor : posColor}
+                        fillOpacity={key === "spy" ? 0.9 : 0.4}
+                      />
+                    );
+                  })}
+                </Bar>
+              ))}
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
     </div>
   );
 }
+
+const CHART_MARGIN = { top: 4, right: 4, bottom: 0, left: 0 };
+// Both charts use a point scale with the same padding so each day's dot sits over its bars.
+const X_PADDING = { left: 28, right: 28 };
 
 function DayLoading() {
   const c = useCopy();
