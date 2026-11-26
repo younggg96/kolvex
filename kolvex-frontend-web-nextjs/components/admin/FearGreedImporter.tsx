@@ -1,6 +1,14 @@
 "use client";
 
-import { useId, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
 import { useCopy } from "@/components/decision/shared";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -12,7 +20,85 @@ import { invalidateClientCache } from "@/lib/clientCache";
 
 type ImportSummary = { count: number; first_date: string; last_date: string };
 type Result = { kind: "preview" | "saved"; summary: ImportSummary };
+type SyncStatus = {
+  worker_configured: boolean;
+  latest: { date: string; score: number; updated_at: string; source: "worker" | "admin" } | null;
+};
 const MAX_BYTES = 512 * 1024;
+const STALE_MS = 24 * 60 * 60 * 1000;
+
+/** Latest stored day and whether the local Playwright worker or an admin wrote it. */
+function SyncStatusLine({ reloadKey }: { reloadKey: number }) {
+  const c = useCopy();
+  const [status, setStatus] = useState<SyncStatus | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  const load = useCallback(async (signal: AbortSignal) => {
+    try {
+      const response = await fetch("/api/admin/fear-greed", { cache: "no-store", signal });
+      if (!response.ok) throw new Error(String(response.status));
+      setStatus(await response.json());
+      setFailed(false);
+    } catch {
+      if (!signal.aborted) setFailed(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void load(controller.signal);
+    return () => controller.abort();
+  }, [load, reloadKey]);
+
+  if (failed) {
+    return (
+      <p role="alert" className="text-sm text-negative">
+        {c("Could not load sync status.", "无法读取同步状态。")}
+      </p>
+    );
+  }
+  if (!status) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        {c("Loading sync status…", "正在读取同步状态…")}
+      </p>
+    );
+  }
+  const { latest } = status;
+  const updated = latest ? new Date(latest.updated_at) : null;
+  const stale = status.worker_configured && updated && Date.now() - updated.getTime() > STALE_MS;
+  return (
+    <div className="space-y-1 text-sm">
+      <p className="text-muted-foreground">
+        {status.worker_configured
+          ? c(
+              "Automatic sync is on: the local Playwright script (side-projects/fear-greed) posts CNN data on a schedule.",
+              "自动同步已开启：本机 Playwright 脚本（side-projects/fear-greed）定时抓取 CNN 数据。",
+            )
+          : c(
+              "Automatic sync is off: set FEAR_GREED_WORKER_TOKEN on the backend.",
+              "自动同步未开启：后端需设置 FEAR_GREED_WORKER_TOKEN。",
+            )}
+      </p>
+      <p>
+        {latest && updated
+          ? c(
+              `Latest day ${latest.date} · score ${latest.score.toFixed(1)} · ${latest.source === "worker" ? "automatic sync" : "admin import"} · updated ${updated.toLocaleString("en-US")}`,
+              `最新数据 ${latest.date} · 分数 ${latest.score.toFixed(1)} · ${latest.source === "worker" ? "自动同步" : "管理员导入"} · 更新于 ${updated.toLocaleString("zh-CN")}`,
+            )
+          : c("No data stored yet.", "还没有数据。")}
+      </p>
+      {stale && (
+        <p className="text-sm text-warning">
+          {c(
+            "No update in over 24 hours. Check that the Mac is awake and see side-projects/fear-greed/logs/collect.log.",
+            "超过 24 小时没有更新。请确认 Mac 未休眠，并查看 side-projects/fear-greed/logs/collect.log。",
+          )}
+        </p>
+      )}
+    </div>
+  );
+}
 
 export default function FearGreedImporter() {
   const c = useCopy();
@@ -23,6 +109,7 @@ export default function FearGreedImporter() {
   const [result, setResult] = useState<Result | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState<"file" | "preview" | "save" | null>(null);
+  const [statusKey, setStatusKey] = useState(0);
   const pending = useRef(false);
 
   const tooLarge = c("Choose a CSV file up to 512 KB.", "CSV 文件不能超过 512 KB。");
@@ -111,7 +198,10 @@ export default function FearGreedImporter() {
         return;
       }
       setResult({ kind: preview ? "preview" : "saved", summary: data });
-      if (!preview) invalidateClientCache(FEAR_GREED_HISTORY_PATH);
+      if (!preview) {
+        invalidateClientCache(FEAR_GREED_HISTORY_PATH);
+        setStatusKey((key) => key + 1);
+      }
     } catch {
       setError(c("Could not complete the request. Try again.", "请求未完成，请重试。"));
     } finally {
@@ -125,6 +215,9 @@ export default function FearGreedImporter() {
       <h2 id={`${inputId}-title`} className="text-xl font-semibold">
         {c("Import CNN Fear & Greed data", "导入 CNN 恐慌与贪婪数据")}
       </h2>
+      <Card className="p-4 sm:p-5">
+        <SyncStatusLine reloadKey={statusKey} />
+      </Card>
       <Card className="p-4 sm:p-5">
         <form noValidate className="space-y-4" onSubmit={submit} aria-busy={busy !== null}>
           <div className="space-y-2">

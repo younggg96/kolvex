@@ -23,7 +23,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 | 功能 | Web 入口 | App 入口 | 后端（`app/api/routes/`） | 文档 | App |
 | --- | --- | --- | --- | --- | --- |
 | 行情总览、指数 / 板块 / 跨资产（股票、ETF 分时图含可用的盘前、盘后及已授权的 BOATS 夜盘（实时历史请求被拒时尝试延迟 15 分钟的 K 线），1 天小走势图只画当前交易日并淡化扩展时段，指数卡片在非计算时段显示跟踪 ETF 的扩展时段走势，指数 ETF 单独显示，Yahoo K 线限流后暂停请求 60 秒） | `/dashboard` | `(tabs)/index`、`/markets` | `market_data.py` | [decision-workspace.md](../decision-workspace.md) | ✅ |
-| CNN 恐慌与贪婪指数（管理员手动导入） | `/dashboard`、`/dashboard/admin?tab=fear-greed` | 待跟进 | `fear_greed.py` | [fear-greed.md](../fear-greed.md) | ◐ |
+| CNN 恐慌与贪婪指数（本机 Playwright 脚本每小时自动同步，管理员 CSV 导入用于补数） | `/dashboard`、`/dashboard/admin?tab=fear-greed` | 待跟进 | `fear_greed.py` | [fear-greed.md](../fear-greed.md) | ◐ |
 | 股票观察（今日异动 / 放量活跃 / 博主热议…；Web 报价原位刷新，超出当前行数的候选每 60 秒检查，手动应用新排名；页头可打开搜索页和榜单筛选弹窗） | `/dashboard` | 首页 | `market_data.py`（`/market/discovery`） | [stock-discovery.md](../stock-discovery.md) | ◐（手动应用排名待同步） |
 | 宏观指标 | `/dashboard?tab=macro` | `/macro` | `economic_indicators.py`、`market_observations.py` | `kolvex-backend-py/docs/macro-data.md` | ✅ |
 | 重大事件日历 | `/dashboard?tab=calendar` | `/calendar` | `market_events.py` | [market-events.md](../market-events.md) | ✅ |

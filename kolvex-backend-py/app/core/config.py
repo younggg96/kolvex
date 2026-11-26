@@ -75,6 +75,10 @@ class Settings:
     YOUTUBE_IMPORT_SCHEDULE_TIME: str = os.getenv("YOUTUBE_IMPORT_SCHEDULE_TIME", "21:00")
     YOUTUBE_IMPORT_TIMEZONE: str = os.getenv("YOUTUBE_IMPORT_TIMEZONE", "America/Los_Angeles")
 
+    # Automatic CNN Fear & Greed sync. A local Mac Playwright script (side-projects/fear-greed)
+    # posts CNN's chart data with this shared token; empty = disabled.
+    FEAR_GREED_WORKER_TOKEN: str = os.getenv("FEAR_GREED_WORKER_TOKEN", "")
+
     # Free public government economic statistics.
     ECONOMIC_INDICATORS_WORKER_ENABLED: bool = True
 

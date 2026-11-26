@@ -2,6 +2,32 @@ import { NextRequest, NextResponse } from "next/server";
 import { BACKEND_API_V1 } from "@/lib/config/backend";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
+export async function GET(request: NextRequest) {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      return NextResponse.json({ detail: { code: "sign_in" } }, { status: 401 });
+    }
+    const upstream = await fetch(`${BACKEND_API_V1}/admin/fear-greed/status`, {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+      cache: "no-store",
+      signal: AbortSignal.any([request.signal, AbortSignal.timeout(15_000)]),
+    });
+    return new Response(upstream.body, {
+      status: upstream.status,
+      headers: {
+        "Content-Type": upstream.headers.get("Content-Type") || "application/json",
+        "Cache-Control": "no-store",
+      },
+    });
+  } catch {
+    return NextResponse.json({ detail: { code: "unavailable" } }, { status: 503 });
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient();

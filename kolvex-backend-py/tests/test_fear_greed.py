@@ -107,3 +107,113 @@ def test_database_failure_is_distinct_from_empty_history(local_api):
     client, _, listing = local_api
     listing.execute.side_effect = RuntimeError("database unavailable")
     assert client.get("/market/fear-greed").status_code == 503
+
+
+# ---------------- automatic sync from the local Playwright worker ----------------
+
+MIDNIGHT_JAN_7 = 1767744000000  # 2026-01-07T00:00:00Z
+CNN = {
+    "fear_and_greed": {
+        "score": 61.2,
+        "rating": "Greed",
+        # 21:30 New York on Jan 8 is already Jan 9 in UTC; it belongs to Jan 8.
+        "timestamp": "2026-01-09T02:30:00+00:00",
+    },
+    "fear_and_greed_historical": {
+        "data": [
+            {"x": MIDNIGHT_JAN_7, "y": 24.9, "rating": "extreme fear"},
+            {"x": MIDNIGHT_JAN_7 + 86_400_000, "y": 55.0, "rating": "neutral"},
+            {"x": MIDNIGHT_JAN_7 + 3 * 86_400_000, "y": 50.0, "rating": "neutral"},
+        ]
+    },
+}
+
+
+def test_parse_cnn_graph_dates_ratings_and_current_reading_wins():
+    rows = store.parse_cnn_graph(CNN, TODAY)
+    assert [row.model_dump(mode="json") for row in rows] == [
+        {"date": "2026-01-07", "score": 24.9, "rating": "extreme fear"},
+        {"date": "2026-01-08", "score": 61.2, "rating": "greed"},
+    ]  # Jan 10 is in the future and dropped.
+
+
+def test_parse_cnn_graph_unknown_rating_keeps_score():
+    payload = {**CNN, "fear_and_greed": {**CNN["fear_and_greed"], "rating": "bullish"}}
+    assert store.parse_cnn_graph(payload, TODAY)[-1].rating is None
+
+
+@pytest.mark.parametrize(
+    ("payload", "code"),
+    [
+        ([], "shape"),
+        ({"fear_and_greed": {}}, "shape"),
+        ({**CNN, "fear_and_greed_historical": {"data": [{"x": "today", "y": 1}]}}, "date"),
+        (
+            {**CNN, "fear_and_greed_historical": {"data": [{"x": MIDNIGHT_JAN_7, "y": 101}]}},
+            "score",
+        ),
+        (
+            {**CNN, "fear_and_greed_historical": {"data": [{"x": MIDNIGHT_JAN_7, "y": True}]}},
+            "score",
+        ),
+        ({**CNN, "fear_and_greed": {"score": 50, "timestamp": "2026-01-08"}}, "date"),
+        (
+            {
+                **CNN,
+                "fear_and_greed": {"score": 50, "timestamp": "2026-02-01T00:00:00+00:00"},
+                "fear_and_greed_historical": {"data": []},
+            },
+            "empty",
+        ),
+    ],
+)
+def test_parse_cnn_graph_rejects_whole_malformed_payload(payload, code):
+    with pytest.raises(store.InvalidCnnData) as error:
+        store.parse_cnn_graph(payload, TODAY)
+    assert str(error.value) == code
+
+
+def test_worker_endpoint_requires_token_and_saves_as_automatic(local_api, monkeypatch):
+    client, table, _ = local_api
+    path = "/fear-greed/worker/cnn"
+    monkeypatch.setattr(
+        routes, "datetime", SimpleNamespace(now=lambda tz: SimpleNamespace(date=lambda: TODAY))
+    )
+
+    monkeypatch.setattr(routes.settings, "FEAR_GREED_WORKER_TOKEN", "")
+    assert client.post(path, json=CNN, headers={"X-Worker-Token": "x"}).status_code == 503
+
+    monkeypatch.setattr(routes.settings, "FEAR_GREED_WORKER_TOKEN", "secret")
+    assert client.post(path, json=CNN).status_code == 401
+    assert client.post(path, json=CNN, headers={"X-Worker-Token": "wrong"}).status_code == 401
+    bad = client.post(path, content=b"not json", headers={"X-Worker-Token": "secret"})
+    assert (bad.status_code, bad.json()["detail"]) == (422, {"code": "json"})
+    table.upsert.assert_not_called()
+
+    response = client.post(path, json=CNN, headers={"X-Worker-Token": "secret"})
+    assert response.json() == {
+        "count": 2,
+        "first_date": "2026-01-07",
+        "last_date": "2026-01-08",
+        "latest_score": 61.2,
+    }
+    records = table.upsert.call_args.args[0]
+    assert [row["updated_by"] for row in records] == [None, None]
+
+
+def test_admin_status_reports_source_of_latest_day(local_api, monkeypatch):
+    client, table, _ = local_api
+    monkeypatch.setattr(routes.settings, "FEAR_GREED_WORKER_TOKEN", "secret")
+    latest = table.select.return_value.order.return_value.limit.return_value
+    latest.execute.return_value = SimpleNamespace(
+        data=[{"date": "2026-01-08", "score": 61.2, "updated_by": None, "updated_at": "t"}]
+    )
+    assert client.get("/admin/fear-greed/status").status_code == 401
+    assert (
+        client.get("/admin/fear-greed/status", headers={"Authorization": "reader"}).status_code
+        == 403
+    )
+    assert client.get("/admin/fear-greed/status", headers={"Authorization": "admin"}).json() == {
+        "worker_configured": True,
+        "latest": {"date": "2026-01-08", "score": 61.2, "updated_at": "t", "source": "worker"},
+    }

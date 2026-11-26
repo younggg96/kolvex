@@ -1,9 +1,10 @@
-"""Storage and CSV validation for manually provided CNN Fear & Greed observations."""
+"""Storage and validation for CNN Fear & Greed observations (admin CSV or local worker)."""
 
 import csv
 import io
+import math
 import re
-from datetime import date, datetime, timezone
+from datetime import date, datetime, time, timezone
 from decimal import Decimal, InvalidOperation
 from typing import Literal, get_args
 from zoneinfo import ZoneInfo
@@ -83,7 +84,84 @@ def parse_csv(payload: bytes, today: date) -> list[Observation]:
     return [observations[day] for day in sorted(observations)]
 
 
-def save_observations(db: Client, rows: list[Observation], admin_id: str) -> None:
+class InvalidCnnData(ValueError):
+    """The worker's CNN chart payload is not in the expected shape; nothing is saved."""
+
+
+def _cnn_rating(value: object) -> Rating | None:
+    rating = " ".join(str(value or "").lower().split())
+    return rating if rating in get_args(Rating) else None
+
+
+def _cnn_score(value: object) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise InvalidCnnData("score")
+    score = float(value)
+    if not math.isfinite(score) or not 0 <= score <= 100:
+        raise InvalidCnnData("score")
+    return round(score, 4)
+
+
+def _cnn_point_date(moment: datetime) -> date:
+    # CNN stamps finished days at 00:00 UTC (that UTC date is the trading day); the live
+    # reading carries its real time, which belongs to the New York trading day.
+    utc = moment.astimezone(timezone.utc)
+    return utc.date() if utc.time() == time(0) else utc.astimezone(NEW_YORK).date()
+
+
+def parse_cnn_graph(payload: object, today: date) -> list[Observation]:
+    """Turn CNN's ``fearandgreed/graphdata`` JSON into one observation per day.
+
+    The current reading wins over the historical point of the same day. Future days are
+    dropped; any malformed point rejects the whole payload so a format change never
+    writes half-parsed data.
+    """
+    if not isinstance(payload, dict):
+        raise InvalidCnnData("shape")
+    current = payload.get("fear_and_greed")
+    history = payload.get("fear_and_greed_historical")
+    points = history.get("data") if isinstance(history, dict) else None
+    if not isinstance(current, dict) or not isinstance(points, list):
+        raise InvalidCnnData("shape")
+
+    days: dict[date, Observation] = {}
+    for point in points:
+        if not isinstance(point, dict):
+            raise InvalidCnnData("point")
+        stamp = point.get("x")
+        if (
+            isinstance(stamp, bool)
+            or not isinstance(stamp, (int, float))
+            or not math.isfinite(stamp)
+        ):
+            raise InvalidCnnData("date")
+        try:
+            day = _cnn_point_date(datetime.fromtimestamp(stamp / 1000, timezone.utc))
+        except (OverflowError, OSError, ValueError) as exc:
+            raise InvalidCnnData("date") from exc
+        days[day] = Observation(
+            date=day, score=_cnn_score(point.get("y")), rating=_cnn_rating(point.get("rating"))
+        )
+
+    try:
+        moment = datetime.fromisoformat(str(current.get("timestamp")))
+    except ValueError as exc:
+        raise InvalidCnnData("date") from exc
+    if moment.tzinfo is None:
+        raise InvalidCnnData("date")
+    day = _cnn_point_date(moment)
+    days[day] = Observation(
+        date=day, score=_cnn_score(current.get("score")), rating=_cnn_rating(current.get("rating"))
+    )
+
+    rows = [days[day] for day in sorted(days) if day <= today]
+    if not rows:
+        raise InvalidCnnData("empty")
+    return rows
+
+
+def save_observations(db: Client, rows: list[Observation], admin_id: str | None) -> None:
+    """Upsert by date. ``admin_id`` is None for rows written by the automatic worker."""
     now = datetime.now(timezone.utc).isoformat()
     records = [
         {**row.model_dump(mode="json"), "updated_by": admin_id, "updated_at": now} for row in rows
@@ -101,3 +179,24 @@ def list_observations(db: Client) -> list[dict]:
         .data
     )
     return list(reversed(rows))
+
+
+def latest_status(db: Client) -> dict | None:
+    """The newest stored day and who wrote it, for the admin page."""
+    rows = (
+        db.table(TABLE)
+        .select("date,score,updated_by,updated_at")
+        .order("date", desc=True)
+        .limit(1)
+        .execute()
+        .data
+    )
+    if not rows:
+        return None
+    row = rows[0]
+    return {
+        "date": row["date"],
+        "score": row["score"],
+        "updated_at": row["updated_at"],
+        "source": "worker" if row.get("updated_by") is None else "admin",
+    }
