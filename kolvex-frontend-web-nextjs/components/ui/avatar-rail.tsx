@@ -17,6 +17,8 @@ export interface AvatarRailItem {
   avatar: ReactNode;
   href?: string;
   updateLabel?: string;
+  /** Count shown on the avatar's corner; hidden when 0. Screen readers get it from updateLabel. */
+  badge?: number;
 }
 
 export function AvatarRail({
@@ -99,13 +101,18 @@ export function AvatarRail({
                   aria-hidden="true"
                   data-recent={item.updateLabel ? "true" : undefined}
                   className={cn(
-                    "flex size-[74px] items-center justify-center rounded-full border-2 p-[3px] motion-safe:transition-transform motion-safe:duration-200 motion-safe:ease-out motion-safe:group-hover/avatar:-translate-y-0.5 motion-safe:group-active/avatar:scale-95 md:size-[88px]",
+                    "relative flex size-[74px] items-center justify-center rounded-full border-2 p-[3px] motion-safe:transition-transform motion-safe:duration-200 motion-safe:ease-out motion-safe:group-hover/avatar:-translate-y-0.5 motion-safe:group-active/avatar:scale-95 md:size-[88px]",
                     item.updateLabel ? "border-primary" : "border-transparent",
                   )}
                 >
                   <span className="flex size-full items-center justify-center overflow-hidden rounded-full bg-muted [&>*]:size-full">
                     {item.avatar}
                   </span>
+                  {item.badge ? (
+                    <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-semibold leading-none tabular-nums text-primary-foreground ring-2 ring-background md:h-6 md:min-w-6 md:text-xs">
+                      {item.badge > 99 ? "99+" : item.badge}
+                    </span>
+                  ) : null}
                 </span>
                 <span className="w-full truncate">{item.label}</span>
                 <span

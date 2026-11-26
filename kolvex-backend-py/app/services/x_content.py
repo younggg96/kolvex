@@ -302,6 +302,7 @@ class XContentService:
         }
 
 
+MAX_CRAWL_BATCH = 200
 CRAWL_LIMITS = {"max_posts_per_creator": (1, 2000), "max_scrolls_per_creator": (1, 300)}
 
 
@@ -366,6 +367,23 @@ class XCrawlerSettings:
                 .upsert(row, on_conflict="username")
                 .execute()
                 .data[0]
+            }
+        )
+
+    def save_sources(self, handles):
+        """Add or turn on many accounts at once. Validates every name before writing any."""
+        if not isinstance(handles, list) or not 1 <= len(handles) <= MAX_CRAWL_BATCH:
+            raise ValueError(f"Add 1 to {MAX_CRAWL_BATCH} accounts at a time")
+        names = sorted({username(handle) for handle in handles})
+        stamp = datetime.now(timezone.utc).isoformat()
+        rows = [{"username": name, "enabled": True, "updated_at": stamp} for name in names]
+        return _crawl_tables(
+            lambda: {
+                "sources": self.db.table("x_crawl_sources")
+                .upsert(rows, on_conflict="username")
+                .execute()
+                .data
+                or []
             }
         )
 

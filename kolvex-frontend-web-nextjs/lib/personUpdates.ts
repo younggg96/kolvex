@@ -117,10 +117,17 @@ export function isFedOfficial({ person, tags }: Pick<PersonUpdate, "person" | "t
   );
 }
 
-const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+/** Local midnight at the start of yesterday: "new" means published yesterday or today. */
+export function startOfYesterday(now: number) {
+  const day = new Date(now);
+  day.setHours(0, 0, 0, 0);
+  day.setDate(day.getDate() - 1);
+  return day.getTime();
+}
 
 /** The timeline arrives newest first, so each person starts with their latest entry. */
 export function personUpdatePeople(items: readonly PersonUpdate[], now: number) {
+  const since = startOfYesterday(now);
   const people = new Map<string, PersonUpdatePerson>();
   for (const item of items) {
     let person = people.get(item.person);
@@ -135,8 +142,8 @@ export function personUpdatePeople(items: readonly PersonUpdate[], now: number) 
       people.set(item.person, person);
     }
     person.avatar ||= personAvatar(item);
-    const age = now - Date.parse(item.published_at);
-    if (age >= 0 && age < ONE_DAY_MS) person.newCount += 1;
+    const published = Date.parse(item.published_at);
+    if (published >= since && published <= now) person.newCount += 1;
   }
   return Array.from(people.values());
 }

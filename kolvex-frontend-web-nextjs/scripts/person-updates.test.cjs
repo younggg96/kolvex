@@ -1,3 +1,5 @@
+// "New" counts start at local midnight yesterday; pin the zone so the expectations hold anywhere.
+process.env.TZ = "UTC";
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -38,7 +40,7 @@ test("market time follows daylight saving time", () => {
   assert.match(personUpdateTime(summer, "zh-CN", "Asia/Shanghai"), /20:00/);
 });
 
-test("groups the avatar rail by person and counts only updates from the last 24 hours", () => {
+test("groups the avatar rail by person and counts only updates published since yesterday 00:00 local time", () => {
   const now = Date.parse("2026-11-18T10:00:00Z");
   const items = [
     { person: "Alpha", person_cn: "甲", published_at: "2026-11-18T11:00:00Z" },
@@ -53,9 +55,10 @@ test("groups the avatar rail by person and counts only updates from the last 24 
     {
       person: "Beta",
       person_cn: "乙",
-      published_at: "2026-11-17T10:00:00Z",
+      published_at: "2026-11-17T00:00:00Z",
       avatar_url: "https://example.test/beta.jpg",
     },
+    { person: "Beta", person_cn: "乙", published_at: "2026-11-16T23:59:59Z" },
     { person: "Gamma", person_cn: "丙", published_at: "invalid" },
   ];
   assert.deepEqual(
@@ -80,7 +83,7 @@ test("groups the avatar rail by person and counts only updates from the last 24 
         label: "乙",
         avatar: "https://example.test/beta.jpg",
         fedOfficial: false,
-        newCount: 1,
+        newCount: 2,
       },
       { name: "Gamma", label: "丙", avatar: null, fedOfficial: false, newCount: 0 },
     ],

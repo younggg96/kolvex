@@ -41,6 +41,23 @@ class ServiceTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             XCrawlerSettings(db).save_source("other", "yes")
 
+    def test_batch_validates_all_before_writing_and_deduplicates(self):
+        db = Mock()
+        db.table.return_value.upsert.return_value.execute.return_value.data = [{}]
+        store = XCrawlerSettings(db)
+        with self.assertRaises(ValueError):
+            store.save_sources(["good", "not valid!"])
+        with self.assertRaises(ValueError):
+            store.save_sources([])
+        with self.assertRaises(ValueError):
+            store.save_sources([f"user{i}" for i in range(201)])
+        db.table.return_value.upsert.assert_not_called()
+        store.save_sources(["@Other", "other", "TestUser"])
+        rows = db.table.return_value.upsert.call_args.args[0]
+        self.assertEqual(
+            [(r["username"], r["enabled"]) for r in rows], [("other", True), ("testuser", True)]
+        )
+
     def test_limits_are_bounded(self):
         db = Mock()
         db.table.return_value.upsert.return_value.execute.return_value.data = [{}]
@@ -86,6 +103,7 @@ class RouteTests(unittest.TestCase):
                 {"max_posts_per_creator": 100, "max_scrolls_per_creator": 10},
             ),
             ("post", "/x-crawler/sources", {"username": "other"}),
+            ("post", "/x-crawler/sources/batch", {"usernames": ["a", "b"]}),
         ]
 
     def test_everything_requires_admin(self):
@@ -98,18 +116,24 @@ class RouteTests(unittest.TestCase):
         self.store.get.assert_not_called()
         self.store.save_settings.assert_not_called()
         self.store.save_source.assert_not_called()
+        self.store.save_sources.assert_not_called()
 
     def test_admin_can_read_and_write(self):
         self.login(True)
         self.store.get.return_value = {"sources": [], "settings": {}}
         self.store.save_settings.return_value = {"settings": {}}
         self.store.save_source.return_value = {"source": {}}
+        self.store.save_sources.return_value = {"sources": []}
         for method, path, body in self.requests():
             self.assertEqual(
                 getattr(self.client, method)(path, **({"json": body} if body else {})).status_code,
                 200,
             )
         self.store.save_source.assert_called_once_with("other", True)
+        self.store.save_sources.assert_called_once_with(["a", "b"])
+        self.assertEqual(
+            self.client.post("/x-crawler/sources/batch", json={"usernames": []}).status_code, 422
+        )
         self.assertEqual(
             self.client.put(
                 "/x-crawler/settings",

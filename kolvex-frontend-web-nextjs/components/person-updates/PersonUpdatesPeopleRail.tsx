@@ -26,10 +26,11 @@ export function PersonUpdatesPeopleRail({
     label: person.name === FED_GROUP ? c("Fed officials", "美联储官员") : person.label,
     updateLabel: person.newCount
       ? c(
-          `${person.newCount} new ${person.newCount === 1 ? "update" : "updates"} in the past 24 hours`,
-          `近 24 小时 ${person.newCount} 条新动态`,
+          `${person.newCount} new ${person.newCount === 1 ? "update" : "updates"} since yesterday`,
+          `昨日至今 ${person.newCount} 条新动态`,
         )
       : undefined,
+    badge: person.newCount,
     avatar: person.name ? (
       <PersonUpdateAvatar
         label={person.label}

@@ -7,7 +7,9 @@ import { InfoTip } from "@/components/ui/info-tip";
 import { Input } from "@/components/ui/input";
 import { SettingsGroup, SettingsRow } from "@/components/ui/settings-group";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { useTranslation } from "@/lib/i18n";
+import { parseHandles } from "@/lib/xCrawlerHandles";
 
 interface Source {
   username: string;
@@ -27,8 +29,10 @@ const LIMITS = {
   max_scrolls_per_creator: [1, 300],
 } as const;
 
-async function request<T>(method: "GET" | "PUT" | "POST", body?: unknown): Promise<T> {
-  const response = await fetch("/api/admin/x-crawler", {
+const MAX_BATCH = 200;
+
+async function request<T>(method: "GET" | "PUT" | "POST", body?: unknown, query = ""): Promise<T> {
+  const response = await fetch(`/api/admin/x-crawler${query}`, {
     method,
     cache: "no-store",
     headers: body ? { "Content-Type": "application/json" } : undefined,
@@ -37,15 +41,6 @@ async function request<T>(method: "GET" | "PUT" | "POST", body?: unknown): Promi
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "unavailable");
   return data as T;
-}
-
-/** Profile URL or @handle → lowercase username; null if invalid. */
-function parseHandle(value: string): string | null {
-  let text = value.trim();
-  const url = text.match(/^https:\/\/(?:www\.)?x\.com\/([^/?#]+)\/?(?:[?#].*)?$/i);
-  if (url) text = url[1];
-  text = text.replace(/^@/, "");
-  return /^[A-Za-z0-9_]{1,15}$/.test(text) ? text.toLowerCase() : null;
 }
 
 export default function XCrawlerSettingsPanel() {
@@ -118,23 +113,60 @@ export default function XCrawlerSettingsPanel() {
     }
   }
 
-  async function addSource(event: React.FormEvent) {
+  async function addSources(event: React.FormEvent) {
     event.preventDefault();
-    const username = parseHandle(handle);
-    if (!username) {
+    const { usernames, invalid } = parseHandles(handle);
+    if (invalid.length) {
+      const shown = invalid.slice(0, 5).join(", ") + (invalid.length > 5 ? " …" : "");
       setError(
         c(
-          "Enter an X username or an https://x.com/<username> link.",
-          "请输入 X 用户名或 https://x.com/<用户名> 链接。",
+          `Not a valid X username or https://x.com link: ${shown}. Nothing was added.`,
+          `以下内容不是有效的 X 用户名或 https://x.com 链接：${shown}。未添加任何账号。`,
         ),
       );
+      setMessage("");
       return;
     }
-    if (await saveSource(username, true, "add")) {
+    if (usernames.length > MAX_BATCH) {
+      setError(
+        c(`Add at most ${MAX_BATCH} accounts at a time.`, `一次最多添加 ${MAX_BATCH} 个账号。`),
+      );
+      setMessage("");
+      return;
+    }
+    const before = new Map((data?.sources ?? []).map((item) => [item.username, item.enabled]));
+    setBusy("add");
+    setError("");
+    setMessage("");
+    try {
+      const { sources: saved } = await request<{ sources: Source[] }>(
+        "POST",
+        { usernames },
+        "?batch=1",
+      );
+      setData((current) => {
+        if (!current) return current;
+        const merged = new Map(current.sources.map((item) => [item.username, item]));
+        for (const item of saved) merged.set(item.username, item);
+        return {
+          ...current,
+          sources: [...merged.values()].sort((a, b) => a.username.localeCompare(b.username)),
+        };
+      });
+      const added = usernames.filter((name) => !before.has(name)).length;
+      const reenabled = usernames.filter((name) => before.get(name) === false).length;
+      const unchanged = usernames.length - added - reenabled;
       setHandle("");
       setMessage(
-        c(`@${username} will be scanned in the next run.`, `下一轮采集会抓取 @${username}。`),
+        c(
+          `Added ${added}, turned back on ${reenabled}, already on ${unchanged}. They are scanned from the next run.`,
+          `新增 ${added} 个，重新开启 ${reenabled} 个，${unchanged} 个已在名单中。下一轮采集生效。`,
+        ),
       );
+    } catch (err) {
+      setError(describe(err instanceof Error ? err.message : ""));
+    } finally {
+      setBusy(null);
     }
   }
 
@@ -202,19 +234,29 @@ export default function XCrawlerSettingsPanel() {
         </InfoTip>
       </div>
 
-      <form noValidate onSubmit={addSource} className="flex flex-col gap-2 sm:flex-row">
-        <Input
+      <form noValidate onSubmit={addSources} className="space-y-2">
+        <Textarea
           value={handle}
           onChange={(e) => setHandle(e.target.value)}
-          placeholder={c("@username or x.com link", "@用户名 或 x.com 链接")}
-          aria-label={c("X account to add", "要添加的 X 账号")}
-          maxLength={60}
+          placeholder={c(
+            "@username or x.com link — one per line, or separated by commas",
+            "@用户名 或 x.com 链接，每行一个，或用逗号分隔",
+          )}
+          aria-label={c("X accounts to add", "要添加的 X 账号")}
+          rows={3}
+          maxLength={8000}
           autoComplete="off"
+          spellCheck={false}
           disabled={busy !== null}
-          className="sm:max-w-xs"
+          className="sm:max-w-md"
         />
         <Button type="submit" variant="outline" disabled={busy !== null || !handle.trim()}>
-          {c("Add account", "添加账号")}
+          {(() => {
+            const count = parseHandles(handle).usernames.length;
+            return count > 1
+              ? c(`Add ${count} accounts`, `添加 ${count} 个账号`)
+              : c("Add account", "添加账号");
+          })()}
         </Button>
       </form>
 

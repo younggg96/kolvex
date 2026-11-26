@@ -8,7 +8,7 @@ from starlette.concurrency import run_in_threadpool
 
 from app.api.dependencies.auth import verify_admin
 from app.core.supabase import get_supabase_service
-from app.services.x_content import CrawlTablesMissing, XCrawlerSettings
+from app.services.x_content import MAX_CRAWL_BATCH, CrawlTablesMissing, XCrawlerSettings
 
 # Mounted under /admin by app.api.routes.admin.
 admin_router = APIRouter(prefix="/x-crawler", tags=["Admin"])
@@ -23,6 +23,11 @@ class SourceInput(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     username: str = Field(min_length=1, max_length=16)
     enabled: bool = True
+
+
+class SourcesInput(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    usernames: list[str] = Field(min_length=1, max_length=MAX_CRAWL_BATCH)
 
 
 class SettingsInput(BaseModel):
@@ -60,3 +65,10 @@ async def save_source(
     body: SourceInput, admin_id: str = Depends(verify_admin), store=Depends(get_store)
 ):
     return await _run(lambda: store.save_source(body.username, body.enabled))
+
+
+@admin_router.post("/sources/batch")
+async def save_sources(
+    body: SourcesInput, admin_id: str = Depends(verify_admin), store=Depends(get_store)
+):
+    return await _run(lambda: store.save_sources(body.usernames))
