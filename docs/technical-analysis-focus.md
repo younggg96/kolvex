@@ -111,6 +111,28 @@ symbol lives in the URL (`?symbol=NVDA`); without one it reopens the last symbol
 (this browser), else SPY. Select a 自选 row to switch stocks and replace the chart URL. The page
 belongs to `home` (行情) in `lib/productFeatures.ts`.
 
+The **全屏 / Fullscreen** button sits next to **K 线回放 / Bar replay** in the quote header.
+Fullscreen hides dashboard navigation, keeps the watchlist and other chart panels, and
+uses browser fullscreen where available. Exit with the same control or Escape. The chart
+stays mounted, preserving the selected ticker, period, zoom, drawings and any active replay.
+
+### Historical bar replay
+
+From the terminal or an advanced stock chart, open **K 线回放 / Bar replay**, then click a
+candle or choose a start on the timeline. Keyboard users can also inspect bars with the
+arrow keys and start on the inspected candle with Enter. Replay starts paused and advances
+one loaded candle per step. Play at 1×, 2× or 4×, step either way, or seek to a bar using the
+timeline. Playback stops at the end of the loaded history and skips timer ticks while the
+tab is hidden.
+
+The current range and interval determine which historical candles are available. Replay
+holds that set steady across live updates. Once the starting bar is selected, future
+candles and their indicator values stay hidden until revealed. Live quotes, side panels,
+forecasts, creator markers and existing drawings are hidden throughout the replay session.
+The oscillator and price indicators use the revealed history. **退出回放 / Exit replay**
+restores the live chart with its prior view. Switch range, interval or ticker from the
+live view to replay a different set of bars.
+
 On phones (< `lg`) the side column is replaced by a floating sheet docked just above the tab bar
 (`MobileChartSheet` in `AdvancedSidePanels.tsx`). Collapsed it is one row of tabs — **自选 / AI / 新闻 /
 财报** — and a tab opens it with that panel (same watchlist, AI, news and earnings bodies as desktop).

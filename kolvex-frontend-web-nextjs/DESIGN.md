@@ -739,6 +739,18 @@ that rail scrolls. Below the desktop breakpoint, AI controls and results open
 from a translated toolbar action in a bounded popover. Nested focus dialogs retain their existing draft,
 confirmation and Escape behavior. Default dialog geometry is unchanged.
 
+The standalone 看盘 workspace places **Bar replay** and the fullscreen toggle at the
+end of its OHLC header. Fullscreen removes the dashboard navigation and keeps the
+existing chart panels. The mobile panel dock moves to the bottom safe area. Browser
+fullscreen falls back to the full viewport when the browser denies the native request.
+
+Replay adds a thin control row between the range strip and the oscillator. Start with
+a candle tap, keyboard selection on the plot, or the timeline. The playback row
+combines step and play/pause buttons, a labelled timeline with the current bar date,
+and the shared Select for playback speed. The timeline wraps below the controls on
+phones. During replay, the chart hides live quotes, side panels, historical annotations
+and forecasts. Indicators and oscillator values follow the revealed bars.
+
 Written analysis leads with trend, direction and a 16px/28px conclusion. Saved
 analysis and conditional plans can offer a compact inline translation action
 when their original language differs from the workspace language. Translated

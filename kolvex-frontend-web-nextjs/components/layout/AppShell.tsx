@@ -20,10 +20,10 @@ export default function AppShell({ children }: AppShellProps) {
     <CommandLayer>
       {/* Desktop sidebar starts as the icon-only rail; the header toggle expands it. */}
       <SidebarProvider defaultOpen={false}>
-        <div className="site-page-surface app-workbench relative isolate flex w-full overflow-clip bg-background font-display text-foreground">
+        <div className="site-page-surface app-workbench relative isolate flex w-full overflow-clip bg-background font-display text-foreground [&:has([data-chart-fullscreen])>[data-collapsible]]:hidden">
           <DashboardBackground />
           <AppSidebar />
-          <SidebarInset className="site-page-surface mobile-nav-inset relative flex min-w-0 flex-col overflow-hidden pb-[calc(5.5rem+env(safe-area-inset-bottom))] [html[data-chat-docked]_&]:pb-0 dark:bg-transparent lg:pb-0">
+          <SidebarInset className="site-page-surface mobile-nav-inset relative flex min-w-0 flex-col overflow-hidden pb-[calc(5.5rem+env(safe-area-inset-bottom))] [html[data-chat-docked]_&]:pb-0 dark:bg-transparent lg:pb-0 [&:has([data-chart-fullscreen])]:!pb-0 [&:has([data-chart-fullscreen])>nav:has([data-mobile-dock])]:hidden">
             {children}
             <MobileTabBar />
           </SidebarInset>

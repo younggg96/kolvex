@@ -414,6 +414,8 @@ export interface PriceGraphProps {
   activeIndex: number | null;
   onActiveChange: (index: number | null) => void;
   onOpenAdvanced?: () => void;
+  /** A plot tap or Enter selects a bar, while a drag still pans. */
+  onPickBar?: (index: number) => void;
   /** Content above the drawing surface, in the normal layout flow. */
   plotHeader?: ReactNode;
   /** Absolutely positioned nodes inside the plot box. */
@@ -501,6 +503,7 @@ export default function PriceGraph({
   activeIndex,
   onActiveChange,
   onOpenAdvanced,
+  onPickBar,
   plotHeader,
   overlay,
   drawingLayer,
@@ -581,7 +584,7 @@ export default function PriceGraph({
     });
     observer.observe(box);
     return () => observer.disconnect();
-  }, []);
+  }, [error]);
 
   /* the window the range asks for */
   const requestedStart = useMemo(() => {
@@ -986,6 +989,20 @@ export default function PriceGraph({
     }
     gesture.current = null;
     setDragging(false);
+    if (now?.kind === "pan" && !now.moved && event.type === "pointerup" && onPickBar) {
+      const { px, index } = indexAtClientX(event.clientX);
+      const py = event.clientY - plotRef.current!.getBoundingClientRect().top;
+      if (
+        px >= 0 &&
+        px < geometry.plotWidth &&
+        py >= 0 &&
+        py < geometry.plotHeight &&
+        index >= 0 &&
+        index < count
+      ) {
+        onPickBar(index);
+      }
+    }
     if (now?.kind === "pan" && now.moved) {
       // A cancelled pointer has no meaningful speed; it only springs back inside the data.
       const velocity =
@@ -1001,8 +1018,9 @@ export default function PriceGraph({
   };
 
   const onPlotDoubleClick = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (!count) return;
-    resetAxis(scaleAxisAt(event.target) ?? undefined);
+    const axis = scaleAxisAt(event.target);
+    if (!count || (onPickBar && !axis)) return;
+    resetAxis(axis ?? undefined);
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -1023,7 +1041,9 @@ export default function PriceGraph({
     drawingInteraction?.onKeyDown(event);
     if (event.defaultPrevented) return;
     const base = activeIndex ?? Math.max(Math.min(geometry.lastIndex, count - 1), 0);
-    if (event.key === "ArrowLeft") onActiveChange(Math.max(base - 1, 0));
+    if (event.key === "Enter" && onPickBar && event.target === plotRef.current && count)
+      onPickBar(base);
+    else if (event.key === "ArrowLeft") onActiveChange(Math.max(base - 1, 0));
     else if (event.key === "ArrowRight") onActiveChange(Math.min(base + 1, count - 1));
     else if (event.key === "+" || event.key === "=") zoomBy(0.8, 0.5);
     else if (event.key === "-") zoomBy(1.25, 0.5);

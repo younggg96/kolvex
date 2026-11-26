@@ -61,6 +61,7 @@ import {
   TrendingUp,
   RectangleHorizontal,
   Ruler,
+  RotateCcw,
   ScanSearch,
   SlidersHorizontal,
   Slash,
@@ -147,6 +148,8 @@ import {
 import PriceGraph, { defaultGraphView, type GraphGeometry } from "./PriceGraph";
 import type { CanvasPainter } from "./PlotCanvas";
 import ChartSettingsDialog from "./ChartSettingsDialog";
+import ChartReplayControls from "./ChartReplayControls";
+import { useChartReplay } from "./useChartReplay";
 import {
   DEFAULT_CHART_SETTINGS,
   candlePaint,
@@ -418,17 +421,25 @@ export default function ChartView({
         : { width: next.width, height: next.height },
     );
   }, []);
-  const [bars, setBars] = useState<PriceBar[] | null>(
+  const [liveBars, setBars] = useState<PriceBar[] | null>(
     () => snapshotBars ?? peekClientCache<PriceBar[]>(chartCacheKey) ?? null,
   );
+  const [historyKey, setHistoryKey] = useState(chartCacheKey);
+  const replayControls = useChartReplay(chartCacheKey, liveBars);
+  const { replay, bars } = replayControls;
   const [error, setError] = useState(false);
   const [historyStale, setHistoryStale] = useState(false);
   const [attempt, setAttempt] = useState(0);
-  const [view, setView] = useState<View | null>(null);
-  const [priceDomainOverride, setPriceDomainOverride] = useState<ReturnType<
-    typeof priceDomain
-  > | null>(null);
+  const [liveView, setLiveView] = useState<View | null>(null);
+  const [livePriceDomain, setLivePriceDomain] = useState<ReturnType<typeof priceDomain> | null>(
+    null,
+  );
+  const replayActive = Boolean(replay);
+  const view = replay ? replay.view : liveView;
+  const priceDomainOverride = replay ? replay.priceDomain : livePriceDomain;
   const autoScale = priceDomainOverride === null;
+  const setPriceDomainOverride = replay ? replayControls.setPriceDomain : setLivePriceDomain;
+  const replayTrigger = useRef<HTMLButtonElement>(null);
   const [active, setActive] = useState<number | null>(null);
   const [tool, setTool] = useState<DrawingTool>("cursor");
   const [color, setColor] = useState(drawingColors[0]);
@@ -505,7 +516,7 @@ export default function ChartView({
     advanced &&
     (forecastInterval === "1d" || forecastInterval === "1wk") &&
     (!snapshotBars || !!analysisForecast);
-  const forecastOn = forecastable && showForecast;
+  const forecastOn = forecastable && showForecast && !replay;
   const forecastResource = useCachedResource<KlineForecast>(
     klineForecastKey(symbol, forecastInterval),
     (signal) => getKlineForecast(symbol, forecastInterval, signal),
@@ -572,7 +583,7 @@ export default function ChartView({
 
   const lastHistoryAttempt = useRef(attempt);
   /** What is on screen now, so a range / interval switch can keep it up while the next loads. */
-  const shownBars = useRef<{ symbol: string; bars: PriceBar[] | null }>({ symbol, bars });
+  const shownBars = useRef<{ symbol: string; bars: PriceBar[] | null }>({ symbol, bars: liveBars });
   const shownView = useRef<View | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   useEffect(() => {
@@ -582,10 +593,11 @@ export default function ChartView({
     const cached = snapshotBars ?? peekClientCache<PriceBar[]>(chartCacheKey) ?? null;
     const showNew = (next: PriceBar[] | null) => {
       setBars(next);
+      setHistoryKey(chartCacheKey);
       setRefreshing(false);
       setActive(null);
-      setView(null);
-      setPriceDomainOverride(null);
+      setLiveView(null);
+      setLivePriceDomain(null);
     };
     setError(false);
     setHistoryStale(false);
@@ -593,7 +605,7 @@ export default function ChartView({
     // instead of blanking the chart. Another stock never shows the previous stock's bars.
     const previous = shownBars.current;
     if (!cached && previous.symbol === symbol && previous.bars?.length && shownView.current) {
-      setView(shownView.current);
+      setLiveView(shownView.current);
       setRefreshing(true);
     } else {
       showNew(cached);
@@ -624,6 +636,7 @@ export default function ChartView({
         const data = await getStockHistory(symbol, JSON.parse(paramsKey), controller.signal, true);
         if (!controller.signal.aborted) {
           setBars(data);
+          setHistoryKey(chartCacheKey);
           setError(false);
           setHistoryStale(false);
         }
@@ -644,7 +657,7 @@ export default function ChartView({
       window.removeEventListener("focus", refreshHistory);
       window.removeEventListener("online", refreshHistory);
     };
-  }, [symbol, paramsKey, snapshotBars]);
+  }, [symbol, paramsKey, snapshotBars, chartCacheKey]);
 
   useEffect(() => {
     setSelectedId(null);
@@ -694,15 +707,35 @@ export default function ChartView({
     );
   }, [advanced, count, range, times, extendedWindowStart]);
   const current = view || defaultView;
-  shownBars.current = { symbol, bars };
-  shownView.current = bars?.length ? current : null;
+  const setView = (next: View | null) => {
+    if (replay) replayControls.setView(next ?? defaultView);
+    else setLiveView(next);
+  };
+  if (!replay && historyKey === chartCacheKey) {
+    shownBars.current = { symbol, bars: liveBars };
+    shownView.current = liveBars?.length ? current : null;
+  }
+  const canReplay =
+    !snapshotBars && historyKey === chartCacheKey && !refreshing && !error && count >= 2;
+
+  function closeReplay() {
+    replayControls.close();
+    setActive(null);
+    replayTrigger.current?.focus();
+  }
+
+  function startReplay(index: number) {
+    setActive(null);
+    replayControls.start(index);
+  }
   /** Once per loaded forecast, widen the window so the band past the last bar is in view; turning it off gives the room back. */
   const revealedForecast = useRef<string | null>(null);
   useEffect(() => {
+    if (replayActive) return;
     if (!forecast || forecastBase < 0) {
       if (!forecastOn && revealedForecast.current) {
         revealedForecast.current = null;
-        setView((previous) =>
+        setLiveView((previous) =>
           previous && previous.end > count
             ? clampGraphView({ start: previous.start, end: count }, count)
             : previous,
@@ -714,12 +747,12 @@ export default function ChartView({
     if (revealedForecast.current === id) return;
     revealedForecast.current = id;
     const end = forecastBase + forecast.points.length + 2;
-    setView((previous) => {
+    setLiveView((previous) => {
       const base = previous || defaultView;
       if (base.end >= end) return previous;
       return clampGraphView({ start: base.start, end }, count + forecast.points.length + 2);
     });
-  }, [forecast, forecastBase, forecastOn, defaultView, count]);
+  }, [forecast, forecastBase, forecastOn, defaultView, count, replayActive]);
 
   /**
    * Daily bars: a call made on a weekend or holiday lands on the next session.
@@ -727,7 +760,7 @@ export default function ChartView({
    */
   const calls = useMemo(() => {
     const byBar = new Map<number, Calls>();
-    if (!bars?.length) return byBar;
+    if (replayActive || !bars?.length) return byBar;
     const containing = params.interval === "1wk" || params.interval === "1mo";
     const starts = bars.map((bar) => bar.date.slice(0, 10));
     for (const opinion of events) {
@@ -752,7 +785,7 @@ export default function ChartView({
       byBar.set(index, entry);
     }
     return byBar;
-  }, [bars, events, params.interval]);
+  }, [bars, events, params.interval, replayActive]);
 
   /** `PriceGraph` wants per-bar counts; the advanced header still reads the opinion lists. */
   const callCounts = useMemo(() => {
@@ -845,7 +878,7 @@ export default function ChartView({
   const retryAnalysis = useCallback(() => void runAiRef.current?.("analysis"), []);
   const toggleForecast = useCallback(() => setShowForecast((value) => !value), []);
 
-  if (error) {
+  if (error && !replay && !advanced) {
     return (
       <div
         className={cn(
@@ -862,13 +895,20 @@ export default function ChartView({
     );
   }
 
+  const formatBarDate = replay
+    ? (date: string) =>
+        new Date(`${date}T00:00:00Z`).toLocaleDateString(t("common.intlLocale"), {
+          timeZone: "UTC",
+        })
+    : formatDate;
   const barLabel = (bar: PriceBar) =>
-    `${formatDate(bar.date.slice(0, 10))}${intraday ? ` ${bar.date.slice(11, 16)}` : ""}`;
+    `${formatBarDate(bar.date.slice(0, 10))}${intraday ? ` ${bar.date.slice(11, 16)}` : ""}`;
 
   const drawing = tool !== "cursor";
   const selected = drawings.find((item) => item.id === selectedId) || null;
   const SyncIcon = syncIcons[syncStatus];
-  const loaded = Boolean(bars && count && size.width);
+  const chartError = error && !replay;
+  const loaded = Boolean(!chartError && bars && count && size.width);
   const last = bars?.[count - 1];
   const activeBar = active === null || !bars ? null : bars[active] || null;
   const shownBar =
@@ -1017,7 +1057,8 @@ export default function ChartView({
   }
 
   function cancelOne() {
-    if (draft) setDraft(null);
+    if (replay) closeReplay();
+    else if (draft) setDraft(null);
     else if (drawing) setTool("cursor");
     else if (selectedId) setSelectedId(null);
     else if (active !== null) setActive(null);
@@ -1035,7 +1076,14 @@ export default function ChartView({
 
   runAiRef.current = runAi;
   async function runAi(operation: "analysis" | "drawings" = "analysis") {
-    if (!bars || !count || aiBusy || ai.status === "loading" || drawingAi.status === "loading")
+    if (
+      replay ||
+      !bars ||
+      !count ||
+      aiBusy ||
+      ai.status === "loading" ||
+      drawingAi.status === "loading"
+    )
       return;
     if (!modelReady) {
       // Keep whatever is on screen; ask for a model and offer to start right after. The phone
@@ -2032,7 +2080,7 @@ export default function ChartView({
   /** Advanced-only toggles that sit in the graph's control row after the range bar. */
   const intervalControl = (
     <Select
-      disabled={Boolean(snapshotBars)}
+      disabled={Boolean(snapshotBars || replay)}
       value={snapshotBars ? compactParams.interval : interval}
       onValueChange={(value) => {
         const next = value as ChartInterval;
@@ -2211,17 +2259,17 @@ export default function ChartView({
     <PriceGraph
       mode={mode}
       heightClass={heightClass}
-      bars={bars}
-      quote={quoteResource.data}
-      quoteEnabled={!snapshotBars}
+      bars={chartError ? null : bars}
+      quote={replay ? null : quoteResource.data}
+      quoteEnabled={!snapshotBars && !replay}
       extendedHours={extendedHours}
       quoteLoading={quoteResource.loading}
       quoteError={!!quoteResource.error}
       onQuoteRetry={quoteResource.refresh}
-      historyStale={historyStale}
+      historyStale={!replay && historyStale}
       loading={!bars && !error}
-      refreshing={refreshing}
-      error={error}
+      refreshing={!replay && refreshing}
+      error={chartError}
       onRetry={() => setAttempt((value) => value + 1)}
       view={view}
       onViewChange={setView}
@@ -2240,7 +2288,11 @@ export default function ChartView({
       }}
       rangeOpen={rangeOpen}
       onRangeOpenChange={onRangeOpenChange}
-      rangeOptions={graphRangeOptions}
+      rangeOptions={
+        replay
+          ? graphRangeOptions.map((option) => ({ ...option, disabled: true }))
+          : graphRangeOptions
+      }
       rangeLabel={advanced && snapshotBars ? undefined : rangeLabel}
       rangeStart={
         advanced
@@ -2250,7 +2302,7 @@ export default function ChartView({
             : undefined
       }
       calls={callCounts}
-      showCalls={showCalls}
+      showCalls={showCalls && !replay}
       activeIndex={active}
       onActiveChange={setActive}
       onOpenAdvanced={advanced ? undefined : onOpenAdvanced}
@@ -2260,9 +2312,11 @@ export default function ChartView({
       priceExtent={priceExtent}
       priceDomainOverride={priceDomainOverride}
       onPriceDomainChange={advanced ? setPriceDomainOverride : undefined}
-      drawingLayer={drawingLayerNode}
+      drawingLayer={replay ? undefined : drawingLayerNode}
+      onPickBar={replay?.choosing ? startReplay : undefined}
+      animate={!replay}
       drawingInteraction={
-        advanced
+        advanced && !replay
           ? {
               onPointerDown: handlePointerDown,
               onPointerMove: handlePointerMove,
@@ -2275,7 +2329,26 @@ export default function ChartView({
       overlay={advanced ? advancedOverlay : null}
       subPane={
         <>
-          {layersRow}
+          {replay ? (
+            <ChartReplayControls
+              choosing={replay.choosing}
+              position={replay.position}
+              count={replay.bars.length}
+              date={barLabel(replay.bars[replay.position])}
+              playing={replay.playing}
+              speed={replay.speed}
+              onSeek={(index) => {
+                setActive(null);
+                replayControls.seek(index);
+              }}
+              onStart={() => startReplay(replay.position)}
+              onToggle={replayControls.toggle}
+              onSpeed={replayControls.setSpeed}
+              t={t}
+            />
+          ) : (
+            layersRow
+          )}
           {oscillatorPane}
         </>
       }
@@ -2283,16 +2356,18 @@ export default function ChartView({
       trailingControls={
         advanced ? (
           <>
-            {layersPopover && <div className="hidden sm:contents">{layersPopover}</div>}
+            {!replay && layersPopover && <div className="hidden sm:contents">{layersPopover}</div>}
             {autoScaleControl}
-            {forecastControl}
-            {hideDrawingsSlot && <div className="hidden sm:contents">{hideDrawingsSlot}</div>}
+            {!replay && forecastControl}
+            {!replay && hideDrawingsSlot && (
+              <div className="hidden sm:contents">{hideDrawingsSlot}</div>
+            )}
           </>
         ) : null
       }
       zoomAnchor={chartSettings.zoomAnchor}
       crosshairSnap={chartSettings.crosshairSnap}
-      formatDate={formatDate}
+      formatDate={formatBarDate}
       t={t}
       symbol={symbol}
       interval={params.interval || "1d"}
@@ -2317,7 +2392,19 @@ export default function ChartView({
     ) : null;
 
   return (
-    <div className={cn("min-w-0", advanced && "flex min-h-full gap-3 sm:h-full sm:min-h-0")}>
+    <div
+      data-chart-replay={replayActive || undefined}
+      onKeyDown={
+        replay && !escapeRef
+          ? (event) => {
+              if (event.key !== "Escape" || event.defaultPrevented) return;
+              event.preventDefault();
+              closeReplay();
+            }
+          : undefined
+      }
+      className={cn("min-w-0", advanced && "flex min-h-full gap-3 sm:h-full sm:min-h-0")}
+    >
       <div className={cn("min-w-0", advanced && "flex min-h-0 flex-1 flex-col")}>
         {advanced && (
           <div className="flex shrink-0 flex-wrap items-center gap-x-3 sm:flex-nowrap">
@@ -2334,7 +2421,7 @@ export default function ChartView({
               className="flex min-h-8 min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-0.5 text-xs tabular-nums max-sm:order-last max-sm:basis-full"
               aria-live="polite"
             >
-              {shownBar ? (
+              {shownBar && !chartError ? (
                 <>
                   <span className="font-medium text-foreground">{barLabel(shownBar)}</span>
                   {stat(t("youtubeOpinions.priceOpen"), formatPrice(shownBar.open))}
@@ -2362,12 +2449,39 @@ export default function ChartView({
                       ) : null,
                     )}
                 </>
-              ) : (
+              ) : chartError ? null : (
                 <Skeleton className="h-4 w-48" />
               )}
             </div>
             <div className="ml-auto flex shrink-0 items-center gap-2">
-              {showAi && !renderSidePanels && (
+              {!snapshotBars && (
+                <Button
+                  ref={replayTrigger}
+                  type="button"
+                  variant="toolbar"
+                  size="toolbar"
+                  selected={replayActive}
+                  className="w-auto gap-1.5 px-2.5 text-xs focus-visible:ring-1 focus-visible:ring-ring sm:w-auto"
+                  aria-pressed={replayActive}
+                  disabled={!replay && !canReplay}
+                  onClick={() => {
+                    if (replay) closeReplay();
+                    else {
+                      setActive(null);
+                      replayControls.open(current);
+                    }
+                  }}
+                  title={t(`youtubeOpinions.replay.${replay ? "exit" : "title"}`)}
+                >
+                  {replay ? (
+                    <X className="h-4 w-4" aria-hidden="true" />
+                  ) : (
+                    <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                  )}
+                  {t(`youtubeOpinions.replay.${replay ? "exit" : "title"}`)}
+                </Button>
+              )}
+              {!replay && showAi && !renderSidePanels && (
                 <Button
                   type="button"
                   size="sm"
@@ -2389,7 +2503,7 @@ export default function ChartView({
                   )}
                 </Button>
               )}
-              {showAi && !renderMobilePanels && (
+              {!replay && showAi && !renderMobilePanels && (
                 <div className="lg:hidden">
                   {/* Phones: one sheet over the chart. Settings are a step inside this sheet, never a second stacked sheet. */}
                   <Dialog
@@ -2527,6 +2641,7 @@ export default function ChartView({
             <PopoverTrigger asChild>
               <Button
                 type="button"
+                disabled={replayActive}
                 aria-label={t("youtubeOpinions.drawTools")}
                 title={t("youtubeOpinions.drawTools")}
                 variant="toolbar"
@@ -2577,6 +2692,7 @@ export default function ChartView({
                 <Button
                   key={item.value}
                   type="button"
+                  disabled={replayActive}
                   title={t(`youtubeOpinions.${item.label}`)}
                   aria-label={t(`youtubeOpinions.${item.label}`)}
                   aria-pressed={tool === item.value}
@@ -2599,6 +2715,7 @@ export default function ChartView({
             <PopoverTrigger asChild>
               <Button
                 type="button"
+                disabled={replayActive}
                 aria-label={t("youtubeOpinions.drawColor")}
                 title={t("youtubeOpinions.drawColor")}
                 variant="toolbar"
@@ -2642,6 +2759,7 @@ export default function ChartView({
           <span className="mx-1 hidden h-5 w-px shrink-0 bg-border sm:block" aria-hidden="true" />
           <Button
             type="button"
+            disabled={replayActive}
             title={t("youtubeOpinions.magnet")}
             aria-label={t("youtubeOpinions.magnet")}
             aria-pressed={magnet}
@@ -2654,6 +2772,7 @@ export default function ChartView({
           </Button>
           <Button
             type="button"
+            disabled={replayActive}
             title={t("youtubeOpinions.showCalls")}
             aria-label={t("youtubeOpinions.showCalls")}
             aria-pressed={showCalls}
@@ -2783,7 +2902,7 @@ export default function ChartView({
             </PopoverContent>
           </Popover>
           <div className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-1">
-            {advanced && (
+            {advanced && !replay && (
               <ChartSettingsDialog
                 open={chartSettingsOpen}
                 onOpenChange={setChartSettingsOpen}
@@ -2817,7 +2936,7 @@ export default function ChartView({
               type="button"
               title={t("youtubeOpinions.undo")}
               aria-label={t("youtubeOpinions.undo")}
-              disabled={!canUndo}
+              disabled={replayActive || !canUndo}
               onClick={undo}
               variant="toolbar"
               size="toolbar"
@@ -2829,7 +2948,7 @@ export default function ChartView({
               type="button"
               title={t("youtubeOpinions.deleteDrawing")}
               aria-label={t("youtubeOpinions.deleteDrawing")}
-              disabled={!selectedId}
+              disabled={replayActive || !selectedId}
               onClick={removeSelected}
               variant="toolbar"
               size="toolbar"
@@ -2841,7 +2960,7 @@ export default function ChartView({
               type="button"
               title={t("youtubeOpinions.clearDrawings")}
               aria-label={t("youtubeOpinions.clearDrawings")}
-              disabled={!drawings.length}
+              disabled={replayActive || !drawings.length}
               onClick={() => {
                 setDrawings([]);
                 setSelectedId(null);
@@ -2878,7 +2997,9 @@ export default function ChartView({
           resultsContainer &&
           createPortal(aiResults, resultsContainer)}
       </div>
-      {mobilePanels && renderMobilePanels(advancedAiPanel)}
+      {mobilePanels && (
+        <div className={replay ? "hidden" : "contents"}>{renderMobilePanels(advancedAiPanel)}</div>
+      )}
       {advanced && (showAi || renderSidePanels) && !mobilePanels && (
         <aside
           id={aiPanelId}
@@ -2887,13 +3008,14 @@ export default function ChartView({
           )}
           className={cn(
             "hidden min-h-0 shrink-0",
-            renderSidePanels
-              ? // Panels and their icon rail run flush to the dialog's right, top and bottom edges.
-                "-my-3 -mr-4 overflow-hidden lg:flex"
-              : cn(
-                  "w-[clamp(22rem,28vw,30rem)] overflow-y-auto overscroll-contain border-l border-border pl-4",
-                  aiPanelOpen && "lg:block",
-                ),
+            !replay &&
+              (renderSidePanels
+                ? // Panels and their icon rail run flush to the dialog's right, top and bottom edges.
+                  "-my-3 -mr-4 overflow-hidden lg:flex"
+                : cn(
+                    "w-[clamp(22rem,28vw,30rem)] overflow-y-auto overscroll-contain border-l border-border pl-4",
+                    aiPanelOpen && "lg:block",
+                  )),
           )}
         >
           {renderSidePanels ? renderSidePanels(advancedAiPanel) : advancedAiPanel}

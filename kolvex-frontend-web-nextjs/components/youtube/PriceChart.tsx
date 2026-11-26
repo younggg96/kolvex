@@ -3,6 +3,7 @@ import { useCachedResource } from "@/hooks/useCachedResource";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import type { ReactNode } from "react";
 import {
   Dialog,
   DialogClose,
@@ -93,7 +94,11 @@ export default function PriceChart({
    * 看盘 page: render only the advanced chart, filling its container. The page owns the
    * symbol (it lives in the URL), so the watchlist panel reports picks instead of switching here.
    */
-  terminal?: { onSelectSymbol: (symbol: string) => void };
+  terminal?: {
+    onSelectSymbol: (symbol: string) => void;
+    fullscreen: boolean;
+    headerActions: ReactNode;
+  };
 }) {
   /**
    * The full-screen chart can switch to another stock from its watchlist panel without leaving
@@ -430,12 +435,17 @@ export default function PriceChart({
         <ChartView
           mode="advanced"
           {...shared}
-          escapeRef={escapeRef}
+          headerActions={terminal.headerActions}
           renderSidePanels={(ai) => (
             <AdvancedSidePanels symbol={symbol} ai={ai} onSelectSymbol={terminal.onSelectSymbol} />
           )}
           renderMobilePanels={(ai) => (
-            <MobileChartSheet symbol={symbol} ai={ai} onSelectSymbol={terminal.onSelectSymbol} />
+            <MobileChartSheet
+              symbol={symbol}
+              ai={ai}
+              onSelectSymbol={terminal.onSelectSymbol}
+              fullscreen={terminal.fullscreen}
+            />
           )}
         />
       </div>

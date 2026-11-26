@@ -1030,11 +1030,13 @@ export function MobileChartSheet({
   symbol,
   ai,
   onSelectSymbol,
+  fullscreen = false,
 }: {
   symbol: string;
   /** The chart's AI actions and results; null when this chart offers no AI. */
   ai: ReactNode | null;
   onSelectSymbol?: (symbol: string) => void;
+  fullscreen?: boolean;
 }) {
   const c = useCopy();
   const panels = SIDE_PANEL_IDS.filter((id) => id !== "ai" || ai !== null);
@@ -1079,7 +1081,12 @@ export function MobileChartSheet({
   return (
     <section
       aria-label={c("Chart panels", "看盘面板")}
-      className="pointer-events-none fixed inset-x-0 bottom-[calc(max(1rem,env(safe-area-inset-bottom))+4.25rem)] z-30 px-4 lg:hidden"
+      className={cn(
+        "pointer-events-none fixed inset-x-0 z-30 px-4 lg:hidden",
+        fullscreen
+          ? "bottom-[max(1rem,env(safe-area-inset-bottom))]"
+          : "bottom-[calc(max(1rem,env(safe-area-inset-bottom))+4.25rem)]",
+      )}
     >
       <div className={cn(floatingSurfaceClass, "pointer-events-auto mx-auto w-full max-w-md p-1")}>
         <div
