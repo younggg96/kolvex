@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from types import SimpleNamespace
 from unittest.mock import Mock
 
@@ -112,6 +112,8 @@ def test_database_failure_is_distinct_from_empty_history(local_api):
 # ---------------- automatic sync from the local Playwright worker ----------------
 
 MIDNIGHT_JAN_7 = 1767744000000  # 2026-01-07T00:00:00Z
+DAY_MS = 86_400_000
+NOW = datetime(2026, 1, 9, 12, 0, tzinfo=store.NEW_YORK)  # Friday, after the open
 CNN = {
     "fear_and_greed": {
         "score": 61.2,
@@ -122,24 +124,59 @@ CNN = {
     "fear_and_greed_historical": {
         "data": [
             {"x": MIDNIGHT_JAN_7, "y": 24.9, "rating": "extreme fear"},
-            {"x": MIDNIGHT_JAN_7 + 86_400_000, "y": 55.0, "rating": "neutral"},
-            {"x": MIDNIGHT_JAN_7 + 3 * 86_400_000, "y": 50.0, "rating": "neutral"},
+            {"x": MIDNIGHT_JAN_7 + DAY_MS, "y": 55.0, "rating": "neutral"},
+            {"x": MIDNIGHT_JAN_7 + 3 * DAY_MS, "y": 50.0, "rating": "neutral"},
         ]
     },
 }
 
 
 def test_parse_cnn_graph_dates_ratings_and_current_reading_wins():
-    rows = store.parse_cnn_graph(CNN, TODAY)
+    rows = store.parse_cnn_graph(CNN, NOW)
     assert [row.model_dump(mode="json") for row in rows] == [
         {"date": "2026-01-07", "score": 24.9, "rating": "extreme fear"},
         {"date": "2026-01-08", "score": 61.2, "rating": "greed"},
-    ]  # Jan 10 is in the future and dropped.
+    ]  # Jan 10 is a future Saturday and dropped.
+
+
+def test_parse_cnn_graph_drops_carried_points_for_holidays_and_before_the_open():
+    # Real shape seen 2026-11-25 20:39 ET: after the close CNN opens Thanksgiving's point
+    # with the last close; it is not an observation.
+    nov_25 = 1795564800000  # 2026-11-25T00:00:00Z
+    payload = {
+        "fear_and_greed": {
+            "score": 15.2,
+            "rating": "extreme fear",
+            "timestamp": "2026-11-26T01:00:00+00:00",
+        },
+        "fear_and_greed_historical": {
+            "data": [
+                {"x": nov_25 - DAY_MS, "y": 10.9, "rating": "extreme fear"},
+                {"x": nov_25, "y": 15.2, "rating": "extreme fear"},
+                {"x": nov_25 + DAY_MS, "y": 15.2, "rating": "extreme fear"},
+                {"x": nov_25 + 2 * DAY_MS, "y": 15.2, "rating": "extreme fear"},
+            ]
+        },
+    }
+
+    def dates(now):
+        return [str(row.date) for row in store.parse_cnn_graph(payload, now)]
+
+    assert dates(datetime(2026, 11, 26, 0, 39, tzinfo=store.NEW_YORK)) == [
+        "2026-11-24",
+        "2026-11-25",
+    ]
+    # Friday the 27th trades, but its carried point is not kept before 09:30.
+    assert dates(datetime(2026, 11, 27, 9, 29, tzinfo=store.NEW_YORK)) == [
+        "2026-11-24",
+        "2026-11-25",
+    ]
+    assert dates(datetime(2026, 11, 27, 9, 30, tzinfo=store.NEW_YORK))[-1] == "2026-11-27"
 
 
 def test_parse_cnn_graph_unknown_rating_keeps_score():
     payload = {**CNN, "fear_and_greed": {**CNN["fear_and_greed"], "rating": "bullish"}}
-    assert store.parse_cnn_graph(payload, TODAY)[-1].rating is None
+    assert store.parse_cnn_graph(payload, NOW)[-1].rating is None
 
 
 @pytest.mark.parametrize(
@@ -169,16 +206,14 @@ def test_parse_cnn_graph_unknown_rating_keeps_score():
 )
 def test_parse_cnn_graph_rejects_whole_malformed_payload(payload, code):
     with pytest.raises(store.InvalidCnnData) as error:
-        store.parse_cnn_graph(payload, TODAY)
+        store.parse_cnn_graph(payload, NOW)
     assert str(error.value) == code
 
 
 def test_worker_endpoint_requires_token_and_saves_as_automatic(local_api, monkeypatch):
     client, table, _ = local_api
     path = "/fear-greed/worker/cnn"
-    monkeypatch.setattr(
-        routes, "datetime", SimpleNamespace(now=lambda tz: SimpleNamespace(date=lambda: TODAY))
-    )
+    monkeypatch.setattr(routes, "datetime", SimpleNamespace(now=lambda tz: NOW))
 
     monkeypatch.setattr(routes.settings, "FEAR_GREED_WORKER_TOKEN", "")
     assert client.post(path, json=CNN, headers={"X-Worker-Token": "x"}).status_code == 503

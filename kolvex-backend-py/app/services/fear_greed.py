@@ -11,6 +11,7 @@ from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel, Field
 
+from app.services.market_risk.calendar import is_trading_day
 from supabase import Client
 
 TABLE = "fear_greed_observations"
@@ -18,6 +19,7 @@ MAX_BYTES = 512 * 1024
 MAX_ROWS = 10_000
 HISTORY_COUNT = 90
 NEW_YORK = ZoneInfo("America/New_York")
+MARKET_OPEN = time(9, 30)
 Rating = Literal["extreme fear", "fear", "neutral", "greed", "extreme greed"]
 
 
@@ -109,12 +111,14 @@ def _cnn_point_date(moment: datetime) -> date:
     return utc.date() if utc.time() == time(0) else utc.astimezone(NEW_YORK).date()
 
 
-def parse_cnn_graph(payload: object, today: date) -> list[Observation]:
-    """Turn CNN's ``fearandgreed/graphdata`` JSON into one observation per day.
+def parse_cnn_graph(payload: object, now: datetime) -> list[Observation]:
+    """Turn CNN's ``fearandgreed/graphdata`` JSON into one observation per NYSE session.
 
-    The current reading wins over the historical point of the same day. Future days are
-    dropped; any malformed point rejects the whole payload so a format change never
-    writes half-parsed data.
+    The current reading wins over the historical point of the same day. CNN opens the next
+    day's point after the close, carrying the last value until trading starts, so days
+    that are not sessions (weekends, holidays) and today before 09:30 New York time are
+    dropped, as are future days. Any malformed point rejects the whole payload so a
+    format change never writes half-parsed data.
     """
     if not isinstance(payload, dict):
         raise InvalidCnnData("shape")
@@ -154,7 +158,14 @@ def parse_cnn_graph(payload: object, today: date) -> list[Observation]:
         date=day, score=_cnn_score(current.get("score")), rating=_cnn_rating(current.get("rating"))
     )
 
-    rows = [days[day] for day in sorted(days) if day <= today]
+    local = now.astimezone(NEW_YORK)
+    today = local.date()
+    started = local.time() >= MARKET_OPEN
+
+    def observed(day: date) -> bool:
+        return is_trading_day(day) and (day < today or (day == today and started))
+
+    rows = [days[day] for day in sorted(days) if observed(day)]
     if not rows:
         raise InvalidCnnData("empty")
     return rows

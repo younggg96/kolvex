@@ -89,7 +89,7 @@ async def sync_from_cnn(request: Request):
             raise HTTPException(413, detail={"code": "too_large"})
         payload.extend(chunk)
     try:
-        rows = parse_cnn_graph(json.loads(payload), datetime.now(NEW_YORK).date())
+        rows = parse_cnn_graph(json.loads(payload), datetime.now(NEW_YORK))
     except (ValueError, InvalidCnnData) as exc:
         code = str(exc) if isinstance(exc, InvalidCnnData) else "json"
         logger.warning("Rejected Fear & Greed worker payload: %s", code)
