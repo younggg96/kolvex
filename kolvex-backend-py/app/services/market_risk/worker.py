@@ -5,11 +5,17 @@ Cboe posts the day's index closes in the evening. After 18:30 ET on each trading
 provider corrections are picked up as new revisions. A Redis lease keeps it to one
 replica. When the day's values are not all published yet it retries every 30 minutes
 until the next session takes over; nothing is filled in meanwhile.
+
+Without Redis the worker keeps its done / retry markers in process memory instead of
+skipping every tick, like the economic-indicator and options-activity jobs. Writes stay
+safe across replicas: observations are insert-only and skip unchanged values, and a
+snapshot with an unchanged ``inputs_hash`` is not inserted again.
 """
 
 import asyncio
 import logging
 import os
+import time as time_module
 from datetime import date, datetime, time, timedelta, timezone
 from uuid import uuid4
 
@@ -58,6 +64,38 @@ def publish_snapshot(db, session: date) -> str | None:
         return None
     freshness = "fresh" if latest.trading_date >= session else "delayed"
     return repository.store_snapshot(db, evaluation, freshness)
+
+
+class LocalState:
+    """In-process stand-in for the Redis calls ``run_tick`` makes, used when Redis is down."""
+
+    def __init__(self, clock=time_module.monotonic):
+        self._clock = clock
+        self._values: dict[str, tuple[str, float | None]] = {}
+        self._lock: tuple[str, float] | None = None
+
+    async def get(self, key: str) -> str | None:
+        item = self._values.get(key)
+        if item is None:
+            return None
+        value, expires = item
+        if expires is not None and self._clock() >= expires:
+            del self._values[key]
+            return None
+        return value
+
+    async def set(self, key: str, value: str, ttl: int | None = None) -> None:
+        self._values[key] = (value, None if ttl is None else self._clock() + ttl)
+
+    async def acquire_lock(self, key: str, token: str, ttl: int = 300) -> bool:
+        if self._lock and self._clock() < self._lock[1]:
+            return False
+        self._lock = (token, self._clock() + ttl)
+        return True
+
+    async def release_lock(self, key: str, token: str) -> None:
+        if self._lock and self._lock[0] == token:
+            self._lock = None
 
 
 def _done_key(session: date) -> str:
@@ -111,11 +149,14 @@ async def run_market_risk_worker() -> None:
     from app.core.redis import get_redis
     from app.core.supabase import get_supabase_service
 
+    local = LocalState()
+    if not get_redis().is_connected:
+        logger.warning("market_risk worker running without Redis; state kept in this process")
     while True:
         try:
             redis = get_redis()
-            if redis.is_connected:
-                await run_tick(datetime.now(timezone.utc), redis, get_supabase_service)
+            state = redis if redis.is_connected else local
+            await run_tick(datetime.now(timezone.utc), state, get_supabase_service)
         except Exception:
             logger.exception("market_risk worker tick failed")
         await asyncio.sleep(POLL_SECONDS)

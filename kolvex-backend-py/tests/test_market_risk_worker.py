@@ -116,3 +116,28 @@ def test_worker_disabled_by_default(monkeypatch):
     assert worker.worker_enabled() is False
     monkeypatch.setenv("MARKET_RISK_WORKER_ENABLED", "true")
     assert worker.worker_enabled() is True
+
+
+def test_local_state_runs_tick_without_redis():
+    clock = [0.0]
+    state = worker.LocalState(clock=lambda: clock[0])
+    now, session = datetime(2026, 11, 21, 0, 0, tzinfo=UTC), date(2026, 11, 20)
+    result, calls = _run(now, state, _report(session, missing={"vvix"}))
+    assert result is not None and calls["publish"] == []
+    # Retry marker holds for 30 minutes, then the tick runs again.
+    assert _run(now, state, _report(session))[0] is None
+    clock[0] += worker.RETRY_SECONDS
+    result, calls = _run(now, state, _report(session))
+    assert result is not None and calls["publish"] == [session]
+    assert _run(now, state, _report(session))[0] is None
+
+
+def test_local_state_lock_expires_and_checks_token():
+    clock = [0.0]
+    state = worker.LocalState(clock=lambda: clock[0])
+    assert asyncio.run(state.acquire_lock("k", "a", ttl=10))
+    assert not asyncio.run(state.acquire_lock("k", "b", ttl=10))
+    asyncio.run(state.release_lock("k", "b"))
+    assert not asyncio.run(state.acquire_lock("k", "b", ttl=10))
+    clock[0] = 10
+    assert asyncio.run(state.acquire_lock("k", "b", ttl=10))

@@ -73,6 +73,7 @@ cd kolvex-backend-py && venv/bin/python scripts/backfill_market_risk.py
 | 完成条件 | 四个指标当日都有通过校验的值且无来源错误 → 记 `done`，当天不再跑 |
 | 未完成 | 30 分钟后重试，直到下一个交易日接替；缺的值不补，在 ingestion run 里报告 |
 | 多副本 | Redis lease（10 分钟），只有一个副本执行 |
+| Redis 不可用 | 不再跳过：完成 / 重试标记和 lease 改存在进程内存（重启后当天会再跑一次，写入是幂等的：观测值不变跳过、快照 `inputs_hash` 相同跳过） |
 
 每次运行都写一条 `market_risk_ingestion_runs`（状态、各指标计数、拒绝样例、缺失日期、交叉校验结果）。
 

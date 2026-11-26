@@ -1,6 +1,6 @@
 import asyncio
 import unittest
-from datetime import date, datetime, timezone
+from datetime import date, datetime, time, timezone
 from unittest.mock import AsyncMock, Mock, patch
 
 from fastapi import FastAPI
@@ -29,27 +29,53 @@ class ScheduleTests(unittest.TestCase):
     def setUp(self):
         patcher = patch.multiple(
             auto.settings,
-            YOUTUBE_IMPORT_SCHEDULE_TIME="21:00",
+            YOUTUBE_IMPORT_SCHEDULE_TIME="21:00, 06:30,16:30",
             YOUTUBE_IMPORT_TIMEZONE="America/Los_Angeles",
         )
         patcher.start()
         self.addCleanup(patcher.stop)
 
-    def test_not_due_before_nine_pm_local(self):
-        # 2026-11-17 04:59 UTC = 2026-11-16 20:59 PST
-        self.assertIsNone(auto.schedule_due(utc("2026-11-17T04:59:00")))
-
-    def test_due_after_nine_pm_uses_local_date(self):
-        self.assertEqual(auto.schedule_due(utc("2026-11-17T05:00:00")), date(2026, 11, 16))
-
-    def test_next_run_rolls_to_tomorrow_after_run_time(self):
+    def test_slots_are_sorted(self):
         self.assertEqual(
-            auto.next_scheduled_at(utc("2026-11-16T20:00:00")).isoformat(),
-            "2026-11-16T21:00:00-08:00",
+            [slot.strftime("%H:%M") for slot in auto.schedule_clock()[0]],
+            ["06:30", "16:30", "21:00"],
+        )
+
+    def test_not_due_before_first_slot_of_the_day(self):
+        # 2026-11-17 14:29 UTC = 2026-11-17 06:29 PST; yesterday's 21:00 is not caught up.
+        self.assertIsNone(auto.schedule_due(utc("2026-11-17T14:29:00")))
+
+    def test_due_returns_latest_passed_slot_with_local_date(self):
+        self.assertEqual(
+            auto.schedule_due(utc("2026-11-17T14:30:00")), (date(2026, 11, 17), time(6, 30))
         )
         self.assertEqual(
-            auto.next_scheduled_at(utc("2026-11-17T06:00:00")).isoformat(),
-            "2026-11-17T21:00:00-08:00",
+            auto.schedule_due(utc("2026-11-18T00:31:00")), (date(2026, 11, 17), time(16, 30))
+        )
+        # 2026-11-18 05:00 UTC = 2026-11-17 21:00 PST
+        self.assertEqual(
+            auto.schedule_due(utc("2026-11-18T05:00:00")), (date(2026, 11, 17), time(21, 0))
+        )
+
+    def test_next_run_is_next_slot_then_tomorrow_morning(self):
+        self.assertEqual(
+            auto.next_scheduled_at(utc("2026-11-17T15:00:00")).isoformat(),
+            "2026-11-17T16:30:00-08:00",
+        )
+        self.assertEqual(
+            auto.next_scheduled_at(utc("2026-11-18T05:00:00")).isoformat(),
+            "2026-11-18T06:30:00-08:00",
+        )
+
+    def test_claim_creates_run_for_due_slot(self):
+        store = auto.YouTubeAutoImportStore.__new__(auto.YouTubeAutoImportStore)
+        store.touch_worker = Mock()
+        store.fail_stale = Mock()
+        store._first_with_status = Mock(return_value=None)
+        store.create_run = Mock()
+        self.assertIsNone(store.claim(utc("2026-11-18T00:31:00")))
+        store.create_run.assert_called_once_with(
+            "schedule", scheduled_for=date(2026, 11, 17), schedule_slot=time(16, 30)
         )
 
 
@@ -90,7 +116,7 @@ class FakeStore:
     def append_video(self, run, result, now):
         self.appended.append(result)
 
-    def create_run(self, trigger, requested_by=None, scheduled_for=None):
+    def create_run(self, trigger, requested_by=None, scheduled_for=None, schedule_slot=None):
         if self.run and self.run["status"] in ("queued", "running"):
             raise auto.RunConflict()
         self.created.append(trigger)

@@ -5,8 +5,8 @@ fetches transcripts of the creators' untracked videos, and posts each transcript
 here. The backend analyzes it with DeepSeek, then imports the result through the
 same validation and upsert path as the admin JSON upload.
 
-Runs are created by an admin ("run now") or once per day at the configured local
-time; the worker creates the scheduled run on its first poll after that time.
+Runs are created by an admin ("run now") or at each configured local time of day;
+the worker creates the scheduled run on its first poll after that time.
 """
 
 from __future__ import annotations
@@ -116,25 +116,35 @@ def _unique_violation(error: Exception) -> bool:
     return getattr(error, "code", None) == "23505" or "23505" in str(error)
 
 
-def schedule_clock() -> tuple[time, ZoneInfo]:
-    hour, minute = (int(part) for part in settings.YOUTUBE_IMPORT_SCHEDULE_TIME.split(":", 1))
-    return time(hour, minute), ZoneInfo(settings.YOUTUBE_IMPORT_TIMEZONE)
+def schedule_clock() -> tuple[list[time], ZoneInfo]:
+    """Daily run times (sorted) and their timezone, from a comma-separated ``HH:MM`` list."""
+    slots = set()
+    for part in settings.YOUTUBE_IMPORT_SCHEDULE_TIME.split(","):
+        if part.strip():
+            hour, minute = (int(value) for value in part.strip().split(":", 1))
+            slots.add(time(hour, minute))
+    return sorted(slots), ZoneInfo(settings.YOUTUBE_IMPORT_TIMEZONE)
 
 
-def schedule_due(now: datetime) -> Optional[date]:
-    """Local date whose scheduled run is due at ``now``, or None before today's run time."""
-    at, zone = schedule_clock()
+def schedule_due(now: datetime) -> Optional[tuple[date, time]]:
+    """Latest of today's run times that has passed at ``now`` (local date and slot).
+
+    None before today's first run time: a slot missed on an earlier day is not caught up.
+    """
+    slots, zone = schedule_clock()
     local = now.astimezone(zone)
-    return local.date() if local.time() >= at else None
+    passed = [slot for slot in slots if slot <= local.time()]
+    return (local.date(), passed[-1]) if passed else None
 
 
 def next_scheduled_at(now: datetime) -> datetime:
-    at, zone = schedule_clock()
+    slots, zone = schedule_clock()
     local = now.astimezone(zone)
-    candidate = datetime.combine(local.date(), at, tzinfo=zone)
-    if candidate <= local:
-        candidate = datetime.combine(local.date() + timedelta(days=1), at, tzinfo=zone)
-    return candidate
+    for slot in slots:
+        candidate = datetime.combine(local.date(), slot, tzinfo=zone)
+        if candidate > local:
+            return candidate
+    return datetime.combine(local.date() + timedelta(days=1), slots[0], tzinfo=zone)
 
 
 def parse_model_json(content: str) -> Dict[str, Any]:
@@ -270,11 +280,17 @@ class YouTubeAutoImportStore:
 
     # ---------- writes ----------
     def create_run(
-        self, trigger: str, requested_by: Optional[str] = None, scheduled_for: Optional[date] = None
+        self,
+        trigger: str,
+        requested_by: Optional[str] = None,
+        scheduled_for: Optional[date] = None,
+        schedule_slot: Optional[time] = None,
     ) -> Dict[str, Any]:
         row = {"trigger": trigger, "status": "queued", "requested_by": requested_by}
         if scheduled_for:
             row["scheduled_for"] = scheduled_for.isoformat()
+        if schedule_slot:
+            row["schedule_slot"] = schedule_slot.strftime("%H:%M")
         try:
             result = self.supabase.table(RUNS).insert(row).execute()
         except Exception as e:
@@ -316,7 +332,7 @@ class YouTubeAutoImportStore:
     def claim(
         self, now: datetime, hostname: Optional[str] = None, version: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
-        """Called by every worker poll: record the heartbeat, enqueue the daily run, hand out work.
+        """Called by every worker poll: record the heartbeat, enqueue a due scheduled run, hand out work.
 
         A run already running is returned again so a restarted worker resumes it.
         """
@@ -328,9 +344,9 @@ class YouTubeAutoImportStore:
         due = schedule_due(now)
         if due:
             try:
-                self.create_run("schedule", scheduled_for=due)
+                self.create_run("schedule", scheduled_for=due[0], schedule_slot=due[1])
             except RunConflict:
-                pass  # Already scheduled today, or a manual run is queued.
+                pass  # This slot already has its run, or another run is queued or running.
         queued = self._first_with_status("queued")
         if not queued:
             return None
@@ -429,14 +445,16 @@ def admin_status(store: YouTubeAutoImportStore, now: Optional[datetime] = None) 
     now = now or _now()
     worker = store.worker()
     seen = _parse_time(worker.get("last_seen_at")) if worker else None
-    at, zone = schedule_clock()
+    slots, zone = schedule_clock()
+    times = [slot.strftime("%H:%M") for slot in slots]
     return {
         "configured": bool(settings.YOUTUBE_IMPORT_WORKER_TOKEN and settings.DEEPSEEK_API_KEY),
         "worker_token_configured": bool(settings.YOUTUBE_IMPORT_WORKER_TOKEN),
         "model_configured": bool(settings.DEEPSEEK_API_KEY),
         "model": settings.YOUTUBE_IMPORT_MODEL,
         "schedule": {
-            "time": at.strftime("%H:%M"),
+            "time": ", ".join(times),
+            "times": times,
             "timezone": zone.key,
             "next_run_at": _iso(next_scheduled_at(now)),
         },

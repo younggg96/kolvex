@@ -72,7 +72,10 @@ class Settings:
     # fetches transcripts and authenticates with this shared token; empty = disabled.
     YOUTUBE_IMPORT_WORKER_TOKEN: str = os.getenv("YOUTUBE_IMPORT_WORKER_TOKEN", "")
     YOUTUBE_IMPORT_MODEL: str = os.getenv("YOUTUBE_IMPORT_MODEL", "deepseek-v4-pro")
-    YOUTUBE_IMPORT_SCHEDULE_TIME: str = os.getenv("YOUTUBE_IMPORT_SCHEDULE_TIME", "21:00")
+    # Comma-separated local run times; one scheduled run per time per day.
+    YOUTUBE_IMPORT_SCHEDULE_TIME: str = os.getenv(
+        "YOUTUBE_IMPORT_SCHEDULE_TIME", "06:30,16:30,21:00"
+    )
     YOUTUBE_IMPORT_TIMEZONE: str = os.getenv("YOUTUBE_IMPORT_TIMEZONE", "America/Los_Angeles")
 
     # Automatic CNN Fear & Greed sync. A local Mac Playwright script (side-projects/fear-greed)
