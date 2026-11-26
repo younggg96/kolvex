@@ -494,6 +494,7 @@ export function Page({
   // The header's own height, so the content can start just below it.
   const [headerHeight, setHeaderHeight] = useState(0);
   const headerTop = insets.top + phone(8);
+  const fadeHeight = headerTop + headerHeight + phone(16);
   // The spinner follows `refreshing` only after the user pulls. Background loads (cached
   // revalidation, quote polling, returning to the foreground) also set `refreshing`, and on
   // iOS a programmatic refresh moves the scroll offset, leaving the page off its top.
@@ -640,12 +641,18 @@ export function Page({
         <Svg
           pointerEvents="none"
           width="100%"
-          height={headerTop + headerHeight + phone(16)}
+          height={fadeHeight}
           style={{ position: "absolute", top: 0, left: 0, right: 0 }}
         >
           <Defs>
             <LinearGradient id="page-edge" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0" stopColor={t.background} stopOpacity={0.92} />
+              <Stop offset="0" stopColor={t.background} stopOpacity={1} />
+              {/* Solid behind the status bar, so nothing shows under the clock and icons. */}
+              <Stop
+                offset={Math.min(insets.top / fadeHeight, 0.6)}
+                stopColor={t.background}
+                stopOpacity={1}
+              />
               <Stop offset="0.6" stopColor={t.background} stopOpacity={0.6} />
               <Stop offset="1" stopColor={t.background} stopOpacity={0} />
             </LinearGradient>
