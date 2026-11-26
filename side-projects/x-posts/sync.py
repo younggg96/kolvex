@@ -14,7 +14,7 @@ from urllib.parse import urlsplit
 ROOT = Path(__file__).resolve().parent
 BACKEND = ROOT.parents[1] / "kolvex-backend-py"
 sys.path.insert(0, str(BACKEND))
-from app.services.x_content import XContentService, normalize_import, username
+from app.services.x_content import CrawlTablesMissing, XContentService, XCrawlerSettings, normalize_import, username
 
 
 def now():
@@ -74,17 +74,29 @@ def database():
 def plan(root, service=None):
     config = read_json(root / "sources.json")
     handles = {username(value) for value in config["usernames"]}
+    max_posts = config.get("max_posts_per_creator", 500)
+    max_scrolls = config.get("max_scrolls_per_creator", 60)
     if config.get("include_database_creators"):
         if service is None:
             raise RuntimeError("Database creator lookup is required; cannot silently use a stale local list")
-        handles.update(username(row["username"]) for row in service.creators()["creators"])
+        try:
+            admin = XCrawlerSettings(service.db).get()
+        except CrawlTablesMissing:
+            # Migration not applied yet: keep the original list (local + every known creator).
+            handles.update(username(row["username"]) for row in service.creators()["creators"])
+        else:
+            # The admin list decides. Local names it has never seen are still scanned;
+            # names an administrator disabled or that are listed as disabled are skipped.
+            known = {username(row["username"]): row["enabled"] for row in admin["sources"]}
+            handles = {h for h, enabled in known.items() if enabled} | {h for h in handles if h not in known}
+            max_posts = admin["settings"]["max_posts_per_creator"]
+            max_scrolls = admin["settings"]["max_scrolls_per_creator"]
     result = []
     for handle in sorted(handles):
         state = state_for(root, handle)
         stop_ids = state.get("boundary_ids", state.get("seen_post_ids", []))
         result.append({"username": handle, "url": f"https://x.com/{handle}", "stop_ids": stop_ids,
-                       "max_posts": config.get("max_posts_per_creator", 500),
-                       "max_scrolls": config.get("max_scrolls_per_creator", 60)})
+                       "max_posts": max_posts, "max_scrolls": max_scrolls})
     return {"sources": result}
 
 
@@ -186,11 +198,37 @@ def finish_run(root, directory, service):
         payload = read_json(path)
         posts = normalize_import(payload)
         handle = posts[0]["author_username"]
-        synced = set(state_for(root, handle).get("synced_post_ids", []))
-        if all(post["author_username"] == handle and post["id"] in synced for post in posts):
+        state = state_for(root, handle)
+        synced = set(state.get("synced_post_ids", []))
+        # A complete scan of already-imported posts still has to move the checkpoint forward.
+        new_boundary = payload.get("scan_complete") is True and set(
+            state.get("boundary_ids", [])
+        ) != {post["id"] for post in posts if not post["pinned"]}
+        if not new_boundary and all(
+            post["author_username"] == handle and post["id"] in synced for post in posts
+        ):
             continue
         saved_paths.append(Path(ingest(root, payload)["file"]))
     return {"files": [sync_file(root, path, service) for path in saved_paths]}
+
+
+def post_process(root, service):
+    """Analyze queued posts and archive media after commit; each step retries next run."""
+    from app.services.x_post_analysis import analyze_pending
+    from app.services.x_post_media import archive_media
+
+    result = {}
+    steps = (
+        ("analysis", lambda: analyze_pending(service.db, os.getenv("DEEPSEEK_API_KEY"))),
+        ("media", lambda: archive_media(service.db, root / "data" / "incoming")),
+    )
+    for name, step in steps:
+        try:
+            result[name] = step()
+        except Exception as error:
+            # Committed posts stay readable; only the error class is kept to avoid leaking keys.
+            result[name] = {"error": type(error).__name__}
+    return result
 
 
 def main():
@@ -223,12 +261,8 @@ def main():
                     result = prepare(ROOT, service)
                     atomic_json(args.directory / "plan.json", result)
                 elif args.command == "finish":
-                    from app.services.x_post_analysis import analyze_pending
-                    from app.services.x_post_media import archive_media
-
                     result = finish_run(ROOT, args.directory, service)
-                    result["analysis"] = analyze_pending(service.db, os.getenv("DEEPSEEK_API_KEY"))
-                    result["media"] = archive_media(service.db, ROOT / "data" / "incoming")
+                    result.update(post_process(ROOT, service))
                 else:
                     files = [sync_file(ROOT, args.file.resolve(), service)] if args.file else sync_saved(ROOT, service)
                     result = {"files": files}

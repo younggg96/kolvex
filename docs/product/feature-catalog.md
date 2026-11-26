@@ -41,7 +41,7 @@ App 列：✅ 已移植 · ◐ 部分移植（差异见 MIGRATION.md）· — �
 | 功能 | ID | Web 入口 | App 入口 | 后端 | 文档 | App |
 | --- | --- | --- | --- | --- | --- | --- |
 | YouTube 博主观点、博主 / 股票目录（Web 博主大头像栏标记近 24 小时新视频，可切换为完整列表，英文界面自动翻译中文观点） | `youtubeOpinions` | `/dashboard/youtube-opinions` | `(tabs)/opinions`、`/creators`、`/creator/youtube/[id]` | `youtube_opinions.py` | [youtube-channel-profiles.md](../youtube-channel-profiles.md)、[内容翻译](../content-translation.md) | ◐ |
-| X 博主内容与翻译（每 2 小时采集入库，逐帖生成 DeepSeek 摘要并标注股票低相关，Web 展示已归档的原帖媒体，优先读取后台中文译文） | `youtubeOpinions` | `/dashboard/x-opinions` | `opinions` 的 X tab、`/creator/x/[id]` | `x_content.py` | [x-content.md](../x-content.md)、[内容翻译](../content-translation.md) | ◐ |
+| X 博主内容与翻译（本机 Playwright 每 2 小时采集入库，逐帖生成 DeepSeek 摘要并标注股票低相关，Web 展示已归档的原帖媒体，优先读取后台中文译文；采集名单和每轮上限在管理员 → X 内容里管理，需迁移 `20261126120000_x_crawler_settings.sql`） | `youtubeOpinions` | `/dashboard/x-opinions` | `opinions` 的 X tab、`/creator/x/[id]` | `x_content.py` | [x-content.md](../x-content.md)、[内容翻译](../content-translation.md) | ◐ |
 | Reddit 热度榜（含 30 日相对趋势，App 未跟进趋势） | `youtubeOpinions` | `/dashboard/reddit-opinions` | `opinions` 的 Reddit tab | `reddit_opinions.py` | `PRODUCT.md` | ✅ |
 | 小红书每日情绪（管理员每天导入一份：五档情绪分布、走势图并对照 SPY / QQQ 当日涨跌、讨论话题及出处帖子、传言；不提供帖子 feed；英文界面显示 RedNote） | `youtubeOpinions` | `/dashboard/xhs-sentiment`、`/dashboard/admin?tab=xhs` | 待跟进 | `xhs_sentiment.py`（需迁移 `20261121040000_xhs_daily_sentiment.sql`） | [xhs-sentiment.md](../xhs-sentiment.md) | — |
 | 观点事后表现（发布后 5 / 20 个交易日股价，对比 SPY；只陈述事实，不判对错） | `youtubeOpinions` | 股票页和博主 × 股票页的观点卡片（含「其他博主的看法」） | — | `youtube_opinions.py`（`/stocks/{ticker}/outcomes`） | [opinion-backtest.md](../opinion-backtest.md) | — |

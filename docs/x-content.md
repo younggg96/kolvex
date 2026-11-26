@@ -66,11 +66,11 @@
 
 ## 当前边界
 
-默认采集入口为 Codex 自动化 `x-kolvex`，每 2 小时通过 cua_repl 操作已登录的日常 Chrome。每轮通过 `sync.py prepare` 读取采集名单和检查点，通过 `sync.py finish` 导入公开正文、执行 DeepSeek 分析并归档媒体。独立 Playwright LaunchAgent 保持暂停。说明见 [本地工作流](../side-projects/x-posts/README.md#默认-ai-定时同步)。
+默认采集入口为本机 Playwright LaunchAgent（`run.sh install`），默认每 2 小时用专用 Chrome 配置目录读取公开时间线，不调用 AI 操作浏览器。每轮读取采集名单和检查点，导入公开正文后执行 DeepSeek 分析并归档媒体，与 `sync.py finish` 共用同一段处理。Codex 自动化 `x-kolvex` 改为手动备用，应保持停用。浏览器可选专用 Chrome 配置目录，或通过 Chrome 远程调试开关连接已登录的日常 Chrome（`install --browser daily`，由常驻进程保持一次确认后的连接，Chrome 重启后需再次确认）。说明见 [本地工作流](../side-projects/x-posts/README.md#playwright-自动同步默认)。
 
-名单合并 `sources.json` 和数据库 `x_creators`。仅在获准导入时写入生产数据库，数据库确认后才更新检查点。采集失败仍处理已完成导出；登录失效、正文缺失和未达到旧边界都保留旧检查点。工作流详见 [采集规程](../side-projects/x-posts/COLLECTOR.md)。
+采集名单和每轮上限由「管理员 → X 内容 → X 采集」（`/dashboard/admin?tab=x`）管理：可添加账号、逐个开关、修改每个账号每轮最多帖子数和滚动次数，下一轮生效；关闭只停止后续采集，已导入推文保留。数据存在 `x_crawl_sources`、`x_crawl_settings`（迁移 `kolvex-backend-py/supabase/migrations/20261126120000_x_crawler_settings.sql`，迁移会带入现有全部博主和本地名单；两表仅服务端可读写），接口为管理员专用的 `GET /api/v1/admin/x-crawler`、`PUT /admin/x-crawler/settings`、`POST /admin/x-crawler/sources`。采集时名单 = 后台开启的账号 + `sources.json` 里后台从未出现过的账号；后台关闭的账号即使在 `sources.json` 里也跳过。迁移未执行时保持旧行为：合并 `sources.json` 和数据库 `x_creators`，上限取 `sources.json`。仅在获准导入时写入生产数据库，数据库确认后才更新检查点。采集失败仍处理已完成导出；登录失效、正文暂时取不到和未达到旧边界都保留旧检查点。订阅者专属帖和经详情页确认只有引用内容的帖不入库，但不再阻止检查点推进。工作流详见 [采集规程](../side-projects/x-posts/COLLECTOR.md)。
 
-运行依赖本机、Codex、浏览器扩展、已登录的 Chrome 和网络。关机、休眠、登录限制或页面变化可能中断采集。互动数是采集时快照，缺失值保持 null。浏览器采集使用 AI；数据库导入沿用确定性校验，原始正文保持不变。覆盖范围由导出决定，无法视为完整历史。
+运行依赖本机、Node.js、Google Chrome、专用配置目录中已登录的 X 会话和网络。关机、休眠、登录限制或页面变化可能中断采集。互动数是采集时快照，缺失值保持 null。浏览器采集是确定性脚本；数据库导入沿用确定性校验，原始正文保持不变。覆盖范围由导出决定，无法视为完整历史。
 
 ## 验证
 

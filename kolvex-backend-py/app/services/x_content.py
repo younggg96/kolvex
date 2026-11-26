@@ -300,3 +300,87 @@ class XContentService:
             "inserted": result["inserted"],
             "skipped": len(posts) - result["inserted"],
         }
+
+
+CRAWL_LIMITS = {"max_posts_per_creator": (1, 2000), "max_scrolls_per_creator": (1, 300)}
+
+
+class CrawlTablesMissing(RuntimeError):
+    """The x_crawler_settings migration has not been applied yet."""
+
+
+def _crawl_tables(action):
+    try:
+        return action()
+    except Exception as exc:
+        # PostgREST "table not in schema cache": the migration is not applied.
+        if "PGRST205" in str(exc):
+            raise CrawlTablesMissing("X crawler settings tables are missing") from exc
+        raise
+
+
+class XCrawlerSettings:
+    """Admin-managed crawl list and limits, read by the local X collector."""
+
+    def __init__(self, db):
+        self.db = db
+
+    def get(self):
+        def load():
+            sources = (
+                self.db.table("x_crawl_sources")
+                .select("username,enabled,created_at,updated_at")
+                .order("username")
+                .execute()
+                .data
+                or []
+            )
+            rows = self.db.table("x_crawl_settings").select("*").eq("id", 1).limit(1).execute().data
+            settings = rows[0] if rows else {}
+            return {
+                "sources": sources,
+                "settings": {
+                    key: settings.get(key, default)
+                    for key, default in (
+                        ("max_posts_per_creator", 500),
+                        ("max_scrolls_per_creator", 60),
+                    )
+                },
+                "updated_at": settings.get("updated_at"),
+            }
+
+        return _crawl_tables(load)
+
+    def save_source(self, handle, enabled=True):
+        if type(enabled) is not bool:
+            raise ValueError("enabled must be boolean")
+        handle = username(handle)
+        row = {
+            "username": handle,
+            "enabled": enabled,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+        return _crawl_tables(
+            lambda: {
+                "source": self.db.table("x_crawl_sources")
+                .upsert(row, on_conflict="username")
+                .execute()
+                .data[0]
+            }
+        )
+
+    def save_settings(self, values):
+        row = {"id": 1, "updated_at": datetime.now(timezone.utc).isoformat()}
+        for key, (low, high) in CRAWL_LIMITS.items():
+            value = values.get(key)
+            if type(value) is not int or not low <= value <= high:
+                raise ValueError(f"{key} must be a whole number from {low} to {high}")
+            row[key] = value
+        return _crawl_tables(
+            lambda: {
+                "settings": self.db.table("x_crawl_settings")
+                .upsert(row, on_conflict="id")
+                .execute()
+                .data[0]
+            }
+        )

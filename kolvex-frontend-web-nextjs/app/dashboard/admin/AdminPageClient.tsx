@@ -14,6 +14,7 @@ import YouTubeOpinionImporter from "@/components/admin/YouTubeOpinionImporter";
 import YouTubeAutoImportPanel from "@/components/admin/YouTubeAutoImportPanel";
 import YouTubeCreatorManager from "@/components/admin/YouTubeCreatorManager";
 import XContentManager from "@/components/admin/XContentManager";
+import XCrawlerSettingsPanel from "@/components/admin/XCrawlerSettingsPanel";
 import EmailSettingsManager from "@/components/admin/EmailSettingsManager";
 import InstitutionManager from "@/components/admin/InstitutionManager";
 import { useUserProfileContext } from "@/components/user/UserProfileProvider";
@@ -317,7 +318,8 @@ export default function AdminPageClient({ initialTab }: { initialTab?: string })
             <YouTubeAutoImportPanel onImported={refresh} />
             <YouTubeOpinionImporter onImported={() => void refresh()} />
           </TabsContent>
-          <TabsContent value="x" className="mt-6">
+          <TabsContent value="x" className="mt-6 space-y-10">
+            <XCrawlerSettingsPanel />
             <XContentManager onSaved={() => void refresh()} />
           </TabsContent>
           <TabsContent value="creators" className="mt-6">

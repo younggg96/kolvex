@@ -21,6 +21,8 @@ class SyncTests(unittest.TestCase):
         (self.root / "state").mkdir()
         self.service = Mock()
         self.service.upload.return_value = {"inserted": 1, "skipped": 0}
+        # Default: crawler settings migration not applied yet.
+        self.service.db.table.return_value.select.return_value.order.return_value.execute.side_effect = RuntimeError("PGRST205")
 
     def tearDown(self):
         self.temp.cleanup()
@@ -90,6 +92,28 @@ class SyncTests(unittest.TestCase):
         result = sync.plan(self.root, self.service)
         self.assertEqual([source["username"] for source in result["sources"]], ["other", "testuser"])
 
+    def admin_settings(self, sources, max_posts=200, max_scrolls=20):
+        query = self.service.db.table.return_value.select.return_value
+        query.order.return_value.execute.side_effect = None
+        query.order.return_value.execute.return_value.data = sources
+        query.eq.return_value.limit.return_value.execute.return_value.data = [
+            {"max_posts_per_creator": max_posts, "max_scrolls_per_creator": max_scrolls}]
+
+    def test_plan_uses_admin_list_and_limits(self):
+        sync.atomic_json(self.root / "sources.json", {"usernames": ["TestUser", "Paused", "LocalOnly"], "include_database_creators": True})
+        self.admin_settings([{"username": "testuser", "enabled": True}, {"username": "paused", "enabled": False},
+                             {"username": "added", "enabled": True}])
+        result = sync.plan(self.root, self.service)
+        self.assertEqual([s["username"] for s in result["sources"]], ["added", "localonly", "testuser"])
+        self.assertEqual({(s["max_posts"], s["max_scrolls"]) for s in result["sources"]}, {(200, 20)})
+        self.service.creators.assert_not_called()
+
+    def test_admin_settings_failure_never_silently_drops_creators(self):
+        sync.atomic_json(self.root / "sources.json", {"usernames": ["TestUser"], "include_database_creators": True})
+        self.service.db.table.return_value.select.return_value.order.return_value.execute.side_effect = RuntimeError("offline")
+        with self.assertRaises(RuntimeError):
+            sync.plan(self.root, self.service)
+
     def test_add_normalizes_profile_urls_and_deduplicates(self):
         config = self.root / "sources.json"
         sync.atomic_json(config, {"usernames": ["TestUser"], "include_database_creators": True})
@@ -120,6 +144,36 @@ class SyncTests(unittest.TestCase):
         self.assertEqual(result["sources"][0]["stop_ids"], ["11"])
         self.assertEqual(sync.finish_run(self.root, run, self.service), {"files": []})
 
+
+    def test_post_process_isolates_analysis_failure_from_media(self):
+        from unittest.mock import patch
+        with (
+            patch("app.services.x_post_analysis.analyze_pending", side_effect=RuntimeError("key sk-secret")),
+            patch("app.services.x_post_media.archive_media", return_value={"archived": 2}) as media,
+        ):
+            result = sync.post_process(self.root, self.service)
+        self.assertEqual(result["analysis"], {"error": "RuntimeError"})
+        self.assertEqual(result["media"], {"archived": 2})
+        self.assertNotIn("secret", json.dumps(result))
+        media.assert_called_once_with(self.service.db, self.root / "data" / "incoming")
+
+    def test_finish_moves_checkpoint_when_every_post_was_already_imported(self):
+        sync.atomic_json(self.root / "state" / "testuser.json", {
+            "username": "testuser", "synced_post_ids": ["11", "10"], "boundary_ids": ["10"],
+            "last_collected_post_id": "10",
+        })
+        run = self.root / "run"
+        sync.atomic_json(run / "plan.json", {"sources": []})
+        sync.atomic_json(run / "testuser-export.json", {
+            "posts": [post("11"), post("10")], "scan_complete": True, "stop_reason": "checkpoint",
+        })
+        sync.finish_run(self.root, run, self.service)
+        self.service.upload.assert_not_called()
+        state = sync.state_for(self.root, "testuser")
+        self.assertEqual(state["boundary_ids"], ["11", "10"])
+        self.assertEqual(state["last_collected_post_id"], "11")
+        # Re-running recovery on the same directory is a no-op once the checkpoint matches.
+        self.assertEqual(sync.finish_run(self.root, run, self.service), {"files": []})
 
 if __name__ == "__main__":
     unittest.main()

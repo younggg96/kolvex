@@ -100,10 +100,6 @@ export async function createXCollector(tab, root, runDirectory) {
         }
         await saveCapture();
         if (reason !== "limit") break;
-        if ([...gaps.values()].some(value => value.startsWith("Subscribers"))) {
-          reason = "restricted_content";
-          break;
-        }
         stale = order.size === count ? stale + 1 : 0;
         if (stale >= 5 || order.size >= source.max_posts || scroll === source.max_scrolls) break;
         await tab.pressKey(null, "PageDown");
@@ -122,12 +118,18 @@ export async function createXCollector(tab, root, runDirectory) {
         .map(id => ({ id, reason: gaps.get(id) || priorGaps.get(id) || "unresolved" })),
     });
     const recovered = new Set();
+    // Posts X will never show in full: subscriber-only, or quote-only with no original on the detail page.
+    // They are reported, never imported, and do not hold the checkpoint back forever.
+    const unavailable = new Set();
     const saveRecovery = () => write(prefix + "-recovered.json", [...recovered].map(id => full.get(id)));
     if (!["page_blocked", "page_unrecognized", "browser_error"].includes(reason)) {
       for (const id of expected) {
         const gap = gaps.get(id) || priorGaps.get(id) || "";
-        if (full.has(id) || (seen.has(id) && id !== boundary) || gap.startsWith("Subscribers")) continue;
-        if (gap.startsWith("No original") && priorGaps.get(id) === gap) continue;
+        if (full.has(id) || (seen.has(id) && id !== boundary)) continue;
+        if (gap.startsWith("Subscribers") || (gap.startsWith("No original") && priorGaps.get(id) === gap)) {
+          unavailable.add(id);
+          continue;
+        }
         try {
           const post = await detail(handle, id);
           if (post) {
@@ -135,6 +137,9 @@ export async function createXCollector(tab, root, runDirectory) {
             recovered.add(id);
             await saveRecovery();
             if (!stops.size) await saveWorking();
+          } else if (gap.startsWith("No original")) {
+            // The detail page loaded this exact post and still has no original text.
+            unavailable.add(id);
           }
         } catch (error) {
           if (error.message === "page_blocked") {
@@ -145,9 +150,11 @@ export async function createXCollector(tab, root, runDirectory) {
       }
     }
     if (!stops.size) await saveWorking();
-    const missing = [...new Set([...order.keys(), ...expected])]
+    const unresolved = [...new Set([...order.keys(), ...expected])]
       .filter(id => !full.has(id) && (!seen.has(id) || id === boundary))
       .map(id => ({ id, reason: gaps.get(id) || priorGaps.get(id) || "unresolved" }));
+    const skipped = unresolved.filter(item => unavailable.has(item.id) && item.id !== boundary);
+    const missing = unresolved.filter(item => !skipped.includes(item));
     const complete = missing.length === 0 && (
       (reason === "checkpoint" && full.has(boundary)) || reason === "initial_window"
     );
@@ -162,8 +169,12 @@ export async function createXCollector(tab, root, runDirectory) {
     });
     if (media.length) await write(prefix + "-media.json", { handle, posts: media });
     const fresh = [...eligible].filter(id => full.has(id) && !seen.has(id));
-    if (fresh.length) {
-      const ids = new Set(fresh);
+    // A complete scan whose posts were all imported earlier still moves the checkpoint forward.
+    const newer = complete && boundary
+      ? [...order.keys()].filter(id => id !== boundary && !order.get(id) && full.has(id))
+      : [];
+    if (fresh.length || newer.length) {
+      const ids = new Set([...fresh, ...newer]);
       if (complete && boundary) ids.add(boundary);
       if (complete && !stops.size) for (const id of order.keys()) ids.add(id);
       await write(prefix + "-export.json", {
@@ -179,7 +190,7 @@ export async function createXCollector(tab, root, runDirectory) {
         }),
       });
     }
-    const summary = { handle, new_posts: fresh.length, complete, reason: stopReason, missing };
+    const summary = { handle, new_posts: fresh.length, complete, reason: stopReason, missing, unavailable: skipped };
     await write(prefix + "-summary.json", summary);
     return summary;
   }
