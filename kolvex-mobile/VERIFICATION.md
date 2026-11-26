@@ -10,9 +10,54 @@
 | Expo Doctor                        | 20 of 20 pass.                                                                                          |
 | iOS and Android bundles            | Metro/Hermes exports pass. **This is not a native compile.**                                            |
 | React Native Web preview at 390 px | Exercised with real data, below. **Not native acceptance.**                                             |
-| Native run on iOS                  | **Started, partial.** See the iOS simulator run below.                                                  |
+| Native run on iOS                  | **Partial.** iOS 26.0 (2026-11-02) and iOS 27.2 (2026-11-26) runs below; 12 open findings on 27.2.      |
 | Native run on Android              | **Not done.** Set aside at the owner's request.                                                         |
 | Real signed-in or mutating flows   | **Not done.** No test account. No sign-in, AI run, save, upload, role change or deletion was performed. |
+
+### iOS simulator run (iPhone 17 Pro, iOS 27.2 runtime, Xcode 27.2) — 2026-11-26
+
+The app was already installed on the simulator; this pass is observation only, no code changes.
+Backend: **production** (`https://kolvex-production.up.railway.app/api/v1`), signed in on the
+owner's account, browsing only. Screens were opened by tapping or by `kolvex://` deep links;
+screenshots via `xcrun simctl io <udid> screenshot`.
+
+Seen working natively with real data:
+
+- Markets: 市场概览, 市场走势, 事件日历, 宏观指标, in light and dark.
+- System glass tab bar on iOS 27.
+- Event calendar marks "today" by the backend's US Eastern date (Thanksgiving 11/26 shown as today
+  while the Mac was still on 11/25 Pacific).
+- Stock detail (AAPL): header with separate regular and after-hours lines, overview chart,
+  key indicators, basic info.
+- Technical chart (AAPL): candles, VWAP/EMA, KDJ/MACD/RSI, saved drawings, crosshair bar readout;
+  no back-gesture pop.
+- Research report (MSFT): sections, Markdown, ticker mentions, per-section translate toggle, dark theme.
+- Dark theme down colour is orange, matching the Web's dark `--negative` (255 80 0).
+- `kolvex://` links show iOS's "Open in Kolvex?" confirmation when sent from `simctl`; expected.
+
+Findings (not fixed):
+
+| #   | Screen                       | Finding                                                                                                                                                                                                                                                       |
+| --- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | 股票观察 list                | LI (Li Auto) logo is a white image; invisible on the light background and on the white logo circle in dark. Likely affects Web too.                                                                                                                           |
+| 2   | 市场走势                     | Cards in one row differ in height when one has no session line (IXP vs XLY).                                                                                                                                                                                  |
+| 3   | 市场走势                     | 1D ETF cards show only the after-hours move under "盘后" (SPY +0.52% while it closed −0.29%); reads as contradicting the index. The stock page's separate after-hours line is clearer.                                                                        |
+| 4   | Pages with a floating header | Top scroll-edge fade (92%) still lets numbers show behind status-bar icons. Minor.                                                                                                                                                                            |
+| 5   | Stock 关键指标               | `financialFormat().percent` prints ASCII `-` and no `+` (e.g. `-2.8%`, `11.7%`), against the `format.ts` sign rule. Web not checked.                                                                                                                          |
+| 6   | Stock detail                 | Initial scroll offset is wrong: ~110pt too low when opened by deep link, ~50pt too high (logo under Back) when opened in-app. Correct after a pull-and-release, so the `Page` padding formula is right and only the starting offset is off.                   |
+| 7   | Stock vs technical           | Same 3M range shows +13.44% on the stock chart and +14.74% on the technical chart. Cause not established.                                                                                                                                                     |
+| 8   | Technical chart              | Drawing labels (目标/入场/阻力/止损) overlap each other and candles; a selected drawing's price tag covers the neighbouring tag (344.20 over 345.00). Minor.                                                                                                  |
+| 9   | AI 研究 tab                  | Without an API key, 生成 AI 研究 is enabled and fails with the generic "研究生成或状态加载失败，请重试" instead of naming the missing key (the overview's AI card does say so). History load errors are not shown; `trade_date` uses the device's local date. |
+| 10  | Pushed screens               | Two back-button styles: custom `GlassIconButton` (stock, technical) vs native stack header (report). Minor.                                                                                                                                                   |
+| 11  | Research report              | Machine translation turns the conclusion `HOLD` into 「抓住」 instead of 「持有」. Each section's translate button sits at the end of that section, so long sections look untranslatable.                                                                     |
+| 12  | Research report, dark        | The native header area is solid black above the page's gradient, leaving a visible seam. Minor.                                                                                                                                                               |
+
+Not exercised on 27.2: pan and pinch on the technical chart (gestures landed on saved drawings and
+the crosshair instead; skipped to avoid editing production drawings), creator pages, chat,
+settings, account, admin, keyboard, Dynamic Type, VoiceOver, signed-out flow.
+
+Writes: one tap on 生成 AI 研究 (`POST /trading-analysis/start-stock`) without an API key; it failed
+and no running job remained. No drawings were changed (undo stayed disabled). No other writes.
 
 ### iOS simulator run (iPhone 17 Pro, iOS 26.0 runtime, Xcode 26.6)
 
