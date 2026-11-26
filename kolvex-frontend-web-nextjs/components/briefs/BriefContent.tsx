@@ -249,7 +249,7 @@ function BriefArticle({ document }: { document: DailyBrief }) {
   return (
     <article
       lang={(document.language ?? "zh") === "zh" ? "zh-CN" : "en"}
-      className="mx-auto max-w-[67.5rem] space-y-10 break-words"
+      className="mx-auto space-y-10 break-words"
     >
       <header className="space-y-4">
         {brief.hero_image && <ImageContent key={brief.hero_image.url} image={brief.hero_image} />}
