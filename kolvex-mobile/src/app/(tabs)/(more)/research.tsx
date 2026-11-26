@@ -3,6 +3,7 @@ import { SymbolView } from "expo-symbols";
 import { useMemo, useState, type ReactNode } from "react";
 import { Pressable, StyleSheet, View, useWindowDimensions } from "react-native";
 import { CompanyLogo } from "../../../components/CompanyLogo";
+import { Direction } from "../../../components/Decision";
 import { Filters, ResourceState } from "../../../components/Content";
 import { OptionGroup, OptionSheet } from "../../../components/OptionSheet";
 import {
@@ -427,46 +428,6 @@ function ResearchRow({
         </View>
       )}
     </View>
-  );
-}
-
-function Direction({
-  value,
-  bias = false,
-}: {
-  value?: string | null;
-  bias?: boolean;
-}) {
-  const t = useTheme();
-  const positive = value?.toUpperCase() === "BUY" || value === "bullish";
-  const negative = value?.toUpperCase() === "SELL" || value === "bearish";
-  if (!value && bias) return null;
-  return (
-    <Copy
-      size={14}
-      bold={!!value}
-      color={
-        !value
-          ? t.secondary
-          : positive
-            ? t.accent
-            : negative
-              ? t.negative
-              : t.text
-      }
-    >
-      {!value
-        ? "暂无结论"
-        : positive
-          ? bias
-            ? "偏多"
-            : "看多"
-          : negative
-            ? bias
-              ? "偏空"
-              : "看空"
-            : "中性"}
-    </Copy>
   );
 }
 

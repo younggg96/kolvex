@@ -23,6 +23,7 @@ import { useResource } from "../lib/useResource";
 import { useNewsTranslations } from "../lib/useNewsTranslations";
 import { Button, Copy, Empty, Glass, Section } from "./UI";
 import { Filters, ResourceState, SourceLink } from "./Content";
+import { Direction } from "./Decision";
 import { ListItem, type } from "./StockBlocks";
 import { safeExternal } from "../lib/links";
 // The Web's StockWorkspace tab order and phone labels.
@@ -155,9 +156,7 @@ function StockReports({ symbol }: { symbol: string }) {
           <Copy size={15} bold>
             {item.trade_date}
           </Copy>
-          <Copy size={14} localize={false}>
-            {item.final_decision?.slice(0, 240) || "—"}
-          </Copy>
+          <Direction value={item.final_decision} />
           <Button
             size="sm"
             onPress={() =>

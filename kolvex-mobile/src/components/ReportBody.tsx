@@ -8,6 +8,7 @@ import { useText } from "../lib/i18n";
 import { useTranslated } from "../lib/useTranslated";
 import { Button, Copy, Failure, Glass, Section } from "./UI";
 import { TextBody } from "./Content";
+import { Direction } from "./Decision";
 import { TranslateToggle } from "./Translate";
 function TranslatableSection({
   title,
@@ -223,8 +224,9 @@ function ReportActions({ item }: { item: TradingAnalysis }) {
   );
 }
 export function ReportBody({ item }: { item: TradingAnalysis }) {
+  // `final_decision` is a rating code (BUY / SELL / HOLD), shown as a fixed label rather
+  // than a translatable section.
   const sections: [keyof TradingAnalysis, string][] = [
-    ["final_decision", "研究结论"],
     ["market_report", "市场分析"],
     ["news_report", "新闻分析"],
     ["sentiment_report", "社交情绪"],
@@ -236,6 +238,12 @@ export function ReportBody({ item }: { item: TradingAnalysis }) {
   return (
     <>
       <ReportActions item={item} />
+      {!!item.final_decision && (
+        <Glass style={{ padding: 20, gap: 16 }}>
+          <Section title="研究结论" />
+          <Direction value={item.final_decision} size={20} />
+        </Glass>
+      )}
       {sections.map(([key, title]) =>
         typeof item[key] === "string" && item[key] ? (
           <TranslatableSection
