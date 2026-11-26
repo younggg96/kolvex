@@ -494,6 +494,12 @@ export function Page({
   // The header's own height, so the content can start just below it.
   const [headerHeight, setHeaderHeight] = useState(0);
   const headerTop = insets.top + phone(8);
+  // The spinner follows `refreshing` only after the user pulls. Background loads (cached
+  // revalidation, quote polling, returning to the foreground) also set `refreshing`, and on
+  // iOS a programmatic refresh moves the scroll offset, leaving the page off its top.
+  // Reset during render (not in an effect) once that load ends.
+  const [pulled, setPulled] = useState(false);
+  if (pulled && !refreshing) setPulled(false);
   useEffect(() => {
     if (scrollKey !== undefined) {
       scroll.current?.scrollTo({
@@ -549,8 +555,11 @@ export function Page({
           refreshControl={
             onRefresh ? (
               <RefreshControl
-                refreshing={refreshing ?? false}
-                onRefresh={onRefresh}
+                refreshing={pulled && !!refreshing}
+                onRefresh={() => {
+                  setPulled(true);
+                  onRefresh();
+                }}
                 tintColor={t.accent}
                 progressViewOffset={floatingHeader ? headerHeight : undefined}
               />
