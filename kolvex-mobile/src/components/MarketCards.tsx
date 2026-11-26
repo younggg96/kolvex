@@ -212,7 +212,8 @@ export function InstrumentCard({
       }
       style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
     >
-      <Glass style={{ width: phone(180), padding: 12, gap: 1 }}>
+      {/* Fill the row's height, so a card without a session line matches its neighbours. */}
+      <Glass style={{ flex: 1, width: phone(180), padding: 12, gap: 1 }}>
         <View
           style={{
             flexDirection: "row",
@@ -255,7 +256,8 @@ export function InstrumentCard({
             {session && extended ? quoteSessionLabel(extended) : rangeLabel}
           </Copy>
         )}
-        <View style={{ marginTop: 8 }}>
+        {/* Pinned to the bottom, so sparklines line up across a row. */}
+        <View style={{ marginTop: "auto", paddingTop: 8 }}>
           {series.loading && !series.data ? (
             <Skeleton height={phone(40)} />
           ) : (
