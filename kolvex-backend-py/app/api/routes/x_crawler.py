@@ -72,3 +72,15 @@ async def save_sources(
     body: SourcesInput, admin_id: str = Depends(verify_admin), store=Depends(get_store)
 ):
     return await _run(lambda: store.save_sources(body.usernames))
+
+
+@admin_router.delete("/creators/{handle}")
+async def delete_creator(
+    handle: str, admin_id: str = Depends(verify_admin), store=Depends(get_store)
+):
+    """Delete a creator's posts, media and profile, and stop crawling them. Cannot be undone."""
+    result = await _run(lambda: store.delete_creator(handle))
+    logger.info(
+        "Admin %s deleted X creator %s (%s posts)", admin_id, result["username"], result["posts"]
+    )
+    return result

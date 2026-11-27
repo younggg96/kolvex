@@ -13,6 +13,7 @@ const ERRORS: Record<string, string> = {
 /**
  * GET → crawl list + limits. PUT → save limits. POST → add or enable/disable an account;
  * POST ?batch=1 → add or turn on many accounts at once.
+ * DELETE ?creator=<username> → delete the creator's posts, media and profile and stop crawling.
  * Admin rights are checked by the backend.
  */
 async function proxy(request: NextRequest) {
@@ -24,15 +25,17 @@ async function proxy(request: NextRequest) {
     if (!session?.access_token)
       return NextResponse.json({ error: "unauthorized" }, { status: 401, headers });
     const batch = request.nextUrl.searchParams.get("batch") === "1";
-    const path =
-      request.method === "PUT"
-        ? "/settings"
-        : request.method === "POST"
-          ? batch
-            ? "/sources/batch"
-            : "/sources"
-          : "";
-    const body = request.method === "GET" ? undefined : await request.text();
+    let path = "";
+    if (request.method === "PUT") path = "/settings";
+    else if (request.method === "POST") path = batch ? "/sources/batch" : "/sources";
+    else if (request.method === "DELETE") {
+      const creator = request.nextUrl.searchParams.get("creator") ?? "";
+      if (!/^[a-z0-9_]{1,15}$/.test(creator))
+        return NextResponse.json({ error: "invalid" }, { status: 400, headers });
+      path = `/creators/${creator}`;
+    }
+    const body =
+      request.method === "GET" || request.method === "DELETE" ? undefined : await request.text();
     // A batch holds up to 200 usernames.
     if (body && body.length > 8000)
       return NextResponse.json({ error: "invalid" }, { status: 413, headers });
@@ -44,7 +47,8 @@ async function proxy(request: NextRequest) {
       },
       body,
       cache: "no-store",
-      signal: AbortSignal.timeout(20000),
+      // Deleting removes every post and media file of a creator.
+      signal: AbortSignal.timeout(request.method === "DELETE" ? 60000 : 20000),
     });
     const data = await response.json().catch(() => ({}));
     if (response.ok) return NextResponse.json(data, { headers });
@@ -67,3 +71,4 @@ async function proxy(request: NextRequest) {
 export const GET = proxy;
 export const PUT = proxy;
 export const POST = proxy;
+export const DELETE = proxy;

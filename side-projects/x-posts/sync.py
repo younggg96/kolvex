@@ -151,7 +151,7 @@ def ingest(root, payload):
     return {"file": str(path), "posts": len(posts), "scan_complete": complete}
 
 
-def sync_file(root, path, service):
+def sync_file(root, path, service, disabled=frozenset()):
     payload = read_json(path)
     posts = normalize_import(payload)
     if any(post["truncated"] for post in posts):
@@ -160,6 +160,10 @@ def sync_file(root, path, service):
     if len(handle_set) != 1:
         raise ValueError("Expected one creator per saved export")
     handle = next(iter(handle_set))
+    if handle in disabled:
+        # Turned off or deleted by an administrator: never (re-)import. The file stays,
+        # so the posts are uploaded if the account is turned back on.
+        return {"file": path.name, "inserted": 0, "skipped": len(posts), "pending": 0, "disabled": True}
     state = state_for(root, handle)
     synced = set(state.get("synced_post_ids", []))
     pending = [post for post in posts if post["id"] not in synced]
@@ -181,7 +185,8 @@ def sync_file(root, path, service):
 
 
 def sync_saved(root, service):
-    return [sync_file(root, path, service) for path in sorted((root / "data").glob("*.json"))]
+    disabled = XCrawlerSettings(service.db).disabled()
+    return [sync_file(root, path, service, disabled) for path in sorted((root / "data").glob("*.json"))]
 
 
 def prepare(root, service):
@@ -214,7 +219,29 @@ def finish_run(root, directory, service):
         ):
             continue
         saved_paths.append(Path(ingest(root, payload)["file"]))
-    return {"files": [sync_file(root, path, service) for path in saved_paths]}
+    disabled = XCrawlerSettings(service.db).disabled() if saved_paths else set()
+    return {"files": [sync_file(root, path, service, disabled) for path in saved_paths]}
+
+
+def fill_profiles(directory, service):
+    """Fill empty creator avatars, names and bios from this run's profile headers.
+
+    Best effort: a failure is reported by error class and never blocks committed posts.
+    """
+    disabled = XCrawlerSettings(service.db).disabled()
+    filled, errors = {}, []
+    for path in sorted(directory.glob("*-profile.json")):
+        profile = read_json(path)
+        try:
+            if username(profile.get("username", "")) in disabled:
+                continue
+            fields = service.fill_profile(profile)
+        except Exception as error:
+            errors.append(type(error).__name__)
+            continue
+        if fields:
+            filled[profile["username"]] = fields
+    return {"filled": filled, "errors": errors}
 
 
 def post_process(root, service):

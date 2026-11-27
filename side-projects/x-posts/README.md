@@ -70,7 +70,7 @@ npm --prefix side-projects/x-posts ci --ignore-scripts
 ./side-projects/x-posts/run.sh uninstall
 ```
 
-名单和每轮上限优先在网页「管理员 → X 内容 → X 采集」里改（需先执行迁移 `20261126120000_x_crawler_settings.sql`），下一轮生效。`run.sh add` 仍可用：写入的是运行目录的 `sources.json`，后台没有出现过的账号会被一起采集；后台关闭的账号不会因为在 `sources.json` 里而被采集。迁移未执行时名单来自 `sources.json` 与生产数据库 `x_creators` 的合并结果。改了 `sync.py` 后需重新执行 `run.sh install` 让运行目录拿到新代码。终端另有 `watch` 命令，可前台循环（`--hours` 指定间隔），使用时应暂停 LaunchAgent。
+名单和每轮上限优先在网页「管理员 → X 内容 → X 采集」里改（需先执行迁移 `20261126120000_x_crawler_settings.sql`），下一轮生效。`run.sh add` 仍可用：写入的是运行目录的 `sources.json`，后台没有出现过的账号会被一起采集；后台关闭的账号不会因为在 `sources.json` 里而被采集；入库前还会按后台名单再查一次，已关闭或已删除账号的导出留在本地、不上传。采集时顺带读取主页头像、显示名称和简介（`<账号>-profile.json`），入库后只补博主资料里空着的字段，不覆盖后台填写的值。迁移未执行时名单来自 `sources.json` 与生产数据库 `x_creators` 的合并结果。改了 `sync.py` 后需重新执行 `run.sh install` 让运行目录拿到新代码。终端另有 `watch` 命令，可前台循环（`--hours` 指定间隔），使用时应暂停 LaunchAgent。
 
 ### 数据与恢复
 

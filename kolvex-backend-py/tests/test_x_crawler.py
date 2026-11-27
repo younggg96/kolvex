@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from app.api.dependencies.auth import get_current_user_id
 from app.api.routes.x_crawler import admin_router, get_store
 from app.core.supabase import get_supabase, get_supabase_service
-from app.services.x_content import CrawlTablesMissing, XCrawlerSettings
+from app.services.x_content import CrawlTablesMissing, XContentService, XCrawlerSettings
 
 
 class ServiceTests(unittest.TestCase):
@@ -58,6 +58,61 @@ class ServiceTests(unittest.TestCase):
             [(r["username"], r["enabled"]) for r in rows], [("other", True), ("testuser", True)]
         )
 
+    def test_delete_creator_stops_crawling_then_removes_media_posts_and_profile(self):
+        db = Mock()
+        calls = []
+        db.table.side_effect = lambda name: calls.append(name) or tables[name]
+        tables = {name: Mock() for name in ("x_crawl_sources", "x_posts", "x_creators")}
+        tables["x_crawl_sources"].upsert.return_value.execute.return_value.data = [{}]
+        media = (
+            "https://p.supabase.co/storage/v1/object/public/x-post-media/12/" + "a" * 64 + ".jpg"
+        )
+        select = tables["x_posts"].select.return_value.eq.return_value.order.return_value
+        select.range.return_value.execute.return_value.data = [
+            {
+                "id": "12",
+                "media_assets": [
+                    {"url": media},
+                    {"url": "https://evil.example/x-post-media/../../secret.jpg"},
+                    {
+                        "url": "https://p.supabase.co/storage/v1/object/public/x-post-media/99/"
+                        + "b" * 64
+                        + ".jpg"
+                    },
+                ],
+            },
+            {"id": "13", "media_assets": []},
+        ]
+        result = XCrawlerSettings(db).delete_creator("@FinancialJuice")
+        self.assertEqual(result, {"username": "financialjuice", "posts": 2, "media": 1})
+        self.assertEqual(calls[0], "x_crawl_sources")
+        row = tables["x_crawl_sources"].upsert.call_args.args[0]
+        self.assertEqual((row["username"], row["enabled"]), ("financialjuice", False))
+        db.storage.from_.return_value.remove.assert_called_once_with(["12/" + "a" * 64 + ".jpg"])
+        tables["x_posts"].delete.return_value.eq.assert_called_once_with(
+            "author_username", "financialjuice"
+        )
+        tables["x_creators"].delete.return_value.eq.assert_called_once_with(
+            "username", "financialjuice"
+        )
+        self.assertEqual(calls[-1], "x_creators")
+        with self.assertRaises(ValueError):
+            XCrawlerSettings(Mock()).delete_creator("not valid!")
+
+    def test_media_failure_keeps_posts_for_a_retry(self):
+        db = Mock()
+        db.table.return_value.upsert.return_value.execute.return_value.data = [{}]
+        db.table.return_value.select.return_value.eq.return_value.order.return_value.range.return_value.execute.return_value.data = [
+            {
+                "id": "12",
+                "media_assets": [{"url": "https://p.co/x-post-media/12/" + "a" * 64 + ".mp4"}],
+            }
+        ]
+        db.storage.from_.return_value.remove.side_effect = RuntimeError("storage offline")
+        with self.assertRaises(RuntimeError):
+            XCrawlerSettings(db).delete_creator("other")
+        db.table.return_value.delete.assert_not_called()
+
     def test_limits_are_bounded(self):
         db = Mock()
         db.table.return_value.upsert.return_value.execute.return_value.data = [{}]
@@ -75,6 +130,60 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(
             (row["id"], row["max_posts_per_creator"], row["max_scrolls_per_creator"]), (1, 200, 30)
         )
+
+
+class ProfileTests(unittest.TestCase):
+    AVATAR = "https://pbs.twimg.com/profile_images/1016847534080155648/NGnyajkE_200x200.jpg"
+
+    def fill(self, current, profile):
+        db = Mock()
+        db.table.return_value.select.return_value.eq.return_value.limit.return_value.execute.return_value.data = current
+        fields = XContentService(db).fill_profile(profile)
+        update = db.table.return_value.update
+        return fields, (update.call_args.args[0] if update.called else None)
+
+    def test_fills_only_empty_fields(self):
+        profile = {
+            "username": "ElerianM",
+            "display_name": "Mohamed A. El-Erian",
+            "bio": "Wharton",
+            "avatar_url": self.AVATAR,
+        }
+        fields, row = self.fill(
+            [{"display_name": "elerianm", "bio": "", "avatar_url": None}], profile
+        )
+        self.assertEqual(fields, ["avatar_url", "bio", "display_name"])
+        self.assertEqual(
+            row,
+            {"avatar_url": self.AVATAR, "display_name": "Mohamed A. El-Erian", "bio": "Wharton"},
+        )
+
+    def test_never_overwrites_admin_values(self):
+        profile = {
+            "username": "elerianm",
+            "display_name": "New",
+            "bio": "New",
+            "avatar_url": self.AVATAR,
+        }
+        current = [
+            {
+                "display_name": "Set by admin",
+                "bio": "Admin bio",
+                "avatar_url": "https://example.com/a.png",
+            }
+        ]
+        self.assertEqual(self.fill(current, profile), ([], None))
+
+    def test_rejects_untrusted_avatar_and_unknown_creator(self):
+        bad = {"username": "elerianm", "avatar_url": "https://evil.example/profile_images/1/a.jpg"}
+        self.assertEqual(
+            self.fill([{"display_name": "Set", "bio": "x", "avatar_url": None}], bad), ([], None)
+        )
+        self.assertEqual(
+            self.fill([], {"username": "elerianm", "avatar_url": self.AVATAR}), ([], None)
+        )
+        with self.assertRaises(ValueError):
+            self.fill([], {"username": "not valid!"})
 
 
 class RouteTests(unittest.TestCase):
@@ -104,6 +213,7 @@ class RouteTests(unittest.TestCase):
             ),
             ("post", "/x-crawler/sources", {"username": "other"}),
             ("post", "/x-crawler/sources/batch", {"usernames": ["a", "b"]}),
+            ("delete", "/x-crawler/creators/other", None),
         ]
 
     def test_everything_requires_admin(self):
@@ -117,6 +227,7 @@ class RouteTests(unittest.TestCase):
         self.store.save_settings.assert_not_called()
         self.store.save_source.assert_not_called()
         self.store.save_sources.assert_not_called()
+        self.store.delete_creator.assert_not_called()
 
     def test_admin_can_read_and_write(self):
         self.login(True)
@@ -124,6 +235,7 @@ class RouteTests(unittest.TestCase):
         self.store.save_settings.return_value = {"settings": {}}
         self.store.save_source.return_value = {"source": {}}
         self.store.save_sources.return_value = {"sources": []}
+        self.store.delete_creator.return_value = {"username": "other", "posts": 3, "media": 1}
         for method, path, body in self.requests():
             self.assertEqual(
                 getattr(self.client, method)(path, **({"json": body} if body else {})).status_code,
@@ -131,6 +243,7 @@ class RouteTests(unittest.TestCase):
             )
         self.store.save_source.assert_called_once_with("other", True)
         self.store.save_sources.assert_called_once_with(["a", "b"])
+        self.store.delete_creator.assert_called_once_with("other")
         self.assertEqual(
             self.client.post("/x-crawler/sources/batch", json={"usernames": []}).status_code, 422
         )

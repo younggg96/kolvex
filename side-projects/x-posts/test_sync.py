@@ -190,5 +190,32 @@ class SyncTests(unittest.TestCase):
         self.service.upload.assert_not_called()
         self.assertEqual(sync.state_for(self.root, "testuser")["boundary_ids"], ["20"])
 
+    def test_disabled_account_is_never_uploaded_and_kept_for_later(self):
+        file = self.capture({"posts": [post()], "scan_complete": True, "stop_reason": "initial_window"})
+        self.service.db.table.return_value.select.return_value.order.return_value.execute.side_effect = None
+        self.service.db.table.return_value.select.return_value.order.return_value.execute.return_value.data = [
+            {"username": "testuser", "enabled": False}
+        ]
+        self.service.db.table.return_value.select.return_value.eq.return_value.limit.return_value.execute.return_value.data = []
+        result = sync.sync_saved(self.root, self.service)
+        self.service.upload.assert_not_called()
+        self.assertTrue(result[0]["disabled"])
+        self.assertTrue(file.exists())
+        self.assertFalse((self.root / "state" / "testuser.json").exists())
+
+    def test_profiles_fill_skips_disabled_and_isolates_failures(self):
+        run = self.root / "run"
+        for name in ("good", "broken", "off"):
+            sync.atomic_json(run / f"{name}-profile.json", {"username": name, "display_name": name.title()})
+        self.service.db.table.return_value.select.return_value.order.return_value.execute.side_effect = None
+        self.service.db.table.return_value.select.return_value.order.return_value.execute.return_value.data = [
+            {"username": "off", "enabled": False}
+        ]
+        self.service.db.table.return_value.select.return_value.eq.return_value.limit.return_value.execute.return_value.data = []
+        self.service.fill_profile.side_effect = lambda p: (_ for _ in ()).throw(RuntimeError("x")) if p["username"] == "broken" else ["display_name"]
+        result = sync.fill_profiles(run, self.service)
+        self.assertEqual(result, {"filled": {"good": ["display_name"]}, "errors": ["RuntimeError"]})
+        self.assertEqual([c.args[0]["username"] for c in self.service.fill_profile.call_args_list], ["broken", "good"])
+
 if __name__ == "__main__":
     unittest.main()

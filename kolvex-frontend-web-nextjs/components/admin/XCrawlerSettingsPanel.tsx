@@ -1,8 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { Trash2 } from "lucide-react";
 import { AdminRowsSkeleton } from "@/components/admin/AdminSkeletons";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Input } from "@/components/ui/input";
 import { SettingsGroup, SettingsRow } from "@/components/ui/settings-group";
@@ -31,7 +40,11 @@ const LIMITS = {
 
 const MAX_BATCH = 200;
 
-async function request<T>(method: "GET" | "PUT" | "POST", body?: unknown, query = ""): Promise<T> {
+async function request<T>(
+  method: "GET" | "PUT" | "POST" | "DELETE",
+  body?: unknown,
+  query = "",
+): Promise<T> {
   const response = await fetch(`/api/admin/x-crawler${query}`, {
     method,
     cache: "no-store",
@@ -53,6 +66,7 @@ export default function XCrawlerSettingsPanel() {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [removing, setRemoving] = useState<string | null>(null);
 
   const describe = useCallback(
     (code: string) =>
@@ -167,6 +181,42 @@ export default function XCrawlerSettingsPanel() {
       setError(describe(err instanceof Error ? err.message : ""));
     } finally {
       setBusy(null);
+    }
+  }
+
+  async function deleteCreator() {
+    if (!removing || busy) return;
+    const name = removing;
+    setBusy("delete");
+    setError("");
+    setMessage("");
+    try {
+      const result = await request<{ username: string; posts: number; media: number }>(
+        "DELETE",
+        undefined,
+        `?creator=${encodeURIComponent(name)}`,
+      );
+      setData((current) =>
+        current
+          ? {
+              ...current,
+              sources: current.sources.map((item) =>
+                item.username === name ? { ...item, enabled: false } : item,
+              ),
+            }
+          : current,
+      );
+      setMessage(
+        c(
+          `Deleted @${name}: ${result.posts} posts and ${result.media} media files. Crawling is off.`,
+          `已删除 @${name}：${result.posts} 条推文、${result.media} 个媒体文件，并已停止抓取。`,
+        ),
+      );
+    } catch (err) {
+      setError(describe(err instanceof Error ? err.message : ""));
+    } finally {
+      setBusy(null);
+      setRemoving(null);
     }
   }
 
@@ -287,17 +337,29 @@ export default function XCrawlerSettingsPanel() {
                 </a>
               }
             >
-              <span className="mr-3 text-xs">
-                {source.enabled ? c("On", "开启") : c("Off", "已关闭")}
-              </span>
-              <Switch
-                checked={source.enabled}
-                disabled={busy !== null}
-                aria-label={c(`Scan @${source.username}`, `抓取 @${source.username}`)}
-                onCheckedChange={(checked) =>
-                  void saveSource(source.username, checked, source.username)
-                }
-              />
+              <div className="flex items-center gap-3">
+                <span className="min-w-[3em] text-right text-xs">
+                  {source.enabled ? c("On", "开启") : c("Off", "已关闭")}
+                </span>
+                <Switch
+                  checked={source.enabled}
+                  disabled={busy !== null}
+                  aria-label={c(`Scan @${source.username}`, `抓取 @${source.username}`)}
+                  onCheckedChange={(checked) =>
+                    void saveSource(source.username, checked, source.username)
+                  }
+                />
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="-mr-2 size-8 text-muted-foreground hover:text-negative"
+                  disabled={busy !== null}
+                  aria-label={c(`Delete @${source.username}`, `删除 @${source.username}`)}
+                  onClick={() => setRemoving(source.username)}
+                >
+                  <Trash2 className="size-4" aria-hidden />
+                </Button>
+              </div>
             </SettingsRow>
           ))
         )}
@@ -341,6 +403,37 @@ export default function XCrawlerSettingsPanel() {
           {message}
         </p>
       )}
+
+      <Dialog
+        open={removing !== null}
+        onOpenChange={(open) => !open && busy === null && setRemoving(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="break-all">
+              {c(`Delete @${removing}?`, `删除 @${removing}？`)}
+            </DialogTitle>
+            <DialogDescription>
+              {c(
+                "All of this creator's posts, AI analysis and archived media are removed from the site, and crawling stops. This cannot be undone.",
+                "将从网站删除该博主的全部推文、AI 分析和已存档的媒体，并停止抓取。删除后无法恢复。",
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" disabled={busy !== null} onClick={() => setRemoving(null)}>
+              {c("Cancel", "取消")}
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={busy !== null}
+              onClick={() => void deleteCreator()}
+            >
+              {busy === "delete" ? c("Deleting…", "正在删除…") : c("Delete", "删除")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

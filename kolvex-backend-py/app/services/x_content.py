@@ -9,6 +9,9 @@ from urllib.parse import urlparse
 HANDLE = re.compile(r"[A-Za-z0-9_]{1,15}")
 POST_ID = re.compile(r"[1-9][0-9]{0,24}")
 TICKER = re.compile(r"[A-Z][A-Z0-9.\-]{0,14}")
+AVATAR = re.compile(
+    r"https://pbs\.twimg\.com/profile_images/[0-9]+/[A-Za-z0-9_\-]+\.(?:jpg|jpeg|png|webp|gif)"
+)
 CREATOR_FIELDS = "username,display_name,bio,avatar_url,location,website,followers_count,following_count,created_at"
 POST_FIELDS = "id,author_username,url,published_at,text,cashtags,metrics,quoted_texts,media_links,truncated,pinned,imported_at,ai_analysis,media_assets"
 METRICS = ("replies", "reposts", "likes", "bookmarks", "views")
@@ -208,6 +211,46 @@ class XContentService:
             .data[0]
         }
 
+    def fill_profile(self, profile):
+        """Fill a creator's empty avatar, display name or bio from their public profile header.
+
+        Never overwrites a value an administrator set, and never creates a creator that has
+        no imported posts. Returns the field names that were filled.
+        """
+        handle = username(profile.get("username", ""))
+        rows = (
+            self.db.table("x_creators")
+            .select("display_name,bio,avatar_url")
+            .eq("username", handle)
+            .limit(1)
+            .execute()
+            .data
+        )
+        if not rows:
+            return []
+        current, changes = rows[0], {}
+        avatar = profile.get("avatar_url")
+        if (
+            not current.get("avatar_url")
+            and isinstance(avatar, str)
+            and len(avatar) <= 2048
+            and AVATAR.fullmatch(avatar)
+        ):
+            changes["avatar_url"] = avatar
+        name = profile.get("display_name")
+        if (
+            current.get("display_name") in (None, "", handle)
+            and isinstance(name, str)
+            and 1 <= len(name.strip()) <= 100
+        ):
+            changes["display_name"] = name.strip()
+        bio = profile.get("bio")
+        if not current.get("bio") and isinstance(bio, str) and 1 <= len(bio.strip()) <= 1000:
+            changes["bio"] = bio.strip()
+        if changes:
+            self.db.table("x_creators").update(changes).eq("username", handle).execute()
+        return sorted(changes)
+
     def posts(self, author=None, ticker=None, limit=20, offset=0):
         query = self.db.table("x_posts").select(
             f"{POST_FIELDS},creator:x_creators({CREATOR_FIELDS})", count="exact"
@@ -306,6 +349,23 @@ MAX_CRAWL_BATCH = 200
 CRAWL_LIMITS = {"max_posts_per_creator": (1, 2000), "max_scrolls_per_creator": (1, 300)}
 
 
+MEDIA_BUCKET = "x-post-media"  # same bucket as app.services.x_post_media.BUCKET
+MEDIA_PATH = re.compile(r"[1-9][0-9]{0,24}/[0-9a-f]{64}\.[a-z0-9]{2,5}")
+
+
+def _media_paths(post):
+    """Storage paths of a post's archived media; only paths this importer itself writes."""
+    paths = []
+    for asset in post.get("media_assets") or []:
+        url = asset.get("url") if isinstance(asset, dict) else None
+        if not isinstance(url, str) or f"/{MEDIA_BUCKET}/" not in url:
+            continue
+        path = url.split(f"/{MEDIA_BUCKET}/", 1)[1].split("?", 1)[0]
+        if MEDIA_PATH.fullmatch(path) and path.startswith(f"{post['id']}/"):
+            paths.append(path)
+    return paths
+
+
 class CrawlTablesMissing(RuntimeError):
     """The x_crawler_settings migration has not been applied yet."""
 
@@ -386,6 +446,48 @@ class XCrawlerSettings:
                 or []
             }
         )
+
+    def delete_creator(self, handle):
+        """Remove a creator from the site and stop crawling them. Cannot be undone.
+
+        Order makes a retry after any failure safe: crawling stops first, then media files,
+        then posts (with their AI analysis), then the profile. The crawl row stays, turned
+        off, so a name in the collector's local sources.json is not scanned again.
+        """
+        handle = username(handle)
+        self.save_source(handle, False)
+        posts, offset = [], 0
+        while True:
+            page = (
+                self.db.table("x_posts")
+                .select("id,media_assets")
+                .eq("author_username", handle)
+                .order("id")
+                .range(offset, offset + 999)
+                .execute()
+                .data
+                or []
+            )
+            posts += page
+            if len(page) < 1000:
+                break
+            offset += 1000
+        paths = [path for post in posts for path in _media_paths(post)]
+        bucket = self.db.storage.from_(MEDIA_BUCKET)
+        for start in range(0, len(paths), 100):
+            bucket.remove(paths[start : start + 100])
+        if posts:
+            self.db.table("x_posts").delete().eq("author_username", handle).execute()
+        self.db.table("x_creators").delete().eq("username", handle).execute()
+        return {"username": handle, "posts": len(posts), "media": len(paths)}
+
+    def disabled(self):
+        """Names an administrator turned off; their posts must not be imported."""
+        try:
+            sources = self.get()["sources"]
+        except CrawlTablesMissing:
+            return set()
+        return {row["username"] for row in sources if row["enabled"] is False}
 
     def save_settings(self, values):
         row = {"id": 1, "updated_at": datetime.now(timezone.utc).isoformat()}

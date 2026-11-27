@@ -334,6 +334,10 @@ def run_once(timeout=DEFAULT_TIMEOUT_SECONDS, root=ROOT):
                 committed = sync.finish_run(root, directory, service)
             inserted += sum(file["inserted"] for file in committed["files"])
             result.update(inserted=inserted, files=committed["files"])
+            try:
+                result["profiles"] = sync.fill_profiles(directory, service)
+            except Exception as error:
+                result["profiles"] = {"error": type(error).__name__}
             # Runs even without new posts so earlier queued analysis/media get retried.
             result.update(sync.post_process(root, service))
             result["sources"] = source_results(directory, plan)

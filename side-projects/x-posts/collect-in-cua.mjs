@@ -1,4 +1,21 @@
 /* Import in CUA REPL. All browser access uses the supplied temporary tab. */
+
+/** Runs in the page. Reads the profile header only when it belongs to `handle`. */
+export function readProfile(handle) {
+  const header = document.querySelector('[data-testid="UserName"]');
+  const lines = (header?.innerText || "").split("\n").map(line => line.trim()).filter(Boolean);
+  const at = lines.findIndex(line => line.toLowerCase() === "@" + handle.toLowerCase());
+  if (at < 1) return null;
+  const image = document.querySelector('a[href="/' + handle + '/photo" i] img');
+  const avatar = image?.src || "";
+  return {
+    username: handle,
+    display_name: lines[at - 1],
+    bio: document.querySelector('[data-testid="UserDescription"]')?.innerText.trim() || "",
+    avatar_url: /^https:\/\/pbs\.twimg\.com\/profile_images\//.test(avatar) ? avatar : null,
+  };
+}
+
 export async function createXCollector(tab, root, runDirectory) {
   const fs = await import("node:fs/promises");
   const incoming = root + "/data/incoming";
@@ -66,6 +83,9 @@ export async function createXCollector(tab, root, runDirectory) {
       await navigate(source.url);
       await tab.playwright.locator('article a[href*="/' + handle + '/status/" i] time')
         .first().waitFor({ state: "attached", timeout: 8000 }).catch(() => {});
+      // Public profile header, used only to fill a creator's empty avatar, name or bio.
+      const profile = await tab.playwright.evaluate(readProfile, handle).catch(() => null);
+      if (profile) await write(prefix + "-profile.json", profile);
       for (let scroll = 0; scroll <= source.max_scrolls; scroll++) {
         const ax = await observe();
         if (blocked(ax)) {

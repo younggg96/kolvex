@@ -16,6 +16,8 @@ class WorkflowTests(unittest.TestCase):
         (self.root / "sources.json").write_text(json.dumps({"usernames": ["testuser"]}))
         self.service = Mock()
         self.service.upload.return_value = {"inserted": 1, "skipped": 0}
+        # Default: crawler settings migration not applied, so no account is turned off.
+        self.service.db.table.return_value.select.return_value.order.return_value.execute.side_effect = RuntimeError("PGRST205")
         for name, value in (
             ("node_binary", "node"),
             ("sync.database", Mock()),
