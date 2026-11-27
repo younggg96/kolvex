@@ -2,7 +2,7 @@
 
 import asyncio
 import logging
-from datetime import date, datetime, timezone
+from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request
@@ -11,13 +11,13 @@ from postgrest.exceptions import APIError
 from app.api.dependencies.auth import verify_admin
 from app.core.supabase import get_supabase_service
 from app.schemas.xhs_sentiment import validate_batch
+from app.services.xhs_sentiment_store import TABLE, upsert_days
 from supabase import Client
 
 router = APIRouter(prefix="/xhs-sentiment", tags=["Xiaohongshu sentiment"])
 admin_router = APIRouter(prefix="/xhs-sentiment", tags=["Admin Xiaohongshu sentiment"])
 logger = logging.getLogger(__name__)
 
-TABLE = "xhs_daily_sentiment"
 MAX_BYTES = 4 * 1024 * 1024
 LOS_ANGELES = ZoneInfo("America/Los_Angeles")
 DAY_PATTERN = r"^\d{4}-\d{2}-\d{2}$"
@@ -60,9 +60,6 @@ def _summary(row: dict) -> dict:
     }
 
 
-RECORD_KEYS = ("date_pt", "captured_at", "sample", "sentiment", "topics", "rumors", "limitations")
-
-
 @admin_router.post("/validate")
 async def preview(
     request: Request,
@@ -89,20 +86,8 @@ async def save(
     db: Client = Depends(get_supabase_service),
 ):
     days = await _validated(request)
-    imported_at = datetime.now(timezone.utc).isoformat()
-    records = [
-        {
-            **{key: day[key] for key in RECORD_KEYS},
-            "imported_by": admin_id,
-            "imported_at": imported_at,
-        }
-        for day in days
-    ]
     try:
-        # One upsert statement: Postgres writes every day or none.
-        await asyncio.to_thread(
-            db.table(TABLE).upsert(records, on_conflict="date_pt", returning="minimal").execute
-        )
+        await asyncio.to_thread(upsert_days, db, days, admin_id)
     except APIError as exc:
         logger.exception("Xiaohongshu sentiment import failed")
         raise HTTPException(503, detail=exc.message) from exc

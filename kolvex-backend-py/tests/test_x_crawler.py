@@ -34,8 +34,12 @@ class ServiceTests(unittest.TestCase):
             {"username": "other"}
         ]
         XCrawlerSettings(db).save_source("@Other", False)
-        row = db.table.return_value.upsert.call_args.args[0]
+        [row] = db.table.return_value.upsert.call_args.args[0]
         self.assertEqual((row["username"], row["enabled"]), ("other", False))
+        self.assertNotIn("deleted_at", row)  # turning off is not deleting
+        XCrawlerSettings(db).save_source("other", True)
+        [row] = db.table.return_value.upsert.call_args.args[0]
+        self.assertIsNone(row["deleted_at"])  # turning on restores a deleted account
         with self.assertRaises(ValueError):
             XCrawlerSettings(db).save_source("https://x.com/other")
         with self.assertRaises(ValueError):
@@ -86,8 +90,9 @@ class ServiceTests(unittest.TestCase):
         result = XCrawlerSettings(db).delete_creator("@FinancialJuice")
         self.assertEqual(result, {"username": "financialjuice", "posts": 2, "media": 1})
         self.assertEqual(calls[0], "x_crawl_sources")
-        row = tables["x_crawl_sources"].upsert.call_args.args[0]
+        [row] = tables["x_crawl_sources"].upsert.call_args.args[0]
         self.assertEqual((row["username"], row["enabled"]), ("financialjuice", False))
+        self.assertTrue(row["deleted_at"])
         db.storage.from_.return_value.remove.assert_called_once_with(["12/" + "a" * 64 + ".jpg"])
         tables["x_posts"].delete.return_value.eq.assert_called_once_with(
             "author_username", "financialjuice"
@@ -98,6 +103,39 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(calls[-1], "x_creators")
         with self.assertRaises(ValueError):
             XCrawlerSettings(Mock()).delete_creator("not valid!")
+
+    def test_delete_needs_the_deleted_at_migration_and_then_deletes_nothing(self):
+        db = Mock()
+        db.table.return_value.upsert.return_value.execute.side_effect = RuntimeError(
+            "{'code': 'PGRST204', 'message': \"Could not find the 'deleted_at' column\"}"
+        )
+        with self.assertRaises(CrawlTablesMissing):
+            XCrawlerSettings(db).delete_creator("other")
+        db.table.return_value.delete.assert_not_called()
+        db.storage.from_.return_value.remove.assert_not_called()
+
+    def test_adding_works_before_the_deleted_at_migration(self):
+        db = Mock()
+        db.table.return_value.upsert.return_value.execute.side_effect = [
+            RuntimeError("PGRST204 deleted_at"),
+            Mock(data=[{"username": "other"}]),
+        ]
+        self.assertEqual(
+            XCrawlerSettings(db).save_sources(["other"]), {"sources": [{"username": "other"}]}
+        )
+        retried = db.table.return_value.upsert.call_args.args[0]
+        self.assertEqual([sorted(row) for row in retried], [["enabled", "updated_at", "username"]])
+
+    def test_list_reports_deleted_at_even_before_migration(self):
+        db = Mock()
+        db.table.return_value.select.return_value.order.return_value.execute.return_value.data = [
+            {"username": "a", "enabled": True}
+        ]
+        db.table.return_value.select.return_value.eq.return_value.limit.return_value.execute.return_value.data = []
+        self.assertEqual(
+            XCrawlerSettings(db).get()["sources"],
+            [{"deleted_at": None, "username": "a", "enabled": True}],
+        )
 
     def test_media_failure_keeps_posts_for_a_retry(self):
         db = Mock()
@@ -184,6 +222,26 @@ class ProfileTests(unittest.TestCase):
         )
         with self.assertRaises(ValueError):
             self.fill([], {"username": "not valid!"})
+
+
+class ActivityTests(unittest.TestCase):
+    def test_counts_posts_per_creator_since_a_recent_time(self):
+        from datetime import datetime, timedelta, timezone
+
+        db = Mock()
+        query = db.table.return_value.select.return_value.gte.return_value.order.return_value
+        query.order.return_value.range.return_value.execute.return_value.data = [
+            {"author_username": "b"},
+            {"author_username": "a"},
+            {"author_username": "b"},
+        ]
+        now = datetime(2026, 11, 27, 12, tzinfo=timezone.utc)
+        result = XContentService(db).activity(now - timedelta(hours=36), now)
+        self.assertEqual(result["counts"], {"b": 2, "a": 1})
+        self.assertEqual(result["order"], ["b", "a"])
+        for bad in (now - timedelta(days=4), now + timedelta(hours=1), datetime(2026, 11, 27)):
+            with self.assertRaises(ValueError):
+                XContentService(db).activity(bad, now)
 
 
 class RouteTests(unittest.TestCase):

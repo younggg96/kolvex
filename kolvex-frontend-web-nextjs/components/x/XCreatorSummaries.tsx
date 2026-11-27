@@ -6,9 +6,10 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AvatarRail } from "@/components/ui/avatar-rail";
 import { Button } from "@/components/ui/button";
 import { ListCard } from "@/components/ui/list-card";
+import { PersonUpdateAvatar } from "@/components/person-updates/PersonUpdateAvatar";
 import { useTranslation } from "@/lib/i18n";
+import { startOfYesterday } from "@/lib/personUpdates";
 import { xRequest, type XCreator } from "@/lib/xContentApi";
-import { CreatorAvatar } from "./XCreatorProfile";
 
 type Insight = { headline: string; basis: string; risks: string };
 type Summary = {
@@ -44,6 +45,23 @@ export default function XCreatorSummaries({
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  // Posts per creator since the viewer's local start of yesterday, as on 动态.
+  // A failed request only hides the badges; it never shows a guessed count.
+  const [activity, setActivity] = useState<{ counts: Record<string, number>; order: string[] }>({
+    counts: {},
+    order: [],
+  });
+  useEffect(() => {
+    const controller = new AbortController();
+    const since = new Date(startOfYesterday(Date.now())).toISOString();
+    void xRequest<{ counts: Record<string, number>; order?: string[] }>(
+      `activity?since=${encodeURIComponent(since)}`,
+      { signal: controller.signal },
+    )
+      .then((data) => setActivity({ counts: data.counts, order: data.order ?? [] }))
+      .catch(() => {});
+    return () => controller.abort();
+  }, []);
   useEffect(() => {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 35000);
@@ -73,6 +91,12 @@ export default function XCreatorSummaries({
     if (!entries.has(username)) entries.set(username, undefined);
   }
   if (author && !entries.has(author)) entries.set(author, undefined);
+  // As on 动态: creators who posted since yesterday come first, newest post first.
+  const recent = activity.order.filter((username) => entries.has(username));
+  const ordered = [
+    ...recent.map((username) => [username, entries.get(username)] as const),
+    ...Array.from(entries).filter(([username]) => !recent.includes(username)),
+  ];
   const allCreators = c("All creators", "全部博主");
   const summary = summaries.get(author);
   const content = summary?.content[locale === "zh" ? "zh" : "en"];
@@ -82,19 +106,36 @@ export default function XCreatorSummaries({
       label: allCreators,
       href: creatorPostsHref(""),
       avatar: (
-        <Avatar>
+        <Avatar className="h-11 w-11">
           <AvatarFallback>
             <UsersRound className="size-6" />
           </AvatarFallback>
         </Avatar>
       ),
     },
-    ...Array.from(entries, ([username, creator]) => ({
-      id: username,
-      href: creatorPostsHref(username),
-      label: creator?.display_name || `@${username}`,
-      avatar: <CreatorAvatar creator={creator} username={username} large />,
-    })),
+    ...ordered.map(([username, creator]) => {
+      const count = activity.counts[username] ?? 0;
+      return {
+        id: username,
+        href: creatorPostsHref(username),
+        label: creator?.display_name || `@${username}`,
+        updateLabel: count
+          ? c(
+              `${count} new ${count === 1 ? "post" : "posts"} since yesterday`,
+              `昨日至今 ${count} 条新推文`,
+            )
+          : undefined,
+        badge: count,
+        avatar: (
+          <PersonUpdateAvatar
+            label={(creator?.display_name || username).toLocaleUpperCase()}
+            src={creator?.avatar_url}
+            fedOfficial={false}
+            className="[&>span]:text-lg"
+          />
+        ),
+      };
+    }),
   ];
   const date = new Intl.DateTimeFormat(locale === "zh" ? "zh-CN" : "en-US", {
     dateStyle: "medium",

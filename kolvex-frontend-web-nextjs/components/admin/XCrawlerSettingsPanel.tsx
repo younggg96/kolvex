@@ -23,6 +23,8 @@ import { parseHandles } from "@/lib/xCrawlerHandles";
 interface Source {
   username: string;
   enabled: boolean;
+  /** Set when the creator was deleted: hidden here, never crawled. */
+  deleted_at?: string | null;
 }
 interface Limits {
   max_posts_per_creator: number;
@@ -72,8 +74,8 @@ export default function XCrawlerSettingsPanel() {
     (code: string) =>
       ({
         tables_missing: c(
-          "Crawler settings tables are missing. Apply migration 20261126120000_x_crawler_settings.sql first.",
-          "数据库还没有采集设置表，请先执行迁移 20261126120000_x_crawler_settings.sql。",
+          "A crawler settings migration is missing. Apply the x_crawl migrations in kolvex-backend-py/supabase/migrations first.",
+          "数据库缺少采集设置迁移，请先执行 kolvex-backend-py/supabase/migrations 里 x_crawl 相关的迁移。",
         ),
         forbidden: c("Administrator access required.", "需要管理员权限。"),
         unauthorized: c("Sign in first.", "请先登录。"),
@@ -148,7 +150,11 @@ export default function XCrawlerSettingsPanel() {
       setMessage("");
       return;
     }
-    const before = new Map((data?.sources ?? []).map((item) => [item.username, item.enabled]));
+    const before = new Map(
+      (data?.sources ?? [])
+        .filter((item) => !item.deleted_at)
+        .map((item) => [item.username, item.enabled]),
+    );
     setBusy("add");
     setError("");
     setMessage("");
@@ -200,9 +206,7 @@ export default function XCrawlerSettingsPanel() {
         current
           ? {
               ...current,
-              sources: current.sources.map((item) =>
-                item.username === name ? { ...item, enabled: false } : item,
-              ),
+              sources: current.sources.filter((item) => item.username !== name),
             }
           : current,
       );
@@ -265,7 +269,7 @@ export default function XCrawlerSettingsPanel() {
       </section>
     );
 
-  const sources = data?.sources ?? [];
+  const sources = (data?.sources ?? []).filter((item) => !item.deleted_at);
   const enabledCount = sources.filter((item) => item.enabled).length;
 
   return (

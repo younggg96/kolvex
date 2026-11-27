@@ -4,7 +4,6 @@ import { createConnection, createServer } from "node:net";
 import { homedir } from "node:os";
 import { dirname, join, relative, resolve, isAbsolute } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { createXCollector } from "./collect-in-cua.mjs";
 
 const root = dirname(fileURLToPath(import.meta.url));
 const profile = join(root, "state", "chrome-profile");
@@ -146,6 +145,11 @@ export async function collectRun(session, directory, { daily = false, signal } =
       : "X 登录不可用，请运行 ./side-projects/x-posts/run.sh login。");
     return 2;
   }
+  // Load the collector fresh for every run: the daily-Chrome daemon stays up for days and
+  // must pick up an updated collect-in-cua.mjs without a restart.
+  const { createXCollector } = await import(
+    new URL("./collect-in-cua.mjs?run=" + Date.now(), import.meta.url).href
+  );
   for (const source of plan.sources) {
     // Sources without a summary are reported as interrupted by the workflow.
     if (signal?.aborted) return 130;

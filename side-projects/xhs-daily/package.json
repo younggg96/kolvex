@@ -1,0 +1,11 @@
+{
+  "name": "kolvex-xhs-local-collector",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test collect.test.mjs"
+  },
+  "dependencies": {
+    "playwright-core": "1.65.1"
+  }
+}

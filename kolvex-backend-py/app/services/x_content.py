@@ -275,6 +275,35 @@ class XContentService:
             "offset": offset,
         }
 
+    def activity(self, since, now=None):
+        """Posts per creator published since `since` (at most 3 days back), for rail badges.
+
+        `order` lists those creators by their newest post first, like the 动态 rail.
+        """
+        now = now or datetime.now(timezone.utc)
+        if since.tzinfo is None or not now - timedelta(days=3) <= since <= now:
+            raise ValueError("since must be a timezone-aware time within the last 3 days")
+        counts, offset = {}, 0
+        while offset < 20000:
+            page = (
+                self.db.table("x_posts")
+                .select("author_username")
+                .gte("published_at", since.isoformat())
+                .order("published_at", desc=True)
+                .order("id", desc=True)
+                .range(offset, offset + 999)
+                .execute()
+                .data
+                or []
+            )
+            for row in page:
+                counts[row["author_username"]] = counts.get(row["author_username"], 0) + 1
+            if len(page) < 1000:
+                break
+            offset += 1000
+        # Rows arrive newest first, so dict insertion order is newest post first.
+        return {"since": since.isoformat(), "counts": counts, "order": list(counts)}
+
     def ticker_heat(self, days=7, now=None):
         """Cashtag counts by source publication date for this window and the one before it."""
         now = now or datetime.now(timezone.utc)
@@ -390,12 +419,14 @@ class XCrawlerSettings:
         def load():
             sources = (
                 self.db.table("x_crawl_sources")
-                .select("username,enabled,created_at,updated_at")
+                # "*": deleted_at exists only after migration 20261127120000.
+                .select("*")
                 .order("username")
                 .execute()
                 .data
                 or []
             )
+            sources = [{"deleted_at": None, **row} for row in sources]
             rows = self.db.table("x_crawl_settings").select("*").eq("id", 1).limit(1).execute().data
             settings = rows[0] if rows else {}
             return {
@@ -421,14 +452,9 @@ class XCrawlerSettings:
             "enabled": enabled,
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }
-        return _crawl_tables(
-            lambda: {
-                "source": self.db.table("x_crawl_sources")
-                .upsert(row, on_conflict="username")
-                .execute()
-                .data[0]
-            }
-        )
+        if enabled:
+            row["deleted_at"] = None  # turning a deleted account back on restores it
+        return {"source": self._upsert([row])[0]}
 
     def save_sources(self, handles):
         """Add or turn on many accounts at once. Validates every name before writing any."""
@@ -436,26 +462,51 @@ class XCrawlerSettings:
             raise ValueError(f"Add 1 to {MAX_CRAWL_BATCH} accounts at a time")
         names = sorted({username(handle) for handle in handles})
         stamp = datetime.now(timezone.utc).isoformat()
-        rows = [{"username": name, "enabled": True, "updated_at": stamp} for name in names]
-        return _crawl_tables(
-            lambda: {
-                "sources": self.db.table("x_crawl_sources")
-                .upsert(rows, on_conflict="username")
+        rows = [
+            {"username": name, "enabled": True, "deleted_at": None, "updated_at": stamp}
+            for name in names
+        ]
+        return {"sources": self._upsert(rows)}
+
+    def _upsert(self, rows, require_deleted_at=False):
+        def write(values):
+            return (
+                self.db.table("x_crawl_sources")
+                .upsert(values, on_conflict="username")
                 .execute()
                 .data
                 or []
-            }
-        )
+            )
+
+        try:
+            return _crawl_tables(lambda: write(rows))
+        except CrawlTablesMissing:
+            raise
+        except Exception as exc:
+            # PGRST204: column not in schema cache, i.e. migration 20261127120000 not applied yet.
+            if "PGRST204" not in str(exc) or not any("deleted_at" in row for row in rows):
+                raise
+            if require_deleted_at:
+                raise CrawlTablesMissing("x_crawl_sources.deleted_at is missing") from exc
+            return _crawl_tables(
+                lambda: write([{k: v for k, v in row.items() if k != "deleted_at"} for row in rows])
+            )
 
     def delete_creator(self, handle):
         """Remove a creator from the site and stop crawling them. Cannot be undone.
 
         Order makes a retry after any failure safe: crawling stops first, then media files,
         then posts (with their AI analysis), then the profile. The crawl row stays, turned
-        off, so a name in the collector's local sources.json is not scanned again.
+        off and marked deleted (hidden from the admin list), so a name in the collector's
+        local sources.json is not scanned again.
         """
         handle = username(handle)
-        self.save_source(handle, False)
+        stamp = datetime.now(timezone.utc).isoformat()
+        # Marked first: before migration 20261127120000 this fails and nothing is deleted.
+        self._upsert(
+            [{"username": handle, "enabled": False, "deleted_at": stamp, "updated_at": stamp}],
+            require_deleted_at=True,
+        )
         posts, offset = [], 0
         while True:
             page = (

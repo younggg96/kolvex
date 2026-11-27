@@ -1,6 +1,7 @@
 """Public source content; all writes require the existing administrator permission."""
 
 import logging
+from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -83,6 +84,12 @@ async def posts(
     feed = await run_in_threadpool(run, lambda: service.posts(author, ticker, limit, offset))
     feed["posts"] = await enrich_posts(get_redis(), feed["posts"])
     return feed
+
+
+@router.get("/activity")
+def activity(since: datetime = Query(...), service=Depends(get_service)):
+    """Posts per creator since `since` (the viewer's local start of yesterday)."""
+    return run(lambda: service.activity(since))
 
 
 @router.get("/tickers")

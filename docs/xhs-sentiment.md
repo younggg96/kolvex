@@ -1,6 +1,6 @@
 # 小红书每日情绪
 
-> **状态：一期已在 Web 和后端实现，尚未上线。** 上线前需要在生产库应用迁移 `20261121040000_xhs_daily_sentiment.sql`，再部署后端和 Web，由管理员导入第一天的数据。
+> **状态：一期已在 Web 和后端实现，尚未上线；本机自动采集代码已完成，尚未在登录状态下实测（2026-11-27）。** 上线前需要在生产库应用迁移 `20261121040000_xhs_daily_sentiment.sql`，再部署后端和 Web，由管理员导入第一天的数据。
 >
 > 入口：Web `/dashboard/xhs-sentiment`（博主观点下的「小红书」，英文界面显示 RedNote）· 管理 `/dashboard/admin?tab=xhs` · 功能开关 `youtubeOpinions` · App 待移植
 
@@ -10,7 +10,10 @@
 
 帖子只作为**话题的出处**出现：每个话题下列几条代表帖的标题和「打开原帖」链接，用来满足「可追溯」的要求。
 
-数据来源：本机采集流程（已登录的 Chrome + 电脑控制，和 X 采集类似）每天产出一份 JSON，管理员粘贴或上传到后台，先校验预览，再确认导入。流程和 [恐慌与贪婪指数](fear-greed.md)、[动态](person-updates.md) 相同。现有样例 `xiaohongshu-us-stocks-summary-2026-11-20.json`（下称 v1）需要按第 5 节转换成 v2。
+数据来源有两条路，写进同一张表、走同一套校验：
+
+- **自动采集（默认，2026-11-27 起）**：本机 Playwright 定时任务每天太平洋时间 19:00 后采集一轮，DeepSeek 打标签、归纳话题，校验通过后直接入库，见第 7.1 节。
+- **管理员导入（备用）**：把采集提示词交给能用浏览器的 AI，产出 JSON 后粘贴或上传到后台，先校验预览再确认导入。流程和 [恐慌与贪婪指数](fear-greed.md)、[动态](person-updates.md) 相同。现有样例 `xiaohongshu-us-stocks-summary-2026-11-20.json`（下称 v1）需要按第 5 节转换成 v2。
 
 ### 与退役代码的关系
 
@@ -40,11 +43,11 @@
 5. **传言**：单独一栏，每条都标「未经证实」或「已被否认」，有出处的附原帖链接。
 6. **页脚**：采集时间和「不构成投资建议」各出现一次；**覆盖说明**为折叠区，展示 `limitations`，例如「特斯拉关键词下多为车型旧帖」「评论为热评抽样，不是全部评论」。
 
-**不做什么**：不做帖子 feed、不做博主目录或主页、不做博主排名或准确率、不显示评论人身份、不在阅读时调用模型、不做自动采集。
+**不做什么**：不做帖子 feed、不做博主目录或主页、不做博主排名或准确率、不显示评论人身份、不在阅读时调用模型（模型只在每天的自动采集里调用一次）。
 
 ## 3. 规则
 
-- **数据来源**：只来自管理员导入，每天一条，重复导入同一天会整条覆盖。覆盖范围由采集决定，不代表小红书全量内容，页面要明说。
+- **数据来源**：本机自动采集或管理员导入，每天一条。管理员导入总是优先：已有管理员导入的日期，自动采集不会覆盖；管理员再导入同一天会整条覆盖自动结果（`imported_by` 为空的就是自动采集写入的）。覆盖范围由采集决定，不代表小红书全量内容，页面要明说。
 - **不显示数字分数**：产品原则要求「强度用文字描述」，所以只显示分布和最大的一档。
 - **只导入计数**：占比和「多数帖子」由前端从计数算出。导入里带 `score`、占比、标签或其他未列出的字段，校验会报「未知字段」并拒绝整份文件。
 - **可追溯**：每个话题至少要有 1 条带 HTTPS 链接的出处帖子，否则校验失败。概括可以由人写或 AI 写，但必须能找到出处。
@@ -247,6 +250,8 @@ v1 最大的变化是：从「帖子列表 + 汇总」改成「汇总 + 话题�
 | 数据库 | `kolvex-backend-py/supabase/migrations/20261121040000_xhs_daily_sentiment.sql`：表 `xhs_daily_sentiment`，主键 `date_pt`，JSONB 列 `sample` / `sentiment` / `topics` / `rumors` / `limitations`，审计列 `imported_by`、`imported_at` |
 | 后端 | 路由 `app/api/routes/xhs_sentiment.py`（公开路由在 `api_router`，管理路由挂在 `/admin`）；校验 `app/schemas/xhs_sentiment.py`；测试 `tests/test_xhs_sentiment.py` |
 | Web | 页面 `app/dashboard/xhs-sentiment/page.tsx` → `components/xhs/XhsSentimentPage.tsx`；单日内容 `components/xhs/XhsDayView.tsx`（阅读页和后台预览共用）；数据与计算 `lib/xhsSentiment.ts`；代理 `app/api/xhs-sentiment/route.ts`、`app/api/xhs-sentiment/[date]/route.ts`、`app/api/admin/xhs-sentiment/route.ts`；后台 `components/admin/XhsSentimentImporter.tsx`；导航 `components/layout/navItems.ts` 的 `OPINION_SOURCES`；测试 `scripts/xhs-sentiment.test.cjs` |
+| 入库公共函数 | `app/services/xhs_sentiment_store.py`（`upsert_days`），管理员导入和自动采集共用 |
+| 自动采集 | `side-projects/xhs-daily/`，见 7.1 |
 | App | 未实现，已登记在 `kolvex-mobile/MIGRATION.md` |
 
 接口（统一前缀 `/api/v1`）：
@@ -273,9 +278,19 @@ v1 最大的变化是：从「帖子列表 + 汇总」改成「汇总 + 话题�
 - 2026-11-21 起，导入不再要求 `xsec_token`：链接只用来记录出处（`note_id` 可追溯），不要求读者能打开。采集提示词改为可直接写 `/explore/<note_id>`，不必为取 token 反复点开帖子。
 - 页面上，没有 `xsec_token` 的出处只显示标题和元信息，不显示「打开原帖」链接，避免点进死链；带 token 的链接和 `xhslink.com` 短链照常可点。
 
+### 7.1 本机自动采集
+
+位置 `side-projects/xhs-daily/`，用法和设置见该目录的 [README](../side-projects/xhs-daily/README.md)，结构对齐 X 的本机采集。
+
+1. **调度**：macOS LaunchAgent `app.kolvex.xhs-daily` 每小时唤醒一次；太平洋时间 19:00 以后、当天还没成功才跑，每天最多尝试 2 次。遇到验证码、安全验证或登录页，当天停止，不重试也不绕过。
+2. **采集**（`collect.mjs`，不用模型）：在专用 Chrome 配置目录（用户手动登录，建议小号）里按关键词搜索、尝试切到「最新」、翻几屏，按 note_id 去重；挑 5 篇打开读正文和热评。评论人的昵称、头像、属地都不读。
+3. **归纳**（`digest.py`）：DeepSeek V4.1 Flash（`deepseek-flash`，关闭思考模式，使用后端的 `DEEPSEEK_API_KEY`）调用两次，一次逐条标「是否美股相关 + 五档情绪」，一次归纳话题和传言。计数、出处链接、评论摘录都由脚本根据采集结果拼出，模型给出的不存在的 ID 一律丢弃；漏标任何一条就整轮失败。
+4. **校验与入库**：调用 `app/schemas/xhs_sentiment.py` 的 `validate_batch`，通过后用 `upsert_days(db, [day], None)` 写入。写库前再查一次，当天已有管理员导入就不写。
+5. **透明**：`limitations` 固定加一条「情绪分类与话题归纳由 AI（DeepSeek）自动生成，可能有误」；「最新」排序切换失败时也会写明。
+
 ## 8. 待确认的问题
 
-- 话题由谁归纳：采集端 AI 写进 JSON（本方案的假设），还是导入后由后端调用 DeepSeek 生成（会花钱，只能在管理员点击后触发）。
+- ~~话题由谁归纳~~：2026-11-27 定为本机采集后调用 DeepSeek 自动归纳，见 7.1。
 - 页面放在博主观点的「小红书」tab，还是和 Reddit 热度合成「社区情绪」。
 
 ## 9. 验证
