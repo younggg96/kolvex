@@ -200,10 +200,15 @@ def finish_run(root, directory, service):
         handle = posts[0]["author_username"]
         state = state_for(root, handle)
         synced = set(state.get("synced_post_ids", []))
-        # A complete scan of already-imported posts still has to move the checkpoint forward.
-        new_boundary = payload.get("scan_complete") is True and set(
-            state.get("boundary_ids", [])
-        ) != {post["id"] for post in posts if not post["pinned"]}
+        ids = {post["id"] for post in posts if not post["pinned"]}
+        # A complete scan of already-imported posts still has to move the checkpoint forward,
+        # unless a newer scan already moved it past this export (an old run directory).
+        stale = max(map(int, ids), default=0) < int(state.get("last_collected_post_id", "0"))
+        new_boundary = (
+            payload.get("scan_complete") is True
+            and not stale
+            and set(state.get("boundary_ids", [])) != ids
+        )
         if not new_boundary and all(
             post["author_username"] == handle and post["id"] in synced for post in posts
         ):

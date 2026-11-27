@@ -84,6 +84,17 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(recovered["inserted"], 1)
         self.assertEqual(workflow.sync.state_for(self.root, "testuser")["synced_post_ids"], ["10"])
 
+    def test_unreadable_old_run_does_not_block_collection(self):
+        broken = self.root / "data" / "incoming" / "old-broken"
+        workflow.sync.atomic_json(broken / "plan.json", {"sources": []})
+        workflow.sync.atomic_json(broken / "testuser-export.json", {"posts": []})
+        with patch.object(workflow, "collect", side_effect=self.export):
+            result = workflow.run_once(root=self.root)
+        self.assertEqual(result["recovery_errors"], ["old-broken"])
+        self.assertEqual(result["status"], "complete")
+        self.assertEqual(result["inserted"], 1)
+        self.assertTrue((broken / "plan.json").exists())
+
     def test_full_run_lock_prevents_overlap(self):
         with workflow.workflow_lock(self.root):
             with self.assertRaises(BlockingIOError):

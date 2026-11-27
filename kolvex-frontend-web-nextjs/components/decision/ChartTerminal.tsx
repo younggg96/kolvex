@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Maximize2, Minimize2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import PriceChart from "@/components/youtube/PriceChart";
@@ -11,6 +12,7 @@ import { isValidStockSymbol, normalizeStockSymbol } from "@/lib/stockLinks";
 
 const LAST_SYMBOL_KEY = "kolvex:chart-terminal:symbol";
 const FALLBACK_SYMBOL = "SPY";
+const FULLSCREEN_TOAST_ID = "chart-fullscreen";
 
 function readLastSymbol(): string | null {
   try {
@@ -29,66 +31,55 @@ export default function ChartTerminal() {
   const router = useRouter();
   const params = useSearchParams();
   const terminalRef = useRef<HTMLDivElement>(null);
-  const nativeFullscreen = useRef(false);
   const pendingFullscreen = useRef(false);
   const [fullscreen, setFullscreen] = useState(false);
 
   useEffect(() => {
-    const dismiss = () => {
-      if (!nativeFullscreen.current || document.fullscreenElement === document.documentElement)
-        return;
-      nativeFullscreen.current = false;
-      setFullscreen(false);
+    const syncFullscreen = () => {
+      setFullscreen(document.fullscreenElement === document.documentElement);
     };
-    document.addEventListener("fullscreenchange", dismiss);
+    document.addEventListener("fullscreenchange", syncFullscreen);
+    syncFullscreen();
     return () => {
-      document.removeEventListener("fullscreenchange", dismiss);
-      if (nativeFullscreen.current && document.fullscreenElement === document.documentElement) {
+      document.removeEventListener("fullscreenchange", syncFullscreen);
+      if (document.fullscreenElement === document.documentElement) {
         void document.exitFullscreen().catch(() => {});
       }
-      nativeFullscreen.current = false;
     };
   }, []);
-
-  useEffect(() => {
-    if (!fullscreen) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (
-        !pendingFullscreen.current &&
-        event.key === "Escape" &&
-        !event.defaultPrevented &&
-        !document.fullscreenElement &&
-        !document.querySelector('[role="dialog"][data-state="open"]')
-      ) {
-        setFullscreen(false);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [fullscreen]);
 
   async function toggleFullscreen() {
     if (pendingFullscreen.current) return;
     const root = document.documentElement;
-    if (fullscreen) {
-      if (nativeFullscreen.current && document.fullscreenElement === root) {
-        await document.exitFullscreen().catch(() => {});
-      } else {
-        setFullscreen(false);
-      }
+    const exiting = document.fullscreenElement === root;
+    if (!exiting && (!document.fullscreenEnabled || typeof root.requestFullscreen !== "function")) {
+      toast.error(t("youtubeOpinions.terminalFullscreenUnavailable"), { id: FULLSCREEN_TOAST_ID });
       return;
     }
 
-    setFullscreen(true);
-    if (!document.fullscreenEnabled || document.fullscreenElement) return;
     pendingFullscreen.current = true;
     try {
-      // Portalled chart dialogs and selectors stay in the fullscreen document.
-      await root.requestFullscreen({ navigationUI: "hide" });
-      if (terminalRef.current) nativeFullscreen.current = document.fullscreenElement === root;
-      else if (document.fullscreenElement === root) await document.exitFullscreen();
+      if (exiting) {
+        await document.exitFullscreen();
+      } else {
+        // Fullscreen the document so portalled chart menus and dialogs stay on the display.
+        await root.requestFullscreen({ navigationUI: "hide" });
+        if (!terminalRef.current && document.fullscreenElement === root) {
+          await document.exitFullscreen();
+        }
+      }
+      toast.dismiss(FULLSCREEN_TOAST_ID);
     } catch {
-      // The chart still fills the browser viewport when native fullscreen is unavailable.
+      if (terminalRef.current) {
+        toast.error(
+          t(
+            exiting
+              ? "youtubeOpinions.terminalFullscreenExitFailed"
+              : "youtubeOpinions.terminalFullscreenFailed",
+          ),
+          { id: FULLSCREEN_TOAST_ID },
+        );
+      }
     } finally {
       pendingFullscreen.current = false;
     }

@@ -1670,6 +1670,9 @@
     "opinionMarkers": "为博主观点，悬停查看",
     "terminalFullscreen": "全屏",
     "exitTerminalFullscreen": "退出全屏",
+    "terminalFullscreenUnavailable": "当前浏览器环境不支持显示器全屏。",
+    "terminalFullscreenFailed": "浏览器未能进入全屏，请重试。",
+    "terminalFullscreenExitFailed": "暂时无法退出全屏，可按 Esc 退出。",
     "replay": {
       "title": "K 线回放",
       "exit": "退出回放",

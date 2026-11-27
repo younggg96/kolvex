@@ -740,9 +740,11 @@ from a translated toolbar action in a bounded popover. Nested focus dialogs reta
 confirmation and Escape behavior. Default dialog geometry is unchanged.
 
 The standalone 看盘 workspace places **Bar replay** and the fullscreen toggle at the
-end of its OHLC header. Fullscreen removes the dashboard navigation and keeps the
-existing chart panels. The mobile panel dock moves to the bottom safe area. Browser
-fullscreen falls back to the full viewport when the browser denies the native request.
+end of its OHLC header. Browser fullscreen fills the display, hides browser and dashboard
+navigation, and keeps the chart panels. The mobile panel dock moves to the bottom safe
+area. The fullscreen layout activates after the browser confirms entry. If the request
+fails or fullscreen is unavailable, the regular layout stays visible and a toast explains
+the result.
 
 Replay adds a thin control row between the range strip and the oscillator. Start with
 a candle tap, keyboard selection on the plot, or the timeline. The playback row

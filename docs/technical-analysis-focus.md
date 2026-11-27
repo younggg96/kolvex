@@ -112,9 +112,11 @@ symbol lives in the URL (`?symbol=NVDA`); without one it reopens the last symbol
 belongs to `home` (行情) in `lib/productFeatures.ts`.
 
 The **全屏 / Fullscreen** button sits next to **K 线回放 / Bar replay** in the quote header.
-Fullscreen hides dashboard navigation, keeps the watchlist and other chart panels, and
-uses browser fullscreen where available. Exit with the same control or Escape. The chart
-stays mounted, preserving the selected ticker, period, zoom, drawings and any active replay.
+The browser's fullscreen mode fills the display and hides the browser toolbar and dashboard
+navigation. The watchlist and other chart panels remain available. If the browser cannot
+enter fullscreen, the chart stays in its regular layout and shows a message. Exit with the
+same control or Escape. The chart preserves the ticker, period, zoom, drawings and any active
+replay.
 
 ### Historical bar replay
 

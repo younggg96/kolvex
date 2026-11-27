@@ -175,5 +175,20 @@ class SyncTests(unittest.TestCase):
         # Re-running recovery on the same directory is a no-op once the checkpoint matches.
         self.assertEqual(sync.finish_run(self.root, run, self.service), {"files": []})
 
+    def test_old_complete_export_does_not_rewind_a_newer_checkpoint(self):
+        # A later run already moved the checkpoint to 20; an old run directory still holds 11/10.
+        sync.atomic_json(self.root / "state" / "testuser.json", {
+            "username": "testuser", "synced_post_ids": ["20", "11", "10"], "boundary_ids": ["20"],
+            "last_collected_post_id": "20",
+        })
+        run = self.root / "old-run"
+        sync.atomic_json(run / "plan.json", {"sources": []})
+        sync.atomic_json(run / "testuser-export.json", {
+            "posts": [post("11"), post("10")], "scan_complete": True, "stop_reason": "checkpoint",
+        })
+        self.assertEqual(sync.finish_run(self.root, run, self.service), {"files": []})
+        self.service.upload.assert_not_called()
+        self.assertEqual(sync.state_for(self.root, "testuser")["boundary_ids"], ["20"])
+
 if __name__ == "__main__":
     unittest.main()

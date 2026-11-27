@@ -1687,6 +1687,9 @@
     "opinionMarkers": "creator calls; hover for details",
     "terminalFullscreen": "Fullscreen",
     "exitTerminalFullscreen": "Exit fullscreen",
+    "terminalFullscreenUnavailable": "Display fullscreen is unavailable in this browser context.",
+    "terminalFullscreenFailed": "The browser could not enter fullscreen. Try again.",
+    "terminalFullscreenExitFailed": "Could not exit fullscreen. Press Esc to exit.",
     "replay": {
       "title": "Bar replay",
       "exit": "Exit replay",

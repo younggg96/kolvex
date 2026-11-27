@@ -309,7 +309,13 @@ def run_once(timeout=DEFAULT_TIMEOUT_SECONDS, root=ROOT):
             with sync.locked(root):
                 # Recover exports saved before a previous process reached finish.
                 for old_plan in sorted(incoming.glob("*/plan.json")):
-                    recovery = sync.finish_run(root, old_plan.parent, service)
+                    try:
+                        recovery = sync.finish_run(root, old_plan.parent, service)
+                    except ValueError:
+                        # One unreadable old directory must not block every future run.
+                        # It stays on disk and is retried next time; only its name is recorded.
+                        result.setdefault("recovery_errors", []).append(old_plan.parent.name)
+                        continue
                     inserted += sum(file["inserted"] for file in recovery["files"])
                 plan = sync.prepare(root, service)
                 inserted += plan["retried"]
